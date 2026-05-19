@@ -13,49 +13,13 @@ public partial class MainViewModel
     /// Owns runtime event subscriptions and external event ingress for the
     /// compatibility ViewModel facade.
     /// </summary>
-    private sealed class MainViewModelRuntimeEventIngressController
+    private sealed partial class MainViewModelRuntimeEventIngressController
     {
         private readonly MainViewModelRuntimeEventIngressControllerContext _context;
 
         public MainViewModelRuntimeEventIngressController(MainViewModelRuntimeEventIngressControllerContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
-        }
-
-        public void Attach()
-        {
-            _context.AttachFormatProbeCompleted(_context.OnDeviceFormatProbeCompleted);
-
-            _context.AttachCaptureStatusChanged(OnCaptureStatusChanged);
-            _context.AttachCaptureErrorOccurred(OnCaptureError);
-            _context.AttachCapturePreCleanupRequested(OnCapturePreCleanupRequested);
-            _context.AttachFrameCaptured(OnFrameCaptured);
-            _context.AttachAudioLevelUpdated(_context.OnAudioLevelUpdated);
-            _context.AttachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);
-            _context.AttachSourceTelemetryUpdated(_context.OnSourceTelemetryUpdated);
-
-            // SystemEvents.PowerModeChanged is the managed desktop wake signal used
-            // to recover capture after sleep or hibernate resume.
-            SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;
-
-            _context.AttachAudioDevicesChanged(_context.OnAudioDevicesChanged);
-        }
-
-        public void Detach()
-        {
-            _context.DetachFormatProbeCompleted(_context.OnDeviceFormatProbeCompleted);
-
-            SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;
-
-            _context.DetachCaptureStatusChanged(OnCaptureStatusChanged);
-            _context.DetachCaptureErrorOccurred(OnCaptureError);
-            _context.DetachCapturePreCleanupRequested(OnCapturePreCleanupRequested);
-            _context.DetachFrameCaptured(OnFrameCaptured);
-            _context.DetachAudioLevelUpdated(_context.OnAudioLevelUpdated);
-            _context.DetachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);
-            _context.DetachSourceTelemetryUpdated(_context.OnSourceTelemetryUpdated);
-
-            _context.DetachAudioDevicesChanged(_context.OnAudioDevicesChanged);
         }
 
         private void OnCaptureStatusChanged(object? sender, string status)

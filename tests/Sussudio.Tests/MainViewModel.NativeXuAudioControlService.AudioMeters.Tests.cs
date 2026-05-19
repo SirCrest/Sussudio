@@ -82,7 +82,7 @@ static partial class Program
     {
         var baseText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var runtimeEventIngressControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs")
+        var runtimeEventIngressSubscriptionsText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Subscriptions.cs")
             .Replace("\r\n", "\n");
         var metersText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioMeters.cs")
             .Replace("\r\n", "\n");
@@ -96,8 +96,8 @@ static partial class Program
         AssertContains(metersText, "private void ResetAudioMeter()");
         AssertContains(metersText, "public void ResetAudioMeterTimerFlag()");
         AssertContains(metersText, "private double UpdateMeterLevel(double peak, ref double meterDb, ref long lastTick)");
-        AssertContains(runtimeEventIngressControllerText, "_context.AttachAudioLevelUpdated(_context.OnAudioLevelUpdated);");
-        AssertContains(runtimeEventIngressControllerText, "_context.AttachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);");
+        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachAudioLevelUpdated(_context.OnAudioLevelUpdated);");
+        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);");
         AssertDoesNotContain(baseText, "_captureService.AudioLevelUpdated += OnAudioLevelUpdated;");
         AssertDoesNotContain(baseText, "_captureService.MicrophoneAudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
         AssertDoesNotContain(baseText, "private const double MeterFloorDb");
