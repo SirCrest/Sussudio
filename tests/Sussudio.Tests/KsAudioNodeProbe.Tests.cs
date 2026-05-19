@@ -5,17 +5,27 @@ static partial class Program
     private static Task KsAudioNodeProbe_SourceOwnership_IsSplit()
     {
         var programText = ReadRepoFile("tools/KsAudioNodeProbe/Program.cs");
+        var scanWorkflowsText = ReadRepoFile("tools/KsAudioNodeProbe/Program.ScanWorkflows.cs");
         var constantsText = ReadRepoFile("tools/KsAudioNodeProbe/Program.Constants.cs");
         var nativeInteropText = ReadRepoFile("tools/KsAudioNodeProbe/Program.NativeInterop.cs");
         var nativeTypesText = ReadRepoFile("tools/KsAudioNodeProbe/Program.NativeTypes.cs");
 
         AssertContains(programText, "using static KsAudioNodeProbeNative;");
+        AssertContains(programText, "KsAudioNodeProbeScanWorkflows.RunSetAndHold(handle)");
+        AssertContains(programText, "KsAudioNodeProbeScanWorkflows.RunFullProbe(handle)");
         AssertDoesNotContain(programText, "const uint IoctlKsProperty");
         AssertDoesNotContain(programText, "struct KsProperty");
         AssertDoesNotContain(programText, "DllImport(");
         AssertDoesNotContain(programText, "static List<string> EnumerateKsInterfaces");
         AssertDoesNotContain(programText, "static bool TryAudioGetLong");
         AssertDoesNotContain(programText, "var anyHit = false");
+        AssertDoesNotContain(programText, "== Extended node tests ==");
+        AssertDoesNotContain(programText, "== ADC volume probe ==");
+        AssertContains(scanWorkflowsText, "static class KsAudioNodeProbeScanWorkflows");
+        AssertContains(scanWorkflowsText, "public static int RunSetAndHold(SafeFileHandle handle)");
+        AssertContains(scanWorkflowsText, "public static void RunFullProbe(SafeFileHandle handle)");
+        AssertContains(scanWorkflowsText, "private static void RunExtendedNodeTests(SafeFileHandle handle)");
+        AssertContains(scanWorkflowsText, "private static void RunAdcVolumeProbe(SafeFileHandle handle)");
         AssertContains(constantsText, "public const uint IoctlKsProperty = 0x002F0003;");
         AssertContains(constantsText, "public const int ErrorMoreData = 234;");
         AssertContains(nativeInteropText, "using static KsAudioNodeProbeConstants;");
