@@ -1828,8 +1828,10 @@ Primary current owners:
   literal `ReadRepoFile` source-shape path drift, cleanup-plan file/folder
   reference drift, and xUnit migration inventory checks.
   `tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs` owns
-  shared Markdown code-span path-token resolution plus AGENT_MAP consumer,
-  ownership-file discovery, and xUnit inventory helpers.
+  shared Markdown code-span path-token extraction and resolution helpers.
+  `tests/Sussudio.Tests/ArchitectureDocs.OwnershipFileEnumerators.cs` owns
+  AGENT_MAP consumer coverage, ownership-file discovery, exact code-span policy,
+  and xUnit inventory helpers.
 - `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter*.Tests.cs`
   owns the shared/ssctl snapshot formatter contract family: typed accessors,
   core section formatting, section-order, and Flashback opt-in smoke checks
