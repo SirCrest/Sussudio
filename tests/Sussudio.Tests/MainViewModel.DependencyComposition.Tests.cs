@@ -16,6 +16,7 @@ static partial class Program
         var controllerGraphCaptureModesText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureModes.cs").Replace("\r\n", "\n");
         var controllerGraphDeviceText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Device.cs").Replace("\r\n", "\n");
         var controllerGraphRecordingText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Recording.cs").Replace("\r\n", "\n");
+        var controllerGraphRuntimeText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Runtime.cs").Replace("\r\n", "\n");
         var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs").Replace("\r\n", "\n");
         var deviceFormatProbeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
         var deviceFormatProbeRetargetApplierText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs").Replace("\r\n", "\n");
@@ -83,6 +84,7 @@ static partial class Program
         AssertContains(controllerGraphCaptureModesText, "private sealed partial class MainViewModelControllerGraph");
         AssertContains(controllerGraphDeviceText, "private sealed partial class MainViewModelControllerGraph");
         AssertContains(controllerGraphRecordingText, "private sealed partial class MainViewModelControllerGraph");
+        AssertContains(controllerGraphRuntimeText, "private sealed partial class MainViewModelControllerGraph");
         AssertContains(controllerGraphText, "public static MainViewModelControllerGraph Create(MainViewModel viewModel)");
         AssertContains(controllerGraphText, "private static MainViewModelUiDispatchController CreateUiDispatchController(MainViewModel viewModel)");
         AssertContains(controllerGraphText, "private static MainViewModelPreviewLifecycleController CreatePreviewLifecycleController(MainViewModel viewModel)");
@@ -140,18 +142,18 @@ static partial class Program
             controllerGraphText,
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
             "var deviceRefreshController = CreateDeviceRefreshController(viewModel, previewLifecycleController);");
-        AssertContains(controllerGraphText, "private static MainViewModelRuntimeLifecycleController CreateRuntimeLifecycleController(");
-        AssertContains(controllerGraphText, "new MainViewModelRuntimeLifecycleController(\n                new MainViewModelRuntimeLifecycleControllerContext");
-        AssertContains(controllerGraphText, "CreateEventIngressController = () => CreateRuntimeEventIngressController(viewModel, previewLifecycleController),");
-        AssertContains(controllerGraphText, "GetRuntimeSnapshot = viewModel._captureService.GetRuntimeSnapshot,");
+        AssertContains(controllerGraphRuntimeText, "private static MainViewModelRuntimeLifecycleController CreateRuntimeLifecycleController(");
+        AssertContains(controllerGraphRuntimeText, "new MainViewModelRuntimeLifecycleController(\n                new MainViewModelRuntimeLifecycleControllerContext");
+        AssertContains(controllerGraphRuntimeText, "CreateEventIngressController = () => CreateRuntimeEventIngressController(viewModel, previewLifecycleController),");
+        AssertContains(controllerGraphRuntimeText, "GetRuntimeSnapshot = viewModel._captureService.GetRuntimeSnapshot,");
         AssertOccursBefore(
             controllerGraphText,
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
             "var runtimeLifecycleController = CreateRuntimeLifecycleController(viewModel, previewLifecycleController);");
-        AssertContains(controllerGraphText, "private static MainViewModelDisposalController CreateDisposalController(MainViewModel viewModel)");
-        AssertContains(controllerGraphText, "new MainViewModelDisposalController(\n                new MainViewModelDisposalControllerContext");
-        AssertContains(controllerGraphText, "TryBeginDispose = () => Interlocked.Exchange(ref viewModel._disposeState, 1) == 0,");
-        AssertContains(controllerGraphText, "CleanupSessionCoordinatorAsync = () => viewModel._sessionCoordinator.CleanupAsync(),");
+        AssertContains(controllerGraphRuntimeText, "private static MainViewModelDisposalController CreateDisposalController(MainViewModel viewModel)");
+        AssertContains(controllerGraphRuntimeText, "new MainViewModelDisposalController(\n                new MainViewModelDisposalControllerContext");
+        AssertContains(controllerGraphRuntimeText, "TryBeginDispose = () => Interlocked.Exchange(ref viewModel._disposeState, 1) == 0,");
+        AssertContains(controllerGraphRuntimeText, "CleanupSessionCoordinatorAsync = () => viewModel._sessionCoordinator.CleanupAsync(),");
         AssertContains(controllerGraphText, "public MainViewModelDisposalController DisposalController { get; }");
         AssertDoesNotContain(controllerGraphText, "RuntimeLifecycleController.Start();");
         AssertOccursBefore(
@@ -405,8 +407,8 @@ static partial class Program
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.");
         AssertContains(runtimeEventIngressControllerText, "_context.ReinitializeDeviceAsync(\"audio device invalidated\")");
         AssertContains(runtimeEventIngressControllerText, "_context.ReinitializeDeviceAsync(\"system resume\")");
-        AssertContains(controllerGraphText, "private static MainViewModelRuntimeEventIngressController CreateRuntimeEventIngressController(");
-        AssertContains(controllerGraphText, "new MainViewModelRuntimeEventIngressControllerContext");
+        AssertContains(controllerGraphRuntimeText, "private static MainViewModelRuntimeEventIngressController CreateRuntimeEventIngressController(");
+        AssertContains(controllerGraphRuntimeText, "new MainViewModelRuntimeEventIngressControllerContext");
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"audio device invalidated\")");
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"system resume\")");
         AssertEqual(
