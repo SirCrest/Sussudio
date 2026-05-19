@@ -62,7 +62,7 @@ public partial class MainViewModel
             var uiDispatchController = CreateUiDispatchController(viewModel);
             var previewLifecycleController = CreatePreviewLifecycleController(viewModel);
             var recordingTransitionController = new MainViewModelRecordingTransitionController(viewModel, previewLifecycleController);
-            var deviceAudioRequestController = new MainViewModelDeviceAudioRequestController(viewModel);
+            var deviceAudioRequestController = CreateDeviceAudioRequestController(viewModel);
             var recordingCapabilityController = CreateRecordingCapabilityController(viewModel);
             var captureSettingsAutomationController = CreateCaptureSettingsAutomationController(viewModel);
             var recordingSettingsAutomationController = CreateRecordingSettingsAutomationController(viewModel);
@@ -158,6 +158,30 @@ public partial class MainViewModel
                         viewModel._sourceTelemetryController.ApplySourceTelemetrySnapshot(
                             viewModel._captureService.GetLatestSourceTelemetrySnapshot(),
                             allowAutoRetarget: true),
+                });
+        }
+
+        private static MainViewModelDeviceAudioRequestController CreateDeviceAudioRequestController(MainViewModel viewModel)
+        {
+            return new MainViewModelDeviceAudioRequestController(
+                new MainViewModelDeviceAudioRequestControllerContext
+                {
+                    EnqueueUiOperation = (operation, operationName, allowDuringDispose) =>
+                        viewModel.EnqueueUiOperation(operation, operationName, allowDuringDispose),
+                    IsDisposing = () => Volatile.Read(ref viewModel._disposeState) != 0,
+                    IsLoadingSettings = () => viewModel._isLoadingSettings,
+                    IsRefreshingDeviceAudioControls = () => viewModel._isRefreshingDeviceAudioControls,
+                    IsDeviceAudioControlSupported = () => viewModel.IsDeviceAudioControlSupported,
+                    IsRecording = () => viewModel.IsRecording,
+                    GetSelectedDeviceAudioMode = () => viewModel.SelectedDeviceAudioMode,
+                    GetSelectedDevice = () => viewModel.SelectedDevice,
+                    SaveSettings = viewModel.SaveSettings,
+                    RefreshDeviceAudioControlsAsync = viewModel.RefreshDeviceAudioControlsAsync,
+                    ApplyDeviceAudioModeAsync = (reason, targetDevice, cancellationToken) =>
+                        viewModel.ApplyDeviceAudioModeAsync(reason, targetDevice: targetDevice, cancellationToken: cancellationToken),
+                    ApplyAnalogAudioGainAsync = (reason, targetDevice, cancellationToken) =>
+                        viewModel.ApplyAnalogAudioGainAsync(reason, targetDevice: targetDevice, cancellationToken: cancellationToken),
+                    IsCurrentSelectedDevice = viewModel.IsCurrentSelectedDevice,
                 });
         }
 

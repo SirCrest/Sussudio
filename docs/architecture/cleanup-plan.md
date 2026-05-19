@@ -3435,7 +3435,7 @@ owner, fold it back into that owner and update the source-shape tests and
    Microphone endpoint volume synchronization and persistence now live in
    `MainViewModel.MicrophoneVolume.cs`; device-native audio request lifetime,
    selected-device refresh, mode request scheduling, shared debounce CTS fields,
-   and cancellation cleanup now live in
+   cancellation cleanup, and graph-built context ports now live in
    `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs`;
    analog-gain request scheduling, UI/XU debounce, and flash-persist debounce
    live in
@@ -3683,7 +3683,7 @@ owner, fold it back into that owner and update the source-shape tests and
    Pure analog audio gain percent/XU-byte curve mapping now lives in
    `Sussudio/ViewModels/DeviceAudioGainMapper.cs`; device-native audio request
    lifetime, including mode property-change adapters, UI enqueue lifetime,
-   shared debounce CTS fields, and cancellation cleanup, stays in
+   shared debounce CTS fields, cancellation cleanup, and graph-built context ports, stays in
    `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs`;
    gain property-change adapters, XU debounce, and flash-persist debounce stay
    in

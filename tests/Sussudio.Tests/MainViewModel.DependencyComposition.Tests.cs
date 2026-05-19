@@ -109,7 +109,7 @@ static partial class Program
         AssertContains(controllerGraphText, "RaisePreviewStopRequested = () => viewModel.PreviewStopRequested?.Invoke(viewModel, EventArgs.Empty),");
         AssertContains(controllerGraphText, "ApplyLatestSourceTelemetryForPreviewStart = () =>");
         AssertContains(controllerGraphText, "new MainViewModelRecordingTransitionController(viewModel, previewLifecycleController)");
-        AssertContains(controllerGraphText, "new MainViewModelDeviceAudioRequestController(viewModel)");
+        AssertContains(controllerGraphText, "var deviceAudioRequestController = CreateDeviceAudioRequestController(viewModel);");
         AssertContains(controllerGraphText, "var recordingCapabilityController = CreateRecordingCapabilityController(viewModel);");
         AssertContains(controllerGraphText, "var captureSettingsAutomationController = CreateCaptureSettingsAutomationController(viewModel);");
         AssertContains(controllerGraphText, "var recordingSettingsAutomationController = CreateRecordingSettingsAutomationController(viewModel);");
@@ -242,12 +242,21 @@ static partial class Program
         AssertContains(controllerGraphText, "viewModel._deviceService.EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)");
         AssertContains(controllerGraphText, "BeginBackgroundFormatProbe = (device, scanGeneration) =>");
         AssertContains(deviceAudioRequestControllerText, "private sealed partial class MainViewModelDeviceAudioRequestController");
+        AssertContains(deviceAudioRequestControllerText, "private sealed class MainViewModelDeviceAudioRequestControllerContext");
+        AssertContains(deviceAudioRequestControllerText, "private readonly MainViewModelDeviceAudioRequestControllerContext _context;");
+        AssertDoesNotContain(deviceAudioRequestControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(deviceAudioRequestControllerText, "_viewModel.");
         AssertContains(deviceAudioRequestControllerText, "public void HandleSelectedDeviceAudioModeChanged(string value)");
         AssertDoesNotContain(deviceAudioRequestControllerText, "public void HandleAnalogAudioGainPercentChanged(double value)");
         AssertContains(deviceAudioRequestControllerGainText, "private sealed partial class MainViewModelDeviceAudioRequestController");
         AssertContains(deviceAudioRequestControllerGainText, "public void HandleAnalogAudioGainPercentChanged(double value)");
         AssertContains(deviceAudioRequestControllerGainText, "public void ScheduleAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
+        AssertDoesNotContain(deviceAudioRequestControllerGainText, "_viewModel.");
         AssertContains(deviceAudioRequestControllerText, "public void CancelPendingAudioControlWork()");
+        AssertContains(controllerGraphText, "private static MainViewModelDeviceAudioRequestController CreateDeviceAudioRequestController(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelDeviceAudioRequestControllerContext");
+        AssertContains(controllerGraphText, "ApplyDeviceAudioModeAsync = (reason, targetDevice, cancellationToken) =>");
+        AssertContains(controllerGraphText, "ApplyAnalogAudioGainAsync = (reason, targetDevice, cancellationToken) =>");
         AssertContains(captureSettingsAutomationControllerText, "private sealed class MainViewModelCaptureSettingsAutomationController");
         AssertEqual(
             true,

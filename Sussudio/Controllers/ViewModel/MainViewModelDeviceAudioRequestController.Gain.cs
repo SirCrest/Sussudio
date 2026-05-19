@@ -12,29 +12,29 @@ public partial class MainViewModel
     {
         public void HandleAnalogAudioGainPercentChanged(double value)
         {
-            if (_viewModel._isLoadingSettings || _viewModel._isRefreshingDeviceAudioControls || !_viewModel.IsDeviceAudioControlSupported)
+            if (_context.IsLoadingSettings() || _context.IsRefreshingDeviceAudioControls() || !_context.IsDeviceAudioControlSupported())
             {
                 return;
             }
 
-            if (_viewModel.IsRecording)
+            if (_context.IsRecording())
             {
                 Logger.Log("Analog audio gain change ignored while recording");
                 return;
             }
 
-            if (!string.Equals(_viewModel.SelectedDeviceAudioMode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(_context.GetSelectedDeviceAudioMode(), DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase))
             {
-                _viewModel.SaveSettings();
+                _context.SaveSettings();
                 return;
             }
 
             // Debounce the XU write to avoid flooding the hardware with commands
             // while the user drags the slider (same hazard class as AT SET bricking).
-            var targetDevice = _viewModel.SelectedDevice;
+            var targetDevice = _context.GetSelectedDevice();
             if (targetDevice == null)
             {
-                _viewModel.SaveSettings();
+                _context.SaveSettings();
                 return;
             }
 
@@ -48,13 +48,13 @@ public partial class MainViewModel
                 try
                 {
                     await Task.Delay(200, token).ConfigureAwait(false);
-                    var enqueued = _viewModel.EnqueueUiOperation(async () =>
+                    var enqueued = _context.EnqueueUiOperation(async () =>
                     {
                         try
                         {
-                            if (Volatile.Read(ref _viewModel._disposeState) == 0)
+                            if (!_context.IsDisposing())
                             {
-                                await _viewModel.ApplyAnalogAudioGainAsync("analog audio gain change", targetDevice: targetDevice, cancellationToken: token).ConfigureAwait(false);
+                                await _context.ApplyAnalogAudioGainAsync("analog audio gain change", targetDevice, token).ConfigureAwait(false);
                             }
                         }
                         catch (OperationCanceledException)
@@ -70,7 +70,7 @@ public partial class MainViewModel
 
                             cts.Dispose();
                         }
-                    }, "analog audio gain change", allowDuringDispose: true);
+                    }, "analog audio gain change", true);
                     if (!enqueued)
                     {
                         if (ReferenceEquals(_gainXuDebounceCts, cts))
@@ -91,7 +91,7 @@ public partial class MainViewModel
                     cts.Dispose();
                 }
             });
-            _viewModel.SaveSettings();
+            _context.SaveSettings();
         }
 
         public void ScheduleAnalogGainFlashPersist(CaptureDevice device, byte gainByte)
@@ -106,7 +106,7 @@ public partial class MainViewModel
                 try
                 {
                     await Task.Delay(300, token).ConfigureAwait(false);
-                    if (!token.IsCancellationRequested && _viewModel.IsCurrentSelectedDevice(device))
+                    if (!token.IsCancellationRequested && _context.IsCurrentSelectedDevice(device))
                     {
                         await NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token).ConfigureAwait(false);
                     }

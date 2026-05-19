@@ -95,7 +95,11 @@ static partial class Program
         AssertContains(mainViewModelDeviceAudioRequestControllerText, "partial void OnSelectedDeviceAudioModeChanged(string value)");
         AssertContains(mainViewModelDeviceAudioRequestControllerText, "partial void OnAnalogAudioGainPercentChanged(double value)");
         AssertContains(mainViewModelDeviceAudioRequestControllerText, "private void RequestDeviceAudioControlsRefresh(CaptureDevice? targetDevice)");
-        AssertContains(mainViewModelDeviceAudioRequestControllerText, "allowDuringDispose: true");
+        AssertContains(mainViewModelDeviceAudioRequestControllerText, "\"device audio controls refresh\", true");
+        AssertContains(mainViewModelDeviceAudioRequestControllerText, "private sealed class MainViewModelDeviceAudioRequestControllerContext");
+        AssertContains(mainViewModelDeviceAudioRequestControllerText, "private readonly MainViewModelDeviceAudioRequestControllerContext _context;");
+        AssertDoesNotContain(mainViewModelDeviceAudioRequestControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(mainViewModelDeviceAudioRequestControllerText, "_viewModel.");
         AssertContains(mainViewModelCaptureModePropertyChangesText, "partial void OnSelectedResolutionChanged(string? value)");
         AssertContains(mainViewModelCaptureModePropertyChangesText, "partial void OnSelectedFormatChanged(MediaFormat? value)");
         AssertContains(mainViewModelCaptureModePropertyChangesText, "partial void OnSelectedVideoFormatChanged(string value)");
@@ -239,8 +243,13 @@ static partial class Program
         AssertContains(deviceAudioRequestControllerText, "_gainXuDebounceCts");
         AssertContains(deviceAudioRequestControllerText, "_deviceAudioModeCts");
         AssertContains(deviceAudioRequestControllerText, "_deviceAudioRefreshCts");
+        AssertContains(deviceAudioRequestControllerText, "private sealed class MainViewModelDeviceAudioRequestControllerContext");
+        AssertContains(deviceAudioRequestControllerText, "private readonly MainViewModelDeviceAudioRequestControllerContext _context;");
+        AssertDoesNotContain(deviceAudioRequestControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(deviceAudioRequestControllerText, "_viewModel.");
         AssertContains(deviceAudioRequestControllerGainText, "public void HandleAnalogAudioGainPercentChanged(double value)");
         AssertContains(deviceAudioRequestControllerGainText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token)");
+        AssertDoesNotContain(deviceAudioRequestControllerGainText, "_viewModel.");
         AssertDoesNotContain(mainViewModelText, "private void CancelPendingAudioControlWork()");
         AssertDoesNotContain(mainViewModelText, "_deviceAudioModeCts");
         AssertDoesNotContain(mainViewModelDisposalText, "_gainFlashDebounceCts");

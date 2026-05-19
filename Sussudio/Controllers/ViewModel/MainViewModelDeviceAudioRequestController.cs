@@ -28,15 +28,15 @@ public partial class MainViewModel
     /// </summary>
     private sealed partial class MainViewModelDeviceAudioRequestController
     {
-        private readonly MainViewModel _viewModel;
+        private readonly MainViewModelDeviceAudioRequestControllerContext _context;
         private CancellationTokenSource? _gainFlashDebounceCts;
         private CancellationTokenSource? _gainXuDebounceCts;
         private CancellationTokenSource? _deviceAudioModeCts;
         private CancellationTokenSource? _deviceAudioRefreshCts;
 
-        public MainViewModelDeviceAudioRequestController(MainViewModel viewModel)
+        public MainViewModelDeviceAudioRequestController(MainViewModelDeviceAudioRequestControllerContext context)
         {
-            _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public void RequestDeviceAudioControlsRefresh(CaptureDevice? targetDevice)
@@ -44,13 +44,13 @@ public partial class MainViewModel
             var refreshCts = new CancellationTokenSource();
             var refreshToken = refreshCts.Token;
             _deviceAudioRefreshCts = refreshCts;
-            var enqueued = _viewModel.EnqueueUiOperation(async () =>
+            var enqueued = _context.EnqueueUiOperation(async () =>
             {
                 try
                 {
-                    if (Volatile.Read(ref _viewModel._disposeState) == 0)
+                    if (!_context.IsDisposing())
                     {
-                        await _viewModel.RefreshDeviceAudioControlsAsync(targetDevice, applySavedState: true, refreshToken).ConfigureAwait(false);
+                        await _context.RefreshDeviceAudioControlsAsync(targetDevice, true, refreshToken).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException)
@@ -66,7 +66,7 @@ public partial class MainViewModel
 
                     refreshCts.Dispose();
                 }
-            }, "device audio controls refresh", allowDuringDispose: true);
+            }, "device audio controls refresh", true);
             if (!enqueued)
             {
                 if (ReferenceEquals(_deviceAudioRefreshCts, refreshCts))
@@ -80,12 +80,12 @@ public partial class MainViewModel
 
         public void HandleSelectedDeviceAudioModeChanged(string value)
         {
-            if (_viewModel._isLoadingSettings || _viewModel._isRefreshingDeviceAudioControls || !_viewModel.IsDeviceAudioControlSupported)
+            if (_context.IsLoadingSettings() || _context.IsRefreshingDeviceAudioControls() || !_context.IsDeviceAudioControlSupported())
             {
                 return;
             }
 
-            if (_viewModel.IsRecording)
+            if (_context.IsRecording())
             {
                 Logger.Log("Device audio mode change ignored while recording");
                 return;
@@ -95,15 +95,15 @@ public partial class MainViewModel
             oldCts?.Cancel();
             var cts = new CancellationTokenSource();
             var token = cts.Token;
-            var targetDevice = _viewModel.SelectedDevice;
+            var targetDevice = _context.GetSelectedDevice();
             _deviceAudioModeCts = cts;
-            var enqueued = _viewModel.EnqueueUiOperation(async () =>
+            var enqueued = _context.EnqueueUiOperation(async () =>
             {
                 try
                 {
-                    if (Volatile.Read(ref _viewModel._disposeState) == 0)
+                    if (!_context.IsDisposing())
                     {
-                        await _viewModel.ApplyDeviceAudioModeAsync("device audio mode change", targetDevice: targetDevice, cancellationToken: token).ConfigureAwait(false);
+                        await _context.ApplyDeviceAudioModeAsync("device audio mode change", targetDevice, token).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException)
@@ -119,7 +119,7 @@ public partial class MainViewModel
 
                     cts.Dispose();
                 }
-            }, "device audio mode change", allowDuringDispose: true);
+            }, "device audio mode change", true);
             if (!enqueued)
             {
                 if (ReferenceEquals(_deviceAudioModeCts, cts))
@@ -130,7 +130,7 @@ public partial class MainViewModel
                 cts.Dispose();
             }
 
-            _viewModel.SaveSettings();
+            _context.SaveSettings();
         }
 
         public void CancelPendingAudioControlWork()
@@ -151,5 +151,22 @@ public partial class MainViewModel
             _deviceAudioRefreshCts = null;
             refreshCts?.Cancel();
         }
+    }
+
+    private sealed class MainViewModelDeviceAudioRequestControllerContext
+    {
+        public required Func<Func<Task>, string, bool, bool> EnqueueUiOperation { get; init; }
+        public required Func<bool> IsDisposing { get; init; }
+        public required Func<bool> IsLoadingSettings { get; init; }
+        public required Func<bool> IsRefreshingDeviceAudioControls { get; init; }
+        public required Func<bool> IsDeviceAudioControlSupported { get; init; }
+        public required Func<bool> IsRecording { get; init; }
+        public required Func<string> GetSelectedDeviceAudioMode { get; init; }
+        public required Func<CaptureDevice?> GetSelectedDevice { get; init; }
+        public required Action SaveSettings { get; init; }
+        public required Func<CaptureDevice?, bool, CancellationToken, Task> RefreshDeviceAudioControlsAsync { get; init; }
+        public required Func<string, CaptureDevice?, CancellationToken, Task<bool>> ApplyDeviceAudioModeAsync { get; init; }
+        public required Func<string, CaptureDevice?, CancellationToken, Task<bool>> ApplyAnalogAudioGainAsync { get; init; }
+        public required Func<CaptureDevice, bool> IsCurrentSelectedDevice { get; init; }
     }
 }
