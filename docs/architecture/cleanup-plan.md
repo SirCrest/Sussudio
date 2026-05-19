@@ -499,6 +499,11 @@ CaptureDiagnosticsSnapshot and CaptureHealthSnapshot legacy owner files, plus
 SourceTelemetryDetailEntry, and source telemetry automation projection
 contracts.
 
+`Sussudio/Models/Capture/CaptureHealthSnapshot.Flashback.cs` now owns the
+Flashback playback, Flashback encoder/backend, and Flashback export health DTO
+properties. Keep source-signal, queue-age, and A/V sync extension fields in the
+root `CaptureHealthSnapshot.cs` compatibility partial.
+
 `tests/Sussudio.Tests/RecordingQueue.Tests.cs` is now the shared recording
 queue source-reader helper shell. Capture health snapshot ownership coverage is
 split into assembly/sampler, Flashback, and recording/source-telemetry files.

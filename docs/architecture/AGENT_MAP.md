@@ -1587,7 +1587,7 @@ Primary current owners:
 - `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.PropertySpec.cs`
   owns the CaptureDiagnosticsSnapshot registered property spec.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.Tests.cs` owns the
-  CaptureHealthSnapshot registered orchestration check;
+  CaptureHealthSnapshot registered orchestration and source-ownership checks;
   `SnapshotModels.CaptureHealth.Defaults.Tests.cs` owns defaults and inherited
   diagnostics assertions;
   `SnapshotModels.CaptureHealth.SourceTelemetryDetail.Tests.cs` owns
