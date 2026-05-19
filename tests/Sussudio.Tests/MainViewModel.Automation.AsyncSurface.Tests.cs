@@ -13,6 +13,10 @@ static partial class Program
         var readinessPortType = RequireType("Sussudio.Services.Automation.IAutomationReadinessPort");
         var deviceSelectionPortType = RequireType("Sussudio.Services.Automation.IAutomationDeviceSelectionPort");
         var snapshotQueryPortType = RequireType("Sussudio.Services.Automation.IAutomationSnapshotQueryPort");
+        var captureSettingsPortType = RequireType("Sussudio.Services.Automation.IAutomationCaptureSettingsPort");
+        var audioPortType = RequireType("Sussudio.Services.Automation.IAutomationAudioPort");
+        var previewRecordingPortType = RequireType("Sussudio.Services.Automation.IAutomationPreviewRecordingPort");
+        var probePortType = RequireType("Sussudio.Services.Automation.IAutomationProbePort");
         AssertEqual(
             true,
             readinessPortType.IsAssignableFrom(automationInterfaceType),
@@ -25,6 +29,22 @@ static partial class Program
             true,
             snapshotQueryPortType.IsAssignableFrom(automationInterfaceType),
             "IAutomationViewModel inherits snapshot-query port");
+        AssertEqual(
+            true,
+            captureSettingsPortType.IsAssignableFrom(automationInterfaceType),
+            "IAutomationViewModel inherits capture-settings port");
+        AssertEqual(
+            true,
+            audioPortType.IsAssignableFrom(automationInterfaceType),
+            "IAutomationViewModel inherits audio port");
+        AssertEqual(
+            true,
+            previewRecordingPortType.IsAssignableFrom(automationInterfaceType),
+            "IAutomationViewModel inherits preview-recording port");
+        AssertEqual(
+            true,
+            probePortType.IsAssignableFrom(automationInterfaceType),
+            "IAutomationViewModel inherits probe port");
         AssertEqual(
             false,
             automationInterfaceType.GetProperty("IsMicrophoneEnabled") != null,
@@ -122,16 +142,22 @@ static partial class Program
         AssertContains(dispatcherText, "AutomationFlashbackAction.EndScrub => GetDouble(payload, \"positionMs\")");
         AssertContains(dispatcherText, "await _viewModel.SetFlashbackEnabledAsync(enabled, cancellationToken).ConfigureAwait(false)");
         AssertContains(dispatcherText, "await _viewModel.GetFlashbackSegmentsAsync(cancellationToken).ConfigureAwait(false)");
-        AssertContains(dispatcherText, "await _viewModel.ProbeVideoSourceAsync(cancellationToken).ConfigureAwait(false)");
-        AssertContains(dispatcherText, "await _viewModel.ProbePreviewColorAsync(cancellationToken).ConfigureAwait(false)");
-        AssertContains(dispatcherText, "await _viewModel.SetMicrophoneEnabledAsync(enabled, cancellationToken).ConfigureAwait(false)");
         AssertContains(dispatcherText, "private readonly IAutomationReadinessPort _readinessPort;");
         AssertContains(dispatcherText, "private readonly IAutomationDeviceSelectionPort _deviceSelectionPort;");
         AssertContains(dispatcherText, "private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;");
+        AssertContains(dispatcherText, "private readonly IAutomationCaptureSettingsPort _captureSettingsPort;");
+        AssertContains(dispatcherText, "private readonly IAutomationAudioPort _audioPort;");
+        AssertContains(dispatcherText, "private readonly IAutomationPreviewRecordingPort _previewRecordingPort;");
+        AssertContains(dispatcherText, "private readonly IAutomationProbePort _probePort;");
         AssertContains(dispatcherText, "_readinessPort.IsInitialized || _readinessPort.Devices.Count > 0");
         AssertContains(dispatcherText, "await _deviceSelectionPort.RefreshDevicesForAutomationAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _deviceSelectionPort.SelectDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _snapshotQueryPort.GetAutomationOptionsSnapshotAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await _audioPort.SetMicrophoneEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await _captureSettingsPort.SetMjpegDecoderCountAsync(decoderCount.Value, cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await _previewRecordingPort.SetRecordingEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await _probePort.ProbeVideoSourceAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await _probePort.ProbePreviewColorAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "vm.SetHdrEnabledAsync(v, ct)");
         AssertContains(dispatcherText, "vm.SetTrueHdrPreviewEnabledAsync(v, ct)");
         AssertDoesNotContain(dispatcherText, "_viewModel.IsMicrophoneEnabled =");

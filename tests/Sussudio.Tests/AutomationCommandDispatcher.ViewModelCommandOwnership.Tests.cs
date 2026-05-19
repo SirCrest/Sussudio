@@ -23,15 +23,15 @@ static partial class Program
 
         AssertContains(audioControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetDeviceAudioModeCommandAsync(");
         AssertContains(audioControlCommandsText, "var mode = RequireString(payload, \"mode\");");
-        AssertContains(audioControlCommandsText, "_viewModel.SetDeviceAudioModeAsync(mode, cancellationToken)");
+        AssertContains(audioControlCommandsText, "_audioPort.SetDeviceAudioModeAsync(mode, cancellationToken)");
         AssertContains(audioControlCommandsText, "Device audio mode changed: {mode}.");
         AssertContains(audioControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetAnalogAudioGainCommandAsync(");
         AssertContains(audioControlCommandsText, "var gain = RequireDouble(payload, \"gain\");");
-        AssertContains(audioControlCommandsText, "_viewModel.SetAnalogAudioGainAsync(gain, cancellationToken)");
+        AssertContains(audioControlCommandsText, "_audioPort.SetAnalogAudioGainAsync(gain, cancellationToken)");
         AssertContains(audioControlCommandsText, "Analog audio gain set to {gain:0.###}%.");
         AssertContains(audioControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetMicrophoneEnabledCommandAsync(");
         AssertContains(audioControlCommandsText, "Missing 'enabled' parameter.");
-        AssertContains(audioControlCommandsText, "_viewModel.SetMicrophoneEnabledAsync(enabled, cancellationToken)");
+        AssertContains(audioControlCommandsText, "_audioPort.SetMicrophoneEnabledAsync(enabled, cancellationToken)");
         AssertContains(audioControlCommandsText, "Microphone {(enabled ? \"enabled\" : \"disabled\")}.");
 
         return Task.CompletedTask;
@@ -59,12 +59,12 @@ static partial class Program
         AssertContains(captureControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetMjpegDecoderCountCommandAsync(");
         AssertContains(captureControlCommandsText, "var decoderCount = GetInt(payload, \"decoderCount\");");
         AssertContains(captureControlCommandsText, "Missing required integer property 'decoderCount'.");
-        AssertContains(captureControlCommandsText, "_viewModel.SetMjpegDecoderCountAsync(decoderCount.Value, cancellationToken)");
+        AssertContains(captureControlCommandsText, "_captureSettingsPort.SetMjpegDecoderCountAsync(decoderCount.Value, cancellationToken)");
         AssertContains(captureControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetOutputPathCommandAsync(");
         AssertContains(captureControlCommandsText, "ValidatePathPayload(\n            AutomationCommandKind.SetOutputPath,");
-        AssertContains(captureControlCommandsText, "_viewModel.SetOutputPathAsync(outputPath, cancellationToken)");
+        AssertContains(captureControlCommandsText, "_previewRecordingPort.SetOutputPathAsync(outputPath, cancellationToken)");
         AssertContains(captureControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetRecordingEnabledCommandAsync(");
-        AssertContains(captureControlCommandsText, "_viewModel.SetRecordingEnabledAsync(enabled, cancellationToken)");
+        AssertContains(captureControlCommandsText, "_previewRecordingPort.SetRecordingEnabledAsync(enabled, cancellationToken)");
         AssertContains(captureControlCommandsText, "_diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken)");
         AssertContains(captureControlCommandsText, "Recording {(enabled ? \"started\" : \"stopped\")}.");
 

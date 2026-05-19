@@ -18,6 +18,10 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
     private readonly IAutomationReadinessPort _readinessPort;
     private readonly IAutomationDeviceSelectionPort _deviceSelectionPort;
     private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;
+    private readonly IAutomationCaptureSettingsPort _captureSettingsPort;
+    private readonly IAutomationAudioPort _audioPort;
+    private readonly IAutomationPreviewRecordingPort _previewRecordingPort;
+    private readonly IAutomationProbePort _probePort;
     private readonly IAutomationDiagnosticsHub _diagnosticsHub;
     private readonly IAutomationWindowControl _windowControl;
     private readonly string? _authToken;
@@ -37,6 +41,10 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
         _readinessPort = viewModel;
         _deviceSelectionPort = viewModel;
         _snapshotQueryPort = viewModel;
+        _captureSettingsPort = viewModel;
+        _audioPort = viewModel;
+        _previewRecordingPort = viewModel;
+        _probePort = viewModel;
         _diagnosticsHub = diagnosticsHub ?? throw new ArgumentNullException(nameof(diagnosticsHub));
         _windowControl = windowControl ?? throw new ArgumentNullException(nameof(windowControl));
         _authToken = string.IsNullOrWhiteSpace(authToken) ? null : authToken;

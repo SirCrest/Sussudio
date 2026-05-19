@@ -14,7 +14,7 @@ public sealed partial class AutomationCommandDispatcher
         CancellationToken cancellationToken)
     {
         var mode = RequireString(payload, "mode");
-        await _viewModel.SetDeviceAudioModeAsync(mode, cancellationToken).ConfigureAwait(false);
+        await _audioPort.SetDeviceAudioModeAsync(mode, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Device audio mode changed: {mode}.");
     }
 
@@ -24,7 +24,7 @@ public sealed partial class AutomationCommandDispatcher
         CancellationToken cancellationToken)
     {
         var gain = RequireDouble(payload, "gain");
-        await _viewModel.SetAnalogAudioGainAsync(gain, cancellationToken).ConfigureAwait(false);
+        await _audioPort.SetAnalogAudioGainAsync(gain, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Analog audio gain set to {gain:0.###}%.");
     }
 
@@ -34,7 +34,7 @@ public sealed partial class AutomationCommandDispatcher
         CancellationToken cancellationToken)
     {
         var enabled = GetBool(payload, "enabled") ?? throw new InvalidOperationException("Missing 'enabled' parameter.");
-        await _viewModel.SetMicrophoneEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
+        await _audioPort.SetMicrophoneEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Microphone {(enabled ? "enabled" : "disabled")}.");
     }
 }

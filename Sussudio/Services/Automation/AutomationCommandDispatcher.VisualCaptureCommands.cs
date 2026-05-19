@@ -13,7 +13,7 @@ public sealed partial class AutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var result = await _viewModel.ProbeVideoSourceAsync(cancellationToken).ConfigureAwait(false);
+        var result = await _probePort.ProbeVideoSourceAsync(cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, "Video source probe completed.", data: result);
     }
 
@@ -21,7 +21,7 @@ public sealed partial class AutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var result = await _viewModel.ProbePreviewColorAsync(cancellationToken).ConfigureAwait(false);
+        var result = await _probePort.ProbePreviewColorAsync(cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, "Preview color probe completed.", data: result);
     }
 
@@ -35,7 +35,7 @@ public sealed partial class AutomationCommandDispatcher
             "outputPath",
             GetString(payload, "outputPath")
                 ?? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.bmp"));
-        var result = await _viewModel.CapturePreviewFrameAsync(outputPath, cancellationToken).ConfigureAwait(false);
+        var result = await _probePort.CapturePreviewFrameAsync(outputPath, cancellationToken).ConfigureAwait(false);
         return CreateCaptureResponse(correlationId, result.Message, result, result.Succeeded);
     }
 

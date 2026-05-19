@@ -19,7 +19,7 @@ public sealed partial class AutomationCommandDispatcher
             throw new InvalidOperationException("Missing required integer property 'decoderCount'.");
         }
 
-        await _viewModel.SetMjpegDecoderCountAsync(decoderCount.Value, cancellationToken).ConfigureAwait(false);
+        await _captureSettingsPort.SetMjpegDecoderCountAsync(decoderCount.Value, cancellationToken).ConfigureAwait(false);
         return CreateAcknowledgedResponse(correlationId, $"MJPEG decoder count change requested: {decoderCount.Value}.");
     }
 
@@ -32,7 +32,7 @@ public sealed partial class AutomationCommandDispatcher
             AutomationCommandKind.SetOutputPath,
             "outputPath",
             RequireString(payload, "outputPath"));
-        await _viewModel.SetOutputPathAsync(outputPath, cancellationToken).ConfigureAwait(false);
+        await _previewRecordingPort.SetOutputPathAsync(outputPath, cancellationToken).ConfigureAwait(false);
         return CreateAcknowledgedResponse(correlationId, $"Output path change requested: {outputPath}.");
     }
 
@@ -42,7 +42,7 @@ public sealed partial class AutomationCommandDispatcher
         CancellationToken cancellationToken)
     {
         var enabled = RequireBool(payload, "enabled");
-        await _viewModel.SetRecordingEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
+        await _previewRecordingPort.SetRecordingEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
         var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Recording {(enabled ? "started" : "stopped")}.", snapshot: snapshot);
     }

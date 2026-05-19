@@ -153,10 +153,11 @@ static partial class Program
         AssertDoesNotContain(customCommandsText, "_windowControl.CaptureWindowScreenshotAsync");
 
         AssertContains(visualCaptureCommandsText, "private async Task<AutomationCommandResponse> ExecuteProbeVideoSourceCommandAsync(");
-        AssertContains(visualCaptureCommandsText, "_viewModel.ProbeVideoSourceAsync(cancellationToken)");
+        AssertContains(visualCaptureCommandsText, "_probePort.ProbeVideoSourceAsync(cancellationToken)");
         AssertContains(visualCaptureCommandsText, "private async Task<AutomationCommandResponse> ExecuteProbePreviewColorCommandAsync(");
-        AssertContains(visualCaptureCommandsText, "_viewModel.ProbePreviewColorAsync(cancellationToken)");
+        AssertContains(visualCaptureCommandsText, "_probePort.ProbePreviewColorAsync(cancellationToken)");
         AssertContains(visualCaptureCommandsText, "AutomationCommandKind.CapturePreviewFrame");
+        AssertContains(visualCaptureCommandsText, "_probePort.CapturePreviewFrameAsync(outputPath, cancellationToken)");
         AssertContains(visualCaptureCommandsText, "preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.bmp");
         AssertContains(visualCaptureCommandsText, "AutomationCommandKind.CaptureWindowScreenshot");
         AssertContains(visualCaptureCommandsText, "window_screenshot_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.png");
