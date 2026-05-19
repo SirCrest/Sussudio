@@ -20,6 +20,7 @@ static partial class Program
         var controllerGraphSourceTelemetryText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.SourceTelemetry.cs").Replace("\r\n", "\n");
         var controllerGraphPresentationText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Presentation.cs").Replace("\r\n", "\n");
         var controllerGraphRecordingText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Recording.cs").Replace("\r\n", "\n");
+        var controllerGraphRecordingSettingsAutomationText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RecordingSettingsAutomation.cs").Replace("\r\n", "\n");
         var controllerGraphRuntimeText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Runtime.cs").Replace("\r\n", "\n");
         var controllerGraphRuntimeDisposalText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RuntimeDisposal.cs").Replace("\r\n", "\n");
         var controllerGraphRuntimeEventIngressText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RuntimeEventIngress.cs").Replace("\r\n", "\n");
@@ -328,8 +329,8 @@ static partial class Program
         AssertDoesNotContain(recordingSettingsAutomationControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(recordingSettingsAutomationControllerText, "_viewModel.");
         AssertContains(recordingSettingsAutomationControllerText, "_context.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
-        AssertContains(controllerGraphRecordingText, "private static MainViewModelRecordingSettingsAutomationController CreateRecordingSettingsAutomationController(MainViewModel viewModel)");
-        AssertContains(controllerGraphRecordingText, "new MainViewModelRecordingSettingsAutomationControllerContext");
+        AssertContains(controllerGraphRecordingSettingsAutomationText, "private static MainViewModelRecordingSettingsAutomationController CreateRecordingSettingsAutomationController(MainViewModel viewModel)");
+        AssertContains(controllerGraphRecordingSettingsAutomationText, "new MainViewModelRecordingSettingsAutomationControllerContext");
         AssertContains(recordingCapabilityControllerText, "private sealed class MainViewModelRecordingCapabilityController");
         AssertContains(recordingCapabilityControllerContextText, "private sealed class MainViewModelRecordingCapabilityControllerContext");
         AssertContains(recordingCapabilityControllerText, "private readonly MainViewModelRecordingCapabilityControllerContext _context;");
