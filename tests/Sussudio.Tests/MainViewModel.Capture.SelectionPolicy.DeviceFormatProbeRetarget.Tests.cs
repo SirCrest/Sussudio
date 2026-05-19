@@ -5,12 +5,13 @@ static partial class Program
     private static Task DeviceFormatProbeRetargetPolicy_LivesInFocusedHelper()
     {
         var probeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
+        var probeControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.Context.cs").Replace("\r\n", "\n");
         var retargetApplierText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs").Replace("\r\n", "\n");
         var retargetApplierContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.Context.cs").Replace("\r\n", "\n");
         var retargetPolicyText = ReadRepoFile("Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(probeControllerText, "private sealed class MainViewModelDeviceFormatProbeController");
-        AssertContains(probeControllerText, "private sealed class MainViewModelDeviceFormatProbeControllerContext");
+        AssertContains(probeControllerContextText, "private sealed class MainViewModelDeviceFormatProbeControllerContext");
         AssertContains(probeControllerText, "private readonly MainViewModelDeviceFormatProbeControllerContext _context;");
         AssertDoesNotContain(probeControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(probeControllerText, "_viewModel.");
