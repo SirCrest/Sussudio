@@ -844,8 +844,9 @@ Native device enumeration ownership is grouped under
 constants, GUIDs, and P/Invoke declarations in `MfDeviceEnumerator.cs`, MF
 video-device enumeration in `MfDeviceEnumerator.VideoDevices.cs`, WASAPI capture
 endpoint enumeration and friendly-name reads in
-`MfDeviceEnumerator.AudioEndpoints.cs`, and native video format probing/source
-fallback/subtype naming in `MfDeviceEnumerator.FormatProbe.cs`.
+`MfDeviceEnumerator.AudioEndpoints.cs`, native video format probing and
+subtype/FourCC naming in `MfDeviceEnumerator.FormatProbe.cs`, and direct plus
+enumeration-fallback MF source activation in `MfDeviceEnumerator.SourceOpening.cs`.
 
 Capture service source telemetry polling and fallback merging now live in
 `Sussudio/Services/Capture/CaptureService.Telemetry.cs`. Capture-format runtime

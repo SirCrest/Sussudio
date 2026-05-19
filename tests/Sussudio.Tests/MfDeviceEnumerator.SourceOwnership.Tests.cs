@@ -8,6 +8,7 @@ static partial class Program
         var videoDevicesText = ReadMfDeviceEnumeratorFile("MfDeviceEnumerator.VideoDevices.cs");
         var audioEndpointsText = ReadMfDeviceEnumeratorFile("MfDeviceEnumerator.AudioEndpoints.cs");
         var formatProbeText = ReadMfDeviceEnumeratorFile("MfDeviceEnumerator.FormatProbe.cs");
+        var sourceOpeningText = ReadMfDeviceEnumeratorFile("MfDeviceEnumerator.SourceOpening.cs");
 
         AssertContains(rootText, "internal static partial class MfDeviceEnumerator");
         AssertContains(rootText, "private static extern int MFCreateAttributes(");
@@ -27,10 +28,13 @@ static partial class Program
         AssertContains(audioEndpointsText, "private static string ReadAudioEndpointFriendlyName(");
 
         AssertContains(formatProbeText, "public static Task<List<MediaFormat>> ProbeVideoFormatsAsync(string symbolicLink)");
-        AssertContains(formatProbeText, "private static IMFMediaSource CreateMediaSource(string symbolicLink)");
-        AssertContains(formatProbeText, "private static IMFMediaSource CreateMediaSourceByEnumeration(");
-        AssertContains(formatProbeText, "MfInteropHelpers.MatchesSymbolicLink(targetSymbolicLink, candidateLink)");
         AssertContains(formatProbeText, "private static string SubtypeGuidToName(Guid subtype)");
+        AssertDoesNotContain(formatProbeText, "private static IMFMediaSource CreateMediaSourceByEnumeration(");
+
+        AssertContains(sourceOpeningText, "private static IMFMediaSource CreateMediaSource(string symbolicLink)");
+        AssertContains(sourceOpeningText, "private static IMFMediaSource CreateMediaSourceByEnumeration(");
+        AssertContains(sourceOpeningText, "MfInteropHelpers.MatchesSymbolicLink(targetSymbolicLink, candidateLink)");
+        AssertContains(sourceOpeningText, "MFCreateDeviceSource(attributes, out var mediaSource)");
 
         return Task.CompletedTask;
     }
