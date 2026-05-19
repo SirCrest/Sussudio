@@ -3052,6 +3052,11 @@ PresentMon executable, and output-path resolution. `tools/Common/PresentMon/Pres
 owns process supervision, stdout/stderr drain, timeout kill, and temp CSV
 cleanup.
 
+EGAVDS audio probing keeps the CLI command flow, SetupAPI device lookup, and
+audio input/gain actions in `tools/EgavdsAudioProbe/Program.cs`; SWIG callback
+registration, EGAVDeviceSupport imports, SetupAPI imports, and native interface
+DTOs live in `tools/EgavdsAudioProbe/Program.NativeInterop.cs`.
+
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient/AutomationPipeClient.Transport.cs`
