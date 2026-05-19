@@ -2601,10 +2601,12 @@ Primary current owners:
   stop fan-out, and frame-captured callbacks.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`
   owns late device-format probe event ingress, UI enqueue/generation checks,
-  selected-device capability refresh, and handoff to the retarget applier.
+  selected-device capability refresh, and handoff to the retarget applier
+  through graph-built context ports.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs`
   owns UI-side late-probe retarget application, HDR/SDR reinitialize dispatch,
-  MJPG HFR preserve, session mismatch checks, and active-capture restore.
+  MJPG HFR preserve, session mismatch checks, and active-capture restore
+  through graph-built context ports.
   `MainViewModel.RecordingRuntime.cs` owns recording-runtime counters and the DiskSpaceInfo assignment bridge,
   while `Sussudio/ViewModels/OutputDriveSpacePresentationBuilder.cs` owns output drive probing,
   fallback, formatting, and suppressed-warning logging.
@@ -2740,10 +2742,11 @@ Primary current owners:
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`
   owns late device-format probe reconciliation, format collection mutation,
   capability refresh after background probes, enqueue/failure logging, and
-  handoff to the retarget applier.
+  handoff to the retarget applier through graph-built context ports.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs`
   owns UI-side late-probe retarget application, HDR/SDR reinitialize dispatch,
-  MJPG HFR preserve, session mismatch check, and active-capture restore.
+  MJPG HFR preserve, session mismatch check, and active-capture restore
+  through graph-built context ports.
   `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`
   owns the pure late-probe decision policy for HDR retarget, SDR NV12 retarget,
   MJPG HFR preservation, session mismatch, and active-capture restore.

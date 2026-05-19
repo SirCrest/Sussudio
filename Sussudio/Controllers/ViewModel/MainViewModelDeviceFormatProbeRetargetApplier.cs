@@ -1,5 +1,5 @@
 using System;
-using System.Linq;
+using System.Threading.Tasks;
 using Sussudio.Models;
 
 namespace Sussudio.ViewModels;
@@ -11,11 +11,11 @@ public partial class MainViewModel
     /// </summary>
     private sealed class MainViewModelDeviceFormatProbeRetargetApplier
     {
-        private readonly MainViewModel _viewModel;
+        private readonly MainViewModelDeviceFormatProbeRetargetApplierContext _context;
 
-        public MainViewModelDeviceFormatProbeRetargetApplier(MainViewModel viewModel)
+        public MainViewModelDeviceFormatProbeRetargetApplier(MainViewModelDeviceFormatProbeRetargetApplierContext context)
         {
-            _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public bool TryApplyDeviceFormatProbeRetarget(
@@ -39,9 +39,9 @@ public partial class MainViewModel
 
             if (retargetDecision.Kind == DeviceFormatProbeRetargetDecisionKind.HdrRetarget)
             {
-                Logger.Log($"Format probe updated HDR mode set; applying new mode {_viewModel.SelectedResolution}@{_viewModel.SelectedFrameRate:0.###} via device renegotiation.");
-                _viewModel.EnqueueUiOperation(
-                    () => _viewModel.ReinitializeDeviceAsync(retargetDecision.ReinitializeReason!),
+                Logger.Log($"Format probe updated HDR mode set; applying new mode {_context.GetSelectedResolution()}@{_context.GetSelectedFrameRate():0.###} via device renegotiation.");
+                _context.EnqueueUiOperation(
+                    () => _context.ReinitializeDeviceAsync(retargetDecision.ReinitializeReason!),
                     retargetDecision.UiOperationName!);
                 return true;
             }
@@ -49,7 +49,7 @@ public partial class MainViewModel
             if (retargetDecision.Kind == DeviceFormatProbeRetargetDecisionKind.PreserveMjpegHighFrameRate)
             {
                 Logger.Log(
-                    $"Format probe preserved special MJPG HFR mode at {_viewModel.SelectedResolution}@{_viewModel.SelectedFrameRate:0.###}; " +
+                    $"Format probe preserved special MJPG HFR mode at {_context.GetSelectedResolution()}@{_context.GetSelectedFrameRate():0.###}; " +
                     "skipping SDR NV12 retarget.");
                 return true;
             }
@@ -57,41 +57,42 @@ public partial class MainViewModel
             if (retargetDecision.Kind == DeviceFormatProbeRetargetDecisionKind.SdrNv12Retarget)
             {
                 Logger.Log(
-                    $"Format probe detected MJPG-only mode at {_viewModel.SelectedResolution}@{_viewModel.SelectedFrameRate:0.###}; " +
+                    $"Format probe detected MJPG-only mode at {_context.GetSelectedResolution()}@{_context.GetSelectedFrameRate():0.###}; " +
                     $"retargeting SDR to NV12-capable mode {retargetDecision.TargetResolution}@{retargetDecision.TargetFrameRate:0.###}.");
 
-                _viewModel._isRebuildingModeOptions = true;
-                _viewModel._isApplyingAutomaticResolutionSelection = true;
+                _context.SetIsRebuildingModeOptions(true);
+                _context.SetIsApplyingAutomaticResolutionSelection(true);
                 try
                 {
-                    _viewModel.SelectedResolution = retargetDecision.TargetResolution;
+                    _context.SetSelectedResolution(retargetDecision.TargetResolution);
                 }
                 finally
                 {
-                    _viewModel._isApplyingAutomaticResolutionSelection = false;
-                    _viewModel._isRebuildingModeOptions = false;
+                    _context.SetIsApplyingAutomaticResolutionSelection(false);
+                    _context.SetIsRebuildingModeOptions(false);
                 }
 
-                _viewModel._suppressFormatChangeReinitialize = true;
+                _context.SetSuppressFormatChangeReinitialize(true);
                 try
                 {
-                    _viewModel.RebuildFrameRateOptions();
+                    _context.RebuildFrameRateOptions();
                 }
                 finally
                 {
-                    _viewModel._suppressFormatChangeReinitialize = false;
+                    _context.SetSuppressFormatChangeReinitialize(false);
                 }
 
-                _viewModel.EnqueueUiOperation(
-                    () => _viewModel.ReinitializeDeviceAsync(retargetDecision.ReinitializeReason!),
+                _context.EnqueueUiOperation(
+                    () => _context.ReinitializeDeviceAsync(retargetDecision.ReinitializeReason!),
                     retargetDecision.UiOperationName!);
                 return true;
             }
 
-            if (allowProbeDrivenRetarget && _viewModel.SelectedFormat != null)
+            if (allowProbeDrivenRetarget && _context.GetSelectedFormat() != null)
             {
-                var runtime = _viewModel.GetCaptureRuntimeSnapshot();
-                Logger.Log($"Format probe session check: actual={runtime.ActualWidth}x{runtime.ActualHeight} selected={_viewModel.SelectedFormat.Width}x{_viewModel.SelectedFormat.Height}");
+                var runtime = _context.GetCaptureRuntimeSnapshot();
+                var selectedFormat = _context.GetSelectedFormat();
+                Logger.Log($"Format probe session check: actual={runtime.ActualWidth}x{runtime.ActualHeight} selected={selectedFormat!.Width}x{selectedFormat.Height}");
                 retargetDecision = DecideDeviceFormatProbeRetarget(
                     target,
                     preserveActiveSelection,
@@ -112,9 +113,9 @@ public partial class MainViewModel
                     Logger.Log(
                         $"Format probe detected session/format mismatch: " +
                         $"session={runtime.ActualWidth}x{runtime.ActualHeight} " +
-                        $"selected={_viewModel.SelectedFormat.Width}x{_viewModel.SelectedFormat.Height}; reinitializing.");
-                    _viewModel.EnqueueUiOperation(
-                        () => _viewModel.ReinitializeDeviceAsync(retargetDecision.ReinitializeReason!),
+                        $"selected={selectedFormat.Width}x{selectedFormat.Height}; reinitializing.");
+                    _context.EnqueueUiOperation(
+                        () => _context.ReinitializeDeviceAsync(retargetDecision.ReinitializeReason!),
                         retargetDecision.UiOperationName!);
                     return true;
                 }
@@ -122,19 +123,19 @@ public partial class MainViewModel
 
             if (retargetDecision.Kind == DeviceFormatProbeRetargetDecisionKind.RestoreActiveSelection)
             {
-                _viewModel._isRebuildingModeOptions = true;
-                _viewModel._isApplyingAutomaticResolutionSelection = true;
+                _context.SetIsRebuildingModeOptions(true);
+                _context.SetIsApplyingAutomaticResolutionSelection(true);
                 try
                 {
-                    _viewModel.SelectedResolution = previousResolution;
-                    _viewModel.SelectedFrameRate = previousFrameRate;
-                    _viewModel.UpdateSelectedFormat();
-                    _viewModel.UpdateTargetSummary();
+                    _context.SetSelectedResolution(previousResolution);
+                    _context.SetSelectedFrameRate(previousFrameRate);
+                    _context.UpdateSelectedFormat();
+                    _context.UpdateTargetSummary();
                 }
                 finally
                 {
-                    _viewModel._isApplyingAutomaticResolutionSelection = false;
-                    _viewModel._isRebuildingModeOptions = false;
+                    _context.SetIsApplyingAutomaticResolutionSelection(false);
+                    _context.SetIsRebuildingModeOptions(false);
                 }
             }
 
@@ -154,18 +155,38 @@ public partial class MainViewModel
             => DeviceFormatProbeRetargetPolicy.Decide(new DeviceFormatProbeRetargetRequest(
                 preserveActiveSelection,
                 allowProbeDrivenRetarget,
-                _viewModel.IsHdrEnabled,
+                _context.IsHdrEnabled(),
                 modeChanged,
                 previousResolution,
                 previousFrameRate,
-                _viewModel.SelectedResolution,
-                _viewModel.SelectedFrameRate,
-                _viewModel.SelectedFormat,
+                _context.GetSelectedResolution(),
+                _context.GetSelectedFrameRate(),
+                _context.GetSelectedFormat(),
                 target.SupportedFormats,
                 !string.IsNullOrWhiteSpace(previousResolution) &&
-                    _viewModel.AvailableResolutions.Any(option => string.Equals(option.Value, previousResolution, StringComparison.OrdinalIgnoreCase)),
+                    _context.AvailableResolutionsContains(previousResolution),
                 includeSessionMismatchCheck,
                 sessionActualWidth,
                 sessionActualHeight));
+    }
+
+    private sealed class MainViewModelDeviceFormatProbeRetargetApplierContext
+    {
+        public required Func<bool> IsHdrEnabled { get; init; }
+        public required Func<string?> GetSelectedResolution { get; init; }
+        public required Action<string?> SetSelectedResolution { get; init; }
+        public required Func<double> GetSelectedFrameRate { get; init; }
+        public required Action<double> SetSelectedFrameRate { get; init; }
+        public required Func<MediaFormat?> GetSelectedFormat { get; init; }
+        public required Func<string, bool> AvailableResolutionsContains { get; init; }
+        public required Action<bool> SetIsRebuildingModeOptions { get; init; }
+        public required Action<bool> SetIsApplyingAutomaticResolutionSelection { get; init; }
+        public required Action<bool> SetSuppressFormatChangeReinitialize { get; init; }
+        public required Action RebuildFrameRateOptions { get; init; }
+        public required Func<string, Task> ReinitializeDeviceAsync { get; init; }
+        public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }
+        public required Func<CaptureRuntimeSnapshot> GetCaptureRuntimeSnapshot { get; init; }
+        public required Action UpdateSelectedFormat { get; init; }
+        public required Action UpdateTargetSummary { get; init; }
     }
 }

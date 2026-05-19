@@ -1,6 +1,4 @@
 using System;
-using System.Linq;
-using System.Threading;
 using Sussudio.Models;
 using Sussudio.Services.Capture;
 
@@ -13,26 +11,25 @@ public partial class MainViewModel
     /// </summary>
     private sealed class MainViewModelDeviceFormatProbeController
     {
-        private readonly MainViewModel _viewModel;
+        private readonly MainViewModelDeviceFormatProbeControllerContext _context;
         private readonly MainViewModelDeviceFormatProbeRetargetApplier _retargetApplier;
 
-        public MainViewModelDeviceFormatProbeController(MainViewModel viewModel)
+        public MainViewModelDeviceFormatProbeController(MainViewModelDeviceFormatProbeControllerContext context)
         {
-            _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
-            _retargetApplier = new MainViewModelDeviceFormatProbeRetargetApplier(_viewModel);
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _retargetApplier = _context.CreateRetargetApplier();
         }
 
         public void OnDeviceFormatProbeCompleted(object? sender, DeviceService.DeviceFormatProbeCompletedEventArgs e)
         {
-            if (!_viewModel._dispatcherQueue.TryEnqueue(() =>
+            if (!_context.TryEnqueueOnUiThread(() =>
             {
-                if (e.RequestId != Interlocked.Read(ref _viewModel._deviceScanGeneration))
+                if (e.RequestId != _context.ReadDeviceScanGeneration())
                 {
                     return;
                 }
 
-                var target = _viewModel.Devices.FirstOrDefault(
-                    d => string.Equals(d.Id, e.DeviceId, StringComparison.OrdinalIgnoreCase));
+                var target = _context.FindDeviceById(e.DeviceId);
                 if (target == null)
                 {
                     return;
@@ -40,8 +37,8 @@ public partial class MainViewModel
 
                 if (!e.Succeeded)
                 {
-                    _viewModel._pendingSdrAutoSelectionForDeviceChange = false;
-                    _viewModel._pendingSdrAutoFriendlyFrameRateBucket = null;
+                    _context.SetPendingSdrAutoSelectionForDeviceChange(false);
+                    _context.SetPendingSdrAutoFriendlyFrameRateBucket(null);
                     Logger.Log($"Format probe failed for {e.DeviceName}: {e.Error}");
                     return;
                 }
@@ -63,16 +60,19 @@ public partial class MainViewModel
 
                 target.IsHdrCapable = e.IsHdrCapable;
 
-                if (_viewModel.SelectedDevice == null ||
-                    !string.Equals(_viewModel.SelectedDevice.Id, target.Id, StringComparison.OrdinalIgnoreCase))
+                var selectedDevice = _context.GetSelectedDevice();
+                if (selectedDevice == null ||
+                    !string.Equals(selectedDevice.Id, target.Id, StringComparison.OrdinalIgnoreCase))
                 {
                     return;
                 }
 
-                var preserveActiveSelection = _viewModel.IsPreviewing || _viewModel.IsRecording;
-                var allowProbeDrivenRetarget = _viewModel.IsPreviewing && _viewModel.IsInitialized && !_viewModel.IsRecording;
-                var previousResolution = _viewModel.SelectedResolution;
-                var previousFrameRate = _viewModel.SelectedFrameRate;
+                var isPreviewing = _context.IsPreviewing();
+                var isRecording = _context.IsRecording();
+                var preserveActiveSelection = isPreviewing || isRecording;
+                var allowProbeDrivenRetarget = isPreviewing && _context.IsInitialized() && !isRecording;
+                var previousResolution = _context.GetSelectedResolution();
+                var previousFrameRate = _context.GetSelectedFrameRate();
                 Logger.Log($"Format probe completed for {e.DeviceName}: formats={e.Formats.Count} preserveActive={preserveActiveSelection} allowRetarget={allowProbeDrivenRetarget} prevRes={previousResolution} prevFps={previousFrameRate:0.###}");
 
                 if (preserveActiveSelection)
@@ -80,20 +80,23 @@ public partial class MainViewModel
                     Logger.Log($"Refreshing selected-device capabilities during active capture for {e.DeviceName} (preserveSelection={!allowProbeDrivenRetarget}).");
                 }
 
-                _viewModel._suppressFormatChangeReinitialize = preserveActiveSelection;
+                _context.SetSuppressFormatChangeReinitialize(preserveActiveSelection);
                 try
                 {
-                    _viewModel.RebuildSelectedDeviceCapabilities(_viewModel.SelectedDevice, resetTelemetryState: false);
+                    _context.RebuildSelectedDeviceCapabilities(selectedDevice, false);
                 }
                 finally
                 {
-                    _viewModel._suppressFormatChangeReinitialize = false;
+                    _context.SetSuppressFormatChangeReinitialize(false);
                 }
 
-                Logger.Log($"Format probe rebuild done: SelectedRes={_viewModel.SelectedResolution} SelectedFormat={_viewModel.SelectedFormat?.Width}x{_viewModel.SelectedFormat?.Height}@{_viewModel.SelectedFormat?.FrameRate:0.###} modeChanged={!string.Equals(previousResolution, _viewModel.SelectedResolution, StringComparison.OrdinalIgnoreCase) || !FrameRateTimingPolicy.IsFrameRateMatch(previousFrameRate, _viewModel.SelectedFrameRate)}");
+                var selectedResolution = _context.GetSelectedResolution();
+                var selectedFrameRate = _context.GetSelectedFrameRate();
+                var selectedFormat = _context.GetSelectedFormat();
+                Logger.Log($"Format probe rebuild done: SelectedRes={selectedResolution} SelectedFormat={selectedFormat?.Width}x{selectedFormat?.Height}@{selectedFormat?.FrameRate:0.###} modeChanged={!string.Equals(previousResolution, selectedResolution, StringComparison.OrdinalIgnoreCase) || !FrameRateTimingPolicy.IsFrameRateMatch(previousFrameRate, selectedFrameRate)}");
 
-                var modeChanged = !string.Equals(previousResolution, _viewModel.SelectedResolution, StringComparison.OrdinalIgnoreCase) ||
-                                  !FrameRateTimingPolicy.IsFrameRateMatch(previousFrameRate, _viewModel.SelectedFrameRate);
+                var modeChanged = !string.Equals(previousResolution, selectedResolution, StringComparison.OrdinalIgnoreCase) ||
+                                  !FrameRateTimingPolicy.IsFrameRateMatch(previousFrameRate, selectedFrameRate);
 
                 if (_retargetApplier.TryApplyDeviceFormatProbeRetarget(
                     target,
@@ -110,5 +113,24 @@ public partial class MainViewModel
                 Logger.Log($"FORMAT_PROBE_UI_ENQUEUE_FAILED deviceId='{e.DeviceId}' requestId={e.RequestId}");
             }
         }
+    }
+
+    private sealed class MainViewModelDeviceFormatProbeControllerContext
+    {
+        public required Func<Action, bool> TryEnqueueOnUiThread { get; init; }
+        public required Func<long> ReadDeviceScanGeneration { get; init; }
+        public required Func<string, CaptureDevice?> FindDeviceById { get; init; }
+        public required Action<bool> SetPendingSdrAutoSelectionForDeviceChange { get; init; }
+        public required Action<int?> SetPendingSdrAutoFriendlyFrameRateBucket { get; init; }
+        public required Func<CaptureDevice?> GetSelectedDevice { get; init; }
+        public required Func<bool> IsPreviewing { get; init; }
+        public required Func<bool> IsInitialized { get; init; }
+        public required Func<bool> IsRecording { get; init; }
+        public required Func<string?> GetSelectedResolution { get; init; }
+        public required Func<double> GetSelectedFrameRate { get; init; }
+        public required Func<MediaFormat?> GetSelectedFormat { get; init; }
+        public required Action<bool> SetSuppressFormatChangeReinitialize { get; init; }
+        public required Action<CaptureDevice, bool> RebuildSelectedDeviceCapabilities { get; init; }
+        public required Func<MainViewModelDeviceFormatProbeRetargetApplier> CreateRetargetApplier { get; init; }
     }
 }

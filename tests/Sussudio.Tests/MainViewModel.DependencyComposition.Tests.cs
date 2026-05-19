@@ -114,7 +114,7 @@ static partial class Program
         AssertContains(controllerGraphText, "new MainViewModelCaptureSettingsAutomationController(viewModel)");
         AssertContains(controllerGraphText, "new MainViewModelRecordingSettingsAutomationController(viewModel)");
         AssertContains(controllerGraphText, "new MainViewModelCaptureModeOptionRebuildController(viewModel)");
-        AssertContains(controllerGraphText, "new MainViewModelDeviceFormatProbeController(viewModel)");
+        AssertContains(controllerGraphText, "var deviceFormatProbeController = CreateDeviceFormatProbeController(viewModel);");
         AssertContains(controllerGraphText, "var sourceTelemetryController = CreateSourceTelemetryController(viewModel);");
         AssertContains(controllerGraphText, "new MainViewModelDeviceRefreshController(viewModel, previewLifecycleController)");
         AssertOccursBefore(
@@ -286,16 +286,27 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelResolutionOptionRebuildController.cs")),
             "old standalone resolution option rebuild controller removed");
         AssertContains(deviceFormatProbeControllerText, "private sealed class MainViewModelDeviceFormatProbeController");
+        AssertContains(deviceFormatProbeControllerText, "private sealed class MainViewModelDeviceFormatProbeControllerContext");
+        AssertContains(deviceFormatProbeControllerText, "private readonly MainViewModelDeviceFormatProbeControllerContext _context;");
+        AssertDoesNotContain(deviceFormatProbeControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(deviceFormatProbeControllerText, "_viewModel.");
         AssertContains(deviceFormatProbeControllerText, "public void OnDeviceFormatProbeCompleted");
-        AssertContains(deviceFormatProbeControllerText, "_retargetApplier = new MainViewModelDeviceFormatProbeRetargetApplier(_viewModel);");
+        AssertContains(deviceFormatProbeControllerText, "_retargetApplier = _context.CreateRetargetApplier();");
         AssertContains(deviceFormatProbeControllerText, "_retargetApplier.TryApplyDeviceFormatProbeRetarget(");
         AssertDoesNotContain(deviceFormatProbeControllerText, "private bool TryApplyDeviceFormatProbeRetarget(");
         AssertContains(deviceFormatProbeRetargetApplierText, "private sealed class MainViewModelDeviceFormatProbeRetargetApplier");
+        AssertContains(deviceFormatProbeRetargetApplierText, "private sealed class MainViewModelDeviceFormatProbeRetargetApplierContext");
+        AssertContains(deviceFormatProbeRetargetApplierText, "private readonly MainViewModelDeviceFormatProbeRetargetApplierContext _context;");
+        AssertDoesNotContain(deviceFormatProbeRetargetApplierText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(deviceFormatProbeRetargetApplierText, "_viewModel.");
         AssertEqual(
             true,
             deviceFormatProbeRetargetApplierText.Split('\n').Length >= 100,
             "device format probe retarget applier is a substantial ownership file");
         AssertContains(deviceFormatProbeRetargetApplierText, "public bool TryApplyDeviceFormatProbeRetarget(");
+        AssertContains(controllerGraphText, "private static MainViewModelDeviceFormatProbeController CreateDeviceFormatProbeController(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelDeviceFormatProbeControllerContext");
+        AssertContains(controllerGraphText, "new MainViewModelDeviceFormatProbeRetargetApplierContext");
         var sourceTelemetryControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs")
             .Replace("\r\n", "\n");
         AssertContains(sourceTelemetryControllerText, "private sealed class MainViewModelSourceTelemetryController");
