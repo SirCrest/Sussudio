@@ -25,6 +25,7 @@ static partial class Program
         var previewSurfaceShadowControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs").Replace("\r\n", "\n");
         var statsSnapshotText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsSnapshotProviderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSnapshotProvider.cs").Replace("\r\n", "\n");
+        var previewRuntimeSnapshotInputText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotInput.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
@@ -132,9 +133,11 @@ static partial class Program
         AssertContains(agentMapText, "PreviewRendererHostController.Lifecycle.cs");
         AssertContains(agentMapText, "PreviewRendererHostController.D3D.cs");
         AssertContains(agentMapText, "PreviewRendererHostController.Reinit.cs");
+        AssertContains(agentMapText, "PreviewRuntimeSnapshotInput.cs");
         AssertContains(cleanupPlanText, "PreviewRendererHostController.Lifecycle.cs");
         AssertContains(cleanupPlanText, "PreviewRendererHostController.D3D.cs");
         AssertContains(cleanupPlanText, "PreviewRendererHostController.Reinit.cs");
+        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotInput.cs");
         AssertContains(previewRendererText, "=> _previewRendererHostController.RendererReinitUnsafeWindows;");
         AssertContains(previewRendererText, "=> _previewRendererHostController.DisposeD3DPreviewRendererForReinit();");
 
@@ -163,7 +166,11 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotText, "PreviewMinPresentationIntervalMs = _previewRendererHostController.PreviewMinPresentationIntervalMs,");
         AssertContains(previewRuntimeSnapshotText, "StartupState = CurrentPreviewStartupState.ToString(),");
         AssertContains(previewRuntimeSnapshotText, "GpuPositionEventCount = PreviewStartupGpuPositionEventCount");
-        AssertContains(previewRuntimeSnapshotControllerText, "internal sealed class PreviewRuntimeSnapshotInput");
+        AssertContains(previewRuntimeSnapshotInputText, "internal sealed class PreviewRuntimeSnapshotInput");
+        AssertContains(previewRuntimeSnapshotInputText, "public D3D11PreviewRenderer? D3DRenderer { get; init; }");
+        AssertContains(previewRuntimeSnapshotInputText, "public PreviewStartupSignalFlags StartupRequiredSignals { get; init; }");
+        AssertContains(previewRuntimeSnapshotInputText, "public long GpuPositionEventCount { get; init; }");
+        AssertDoesNotContain(previewRuntimeSnapshotControllerText, "internal sealed class PreviewRuntimeSnapshotInput");
         AssertContains(previewRuntimeSnapshotControllerText, "internal static class PreviewRuntimeSnapshotController");
         AssertContains(previewRuntimeSnapshotControllerText, "public static PreviewRuntimeSnapshot Build(PreviewRuntimeSnapshotInput input)");
         AssertContains(previewRuntimeSnapshotControllerText, "var d3dProjection = PreviewRuntimeD3DProjection.Build(input);");

@@ -756,6 +756,9 @@ preview snapshot UI-dispatch adapter and UI-thread-only preview state sampling.
 Read-only preview runtime snapshot construction now lives in
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`,
 which owns preview-state composition and blank/stall suspicion.
+`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotInput.cs` owns
+the UI-thread sampled preview snapshot input contract shared by the snapshot
+controller and D3D projection builder.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs` owns
 the renderer projection data contract.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.Builder.cs`
