@@ -64,7 +64,7 @@ public partial class MainViewModel
             var recordingTransitionController = new MainViewModelRecordingTransitionController(viewModel, previewLifecycleController);
             var deviceAudioRequestController = new MainViewModelDeviceAudioRequestController(viewModel);
             var recordingCapabilityController = CreateRecordingCapabilityController(viewModel);
-            var captureSettingsAutomationController = new MainViewModelCaptureSettingsAutomationController(viewModel);
+            var captureSettingsAutomationController = CreateCaptureSettingsAutomationController(viewModel);
             var recordingSettingsAutomationController = CreateRecordingSettingsAutomationController(viewModel);
             var captureModeOptionRebuildController = new MainViewModelCaptureModeOptionRebuildController(viewModel);
             var deviceFormatProbeController = CreateDeviceFormatProbeController(viewModel);
@@ -199,6 +199,33 @@ public partial class MainViewModel
                     GetSelectedSplitEncodeMode = () => viewModel.SelectedSplitEncodeMode,
                     SetSelectedSplitEncodeMode = value => viewModel.SelectedSplitEncodeMode = value,
                     AvailableSplitEncodeModesContains = value => viewModel.AvailableSplitEncodeModes.Contains(value),
+                });
+        }
+
+        private static MainViewModelCaptureSettingsAutomationController CreateCaptureSettingsAutomationController(MainViewModel viewModel)
+        {
+            return new MainViewModelCaptureSettingsAutomationController(
+                new MainViewModelCaptureSettingsAutomationControllerContext
+                {
+                    InvokeBooleanOnUiThreadAsync = (operation, cancellationToken) =>
+                        viewModel.InvokeOnUiThreadAsync(operation, cancellationToken),
+                    InvokeOnUiThreadAsync = (operation, cancellationToken) =>
+                        viewModel.InvokeOnUiThreadAsync(operation, cancellationToken),
+                    GetAvailableResolutions = () => viewModel.AvailableResolutions,
+                    GetAvailableFrameRates = () => viewModel.AvailableFrameRates,
+                    GetAvailableVideoFormats = () => viewModel.AvailableVideoFormats,
+                    GetSelectedResolution = () => viewModel.SelectedResolution,
+                    SetSelectedResolution = value => viewModel.SelectedResolution = value,
+                    SetSelectedFrameRate = value => viewModel.SelectedFrameRate = value,
+                    SetSelectedVideoFormat = value => viewModel.SelectedVideoFormat = value,
+                    SetMjpegDecoderCount = value => viewModel.MjpegDecoderCount = value,
+                    SelectAutoFrameRate = viewModel.SelectAutoFrameRate,
+                    IsPreviewing = () => viewModel.IsPreviewing,
+                    IsInitialized = () => viewModel.IsInitialized,
+                    GetSelectedDevice = () => viewModel.SelectedDevice,
+                    GetSelectedFormat = () => viewModel.SelectedFormat,
+                    SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,
+                    ReinitializeDeviceAsync = viewModel.ReinitializeDeviceAsync,
                 });
         }
 

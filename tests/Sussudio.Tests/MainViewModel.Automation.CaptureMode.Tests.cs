@@ -21,6 +21,10 @@ static partial class Program
         AssertContains(automationSettingsText, "=> _captureSettingsAutomationController.SetMjpegDecoderCountAsync(decoderCount, cancellationToken);");
         AssertDoesNotContain(automationSettingsText, "private async Task SetAutomationCaptureModeAsync(");
         AssertContains(captureSettingsAutomationControllerText, "private sealed class MainViewModelCaptureSettingsAutomationController");
+        AssertContains(captureSettingsAutomationControllerText, "private sealed class MainViewModelCaptureSettingsAutomationControllerContext");
+        AssertContains(captureSettingsAutomationControllerText, "private readonly MainViewModelCaptureSettingsAutomationControllerContext _context;");
+        AssertDoesNotContain(captureSettingsAutomationControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(captureSettingsAutomationControllerText, "_viewModel.");
         AssertEqual(
             true,
             captureSettingsAutomationControllerText.Split('\n').Length >= 100,
@@ -31,18 +35,18 @@ static partial class Program
         AssertContains(captureSettingsAutomationControllerText, "public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)");
         AssertContains(captureSettingsAutomationControllerText, "return SetAutomationCaptureModeAsync(\"frame rate\"");
         AssertContains(captureSettingsAutomationControllerText, "FrameRateTimingPolicy.IsAutoFrameRateValue(frameRate)");
-        AssertContains(captureSettingsAutomationControllerText, "_viewModel.SelectedFrameRate = matched.Value;");
+        AssertContains(captureSettingsAutomationControllerText, "_context.SetSelectedFrameRate(matched.Value);");
         AssertContains(captureSettingsAutomationControllerText, "public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)");
         AssertContains(captureSettingsAutomationControllerText, "return SetAutomationCaptureModeAsync(\"video format\"");
-        AssertContains(captureSettingsAutomationControllerText, "_viewModel.SelectedVideoFormat = match;");
+        AssertContains(captureSettingsAutomationControllerText, "_context.SetSelectedVideoFormat(match);");
         AssertContains(captureSettingsAutomationControllerText, "public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)");
         AssertContains(captureSettingsAutomationControllerText, "return SetAutomationCaptureModeAsync(\"mjpeg decoder count\"");
-        AssertContains(captureSettingsAutomationControllerText, "_viewModel.MjpegDecoderCount = Math.Clamp(decoderCount, 1, 8);");
+        AssertContains(captureSettingsAutomationControllerText, "_context.SetMjpegDecoderCount(Math.Clamp(decoderCount, 1, 8));");
         AssertContains(captureSettingsAutomationControllerText, "private async Task SetAutomationCaptureModeAsync(");
         AssertContains(captureSettingsAutomationControllerText, "await _captureModeGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(captureSettingsAutomationControllerText, "_viewModel._suppressFormatChangeReinitialize = true;");
-        AssertContains(captureSettingsAutomationControllerText, "_viewModel._suppressFormatChangeReinitialize = false;");
-        AssertContains(captureSettingsAutomationControllerText, "return wasPreviewing && _viewModel.SelectedFormat != null;");
+        AssertContains(captureSettingsAutomationControllerText, "_context.SetSuppressFormatChangeReinitialize(true);");
+        AssertContains(captureSettingsAutomationControllerText, "_context.SetSuppressFormatChangeReinitialize(false);");
+        AssertContains(captureSettingsAutomationControllerText, "return wasPreviewing && _context.GetSelectedFormat() != null;");
         AssertContains(captureSettingsAutomationControllerText, "ReinitializeDeviceAsync($\"automation {reason}\")");
         AssertContains(captureSettingsAutomationControllerText, "_captureModeGate.Release();");
         AssertDoesNotContain(captureModeTransactionsText, "_automationCaptureModeGate");

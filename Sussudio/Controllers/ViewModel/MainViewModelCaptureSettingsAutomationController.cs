@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Sussudio.Models;
 
 namespace Sussudio.ViewModels;
 
@@ -12,19 +14,19 @@ public partial class MainViewModel
     /// </summary>
     private sealed class MainViewModelCaptureSettingsAutomationController
     {
-        private readonly MainViewModel _viewModel;
+        private readonly MainViewModelCaptureSettingsAutomationControllerContext _context;
         private readonly SemaphoreSlim _captureModeGate = new(1, 1);
 
-        public MainViewModelCaptureSettingsAutomationController(MainViewModel viewModel)
+        public MainViewModelCaptureSettingsAutomationController(MainViewModelCaptureSettingsAutomationControllerContext context)
         {
-            _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public Task SetResolutionAsync(string resolution, CancellationToken cancellationToken = default)
         {
             return SetAutomationCaptureModeAsync("resolution", () =>
             {
-                var matched = _viewModel.AvailableResolutions.FirstOrDefault(r =>
+                var matched = _context.GetAvailableResolutions().FirstOrDefault(r =>
                     string.Equals(r.Value, resolution, StringComparison.OrdinalIgnoreCase));
                 if (matched == null)
                 {
@@ -38,7 +40,7 @@ public partial class MainViewModel
                             : matched.DisableReason);
                 }
 
-                _viewModel.SelectedResolution = matched.Value;
+                _context.SetSelectedResolution(matched.Value);
             }, cancellationToken);
         }
 
@@ -46,12 +48,13 @@ public partial class MainViewModel
         {
             return SetAutomationCaptureModeAsync("frame rate", () =>
             {
-                if (_viewModel.AvailableFrameRates.Count == 0)
+                var availableFrameRates = _context.GetAvailableFrameRates().ToList();
+                if (availableFrameRates.Count == 0)
                 {
                     throw new InvalidOperationException("No frame rates are available.");
                 }
 
-                var enabledRates = _viewModel.AvailableFrameRates
+                var enabledRates = availableFrameRates
                     .Where(rate => rate.IsEnabled)
                     .ToList();
                 if (enabledRates.Count == 0)
@@ -67,7 +70,7 @@ public partial class MainViewModel
                         throw new InvalidOperationException("Auto frame rate is not available for the current selection.");
                     }
 
-                    _viewModel.SelectAutoFrameRate();
+                    _context.SelectAutoFrameRate();
                     return;
                 }
 
@@ -85,10 +88,10 @@ public partial class MainViewModel
                 if (friendlyMatches.Count == 0 && !FrameRateTimingPolicy.IsFrameRateMatch(matched.Value, frameRate))
                 {
                     throw new InvalidOperationException(
-                        $"Frame rate '{frameRate:0.###}' is not available for {_viewModel.SelectedResolution ?? "the current resolution"}.");
+                        $"Frame rate '{frameRate:0.###}' is not available for {_context.GetSelectedResolution() ?? "the current resolution"}.");
                 }
 
-                _viewModel.SelectedFrameRate = matched.Value;
+                _context.SetSelectedFrameRate(matched.Value);
             }, cancellationToken);
         }
 
@@ -101,14 +104,14 @@ public partial class MainViewModel
                     throw new ArgumentException("Video format is required.", nameof(videoFormat));
                 }
 
-                var match = _viewModel.AvailableVideoFormats.FirstOrDefault(
+                var match = _context.GetAvailableVideoFormats().FirstOrDefault(
                     format => string.Equals(format, videoFormat, StringComparison.OrdinalIgnoreCase));
                 if (match == null)
                 {
                     throw new InvalidOperationException($"Video format '{videoFormat}' is not available.");
                 }
 
-                _viewModel.SelectedVideoFormat = match;
+                _context.SetSelectedVideoFormat(match);
             }, cancellationToken);
         }
 
@@ -116,7 +119,7 @@ public partial class MainViewModel
         {
             return SetAutomationCaptureModeAsync("mjpeg decoder count", () =>
             {
-                _viewModel.MjpegDecoderCount = Math.Clamp(decoderCount, 1, 8);
+                _context.SetMjpegDecoderCount(Math.Clamp(decoderCount, 1, 8));
             }, cancellationToken);
         }
 
@@ -128,26 +131,26 @@ public partial class MainViewModel
             await _captureModeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                var shouldReinitialize = await _viewModel.InvokeOnUiThreadAsync(() =>
+                var shouldReinitialize = await _context.InvokeBooleanOnUiThreadAsync(() =>
                 {
-                    var wasPreviewing = _viewModel.IsPreviewing && _viewModel.IsInitialized && _viewModel.SelectedDevice != null;
-                    _viewModel._suppressFormatChangeReinitialize = true;
+                    var wasPreviewing = _context.IsPreviewing() && _context.IsInitialized() && _context.GetSelectedDevice() != null;
+                    _context.SetSuppressFormatChangeReinitialize(true);
                     try
                     {
                         apply();
                     }
                     finally
                     {
-                        _viewModel._suppressFormatChangeReinitialize = false;
+                        _context.SetSuppressFormatChangeReinitialize(false);
                     }
 
-                    return wasPreviewing && _viewModel.SelectedFormat != null;
+                    return wasPreviewing && _context.GetSelectedFormat() != null;
                 }, cancellationToken).ConfigureAwait(false);
 
                 if (shouldReinitialize)
                 {
-                    await _viewModel.InvokeOnUiThreadAsync(
-                            () => _viewModel.ReinitializeDeviceAsync($"automation {reason}"),
+                    await _context.InvokeOnUiThreadAsync(
+                            () => _context.ReinitializeDeviceAsync($"automation {reason}"),
                             cancellationToken)
                         .ConfigureAwait(false);
                 }
@@ -157,5 +160,26 @@ public partial class MainViewModel
                 _captureModeGate.Release();
             }
         }
+    }
+
+    private sealed class MainViewModelCaptureSettingsAutomationControllerContext
+    {
+        public required Func<Func<bool>, CancellationToken, Task<bool>> InvokeBooleanOnUiThreadAsync { get; init; }
+        public required Func<Func<Task>, CancellationToken, Task> InvokeOnUiThreadAsync { get; init; }
+        public required Func<IEnumerable<ResolutionOption>> GetAvailableResolutions { get; init; }
+        public required Func<IEnumerable<FrameRateOption>> GetAvailableFrameRates { get; init; }
+        public required Func<IEnumerable<string>> GetAvailableVideoFormats { get; init; }
+        public required Func<string?> GetSelectedResolution { get; init; }
+        public required Action<string?> SetSelectedResolution { get; init; }
+        public required Action<double> SetSelectedFrameRate { get; init; }
+        public required Action<string> SetSelectedVideoFormat { get; init; }
+        public required Action<int> SetMjpegDecoderCount { get; init; }
+        public required Action SelectAutoFrameRate { get; init; }
+        public required Func<bool> IsPreviewing { get; init; }
+        public required Func<bool> IsInitialized { get; init; }
+        public required Func<CaptureDevice?> GetSelectedDevice { get; init; }
+        public required Func<MediaFormat?> GetSelectedFormat { get; init; }
+        public required Action<bool> SetSuppressFormatChangeReinitialize { get; init; }
+        public required Func<string, Task> ReinitializeDeviceAsync { get; init; }
     }
 }

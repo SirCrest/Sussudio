@@ -3737,7 +3737,8 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.AutomationSettings.cs` compatibility facade, while
    UI-thread mutations, validation, MJPEG decoder clamping, and active
    capture-mode reinitialization routing live in
-   `Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs`.
+   `Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs`
+   through graph-built context ports.
    Startup FFmpeg capability probes for recording formats and split-encode modes
    plus observable recording-format option rebuilds through graph-built context ports now live in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`.

@@ -111,7 +111,7 @@ static partial class Program
         AssertContains(controllerGraphText, "new MainViewModelRecordingTransitionController(viewModel, previewLifecycleController)");
         AssertContains(controllerGraphText, "new MainViewModelDeviceAudioRequestController(viewModel)");
         AssertContains(controllerGraphText, "var recordingCapabilityController = CreateRecordingCapabilityController(viewModel);");
-        AssertContains(controllerGraphText, "new MainViewModelCaptureSettingsAutomationController(viewModel)");
+        AssertContains(controllerGraphText, "var captureSettingsAutomationController = CreateCaptureSettingsAutomationController(viewModel);");
         AssertContains(controllerGraphText, "var recordingSettingsAutomationController = CreateRecordingSettingsAutomationController(viewModel);");
         AssertContains(controllerGraphText, "new MainViewModelCaptureModeOptionRebuildController(viewModel)");
         AssertContains(controllerGraphText, "var deviceFormatProbeController = CreateDeviceFormatProbeController(viewModel);");
@@ -245,12 +245,20 @@ static partial class Program
             true,
             captureSettingsAutomationControllerText.Split('\n').Length >= 100,
             "capture settings automation controller is a substantial ownership file");
+        AssertContains(captureSettingsAutomationControllerText, "private sealed class MainViewModelCaptureSettingsAutomationControllerContext");
+        AssertContains(captureSettingsAutomationControllerText, "private readonly MainViewModelCaptureSettingsAutomationControllerContext _context;");
+        AssertDoesNotContain(captureSettingsAutomationControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(captureSettingsAutomationControllerText, "_viewModel.");
         AssertContains(captureSettingsAutomationControllerText, "private readonly SemaphoreSlim _captureModeGate = new(1, 1);");
         AssertContains(captureSettingsAutomationControllerText, "public Task SetResolutionAsync(string resolution, CancellationToken cancellationToken = default)");
         AssertContains(captureSettingsAutomationControllerText, "public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)");
         AssertContains(captureSettingsAutomationControllerText, "public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)");
         AssertContains(captureSettingsAutomationControllerText, "public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)");
         AssertContains(captureSettingsAutomationControllerText, "private async Task SetAutomationCaptureModeAsync(");
+        AssertContains(controllerGraphText, "private static MainViewModelCaptureSettingsAutomationController CreateCaptureSettingsAutomationController(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelCaptureSettingsAutomationControllerContext");
+        AssertContains(controllerGraphText, "SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,");
+        AssertContains(controllerGraphText, "ReinitializeDeviceAsync = viewModel.ReinitializeDeviceAsync,");
         AssertContains(recordingSettingsAutomationControllerText, "private sealed class MainViewModelRecordingSettingsAutomationController");
         AssertContains(recordingSettingsAutomationControllerText, "public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
         AssertContains(recordingSettingsAutomationControllerText, "private sealed class MainViewModelRecordingSettingsAutomationControllerContext");

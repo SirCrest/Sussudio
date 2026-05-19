@@ -2816,7 +2816,8 @@ Primary current owners:
   worker-count, recording format, encoder, and output-path settings.
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs`
   owns the UI-thread setting mutations, validation, MJPEG decoder clamping,
-  and active capture-mode reinitialization routing.
+  and active capture-mode reinitialization routing through graph-built
+  context ports.
   `MainViewModel.CaptureModeTransactions.cs` owns capture-mode/HDR
   property-change side effects outside the capture-settings automation
   controller.
