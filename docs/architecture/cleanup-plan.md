@@ -3476,7 +3476,10 @@ owner, fold it back into that owner and update the source-shape tests and
    selection handlers live in `MainViewModel.MicrophonePropertyChanges.cs`,
    capture-mode property handlers live in `MainViewModel.CaptureModePropertyChanges.cs`. Shared
    view-model UI dispatcher enqueue/invoke policy now lives in
-   `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs`, while
+   `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs`.
+   The UI dispatch graph-port contract for dispatcher access, disposal state,
+   logging, exception logging, and status text projection lives in
+   `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.Context.cs`, while
    `MainViewModel.Dispatching.cs` keeps the stable private adapter names and
    preview event fan-out;
    periodic timer refresh orchestration and initial

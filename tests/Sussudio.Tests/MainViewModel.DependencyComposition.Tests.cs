@@ -19,6 +19,7 @@ static partial class Program
         var controllerGraphRecordingText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Recording.cs").Replace("\r\n", "\n");
         var controllerGraphRuntimeText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Runtime.cs").Replace("\r\n", "\n");
         var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs").Replace("\r\n", "\n");
+        var uiDispatchControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.Context.cs").Replace("\r\n", "\n");
         var deviceFormatProbeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
         var deviceFormatProbeControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.Context.cs").Replace("\r\n", "\n");
         var deviceFormatProbeRetargetApplierText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs").Replace("\r\n", "\n");
@@ -219,9 +220,9 @@ static partial class Program
         AssertDoesNotContain(audioStateText, "SelectedDeviceAudioMode");
         AssertDoesNotContain(audioStateText, "AnalogAudioGainPercent");
         AssertContains(flashbackStateText, "partial void OnIsFlashbackEnabledChanged(bool value)");
-        AssertContains(uiDispatchControllerText, "internal sealed class MainViewModelUiDispatchControllerContext");
-        AssertContains(uiDispatchControllerText, "public required DispatcherQueue DispatcherQueue { get; init; }");
-        AssertContains(uiDispatchControllerText, "public required Func<bool> IsDisposing { get; init; }");
+        AssertContains(uiDispatchControllerContextText, "internal sealed class MainViewModelUiDispatchControllerContext");
+        AssertContains(uiDispatchControllerContextText, "public required DispatcherQueue DispatcherQueue { get; init; }");
+        AssertContains(uiDispatchControllerContextText, "public required Func<bool> IsDisposing { get; init; }");
         AssertContains(recordingTransitionControllerText, "private sealed partial class MainViewModelRecordingTransitionController");
         AssertContains(recordingTransitionControllerContextText, "private sealed class MainViewModelRecordingTransitionControllerContext");
         AssertContains(recordingTransitionControllerText, "private readonly MainViewModelRecordingTransitionControllerContext _context;");
