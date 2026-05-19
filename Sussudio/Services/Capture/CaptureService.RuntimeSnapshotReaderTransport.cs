@@ -59,19 +59,4 @@ public partial class CaptureService
         };
     }
 
-    private sealed class RuntimeReaderTransportSnapshotFields
-    {
-        public string MemoryPreference { get; init; } = "Cpu";
-        public string VideoRequestedSubtype { get; init; } = "unknown";
-        public string VideoNegotiatedSubtype { get; init; } = "unknown";
-        public int FrameLedgerCapacity { get; init; }
-        public long FrameLedgerEventCount { get; init; }
-        public long FrameLedgerDroppedEventCount { get; init; }
-        public FrameLedgerEventSnapshot[] FrameLedgerRecentEvents { get; init; } = Array.Empty<FrameLedgerEventSnapshot>();
-        public string PreviewColorMetadata { get; init; } = "None";
-        public string? MfSourceReaderNegotiatedFormat { get; init; }
-        public string? RequestedReaderSubtype { get; init; }
-        public string? ReaderSourceStreamType { get; init; }
-        public string? ReaderSourceSubtype { get; init; }
-    }
 }

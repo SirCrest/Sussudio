@@ -1967,6 +1967,9 @@ projection ownership coverage lives in
 `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.ProjectionOwnership.Tests.cs`.
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs` owns final
 `CaptureRuntimeSnapshot` DTO construction from already-sampled field groups.
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotModels.cs` owns the
+private runtime snapshot assembly and projection handoff models as one
+substantial model owner instead of per-section tiny files.
 Video ingest, source-reader health, WASAPI capture, and playback output counter
 projection lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs`,
