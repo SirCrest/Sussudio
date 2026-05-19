@@ -3463,9 +3463,11 @@ owner, fold it back into that owner and update the source-shape tests and
    owns UI-dispatch and preview lifecycle graph ports,
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureModes.cs`
    owns capture settings automation and capture option rebuild graph ports, and
+   `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.DeviceAudio.cs`
+   owns device-native audio request graph ports, and
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Device.cs`
-   owns device audio request, device refresh, and late format probe graph
-   ports, and `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.SourceTelemetry.cs`
+   owns device refresh and late format probe graph ports, and
+   `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.SourceTelemetry.cs`
    owns source telemetry graph ports, and
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Recording.cs`
    owns recording transition, recording capability, and recording settings
