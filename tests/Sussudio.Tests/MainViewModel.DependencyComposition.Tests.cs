@@ -112,7 +112,7 @@ static partial class Program
         AssertContains(controllerGraphText, "new MainViewModelDeviceAudioRequestController(viewModel)");
         AssertContains(controllerGraphText, "var recordingCapabilityController = CreateRecordingCapabilityController(viewModel);");
         AssertContains(controllerGraphText, "new MainViewModelCaptureSettingsAutomationController(viewModel)");
-        AssertContains(controllerGraphText, "new MainViewModelRecordingSettingsAutomationController(viewModel)");
+        AssertContains(controllerGraphText, "var recordingSettingsAutomationController = CreateRecordingSettingsAutomationController(viewModel);");
         AssertContains(controllerGraphText, "new MainViewModelCaptureModeOptionRebuildController(viewModel)");
         AssertContains(controllerGraphText, "var deviceFormatProbeController = CreateDeviceFormatProbeController(viewModel);");
         AssertContains(controllerGraphText, "var sourceTelemetryController = CreateSourceTelemetryController(viewModel);");
@@ -253,7 +253,13 @@ static partial class Program
         AssertContains(captureSettingsAutomationControllerText, "private async Task SetAutomationCaptureModeAsync(");
         AssertContains(recordingSettingsAutomationControllerText, "private sealed class MainViewModelRecordingSettingsAutomationController");
         AssertContains(recordingSettingsAutomationControllerText, "public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
-        AssertContains(recordingSettingsAutomationControllerText, "_viewModel._sessionCoordinator.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
+        AssertContains(recordingSettingsAutomationControllerText, "private sealed class MainViewModelRecordingSettingsAutomationControllerContext");
+        AssertContains(recordingSettingsAutomationControllerText, "private readonly MainViewModelRecordingSettingsAutomationControllerContext _context;");
+        AssertDoesNotContain(recordingSettingsAutomationControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(recordingSettingsAutomationControllerText, "_viewModel.");
+        AssertContains(recordingSettingsAutomationControllerText, "_context.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
+        AssertContains(controllerGraphText, "private static MainViewModelRecordingSettingsAutomationController CreateRecordingSettingsAutomationController(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelRecordingSettingsAutomationControllerContext");
         AssertContains(recordingCapabilityControllerText, "private sealed class MainViewModelRecordingCapabilityController");
         AssertContains(recordingCapabilityControllerText, "private sealed class MainViewModelRecordingCapabilityControllerContext");
         AssertContains(recordingCapabilityControllerText, "private readonly MainViewModelRecordingCapabilityControllerContext _context;");

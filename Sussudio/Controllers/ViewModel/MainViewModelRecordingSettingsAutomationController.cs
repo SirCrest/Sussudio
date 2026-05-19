@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Sussudio.Models;
 
 namespace Sussudio.ViewModels;
 
@@ -13,170 +15,173 @@ public partial class MainViewModel
     /// </summary>
     private sealed class MainViewModelRecordingSettingsAutomationController
     {
-        private readonly MainViewModel _viewModel;
+        private readonly MainViewModelRecordingSettingsAutomationControllerContext _context;
 
-        public MainViewModelRecordingSettingsAutomationController(MainViewModel viewModel)
+        public MainViewModelRecordingSettingsAutomationController(MainViewModelRecordingSettingsAutomationControllerContext context)
         {
-            _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)
         {
-            var recordingFormat = await _viewModel.InvokeOnUiThreadAsync(() =>
+            var recordingFormat = await _context.InvokeRecordingFormatOnUiThreadAsync(() =>
             {
-                var matched = _viewModel.AvailableRecordingFormats.FirstOrDefault(value =>
+                var matched = _context.GetAvailableRecordingFormats().FirstOrDefault(value =>
                     string.Equals(value, format, StringComparison.OrdinalIgnoreCase));
                 if (matched == null)
                 {
                     throw new InvalidOperationException($"Recording format '{format}' is not available.");
                 }
-                if (_viewModel.IsHdrEnabled && !RecordingSettingsSelectionPolicy.IsHdrCompatible(matched))
+                if (_context.IsHdrEnabled() && !RecordingSettingsSelectionPolicy.IsHdrCompatible(matched))
                 {
                     throw new InvalidOperationException("HDR recording requires HEVC or AV1 (10-bit).");
                 }
 
-                _viewModel._suppressFlashbackFormatCycle = true;
+                _context.SetSuppressFlashbackFormatCycle(true);
                 try
                 {
-                    _viewModel.SelectedRecordingFormat = matched;
+                    _context.SetSelectedRecordingFormat(matched);
                 }
                 finally
                 {
-                    _viewModel._suppressFlashbackFormatCycle = false;
+                    _context.SetSuppressFlashbackFormatCycle(false);
                 }
 
                 return RecordingSettingsSelectionPolicy.ParseRecordingFormat(matched);
             }, cancellationToken).ConfigureAwait(false);
 
-            await _viewModel._sessionCoordinator.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)
+            await _context.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)
                 .ConfigureAwait(false);
         }
 
         public async Task SetQualityAsync(string quality, CancellationToken cancellationToken = default)
         {
-            var settings = await _viewModel.InvokeOnUiThreadAsync(() =>
+            var settings = await _context.InvokeEncoderSettingsOnUiThreadAsync(() =>
             {
-                var matched = _viewModel.AvailableQualities.FirstOrDefault(value =>
+                var matched = _context.GetAvailableQualities().FirstOrDefault(value =>
                     string.Equals(value, quality, StringComparison.OrdinalIgnoreCase));
                 if (matched == null)
                 {
                     throw new InvalidOperationException($"Quality '{quality}' is not available.");
                 }
 
-                _viewModel._suppressFlashbackEncoderSettingsCycle = true;
+                _context.SetSuppressFlashbackEncoderSettingsCycle(true);
                 try
                 {
-                    _viewModel.SelectedQuality = matched;
+                    _context.SetSelectedQuality(matched);
                 }
                 finally
                 {
-                    _viewModel._suppressFlashbackEncoderSettingsCycle = false;
+                    _context.SetSuppressFlashbackEncoderSettingsCycle(false);
                 }
 
-                return (Quality: RecordingSettingsSelectionPolicy.ParseVideoQuality(_viewModel.SelectedQuality), Bitrate: _viewModel.CustomBitrateMbps, Preset: _viewModel.SelectedPreset);
+                return BuildEncoderSettings();
             }, cancellationToken).ConfigureAwait(false);
 
-            await _viewModel._sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
-                    quality: settings.Quality,
-                    customBitrateMbps: settings.Bitrate,
-                    nvencPreset: settings.Preset,
-                    cancellationToken: cancellationToken)
+            await _context.CycleFlashbackEncoderSettingsAsync(
+                    settings.Quality,
+                    settings.Bitrate,
+                    settings.Preset,
+                    null,
+                    cancellationToken)
                 .ConfigureAwait(false);
         }
 
         public async Task SetSplitEncodeModeAsync(string splitEncodeMode, CancellationToken cancellationToken = default)
         {
-            var settings = await _viewModel.InvokeOnUiThreadAsync(() =>
+            var settings = await _context.InvokeEncoderSettingsOnUiThreadAsync(() =>
             {
-                var matched = _viewModel.AvailableSplitEncodeModes.FirstOrDefault(value =>
+                var matched = _context.GetAvailableSplitEncodeModes().FirstOrDefault(value =>
                     string.Equals(value, splitEncodeMode, StringComparison.OrdinalIgnoreCase));
                 if (matched == null)
                 {
                     throw new InvalidOperationException($"Split encode mode '{splitEncodeMode}' is not available.");
                 }
 
-                _viewModel._suppressFlashbackEncoderSettingsCycle = true;
+                _context.SetSuppressFlashbackEncoderSettingsCycle(true);
                 try
                 {
-                    _viewModel.SelectedSplitEncodeMode = matched;
+                    _context.SetSelectedSplitEncodeMode(matched);
                 }
                 finally
                 {
-                    _viewModel._suppressFlashbackEncoderSettingsCycle = false;
+                    _context.SetSuppressFlashbackEncoderSettingsCycle(false);
                 }
 
-                return (Quality: RecordingSettingsSelectionPolicy.ParseVideoQuality(_viewModel.SelectedQuality), Bitrate: _viewModel.CustomBitrateMbps, Preset: _viewModel.SelectedPreset, SplitEncodeMode: _viewModel.SelectedSplitEncodeMode);
+                return BuildEncoderSettings(splitEncodeMode: _context.GetSelectedSplitEncodeMode());
             }, cancellationToken).ConfigureAwait(false);
 
-            await _viewModel._sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
-                    quality: settings.Quality,
-                    customBitrateMbps: settings.Bitrate,
-                    nvencPreset: settings.Preset,
-                    splitEncodeMode: settings.SplitEncodeMode,
+            await _context.CycleFlashbackEncoderSettingsAsync(
+                    settings.Quality,
+                    settings.Bitrate,
+                    settings.Preset,
+                    settings.SplitEncodeMode,
                     cancellationToken)
                 .ConfigureAwait(false);
         }
 
         public async Task SetCustomBitrateAsync(double bitrateMbps, CancellationToken cancellationToken = default)
         {
-            var settings = await _viewModel.InvokeOnUiThreadAsync(() =>
+            var settings = await _context.InvokeEncoderSettingsOnUiThreadAsync(() =>
             {
-                _viewModel._suppressFlashbackEncoderSettingsCycle = true;
+                _context.SetSuppressFlashbackEncoderSettingsCycle(true);
                 try
                 {
-                    _viewModel.CustomBitrateMbps = RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps(bitrateMbps);
+                    _context.SetCustomBitrateMbps(RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps(bitrateMbps));
                 }
                 finally
                 {
-                    _viewModel._suppressFlashbackEncoderSettingsCycle = false;
+                    _context.SetSuppressFlashbackEncoderSettingsCycle(false);
                 }
 
-                return (Quality: RecordingSettingsSelectionPolicy.ParseVideoQuality(_viewModel.SelectedQuality), Bitrate: _viewModel.CustomBitrateMbps, Preset: _viewModel.SelectedPreset);
+                return BuildEncoderSettings();
             }, cancellationToken).ConfigureAwait(false);
 
-            await _viewModel._sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
-                    quality: settings.Quality,
-                    customBitrateMbps: settings.Bitrate,
-                    nvencPreset: settings.Preset,
-                    cancellationToken: cancellationToken)
+            await _context.CycleFlashbackEncoderSettingsAsync(
+                    settings.Quality,
+                    settings.Bitrate,
+                    settings.Preset,
+                    null,
+                    cancellationToken)
                 .ConfigureAwait(false);
         }
 
         public async Task SetPresetAsync(string preset, CancellationToken cancellationToken = default)
         {
-            var settings = await _viewModel.InvokeOnUiThreadAsync(() =>
+            var settings = await _context.InvokeEncoderSettingsOnUiThreadAsync(() =>
             {
-                var matched = _viewModel.AvailablePresets.FirstOrDefault(value =>
+                var matched = _context.GetAvailablePresets().FirstOrDefault(value =>
                     string.Equals(value, preset, StringComparison.OrdinalIgnoreCase));
                 if (matched == null)
                 {
                     throw new InvalidOperationException($"Preset '{preset}' is not available.");
                 }
 
-                _viewModel._suppressFlashbackEncoderSettingsCycle = true;
+                _context.SetSuppressFlashbackEncoderSettingsCycle(true);
                 try
                 {
-                    _viewModel.SelectedPreset = matched;
+                    _context.SetSelectedPreset(matched);
                 }
                 finally
                 {
-                    _viewModel._suppressFlashbackEncoderSettingsCycle = false;
+                    _context.SetSuppressFlashbackEncoderSettingsCycle(false);
                 }
 
-                return (Quality: RecordingSettingsSelectionPolicy.ParseVideoQuality(_viewModel.SelectedQuality), Bitrate: _viewModel.CustomBitrateMbps, Preset: _viewModel.SelectedPreset);
+                return BuildEncoderSettings();
             }, cancellationToken).ConfigureAwait(false);
 
-            await _viewModel._sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
-                    quality: settings.Quality,
-                    customBitrateMbps: settings.Bitrate,
-                    nvencPreset: settings.Preset,
-                    cancellationToken: cancellationToken)
+            await _context.CycleFlashbackEncoderSettingsAsync(
+                    settings.Quality,
+                    settings.Bitrate,
+                    settings.Preset,
+                    null,
+                    cancellationToken)
                 .ConfigureAwait(false);
         }
 
         public Task SetOutputPathAsync(string outputPath, CancellationToken cancellationToken = default)
         {
-            return _viewModel.InvokeOnUiThreadAsync(() =>
+            return _context.InvokeOnUiThreadAsync(() =>
             {
                 if (string.IsNullOrWhiteSpace(outputPath))
                 {
@@ -184,9 +189,48 @@ public partial class MainViewModel
                 }
 
                 Directory.CreateDirectory(outputPath);
-                _viewModel.OutputPath = outputPath;
+                _context.SetOutputPath(outputPath);
                 return Task.CompletedTask;
             }, cancellationToken);
         }
+
+        private MainViewModelRecordingEncoderSettings BuildEncoderSettings(string? splitEncodeMode = null)
+            => new(
+                RecordingSettingsSelectionPolicy.ParseVideoQuality(_context.GetSelectedQuality()),
+                _context.GetCustomBitrateMbps(),
+                _context.GetSelectedPreset(),
+                splitEncodeMode);
     }
+
+    private sealed class MainViewModelRecordingSettingsAutomationControllerContext
+    {
+        public required Func<Func<RecordingFormat>, CancellationToken, Task<RecordingFormat>> InvokeRecordingFormatOnUiThreadAsync { get; init; }
+        public required Func<Func<MainViewModelRecordingEncoderSettings>, CancellationToken, Task<MainViewModelRecordingEncoderSettings>> InvokeEncoderSettingsOnUiThreadAsync { get; init; }
+        public required Func<Func<Task>, CancellationToken, Task> InvokeOnUiThreadAsync { get; init; }
+        public required Func<IEnumerable<string>> GetAvailableRecordingFormats { get; init; }
+        public required Func<IEnumerable<string>> GetAvailableQualities { get; init; }
+        public required Func<IEnumerable<string>> GetAvailableSplitEncodeModes { get; init; }
+        public required Func<IEnumerable<string>> GetAvailablePresets { get; init; }
+        public required Func<bool> IsHdrEnabled { get; init; }
+        public required Action<bool> SetSuppressFlashbackFormatCycle { get; init; }
+        public required Action<bool> SetSuppressFlashbackEncoderSettingsCycle { get; init; }
+        public required Action<string> SetSelectedRecordingFormat { get; init; }
+        public required Func<string> GetSelectedQuality { get; init; }
+        public required Action<string> SetSelectedQuality { get; init; }
+        public required Func<string> GetSelectedSplitEncodeMode { get; init; }
+        public required Action<string> SetSelectedSplitEncodeMode { get; init; }
+        public required Func<string> GetSelectedPreset { get; init; }
+        public required Action<string> SetSelectedPreset { get; init; }
+        public required Func<double> GetCustomBitrateMbps { get; init; }
+        public required Action<double> SetCustomBitrateMbps { get; init; }
+        public required Action<string> SetOutputPath { get; init; }
+        public required Func<RecordingFormat, CancellationToken, Task> UpdateRecordingFormatAsync { get; init; }
+        public required Func<VideoQuality, double, string, string?, CancellationToken, Task> CycleFlashbackEncoderSettingsAsync { get; init; }
+    }
+
+    private sealed record MainViewModelRecordingEncoderSettings(
+        VideoQuality Quality,
+        double Bitrate,
+        string Preset,
+        string? SplitEncodeMode = null);
 }

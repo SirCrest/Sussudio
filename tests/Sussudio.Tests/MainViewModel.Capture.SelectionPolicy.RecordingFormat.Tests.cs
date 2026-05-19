@@ -27,7 +27,11 @@ static partial class Program
         AssertContains(automationSettingsText, "=> _recordingSettingsAutomationController.SetRecordingFormatAsync(format, cancellationToken);");
         AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.IsHdrCompatible(matched)");
         AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.ParseRecordingFormat(matched)");
-        AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.ParseVideoQuality(_viewModel.SelectedQuality)");
+        AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.ParseVideoQuality(_context.GetSelectedQuality())");
+        AssertContains(automationRecordingControllerText, "private sealed class MainViewModelRecordingSettingsAutomationControllerContext");
+        AssertContains(automationRecordingControllerText, "private readonly MainViewModelRecordingSettingsAutomationControllerContext _context;");
+        AssertDoesNotContain(automationRecordingControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(automationRecordingControllerText, "_viewModel.");
         AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps(bitrateMbps)");
         AssertContains(automationRecordingControllerText, "public async Task SetRecordingFormatAsync");
         AssertEqual(
