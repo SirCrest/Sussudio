@@ -60,6 +60,8 @@ static partial class Program
     {
         var deviceCommandsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommands.cs")
             .Replace("\r\n", "\n");
+        var deviceCommandReadsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommandReads.cs")
+            .Replace("\r\n", "\n");
         var audioCommandsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioCommands.cs")
             .Replace("\r\n", "\n");
         var analogGainText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AnalogGain.cs")
@@ -74,7 +76,13 @@ static partial class Program
 
         AssertContains(deviceCommandsText, "public static async Task<bool> SendAtSetCommandAsync(");
         AssertContains(deviceCommandsText, "public static Task<bool> SetInputSourceAsync(");
-        AssertContains(deviceCommandsText, "public static async Task<byte[]?> ReadAtCommandAsync(");
+        AssertDoesNotContain(deviceCommandsText, "public static async Task<byte[]?> ReadAtCommandAsync(");
+        AssertContains(deviceCommandReadsText, "public sealed partial class NativeXuAtCommandProvider");
+        AssertContains(deviceCommandReadsText, "public static async Task<byte[]?> ReadAtCommandAsync(");
+        AssertContains(deviceCommandReadsText, "SendAtCommand(handle, node.NodeId, label, cmdCode)");
+        AssertContains(deviceCommandReadsText, "NATIVEXU_GET_EXCEPTION");
+        AssertDoesNotContain(deviceCommandReadsText, "public static async Task<bool> SendAtSetCommandAsync(");
+        AssertDoesNotContain(deviceCommandReadsText, "public static Task<bool> SetInputSourceAsync(");
         AssertDoesNotContain(deviceCommandsText, "public static async Task<bool> SwitchAudioInputAsync(");
         AssertDoesNotContain(deviceCommandsText, "public static async Task<bool> SetAnalogGainAsync(");
         AssertDoesNotContain(deviceCommandsText, "internal static void ComputeGainRegisters(");
@@ -104,6 +112,7 @@ static partial class Program
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.AudioCommands.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.AnalogGain.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.AudioSwitch.cs");
+        AssertContains(probeProjectText, "NativeXuAtCommandProvider.DeviceCommandReads.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.Selector4.cs");
         AssertContains(probeProjectText, "NativeXuDeviceSupport.cs");
 
