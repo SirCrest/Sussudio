@@ -1861,11 +1861,15 @@ there; keep recording and Flashback enqueue paths in
 `UnifiedVideoCapture.SinkFanout.cs` and
 `UnifiedVideoCapture.SinkFanout.Flashback.cs`.
 
-Decoded visual-cadence sampling now lives in
-`Sussudio/Services/Capture/VisualCadenceTracker.cs`. Keep luma sampling, crop
-selection, sample-buffer promotion, and repeat/change ingestion there; keep
-metrics DTO construction, ring-buffer snapshot copying, delta/output/change
-statistics, and motion-confidence labels in
+Decoded visual-cadence frame ingestion now lives in
+`Sussudio/Services/Capture/VisualCadenceTracker.cs`. Keep state, reset, frame
+validation, output/change ingestion, and repeat-run bookkeeping there. Luma
+sampling now lives in
+`Sussudio/Services/Capture/VisualCadenceTracker.Sampling.cs`. Keep crop
+selection, one-pass current-vs-previous comparison, sample-buffer promotion,
+rolling sample writes, and elapsed-time conversion there; keep metrics DTO
+construction, ring-buffer snapshot copying, delta/output/change statistics, and
+motion-confidence labels in
 `Sussudio/Services/Capture/VisualCadenceTracker.Metrics.cs`.
 
 Source-packet fingerprint cadence ingestion now lives in
