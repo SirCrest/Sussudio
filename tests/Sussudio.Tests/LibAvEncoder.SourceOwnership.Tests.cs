@@ -83,6 +83,10 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
+        var codecPolicyText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs")
+            .Replace("\r\n", "\n");
+        var optionsValidationText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.OptionsValidation.cs")
+            .Replace("\r\n", "\n");
         var audioText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Audio.cs")
             .Replace("\r\n", "\n");
         var audioQueueText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioQueue.cs")
@@ -139,6 +143,11 @@ static partial class Program
         AssertContains(cudaHardwareFramesText, "private void InitializeCudaHardwareFrames(LibAvEncoderOptions options)");
         AssertContains(cudaHardwareFramesText, "_useCudaHardwareFrames = true;");
         AssertContains(cudaHardwareFramesText, "AVPixelFormat.AV_PIX_FMT_CUDA");
+        AssertContains(optionsValidationText, "private static void ValidateOptions(LibAvEncoderOptions options)");
+        AssertContains(optionsValidationText, "private static void ValidateRequiredVideoOptions(LibAvEncoderOptions options)");
+        AssertContains(optionsValidationText, "private static void ValidateAudioOptions(LibAvEncoderOptions options)");
+        AssertContains(optionsValidationText, "private static void ValidateHdrOptions(LibAvEncoderOptions options)");
+        AssertDoesNotContain(codecPolicyText, "private static void ValidateOptions(LibAvEncoderOptions options)");
         AssertDoesNotContain(audioText, "public void SendAudioSamples(ReadOnlySpan<byte> f32leSamples)");
         AssertDoesNotContain(audioText, "public void SendMicrophoneSamples(ReadOnlySpan<byte> f32leSamples)");
         AssertDoesNotContain(audioText, "private void InitializeAudioIfNeeded(LibAvEncoderOptions options)");

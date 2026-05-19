@@ -1095,11 +1095,14 @@ partial resolves the active backend, `.Models.cs` owns the private counter DTOs,
 capture and baseline deltas, and `.Audio.cs` owns audio counter capture and
 baseline deltas. Snapshot partials consume that policy instead of containing it.
 
-LibAv encoder codec and options policy now lives in
-`Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs`. Keep option
-validation, bitstream-filter selection, NVENC preset/split-encode mapping,
-frame-size math, sample-format support, and rational conversion helpers there;
-leave live send/drain/finalize paths in the owner partials.
+LibAv encoder option validation now lives in
+`Sussudio/Services/Recording/LibAvEncoder.OptionsValidation.cs`. Keep required
+path/codec/dimension/frame-rate/bitrate checks plus audio, microphone, and HDR
+guards there. LibAv encoder codec policy stays in
+`Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs`; keep bitstream-filter
+selection, NVENC preset/split-encode mapping, frame-size math, sample-format
+support, and rational conversion helpers there; leave live send/drain/finalize
+paths in the owner partials.
 
 LibAv encoder A/V sync diagnostics now live in
 `Sussudio/Services/Recording/LibAvEncoder.AvSync.cs`. Keep drift-correction
