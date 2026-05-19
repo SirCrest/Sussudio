@@ -2773,7 +2773,7 @@ Primary current owners:
   resolution dropdown mutation routes through
   `MainViewModelCaptureModeOptionRebuildController.Resolution.cs`.
   `Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs`
-  owns source telemetry ingress, projection, enum-string caching, summary-age
+  owns source telemetry ingress through graph-built context ports, projection, enum-string caching, summary-age
   refresh, and source-aware auto-retargeting hints.
   `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`
   owns source telemetry summary, telemetry age, and target-summary display text formatting.

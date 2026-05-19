@@ -269,10 +269,14 @@ static partial class Program
         AssertContains(mainViewModelDeviceFormatProbeRetargetApplierText, "_viewModel.GetCaptureRuntimeSnapshot();");
         AssertDoesNotContain(mainViewModelText, "private void OnDeviceFormatProbeCompleted");
         AssertContains(mainViewModelSourceTelemetryControllerText, "private sealed class MainViewModelSourceTelemetryController");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "private sealed class MainViewModelSourceTelemetryControllerContext");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "private readonly MainViewModelSourceTelemetryControllerContext _context;");
+        AssertDoesNotContain(mainViewModelSourceTelemetryControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(mainViewModelSourceTelemetryControllerText, "_viewModel.");
         AssertContains(mainViewModelSourceTelemetryControllerText, "public void OnSourceTelemetryUpdated(object? sender, SourceSignalTelemetrySnapshot snapshot)");
         AssertContains(mainViewModelSourceTelemetryControllerText, "SOURCE_TELEMETRY_UI_ENQUEUE_FAILED");
         AssertContains(mainViewModelSourceTelemetryControllerText, "private int? _lastTelemetryAgeBucket;");
-        AssertContains(mainViewModelSourceTelemetryControllerText, "_viewModel.RebuildResolutionOptions();");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "_context.RebuildResolutionOptions();");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Telemetry.cs")),

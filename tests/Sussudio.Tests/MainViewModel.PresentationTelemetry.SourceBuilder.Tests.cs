@@ -81,9 +81,9 @@ static partial class Program
         var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CapturePresentation.cs").Replace("\r\n", "\n");
         var builderText = ReadRepoFile("Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs").Replace("\r\n", "\n");
 
-        AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildSourceSummary(_viewModel._latestSourceTelemetry, DateTimeOffset.UtcNow);");
-        AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildSourceSummary(snapshot, DateTimeOffset.UtcNow);");
-        AssertContains(telemetryText, "UpdateTargetSummary();");
+        AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildSourceSummary(_context.GetLatestSourceTelemetry(), DateTimeOffset.UtcNow);");
+        AssertContains(telemetryText, "_context.SetSourceTelemetrySummaryText(SourceTelemetryPresentationBuilder.BuildSourceSummary(snapshot, DateTimeOffset.UtcNow));");
+        AssertContains(telemetryText, "_context.UpdateTargetSummary();");
         AssertDoesNotContain(telemetryText, "private void UpdateHdrRuntimeStatusFromCapture(");
         AssertContains(capturePresentationText, "private void UpdateHdrRuntimeStatusFromCapture(CaptureRuntimeSnapshot? runtimeSnapshot = null)");
         AssertContains(capturePresentationText, "HdrRuntimeState = runtime.HdrRuntimeState;");

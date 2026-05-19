@@ -3666,7 +3666,7 @@ owner, fold it back into that owner and update the source-shape tests and
    formatting now live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`;
    HDR runtime state/readiness projection and target-summary property
    application live in `MainViewModel.CapturePresentation.cs`; keep snapshot
-   application, source telemetry ingress, telemetry age refresh, enum-string
+   application, source telemetry ingress through graph-built context ports, telemetry age refresh, enum-string
    caching, and source-aware auto-retargeting in
    `Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs`.
    Settings initialization, simple persistence reactions, and the impure

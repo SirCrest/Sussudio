@@ -114,7 +114,7 @@ static partial class Program
         AssertContains(controllerGraphText, "new MainViewModelRecordingSettingsAutomationController(viewModel)");
         AssertContains(controllerGraphText, "new MainViewModelCaptureModeOptionRebuildController(viewModel)");
         AssertContains(controllerGraphText, "new MainViewModelDeviceFormatProbeController(viewModel)");
-        AssertContains(controllerGraphText, "new MainViewModelSourceTelemetryController(viewModel)");
+        AssertContains(controllerGraphText, "var sourceTelemetryController = CreateSourceTelemetryController(viewModel);");
         AssertContains(controllerGraphText, "new MainViewModelDeviceRefreshController(viewModel, previewLifecycleController)");
         AssertOccursBefore(
             controllerGraphText,
@@ -289,6 +289,15 @@ static partial class Program
         var sourceTelemetryControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs")
             .Replace("\r\n", "\n");
         AssertContains(sourceTelemetryControllerText, "private sealed class MainViewModelSourceTelemetryController");
+        AssertContains(sourceTelemetryControllerText, "private sealed class MainViewModelSourceTelemetryControllerContext");
+        AssertContains(sourceTelemetryControllerText, "private readonly MainViewModelSourceTelemetryControllerContext _context;");
+        AssertDoesNotContain(sourceTelemetryControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(sourceTelemetryControllerText, "_viewModel.");
+        AssertContains(controllerGraphText, "private static MainViewModelSourceTelemetryController CreateSourceTelemetryController(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelSourceTelemetryControllerContext");
+        AssertContains(controllerGraphText, "SetLatestSourceTelemetry = snapshot => viewModel._latestSourceTelemetry = snapshot,");
+        AssertContains(controllerGraphText, "RebuildResolutionOptions = viewModel.RebuildResolutionOptions,");
+        AssertContains(controllerGraphText, "UpdateTargetSummary = viewModel.UpdateTargetSummary,");
         AssertContains(sourceTelemetryControllerText, "public void OnSourceTelemetryUpdated(object? sender, SourceSignalTelemetrySnapshot snapshot)");
         AssertContains(sourceTelemetryControllerText, "public void ApplySourceTelemetrySnapshot(SourceSignalTelemetrySnapshot snapshot, bool allowAutoRetarget)");
         AssertContains(sourceTelemetryControllerText, "public void RefreshSourceTelemetrySummaryAge()");
