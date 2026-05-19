@@ -2753,8 +2753,11 @@ Primary current owners:
   owns startup refresh orchestration: requesting the combined discovery result,
   applying audio-device startup selection, replacing the capture-device collection,
   starting background format probes, restoring saved capture-device selection,
-  and directly auto-starting preview through graph-built context ports plus the
-  preview lifecycle owner. The shallow `MainViewModel.DeviceManagement.cs`
+  and directly auto-starting preview through the preview lifecycle owner.
+  `Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.Context.cs`
+  owns the device-refresh graph-port contract for discovery, startup audio
+  selection, device collection mutation, background format probes, selection
+  restore, and scan status projection. The shallow `MainViewModel.DeviceManagement.cs`
   partial was retired instead of keeping another sub-100-line facade. Selected
   capture-device reactions, capability projection, source telemetry reset, and
   device-native audio-control refresh handoff live in `MainViewModel.DeviceSelection.cs`; capture-mode property-change hooks live

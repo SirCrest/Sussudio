@@ -212,6 +212,7 @@ static partial class Program
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "CAPTURE_ERROR_UI_ENQUEUE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
         AssertDoesNotContain(mainViewModelText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
         var deviceRefreshControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceRefreshController.cs"));
+        var deviceRefreshControllerContextText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceRefreshController.Context.cs"));
         var deviceSelectionText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceSelection.cs"));
         var audioDeviceDiscoveryText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioDeviceDiscovery.cs"));
         var audioDeviceSelectionPolicyText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "AudioDeviceSelectionPolicy.cs"));
@@ -222,7 +223,7 @@ static partial class Program
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceManagement.cs")),
             "shallow MainViewModel device-management partial");
         AssertContains(deviceRefreshControllerText, "private sealed class MainViewModelDeviceRefreshController");
-        AssertContains(deviceRefreshControllerText, "private sealed class MainViewModelDeviceRefreshControllerContext");
+        AssertContains(deviceRefreshControllerContextText, "private sealed class MainViewModelDeviceRefreshControllerContext");
         AssertContains(deviceRefreshControllerText, "private readonly MainViewModelDeviceRefreshControllerContext _context;");
         AssertDoesNotContain(deviceRefreshControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");

@@ -80,6 +80,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs")
             .Replace("\r\n", "\n");
+        var deviceRefreshControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.Context.cs")
+            .Replace("\r\n", "\n");
         var selectDevice = ExtractTextBetween(
             deviceSelectionAutomationText,
             "public Task SelectDeviceAsync",
@@ -102,7 +104,7 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.DeviceManagement.cs")),
             "shallow MainViewModel device-management partial");
-        AssertContains(deviceRefreshControllerText, "private sealed class MainViewModelDeviceRefreshControllerContext");
+        AssertContains(deviceRefreshControllerContextText, "private sealed class MainViewModelDeviceRefreshControllerContext");
         AssertContains(deviceRefreshControllerText, "private readonly MainViewModelDeviceRefreshControllerContext _context;");
         AssertDoesNotContain(deviceRefreshControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");
