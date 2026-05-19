@@ -3133,9 +3133,11 @@ Primary owners:
   summary, evidence, and frame-lane snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot
   active/failure gating, section ordering, encoder, buffer, temp-cache,
-  queue-latency, backpressure, failure, GPU queue, playback state,
-  command-queue, cadence, decode, frame, stage, A/V drift, and export
-  progress/result snapshot text.
+  queue-latency, backpressure, failure, GPU queue, and export progress/result
+  snapshot text.
+- `tools/ssctl/Formatters.Snapshot.Flashback.Playback.cs` owns Flashback
+  playback state, command-queue, cadence, decode, frame, stage, and A/V drift
+  snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG timing snapshot text.
 - `tools/ssctl/Formatters.Snapshot.PreviewD3D.cs` owns D3D preview renderer
   snapshot text: routing/header order, CPU timing, pipeline-latency,
