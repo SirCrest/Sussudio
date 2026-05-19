@@ -9,6 +9,8 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs")
             .Replace("\r\n", "\n");
+        var interfaceReadText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.InterfaceRead.cs")
+            .Replace("\r\n", "\n");
         var rollingPollText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingPoll.cs")
             .Replace("\r\n", "\n");
         var rollingCommandGroupsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingCommandGroups.cs")
@@ -18,8 +20,20 @@ static partial class Program
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
 
         AssertContains(rootText, "public async Task<SourceSignalTelemetrySnapshot> ReadAsync(");
-        AssertContains(rootText, "var attempt = TryReadRolling(handle, node.NodeId, ksInterface.Path, cancellationToken);");
+        AssertContains(rootText, "var attempt = TryReadInterface(ksInterface, cancellationToken);");
+        AssertDoesNotContain(rootText, "using var handle = KsExtensionUnitNative.TryOpen(");
+        AssertDoesNotContain(rootText, "KsExtensionUnitNative.TryReadTopologyNodes(");
+        AssertContains(interfaceReadText, "private NodeReadAttempt TryReadInterface(");
+        AssertContains(interfaceReadText, "using var handle = KsExtensionUnitNative.TryOpen(");
+        AssertContains(interfaceReadText, "KsExtensionUnitNative.TryReadTopologyNodes(");
+        AssertContains(interfaceReadText, "var attempt = TryReadRolling(handle, node.NodeId, ksInterface.Path, cancellationToken);");
+        AssertContains(interfaceReadText, "private static NodeReadAttempt CreateUnavailableNodeResult(");
+        AssertContains(interfaceReadText, "private static NodeReadAttempt HandleFailedCommand(");
+        AssertContains(interfaceReadText, "private static bool IsUnsupportedNodeFailure(");
+        AssertContains(interfaceReadText, "private static string DescribeCommandFailure(");
+        AssertContains(interfaceReadText, "private static string DescribeWin32Detail(");
         AssertDoesNotContain(rootText, "private NodeReadAttempt TryReadRolling(");
+        AssertDoesNotContain(rootText, "private static NodeReadAttempt HandleFailedCommand(");
         AssertDoesNotContain(rootText, "private NodeReadAttempt BuildSnapshotFromCachedResults(");
         AssertDoesNotContain(rootText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
         AssertContains(rollingPollText, "public sealed partial class NativeXuAtCommandProvider");
@@ -42,6 +56,7 @@ static partial class Program
         AssertContains(rollingCommandGroupsText, "private void PopulateInitialRollingCache(");
         AssertContains(rollingCommandGroupsText, "private void RefreshRollingGroup(");
         AssertContains(rollingCommandGroupsText, "case 5: // Diagnostics");
+        AssertDoesNotContain(rollingCommandGroupsText, "private static bool IsUnsupportedNodeFailure(");
         AssertContains(snapshotAssemblyText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
         AssertContains(snapshotAssemblyText, "private static readonly double[] CanonicalFrameRates");
         AssertContains(snapshotAssemblyText, "private readonly record struct NativeXuSnapshotCommandResults(");
@@ -49,6 +64,7 @@ static partial class Program
         AssertContains(snapshotAssemblyText, "BuildDetailEntries(");
         AssertContains(snapshotAssemblyText, "new SourceSignalTelemetrySnapshot");
         AssertContains(snapshotAssemblyText, "ResolveSnapshotAudioInputOrigin(");
+        AssertContains(probeProjectText, "NativeXuAtCommandProvider.InterfaceRead.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.RollingCommandGroups.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.cs");

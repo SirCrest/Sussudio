@@ -18,6 +18,7 @@ static partial class Program
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.DeviceCommandReads.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.DeviceCommands.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.FullSnapshot.cs");
+        AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.InterfaceRead.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.PayloadDecoding.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.cs");

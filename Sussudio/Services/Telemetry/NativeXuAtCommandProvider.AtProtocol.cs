@@ -1,5 +1,4 @@
 using System;
-using System.ComponentModel;
 using System.Globalization;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
@@ -169,25 +168,6 @@ public sealed partial class NativeXuAtCommandProvider
         var result = new byte[dataLength];
         Array.Copy(responseFrame, AtFrameHeaderSize, result, 0, dataLength);
         return result;
-    }
-
-    private static bool IsUnsupportedNodeFailure(int? win32Code)
-        => win32Code is KsExtensionUnitNative.ErrorNotFound
-            or KsExtensionUnitNative.ErrorSetNotFound
-            or KsExtensionUnitNative.ErrorInvalidParameter
-            or KsExtensionUnitNative.ErrorInvalidFunction;
-
-    private static string DescribeCommandFailure(string interfacePath, AtCommandResult result)
-        => $"{interfacePath}: {result.Name}:{result.FailureStage ?? "unknown"} win32={FormatWin32Code(result.Win32Code)}";
-
-    private static string DescribeWin32Detail(string path, int? win32Code)
-    {
-        if (!win32Code.HasValue)
-        {
-            return $"{path}: unknown";
-        }
-
-        return $"{path}: win32={win32Code.Value} ({new Win32Exception(win32Code.Value).Message})";
     }
 
     private static string FormatWin32Code(int? win32Code)

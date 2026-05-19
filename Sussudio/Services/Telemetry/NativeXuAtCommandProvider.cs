@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
@@ -132,74 +131,16 @@ public sealed partial class NativeXuAtCommandProvider : ISourceSignalTelemetryPr
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                try
+                var attempt = TryReadInterface(ksInterface, cancellationToken);
+                if (attempt.Snapshot != null)
                 {
-                    using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out var openErrorCode);
-                    if (handle is null)
-                    {
-                        unavailableReason = "nativexu-open-failed";
-                        unavailableDetail = DescribeWin32Detail(ksInterface.Path, openErrorCode);
-                        Logger.Log($"NATIVEXU_OPEN_FAILED path='{ksInterface.Path}' detail='{unavailableDetail}'");
-                        continue;
-                    }
-
-                    if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out var topologyError))
-                    {
-                        unavailableReason = "nativexu-topology-read-failed";
-                        unavailableDetail = $"{ksInterface.Path}: {topologyError ?? "unknown"}";
-                        Logger.Log($"NATIVEXU_TOPOLOGY_FAILED path='{ksInterface.Path}' error='{topologyError ?? "unknown"}'");
-                        continue;
-                    }
-
-                    var nodeList = nodes ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>();
-                    var devSpecificIds = new List<int>();
-                    foreach (var node in nodeList)
-                    {
-                        if (node.IsDevSpecific)
-                        {
-                            devSpecificIds.Add(node.NodeId);
-                        }
-                    }
-
-                    Logger.Log(
-                        $"NATIVEXU_TOPOLOGY path='{ksInterface.Path}' nodeCount={nodeList.Count} " +
-                        $"devSpecificNodes=[{string.Join(",", devSpecificIds)}]");
-
-                    var candidateNodes = devSpecificIds.Count > 0
-                        ? nodeList.Where(node => node.IsDevSpecific)
-                        : nodeList.AsEnumerable();
-
-                    foreach (var node in candidateNodes)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-
-                        var attempt = TryReadRolling(handle, node.NodeId, ksInterface.Path, cancellationToken);
-                        if (attempt.Snapshot != null)
-                        {
-                            return attempt.Snapshot;
-                        }
-
-                        if (attempt.UnsupportedNode)
-                        {
-                            continue;
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(attempt.UnavailableReason))
-                        {
-                            unavailableReason = attempt.UnavailableReason;
-                            unavailableDetail = attempt.UnavailableDetail;
-                        }
-                    }
+                    return attempt.Snapshot;
                 }
-                catch (OperationCanceledException)
+
+                if (!string.IsNullOrWhiteSpace(attempt.UnavailableReason))
                 {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    unavailableReason = "nativexu-interface-exception";
-                    unavailableDetail = $"{ksInterface.Path}: {ex.GetType().Name}: {ex.Message}";
-                    Logger.Log($"NATIVEXU_INTERFACE_EXCEPTION path='{ksInterface.Path}' type={ex.GetType().Name} message={ex.Message}");
+                    unavailableReason = attempt.UnavailableReason;
+                    unavailableDetail = attempt.UnavailableDetail;
                 }
             }
 
@@ -223,20 +164,6 @@ public sealed partial class NativeXuAtCommandProvider : ISourceSignalTelemetryPr
                 NativeXuDeviceSupport.ReleaseTransportGate();
             }
         }
-    }
-
-    private static NodeReadAttempt CreateUnavailableNodeResult(string interfacePath, string reason)
-        => new(null, false, reason, interfacePath);
-
-    private static NodeReadAttempt HandleFailedCommand(string reason, string interfacePath, AtCommandResult result)
-    {
-        if (IsUnsupportedNodeFailure(result.Win32Code))
-        {
-            return new NodeReadAttempt(null, true, null, null);
-        }
-
-        var detail = DescribeCommandFailure(interfacePath, result);
-        return new NodeReadAttempt(null, false, reason, detail);
     }
 
     private readonly record struct NodeReadAttempt(

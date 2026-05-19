@@ -1319,6 +1319,13 @@ group advancement there. Rolling command batch construction/refresh and
 per-command cancellation checks now live in
 `NativeXuAtCommandProvider.RollingCommandGroups.cs`.
 
+Native XU selected-interface reading now lives in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.InterfaceRead.cs`. Keep
+interface open failures, topology reads, dev-specific node selection, per-node
+rolling-read iteration, and node-read failure classification there. The root
+provider keeps public `ReadAsync` validation, transport gate ownership, and
+interface enumeration.
+
 Native XU source snapshot assembly now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs`.
 Keep VIC/frame-rate lookup, AT-command-result decode, diagnostic/detail
