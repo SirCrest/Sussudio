@@ -5,13 +5,17 @@ static partial class Program
     private static Task FlashbackTimelineTrackLayout_LivesInController()
     {
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
-        var timelineAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackTimeline.cs").Replace("\r\n", "\n");
+        var timelineAdapterText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineController.cs").Replace("\r\n", "\n");
         var animationControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineAnimationController.cs").Replace("\r\n", "\n");
         var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
 
         AssertContains(timelineAdapterText, "FlashbackTrackBackground = FlashbackTrackBackground,");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.FlashbackTimeline.cs")),
+            "Flashback timeline adapter is consolidated into MainWindow.Flashback.cs");
         AssertContains(timelineAdapterText, "FlashbackScrubArea = FlashbackScrubArea,");
         AssertContains(timelineAdapterText, "FlashbackPlayhead = FlashbackPlayhead,");
         AssertContains(timelineAdapterText, "FlashbackLiveEdge = FlashbackLiveEdge,");

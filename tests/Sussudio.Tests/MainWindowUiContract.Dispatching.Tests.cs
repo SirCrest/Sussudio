@@ -10,7 +10,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewActionsSource = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
             .Replace("\r\n", "\n");
-        var flashbackSource = ReadRepoFile("Sussudio/MainWindow.FlashbackCommands.cs")
+        var flashbackSource = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
         var flashbackControllerSource = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackCommandController.cs")
             .Replace("\r\n", "\n");

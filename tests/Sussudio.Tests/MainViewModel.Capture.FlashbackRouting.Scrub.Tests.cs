@@ -13,13 +13,13 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackCommandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackCommandController.cs")
             .Replace("\r\n", "\n");
-        var flashbackScrubText = ReadRepoFile("Sussudio/MainWindow.FlashbackScrub.cs")
+        var flashbackScrubText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
         var flashbackScrubControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs")
             .Replace("\r\n", "\n");
         var flashbackGeometryText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineGeometry.cs")
             .Replace("\r\n", "\n");
-        var flashbackPlayheadText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.cs")
+        var flashbackPlayheadText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
         var flashbackPlayheadControllerText = (
             ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs")
@@ -131,7 +131,10 @@ static partial class Program
         AssertDoesNotContain(flashbackScrubText, "private TimeSpan? _lastScrubPointerPosition;");
         AssertDoesNotContain(flashbackScrubText, "private long _lastScrubUpdateTick;");
         AssertDoesNotContain(flashbackScrubControllerText, "var carriedPosition = _isScrubbing ? _context.ViewModel.FlashbackPlaybackPosition : (TimeSpan?)null;");
-        AssertDoesNotContain(flashbackWindowText, "private void FlashbackScrubArea_PointerPressed(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.FlashbackScrub.cs")),
+            "Flashback scrub adapter is consolidated into MainWindow.Flashback.cs");
         AssertDoesNotContain(mainWindowText, "private bool _isFlashbackScrubbing;");
         AssertDoesNotContain(mainWindowText, "private TimeSpan? _lastScrubPointerPosition;");
 

@@ -6,8 +6,8 @@ static partial class Program
     {
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var pollingAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackPolling.cs").Replace("\r\n", "\n");
-        var timelineAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackTimeline.cs").Replace("\r\n", "\n");
+        var pollingAdapterText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var timelineAdapterText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPollingController.cs").Replace("\r\n", "\n");
@@ -22,6 +22,10 @@ static partial class Program
         AssertContains(pollingAdapterText, "=> _flashbackPollingController.StartPlaybackPolling();");
         AssertContains(pollingAdapterText, "=> _flashbackPollingController.StopPlaybackPolling();");
         AssertContains(mainWindowText, "InitializeFlashbackPollingController();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.FlashbackPolling.cs")),
+            "Flashback polling adapter is consolidated into MainWindow.Flashback.cs");
         AssertContains(timelineAdapterText, "StartStatusPolling = StartFlashbackStatusPolling,");
         AssertContains(shutdownCleanupText, "StopFlashbackStatusPolling();");
         AssertContains(shutdownCleanupControllerText, "_context.StopTimers();");

@@ -6,10 +6,10 @@ static partial class Program
     {
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var scrubText = ReadRepoFile("Sussudio/MainWindow.FlashbackScrub.cs").Replace("\r\n", "\n");
+        var scrubText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
         var scrubControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs").Replace("\r\n", "\n");
-        var playheadText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.cs").Replace("\r\n", "\n");
-        var pollingAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackPolling.cs").Replace("\r\n", "\n");
+        var playheadText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var pollingAdapterText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
         var controllerRootText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs").Replace("\r\n", "\n");
         var controllerCtiText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Cti.cs").Replace("\r\n", "\n");
         var controllerVisualsText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Visuals.cs").Replace("\r\n", "\n");
@@ -26,6 +26,10 @@ static partial class Program
         AssertContains(playheadText, "private void StopFlashbackCtiAnchorTimer()");
         AssertContains(playheadText, "=> _flashbackPlayheadMotionController.StopCtiAnchorTimer();");
         AssertContains(mainWindowText, "InitializeFlashbackPlayheadMotionController();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.FlashbackPlayhead.cs")),
+            "Flashback playhead adapter is consolidated into MainWindow.Flashback.cs");
         AssertOccursBefore(mainWindowText, "InitializeFlashbackScrubInteractionController();", "InitializeFlashbackPlayheadMotionController();");
         AssertOccursBefore(mainWindowText, "InitializeFlashbackPlayheadMotionController();", "InitializeFlashbackTimelineController();");
         AssertContains(controllerRootText, "internal sealed class FlashbackPlayheadMotionControllerContext");
@@ -73,7 +77,7 @@ static partial class Program
         AssertDoesNotContain(flashbackText, "private enum FlashbackPlayheadMotion");
         AssertDoesNotContain(flashbackText, "private Visual? _flashbackPlayheadVisual;");
         AssertDoesNotContain(flashbackText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
-        AssertDoesNotContain(flashbackText, "private void RefreshFlashbackCtiMotion(string reason)");
+        AssertDoesNotContain(flashbackText, "private void StartLinearPlayheadExtrapolation(");
 
         return Task.CompletedTask;
     }

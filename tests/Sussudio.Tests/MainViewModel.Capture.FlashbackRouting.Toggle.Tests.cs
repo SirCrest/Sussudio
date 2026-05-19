@@ -11,13 +11,13 @@ static partial class Program
     {
         var flashbackWindowText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
-        var flashbackCommandAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackCommands.cs")
+        var flashbackCommandAdapterText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
         var flashbackCommandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackCommandController.cs")
             .Replace("\r\n", "\n");
-        var flashbackTimelineText = ReadRepoFile("Sussudio/MainWindow.FlashbackTimeline.cs")
+        var flashbackTimelineText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
-        var flashbackSettingsText = ReadRepoFile("Sussudio/MainWindow.FlashbackSettingsBindings.cs")
+        var flashbackSettingsText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
         var flashbackTimelineControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineController.cs")
             .Replace("\r\n", "\n");
