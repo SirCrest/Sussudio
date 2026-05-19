@@ -1163,7 +1163,9 @@ creation now live in `Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs
 CUDA hardware frame context adoption lives in
 `Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.Cuda.cs`.
 Output rotation now lives in `LibAvEncoder.OutputRotation.cs`; final close and
-native cleanup now live in `LibAvEncoder.ResourceCleanup.cs`.
+trailer/logging now live in `LibAvEncoder.ResourceCleanup.cs`; native
+frame/context/buffer release and encoder state reset now live in
+`LibAvEncoder.NativeResourceRelease.cs`.
 
 LibAv encoder video submission now lives in
 `Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs`. Keep CPU packed
@@ -1180,8 +1182,10 @@ LibAv encoder output lifecycle is split across focused partials.
 option policy for open and rotated outputs. `LibAvEncoder.OutputRotation.cs`
 owns rotation IO close/reopen, stream reinitialization, bitstream-filter reset,
 and segment runtime resets. `LibAvEncoder.ResourceCleanup.cs` owns
-flush/final close, dispose, trailer writing, and native cleanup/freeing; keep
-generic error helpers in `LibAvEncoder.Diagnostics.cs`.
+flush/final close, dispose, trailer writing, close-result logging, and final
+output telemetry. `LibAvEncoder.NativeResourceRelease.cs` owns native
+frame/context/buffer release, hardware texture pool release, and encoder state
+reset; keep generic error helpers in `LibAvEncoder.Diagnostics.cs`.
 
 LibAv recording sink queue ownership now lives in
 `Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs`. Keep public

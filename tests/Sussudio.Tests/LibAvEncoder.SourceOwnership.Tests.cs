@@ -171,6 +171,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var muxerOptionsText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.MuxerOptions.cs")
             .Replace("\r\n", "\n");
+        var nativeResourceReleaseText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.NativeResourceRelease.cs")
+            .Replace("\r\n", "\n");
         var resourceCleanupText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.ResourceCleanup.cs")
             .Replace("\r\n", "\n");
 
@@ -188,11 +190,19 @@ static partial class Program
         AssertContains(resourceCleanupText, "public void FlushAndClose()");
         AssertContains(resourceCleanupText, "public void Dispose()");
         AssertContains(resourceCleanupText, "private void CleanupResources(bool writeTrailer)");
-        AssertContains(resourceCleanupText, "Marshal.Release(_hwPoolTextures[i]);");
+        AssertContains(resourceCleanupText, "var finalMicSamplesReceived = ReleaseNativeResources(useCudaHardwareFrames);");
+        AssertContains(resourceCleanupText, "ffmpeg.av_write_trailer(_formatCtx)");
+        AssertContains(nativeResourceReleaseText, "private long ReleaseNativeResources(bool useCudaHardwareFrames)");
+        AssertContains(nativeResourceReleaseText, "ffmpeg.avio_closep(&_formatCtx->pb)");
+        AssertContains(nativeResourceReleaseText, "Marshal.Release(_hwPoolTextures[i]);");
+        AssertContains(nativeResourceReleaseText, "ffmpeg.avcodec_free_context(&videoCodecCtx)");
+        AssertContains(nativeResourceReleaseText, "_isOpen = false;");
         AssertDoesNotContain(rootText, "public RotateOutputResult RotateOutput(string newPath)");
         AssertDoesNotContain(rootText, "public void FlushAndClose()");
         AssertDoesNotContain(rootText, "public void Dispose()");
         AssertDoesNotContain(rotationText, "private void CleanupResources(bool writeTrailer)");
+        AssertDoesNotContain(resourceCleanupText, "Marshal.Release(_hwPoolTextures[i]);");
+        AssertDoesNotContain(resourceCleanupText, "ffmpeg.avcodec_free_context(&videoCodecCtx)");
         AssertDoesNotContain(resourceCleanupText, "private static unsafe void ApplyMp4MuxerOptions(");
 
         return Task.CompletedTask;
