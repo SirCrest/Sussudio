@@ -769,6 +769,9 @@ and controller-provided clock/tick values.
 owns preview startup elapsed timing plus blank/stall suspicion policy.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameCounterPolicy.cs`
 owns the D3D-vs-CPU frame-counter fallback rules used by preview diagnostics.
+`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameOwnershipPolicy.cs`
+owns D3D submitted/rendered/dropped frame-identity projection defaults,
+including null-renderer source sequence sentinels and last-drop reason.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameStatisticsPolicy.cs`
 owns DXGI frame-statistics projection defaults, including the null-renderer
 present-count sentinels used by preview diagnostics.
