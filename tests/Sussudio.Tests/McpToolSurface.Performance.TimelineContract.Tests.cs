@@ -11,9 +11,11 @@ static partial class Program
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs")
+            + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Preview.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs");
         var trendSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs");
+        var previewTrendSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Preview.cs");
         var flashbackTrendSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.cs");
         AssertDoesNotContain(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs"), "private sealed class TimelineRow");
         AssertDoesNotContain(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs"), "new StringBuilder()");
@@ -24,8 +26,14 @@ static partial class Program
         AssertDoesNotContain(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs"), "== Trend Summary");
         AssertContains(trendSource, "AppendTrendSummary");
         AssertContains(trendSource, "== Trend Summary");
+        AssertContains(trendSource, "AppendPreviewTrendSummary(builder, first, last);");
         AssertContains(trendSource, "AppendFlashbackTrendSummary(builder, first, last);");
+        AssertDoesNotContain(trendSource, "Preview Slow Stage:");
         AssertDoesNotContain(trendSource, "Flashback Cmd Counters:");
+        AssertContains(previewTrendSource, "private static void AppendPreviewTrendSummary(StringBuilder builder, TimelineRow first, TimelineRow last)");
+        AssertContains(previewTrendSource, "Preview Slow Stage:");
+        AssertContains(previewTrendSource, "D3D P99 Bottleneck:");
+        AssertContains(previewTrendSource, "Jitter Drops:");
         AssertContains(flashbackTrendSource, "private static void AppendFlashbackTrendSummary(StringBuilder builder, TimelineRow first, TimelineRow last)");
         AssertContains(flashbackTrendSource, "Flashback Cmd Counters:");
         AssertContains(flashbackTrendSource, "Export Output:");

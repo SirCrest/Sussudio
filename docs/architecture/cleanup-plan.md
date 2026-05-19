@@ -2914,8 +2914,10 @@ projection in `PerformanceTimelineTools.Rows.cs`, the private row model in
 `PerformanceTimelineTools.Rows.Model.cs`,
 timeline table text rendering in `PerformanceTimelineTools.Rendering.cs`,
 first-vs-last trend text and target-summary orchestration in
-`PerformanceTimelineTools.Rendering.Trend.cs`, Flashback playback, command,
-failure, cleanup, and export trend text in
+`PerformanceTimelineTools.Rendering.Trend.cs`, preview cadence, visual/MJPEG
+fingerprint, jitter, D3D, and slow-stage trend text in
+`PerformanceTimelineTools.Rendering.Trend.Preview.cs`, Flashback playback,
+command, failure, cleanup, and export trend text in
 `PerformanceTimelineTools.Rendering.Trend.Flashback.cs`,
 compact value/byte/export/D3D formatting helpers in
 `PerformanceTimelineTools.Formatting.cs`, and target/pressure summaries in
