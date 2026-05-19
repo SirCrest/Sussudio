@@ -10,6 +10,7 @@ static partial class Program
         var deviceAudioRefreshText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioRefresh.cs"));
         var analogAudioGainText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AnalogAudioGain.cs"));
         var deviceAudioRequestControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceAudioRequestController.cs"));
+        var deviceAudioRequestControllerContextText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceAudioRequestController.Context.cs"));
         var deviceAudioRequestControllerGainText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceAudioRequestController.Gain.cs"));
         AssertContains(deviceAudioStateText, "public partial ObservableCollection<string> AvailableDeviceAudioModes");
         AssertContains(deviceAudioStateText, "public partial bool IsDeviceAudioControlSupported");
@@ -43,6 +44,7 @@ static partial class Program
         var mainViewModelAudioInputSelectionText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioInputSelection.cs"));
         var mainViewModelMicrophonePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.MicrophonePropertyChanges.cs"));
         var mainViewModelDeviceAudioRequestControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceAudioRequestController.cs"));
+        var mainViewModelDeviceAudioRequestControllerContextText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceAudioRequestController.Context.cs"));
         var mainViewModelCaptureModePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureModePropertyChanges.cs"));
         var mainViewModelDispatchingText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Dispatching.cs"));
         var mainViewModelUiDispatchControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelUiDispatchController.cs"));
@@ -99,7 +101,7 @@ static partial class Program
         AssertContains(mainViewModelDeviceAudioRequestControllerText, "partial void OnAnalogAudioGainPercentChanged(double value)");
         AssertContains(mainViewModelDeviceAudioRequestControllerText, "private void RequestDeviceAudioControlsRefresh(CaptureDevice? targetDevice)");
         AssertContains(mainViewModelDeviceAudioRequestControllerText, "\"device audio controls refresh\", true");
-        AssertContains(mainViewModelDeviceAudioRequestControllerText, "private sealed class MainViewModelDeviceAudioRequestControllerContext");
+        AssertContains(mainViewModelDeviceAudioRequestControllerContextText, "private sealed class MainViewModelDeviceAudioRequestControllerContext");
         AssertContains(mainViewModelDeviceAudioRequestControllerText, "private readonly MainViewModelDeviceAudioRequestControllerContext _context;");
         AssertDoesNotContain(mainViewModelDeviceAudioRequestControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(mainViewModelDeviceAudioRequestControllerText, "_viewModel.");
@@ -249,7 +251,7 @@ static partial class Program
         AssertContains(deviceAudioRequestControllerText, "_gainXuDebounceCts");
         AssertContains(deviceAudioRequestControllerText, "_deviceAudioModeCts");
         AssertContains(deviceAudioRequestControllerText, "_deviceAudioRefreshCts");
-        AssertContains(deviceAudioRequestControllerText, "private sealed class MainViewModelDeviceAudioRequestControllerContext");
+        AssertContains(deviceAudioRequestControllerContextText, "private sealed class MainViewModelDeviceAudioRequestControllerContext");
         AssertContains(deviceAudioRequestControllerText, "private readonly MainViewModelDeviceAudioRequestControllerContext _context;");
         AssertDoesNotContain(deviceAudioRequestControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceAudioRequestControllerText, "_viewModel.");

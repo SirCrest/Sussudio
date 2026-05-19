@@ -3716,8 +3716,10 @@ owner, fold it back into that owner and update the source-shape tests and
    Pure analog audio gain percent/XU-byte curve mapping now lives in
    `Sussudio/ViewModels/DeviceAudioGainMapper.cs`; device-native audio request
    lifetime, including mode property-change adapters, UI enqueue lifetime,
-   shared debounce CTS fields, cancellation cleanup, and graph-built context ports, stays in
+   shared debounce CTS fields, and cancellation cleanup, stays in
    `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs`;
+   the device-native audio request graph-port contract now lives in
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.Context.cs`;
    gain property-change adapters, XU debounce, and flash-persist debounce stay
    in
    `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.Gain.cs`;
