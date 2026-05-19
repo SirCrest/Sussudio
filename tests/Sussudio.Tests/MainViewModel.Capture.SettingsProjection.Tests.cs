@@ -64,7 +64,7 @@ static partial class Program
         AssertDoesNotContain(captureSettingsText, "private bool ShouldForceMjpegDecode()");
         AssertDoesNotContain(captureText, "private CaptureSettings BuildCaptureSettings()");
         AssertContains(previewLifecycleControllerText, "await _context.SessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken)");
-        AssertContains(recordingTransitionControllerText, "await _viewModel._sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
+        AssertContains(recordingTransitionControllerText, "await _context.StartRecordingAsync(settings, cancellationToken);");
         AssertDoesNotContain(recordingLifecycleText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
         AssertDoesNotContain(captureText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
 

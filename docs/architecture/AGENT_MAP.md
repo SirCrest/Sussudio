@@ -2653,8 +2653,8 @@ Primary current owners:
   transition gating, and in-flight transition wait/error propagation.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`
   owns concrete start/stop operation execution plus failure/cancellation state
-  repair, including direct use of the preview lifecycle owner for recording
-  startup initialization.
+  repair through graph-built context ports, including direct use of the preview
+  lifecycle owner for recording startup initialization.
   `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs` owns
   bounded teardown, dispose timeout policy, watcher disposal, coordinator
   cleanup/dispose, capture-service async-dispose fallback, and disposal-step

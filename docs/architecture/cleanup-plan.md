@@ -3523,8 +3523,8 @@ owner, fold it back into that owner and update the source-shape tests and
    transition wait/error propagation now live in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`;
    concrete start/stop operation execution plus failure/cancellation state
-   repair, including direct use of the preview lifecycle owner for recording
-   startup initialization, live in
+   repair through graph-built context ports, including direct use of the preview
+   lifecycle owner for recording startup initialization, live in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`.
    Recording option selections, output path, counters, and transition flags also
    live in `MainViewModel.RecordingState.cs`. Bounded teardown, dispose timeout policy,
@@ -3727,7 +3727,7 @@ owner, fold it back into that owner and update the source-shape tests and
    The automation recording desired-state bridge enters through
    `MainViewModel.RecordingState.cs` and is serialized by
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`,
-   with start/stop execution in
+   with graph-built context ports and start/stop execution in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`.
    The emergency recording-stop bridge also enters through
    `MainViewModel.RecordingState.cs` but routes directly to

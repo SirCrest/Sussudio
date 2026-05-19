@@ -108,7 +108,12 @@ static partial class Program
         AssertContains(controllerGraphText, "RaisePreviewStartRequested = () => viewModel.PreviewStartRequested?.Invoke(viewModel, EventArgs.Empty),");
         AssertContains(controllerGraphText, "RaisePreviewStopRequested = () => viewModel.PreviewStopRequested?.Invoke(viewModel, EventArgs.Empty),");
         AssertContains(controllerGraphText, "ApplyLatestSourceTelemetryForPreviewStart = () =>");
-        AssertContains(controllerGraphText, "new MainViewModelRecordingTransitionController(viewModel, previewLifecycleController)");
+        AssertContains(controllerGraphText, "private static MainViewModelRecordingTransitionController CreateRecordingTransitionController(");
+        AssertContains(controllerGraphText, "new MainViewModelRecordingTransitionController(\n                new MainViewModelRecordingTransitionControllerContext");
+        AssertContains(controllerGraphText, "StartRecordingAsync = (settings, cancellationToken) =>");
+        AssertContains(controllerGraphText, "viewModel._sessionCoordinator.StartRecordingAsync(settings, cancellationToken),");
+        AssertContains(controllerGraphText, "StopRecordingAsync = cancellationToken =>");
+        AssertContains(controllerGraphText, "viewModel._sessionCoordinator.StopRecordingAsync(cancellationToken),");
         AssertContains(controllerGraphText, "var deviceAudioRequestController = CreateDeviceAudioRequestController(viewModel);");
         AssertContains(controllerGraphText, "var recordingCapabilityController = CreateRecordingCapabilityController(viewModel);");
         AssertContains(controllerGraphText, "var captureSettingsAutomationController = CreateCaptureSettingsAutomationController(viewModel);");
@@ -120,7 +125,7 @@ static partial class Program
         AssertOccursBefore(
             controllerGraphText,
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
-            "var recordingTransitionController = new MainViewModelRecordingTransitionController(viewModel, previewLifecycleController);");
+            "var recordingTransitionController = CreateRecordingTransitionController(viewModel, previewLifecycleController);");
         AssertOccursBefore(
             controllerGraphText,
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
@@ -189,6 +194,11 @@ static partial class Program
         AssertContains(uiDispatchControllerText, "public required DispatcherQueue DispatcherQueue { get; init; }");
         AssertContains(uiDispatchControllerText, "public required Func<bool> IsDisposing { get; init; }");
         AssertContains(recordingTransitionControllerText, "private sealed partial class MainViewModelRecordingTransitionController");
+        AssertContains(recordingTransitionControllerText, "private sealed class MainViewModelRecordingTransitionControllerContext");
+        AssertContains(recordingTransitionControllerText, "private readonly MainViewModelRecordingTransitionControllerContext _context;");
+        AssertDoesNotContain(recordingTransitionControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(recordingTransitionControllerText, "_viewModel.");
+        AssertDoesNotContain(recordingTransitionControllerOperationsText, "_viewModel.");
         AssertContains(recordingTransitionControllerText, "private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;");
         AssertContains(recordingTransitionControllerText, "public Task SetRecordingDesiredStateAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(recordingTransitionControllerText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");

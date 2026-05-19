@@ -61,7 +61,7 @@ public partial class MainViewModel
 
             var uiDispatchController = CreateUiDispatchController(viewModel);
             var previewLifecycleController = CreatePreviewLifecycleController(viewModel);
-            var recordingTransitionController = new MainViewModelRecordingTransitionController(viewModel, previewLifecycleController);
+            var recordingTransitionController = CreateRecordingTransitionController(viewModel, previewLifecycleController);
             var deviceAudioRequestController = CreateDeviceAudioRequestController(viewModel);
             var recordingCapabilityController = CreateRecordingCapabilityController(viewModel);
             var captureSettingsAutomationController = CreateCaptureSettingsAutomationController(viewModel);
@@ -183,6 +183,37 @@ public partial class MainViewModel
                         viewModel.ApplyAnalogAudioGainAsync(reason, targetDevice: targetDevice, cancellationToken: cancellationToken),
                     IsCurrentSelectedDevice = viewModel.IsCurrentSelectedDevice,
                 });
+        }
+
+        private static MainViewModelRecordingTransitionController CreateRecordingTransitionController(
+            MainViewModel viewModel,
+            MainViewModelPreviewLifecycleController previewLifecycleController)
+        {
+            return new MainViewModelRecordingTransitionController(
+                new MainViewModelRecordingTransitionControllerContext
+                {
+                    InvokeOnUiThreadAsync = (operation, cancellationToken) => viewModel.InvokeOnUiThreadAsync(operation, cancellationToken),
+                    IsRecording = () => viewModel.IsRecording,
+                    SetIsRecording = value => viewModel.IsRecording = value,
+                    IsInitialized = () => viewModel.IsInitialized,
+                    HasSelectedDevice = () => viewModel.SelectedDevice != null,
+                    GetStatusText = () => viewModel.StatusText,
+                    SetStatusText = value => viewModel.StatusText = value,
+                    SetIsRecordingTransitioning = value => viewModel.IsRecordingTransitioning = value,
+                    BuildCaptureSettings = viewModel.BuildCaptureSettings,
+                    StartRecordingAsync = (settings, cancellationToken) =>
+                        viewModel._sessionCoordinator.StartRecordingAsync(settings, cancellationToken),
+                    StopRecordingAsync = cancellationToken =>
+                        viewModel._sessionCoordinator.StopRecordingAsync(cancellationToken),
+                    GetSessionIsRecording = () => viewModel._sessionCoordinator.Snapshot.IsRecording,
+                    RestartRecordingStopwatch = viewModel._recordingStopwatch.Restart,
+                    StopRecordingStopwatch = viewModel._recordingStopwatch.Stop,
+                    ClearRecordingBitrateSamples = viewModel._recordingBitrateSamples.Clear,
+                    SetRecordingSizeInfo = value => viewModel.RecordingSizeInfo = value,
+                    SetRecordingBitrateInfo = value => viewModel.RecordingBitrateInfo = value,
+                    GetRecordingTime = () => viewModel.RecordingTime,
+                },
+                previewLifecycleController);
         }
 
         private static MainViewModelRecordingCapabilityController CreateRecordingCapabilityController(MainViewModel viewModel)

@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Sussudio.Models;
 
 namespace Sussudio.ViewModels;
 
@@ -11,7 +12,7 @@ public partial class MainViewModel
     /// </summary>
     private sealed partial class MainViewModelRecordingTransitionController
     {
-        private readonly MainViewModel _viewModel;
+        private readonly MainViewModelRecordingTransitionControllerContext _context;
         private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;
         private int _recordingToggleInProgress;
         // Holds the in-flight ToggleRecordingAsync task so the window-close path can
@@ -21,18 +22,18 @@ public partial class MainViewModel
         private int _activeRecordingTransitionTarget = -1;
 
         public MainViewModelRecordingTransitionController(
-            MainViewModel viewModel,
+            MainViewModelRecordingTransitionControllerContext context,
             MainViewModelPreviewLifecycleController previewLifecycleController)
         {
-            _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
             _previewLifecycleController = previewLifecycleController ?? throw new ArgumentNullException(nameof(previewLifecycleController));
         }
 
         public Task ToggleRecordingAsync()
-            => SetRecordingDesiredStateAsync(!_viewModel.IsRecording);
+            => SetRecordingDesiredStateAsync(!_context.IsRecording());
 
         public Task SetRecordingDesiredStateAsync(bool enabled, CancellationToken cancellationToken = default)
-            => _viewModel.InvokeOnUiThreadAsync(
+            => _context.InvokeOnUiThreadAsync(
                 () => SetRecordingDesiredStateOnUiThreadAsync(enabled, cancellationToken),
                 cancellationToken);
 
@@ -42,13 +43,13 @@ public partial class MainViewModel
         /// recording, initiate a fresh stop.
         /// </summary>
         public Task StopRecordingAndWaitAsync(CancellationToken cancellationToken = default)
-            => _viewModel.InvokeOnUiThreadAsync(
+            => _context.InvokeOnUiThreadAsync(
                 () => SetRecordingDesiredStateOnUiThreadAsync(enabled: false, cancellationToken),
                 cancellationToken);
 
         private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)
         {
-            if (enabled == _viewModel.IsRecording)
+            if (enabled == _context.IsRecording())
             {
                 return Task.CompletedTask;
             }
@@ -108,7 +109,7 @@ public partial class MainViewModel
                     throw new InvalidOperationException("Recording transition failed.", transitionError);
                 }
 
-                if (_viewModel.IsRecording == enabled)
+                if (_context.IsRecording() == enabled)
                 {
                     return;
                 }
@@ -116,18 +117,40 @@ public partial class MainViewModel
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (_viewModel.IsRecording == enabled)
+            if (_context.IsRecording() == enabled)
             {
                 return;
             }
 
             await BeginRecordingTransitionAsync(enabled, cancellationToken);
-            if (_viewModel.IsRecording != enabled)
+            if (_context.IsRecording() != enabled)
             {
                 throw new InvalidOperationException(
-                    $"Recording transition did not reach requested state: requested={enabled}, actual={_viewModel.IsRecording}.");
+                    $"Recording transition did not reach requested state: requested={enabled}, actual={_context.IsRecording()}.");
             }
         }
 
+    }
+
+    private sealed class MainViewModelRecordingTransitionControllerContext
+    {
+        public required Func<bool> IsRecording { get; init; }
+        public required Action<bool> SetIsRecording { get; init; }
+        public required Func<bool> IsInitialized { get; init; }
+        public required Func<bool> HasSelectedDevice { get; init; }
+        public required Func<string> GetStatusText { get; init; }
+        public required Action<string> SetStatusText { get; init; }
+        public required Action<bool> SetIsRecordingTransitioning { get; init; }
+        public required Func<Func<Task>, CancellationToken, Task> InvokeOnUiThreadAsync { get; init; }
+        public required Func<CaptureSettings> BuildCaptureSettings { get; init; }
+        public required Func<CaptureSettings, CancellationToken, Task> StartRecordingAsync { get; init; }
+        public required Func<CancellationToken, Task> StopRecordingAsync { get; init; }
+        public required Func<bool> GetSessionIsRecording { get; init; }
+        public required Action RestartRecordingStopwatch { get; init; }
+        public required Action StopRecordingStopwatch { get; init; }
+        public required Action ClearRecordingBitrateSamples { get; init; }
+        public required Action<string> SetRecordingSizeInfo { get; init; }
+        public required Action<string> SetRecordingBitrateInfo { get; init; }
+        public required Func<string> GetRecordingTime { get; init; }
     }
 }

@@ -12,8 +12,8 @@ public partial class MainViewModel
         {
             try
             {
-                _viewModel.IsRecordingTransitioning = true;
-                _viewModel.StatusText = enabled ? "Starting recording..." : "Stopping recording...";
+                _context.SetIsRecordingTransitioning(true);
+                _context.SetStatusText(enabled ? "Starting recording..." : "Stopping recording...");
 
                 if (enabled)
                 {
@@ -24,62 +24,62 @@ public partial class MainViewModel
                     await StopRecordingAsync(cancellationToken);
                 }
 
-                if (_viewModel.IsRecording != enabled)
+                if (_context.IsRecording() != enabled)
                 {
                     throw new InvalidOperationException(
-                        $"Recording transition did not reach requested state: requested={enabled}, actual={_viewModel.IsRecording}.");
+                        $"Recording transition did not reach requested state: requested={enabled}, actual={_context.IsRecording()}.");
                 }
             }
             finally
             {
-                _viewModel.IsRecordingTransitioning = false;
+                _context.SetIsRecordingTransitioning(false);
                 Interlocked.Exchange(ref _recordingToggleInProgress, 0);
             }
         }
 
         private async Task StartRecordingAsync(CancellationToken cancellationToken = default)
         {
-            if (_viewModel.SelectedDevice == null)
+            if (!_context.HasSelectedDevice())
             {
-                _viewModel.StatusText = "No device selected";
-                throw new InvalidOperationException(_viewModel.StatusText);
+                _context.SetStatusText("No device selected");
+                throw new InvalidOperationException(_context.GetStatusText());
             }
 
-            if (!_viewModel.IsInitialized)
+            if (!_context.IsInitialized())
             {
                 await _previewLifecycleController.InitializeDeviceAsync(cancellationToken);
-                if (!_viewModel.IsInitialized)
+                if (!_context.IsInitialized())
                 {
                     throw new InvalidOperationException(
-                        string.IsNullOrWhiteSpace(_viewModel.StatusText)
+                        string.IsNullOrWhiteSpace(_context.GetStatusText())
                             ? "Device failed to initialize."
-                            : _viewModel.StatusText);
+                            : _context.GetStatusText());
                 }
             }
 
             try
             {
-                var settings = _viewModel.BuildCaptureSettings();
-                await _viewModel._sessionCoordinator.StartRecordingAsync(settings, cancellationToken);
+                var settings = _context.BuildCaptureSettings();
+                await _context.StartRecordingAsync(settings, cancellationToken);
 
-                _viewModel.IsRecording = true;
-                _viewModel._recordingStopwatch.Restart();
-                _viewModel._recordingBitrateSamples.Clear();
-                _viewModel.RecordingSizeInfo = "0 B";
-                _viewModel.RecordingBitrateInfo = "--";
-                _viewModel.StatusText = "Recording...";
+                _context.SetIsRecording(true);
+                _context.RestartRecordingStopwatch();
+                _context.ClearRecordingBitrateSamples();
+                _context.SetRecordingSizeInfo("0 B");
+                _context.SetRecordingBitrateInfo("--");
+                _context.SetStatusText("Recording...");
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                _viewModel.IsRecording = _viewModel._sessionCoordinator.Snapshot.IsRecording;
-                _viewModel.StatusText = "Recording start canceled";
+                _context.SetIsRecording(_context.GetSessionIsRecording());
+                _context.SetStatusText("Recording start canceled");
                 throw;
             }
             catch (Exception ex)
             {
                 Logger.LogException(ex);
-                _viewModel.IsRecording = _viewModel._sessionCoordinator.Snapshot.IsRecording;
-                _viewModel.StatusText = $"Recording failed: {ex.Message}";
+                _context.SetIsRecording(_context.GetSessionIsRecording());
+                _context.SetStatusText($"Recording failed: {ex.Message}");
                 throw;
             }
         }
@@ -88,25 +88,25 @@ public partial class MainViewModel
         {
             // UX: Freeze the timer immediately when the user requests stop (finalization can take seconds).
             // Keep IsRecording true until the stop transition completes so the button remains in "Stop" state.
-            _viewModel._recordingStopwatch.Stop();
+            _context.StopRecordingStopwatch();
 
             try
             {
-                await _viewModel._sessionCoordinator.StopRecordingAsync(cancellationToken);
-                _viewModel.IsRecording = false;
-                _viewModel.StatusText = $"Recording saved ({_viewModel.RecordingTime})";
+                await _context.StopRecordingAsync(cancellationToken);
+                _context.SetIsRecording(false);
+                _context.SetStatusText($"Recording saved ({_context.GetRecordingTime()})");
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                _viewModel.IsRecording = _viewModel._sessionCoordinator.Snapshot.IsRecording;
-                _viewModel.StatusText = "Stop recording canceled";
+                _context.SetIsRecording(_context.GetSessionIsRecording());
+                _context.SetStatusText("Stop recording canceled");
                 throw;
             }
             catch (Exception ex)
             {
                 Logger.LogException(ex);
-                _viewModel.IsRecording = _viewModel._sessionCoordinator.Snapshot.IsRecording;
-                _viewModel.StatusText = $"Stop recording failed: {ex.Message}";
+                _context.SetIsRecording(_context.GetSessionIsRecording());
+                _context.SetStatusText($"Stop recording failed: {ex.Message}");
                 throw;
             }
         }
