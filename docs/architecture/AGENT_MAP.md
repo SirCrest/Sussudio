@@ -102,8 +102,10 @@ Entry points:
 
 - `AutomationCommandKind.cs` owns numeric command IDs. Append only; never
   renumber or reuse values.
-- `AutomationCommandCatalog.cs` owns command metadata table, payload shape,
-  readiness gating, timeout policy, CLI help, and MCP descriptions.
+- `AutomationCommandCatalog.cs` owns command lookup, canonical name resolution,
+  and default metadata helpers. `AutomationCommandCatalog.Entries.cs` owns the
+  command metadata table: payload shape, readiness gating, timeout policy, CLI
+  help, and MCP descriptions.
 - `AutomationCommandCatalog.Manifest.cs` owns manifest DTO projection and stable
   manifest JSON serialization.
 - `AutomationCommandCatalog.PathValidation.cs` owns path-policy types and path

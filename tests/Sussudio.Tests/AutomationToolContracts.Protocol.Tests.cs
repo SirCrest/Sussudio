@@ -20,12 +20,12 @@ static partial class Program
         AssertContains(protocolText, "commandName = ResolveCanonicalCommandName(commandName);");
         AssertContains(protocolText, "AutomationCommandCatalog.TryGet(commandName, out var metadata)");
         AssertContains(protocolText, "? metadata.ResponseTimeoutMs");
-        var catalogText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
+        var catalogEntriesText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.Entries.cs")
             .Replace("\r\n", "\n");
-        AssertContains(catalogText, "AutomationCommandKind.SetRecordingEnabled");
-        AssertContains(catalogText, "AutomationPipeProtocol.RecordingResponseTimeoutMs");
-        AssertContains(catalogText, "AutomationCommandKind.FlashbackExport");
-        AssertContains(catalogText, "AutomationPipeProtocol.FlashbackMutationResponseTimeoutMs");
+        AssertContains(catalogEntriesText, "AutomationCommandKind.SetRecordingEnabled");
+        AssertContains(catalogEntriesText, "AutomationPipeProtocol.RecordingResponseTimeoutMs");
+        AssertContains(catalogEntriesText, "AutomationCommandKind.FlashbackExport");
+        AssertContains(catalogEntriesText, "AutomationPipeProtocol.FlashbackMutationResponseTimeoutMs");
         AssertDoesNotContain(protocolText, "AlignResponseTimeoutWithServerRequest");
         AssertContains(clientText, "AutomationPipeProtocol.TryGetCommandName(commandValue, out var canonicalCommandName)");
         AssertContains(clientText, "AutomationPipeProtocol.GetDefaultResponseTimeout(timeoutCommandName)");

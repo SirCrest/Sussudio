@@ -15,7 +15,7 @@ static partial class Program
         var helpWriterSectionsText = ReadRepoFile("tools/ssctl/SsctlHelpWriter.Sections.cs")
             .Replace("\r\n", "\n");
         var helpWriterText = string.Join("\n", helpWriterRootText, helpWriterSectionsText);
-        var catalogText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
+        var catalogEntriesText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.Entries.cs")
             .Replace("\r\n", "\n");
         var flashbackHandlersText = string.Join(
             "\n",
@@ -35,7 +35,7 @@ static partial class Program
         writeHelp.Invoke(null, new object[] { writer });
         var helpOutput = writer.ToString().Replace("\r\n", "\n");
 
-        AssertContains(catalogText, "\"flashback export [seconds] [path] [--range] [--force]\"");
+        AssertContains(catalogEntriesText, "\"flashback export [seconds] [path] [--range] [--force]\"");
         AssertContains(flashbackHandlersText, "ConsumeFlag(context.Rest, \"--force\")");
         AssertContains(ssctlProgramText, "SsctlHelpWriter.Write(Console.Out);");
         AssertDoesNotContain(ssctlProgramText, "AutomationCommandCatalog.Get(kind).CliHelp");

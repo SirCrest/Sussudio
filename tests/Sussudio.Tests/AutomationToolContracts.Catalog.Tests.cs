@@ -8,6 +8,8 @@ static partial class Program
         var catalogType = RequireType("Sussudio.Tools.AutomationCommandCatalog");
         var catalogText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
             .Replace("\r\n", "\n");
+        var catalogEntriesText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.Entries.cs")
+            .Replace("\r\n", "\n");
         var manifestText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.Manifest.cs")
             .Replace("\r\n", "\n");
         var pathValidationText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.PathValidation.cs")
@@ -38,7 +40,10 @@ static partial class Program
         }
 
         AssertContains(catalogText, "public static partial class AutomationCommandCatalog");
-        AssertContains(catalogText, "private static IReadOnlyList<AutomationCommandMetadata> BuildEntries()");
+        AssertContains(catalogEntriesText, "private static IReadOnlyList<AutomationCommandMetadata> BuildEntries()");
+        AssertContains(catalogEntriesText, "Set(entries, AutomationCommandKind.SetRecordingEnabled");
+        AssertContains(catalogEntriesText, "Set(entries, AutomationCommandKind.FlashbackExport");
+        AssertDoesNotContain(catalogText, "private static IReadOnlyList<AutomationCommandMetadata> BuildEntries()");
         AssertDoesNotContain(catalogText, "public static AutomationManifest CreateManifest()");
         AssertDoesNotContain(catalogText, "public static string ValidatePath(");
         AssertContains(manifestText, "public static AutomationManifest CreateManifest()");
