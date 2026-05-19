@@ -50,7 +50,7 @@ static partial class Program
     {
         var source = ReadFlashbackBufferManagerSource();
         AssertContains(source, "if (!File.Exists(seg.Path))\n                {\n                    continue;\n                }");
-        AssertContains(source, "if (_activeSegmentPath != null && File.Exists(_activeSegmentPath))");
+        AssertContains(source, "if (TryGetExistingActiveSegmentPath(out var activePath))");
         AssertContains(source, "SequenceNumber = Math.Max(0, _nextSegmentIndex - 1),");
 
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
@@ -94,7 +94,7 @@ static partial class Program
     private static Task FlashbackBufferManager_ActiveFilePath_RequiresExistingFile()
     {
         var source = ReadFlashbackBufferManagerSource();
-        AssertContains(source, "return _activeSegmentPath != null && File.Exists(_activeSegmentPath)\n                    ? _activeSegmentPath\n                    : null;");
+        AssertContains(source, "return TryGetExistingActiveSegmentPath(out var activePath)\n                    ? activePath\n                    : null;");
 
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -113,7 +113,7 @@ static partial class Program
     private static Task FlashbackBufferManager_SegmentCount_SkipsMissingFiles()
     {
         var source = ReadFlashbackBufferManagerSource();
-        AssertContains(source, "return _completedSegments.Count(seg => File.Exists(seg.Path)) +\n                    (_activeSegmentPath != null && File.Exists(_activeSegmentPath) ? 1 : 0);");
+        AssertContains(source, "return _completedSegments.Count(seg => File.Exists(seg.Path)) +\n                    (TryGetExistingActiveSegmentPath(out _) ? 1 : 0);");
 
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);

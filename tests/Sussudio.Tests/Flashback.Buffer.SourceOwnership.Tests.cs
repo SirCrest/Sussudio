@@ -55,9 +55,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var queryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs")
             .Replace("\r\n", "\n");
+        var statusText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.SegmentStatus.cs")
+            .Replace("\r\n", "\n");
 
-        AssertContains(queryText, "public int SegmentCount");
-        AssertContains(queryText, "public string? ActiveFilePath");
+        AssertContains(statusText, "public int SegmentCount");
+        AssertContains(statusText, "public string? ActiveFilePath");
         AssertContains(queryText, "public string? GetSegmentFileForPosition(TimeSpan absolutePts)");
         AssertContains(queryText, "public string? GetValidSegmentFileForPosition(TimeSpan absolutePts)");
         AssertContains(queryText, "private string? GetOldestExistingSegmentPath()");
@@ -65,9 +67,12 @@ static partial class Program
         AssertContains(queryText, "public string? GetNextSegmentFile(string currentPath)");
         AssertContains(queryText, "public TimeSpan? GetSegmentStartPts(string path)");
         AssertContains(queryText, "public IReadOnlyList<string> GetValidSegmentPaths(TimeSpan inPoint, TimeSpan outPoint)");
-        AssertContains(queryText, "private TimeSpan GetActiveSegmentStartPts()");
-        AssertContains(queryText, "private TimeSpan GetDefaultActiveSegmentStartPts()");
-        AssertContains(queryText, "public IReadOnlyList<FlashbackSegmentInfo> GetSegmentInfoList()");
+        AssertContains(statusText, "private TimeSpan GetActiveSegmentStartPts()");
+        AssertContains(statusText, "private TimeSpan GetDefaultActiveSegmentStartPts()");
+        AssertContains(statusText, "public IReadOnlyList<FlashbackSegmentInfo> GetSegmentInfoList()");
+        AssertDoesNotContain(queryText, "public int SegmentCount");
+        AssertDoesNotContain(queryText, "public string? ActiveFilePath");
+        AssertDoesNotContain(queryText, "public IReadOnlyList<FlashbackSegmentInfo> GetSegmentInfoList()");
         AssertDoesNotContain(rootText, "public int SegmentCount");
         AssertDoesNotContain(rootText, "public string? ActiveFilePath");
         AssertDoesNotContain(rootText, "public string? GetSegmentFileForPosition(TimeSpan absolutePts)");

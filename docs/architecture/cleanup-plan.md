@@ -1464,9 +1464,11 @@ extension there.
 Flashback buffer initialization, segment-extension setup, recovery-preserve
 markers, disposal, and disposed-state guards now live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs`.
-Flashback buffer segment counts, active-path projection, segment file lookup,
-start-PTS lookup, and segment-info projection now live in
-`Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs`.
+Flashback buffer segment file lookup, range selection, and start-PTS lookup now
+live in `Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs`.
+Segment counts, active-path projection, active segment start PTS calculation,
+and segment-info projection now live in
+`Sussudio/Services/Flashback/FlashbackBufferManager.SegmentStatus.cs`.
 Flashback buffer saturated math, PTS range clamps, completed-segment byte
 summation, and normalized segment-path comparisons now live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Math.cs`.

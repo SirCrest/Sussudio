@@ -62,8 +62,8 @@ static partial class Program
         AssertContains(cleanupText, "Directory.Delete(fullPath, recursive: true);");
 
         // Segment lookup helpers remain in the FlashbackBufferManager partial family
-        AssertContains(bufferText, "if (IsSameSegmentPath(_activeSegmentPath, currentPath))\n                return _activeSegmentPath != null && File.Exists(_activeSegmentPath) ? _activeSegmentPath : null;");
-        AssertContains(bufferText, "return GetOldestExistingSegmentPath()\n                ?? (_activeSegmentPath != null && File.Exists(_activeSegmentPath) ? _activeSegmentPath : null);");
+        AssertContains(bufferText, "if (IsSameSegmentPath(_activeSegmentPath, currentPath))\n                return TryGetExistingActiveSegmentPath(out var activePath) ? activePath : null;");
+        AssertContains(bufferText, "return GetOldestExistingSegmentPath()\n                ?? (TryGetExistingActiveSegmentPath(out var fallbackActivePath) ? fallbackActivePath : null);");
         AssertContains(bufferText, "public TimeSpan? GetSegmentStartPts(string path)");
         AssertContains(playbackSegmentEdgesText, "var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);");
         AssertContains(playbackSegmentEdgesText, "if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)");
