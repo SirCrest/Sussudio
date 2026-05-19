@@ -13,6 +13,7 @@ internal static class PreviewRuntimeSnapshotMapper
     {
         var surface = PreviewRuntimeSnapshotSurfaceProjectionPolicy.Evaluate(input, d3dProjection, health);
         var startup = PreviewRuntimeSnapshotStartupProjectionPolicy.Evaluate(input, health);
+        var gpuPlayback = PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.Evaluate(input, d3dProjection);
 
         return new PreviewRuntimeSnapshot
         {
@@ -138,11 +139,11 @@ internal static class PreviewRuntimeSnapshotMapper
             D3DLastDropReason = d3dProjection.D3DLastDropReason,
             D3DRecentSlowFrames = d3dProjection.D3DRecentSlowFrames,
             EstimatedPipelineLatencyMs = d3dProjection.EstimatedPipelineLatencyMs,
-            GpuPlaybackState = d3dProjection.GpuPlaybackState,
-            GpuNaturalVideoWidth = d3dProjection.GpuNaturalVideoWidth,
-            GpuNaturalVideoHeight = d3dProjection.GpuNaturalVideoHeight,
-            GpuPositionMs = d3dProjection.GpuPositionMs,
-            GpuPositionEventCount = input.GpuPositionEventCount
+            GpuPlaybackState = gpuPlayback.PlaybackState,
+            GpuNaturalVideoWidth = gpuPlayback.NaturalVideoWidth,
+            GpuNaturalVideoHeight = gpuPlayback.NaturalVideoHeight,
+            GpuPositionMs = gpuPlayback.PositionMs,
+            GpuPositionEventCount = gpuPlayback.PositionEventCount
         };
     }
 }

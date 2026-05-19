@@ -1171,6 +1171,9 @@ Primary current owners:
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotStartupProjectionPolicy.cs`
   owns sampled preview-startup field projection into the runtime snapshot,
   including startup health elapsed time.
+  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.cs`
+  owns GPU playback fields in the runtime snapshot, including renderer-projected
+  playback state/dimensions and sampled position event count.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthInputFactory.cs`
   owns blank/stall suspicion input projection from sampled input, D3D
   projection, and controller-provided clock/tick values.

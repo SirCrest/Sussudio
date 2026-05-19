@@ -23,6 +23,7 @@ static partial class Program
         var previewRuntimeSnapshotMapperText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotMapper.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotSurfaceProjectionPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotSurfaceProjectionPolicy.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotStartupProjectionPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotStartupProjectionPolicy.cs").Replace("\r\n", "\n");
+        var previewRuntimeSnapshotGpuPlaybackProjectionPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotHealthInputFactoryText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthInputFactory.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotHealthPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthPolicy.cs").Replace("\r\n", "\n");
         var previewRuntimeD3DFrameCounterPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameCounterPolicy.cs").Replace("\r\n", "\n");
@@ -150,6 +151,7 @@ static partial class Program
         AssertContains(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotSurfaceProjectionPolicy.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotStartupProjectionPolicy.cs");
+        AssertContains(agentMapText, "PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotHealthInputFactory.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotHealthPolicy.cs");
         AssertContains(agentMapText, "PreviewRuntimeD3DFrameCounterPolicy.cs");
@@ -167,6 +169,7 @@ static partial class Program
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotMapper.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotSurfaceProjectionPolicy.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotStartupProjectionPolicy.cs");
+        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotHealthInputFactory.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotHealthPolicy.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeD3DFrameCounterPolicy.cs");
@@ -221,6 +224,7 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotMapperText, "public static PreviewRuntimeSnapshot Build(");
         AssertContains(previewRuntimeSnapshotMapperText, "var surface = PreviewRuntimeSnapshotSurfaceProjectionPolicy.Evaluate(input, d3dProjection, health);");
         AssertContains(previewRuntimeSnapshotMapperText, "var startup = PreviewRuntimeSnapshotStartupProjectionPolicy.Evaluate(input, health);");
+        AssertContains(previewRuntimeSnapshotMapperText, "var gpuPlayback = PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.Evaluate(input, d3dProjection);");
         AssertContains(previewRuntimeSnapshotMapperText, "return new PreviewRuntimeSnapshot");
         AssertContains(previewRuntimeSnapshotMapperText, "TimestampUtc = timestampUtc,");
         AssertContains(previewRuntimeSnapshotMapperText, "IsPreviewing = surface.IsPreviewing,");
@@ -229,7 +233,8 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotMapperText, "StartupElapsedMs = startup.ElapsedMs,");
         AssertContains(previewRuntimeSnapshotMapperText, "BlankSuspected = surface.BlankSuspected,");
         AssertContains(previewRuntimeSnapshotMapperText, "StallSuspected = surface.StallSuspected,");
-        AssertContains(previewRuntimeSnapshotMapperText, "GpuPositionEventCount = input.GpuPositionEventCount");
+        AssertContains(previewRuntimeSnapshotMapperText, "GpuPlaybackState = gpuPlayback.PlaybackState,");
+        AssertContains(previewRuntimeSnapshotMapperText, "GpuPositionEventCount = gpuPlayback.PositionEventCount");
         AssertContains(previewRuntimeSnapshotSurfaceProjectionPolicyText, "internal static class PreviewRuntimeSnapshotSurfaceProjectionPolicy");
         AssertContains(previewRuntimeSnapshotSurfaceProjectionPolicyText, "public static PreviewRuntimeSnapshotSurfaceProjection Evaluate(");
         AssertContains(previewRuntimeSnapshotSurfaceProjectionPolicyText, "GpuActive: d3dProjection.GpuActive,");
@@ -238,12 +243,18 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "public static PreviewRuntimeSnapshotStartupProjection Evaluate(");
         AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "ElapsedMs: health.StartupElapsedMs,");
         AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "RecoveryAttemptCount: input.StartupRecoveryAttemptCount,");
+        AssertContains(previewRuntimeSnapshotGpuPlaybackProjectionPolicyText, "internal static class PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy");
+        AssertContains(previewRuntimeSnapshotGpuPlaybackProjectionPolicyText, "public static PreviewRuntimeSnapshotGpuPlaybackProjection Evaluate(");
+        AssertContains(previewRuntimeSnapshotGpuPlaybackProjectionPolicyText, "PlaybackState: d3dProjection.GpuPlaybackState,");
+        AssertContains(previewRuntimeSnapshotGpuPlaybackProjectionPolicyText, "PositionEventCount: input.GpuPositionEventCount);");
         AssertDoesNotContain(previewRuntimeSnapshotMapperText, "GpuActive = d3dProjection.GpuActive,");
         AssertDoesNotContain(previewRuntimeSnapshotMapperText, "FramesArrived = d3dProjection.FramesArrived,");
         AssertDoesNotContain(previewRuntimeSnapshotMapperText, "BlankSuspected = health.BlankSuspected,");
         AssertDoesNotContain(previewRuntimeSnapshotMapperText, "StallSuspected = health.StallSuspected,");
         AssertDoesNotContain(previewRuntimeSnapshotMapperText, "StartupElapsedMs = health.StartupElapsedMs,");
         AssertDoesNotContain(previewRuntimeSnapshotMapperText, "StartupRecoveryAttemptCount = input.StartupRecoveryAttemptCount,");
+        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "GpuPlaybackState = d3dProjection.GpuPlaybackState,");
+        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "GpuPositionEventCount = input.GpuPositionEventCount");
         AssertDoesNotContain(previewRuntimeSnapshotControllerText, "return new PreviewRuntimeSnapshot");
         AssertDoesNotContain(previewRuntimeSnapshotControllerText, "BlankSuspected = health.BlankSuspected,");
         AssertDoesNotContain(previewRuntimeSnapshotControllerText, "StallSuspected = health.StallSuspected,");

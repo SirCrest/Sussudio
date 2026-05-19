@@ -317,6 +317,37 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy_PreservesRendererAndEventFields()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.Evaluate not found.");
+
+        var input = Activator.CreateInstance(inputType)
+                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+        SetPropertyOrBackingField(input, "GpuPositionEventCount", 42L);
+
+        var d3dProjection = Activator.CreateInstance(projectionType)
+                            ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
+        SetPropertyOrBackingField(d3dProjection, "GpuPlaybackState", "Rendering");
+        SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoWidth", 3840);
+        SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoHeight", 2160);
+        SetPropertyOrBackingField(d3dProjection, "GpuPositionMs", 1234.5d);
+
+        var gpuPlayback = evaluate.Invoke(null, new object?[] { input, d3dProjection })
+                          ?? throw new InvalidOperationException("PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy returned null.");
+
+        AssertEqual("Rendering", GetStringProperty(gpuPlayback, "PlaybackState"), "GPU playback projection state");
+        AssertEqual(3840, GetIntProperty(gpuPlayback, "NaturalVideoWidth"), "GPU playback projection natural width");
+        AssertEqual(2160, GetIntProperty(gpuPlayback, "NaturalVideoHeight"), "GPU playback projection natural height");
+        AssertEqual(1234.5d, GetDoubleProperty(gpuPlayback, "PositionMs"), "GPU playback projection position");
+        AssertEqual(42L, GetLongProperty(gpuPlayback, "PositionEventCount"), "GPU playback projection event count");
+
+        return Task.CompletedTask;
+    }
+
     private static Task PreviewRuntimeD3DRendererStatePolicy_PreservesNullRendererDefaults()
     {
         var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DRendererStatePolicy");

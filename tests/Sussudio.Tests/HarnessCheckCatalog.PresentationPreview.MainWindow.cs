@@ -64,6 +64,9 @@ static partial class Program
             "Preview runtime snapshot startup projection preserves sampled startup fields",
             PreviewRuntimeSnapshotStartupProjectionPolicy_PreservesSampledStartupFields);
         await AddCheckAsync(results,
+            "Preview runtime snapshot GPU playback projection preserves renderer and event fields",
+            PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy_PreservesRendererAndEventFields);
+        await AddCheckAsync(results,
             "Preview runtime D3D frame-counter policy preserves CPU fallback counters",
             PreviewRuntimeD3DFrameCounterPolicy_PreservesCpuFallbackCounters);
         await AddCheckAsync(results,
