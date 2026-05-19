@@ -170,17 +170,20 @@ static partial class Program
             .Replace("\r\n", "\n");
         var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             .Replace("\r\n", "\n");
+        var presentCadenceMetricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PresentCadenceMetrics.cs")
+            .Replace("\r\n", "\n");
         var trackingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricsTracking.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(metricsText, "private readonly object _presentCadenceLock = new();");
-        AssertContains(metricsText, "private double[] _presentIntervalWindowMs = new double[1200];");
+        AssertContains(presentCadenceMetricsText, "private readonly object _presentCadenceLock = new();");
+        AssertContains(presentCadenceMetricsText, "private double[] _presentIntervalWindowMs = new double[1200];");
+        AssertContains(presentCadenceMetricsText, "public PresentCadenceMetrics GetPresentCadenceMetrics(double expectedIntervalMs)");
+        AssertContains(presentCadenceMetricsText, "public double[] GetRecentPresentIntervalsMs(int maxSamples)");
         AssertContains(metricsText, "private readonly object _pipelineLatencyLock = new();");
         AssertContains(metricsText, "private double[] _pipelineLatencyWindowMs = new double[1200];");
         AssertContains(metricsText, "private readonly object _renderCpuTimingLock = new();");
         AssertContains(metricsText, "private readonly object _frameLatencyWaitTimingLock = new();");
         AssertContains(metricsText, "private long _frameLatencyWaitCallCount;");
-        AssertContains(metricsText, "public PresentCadenceMetrics GetPresentCadenceMetrics(double expectedIntervalMs)");
         AssertContains(metricsText, "public RenderCpuTimingMetrics GetRenderCpuTimingMetrics()");
         AssertContains(metricsText, "public FrameLatencyWaitMetrics GetFrameLatencyWaitMetrics()");
         AssertContains(trackingText, "private long _lastPresentTick;");
@@ -194,6 +197,7 @@ static partial class Program
         AssertDoesNotContain(metricsText, "private double TrackPresentCadence(");
         AssertDoesNotContain(metricsText, "private void TrackRenderCpuTiming(");
         AssertDoesNotContain(metricsText, "private void ResetPresentCadence()");
+        AssertDoesNotContain(metricsText, "public PresentCadenceMetrics GetPresentCadenceMetrics(double expectedIntervalMs)");
         AssertDoesNotContain(rootText, "private readonly object _presentCadenceLock = new();");
         AssertDoesNotContain(rootText, "private long _lastPresentTick;");
 
