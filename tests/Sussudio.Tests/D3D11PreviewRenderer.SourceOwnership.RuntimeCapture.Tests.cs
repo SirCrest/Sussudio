@@ -67,6 +67,8 @@ static partial class Program
     {
         var captureText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs")
             .Replace("\r\n", "\n");
+        var captureRequestsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotRequests.cs")
+            .Replace("\r\n", "\n");
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
         var previewScreenshotCaptureText =
@@ -80,13 +82,19 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(captureText, "private void TryCaptureFrameBeforePresent(string rendererMode)");
+        AssertDoesNotContain(captureText, "public Task<PreviewFrameCaptureResult> CaptureNextFrameAsync(");
+        AssertDoesNotContain(captureText, "private void FailPendingFrameCapture(string message)");
+        AssertDoesNotContain(captureText, "private void DisposeFrameCaptureStagingResources()");
+        AssertContains(captureRequestsText, "public Task<PreviewFrameCaptureResult> CaptureNextFrameAsync(string outputPath, CancellationToken cancellationToken)");
+        AssertContains(captureRequestsText, "private const int FrameCaptureTimeoutMs = 5000;");
+        AssertContains(captureRequestsText, "private TaskCompletionSource<PreviewFrameCaptureResult>? _frameCaptureRequest;");
+        AssertContains(captureRequestsText, "private void FailPendingFrameCapture(string message)");
+        AssertContains(captureRequestsText, "private void DisposeFrameCaptureStagingResources()");
+        AssertContains(captureRequestsText, "private static PreviewFrameCaptureResult CreateFrameCaptureError(");
         AssertContains(captureText, "PreviewScreenshotCapture.CaptureFrameBufferTo16BitPng(");
         AssertContains(captureText, "PreviewScreenshotCapture.CopyMappedFrameToBuffer(");
         AssertContains(captureText, "PreviewScreenshotCapture.CaptureMappedFrameToBmp(");
-        AssertContains(captureText, "private void FailPendingFrameCapture(string message)");
-        AssertContains(captureText, "private void DisposeFrameCaptureStagingResources()");
-        AssertContains(captureText, "private static PreviewFrameCaptureResult CreateFrameCaptureError(");
-        AssertContains(captureText, "_captureStagingTexture?.Dispose();");
+        AssertContains(captureRequestsText, "_captureStagingTexture?.Dispose();");
         AssertContains(resourcesText, "DisposeFrameCaptureStagingResources();");
         AssertContains(previewScreenshotCaptureText, "internal static PreviewFrameCaptureResult CaptureMappedFrameToBmp(");
         AssertContains(previewScreenshotCaptureText, "internal static PreviewFrameCaptureResult CaptureFrameBufferTo16BitPng(");

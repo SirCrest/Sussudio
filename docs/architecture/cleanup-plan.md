@@ -624,10 +624,12 @@ directory fallback, file naming, status text, and log text policy.
 `MainWindow.Screenshot.cs` is the XAML-facing adapter; the controller keeps
 directory creation, preview-frame capture, logging side effects, and button
 enable/disable state.
-Renderer-level preview frame capture request state and timeout/cancellation
-handling now live with the capture implementation in
+Renderer-level preview frame capture request state, timeout/cancellation
+handling, staging-resource ownership, and screenshot error result construction
+now live in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotRequests.cs`.
+Render-thread GPU readback and before-present screenshot dispatch stay in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs`.
-Screenshot error result construction stays with the renderer request lifecycle.
 Preview-frame BMP/PNG pixel conversion, mapped-frame buffer copying, luminance
 analysis, and letterbox/pillarbox measurement live in the
 `Sussudio/Services/Preview/PreviewScreenshotCapture*.cs` family:
