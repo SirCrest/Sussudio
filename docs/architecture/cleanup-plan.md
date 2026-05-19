@@ -3533,11 +3533,11 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.AutomationOptionsSnapshot.cs`; pure selected-control-state DTO
    construction lives in `AutomationOptionsSnapshotBuilder.cs`.
    Flashback playback, scrub, nudge, marker, and automation action command routing
-   plus rejection status projection now live in
-   `MainViewModel.FlashbackPlaybackCommands.cs`; read-only Flashback playback
-   snapshot access plus buffer, bitrate, playback-state, in/out marker, and
-   gap-from-live UI projection, and read-only segment projection for UI, CLI,
-   and MCP callers live in `MainViewModel.FlashbackPlayback.cs`.
+   now live in `MainViewModel.FlashbackPlaybackCommands.cs`; read-only
+   Flashback playback snapshot access plus rejection status projection, buffer,
+   bitrate, playback-state, in/out marker, gap-from-live UI projection, and
+   read-only segment projection for UI, CLI, and MCP callers live in
+   `MainViewModel.FlashbackPlayback.cs`.
    Flashback UI export commands, save-picker flow, active-export guard, and
    user-facing export result/status handling now live in
    `MainViewModel.FlashbackExport.cs`. Shared Flashback export operation
