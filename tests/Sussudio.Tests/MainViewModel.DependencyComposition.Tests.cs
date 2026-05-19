@@ -32,6 +32,7 @@ static partial class Program
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs").Replace("\r\n", "\n");
         var previewLifecycleControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.Context.cs").Replace("\r\n", "\n");
         var previewReinitializeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs").Replace("\r\n", "\n");
+        var previewReinitializeControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.Context.cs").Replace("\r\n", "\n");
         var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs").Replace("\r\n", "\n");
         var deviceAudioRequestControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs").Replace("\r\n", "\n");
         var deviceAudioRequestControllerGainText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.Gain.cs").Replace("\r\n", "\n");
@@ -250,7 +251,7 @@ static partial class Program
         AssertContains(previewLifecycleControllerText, "_previewReinitializeController = _context.CreateReinitializeController(this);");
         AssertContains(previewLifecycleControllerText, "public Task ReinitializeDeviceAsync(string reason)");
         AssertContains(previewReinitializeControllerText, "private sealed class MainViewModelPreviewReinitializeController");
-        AssertContains(previewReinitializeControllerText, "private sealed class MainViewModelPreviewReinitializeControllerContext");
+        AssertContains(previewReinitializeControllerContextText, "private sealed class MainViewModelPreviewReinitializeControllerContext");
         AssertContains(previewReinitializeControllerText, "private readonly MainViewModelPreviewReinitializeControllerContext _context;");
         AssertDoesNotContain(previewReinitializeControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(previewReinitializeControllerText, "_viewModel.");

@@ -3535,7 +3535,12 @@ owner, fold it back into that owner and update the source-shape tests and
    `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`
    owns debounced reinitialization, restart-cancellation state,
    Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
-   and gate release through graph-built context ports. Output folder display plus browse/open-recordings button workflows now live in
+   and gate release.
+   `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.Context.cs`
+   owns the graph-built reinitialization port contract for selected
+   device/format state, generation coalescing, pending Flashback-cycle waits,
+   renderer notifications, restart cancellation, and reinit gate access.
+   Output folder display plus browse/open-recordings button workflows now live in
    `Sussudio/Controllers/Recording/Output/OutputPathController.cs`.
    Recording facade entry points, including the direct emergency-stop
    coordinator bridge, now live in `MainViewModel.RecordingState.cs`, while
