@@ -21,6 +21,7 @@ static partial class Program
         var controllerGraphPresentationText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Presentation.cs").Replace("\r\n", "\n");
         var controllerGraphRecordingText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Recording.cs").Replace("\r\n", "\n");
         var controllerGraphRuntimeText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Runtime.cs").Replace("\r\n", "\n");
+        var controllerGraphRuntimeDisposalText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RuntimeDisposal.cs").Replace("\r\n", "\n");
         var controllerGraphRuntimeEventIngressText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RuntimeEventIngress.cs").Replace("\r\n", "\n");
         var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs").Replace("\r\n", "\n");
         var uiDispatchControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.Context.cs").Replace("\r\n", "\n");
@@ -172,10 +173,10 @@ static partial class Program
             controllerGraphText,
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
             "var runtimeLifecycleController = CreateRuntimeLifecycleController(viewModel, previewLifecycleController);");
-        AssertContains(controllerGraphRuntimeText, "private static MainViewModelDisposalController CreateDisposalController(MainViewModel viewModel)");
-        AssertContains(controllerGraphRuntimeText, "new MainViewModelDisposalController(\n                new MainViewModelDisposalControllerContext");
-        AssertContains(controllerGraphRuntimeText, "TryBeginDispose = () => Interlocked.Exchange(ref viewModel._disposeState, 1) == 0,");
-        AssertContains(controllerGraphRuntimeText, "CleanupSessionCoordinatorAsync = () => viewModel._sessionCoordinator.CleanupAsync(),");
+        AssertContains(controllerGraphRuntimeDisposalText, "private static MainViewModelDisposalController CreateDisposalController(MainViewModel viewModel)");
+        AssertContains(controllerGraphRuntimeDisposalText, "new MainViewModelDisposalController(\n                new MainViewModelDisposalControllerContext");
+        AssertContains(controllerGraphRuntimeDisposalText, "TryBeginDispose = () => Interlocked.Exchange(ref viewModel._disposeState, 1) == 0,");
+        AssertContains(controllerGraphRuntimeDisposalText, "CleanupSessionCoordinatorAsync = () => viewModel._sessionCoordinator.CleanupAsync(),");
         AssertContains(controllerGraphText, "public MainViewModelDisposalController DisposalController { get; }");
         AssertDoesNotContain(controllerGraphText, "RuntimeLifecycleController.Start();");
         AssertOccursBefore(
