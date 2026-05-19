@@ -9,13 +9,7 @@ internal sealed partial class PreviewRuntimeD3DProjection
     public static PreviewRuntimeD3DProjection Build(PreviewRuntimeSnapshotInput input)
     {
         var d3d = input.D3DRenderer;
-        var gpuActive = d3d != null;
-        var d3dFramesSubmitted = d3d?.FramesSubmitted ?? 0;
-        var d3dFramesRendered = d3d?.FramesRendered ?? 0;
-        var d3dFramesDropped = d3d?.FramesDropped ?? 0;
-        var framesArrived = gpuActive ? d3dFramesSubmitted : input.FramesArrived;
-        var framesDisplayed = gpuActive ? d3dFramesRendered : input.FramesDisplayed;
-        var framesDropped = gpuActive ? d3dFramesDropped : input.FramesDropped;
+        var frameCounters = PreviewRuntimeD3DFrameCounterPolicy.Evaluate(input);
         var rendererCadence = d3d?.GetPresentCadenceMetrics(input.PreviewMinPresentationIntervalMs);
         var d3dRenderCpuTiming = d3d?.GetRenderCpuTimingMetrics();
         var d3dFrameOwnership = d3d?.GetFrameOwnershipMetrics();
@@ -25,11 +19,11 @@ internal sealed partial class PreviewRuntimeD3DProjection
 
         return new PreviewRuntimeD3DProjection
         {
-            GpuActive = gpuActive,
-            RendererAttached = d3d != null || input.PreviewSourceAttached,
-            FramesArrived = framesArrived,
-            FramesDisplayed = framesDisplayed,
-            FramesDropped = framesDropped,
+            GpuActive = frameCounters.GpuActive,
+            RendererAttached = frameCounters.RendererAttached,
+            FramesArrived = frameCounters.FramesArrived,
+            FramesDisplayed = frameCounters.FramesDisplayed,
+            FramesDropped = frameCounters.FramesDropped,
             RendererMode = d3d?.RendererMode ?? (input.IsPreviewing ? "CpuSoftwareBitmap" : "None"),
             DisplayCadenceSampleCount = rendererCadence?.SampleCount ?? 0,
             DisplayCadenceObservedFps = rendererCadence?.ObservedFps ?? 0,
@@ -49,9 +43,9 @@ internal sealed partial class PreviewRuntimeD3DProjection
             D3DMaxFrameLatency = d3d?.DxgiMaxFrameLatency ?? 0,
             D3DSwapChainBufferCount = d3d?.SwapChainBufferCount ?? 0,
             D3DSwapChainAddress = d3d?.SwapChainAddress ?? string.Empty,
-            D3DFramesSubmitted = d3dFramesSubmitted,
-            D3DFramesRendered = d3dFramesRendered,
-            D3DFramesDropped = d3dFramesDropped,
+            D3DFramesSubmitted = frameCounters.D3DFramesSubmitted,
+            D3DFramesRendered = frameCounters.D3DFramesRendered,
+            D3DFramesDropped = frameCounters.D3DFramesDropped,
             D3DRenderThreadFailureCount = d3d?.RenderThreadFailureCount ?? 0,
             D3DLastRenderThreadFailureType = d3d?.LastRenderThreadFailureType ?? string.Empty,
             D3DLastRenderThreadFailureMessage = d3d?.LastRenderThreadFailureMessage ?? string.Empty,

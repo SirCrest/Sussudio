@@ -143,4 +143,42 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task PreviewRuntimeD3DFrameCounterPolicy_PreservesCpuFallbackCounters()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DFrameCounterPolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameCounterPolicy.Evaluate not found.");
+
+        var attachedInput = Activator.CreateInstance(inputType)
+                            ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+        SetPropertyOrBackingField(attachedInput, "D3DRenderer", null);
+        SetPropertyOrBackingField(attachedInput, "PreviewSourceAttached", true);
+        SetPropertyOrBackingField(attachedInput, "FramesArrived", 31L);
+        SetPropertyOrBackingField(attachedInput, "FramesDisplayed", 17L);
+        SetPropertyOrBackingField(attachedInput, "FramesDropped", 4L);
+
+        var attachedCounters = evaluate.Invoke(null, new[] { attachedInput })
+                               ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameCounterPolicy returned null.");
+        AssertEqual(false, GetBoolProperty(attachedCounters, "GpuActive"), "CPU fallback reports GPU inactive");
+        AssertEqual(true, GetBoolProperty(attachedCounters, "RendererAttached"), "CPU fallback keeps renderer attached");
+        AssertEqual(31L, GetLongProperty(attachedCounters, "FramesArrived"), "CPU fallback frames arrived");
+        AssertEqual(17L, GetLongProperty(attachedCounters, "FramesDisplayed"), "CPU fallback frames displayed");
+        AssertEqual(4L, GetLongProperty(attachedCounters, "FramesDropped"), "CPU fallback frames dropped");
+        AssertEqual(0L, GetLongProperty(attachedCounters, "D3DFramesSubmitted"), "null D3D submitted counter");
+        AssertEqual(0L, GetLongProperty(attachedCounters, "D3DFramesRendered"), "null D3D rendered counter");
+        AssertEqual(0L, GetLongProperty(attachedCounters, "D3DFramesDropped"), "null D3D dropped counter");
+
+        var detachedInput = Activator.CreateInstance(inputType)
+                            ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+        SetPropertyOrBackingField(detachedInput, "D3DRenderer", null);
+        SetPropertyOrBackingField(detachedInput, "PreviewSourceAttached", false);
+
+        var detachedCounters = evaluate.Invoke(null, new[] { detachedInput })
+                               ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameCounterPolicy returned null.");
+        AssertEqual(false, GetBoolProperty(detachedCounters, "RendererAttached"), "null D3D without CPU source is detached");
+
+        return Task.CompletedTask;
+    }
 }
