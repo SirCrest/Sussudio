@@ -9,6 +9,7 @@ static partial class Program
         var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs").Replace("\r\n", "\n");
         var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSettings.cs").Replace("\r\n", "\n");
         var automationRecordingControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs").Replace("\r\n", "\n");
+        var automationRecordingControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.Context.cs").Replace("\r\n", "\n");
         var recordingSettingsPolicyText = ReadRepoFile("Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(recordingCapabilityControllerText, "private void RebuildRecordingFormatOptions()");
@@ -28,7 +29,7 @@ static partial class Program
         AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.IsHdrCompatible(matched)");
         AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.ParseRecordingFormat(matched)");
         AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.ParseVideoQuality(_context.GetSelectedQuality())");
-        AssertContains(automationRecordingControllerText, "private sealed class MainViewModelRecordingSettingsAutomationControllerContext");
+        AssertContains(automationRecordingControllerContextText, "private sealed class MainViewModelRecordingSettingsAutomationControllerContext");
         AssertContains(automationRecordingControllerText, "private readonly MainViewModelRecordingSettingsAutomationControllerContext _context;");
         AssertDoesNotContain(automationRecordingControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(automationRecordingControllerText, "_viewModel.");

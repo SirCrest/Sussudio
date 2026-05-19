@@ -3755,8 +3755,11 @@ owner, fold it back into that owner and update the source-shape tests and
    while UI-thread mutations, HDR compatibility enforcement, Flashback cycle
    suppression, coordinator side effects, custom bitrate clamping, encoder
    preset, and output-path directory creation live in
-   `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs`
-   through graph-built context ports.
+   `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs`.
+   `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.Context.cs`
+   owns the recording-settings automation graph-port contract for UI dispatch,
+   option collections, suppression flags, selected encoder/output state,
+   recording-format coordinator updates, and Flashback encoder setting cycles.
    The automation recording desired-state bridge enters through
    `MainViewModel.RecordingState.cs` and is serialized by
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`,
