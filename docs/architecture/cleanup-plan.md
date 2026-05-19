@@ -692,13 +692,14 @@ diagnostic-session runner command-channel delegates intentionally remain
 string-based.
 
 First-load startup, initial ViewModel/device refresh, automation startup timing,
-and the launch entrance trigger now live in `Sussudio/MainWindow.Startup.cs`.
+native shell bootstrap, and the launch entrance trigger now live in
+`Sussudio/MainWindow.ShellChrome.cs`.
 Automation host composition, once-only
 startup, ready/disabled logging, and pipe-before-hub shutdown disposal now live
 in `Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs`.
-`Sussudio/MainWindow.Startup.cs` starts that controller directly after initial
-device refresh, and `Sussudio/MainWindow.ShutdownCleanup.cs` passes its async
-dispose delegate into the shutdown controller. Window close
+`Sussudio/MainWindow.ShellChrome.cs` starts that controller directly after
+initial device refresh, and `Sussudio/MainWindow.ShutdownCleanup.cs` passes its
+async dispose delegate into the shutdown controller. Window close
 completion lives in `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`;
 recording-aware close finalization now lives in
 `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs`.
@@ -771,8 +772,9 @@ Native `AppWindow` lookup, ViewModel window handle handoff, minimum-size
 subclassing, DWM cloak/dark-mode setup, first-composed-frame shell reveal
 scheduling/cancellation, initial shell size, icon, and uncloaking now live in
 `Sussudio/Controllers/Window/NativeWindowBootstrapController.cs`.
-`Sussudio/MainWindow.NativeWindow.cs` is the XAML-facing adapter and keeps the
-`_hwnd` field consumed by screenshot and window automation paths.
+`Sussudio/MainWindow.ShellChrome.cs` is the XAML-facing shell launch/chrome
+adapter and keeps the `_hwnd` field consumed by screenshot and window
+automation paths.
 MainWindow shell ownership tests mirror these runtime owners through focused
 `MainWindow.ShellOwnership.*.Tests.cs` files for chrome, startup, preview
 runtime, native bootstrap, and window lifecycle contracts.
@@ -2441,8 +2443,9 @@ Randomized interval/mode selection now lives in
 `Sussudio/Controllers/Launch/Splash/SplashLoadingPhrasePacingPolicy.cs`.
 `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs` owns
 DispatcherTimer lifecycle and the two-line splash text animation.
-Its MainWindow wiring is folded into `MainWindow.LaunchEntrance.cs` because
-launch entrance owns the only phrase start/stop choreography.
+Its MainWindow wiring is folded into `MainWindow.ShellChrome.cs` because launch
+entrance owns the only phrase start/stop choreography and now shares the shell
+launch adapter.
 
 Launch entrance ownership is split by phase:
 `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs` owns context and
@@ -2452,7 +2455,7 @@ fade, loading-phrase start/stop ordering, one-shot splash playback state, and
 handoff into shell entrance, and
 `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs` owns shell
 chrome/button/stats entrance choreography, deferred preview reveal logging,
-active-storyboard cleanup, and control-bar shadow fade. `MainWindow.LaunchEntrance.cs`
+active-storyboard cleanup, and control-bar shadow fade. `MainWindow.ShellChrome.cs`
 is the XAML-facing adapter for launch entrance and splash phrase controller
 wiring.
 

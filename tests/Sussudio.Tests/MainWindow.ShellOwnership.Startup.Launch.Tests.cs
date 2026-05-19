@@ -6,8 +6,8 @@ static partial class Program
     private static Task LaunchEntranceAnimation_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs").Replace("\r\n", "\n");
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.LaunchEntrance.cs").Replace("\r\n", "\n");
+        var startupText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
         var splashText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs").Replace("\r\n", "\n");
         var shellText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
@@ -25,6 +25,10 @@ static partial class Program
         AssertContains(adapterText, "FadeInControlBarShadow = () => FadeInControlBarShadow(delayMs: 400, durationMs: 500),");
         AssertContains(adapterText, "=> _launchEntranceAnimationController.PrepareInitialState();");
         AssertContains(adapterText, "=> _launchEntranceAnimationController.PlaySplashAndEntrance();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.LaunchEntrance.cs")),
+            "launch entrance adapter is consolidated into the shell chrome adapter");
         AssertContains(mainWindowText, "InitializeLaunchEntranceAnimationController();");
         AssertContains(mainWindowText, "PrepareLaunchEntranceInitialState();");
         AssertContains(startupText, "PlaySplashAndEntrance();");
@@ -68,7 +72,7 @@ static partial class Program
     private static Task MainWindowStartupHosting_LivesInStartupPartial()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs").Replace("\r\n", "\n");
+        var startupText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs").Replace("\r\n", "\n");
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs").Replace("\r\n", "\n");
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
 
@@ -80,6 +84,10 @@ static partial class Program
         AssertContains(startupText, "RevealPreviewUnavailablePlaceholder();");
         AssertContains(startupText, "_automationHostLifecycleController.Start();");
         AssertContains(startupText, "PlaySplashAndEntrance();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Startup.cs")),
+            "startup adapter is consolidated into the shell chrome adapter");
         AssertContains(mainWindowText, "private readonly WindowAutomationHostLifecycleController _automationHostLifecycleController;");
         AssertEqual(
             false,
