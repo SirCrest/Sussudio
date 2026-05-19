@@ -15,6 +15,7 @@ static partial class Program
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
         var controllerGraphCaptureModesText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureModes.cs").Replace("\r\n", "\n");
         var controllerGraphDeviceAudioText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.DeviceAudio.cs").Replace("\r\n", "\n");
+        var controllerGraphDeviceFormatProbeText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.DeviceFormatProbe.cs").Replace("\r\n", "\n");
         var controllerGraphDeviceText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Device.cs").Replace("\r\n", "\n");
         var controllerGraphSourceTelemetryText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.SourceTelemetry.cs").Replace("\r\n", "\n");
         var controllerGraphPresentationText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Presentation.cs").Replace("\r\n", "\n");
@@ -383,9 +384,9 @@ static partial class Program
             deviceFormatProbeRetargetApplierText.Split('\n').Length >= 100,
             "device format probe retarget applier is a substantial ownership file");
         AssertContains(deviceFormatProbeRetargetApplierText, "public bool TryApplyDeviceFormatProbeRetarget(");
-        AssertContains(controllerGraphDeviceText, "private static MainViewModelDeviceFormatProbeController CreateDeviceFormatProbeController(MainViewModel viewModel)");
-        AssertContains(controllerGraphDeviceText, "new MainViewModelDeviceFormatProbeControllerContext");
-        AssertContains(controllerGraphDeviceText, "new MainViewModelDeviceFormatProbeRetargetApplierContext");
+        AssertContains(controllerGraphDeviceFormatProbeText, "private static MainViewModelDeviceFormatProbeController CreateDeviceFormatProbeController(MainViewModel viewModel)");
+        AssertContains(controllerGraphDeviceFormatProbeText, "new MainViewModelDeviceFormatProbeControllerContext");
+        AssertContains(controllerGraphDeviceFormatProbeText, "new MainViewModelDeviceFormatProbeRetargetApplierContext");
         var sourceTelemetryControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs")
             .Replace("\r\n", "\n");
         var sourceTelemetryControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.Context.cs")
