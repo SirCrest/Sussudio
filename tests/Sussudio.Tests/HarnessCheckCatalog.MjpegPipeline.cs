@@ -12,18 +12,6 @@ static partial class Program
             "Unified video capture retains MJPEG pipeline on stop failure",
             UnifiedVideoCapture_RetainsMjpegPipeline_WhenStopFails);
         await AddCheckAsync(results,
-            "MJPEG pipeline timing metrics calculate uniform samples",
-            ParallelMjpegDecodePipeline_ComputeTimingMetrics_CalculatesCorrectly);
-        await AddCheckAsync(results,
-            "MJPEG pipeline timing metrics calculate P95 samples",
-            ParallelMjpegDecodePipeline_ComputeTimingMetrics_P95Calculation);
-        await AddCheckAsync(results,
-            "MJPEG pipeline elapsed milliseconds uses stopwatch ticks",
-            ParallelMjpegDecodePipeline_GetElapsedMilliseconds_ComputesCorrectly);
-        await AddCheckAsync(results,
-            "MJPEG pipeline remaining timeout clamps past deadlines",
-            ParallelMjpegDecodePipeline_GetRemainingTimeout_ReturnsCorrectTimeSpan);
-        await AddCheckAsync(results,
             "MJPEG pipeline lifecycle lives in focused partial",
             ParallelMjpegDecodePipeline_LifecycleLivesInFocusedPartial);
         await AddCheckAsync(results,
@@ -35,12 +23,6 @@ static partial class Program
         await AddCheckAsync(results,
             "MJPEG pipeline reorder lives in focused partial",
             ParallelMjpegDecodePipeline_ReorderLivesInFocusedPartial);
-        await AddCheckAsync(results,
-            "MJPEG pipeline timing metrics expose expected properties",
-            ParallelMjpegDecodePipeline_PipelineTimingMetrics_HasExpectedProperties);
-        await AddCheckAsync(results,
-            "Software MJPEG decoder exposes dimensions and decode ownership",
-            SoftwareMjpegDecoder_Properties_ExposeCorrectDimensions);
         await AddCheckAsync(results,
             "Pooled video frame leases return buffer after final release",
             PooledVideoFrame_LeaseLifecycle_ReturnsBufferAfterLastRelease);

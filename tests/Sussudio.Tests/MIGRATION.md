@@ -54,6 +54,8 @@ add xUnit alongside, and port incrementally.
   encoder support, and recording pipeline option contract checks.
 - `RecordingArtifactManager.Tests.cs` owns the former legacy temp artifact
   finalization and rollback behavior checks for recording output cleanup.
+- `MjpegPipeline.Timing.Tests.cs` owns the former legacy CPU MJPEG timing
+  metric, stopwatch timeout, and software decoder shape checks.
 - `XUnit.FlashbackModelsTests.cs` owns the former legacy Flashback buffer option
   sizing, session, playback-state, export progress, export segment, and export
   request model contract checks; `XUnit.FlashbackModels.PropertyAssertions.cs`

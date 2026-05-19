@@ -1,10 +1,13 @@
 using System.Diagnostics;
 using System.Reflection;
-using System.Threading.Tasks;
+using Xunit;
 
-static partial class Program
+namespace Sussudio.Tests;
+
+public class MjpegPipelineTimingTests
 {
-    private static Task ParallelMjpegDecodePipeline_ComputeTimingMetrics_CalculatesCorrectly()
+    [Fact]
+    public void ParallelMjpegDecodePipeline_ComputeTimingMetrics_CalculatesCorrectly()
     {
         var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
         var method = pipelineType.GetMethod("ComputeTimingMetrics",
@@ -20,18 +23,17 @@ static partial class Program
         var p95Field = resultType.GetField("Item3")!;
         var maxField = resultType.GetField("Item4")!;
 
-        AssertEqual(5, Convert.ToInt32(countField.GetValue(result)), "Sample count");
+        Assert.Equal(5, Convert.ToInt32(countField.GetValue(result)));
         var avg = Convert.ToDouble(avgField.GetValue(result));
-        AssertEqual(true, Math.Abs(avg - 10.0) < 0.001, $"Average should be 10.0, got {avg}");
+        Assert.True(Math.Abs(avg - 10.0) < 0.001, $"Average should be 10.0, got {avg}");
         var p95 = Convert.ToDouble(p95Field.GetValue(result));
-        AssertEqual(true, Math.Abs(p95 - 10.0) < 0.001, $"P95 should be 10.0, got {p95}");
+        Assert.True(Math.Abs(p95 - 10.0) < 0.001, $"P95 should be 10.0, got {p95}");
         var max = Convert.ToDouble(maxField.GetValue(result));
-        AssertEqual(true, Math.Abs(max - 10.0) < 0.001, $"Max should be 10.0, got {max}");
-
-        return Task.CompletedTask;
+        Assert.True(Math.Abs(max - 10.0) < 0.001, $"Max should be 10.0, got {max}");
     }
 
-    private static Task ParallelMjpegDecodePipeline_ComputeTimingMetrics_P95Calculation()
+    [Fact]
+    public void ParallelMjpegDecodePipeline_ComputeTimingMetrics_P95Calculation()
     {
         var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
         var method = pipelineType.GetMethod("ComputeTimingMetrics",
@@ -51,16 +53,15 @@ static partial class Program
 
         var maxField = resultType.GetField("Item4")!;
         var max = Convert.ToDouble(maxField.GetValue(result));
-        AssertEqual(true, max >= 50.0, $"Max should be >= 50.0, got {max}");
+        Assert.True(max >= 50.0, $"Max should be >= 50.0, got {max}");
 
         var p95Field = resultType.GetField("Item3")!;
         var p95 = Convert.ToDouble(p95Field.GetValue(result));
-        AssertEqual(true, p95 >= 5.0, $"P95 should be >= 5.0, got {p95}");
-
-        return Task.CompletedTask;
+        Assert.True(p95 >= 5.0, $"P95 should be >= 5.0, got {p95}");
     }
 
-    private static Task ParallelMjpegDecodePipeline_GetElapsedMilliseconds_ComputesCorrectly()
+    [Fact]
+    public void ParallelMjpegDecodePipeline_GetElapsedMilliseconds_ComputesCorrectly()
     {
         var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
         var method = pipelineType.GetMethod("GetElapsedMilliseconds",
@@ -71,18 +72,17 @@ static partial class Program
         long end = Stopwatch.Frequency;
         var result = (double)method.Invoke(null, new object[] { start, end })!;
 
-        AssertEqual(true, Math.Abs(result - 1000.0) < 0.1,
+        Assert.True(Math.Abs(result - 1000.0) < 0.1,
             $"1 second of ticks should be ~1000ms, got {result:F3}");
 
         long halfEnd = Stopwatch.Frequency / 2;
         var halfResult = (double)method.Invoke(null, new object[] { start, halfEnd })!;
-        AssertEqual(true, Math.Abs(halfResult - 500.0) < 0.1,
+        Assert.True(Math.Abs(halfResult - 500.0) < 0.1,
             $"Half second should be ~500ms, got {halfResult:F3}");
-
-        return Task.CompletedTask;
     }
 
-    private static Task ParallelMjpegDecodePipeline_GetRemainingTimeout_ReturnsCorrectTimeSpan()
+    [Fact]
+    public void ParallelMjpegDecodePipeline_GetRemainingTimeout_ReturnsCorrectTimeSpan()
     {
         var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
         var method = pipelineType.GetMethod("GetRemainingTimeout",
@@ -91,18 +91,17 @@ static partial class Program
 
         long futureDeadline = Stopwatch.GetTimestamp() + Stopwatch.Frequency * 2;
         var result = (TimeSpan)method.Invoke(null, new object[] { futureDeadline })!;
-        AssertEqual(true, result.TotalMilliseconds > 1000,
+        Assert.True(result.TotalMilliseconds > 1000,
             $"Remaining timeout for 2s future deadline should be >1000ms, got {result.TotalMilliseconds:F1}");
 
         long pastDeadline = Stopwatch.GetTimestamp() - Stopwatch.Frequency;
         var pastResult = (TimeSpan)method.Invoke(null, new object[] { pastDeadline })!;
-        AssertEqual(true, pastResult.TotalMilliseconds <= 0,
+        Assert.True(pastResult.TotalMilliseconds <= 0,
             $"Past deadline should return <=0ms, got {pastResult.TotalMilliseconds:F1}");
-
-        return Task.CompletedTask;
     }
 
-    private static Task ParallelMjpegDecodePipeline_PipelineTimingMetrics_HasExpectedProperties()
+    [Fact]
+    public void ParallelMjpegDecodePipeline_PipelineTimingMetrics_HasExpectedProperties()
     {
         var metricsType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
 
@@ -118,18 +117,15 @@ static partial class Program
         foreach (var prop in expectedProps)
         {
             var propInfo = metricsType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance);
-            AssertNotNull(propInfo, $"PipelineTimingMetrics.{prop}");
+            Assert.NotNull(propInfo);
         }
-
-        return Task.CompletedTask;
     }
 
-    private static Task SoftwareMjpegDecoder_Properties_ExposeCorrectDimensions()
+    [Fact]
+    public void SoftwareMjpegDecoder_Properties_ExposeCorrectDimensions()
     {
-        var rootText = ReadRepoFile("Sussudio/Services/Gpu/SoftwareMjpegDecoder.cs")
-            .Replace("\r\n", "\n");
-        var decodeText = ReadRepoFile("Sussudio/Services/Gpu/SoftwareMjpegDecoder.Decode.cs")
-            .Replace("\r\n", "\n");
+        var rootText = ReadRepoFile("Sussudio/Services/Gpu/SoftwareMjpegDecoder.cs");
+        var decodeText = ReadRepoFile("Sussudio/Services/Gpu/SoftwareMjpegDecoder.Decode.cs");
         var decoderType = RequireType("Sussudio.Services.Gpu.SoftwareMjpegDecoder");
 
         AssertContains(rootText, "internal sealed unsafe partial class SoftwareMjpegDecoder : IDisposable");
@@ -145,10 +141,20 @@ static partial class Program
         var heightProp = decoderType.GetProperty("Height", BindingFlags.Public | BindingFlags.Instance);
         var nv12SizeProp = decoderType.GetProperty("Nv12Size", BindingFlags.Public | BindingFlags.Instance);
 
-        AssertNotNull(widthProp, "SoftwareMjpegDecoder.Width");
-        AssertNotNull(heightProp, "SoftwareMjpegDecoder.Height");
-        AssertNotNull(nv12SizeProp, "SoftwareMjpegDecoder.Nv12Size");
-
-        return Task.CompletedTask;
+        Assert.NotNull(widthProp);
+        Assert.NotNull(heightProp);
+        Assert.NotNull(nv12SizeProp);
     }
+
+    private static Type RequireType(string typeName)
+        => SussudioAssembly.Load().GetType(typeName, throwOnError: true)!;
+
+    private static string ReadRepoFile(string relativePath)
+        => RuntimeContractSource.ReadRepoFile(relativePath).Replace("\r\n", "\n");
+
+    private static void AssertContains(string actual, string expectedSubstring)
+        => Assert.Contains(expectedSubstring, actual, StringComparison.Ordinal);
+
+    private static void AssertDoesNotContain(string actual, string unexpectedSubstring)
+        => Assert.DoesNotContain(unexpectedSubstring, actual, StringComparison.Ordinal);
 }
