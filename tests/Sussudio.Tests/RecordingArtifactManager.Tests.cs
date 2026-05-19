@@ -1,11 +1,18 @@
 using System;
+using System.Collections;
 using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
-static partial class Program
+namespace Sussudio.Tests;
+
+public class RecordingArtifactManagerTests
 {
-    private static Task ArtifactManager_FinalizationLivesInFocusedPartial()
+    [Fact]
+    public void ArtifactManager_FinalizationLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/RecordingArtifactManager.cs");
         var finalizationText = ReadRepoFile("Sussudio/Services/Recording/RecordingArtifactManager.Finalization.cs");
@@ -22,11 +29,10 @@ static partial class Program
         AssertContains(finalizationText, "public Task RollbackAsync(");
         AssertContains(finalizationText, "private static bool TryValidateFinalOutput(");
         AssertContains(finalizationText, "private static IReadOnlyList<string> GetExistingTempArtifacts(");
-
-        return Task.CompletedTask;
     }
 
-    private static Task ArtifactManager_FinalizeContext_ReturnsSuccess_WhenPostMuxDisabled()
+    [Fact]
+    public void ArtifactManager_FinalizeContext_ReturnsSuccess_WhenPostMuxDisabled()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -44,8 +50,6 @@ static partial class Program
 
             AssertEqual(true, GetBoolProperty(result, "Succeeded"), "Succeeded");
             AssertEqual(finalPath, GetStringProperty(result, "OutputPath"), "OutputPath");
-
-            return Task.CompletedTask;
         }
         finally
         {
@@ -53,7 +57,8 @@ static partial class Program
         }
     }
 
-    private static Task ArtifactManager_FinalizeContext_PreservesTempArtifacts_WhenMuxFails()
+    [Fact]
+    public void ArtifactManager_FinalizeContext_PreservesTempArtifacts_WhenMuxFails()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -85,8 +90,6 @@ static partial class Program
             {
                 throw new InvalidOperationException("Expected empty final file to be deleted");
             }
-
-            return Task.CompletedTask;
         }
         finally
         {
@@ -94,7 +97,8 @@ static partial class Program
         }
     }
 
-    private static Task ArtifactManager_FinalizeContext_RejectsInvalidFinalOutput()
+    [Fact]
+    public void ArtifactManager_FinalizeContext_RejectsInvalidFinalOutput()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -130,8 +134,6 @@ static partial class Program
             AssertEqual(2, GetCountProperty(preserved), "Invalid mux final preserves temp artifacts");
             AssertEqual(true, File.Exists(videoPath), "Invalid mux final preserves video temp");
             AssertEqual(true, File.Exists(audioPath), "Invalid mux final preserves audio temp");
-
-            return Task.CompletedTask;
         }
         finally
         {
@@ -139,7 +141,8 @@ static partial class Program
         }
     }
 
-    private static Task ArtifactManager_RollbackAsync_DeletesAllArtifacts_WhenPostMuxEnabled()
+    [Fact]
+    public async Task ArtifactManager_RollbackAsync_DeletesAllArtifacts_WhenPostMuxEnabled()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -163,7 +166,7 @@ static partial class Program
                 ?? throw new InvalidOperationException("RollbackAsync not found");
             var task = rollbackMethod.Invoke(manager, new object?[] { context, CancellationToken.None }) as Task
                 ?? throw new InvalidOperationException("RollbackAsync did not return Task");
-            task.GetAwaiter().GetResult();
+            await task;
 
             if (File.Exists(videoPath))
             {
@@ -179,8 +182,6 @@ static partial class Program
             {
                 throw new InvalidOperationException("Expected final output to be deleted");
             }
-
-            return Task.CompletedTask;
         }
         finally
         {
@@ -188,7 +189,8 @@ static partial class Program
         }
     }
 
-    private static Task ArtifactManager_RollbackAsync_SafeWithNullContext()
+    [Fact]
+    public async Task ArtifactManager_RollbackAsync_SafeWithNullContext()
     {
         var manager = CreateInstance("Sussudio.Services.Recording.RecordingArtifactManager");
         var rollbackMethod = manager.GetType().GetMethod("RollbackAsync")
@@ -197,8 +199,103 @@ static partial class Program
         _ = RequireType("Sussudio.Services.Contracts.RecordingContext");
         var task = rollbackMethod.Invoke(manager, new object?[] { null, CancellationToken.None }) as Task
             ?? throw new InvalidOperationException("RollbackAsync did not return Task");
-        task.GetAwaiter().GetResult();
-
-        return Task.CompletedTask;
+        await task;
     }
+
+    private static object BuildRecordingContext(
+        bool usePostMuxAudio,
+        string? videoPath = null,
+        string? audioTempPath = null,
+        string? finalPath = null)
+    {
+        var settings = BuildSettings();
+        var contextType = RequireType("Sussudio.Services.Contracts.RecordingContext");
+        var context = RuntimeHelpers.GetUninitializedObject(contextType);
+        SetPropertyBackingField(context, "Settings", settings);
+        SetPropertyBackingField(context, "UsePostMuxAudio", usePostMuxAudio);
+        SetPropertyBackingField(context, "EffectiveFrameRate", 60.0);
+        SetPropertyBackingField(context, "FrameRateArg", "60");
+        SetPropertyBackingField(context, "EffectiveWidth", 1920u);
+        SetPropertyBackingField(context, "EffectiveHeight", 1080u);
+        SetPropertyBackingField(context, "VideoInputPixelFormat", "nv12");
+        SetPropertyBackingField(context, "VideoOutputPath", videoPath ?? "/tmp/video.mp4");
+        SetPropertyBackingField(context, "FinalOutputPath", finalPath ?? "/tmp/final.mp4");
+        SetPropertyBackingField(context, "AudioTempPath", audioTempPath);
+        SetPropertyBackingField(context, "HdrPipelineActive", false);
+        return context;
+    }
+
+    private static object BuildSettings()
+    {
+        var settings = CreateInstance("Sussudio.Models.CaptureSettings");
+        SetPropertyOrBackingField(settings, "Width", 1920u);
+        SetPropertyOrBackingField(settings, "Height", 1080u);
+        SetPropertyOrBackingField(settings, "FrameRate", 60d);
+        SetPropertyOrBackingField(settings, "RequestedFrameRateArg", "60/1");
+        SetPropertyOrBackingField(settings, "RequestedFrameRateNumerator", 60u);
+        SetPropertyOrBackingField(settings, "RequestedFrameRateDenominator", 1u);
+        SetPropertyOrBackingField(settings, "RequestedPixelFormat", "NV12");
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("Sussudio.Models.RecordingFormat", "HevcMp4"));
+        SetPropertyOrBackingField(settings, "Quality", ParseEnum("Sussudio.Models.VideoQuality", "High"));
+        SetPropertyOrBackingField(settings, "HdrEnabled", false);
+        SetPropertyOrBackingField(settings, "HdrOutputMode", ParseEnum("Sussudio.Models.HdrOutputMode", "Hdr10Pq"));
+        SetPropertyOrBackingField(settings, "AudioEnabled", true);
+        SetPropertyOrBackingField(settings, "OutputPath", Path.GetTempPath());
+        return settings;
+    }
+
+    private static Type RequireType(string typeName)
+        => SussudioAssembly.Load().GetType(typeName, throwOnError: true)!;
+
+    private static object CreateInstance(string typeName)
+        => Activator.CreateInstance(RequireType(typeName))
+           ?? throw new InvalidOperationException($"Failed to create {typeName}.");
+
+    private static object ParseEnum(string typeName, string value)
+        => Enum.Parse(RequireType(typeName), value);
+
+    private static void SetPropertyOrBackingField(object instance, string name, object? value)
+    {
+        var property = instance.GetType().GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
+        if (property?.SetMethod != null)
+        {
+            property.SetValue(instance, value);
+            return;
+        }
+
+        SetPropertyBackingField(instance, name, value);
+    }
+
+    private static void SetPropertyBackingField(object instance, string name, object? value)
+    {
+        var field = instance.GetType().GetField($"<{name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException($"{instance.GetType().Name}.{name} backing field not found.");
+        field.SetValue(instance, value);
+    }
+
+    private static object? GetPropertyValue(object instance, string name)
+        => instance.GetType().GetProperty(name, BindingFlags.Public | BindingFlags.Instance)!.GetValue(instance);
+
+    private static bool GetBoolProperty(object instance, string name)
+        => (bool)GetPropertyValue(instance, name)!;
+
+    private static string GetStringProperty(object instance, string name)
+        => (string)GetPropertyValue(instance, name)!;
+
+    private static int GetCountProperty(object? value)
+        => value is ICollection collection
+            ? collection.Count
+            : throw new InvalidOperationException("Expected collection value.");
+
+    private static string ReadRepoFile(string relativePath)
+        => RuntimeContractSource.ReadRepoFile(relativePath).Replace("\r\n", "\n");
+
+    private static void AssertContains(string actual, string expectedSubstring)
+        => Assert.Contains(expectedSubstring, actual, StringComparison.Ordinal);
+
+    private static void AssertDoesNotContain(string actual, string unexpectedSubstring)
+        => Assert.DoesNotContain(unexpectedSubstring, actual, StringComparison.Ordinal);
+
+    private static void AssertEqual<T>(T expected, T actual, string _)
+        => Assert.Equal(expected, actual);
 }

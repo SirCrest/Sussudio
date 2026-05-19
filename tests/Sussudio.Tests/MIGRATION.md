@@ -52,6 +52,8 @@ add xUnit alongside, and port incrementally.
   output path/file naming, bitrate policy, and MJPEG HFR policy checks.
 - `XUnit.RecordingConfigurationPolicyTests.cs` owns recording selection policy,
   encoder support, and recording pipeline option contract checks.
+- `RecordingArtifactManager.Tests.cs` owns the former legacy temp artifact
+  finalization and rollback behavior checks for recording output cleanup.
 - `XUnit.FlashbackModelsTests.cs` owns the former legacy Flashback buffer option
   sizing, session, playback-state, export progress, export segment, and export
   request model contract checks; `XUnit.FlashbackModels.PropertyAssertions.cs`

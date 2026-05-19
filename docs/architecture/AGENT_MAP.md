@@ -1834,8 +1834,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns recording
   service contract DTO checks such as GpuPipelineHandles,
   RecordingContextRequest, FinalizeResult, and RecordingStats.
-- `tests/Sussudio.Tests/RecordingArtifactManager.Tests.cs` owns temp artifact
-  finalize/rollback behavior for recording output cleanup.
+- `tests/Sussudio.Tests/RecordingArtifactManager.Tests.cs` owns xUnit temp
+  artifact finalize/rollback behavior for recording output cleanup.
 - `tests/Sussudio.Tests/LibAvEncoder.Options.Tests.cs` owns LibAvEncoder
   ValidateOptions reflection coverage for valid options, output path and
   dimension rejection, HDR codec/P010 constraints, and frame-rate

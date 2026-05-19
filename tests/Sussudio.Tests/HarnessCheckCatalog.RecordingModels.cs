@@ -7,7 +7,6 @@ static partial class Program
     {
         await AddRecordingModelLibAvSinkChecksAsync(results);
         await AddRecordingModelCaptureRuntimeChecksAsync(results);
-        await AddRecordingModelRecordingContractChecksAsync(results);
         await AddRecordingModelFlashbackBufferChecksAsync(results);
     }
 
@@ -38,28 +37,6 @@ static partial class Program
         await AddCheckAsync(results,
             "Capture errors refresh ViewModel runtime flags",
             CaptureErrors_RefreshViewModelRuntimeFlags);
-    }
-
-    private static async Task AddRecordingModelRecordingContractChecksAsync(List<CheckResult> results)
-    {
-        await AddCheckAsync(results,
-            "Recording artifact manager finalization lives in focused partial",
-            ArtifactManager_FinalizationLivesInFocusedPartial);
-        await AddCheckAsync(results,
-            "FinalizeContext returns success when post-mux audio disabled",
-            ArtifactManager_FinalizeContext_ReturnsSuccess_WhenPostMuxDisabled);
-        await AddCheckAsync(results,
-            "FinalizeContext preserves temp artifacts when mux fails",
-            ArtifactManager_FinalizeContext_PreservesTempArtifacts_WhenMuxFails);
-        await AddCheckAsync(results,
-            "FinalizeContext rejects invalid final output",
-            ArtifactManager_FinalizeContext_RejectsInvalidFinalOutput);
-        await AddCheckAsync(results,
-            "RollbackAsync deletes all artifacts when post-mux enabled",
-            ArtifactManager_RollbackAsync_DeletesAllArtifacts_WhenPostMuxEnabled);
-        await AddCheckAsync(results,
-            "RollbackAsync is safe with null context",
-            ArtifactManager_RollbackAsync_SafeWithNullContext);
     }
 
 }
