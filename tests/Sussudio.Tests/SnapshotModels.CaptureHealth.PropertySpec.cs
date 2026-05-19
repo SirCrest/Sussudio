@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 
-static partial class Program
+namespace Sussudio.Tests;
+
+public partial class SnapshotModelsTests
 {
     private static SnapshotPropertySpec[] CaptureHealthSnapshotPropertySpecs(Type detailType)
     {

@@ -9,7 +9,6 @@ static partial class Program
         await AddRecordingModelCaptureRuntimeChecksAsync(results);
         await AddRecordingModelRecordingContractChecksAsync(results);
         await AddRecordingModelFlashbackBufferChecksAsync(results);
-        await AddRecordingModelSnapshotChecksAsync(results);
     }
 
     private static async Task AddRecordingModelLibAvSinkChecksAsync(List<CheckResult> results)
@@ -64,16 +63,6 @@ static partial class Program
         await AddCheckAsync(results,
             "RecordingStats computes totals and preserves estimate flag",
             RecordingStats_ComputesTotalsAndPreservesEstimateFlag);
-    }
-
-    private static async Task AddRecordingModelSnapshotChecksAsync(List<CheckResult> results)
-    {
-        await AddCheckAsync(results,
-            "CaptureDiagnosticsSnapshot preserves diagnostics telemetry contract and MJPEG ownership",
-            CaptureDiagnosticsSnapshot_DefaultsAndRoundTripsCoreTelemetry);
-        await AddCheckAsync(results,
-            "CaptureHealthSnapshot extends diagnostics with health telemetry",
-            CaptureHealthSnapshot_ExtendsDiagnosticsWithFlashbackSourceAndAvSync);
     }
 
 }

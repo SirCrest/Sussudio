@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -9,7 +10,7 @@ using Xunit;
 
 namespace Sussudio.Tests;
 
-public class SnapshotModelsTests
+public partial class SnapshotModelsTests
 {
     [Fact]
     public void AutomationSnapshots_ExposeHighConfidenceSourceTelemetryFields()
@@ -252,14 +253,70 @@ public class SnapshotModelsTests
     private static object? GetPropertyValue(object instance, string name)
         => instance.GetType().GetProperty(name, BindingFlags.Public | BindingFlags.Instance)!.GetValue(instance);
 
+    private static bool GetBoolProperty(object instance, string name)
+        => (bool)GetPropertyValue(instance, name)!;
+
+    private static int GetIntProperty(object instance, string name)
+        => Convert.ToInt32(GetPropertyValue(instance, name), CultureInfo.InvariantCulture);
+
+    private static long GetLongProperty(object instance, string name)
+        => Convert.ToInt64(GetPropertyValue(instance, name), CultureInfo.InvariantCulture);
+
+    private static double GetDoubleProperty(object instance, string name)
+        => Convert.ToDouble(GetPropertyValue(instance, name), CultureInfo.InvariantCulture);
+
+    private static string GetStringProperty(object instance, string name)
+        => (string)GetPropertyValue(instance, name)!;
+
+    private static int GetCountProperty(object value)
+        => value is ICollection collection
+            ? collection.Count
+            : ((IEnumerable)value).Cast<object>().Count();
+
     private static void SetProperty(object instance, string name, object? value)
         => instance.GetType().GetProperty(name, BindingFlags.Public | BindingFlags.Instance)!.SetValue(instance, value);
+
+    private static void SetPropertyOrBackingField(object instance, string name, object? value)
+    {
+        var property = instance.GetType().GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
+        if (property?.SetMethod != null)
+        {
+            property.SetValue(instance, value);
+            return;
+        }
+
+        var field = instance.GetType().GetField($"<{name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException($"{instance.GetType().Name}.{name} backing field not found.");
+        field.SetValue(instance, value);
+    }
 
     private static object? InvokeInstanceMethod(object instance, string name)
         => instance.GetType().GetMethod(name, BindingFlags.Public | BindingFlags.Instance)!.Invoke(instance, Array.Empty<object>());
 
     private static object ParseEnum(Assembly asm, string typeName, string value)
         => Enum.Parse(asm.GetType(typeName, throwOnError: true)!, value);
+
+    private static object ParseEnum(string typeName, string value)
+        => ParseEnum(SussudioAssembly.Load(), typeName, value);
+
+    private static Type RequireType(string typeName)
+        => SussudioAssembly.Load().GetType(typeName, throwOnError: true)!;
+
+    private static object CreateInstance(string typeName)
+        => Activator.CreateInstance(RequireType(typeName))
+           ?? throw new InvalidOperationException($"Failed to create {typeName}.");
+
+    private static void AssertEqual<T>(T expected, object? actual, string _)
+        => Assert.Equal(expected, actual);
+
+    private static void AssertNotNull(object? value, string _)
+        => Assert.NotNull(value);
+
+    private static void AssertContains(string text, string expectedSubstring)
+        => Assert.Contains(expectedSubstring, text, StringComparison.Ordinal);
+
+    private static void AssertDoesNotContain(string text, string unexpectedSubstring)
+        => Assert.DoesNotContain(unexpectedSubstring, text, StringComparison.Ordinal);
 
     private static object CreateGenericList(Type itemType, params object[] items)
     {

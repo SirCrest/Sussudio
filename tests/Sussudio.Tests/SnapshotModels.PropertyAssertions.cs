@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-static partial class Program
+namespace Sussudio.Tests;
+
+public partial class SnapshotModelsTests
 {
     private static void AssertDeclaredProperties(Type type, SnapshotPropertySpec[] expectedProperties)
     {

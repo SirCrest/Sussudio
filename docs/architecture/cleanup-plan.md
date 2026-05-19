@@ -502,12 +502,12 @@ coordinator/UI routing, Flashback backend lifecycle, capture selection policy,
 output path, audio monitoring, reinitialization, and Flashback
 frame-rate/enable-disable owner files.
 
-`tests/Sussudio.Tests/SnapshotModels.Tests.cs` is now the shared snapshot-model
-reflection/spec helper shell. Snapshot model contract coverage is split into
-CaptureDiagnosticsSnapshot and CaptureHealthSnapshot legacy owner files, plus
-`XUnit.SnapshotModelsTests.cs` for the ported SourceSignalTelemetrySnapshot,
-SourceTelemetryDetailEntry, and source telemetry automation projection
-contracts.
+`tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` and its `SnapshotModels.*`
+partials now own the snapshot-model xUnit contract suite. Snapshot model
+coverage is split into CaptureDiagnosticsSnapshot, CaptureHealthSnapshot,
+SourceSignalTelemetrySnapshot, SourceTelemetryDetailEntry, and source telemetry
+automation projection owner files, with shared reflection/spec helpers kept in
+the same partial family.
 
 `Sussudio/Models/Capture/CaptureHealthSnapshot.Flashback.cs` now owns the
 Flashback playback, Flashback encoder/backend, and Flashback export health DTO

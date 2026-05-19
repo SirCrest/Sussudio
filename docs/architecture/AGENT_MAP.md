@@ -1628,26 +1628,25 @@ Primary current owners:
   window action enum contract checks.
 - `tests/Sussudio.Tests/XUnit.MediaFormatTests.cs` owns MediaFormat
   equality and hash-code contract checks.
-- `tests/Sussudio.Tests/SnapshotModels.Tests.cs` owns shared snapshot-model
-  spec DTOs and registration state.
-- `tests/Sussudio.Tests/SnapshotModels.PropertyAssertions.cs` owns shared
-  snapshot property-list, nullability, and helper assertion methods.
-- `tests/Sussudio.Tests/SnapshotModels.ReflectionJson.cs` owns shared
-  reflection JSON round-trip and registered-property coverage helpers.
-- `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` owns the ported
-  source-signal projection drift guards.
+- `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` and its
+  `SnapshotModels.*` partials own the xUnit snapshot-model contract suite.
+  `SnapshotModels.Tests.cs` owns shared snapshot-model spec DTOs and
+  registration state; `SnapshotModels.PropertyAssertions.cs` owns shared
+  property-list, nullability, and helper assertion methods; and
+  `SnapshotModels.ReflectionJson.cs` owns shared reflection JSON round-trip and
+  registered-property coverage helpers.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.CpuMjpeg.Tests.cs` owns
   automation snapshot CPU MJPEG metric shape checks.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.Options.Tests.cs` owns
   automation options DTO shape checks.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.CpuMjpegContractSpec.cs` owns
   the CPU MJPEG automation snapshot property-list contract used by that check.
-- `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.Tests.cs` owns
+- `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.Tests.cs` owns xUnit
   CaptureDiagnosticsSnapshot default, round-trip, reflection JSON, and MJPEG
   source-ownership checks.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.PropertySpec.cs`
   owns the CaptureDiagnosticsSnapshot registered property spec.
-- `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.Tests.cs` owns the
+- `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.Tests.cs` owns xUnit
   CaptureHealthSnapshot registered orchestration and source-ownership checks;
   `SnapshotModels.CaptureHealth.Defaults.Tests.cs` owns defaults and inherited
   diagnostics assertions;
@@ -1659,9 +1658,9 @@ Primary current owners:
   reflection JSON assertions; and `SnapshotModels.CaptureHealth.PropertySpec.cs`
   owns the CaptureHealthSnapshot and SourceTelemetryDetailEntry property-list
   contracts.
-- `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` owns the ported
-  SourceSignalTelemetrySnapshot, SourceTelemetryDetailEntry, and source
-  telemetry automation projection contract checks.
+- `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` owns the
+  SourceSignalTelemetrySnapshot and source telemetry automation projection
+  contract checks.
 - `tests/Sussudio.Tests/NativeXuAtCommandProvider.Tests.cs` owns Native XU
   telemetry provider ownership, rolling command-group split, shared snapshot
   assembly ownership, and supported 4K X product-revision checks.

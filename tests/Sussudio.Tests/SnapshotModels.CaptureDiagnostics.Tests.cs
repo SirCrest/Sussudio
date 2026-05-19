@@ -4,11 +4,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
-using System.Threading.Tasks;
+using Xunit;
 
-static partial class Program
+namespace Sussudio.Tests;
+
+public partial class SnapshotModelsTests
 {
-    private static Task CaptureDiagnosticsSnapshot_DefaultsAndRoundTripsCoreTelemetry()
+    [Fact]
+    public void CaptureDiagnosticsSnapshot_DefaultsAndRoundTripsCoreTelemetry()
     {
         var diagnosticsRootText = ReadRepoFile("Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.cs");
         var diagnosticsMjpegText = ReadRepoFile("Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.Mjpeg.cs");
@@ -199,7 +202,6 @@ static partial class Program
         AssertEqual(1, GetCountProperty(GetPropertyValue(jsonRoundTrip, "MjpegPerDecoder")!), "CaptureDiagnosticsSnapshot JSON MjpegPerDecoder count");
         AssertEqual(1, GetIntProperty(GetSingleEnumerableItem(GetPropertyValue(jsonRoundTrip, "MjpegPerDecoder")!), "WorkerIndex"), "CaptureDiagnosticsSnapshot JSON MjpegPerDecoder WorkerIndex");
 
-        return Task.CompletedTask;
     }
 
     private static object CreateMjpegDecoderHealthSnapshot(

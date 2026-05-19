@@ -1,6 +1,8 @@
 using System;
 
-static partial class Program
+namespace Sussudio.Tests;
+
+public partial class SnapshotModelsTests
 {
     private static void RegisterCaptureDiagnosticsSnapshotProperties(Type snapshotType)
     {

@@ -4,7 +4,9 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 
-static partial class Program
+namespace Sussudio.Tests;
+
+public partial class SnapshotModelsTests
 {
     // LoggingJsonContext.Tests covers the production source-generated routing; this harness
     // validates the DTO reflection JSON shape because it loads the app in an isolated context.

@@ -1,8 +1,11 @@
-using System.Threading.Tasks;
+using Xunit;
 
-static partial class Program
+namespace Sussudio.Tests;
+
+public partial class SnapshotModelsTests
 {
-    private static Task CaptureHealthSnapshot_ExtendsDiagnosticsWithFlashbackSourceAndAvSync()
+    [Fact]
+    public void CaptureHealthSnapshot_ExtendsDiagnosticsWithFlashbackSourceAndAvSync()
     {
         var diagnosticsType = RequireType("Sussudio.Models.CaptureDiagnosticsSnapshot");
         var healthType = RequireType("Sussudio.Models.CaptureHealthSnapshot");
@@ -30,6 +33,5 @@ static partial class Program
         AssertCaptureHealthSnapshotRoundTripValues(health);
         AssertCaptureHealthSnapshotJsonRoundTrip(healthType, health);
 
-        return Task.CompletedTask;
     }
 }
