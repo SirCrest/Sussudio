@@ -15,6 +15,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Queue.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.EmitLoop.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FramePacing.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Adaptive.cs");
         var pipelineSource = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs")
@@ -69,6 +70,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var emitLoopText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.EmitLoop.cs")
             .Replace("\r\n", "\n");
+        var framePacingText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FramePacing.cs")
+            .Replace("\r\n", "\n");
         var queueText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Queue.cs")
             .Replace("\r\n", "\n");
         var adaptiveText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Adaptive.cs")
@@ -85,12 +88,15 @@ static partial class Program
         AssertDoesNotContain(rootText, "public void Enqueue(PooledVideoFrameLease frame)");
         AssertDoesNotContain(rootText, "private void EnqueueBufferedFrame(BufferedFrame frame)");
         AssertContains(emitLoopText, "private void EmitLoop()");
-        AssertContains(emitLoopText, "private long AlignDueTickToDisplayClock(IPreviewFrameSink? sink, long currentDueTick, long nowTick)");
-        AssertContains(emitLoopText, "private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)");
-        AssertContains(emitLoopText, "private void WaitForTicks(long ticks)");
-        AssertContains(emitLoopText, "private static extern uint timeBeginPeriod(uint uPeriod);");
-        AssertContains(emitLoopText, "private static extern uint timeEndPeriod(uint uPeriod);");
         AssertContains(emitLoopText, "MmcssThreadRegistration.TryRegister(_mmcssTask, _mmcssPriority");
+        AssertContains(framePacingText, "private long AlignDueTickToDisplayClock(IPreviewFrameSink? sink, long currentDueTick, long nowTick)");
+        AssertContains(framePacingText, "private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)");
+        AssertContains(framePacingText, "private void WaitForTicks(long ticks)");
+        AssertContains(framePacingText, "private static extern uint timeBeginPeriod(uint uPeriod);");
+        AssertContains(framePacingText, "private static extern uint timeEndPeriod(uint uPeriod);");
+        AssertDoesNotContain(emitLoopText, "private long AlignDueTickToDisplayClock(");
+        AssertDoesNotContain(emitLoopText, "private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)");
+        AssertDoesNotContain(emitLoopText, "private void WaitForTicks(long ticks)");
         AssertDoesNotContain(rootText, "private void EmitLoop()");
         AssertDoesNotContain(rootText, "private long AlignDueTickToDisplayClock(");
         AssertDoesNotContain(rootText, "private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)");
