@@ -87,12 +87,11 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     public event EventHandler<AutomationSnapshot>? SnapshotUpdated;
 
     public AutomationDiagnosticsHub(
-        IAutomationViewModel viewModel,
+        IAutomationSnapshotQueryPort snapshotQueryPort,
         Func<CancellationToken, Task<PreviewRuntimeSnapshot>> previewSnapshotProvider,
         IRecordingVerifier recordingVerifier)
     {
-        ArgumentNullException.ThrowIfNull(viewModel);
-        _snapshotQueryPort = viewModel;
+        _snapshotQueryPort = snapshotQueryPort ?? throw new ArgumentNullException(nameof(snapshotQueryPort));
         _previewSnapshotProvider = previewSnapshotProvider ?? throw new ArgumentNullException(nameof(previewSnapshotProvider));
         _recordingVerifier = recordingVerifier ?? throw new ArgumentNullException(nameof(recordingVerifier));
         _perfectionCaptureDropPercentThreshold = EnvironmentHelpers.GetDoubleFromEnv("SUSSUDIO_PERF_CAPTURE_DROP_PCT", 0.10, 0.0, 50.0);

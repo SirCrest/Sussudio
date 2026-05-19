@@ -227,6 +227,8 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs` owns polling,
   field/constructor state, and timeline flow. `AutomationDiagnosticsHub.Counters.cs`
   owns recent-counter baseline state and delta updates used by diagnostics evaluation.
+  The hub constructor should take `IAutomationSnapshotQueryPort` directly because
+  snapshot refresh and verification are read-only over that port.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs` owns alert
   rule evaluation, active-alert transitions, and Flashback alert group routing.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.cs` owns

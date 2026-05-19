@@ -328,8 +328,9 @@ surface. Stats-section UI commands consume the UI port, audio-ramp trace reads
 consume the snapshot-query port, and Flashback commands consume the Flashback
 port.
 `AutomationDiagnosticsHub` consumes the snapshot-query port for read-only
-runtime, health, and recording verification snapshots instead of depending on
-the full aggregate surface.
+runtime, health, and recording verification snapshots. Its constructor should
+take `IAutomationSnapshotQueryPort` directly instead of advertising the full
+aggregate automation surface.
 `AutomationCommandDispatcher.UiSettingsCommands.cs` owns UI/settings
 automation command application, including show-all capture options, preview
 volume, stats visibility, settings visibility, frame-time overlay visibility,

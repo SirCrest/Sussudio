@@ -121,7 +121,9 @@ static partial class Program
         AssertContains(diagnostics.VerificationText, "private void ScheduleAutoVerificationIfNeeded(");
         AssertDoesNotContain(diagnostics.HubText, "public async Task<RecordingVerificationResult> VerifyLastRecordingAsync");
         AssertContains(diagnostics.HubText, "private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;");
-        AssertContains(diagnostics.HubText, "_snapshotQueryPort = viewModel;");
+        AssertContains(diagnostics.HubText, "IAutomationSnapshotQueryPort snapshotQueryPort,");
+        AssertContains(diagnostics.HubText, "_snapshotQueryPort = snapshotQueryPort ?? throw new ArgumentNullException(nameof(snapshotQueryPort));");
+        AssertDoesNotContain(diagnostics.HubText, "IAutomationViewModel viewModel,");
         AssertDoesNotContain(diagnostics.HubText, "private readonly IAutomationViewModel _viewModel;");
         AssertContains(diagnostics.SnapshotsText, "await _snapshotQueryPort\n            .GetViewModelRuntimeSnapshotAsync(cancellationToken)");
         AssertContains(diagnostics.SnapshotsText, "await _snapshotQueryPort\n            .GetCaptureRuntimeSnapshotAsync(cancellationToken)");
