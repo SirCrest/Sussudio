@@ -2294,7 +2294,7 @@ Primary current owners:
   `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Cti.cs`.
 - `Sussudio/Controllers/Shell/SettingsShelfController.cs` owns settings shelf
   visibility, the animation gate, and show/hide storyboard construction.
-  `MainWindow.SettingsShelf.cs` is the XAML-facing adapter.
+  `MainWindow.ShellChrome.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseCatalog.cs` owns splash phrase
   file lookup, Markdown-ish parsing, cached defaults, and exception fallback.
   `Sussudio/Controllers/Launch/Splash/SplashLoadingPhrasePacingPolicy.cs` owns

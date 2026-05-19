@@ -2434,8 +2434,8 @@ lives in `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Cti.c
 
 Settings shelf visibility, the animation gate, and show/hide storyboard
 construction now live in
-`Sussudio/Controllers/Shell/SettingsShelfController.cs`. `MainWindow.SettingsShelf.cs`
-is the XAML-facing adapter.
+`Sussudio/Controllers/Shell/SettingsShelfController.cs`. `MainWindow.ShellChrome.cs`
+is the XAML-facing settings shelf adapter.
 
 Splash phrase file lookup, Markdown-ish parsing, cached defaults, and exception
 fallback now live in `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseCatalog.cs`.

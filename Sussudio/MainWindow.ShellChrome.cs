@@ -8,12 +8,13 @@ namespace Sussudio;
 
 // XAML-facing shell launch/chrome adapter. Focused controllers own native
 // window bootstrap, launch entrance choreography, splash phrases, control-bar
-// animations, and static shell elevation.
+// animations, settings shelf presentation, and static shell elevation.
 public sealed partial class MainWindow
 {
     private ControlBarAnimationController _controlBarAnimationController = null!;
     private readonly NativeWindowBootstrapController _nativeWindowBootstrapController = new();
     private LaunchEntranceAnimationController _launchEntranceAnimationController = null!;
+    private SettingsShelfController _settingsShelfController = null!;
     private ShellElevationController _shellElevationController = null!;
     private SplashLoadingPhraseController _splashLoadingPhraseController = null!;
     private IntPtr _hwnd;
@@ -85,6 +86,14 @@ public sealed partial class MainWindow
         });
     }
 
+    private void InitializeSettingsShelfController()
+    {
+        _settingsShelfController = new SettingsShelfController(new SettingsShelfControllerContext
+        {
+            SettingsOverlayPanel = SettingsOverlayPanel,
+        });
+    }
+
     private void InitializeSplashLoadingPhraseController()
     {
         _splashLoadingPhraseController = new SplashLoadingPhraseController(new SplashLoadingPhraseControllerContext
@@ -135,6 +144,21 @@ public sealed partial class MainWindow
 
     private void ApplyShellElevation()
         => _shellElevationController.Apply();
+
+    private void SettingsToggleButton_Click(object sender, RoutedEventArgs e)
+        => _settingsShelfController.Toggle();
+
+    private void ApplySettingsVisibility(bool visible)
+        => _settingsShelfController.ApplyVisibility(visible);
+
+    private void ShowSettingsShelf()
+        => _settingsShelfController.Show();
+
+    private void HideSettingsShelf()
+        => _settingsShelfController.Hide();
+
+    private void ResetSettingsShelfAnimationForFullScreen()
+        => _settingsShelfController.ResetAnimationState();
 
     private void PrepareLaunchEntranceInitialState()
         => _launchEntranceAnimationController.PrepareInitialState();

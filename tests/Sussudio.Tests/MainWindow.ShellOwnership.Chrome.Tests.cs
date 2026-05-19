@@ -7,7 +7,7 @@ static partial class Program
     {
         var fullScreenText = ReadRepoFile("Sussudio/MainWindow.FullScreen.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var settingsShelfText = ReadRepoFile("Sussudio/MainWindow.SettingsShelf.cs").Replace("\r\n", "\n");
+        var settingsShelfText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/SettingsShelfController.cs").Replace("\r\n", "\n");
 
         AssertContains(settingsShelfText, "private SettingsShelfController _settingsShelfController = null!;");
@@ -15,6 +15,10 @@ static partial class Program
         AssertContains(settingsShelfText, "=> _settingsShelfController.Toggle();");
         AssertContains(settingsShelfText, "=> _settingsShelfController.ApplyVisibility(visible);");
         AssertContains(settingsShelfText, "=> _settingsShelfController.ResetAnimationState();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.SettingsShelf.cs")),
+            "settings shelf adapter is consolidated into the shell chrome adapter");
         AssertContains(mainWindowText, "InitializeSettingsShelfController();");
         AssertContains(fullScreenText, "ResetSettingsShelfAnimation = ResetSettingsShelfAnimationForFullScreen,");
         AssertContains(controllerText, "internal sealed class SettingsShelfController");
