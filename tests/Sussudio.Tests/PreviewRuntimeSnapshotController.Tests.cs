@@ -223,6 +223,56 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task PreviewRuntimeSnapshotStartupProjectionPolicy_PreservesSampledStartupFields()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        var healthType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth");
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotStartupProjectionPolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeSnapshotStartupProjectionPolicy.Evaluate not found.");
+        var requiredSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", "FirstVisual");
+        var receivedSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", "MediaOpened");
+        var startupStrategy = ParseEnum("Sussudio.Models.PreviewStartupStrategy", "D3D11VideoProcessor");
+
+        var input = Activator.CreateInstance(inputType)
+                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+        SetPropertyOrBackingField(input, "StartupState", "WaitingForFirstVisual");
+        SetPropertyOrBackingField(input, "StartupAttemptId", "attempt-42");
+        SetPropertyOrBackingField(input, "StartupTimeoutMs", 1250);
+        SetPropertyOrBackingField(input, "StartupGpuSignalMediaOpened", true);
+        SetPropertyOrBackingField(input, "StartupGpuSignalFirstFrame", false);
+        SetPropertyOrBackingField(input, "StartupGpuSignalPlaybackAdvancing", true);
+        SetPropertyOrBackingField(input, "StartupRequiredSignals", requiredSignals);
+        SetPropertyOrBackingField(input, "StartupReceivedSignals", receivedSignals);
+        SetPropertyOrBackingField(input, "StartupStrategy", startupStrategy);
+        SetPropertyOrBackingField(input, "StartupMissingSignals", "FirstVisual");
+        SetPropertyOrBackingField(input, "StartupRecoveryAttemptCount", 5);
+        SetPropertyOrBackingField(input, "StartupLastFailureReason", "visual-timeout");
+        SetPropertyOrBackingField(input, "FirstVisualConfirmed", true);
+
+        var health = Activator.CreateInstance(healthType, new object?[] { 456.25d, true, false })
+                     ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
+        var startup = evaluate.Invoke(null, new object?[] { input, health })
+                      ?? throw new InvalidOperationException("PreviewRuntimeSnapshotStartupProjectionPolicy returned null.");
+
+        AssertEqual("WaitingForFirstVisual", GetStringProperty(startup, "State"), "startup projection state");
+        AssertEqual("attempt-42", GetStringProperty(startup, "AttemptId"), "startup projection attempt id");
+        AssertEqual(456.25d, GetDoubleProperty(startup, "ElapsedMs"), "startup projection elapsed");
+        AssertEqual(1250, GetIntProperty(startup, "TimeoutMs"), "startup projection timeout");
+        AssertEqual(true, GetBoolProperty(startup, "GpuSignalMediaOpened"), "startup projection media opened signal");
+        AssertEqual(false, GetBoolProperty(startup, "GpuSignalFirstFrame"), "startup projection first frame signal");
+        AssertEqual(true, GetBoolProperty(startup, "GpuSignalPlaybackAdvancing"), "startup projection playback signal");
+        AssertEqual(requiredSignals, GetPropertyValue(startup, "RequiredSignals"), "startup projection required signals");
+        AssertEqual(receivedSignals, GetPropertyValue(startup, "ReceivedSignals"), "startup projection received signals");
+        AssertEqual(startupStrategy, GetPropertyValue(startup, "Strategy"), "startup projection strategy");
+        AssertEqual("FirstVisual", GetStringProperty(startup, "MissingSignals"), "startup projection missing signals");
+        AssertEqual(5, GetIntProperty(startup, "RecoveryAttemptCount"), "startup projection recovery count");
+        AssertEqual("visual-timeout", GetStringProperty(startup, "LastFailureReason"), "startup projection failure reason");
+        AssertEqual(true, GetBoolProperty(startup, "FirstVisualConfirmed"), "startup projection first visual confirmed");
+
+        return Task.CompletedTask;
+    }
+
     private static Task PreviewRuntimeD3DRendererStatePolicy_PreservesNullRendererDefaults()
     {
         var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DRendererStatePolicy");

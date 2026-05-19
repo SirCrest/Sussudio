@@ -21,6 +21,7 @@ static partial class Program
         var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotMapperText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotMapper.cs").Replace("\r\n", "\n");
+        var previewRuntimeSnapshotStartupProjectionPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotStartupProjectionPolicy.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotHealthInputFactoryText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthInputFactory.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotHealthPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthPolicy.cs").Replace("\r\n", "\n");
         var previewRuntimeD3DFrameCounterPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameCounterPolicy.cs").Replace("\r\n", "\n");
@@ -146,6 +147,7 @@ static partial class Program
         AssertContains(agentMapText, "PreviewRendererHostController.Reinit.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotInput.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
+        AssertContains(agentMapText, "PreviewRuntimeSnapshotStartupProjectionPolicy.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotHealthInputFactory.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotHealthPolicy.cs");
         AssertContains(agentMapText, "PreviewRuntimeD3DFrameCounterPolicy.cs");
@@ -161,6 +163,7 @@ static partial class Program
         AssertContains(cleanupPlanText, "PreviewRendererHostController.Reinit.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotInput.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotMapper.cs");
+        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotStartupProjectionPolicy.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotHealthInputFactory.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotHealthPolicy.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeD3DFrameCounterPolicy.cs");
@@ -213,11 +216,20 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotControllerText, "return PreviewRuntimeSnapshotMapper.Build(input, d3dProjection, health, DateTimeOffset.UtcNow);");
         AssertContains(previewRuntimeSnapshotMapperText, "internal static class PreviewRuntimeSnapshotMapper");
         AssertContains(previewRuntimeSnapshotMapperText, "public static PreviewRuntimeSnapshot Build(");
+        AssertContains(previewRuntimeSnapshotMapperText, "var startup = PreviewRuntimeSnapshotStartupProjectionPolicy.Evaluate(input, health);");
         AssertContains(previewRuntimeSnapshotMapperText, "return new PreviewRuntimeSnapshot");
         AssertContains(previewRuntimeSnapshotMapperText, "TimestampUtc = timestampUtc,");
+        AssertContains(previewRuntimeSnapshotMapperText, "StartupState = startup.State,");
+        AssertContains(previewRuntimeSnapshotMapperText, "StartupElapsedMs = startup.ElapsedMs,");
         AssertContains(previewRuntimeSnapshotMapperText, "BlankSuspected = health.BlankSuspected,");
         AssertContains(previewRuntimeSnapshotMapperText, "StallSuspected = health.StallSuspected,");
         AssertContains(previewRuntimeSnapshotMapperText, "GpuPositionEventCount = input.GpuPositionEventCount");
+        AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "internal static class PreviewRuntimeSnapshotStartupProjectionPolicy");
+        AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "public static PreviewRuntimeSnapshotStartupProjection Evaluate(");
+        AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "ElapsedMs: health.StartupElapsedMs,");
+        AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "RecoveryAttemptCount: input.StartupRecoveryAttemptCount,");
+        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "StartupElapsedMs = health.StartupElapsedMs,");
+        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "StartupRecoveryAttemptCount = input.StartupRecoveryAttemptCount,");
         AssertDoesNotContain(previewRuntimeSnapshotControllerText, "return new PreviewRuntimeSnapshot");
         AssertDoesNotContain(previewRuntimeSnapshotControllerText, "BlankSuspected = health.BlankSuspected,");
         AssertDoesNotContain(previewRuntimeSnapshotControllerText, "StallSuspected = health.StallSuspected,");

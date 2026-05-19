@@ -11,6 +11,8 @@ internal static class PreviewRuntimeSnapshotMapper
         PreviewRuntimeSnapshotHealth health,
         DateTimeOffset timestampUtc)
     {
+        var startup = PreviewRuntimeSnapshotStartupProjectionPolicy.Evaluate(input, health);
+
         return new PreviewRuntimeSnapshot
         {
             TimestampUtc = timestampUtc,
@@ -20,20 +22,20 @@ internal static class PreviewRuntimeSnapshotMapper
             GpuElementVisible = input.GpuElementVisible,
             CpuElementVisible = input.CpuElementVisible,
             RendererAttached = d3dProjection.RendererAttached,
-            StartupState = input.StartupState,
-            StartupAttemptId = input.StartupAttemptId,
-            StartupElapsedMs = health.StartupElapsedMs,
-            StartupTimeoutMs = input.StartupTimeoutMs,
-            StartupGpuSignalMediaOpened = input.StartupGpuSignalMediaOpened,
-            StartupGpuSignalFirstFrame = input.StartupGpuSignalFirstFrame,
-            StartupGpuSignalPlaybackAdvancing = input.StartupGpuSignalPlaybackAdvancing,
-            StartupRequiredSignals = input.StartupRequiredSignals,
-            StartupReceivedSignals = input.StartupReceivedSignals,
-            StartupStrategy = input.StartupStrategy,
-            StartupMissingSignals = input.StartupMissingSignals,
-            StartupRecoveryAttemptCount = input.StartupRecoveryAttemptCount,
-            StartupLastFailureReason = input.StartupLastFailureReason,
-            FirstVisualConfirmed = input.FirstVisualConfirmed,
+            StartupState = startup.State,
+            StartupAttemptId = startup.AttemptId,
+            StartupElapsedMs = startup.ElapsedMs,
+            StartupTimeoutMs = startup.TimeoutMs,
+            StartupGpuSignalMediaOpened = startup.GpuSignalMediaOpened,
+            StartupGpuSignalFirstFrame = startup.GpuSignalFirstFrame,
+            StartupGpuSignalPlaybackAdvancing = startup.GpuSignalPlaybackAdvancing,
+            StartupRequiredSignals = startup.RequiredSignals,
+            StartupReceivedSignals = startup.ReceivedSignals,
+            StartupStrategy = startup.Strategy,
+            StartupMissingSignals = startup.MissingSignals,
+            StartupRecoveryAttemptCount = startup.RecoveryAttemptCount,
+            StartupLastFailureReason = startup.LastFailureReason,
+            FirstVisualConfirmed = startup.FirstVisualConfirmed,
             FramesArrived = d3dProjection.FramesArrived,
             FramesDisplayed = d3dProjection.FramesDisplayed,
             FramesDropped = d3dProjection.FramesDropped,
