@@ -43,12 +43,17 @@ static partial class Program
             .Replace("\r\n", "\n");
         var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs")
             .Replace("\r\n", "\n");
+        var hardwareSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareSubmission.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(videoSubmissionText, "public void SendVideoFrame(ReadOnlySpan<byte> frameData, int width, int height)");
-        AssertContains(videoSubmissionText, "public void SendGpuVideoFrame(IntPtr d3d11Texture, int subresourceIndex)");
-        AssertContains(videoSubmissionText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");
-        AssertContains(videoSubmissionText, "CopySubresourceRegion");
-        AssertContains(videoSubmissionText, "AttachHdrFrameSideDataToHwFrame(options)");
+        AssertContains(videoSubmissionText, "CopyPackedFrameToVideoFrame(frameData[..expectedSize], options);");
+        AssertDoesNotContain(videoSubmissionText, "public void SendGpuVideoFrame(IntPtr d3d11Texture, int subresourceIndex)");
+        AssertDoesNotContain(videoSubmissionText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");
+        AssertContains(hardwareSubmissionText, "public void SendGpuVideoFrame(IntPtr d3d11Texture, int subresourceIndex)");
+        AssertContains(hardwareSubmissionText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");
+        AssertContains(hardwareSubmissionText, "CopySubresourceRegion");
+        AssertContains(hardwareSubmissionText, "AttachHdrFrameSideDataToHwFrame(options)");
         AssertDoesNotContain(rootText, "public void SendVideoFrame(ReadOnlySpan<byte> frameData, int width, int height)");
         AssertDoesNotContain(rootText, "public void SendGpuVideoFrame(IntPtr d3d11Texture, int subresourceIndex)");
         AssertDoesNotContain(rootText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");

@@ -1158,9 +1158,13 @@ native cleanup now live in `LibAvEncoder.ResourceCleanup.cs`.
 
 LibAv encoder video submission now lives in
 `Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs`. Keep CPU packed
-frame submission, D3D11 texture submission, CUDA frame submission, forced
-keyframe handling, per-frame HDR side-data attachment/removal, and video packet
-drains there.
+frame submission, forced keyframe handling, per-frame HDR side-data
+attachment/removal, and video packet drains there. D3D11 and CUDA hardware-frame
+submission now live in
+`Sussudio/Services/Recording/LibAvEncoder.HardwareSubmission.cs`; keep
+texture-pool copy/reference setup, GPU device-removed checks, hardware-frame
+PTS/keyframe assignment, HDR side-data attachment, EAGAIN packet drains, and
+hardware-frame unref cleanup there.
 
 LibAv encoder output lifecycle is split across focused partials.
 `Sussudio/Services/Recording/LibAvEncoder.MuxerOptions.cs` owns MP4 muxer
