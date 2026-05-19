@@ -314,11 +314,13 @@ payloads, special response shapes, capture/Flashback routing, or domain command
 handoff. `IAutomationViewModel.cs` now keeps the aggregate automation ViewModel
 constructor contract while defining feature-shaped ports for readiness, snapshot
 queries, device selection, capture settings, audio, preview/recording, UI,
-Flashback, and probes in one file. Keep the ports grouped there until a
-consumer needs a separate file; avoid tiny interface files that only reduce line
-count. The dispatcher no longer stores the aggregate ViewModel; it assigns the
-constructor argument into the narrow ports and invokes trivial/UI handler tables
-through matching port targets. The dispatcher consumes the readiness port for
+Flashback, and probes in one file. It also owns `AutomationViewModelPorts`, the
+composition-time adapter that turns the aggregate compatibility contract into
+named port targets for the automation host. Keep these ports grouped there
+until a consumer needs a separate file; avoid tiny interface files that only
+reduce line count. The dispatcher no longer stores the aggregate ViewModel; its
+port-bundle constructor assigns narrow ports and invokes trivial/UI handler
+tables through matching port targets. The dispatcher consumes the readiness port for
 device-ready gating and the device-selection/snapshot-query ports for device
 commands, the audio port for device-audio/microphone commands, and the
 capture-settings plus preview-recording ports for MJPEG decoder, output path,

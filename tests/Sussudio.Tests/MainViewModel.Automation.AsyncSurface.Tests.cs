@@ -150,7 +150,16 @@ static partial class Program
         AssertContains(dispatcherText, "private readonly IAutomationFlashbackPort _flashbackPort;");
         AssertContains(dispatcherText, "private readonly IAutomationProbePort _probePort;");
         AssertDoesNotContain(dispatcherText, "private readonly IAutomationViewModel _viewModel;");
-        AssertContains(dispatcherText, "ArgumentNullException.ThrowIfNull(viewModel);");
+        AssertContains(interfaceText, "internal readonly record struct AutomationViewModelPorts(");
+        AssertContains(interfaceText, "public static AutomationViewModelPorts From(IAutomationViewModel viewModel)");
+        AssertContains(interfaceText, "ArgumentNullException.ThrowIfNull(viewModel);");
+        AssertContains(dispatcherText, "AutomationViewModelPorts.From(viewModel)");
+        AssertContains(dispatcherText, "internal AutomationCommandDispatcher(");
+        AssertContains(dispatcherText, "AutomationViewModelPorts ports,");
+        AssertContains(dispatcherText, "_readinessPort = ports.Readiness");
+        AssertContains(dispatcherText, "_snapshotQueryPort = ports.SnapshotQuery");
+        AssertDoesNotContain(dispatcherText, "_readinessPort = viewModel;");
+        AssertDoesNotContain(dispatcherText, "_snapshotQueryPort = viewModel;");
         AssertContains(dispatcherText, "_readinessPort.IsInitialized || _readinessPort.Devices.Count > 0");
         AssertContains(dispatcherText, "await deviceSelectionHandler.InvokeAsync(_deviceSelectionPort, payload, cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await captureSettingsHandler.InvokeAsync(_captureSettingsPort, payload, cancellationToken).ConfigureAwait(false);");

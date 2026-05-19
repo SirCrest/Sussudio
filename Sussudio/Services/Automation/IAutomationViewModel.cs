@@ -129,6 +129,36 @@ public interface IAutomationProbePort
 }
 
 /// <summary>
+/// Feature-shaped automation ports composed from the aggregate ViewModel surface.
+/// </summary>
+internal readonly record struct AutomationViewModelPorts(
+    IAutomationReadinessPort Readiness,
+    IAutomationSnapshotQueryPort SnapshotQuery,
+    IAutomationDeviceSelectionPort DeviceSelection,
+    IAutomationCaptureSettingsPort CaptureSettings,
+    IAutomationAudioPort Audio,
+    IAutomationPreviewRecordingPort PreviewRecording,
+    IAutomationUiPort Ui,
+    IAutomationFlashbackPort Flashback,
+    IAutomationProbePort Probe)
+{
+    public static AutomationViewModelPorts From(IAutomationViewModel viewModel)
+    {
+        ArgumentNullException.ThrowIfNull(viewModel);
+        return new AutomationViewModelPorts(
+            viewModel,
+            viewModel,
+            viewModel,
+            viewModel,
+            viewModel,
+            viewModel,
+            viewModel,
+            viewModel,
+            viewModel);
+    }
+}
+
+/// <summary>
 /// Aggregate automation ViewModel contract consumed by the current automation host.
 /// Narrower ports above let command owners depend on feature-shaped interfaces as
 /// the dispatcher continues to shed the root compatibility surface.

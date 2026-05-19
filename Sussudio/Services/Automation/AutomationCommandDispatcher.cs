@@ -37,17 +37,29 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
         IAutomationDiagnosticsHub diagnosticsHub,
         IAutomationWindowControl windowControl,
         string? authToken = null)
+        : this(
+            AutomationViewModelPorts.From(viewModel),
+            diagnosticsHub,
+            windowControl,
+            authToken)
     {
-        ArgumentNullException.ThrowIfNull(viewModel);
-        _readinessPort = viewModel;
-        _deviceSelectionPort = viewModel;
-        _snapshotQueryPort = viewModel;
-        _captureSettingsPort = viewModel;
-        _audioPort = viewModel;
-        _previewRecordingPort = viewModel;
-        _uiPort = viewModel;
-        _flashbackPort = viewModel;
-        _probePort = viewModel;
+    }
+
+    internal AutomationCommandDispatcher(
+        AutomationViewModelPorts ports,
+        IAutomationDiagnosticsHub diagnosticsHub,
+        IAutomationWindowControl windowControl,
+        string? authToken = null)
+    {
+        _readinessPort = ports.Readiness ?? throw new ArgumentNullException(nameof(ports));
+        _deviceSelectionPort = ports.DeviceSelection ?? throw new ArgumentNullException(nameof(ports));
+        _snapshotQueryPort = ports.SnapshotQuery ?? throw new ArgumentNullException(nameof(ports));
+        _captureSettingsPort = ports.CaptureSettings ?? throw new ArgumentNullException(nameof(ports));
+        _audioPort = ports.Audio ?? throw new ArgumentNullException(nameof(ports));
+        _previewRecordingPort = ports.PreviewRecording ?? throw new ArgumentNullException(nameof(ports));
+        _uiPort = ports.Ui ?? throw new ArgumentNullException(nameof(ports));
+        _flashbackPort = ports.Flashback ?? throw new ArgumentNullException(nameof(ports));
+        _probePort = ports.Probe ?? throw new ArgumentNullException(nameof(ports));
         _diagnosticsHub = diagnosticsHub ?? throw new ArgumentNullException(nameof(diagnosticsHub));
         _windowControl = windowControl ?? throw new ArgumentNullException(nameof(windowControl));
         _authToken = string.IsNullOrWhiteSpace(authToken) ? null : authToken;

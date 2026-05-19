@@ -29,12 +29,13 @@ internal sealed class WindowAutomationHostLifecycleController : IAsyncDisposable
             automationPipeName = NamedPipeAutomationServer.DefaultPipeName;
         }
 
+        var automationPorts = AutomationViewModelPorts.From(viewModel);
         _diagnosticsHub = new AutomationDiagnosticsHub(
-            viewModel,
+            automationPorts.SnapshotQuery,
             previewSnapshotProvider,
             new RecordingVerifier());
         var automationDispatcher = new AutomationCommandDispatcher(
-            viewModel,
+            automationPorts,
             _diagnosticsHub,
             windowControl,
             automationToken);
