@@ -145,5 +145,8 @@ static partial class Program
         await AddCheckAsync(results,
             "KS audio node probe source ownership is split",
             KsAudioNodeProbe_SourceOwnership_IsSplit);
+        await AddCheckAsync(results,
+            "EGAVDS audio probe source ownership is split",
+            EgavdsAudioProbe_SourceOwnership_IsSplit);
     }
 }
