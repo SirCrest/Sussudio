@@ -21,6 +21,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var captureSettingsBuilderText = ReadRepoFile("Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs")
             .Replace("\r\n", "\n");
+        var captureSettingsPolicyText = ReadRepoFile("Sussudio/ViewModels/CaptureSettingsProjectionBuilder.Policy.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(captureSettingsText, "private CaptureSettings BuildCaptureSettings()");
         AssertContains(captureSettingsText, "var runtime = _captureService.GetRuntimeSnapshot();");
@@ -29,10 +31,8 @@ static partial class Program
         AssertContains(captureSettingsText, "AvailableFrameRates = AvailableFrameRates.ToArray(),");
         AssertContains(captureSettingsText, "SelectedAudioInputDeviceId = SelectedAudioInputDevice?.Id,");
         AssertContains(captureSettingsText, "SelectedMicrophoneDeviceId = SelectedMicrophoneDevice?.Id,");
-        AssertContains(captureSettingsBuilderText, "internal static class CaptureSettingsProjectionBuilder");
-        AssertContains(captureSettingsBuilderText, "internal sealed class CaptureSettingsProjectionInput");
+        AssertContains(captureSettingsBuilderText, "internal static partial class CaptureSettingsProjectionBuilder");
         AssertContains(captureSettingsBuilderText, "public static CaptureSettings Build(CaptureSettingsProjectionInput input)");
-        AssertContains(captureSettingsBuilderText, "private static CaptureSettingsFrameRateProjection ProjectFrameRate(CaptureSettingsProjectionInput input)");
         AssertContains(captureSettingsBuilderText, "FrameRate = frameRateProjection.EffectiveFrameRate,");
         AssertContains(captureSettingsBuilderText, "RequestedFrameRateArg = frameRateProjection.RequestedFrameRateArg,");
         AssertContains(captureSettingsBuilderText, "RequestedFrameRateNumerator = frameRateProjection.RequestedFrameRateNumerator,");
@@ -41,14 +41,24 @@ static partial class Program
         AssertContains(captureSettingsBuilderText, "ForceMjpegDecode = ShouldForceMjpegDecode(input)");
         AssertContains(captureSettingsBuilderText, "settings.UseCustomAudioInput = input.IsCustomAudioInputEnabled;");
         AssertContains(captureSettingsBuilderText, "settings.MicrophoneEnabled = input.IsMicrophoneEnabled;");
-        AssertContains(captureSettingsBuilderText, "var selectedFrameRateOption = input.AvailableFrameRates");
-        AssertContains(captureSettingsBuilderText, "var effectiveFrameRate = input.IsAutoResolutionSelected && input.AutoResolvedFrameRate.HasValue && input.AutoResolvedFrameRate.Value > 0");
-        AssertContains(captureSettingsBuilderText, "runtimeMatchesResolution");
-        AssertContains(captureSettingsBuilderText, "input.Runtime.NegotiatedFrameRateNumerator");
-        AssertContains(captureSettingsBuilderText, "input.SourceTelemetry.HasFrameRate");
-        AssertContains(captureSettingsBuilderText, "TryParseFrameRateRational(requestedFrameRateArg");
-        AssertContains(captureSettingsBuilderText, "input.SelectedFormat?.FrameRateNumerator > 0 && input.SelectedFormat.FrameRateDenominator > 0");
-        AssertContains(captureSettingsBuilderText, "requestedFrameRateArg = effectiveFrameRate.ToString(\"0.###\");");
+        AssertDoesNotContain(captureSettingsBuilderText, "private static CaptureSettingsFrameRateProjection ProjectFrameRate(CaptureSettingsProjectionInput input)");
+        AssertDoesNotContain(captureSettingsBuilderText, "internal sealed class CaptureSettingsProjectionInput");
+        AssertDoesNotContain(captureSettingsBuilderText, "private static string? ResolveRequestedPixelFormat(CaptureSettingsProjectionInput input)");
+        AssertDoesNotContain(captureSettingsBuilderText, "private static bool ShouldForceMjpegDecode(CaptureSettingsProjectionInput input)");
+        AssertContains(captureSettingsPolicyText, "internal static partial class CaptureSettingsProjectionBuilder");
+        AssertContains(captureSettingsPolicyText, "private static CaptureSettingsFrameRateProjection ProjectFrameRate(CaptureSettingsProjectionInput input)");
+        AssertContains(captureSettingsPolicyText, "private static string? ResolveRequestedPixelFormat(CaptureSettingsProjectionInput input)");
+        AssertContains(captureSettingsPolicyText, "private static bool ShouldForceMjpegDecode(CaptureSettingsProjectionInput input)");
+        AssertContains(captureSettingsPolicyText, "internal sealed class CaptureSettingsProjectionInput");
+        AssertContains(captureSettingsPolicyText, "var selectedFrameRateOption = input.AvailableFrameRates");
+        AssertContains(captureSettingsPolicyText, "var effectiveFrameRate = input.IsAutoResolutionSelected && input.AutoResolvedFrameRate.HasValue && input.AutoResolvedFrameRate.Value > 0");
+        AssertContains(captureSettingsPolicyText, "runtimeMatchesResolution");
+        AssertContains(captureSettingsPolicyText, "input.Runtime.NegotiatedFrameRateNumerator");
+        AssertContains(captureSettingsPolicyText, "input.SourceTelemetry.HasFrameRate");
+        AssertContains(captureSettingsPolicyText, "TryParseFrameRateRational(requestedFrameRateArg");
+        AssertContains(captureSettingsPolicyText, "input.SelectedFormat?.FrameRateNumerator > 0 && input.SelectedFormat.FrameRateDenominator > 0");
+        AssertContains(captureSettingsPolicyText, "requestedFrameRateArg = effectiveFrameRate.ToString(\"0.###\");");
+        AssertContains(captureSettingsPolicyText, "internal readonly record struct CaptureSettingsFrameRateProjection(");
         AssertDoesNotContain(captureSettingsText, "ProjectCaptureSettingsFrameRate");
         AssertDoesNotContain(captureSettingsText, "private string? ResolveRequestedPixelFormat()");
         AssertDoesNotContain(captureSettingsText, "private bool ShouldForceMjpegDecode()");

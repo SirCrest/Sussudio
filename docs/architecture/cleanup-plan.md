@@ -3427,10 +3427,13 @@ Remaining `tools/Common` ownership:
    `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`. Capture
    settings projection from UI/runtime state is sampled by
    `MainViewModel.CaptureSettings.cs` and projected by
-   `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`: selected-option
-   seeding, auto-resolved effective FPS, runtime/source rational overrides,
-   rational/decimal fallbacks, requested pixel format, MJPEG decode forcing,
-   HDR/preview mode, Flashback options, and audio/microphone device projection.
+   `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`, which owns final
+   `CaptureSettings` assembly and audio/microphone device application. Pure
+   projection policy and input DTOs now live in
+   `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.Policy.cs`:
+   selected-option seeding, auto-resolved effective FPS, runtime/source rational
+   overrides, rational/decimal fallbacks, requested pixel format, and MJPEG
+   decode forcing.
    `MainViewModel.cs` keeps the stable compatibility facade entry points for
    device initialization, preview start/stop, selected-device apply, and preview
    reinitialization. Preview lifecycle
