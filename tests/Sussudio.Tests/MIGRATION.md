@@ -60,6 +60,8 @@ add xUnit alongside, and port incrementally.
   sizing, session, playback-state, export progress, export segment, and export
   request model contract checks; `XUnit.FlashbackModels.PropertyAssertions.cs`
   owns the shared reflection/nullability assertion helpers for that suite.
+- `Flashback.Playback.Markers.Tests.cs` owns the former legacy Flashback
+  playback in/out marker API, normalization, disposal, and marker clamp checks.
 - `XUnit.ToolFormatterContractsTests.cs` owns focused tool formatter contract
   checks.
 - Additional focused `[Fact]`/`[Theory]` files such as

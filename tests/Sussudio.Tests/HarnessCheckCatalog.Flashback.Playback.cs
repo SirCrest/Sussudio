@@ -28,21 +28,6 @@ static partial class Program
     private static async Task AddFlashbackPlaybackTimelineChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Flashback in/out points default to unset",
-            FlashbackPlaybackController_InOutPoints_DefaultToUnset);
-        await AddCheckAsync(results,
-            "Flashback in/out points clear invalid counterpart",
-            FlashbackPlaybackController_InOutPoints_ClearInvalidCounterpart);
-        await AddCheckAsync(results,
-            "Flashback in/out point setters normalize markers",
-            FlashbackPlaybackController_InOutPointSettersNormalizeMarkers);
-        await AddCheckAsync(results,
-            "Flashback in/out point changes stop after dispose",
-            FlashbackPlaybackController_InOutPointChangesStopAfterDispose);
-        await AddCheckAsync(results,
-            "Flashback clamp bounds stale markers to buffered duration",
-            FlashbackPlaybackController_ClampPosition_BoundsMarkersToBufferedDuration);
-        await AddCheckAsync(results,
             "Flashback command positions clamp before file lookup",
             FlashbackPlaybackController_ClampsCommandPositionsBeforeFileLookup);
         await AddCheckAsync(results,

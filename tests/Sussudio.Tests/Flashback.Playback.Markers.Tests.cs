@@ -1,9 +1,12 @@
 using System.Reflection;
-using System.Threading.Tasks;
+using Xunit;
 
-static partial class Program
+namespace Sussudio.Tests;
+
+public class FlashbackPlaybackMarkersTests
 {
-    private static Task FlashbackPlaybackController_InOutPoints_DefaultToUnset()
+    [Fact]
+    public void FlashbackPlaybackController_InOutPoints_DefaultToUnset()
     {
         var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
         var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
@@ -20,8 +23,8 @@ static partial class Program
         var inPointProp = controllerType.GetProperty("InPoint", BindingFlags.Public | BindingFlags.Instance);
         var outPointProp = controllerType.GetProperty("OutPoint", BindingFlags.Public | BindingFlags.Instance);
 
-        AssertNotNull(inPointProp, "FlashbackPlaybackController.InPoint");
-        AssertNotNull(outPointProp, "FlashbackPlaybackController.OutPoint");
+        Assert.NotNull(inPointProp);
+        Assert.NotNull(outPointProp);
         foreach (var propertyName in new[]
                  {
                      "CommandsEnqueued",
@@ -42,14 +45,12 @@ static partial class Program
                      "PlaybackThreadAlive"
                  })
         {
-            AssertNotNull(
-                controllerType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance),
-                $"FlashbackPlaybackController.{propertyName}");
+            Assert.NotNull(controllerType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance));
         }
 
         // ClearInOutPoints should not throw on a fresh controller
         var clearMethod = controllerType.GetMethod("ClearInOutPoints", BindingFlags.Public | BindingFlags.Instance);
-        AssertNotNull(clearMethod, "FlashbackPlaybackController.ClearInOutPoints");
+        Assert.NotNull(clearMethod);
         clearMethod!.Invoke(controller, null);
 
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
@@ -61,11 +62,10 @@ static partial class Program
         AssertContains(sourceText, "private bool IsCommandChannelOpenForDropRetry()");
         AssertContains(sourceText, "private bool TryDropOldestQueuedCommandForNewCommand(out PlaybackCommand droppedCommand)");
         AssertContains(sourceText, "private void TrackDroppedQueuedCommand(PlaybackCommand droppedCommand, CommandKind newCommandKind)");
-
-        return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_InOutPoints_ClearInvalidCounterpart()
+    [Fact]
+    public void FlashbackPlaybackController_InOutPoints_ClearInvalidCounterpart()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
@@ -88,11 +88,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         AssertContains(mainWindowFlashback, "_context.ViewModel.FlashbackSetInPointAt(_context.ViewModel.FlashbackPlaybackPosition)");
         AssertContains(mainWindowFlashback, "_context.ViewModel.FlashbackSetOutPointAt(_context.ViewModel.FlashbackPlaybackPosition)");
-
-        return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_InOutPointSettersNormalizeMarkers()
+    [Fact]
+    public void FlashbackPlaybackController_InOutPointSettersNormalizeMarkers()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
@@ -106,11 +105,10 @@ static partial class Program
         AssertContains(sourceText, "Interlocked.Exchange(ref _inPointFilePtsTicks, inPointFilePts.Value.Ticks);");
         AssertContains(sourceText, "Interlocked.Exchange(ref _outPointFilePtsTicks, outPointFilePts.Value.Ticks);");
         AssertContains(sourceText, "private TimeSpan NormalizeMarkerPosition(TimeSpan position)\n    {\n        if (position <= TimeSpan.Zero)\n        {\n            return TimeSpan.Zero;\n        }\n\n        var bufferDuration = _bufferManager.BufferedDuration;\n        return position > bufferDuration ? bufferDuration : position;\n    }");
-
-        return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_InOutPointChangesStopAfterDispose()
+    [Fact]
+    public void FlashbackPlaybackController_InOutPointChangesStopAfterDispose()
     {
         var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
         var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
@@ -130,8 +128,8 @@ static partial class Program
         clearInOut.Invoke(controller, null);
         setOutPoint.Invoke(controller, null);
 
-        AssertEqual(TimeSpan.Zero, (TimeSpan?)GetPropertyValue(controller, "InPoint"), "Disposed clear should preserve existing in point");
-        AssertEqual(null, GetPropertyValue(controller, "OutPoint"), "Disposed set out should not create a marker");
+        Assert.Equal(TimeSpan.Zero, (TimeSpan?)GetPropertyValue(controller, "InPoint"));
+        Assert.Null(GetPropertyValue(controller, "OutPoint"));
 
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SET_IN_SKIP reason=disposed");
@@ -140,11 +138,10 @@ static partial class Program
         AssertContains(sourceText, "SetLastCommandFailure(\"disposed:SetOutPoint\");");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_CLEAR_INOUT_SKIP reason=disposed");
         AssertContains(sourceText, "SetLastCommandFailure(\"disposed:ClearInOutPoints\");");
-
-        return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_ClampPosition_BoundsMarkersToBufferedDuration()
+    [Fact]
+    public void FlashbackPlaybackController_ClampPosition_BoundsMarkersToBufferedDuration()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
@@ -157,7 +154,56 @@ static partial class Program
         AssertContains(sourceText, "private TimeSpan ClampPosition(TimeSpan position, TimeSpan? frozenValidStart)");
         AssertContains(sourceText, "var currentValidStart = _bufferManager.ValidStartPts;");
         AssertContains(sourceText, "var evictedDelta = currentValidStart - frozenValidStart.Value;");
-
-        return Task.CompletedTask;
     }
+
+    private static Type RequireType(string typeName)
+        => SussudioAssembly.Load().GetType(typeName, throwOnError: true)!;
+
+    private static object? GetPropertyValue(object instance, string propertyName)
+        => instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance)
+            ?.GetValue(instance);
+
+    private static string ReadFlashbackPlaybackControllerPlaybackSource()
+    {
+        var parts = new[]
+        {
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderSegmentReopen.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Markers.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PositionMapping.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.MetricsCollection.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrames.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.SeekDisplay.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLoop.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Commands.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandCoalescing.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandTelemetry.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekCommands.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekScrubCommands.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadPlayCommand.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCleanup.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioPrebuffer.cs")
+        };
+
+        return string.Join("\n", parts);
+    }
+
+    private static string ReadRepoFile(string relativePath)
+        => RuntimeContractSource.ReadRepoFile(relativePath).Replace("\r\n", "\n");
+
+    private static void AssertContains(string actual, string expectedSubstring)
+        => Assert.Contains(expectedSubstring, actual, StringComparison.Ordinal);
 }
