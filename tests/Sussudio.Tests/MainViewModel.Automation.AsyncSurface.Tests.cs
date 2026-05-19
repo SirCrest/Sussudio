@@ -149,7 +149,13 @@ static partial class Program
         AssertContains(dispatcherText, "private readonly IAutomationUiPort _uiPort;");
         AssertContains(dispatcherText, "private readonly IAutomationFlashbackPort _flashbackPort;");
         AssertContains(dispatcherText, "private readonly IAutomationProbePort _probePort;");
+        AssertDoesNotContain(dispatcherText, "private readonly IAutomationViewModel _viewModel;");
+        AssertContains(dispatcherText, "ArgumentNullException.ThrowIfNull(viewModel);");
         AssertContains(dispatcherText, "_readinessPort.IsInitialized || _readinessPort.Devices.Count > 0");
+        AssertContains(dispatcherText, "await deviceSelectionHandler.InvokeAsync(_deviceSelectionPort, payload, cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await captureSettingsHandler.InvokeAsync(_captureSettingsPort, payload, cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await audioHandler.InvokeAsync(_audioPort, payload, cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await previewRecordingHandler.InvokeAsync(_previewRecordingPort, payload, cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _deviceSelectionPort.RefreshDevicesForAutomationAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _deviceSelectionPort.SelectDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _snapshotQueryPort.GetAutomationOptionsSnapshotAsync(cancellationToken).ConfigureAwait(false);");

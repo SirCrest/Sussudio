@@ -13,49 +13,49 @@ namespace Sussudio.Services.Automation;
 // calls the delegate. AcknowledgeMessage returns a stable ack string for the
 // response, using the command name because trivial handlers do not retain the
 // formatted per-command strings from the old case bodies.
-internal sealed record AutomationCommandHandler(
-    Func<IAutomationViewModel, JsonElement, CancellationToken, Task> Invoke,
+internal sealed record AutomationCommandHandler<TTarget>(
+    Func<TTarget, JsonElement, CancellationToken, Task> Invoke,
     Func<AutomationCommandKind, JsonElement, string> AcknowledgeMessage,
     string PayloadFieldName,
     AutomationPayloadFieldType PayloadFieldType)
 {
-    public Task InvokeAsync(IAutomationViewModel viewModel, JsonElement payload, CancellationToken cancellationToken)
-        => Invoke(viewModel, payload, cancellationToken);
+    public Task InvokeAsync(TTarget target, JsonElement payload, CancellationToken cancellationToken)
+        => Invoke(target, payload, cancellationToken);
 
-    public static AutomationCommandHandler Bool(
-        Func<IAutomationViewModel, bool, CancellationToken, Task> action,
+    public static AutomationCommandHandler<TTarget> Bool(
+        Func<TTarget, bool, CancellationToken, Task> action,
         string propertyName)
         => new(
-            (vm, payload, ct) =>
+            (target, payload, ct) =>
             {
                 var value = GetBoolRequired(payload, propertyName);
-                return action(vm, value, ct);
+                return action(target, value, ct);
             },
             (command, _) => $"{command} acknowledged.",
             propertyName,
             AutomationPayloadFieldType.Boolean);
 
-    public static AutomationCommandHandler String(
-        Func<IAutomationViewModel, string, CancellationToken, Task> action,
+    public static AutomationCommandHandler<TTarget> String(
+        Func<TTarget, string, CancellationToken, Task> action,
         string propertyName)
         => new(
-            (vm, payload, ct) =>
+            (target, payload, ct) =>
             {
                 var value = GetStringRequired(payload, propertyName);
-                return action(vm, value, ct);
+                return action(target, value, ct);
             },
             (command, _) => $"{command} acknowledged.",
             propertyName,
             AutomationPayloadFieldType.String);
 
-    public static AutomationCommandHandler Double(
-        Func<IAutomationViewModel, double, CancellationToken, Task> action,
+    public static AutomationCommandHandler<TTarget> Double(
+        Func<TTarget, double, CancellationToken, Task> action,
         string propertyName)
         => new(
-            (vm, payload, ct) =>
+            (target, payload, ct) =>
             {
                 var value = GetDoubleRequired(payload, propertyName);
-                return action(vm, value, ct);
+                return action(target, value, ct);
             },
             (command, _) => $"{command} acknowledged.",
             propertyName,

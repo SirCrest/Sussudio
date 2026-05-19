@@ -307,23 +307,26 @@ commands, automatic post-recording verification scheduling, and
 recording-start verification reset, and verification-profile adaptation.
 
 Automation command dispatch now keeps the root router focused on the command
-envelope: manifest revision checks, auth/readiness gates, trivial-handler
-dispatch, and error shaping. `AutomationCommandDispatcher.CustomCommands.cs`
+envelope: manifest revision checks, auth/readiness gates, port-typed
+trivial-handler dispatch, and error shaping. `AutomationCommandDispatcher.CustomCommands.cs`
 owns the custom command switch/router for commands that need multi-field
 payloads, special response shapes, capture/Flashback routing, or domain command
 handoff. `IAutomationViewModel.cs` now keeps the aggregate automation ViewModel
-contract while defining feature-shaped ports for readiness, snapshot queries,
-device selection, capture settings, audio, preview/recording, UI, Flashback,
-and probes in one file. Keep the ports grouped there until a consumer needs a
-separate file; avoid tiny interface files that only reduce line count. The
-dispatcher consumes the readiness port for device-ready gating and the
-device-selection/snapshot-query ports for device commands, the audio port for
-device-audio/microphone commands, and the capture-settings plus
-preview-recording ports for MJPEG decoder, output path, and recording commands.
-Visual probe commands consume the probe port while window screenshots remain on
-the window-control surface. Stats-section UI commands consume the UI port,
-audio-ramp trace reads consume the snapshot-query port, and Flashback commands
-consume the Flashback port.
+constructor contract while defining feature-shaped ports for readiness, snapshot
+queries, device selection, capture settings, audio, preview/recording, UI,
+Flashback, and probes in one file. Keep the ports grouped there until a
+consumer needs a separate file; avoid tiny interface files that only reduce line
+count. The dispatcher no longer stores the aggregate ViewModel; it assigns the
+constructor argument into the narrow ports and invokes trivial/UI handler tables
+through matching port targets. The dispatcher consumes the readiness port for
+device-ready gating and the device-selection/snapshot-query ports for device
+commands, the audio port for device-audio/microphone commands, and the
+capture-settings plus preview-recording ports for MJPEG decoder, output path,
+recording, preview, and related one-field commands. Visual probe commands
+consume the probe port while window screenshots remain on the window-control
+surface. Stats-section UI commands consume the UI port, audio-ramp trace reads
+consume the snapshot-query port, and Flashback commands consume the Flashback
+port.
 `AutomationDiagnosticsHub` consumes the snapshot-query port for read-only
 runtime, health, and recording verification snapshots instead of depending on
 the full aggregate surface.

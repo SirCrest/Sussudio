@@ -135,8 +135,10 @@ dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore
 Automation diagnostics ownership:
 
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.cs` owns the
-  command envelope, manifest/auth/readiness gates, trivial-handler dispatch, and
-  error shaping.
+  command envelope, manifest/auth/readiness gates, port-typed trivial-handler
+  dispatch, and error shaping. The public constructor still accepts the
+  aggregate automation ViewModel contract, but this dispatcher root should
+  assign it into narrow ports rather than storing the aggregate dependency.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.AudioControlCommands.cs`
   owns device-audio mode, analog audio gain, and microphone-enable command
   bodies behind the custom command router.
@@ -172,8 +174,8 @@ Automation diagnostics ownership:
   screenshot capture, default capture output paths, and capture response
   status shaping behind the custom command router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.TrivialHandlers.cs`
-  owns the table of simple one-property capture and pipeline commands that
-  delegate straight to the automation view-model port.
+  owns the port-grouped tables of simple one-property capture and pipeline
+  commands that delegate straight to the matching automation ports.
 - `Sussudio/Services/Automation/IAutomationViewModel.cs` owns the aggregate
   automation ViewModel contract plus feature-shaped ports for readiness,
   snapshot queries, device selection, capture settings, audio, preview/recording,
@@ -205,9 +207,9 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.Payload.cs` owns
   JSON payload extraction helpers for dispatcher command bodies.
 - `Sussudio/Services/Automation/AutomationCommandHandler.cs` owns the shared
-  trivial-handler wrapper used by simple one-property automation commands,
-  including the payload field name/type metadata checked against the shared
-  automation command catalog.
+  target-typed trivial-handler wrapper used by simple one-property automation
+  commands, including the payload field name/type metadata checked against the
+  shared automation command catalog.
 - `Sussudio/Services/Automation/NamedPipeAutomationServer.cs` owns automation
   pipe constructor/configuration state.
 - `Sussudio/Services/Automation/NamedPipeAutomationServer.Lifecycle.cs` owns

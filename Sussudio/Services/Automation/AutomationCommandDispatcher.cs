@@ -14,7 +14,6 @@ namespace Sussudio.Services.Automation;
 // harnesses.
 public sealed partial class AutomationCommandDispatcher : IAutomationCommandDispatcher
 {
-    private readonly IAutomationViewModel _viewModel;
     private readonly IAutomationReadinessPort _readinessPort;
     private readonly IAutomationDeviceSelectionPort _deviceSelectionPort;
     private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;
@@ -39,7 +38,7 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
         IAutomationWindowControl windowControl,
         string? authToken = null)
     {
-        _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+        ArgumentNullException.ThrowIfNull(viewModel);
         _readinessPort = viewModel;
         _deviceSelectionPort = viewModel;
         _snapshotQueryPort = viewModel;
@@ -136,10 +135,28 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
                 return uiSettingsResponse;
             }
 
-            if (TrivialHandlers.TryGetValue(request.Command, out var trivialHandler))
+            if (TrivialDeviceSelectionHandlers.TryGetValue(request.Command, out var deviceSelectionHandler))
             {
-                await trivialHandler.InvokeAsync(_viewModel, payload, cancellationToken).ConfigureAwait(false);
-                return CreateAcknowledgedResponse(correlationId, trivialHandler.AcknowledgeMessage(request.Command, payload));
+                await deviceSelectionHandler.InvokeAsync(_deviceSelectionPort, payload, cancellationToken).ConfigureAwait(false);
+                return CreateAcknowledgedResponse(correlationId, deviceSelectionHandler.AcknowledgeMessage(request.Command, payload));
+            }
+
+            if (TrivialCaptureSettingsHandlers.TryGetValue(request.Command, out var captureSettingsHandler))
+            {
+                await captureSettingsHandler.InvokeAsync(_captureSettingsPort, payload, cancellationToken).ConfigureAwait(false);
+                return CreateAcknowledgedResponse(correlationId, captureSettingsHandler.AcknowledgeMessage(request.Command, payload));
+            }
+
+            if (TrivialAudioHandlers.TryGetValue(request.Command, out var audioHandler))
+            {
+                await audioHandler.InvokeAsync(_audioPort, payload, cancellationToken).ConfigureAwait(false);
+                return CreateAcknowledgedResponse(correlationId, audioHandler.AcknowledgeMessage(request.Command, payload));
+            }
+
+            if (TrivialPreviewRecordingHandlers.TryGetValue(request.Command, out var previewRecordingHandler))
+            {
+                await previewRecordingHandler.InvokeAsync(_previewRecordingPort, payload, cancellationToken).ConfigureAwait(false);
+                return CreateAcknowledgedResponse(correlationId, previewRecordingHandler.AcknowledgeMessage(request.Command, payload));
             }
 
             return await ExecuteCustomCommandAsync(request, payload, correlationId, cancellationToken)

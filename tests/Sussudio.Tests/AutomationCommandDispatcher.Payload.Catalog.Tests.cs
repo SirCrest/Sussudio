@@ -44,8 +44,13 @@ static partial class Program
     private static Task AutomationCommandDispatcher_OneFieldHandlers_MatchCatalogPayloadFields()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
-        var handlers = GetHandlerEntries(dispatcherType, "TrivialHandlers")
-            .Concat(GetHandlerEntries(dispatcherType, "UiSettingsHandlers"))
+        var handlers = GetHandlerEntries(dispatcherType, "TrivialDeviceSelectionHandlers")
+            .Concat(GetHandlerEntries(dispatcherType, "TrivialCaptureSettingsHandlers"))
+            .Concat(GetHandlerEntries(dispatcherType, "TrivialAudioHandlers"))
+            .Concat(GetHandlerEntries(dispatcherType, "TrivialPreviewRecordingHandlers"))
+            .Concat(GetHandlerEntries(dispatcherType, "UiCaptureSettingsHandlers"))
+            .Concat(GetHandlerEntries(dispatcherType, "UiPreviewRecordingHandlers"))
+            .Concat(GetHandlerEntries(dispatcherType, "UiStateHandlers"))
             .ToArray();
 
         AssertEqual(true, handlers.Length > 0, "dispatcher one-field handler tables are not empty");

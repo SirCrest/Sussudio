@@ -79,13 +79,18 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertDoesNotContain(customCommandsText, "case AutomationCommandKind.SetStatsSectionVisible:");
-        AssertContains(uiSettingsCommandsText, "private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler> UiSettingsHandlers");
+        AssertContains(uiSettingsCommandsText, "private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationCaptureSettingsPort>> UiCaptureSettingsHandlers");
+        AssertContains(uiSettingsCommandsText, "private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationPreviewRecordingPort>> UiPreviewRecordingHandlers");
+        AssertContains(uiSettingsCommandsText, "private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationUiPort>> UiStateHandlers");
         AssertContains(uiSettingsCommandsText, "[AutomationCommandKind.SetShowAllCaptureOptions]");
         AssertContains(uiSettingsCommandsText, "[AutomationCommandKind.SetPreviewVolume]");
         AssertContains(uiSettingsCommandsText, "[AutomationCommandKind.SetStatsVisible]");
         AssertContains(uiSettingsCommandsText, "[AutomationCommandKind.SetSettingsVisible]");
         AssertContains(uiSettingsCommandsText, "[AutomationCommandKind.SetFrameTimeOverlayVisible]");
         AssertContains(uiSettingsCommandsText, "[AutomationCommandKind.SetFlashbackTimelineVisible]");
+        AssertContains(uiSettingsCommandsText, "captureSettingsHandler.InvokeAsync(_captureSettingsPort, payload, cancellationToken)");
+        AssertContains(uiSettingsCommandsText, "previewRecordingHandler.InvokeAsync(_previewRecordingPort, payload, cancellationToken)");
+        AssertContains(uiSettingsCommandsText, "uiHandler.InvokeAsync(_uiPort, payload, cancellationToken)");
         AssertContains(uiSettingsCommandsText, "if (command == AutomationCommandKind.SetStatsSectionVisible)");
         AssertContains(uiSettingsCommandsText, "ExecuteSetStatsSectionVisibleCommandAsync(payload, correlationId, cancellationToken)");
         AssertContains(uiSettingsCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetStatsSectionVisibleCommandAsync(");

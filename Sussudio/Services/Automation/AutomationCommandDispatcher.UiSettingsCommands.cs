@@ -10,20 +10,30 @@ public sealed partial class AutomationCommandDispatcher
 {
     // UI/settings automation commands live together because callers treat them
     // as ready-independent app-state toggles, even when their payload shapes vary.
-    private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler> UiSettingsHandlers =
-        new Dictionary<AutomationCommandKind, AutomationCommandHandler>
+    private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationCaptureSettingsPort>> UiCaptureSettingsHandlers =
+        new Dictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationCaptureSettingsPort>>
         {
-            [AutomationCommandKind.SetShowAllCaptureOptions] = AutomationCommandHandler.Bool(
+            [AutomationCommandKind.SetShowAllCaptureOptions] = AutomationCommandHandler<IAutomationCaptureSettingsPort>.Bool(
                 (vm, v, ct) => vm.SetShowAllCaptureOptionsAsync(v, ct), "enabled"),
-            [AutomationCommandKind.SetPreviewVolume] = AutomationCommandHandler.Double(
+        };
+
+    private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationPreviewRecordingPort>> UiPreviewRecordingHandlers =
+        new Dictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationPreviewRecordingPort>>
+        {
+            [AutomationCommandKind.SetPreviewVolume] = AutomationCommandHandler<IAutomationPreviewRecordingPort>.Double(
                 (vm, v, ct) => vm.SetPreviewVolumeAsync(v, ct), "previewVolumePercent"),
-            [AutomationCommandKind.SetStatsVisible] = AutomationCommandHandler.Bool(
+        };
+
+    private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationUiPort>> UiStateHandlers =
+        new Dictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationUiPort>>
+        {
+            [AutomationCommandKind.SetStatsVisible] = AutomationCommandHandler<IAutomationUiPort>.Bool(
                 (vm, v, ct) => vm.SetStatsVisibleAsync(v, ct), "visible"),
-            [AutomationCommandKind.SetSettingsVisible] = AutomationCommandHandler.Bool(
+            [AutomationCommandKind.SetSettingsVisible] = AutomationCommandHandler<IAutomationUiPort>.Bool(
                 (vm, v, ct) => vm.SetSettingsVisibleAsync(v, ct), "visible"),
-            [AutomationCommandKind.SetFrameTimeOverlayVisible] = AutomationCommandHandler.Bool(
+            [AutomationCommandKind.SetFrameTimeOverlayVisible] = AutomationCommandHandler<IAutomationUiPort>.Bool(
                 (vm, v, ct) => vm.SetFrameTimeOverlayVisibleAsync(v, ct), "visible"),
-            [AutomationCommandKind.SetFlashbackTimelineVisible] = AutomationCommandHandler.Bool(
+            [AutomationCommandKind.SetFlashbackTimelineVisible] = AutomationCommandHandler<IAutomationUiPort>.Bool(
                 (vm, v, ct) => vm.SetFlashbackTimelineVisibleAsync(v, ct), "visible"),
         };
 
@@ -33,10 +43,22 @@ public sealed partial class AutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        if (UiSettingsHandlers.TryGetValue(command, out var handler))
+        if (UiCaptureSettingsHandlers.TryGetValue(command, out var captureSettingsHandler))
         {
-            await handler.InvokeAsync(_viewModel, payload, cancellationToken).ConfigureAwait(false);
-            return CreateAcknowledgedResponse(correlationId, handler.AcknowledgeMessage(command, payload));
+            await captureSettingsHandler.InvokeAsync(_captureSettingsPort, payload, cancellationToken).ConfigureAwait(false);
+            return CreateAcknowledgedResponse(correlationId, captureSettingsHandler.AcknowledgeMessage(command, payload));
+        }
+
+        if (UiPreviewRecordingHandlers.TryGetValue(command, out var previewRecordingHandler))
+        {
+            await previewRecordingHandler.InvokeAsync(_previewRecordingPort, payload, cancellationToken).ConfigureAwait(false);
+            return CreateAcknowledgedResponse(correlationId, previewRecordingHandler.AcknowledgeMessage(command, payload));
+        }
+
+        if (UiStateHandlers.TryGetValue(command, out var uiHandler))
+        {
+            await uiHandler.InvokeAsync(_uiPort, payload, cancellationToken).ConfigureAwait(false);
+            return CreateAcknowledgedResponse(correlationId, uiHandler.AcknowledgeMessage(command, payload));
         }
 
         if (command == AutomationCommandKind.SetStatsSectionVisible)
