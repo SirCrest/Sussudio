@@ -3474,8 +3474,10 @@ owner, fold it back into that owner and update the source-shape tests and
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Recording.cs`
    owns recording transition, recording capability, and recording settings
    automation graph ports, and
+   `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RuntimeEventIngress.cs`
+   owns runtime event-ingress graph ports, and
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Runtime.cs`
-   owns runtime lifecycle, event ingress, and disposal graph ports.
+   owns runtime lifecycle and disposal graph ports.
    `MainViewModelDependencies.cs` continues to own service construction. Audio capture/preview property handlers now live in
    `MainViewModel.AudioPropertyChanges.cs`, microphone monitor/device
    selection handlers live in `MainViewModel.MicrophonePropertyChanges.cs`,
