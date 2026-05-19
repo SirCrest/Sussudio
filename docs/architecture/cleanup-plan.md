@@ -819,9 +819,11 @@ snapshots, and Flashback playback/buffer status projections now live in
 `CaptureSessionCoordinator.cs` owns construction and shared state fields.
 `CaptureSessionCoordinator.Commands.cs` owns the public non-Flashback
 lifecycle/audio command facade into the serialized worker. Queue work item
-creation, command enqueueing, worker-loop execution, coalescing,
-cancellation/failure accounting, and pending-command counters now live in
-`CaptureSessionCoordinator.Queue.cs`.
+creation, command enqueueing, enqueue-failure handling, and disposed-state
+ingress guards now live in `CaptureSessionCoordinator.Queue.cs`. Worker-loop
+execution, command coalescing, operation cancellation/failure accounting,
+pending-command failure drain, and pending-command counter decrement policy now
+live in `CaptureSessionCoordinator.QueueExecution.cs`.
 Queue/session snapshot projection, last-command state, pending-command age
 bookkeeping, and queue latency accounting now live in
 `CaptureSessionCoordinator.Snapshot.cs`. Dispose/drain/cancel lifecycle for the
