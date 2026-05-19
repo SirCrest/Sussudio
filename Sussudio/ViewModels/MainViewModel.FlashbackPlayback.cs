@@ -51,7 +51,6 @@ public partial class MainViewModel
 
         IsDiskWarningActive = bufferStatus.IsDiskWarningActive;
 
-        // Sample flashback output bytes for bitrate computation
         UpdateFlashbackBitrate();
 
         // Sync state from controller
@@ -78,13 +77,7 @@ public partial class MainViewModel
     {
         var diskBytes = _sessionCoordinator.FlashbackTotalBytesWritten;
         var now = Environment.TickCount64;
-        _flashbackBitrateSamples.Enqueue((now, diskBytes));
-        while (_flashbackBitrateSamples.Count > 0 && now - _flashbackBitrateSamples.Peek().Tick > BitrateWindowMs)
-        {
-            _flashbackBitrateSamples.Dequeue();
-        }
-
-        var smoothed = ComputeAverageBitrate(_flashbackBitrateSamples);
+        var smoothed = _flashbackBitrateSamples.AddSampleAndCompute(now, diskBytes);
         FlashbackBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : "";
     }
 }

@@ -64,7 +64,7 @@ public partial class MainViewModel
 
                 _viewModel.IsRecording = true;
                 _viewModel._recordingStopwatch.Restart();
-                _viewModel._bitrateSamples.Clear();
+                _viewModel._recordingBitrateSamples.Clear();
                 _viewModel.RecordingSizeInfo = "0 B";
                 _viewModel.RecordingBitrateInfo = "--";
                 _viewModel.StatusText = "Recording...";

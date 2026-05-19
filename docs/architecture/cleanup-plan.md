@@ -3452,9 +3452,11 @@ owner, fold it back into that owner and update the source-shape tests and
    output drive free-space assignment now lives in
    `MainViewModel.RecordingRuntime.cs`, while output drive probing,
    fallback, formatting, and suppressed-warning logging now live in
-   `OutputDriveSpacePresentationBuilder.cs`. Recording size/bitrate
-   projection and recording-state reset reactions also live in
-   `MainViewModel.RecordingRuntime.cs`, and
+   `OutputDriveSpacePresentationBuilder.cs`. Recording size/bitrate label
+   assignment and recording-state reset reactions also live in
+   `MainViewModel.RecordingRuntime.cs`, while
+   `Sussudio/ViewModels/BitrateSampleWindow.cs` owns bounded byte-sample
+   smoothing shared by recording and Flashback bitrate presentation, and
    capture presentation adapters now live in
    `MainViewModel.CapturePresentation.cs`: live-capture info projection from
    runtime snapshots, audio-preview activity, live resolution/frame-rate/pixel-format

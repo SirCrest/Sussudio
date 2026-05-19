@@ -53,6 +53,7 @@ static partial class Program
         var mainViewModelRuntimeEventIngressControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeEventIngressController.cs"));
         var mainViewModelDisposalControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDisposalController.cs"));
         var mainViewModelRecordingRuntimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.RecordingRuntime.cs"));
+        var bitrateSampleWindowText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "BitrateSampleWindow.cs"));
         var outputDriveSpacePresentationBuilderText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "OutputDriveSpacePresentationBuilder.cs"));
         var mainViewModelCapturePresentationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CapturePresentation.cs"));
         var mainViewModelDisposalText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Disposal.cs"));
@@ -109,6 +110,9 @@ static partial class Program
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel.UpdateDiskSpace();");
         AssertContains(mainViewModelRecordingRuntimeText, "private void UpdateDiskSpace()");
         AssertContains(mainViewModelRecordingRuntimeText, "DiskSpaceInfo = OutputDriveSpacePresentationBuilder.Build(OutputPath);");
+        AssertContains(mainViewModelRecordingRuntimeText, "_recordingBitrateSamples.AddSampleAndCompute(now, totalBytes);");
+        AssertContains(bitrateSampleWindowText, "internal sealed class BitrateSampleWindow");
+        AssertContains(bitrateSampleWindowText, "private readonly Queue<(long Tick, long Bytes)> _samples = new();");
         AssertContains(outputDriveSpacePresentationBuilderText, "new DriveInfo(Path.GetPathRoot(outputPath) ?? \"C:\");");
         AssertContains(outputDriveSpacePresentationBuilderText, "return $\"Free: {freeGb:F1} GB\";");
         AssertContains(outputDriveSpacePresentationBuilderText, "Suppressed exception in MainViewModel.RefreshDiskSpace");
@@ -164,6 +168,7 @@ static partial class Program
         AssertDoesNotContain(mainViewModelRecordingRuntimeText, "new DriveInfo(");
         AssertDoesNotContain(mainViewModelRecordingRuntimeText, "Path.GetPathRoot(");
         AssertDoesNotContain(mainViewModelRecordingRuntimeText, "Trace.TraceWarning(");
+        AssertDoesNotContain(mainViewModelRecordingRuntimeText, "private static double? ComputeAverageBitrate(");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "private void OnCaptureStatusChanged(object? sender, string status)");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "private void OnCaptureError(object? sender, Exception ex)");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "private void OnCapturePreCleanupRequested()");

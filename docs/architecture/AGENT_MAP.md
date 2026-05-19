@@ -2592,7 +2592,9 @@ Primary current owners:
   while `Sussudio/ViewModels/OutputDriveSpacePresentationBuilder.cs` owns output drive probing,
   fallback, formatting, and suppressed-warning logging.
   `MainViewModel.RecordingRuntime.cs` owns
-  recording size/bitrate projection and recording-state reset reactions.
+  recording size/bitrate label assignment and recording-state reset reactions,
+  while `Sussudio/ViewModels/BitrateSampleWindow.cs` owns bounded byte-sample
+  smoothing shared by recording and Flashback bitrate presentation.
   `MainViewModel.CapturePresentation.cs` owns capture presentation adapters:
   live-capture info projection from `CaptureRuntimeSnapshot`, including
   audio-preview activity and live-resolution/frame-rate/pixel-format

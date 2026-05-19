@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -12,7 +11,7 @@ namespace Sussudio.ViewModels;
 public partial class MainViewModel
 {
     private readonly Stopwatch _recordingStopwatch = new();
-    private readonly Queue<(long Tick, long Bytes)> _bitrateSamples = new();
+    private readonly BitrateSampleWindow _recordingBitrateSamples = new(BitrateWindowMs);
     private const int BitrateWindowMs = 10000;
     private const string DefaultRecordingFormat = "H.264";
     private const string HevcRecordingFormat = "HEVC";

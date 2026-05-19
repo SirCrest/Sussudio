@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.ViewModels;
@@ -17,7 +15,7 @@ public partial class MainViewModel
             ResetAudioMeter();
             RecordingSizeInfo = "--";
             RecordingBitrateInfo = "--";
-            _bitrateSamples.Clear();
+            _recordingBitrateSamples.Clear();
 
             if (_pendingModeOptionsRefresh)
             {
@@ -34,37 +32,12 @@ public partial class MainViewModel
         RecordingSizeInfo = DisplayFormatters.FormatBytes(totalBytes, "0");
 
         var now = Environment.TickCount64;
-        _bitrateSamples.Enqueue((now, totalBytes));
-        while (_bitrateSamples.Count > 0 && now - _bitrateSamples.Peek().Tick > BitrateWindowMs)
-        {
-            _bitrateSamples.Dequeue();
-        }
-
-        var smoothed = ComputeAverageBitrate(_bitrateSamples);
+        var smoothed = _recordingBitrateSamples.AddSampleAndCompute(now, totalBytes);
         RecordingBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : "--";
     }
 
     private void UpdateDiskSpace()
     {
         DiskSpaceInfo = OutputDriveSpacePresentationBuilder.Build(OutputPath);
-    }
-
-    private static double? ComputeAverageBitrate(Queue<(long Tick, long Bytes)> samples)
-    {
-        if (samples.Count < 2)
-        {
-            return null;
-        }
-
-        var first = samples.Peek();
-        var last = samples.Last();
-        var deltaMs = last.Tick - first.Tick;
-        if (deltaMs <= 0)
-        {
-            return null;
-        }
-
-        var deltaBytes = Math.Max(0, last.Bytes - first.Bytes);
-        return (deltaBytes * 8.0) / (deltaMs / 1000.0);
     }
 }

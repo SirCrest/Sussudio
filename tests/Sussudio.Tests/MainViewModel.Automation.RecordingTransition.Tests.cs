@@ -1,4 +1,5 @@
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -101,6 +102,12 @@ static partial class Program
             .Replace("\r\n", "\n");
         var recordingStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingState.cs")
             .Replace("\r\n", "\n");
+        var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
+            .Replace("\r\n", "\n");
+        var flashbackPlaybackText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackPlayback.cs")
+            .Replace("\r\n", "\n");
+        var bitrateSampleWindowText = ReadRepoFile("Sussudio/ViewModels/BitrateSampleWindow.cs")
+            .Replace("\r\n", "\n");
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs")
             .Replace("\r\n", "\n");
         var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
@@ -151,6 +158,8 @@ static partial class Program
         AssertDoesNotContain(captureText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(captureText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
         AssertContains(recordingStateText, "private readonly Stopwatch _recordingStopwatch = new();");
+        AssertContains(recordingStateText, "private readonly BitrateSampleWindow _recordingBitrateSamples = new(BitrateWindowMs);");
+        AssertContains(flashbackStateText, "private readonly BitrateSampleWindow _flashbackBitrateSamples = new(BitrateWindowMs);");
         AssertContains(recordingStateText, "public partial ObservableCollection<string> AvailableRecordingFormats");
         AssertContains(recordingStateText, "public partial string OutputPath");
         AssertContains(recordingStateText, "public partial bool IsRecording");
@@ -158,21 +167,61 @@ static partial class Program
         AssertDoesNotContain(recordingStateText, "_recordingToggleInProgress");
         AssertContains(recordingRuntimeText, "partial void OnIsRecordingChanged(bool value)");
         AssertContains(recordingRuntimeText, "private void UpdateRecordingStats()");
-        AssertContains(recordingRuntimeText, "private static double? ComputeAverageBitrate(Queue<(long Tick, long Bytes)> samples)");
+        AssertContains(recordingRuntimeText, "_recordingBitrateSamples.Clear();");
+        AssertContains(recordingRuntimeText, "var smoothed = _recordingBitrateSamples.AddSampleAndCompute(now, totalBytes);");
         AssertContains(recordingRuntimeText, "RecordingSizeInfo = DisplayFormatters.FormatBytes(totalBytes, \"0\");");
         AssertContains(recordingRuntimeText, "RecordingBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : \"--\";");
+        AssertContains(flashbackPlaybackText, "var smoothed = _flashbackBitrateSamples.AddSampleAndCompute(now, diskBytes);");
+        AssertContains(bitrateSampleWindowText, "internal sealed class BitrateSampleWindow");
+        AssertContains(bitrateSampleWindowText, "public double? AddSampleAndCompute(long tick, long bytes)");
+        AssertContains(bitrateSampleWindowText, "private static double? ComputeAverageBitrate(Queue<(long Tick, long Bytes)> samples)");
         AssertContains(recordingRuntimeText, "_pendingModeOptionsRefresh = false;");
         AssertContains(recordingRuntimeText, "RebuildResolutionOptions();");
         AssertContains(runtimeLifecycleControllerText, "_viewModel.UpdateRecordingStats();");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private void UpdateRecordingStats()");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private static double? ComputeAverageBitrate(");
         AssertDoesNotContain(runtimeLifecycleControllerText, "partial void OnIsRecordingChanged(bool value)");
+        AssertDoesNotContain(recordingRuntimeText, "private static double? ComputeAverageBitrate(");
+        AssertDoesNotContain(recordingRuntimeText, "Queue<(long Tick, long Bytes)> samples");
         AssertDoesNotContain(rootViewModelText, "public partial ObservableCollection<string> AvailableRecordingFormats");
         AssertDoesNotContain(rootViewModelText, "public partial string OutputPath");
         AssertContains(automationText, "=> SetRecordingDesiredStateAsync(enabled, cancellationToken);");
         AssertContains(dispatcherText, "return CreateResponse(correlationId, $\"Recording {(enabled ? \"started\" : \"stopped\")}.\"");
         AssertContains(dispatcherText, "var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "snapshot: snapshot");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task BitrateSampleWindow_PreservesBoundedAverageBehavior()
+    {
+        var windowType = RequireType("Sussudio.ViewModels.BitrateSampleWindow");
+        var window = Activator.CreateInstance(
+                         windowType,
+                         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                         binder: null,
+                         args: new object[] { 10_000L },
+                         culture: null)
+                     ?? throw new InvalidOperationException("BitrateSampleWindow instance could not be created.");
+        var sampleMethod = windowType.GetMethod("AddSampleAndCompute", BindingFlags.Instance | BindingFlags.Public)
+            ?? throw new InvalidOperationException("BitrateSampleWindow.AddSampleAndCompute was not found.");
+        var clearMethod = windowType.GetMethod("Clear", BindingFlags.Instance | BindingFlags.Public)
+            ?? throw new InvalidOperationException("BitrateSampleWindow.Clear was not found.");
+
+        AssertEqual(null, (double?)sampleMethod.Invoke(window, new object[] { 0L, 100L }), "first sample bitrate");
+        AssertNearlyEqual(
+            8000.0,
+            (double)sampleMethod.Invoke(window, new object[] { 1000L, 1100L })!,
+            0.0001,
+            "two sample bitrate");
+        AssertNearlyEqual(
+            4000.0,
+            (double)sampleMethod.Invoke(window, new object[] { 11_000L, 6100L })!,
+            0.0001,
+            "trimmed sample bitrate");
+
+        clearMethod.Invoke(window, null);
+        AssertEqual(null, (double?)sampleMethod.Invoke(window, new object[] { 12_000L, 6100L }), "cleared sample bitrate");
 
         return Task.CompletedTask;
     }

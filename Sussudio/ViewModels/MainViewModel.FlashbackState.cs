@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -9,7 +8,7 @@ namespace Sussudio.ViewModels;
 
 public partial class MainViewModel
 {
-    private readonly Queue<(long Tick, long Bytes)> _flashbackBitrateSamples = new();
+    private readonly BitrateSampleWindow _flashbackBitrateSamples = new(BitrateWindowMs);
     private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;
     private bool _suppressFlashbackFormatCycle;
     private bool _suppressFlashbackEncoderSettingsCycle;

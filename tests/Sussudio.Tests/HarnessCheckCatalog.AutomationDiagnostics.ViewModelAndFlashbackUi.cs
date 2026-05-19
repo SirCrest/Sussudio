@@ -30,6 +30,9 @@ static partial class Program
             "Automation recording transitions use shared lifecycle gate",
             MainViewModelAutomation_RoutesRecordingThroughSharedTransitionGate);
         await AddCheckAsync(results,
+            "Bitrate sample window preserves bounded average behavior",
+            BitrateSampleWindow_PreservesBoundedAverageBehavior);
+        await AddCheckAsync(results,
             "Automation recording settings route through controller and Flashback cycle",
             MainViewModelAutomation_RecordingSettingsRouteThroughControllerAndFlashbackCycle);
         await AddCheckAsync(results,
