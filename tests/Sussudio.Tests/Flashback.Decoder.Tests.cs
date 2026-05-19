@@ -244,11 +244,15 @@ static partial class Program
         {
         }
 
-        var sourceText = ReadFlashbackDecoderSource();
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+        var d3d11Text = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs")
+            .Replace("\r\n", "\n");
+        AssertDoesNotContain(rootText, "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)");
         var initializeBlock = ExtractTextBetween(
-            sourceText,
+            d3d11Text,
             "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)",
-            "    /// <summary>\n    /// Opens a .ts or .mp4 file for decoding.");
+            "    private static AVPixelFormat GetFormatD3D11");
         AssertContains(initializeBlock, "ThrowIfDisposed();");
         AssertOccursBefore(initializeBlock, "ThrowIfDisposed();", "if (_initialized)");
 

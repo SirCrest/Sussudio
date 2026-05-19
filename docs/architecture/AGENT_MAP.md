@@ -860,10 +860,10 @@ Entry points:
 - `FlashbackBufferManager.EvictionPause.cs` owns eviction-pause state, recording PTS range capture, and pause-driven disk warning state.
 - `FlashbackStartupCacheCleanup.cs` owns startup stale-root/stale-session cleanup and temp-drive free-space probing.
 - `FlashbackStartupSessionCacheBudget.cs` owns startup session-cache budget calculation, session-directory stats, oldest-session eviction, and cache-budget cleanup telemetry.
-- `FlashbackDecoder.cs` owns decoder lifecycle, initialization, file open/close, and dispose shell.
+- `FlashbackDecoder.cs` owns decoder lifecycle, file open/close, and dispose shell.
 - `FlashbackDecoder.DecodeLoop.cs` owns video frame receive, packet feeding, inline audio interleave during video reads, live-file EOF clearing, and decode phase timing state.
 - `FlashbackDecoder.Seeking.cs` owns keyframe/exact seek control flow, pending-frame transfer, seek-cap diagnostics, and seek-buffer flushing.
-- `FlashbackDecoder.D3D11.cs` owns D3D11VA decoder selection, get-format callback behavior, hardware-config diagnostics, and hardware decoder context setup.
+- `FlashbackDecoder.D3D11.cs` owns D3D11 device-context initialization, D3D11VA decoder selection, get-format callback behavior, hardware-config diagnostics, and hardware decoder context setup.
 - `FlashbackDecoder.VideoOutput.cs` owns decoded video frame output and hardware/software frame selection.
 - `FlashbackDecoder.VideoConversion.cs` owns software plane copies and YUV-to-NV12/P010 conversion kernels.
 - `FlashbackDecoder.AudioOutput.cs` owns audio codec/resampler initialization, audio packet delivery, callback failure handling, resampler output conversion, and bounded audio buffer sizing.
