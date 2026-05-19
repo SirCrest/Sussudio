@@ -503,6 +503,12 @@ contracts.
 Flashback playback, Flashback encoder/backend, and Flashback export health DTO
 properties. Keep source-signal, queue-age, and A/V sync extension fields in the
 root `CaptureHealthSnapshot.cs` compatibility partial.
+`Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.Mjpeg.cs` owns the base
+diagnostics DTO's MJPEG decode, jitter, packet-hash, visual-cadence, and
+per-decoder telemetry properties. Keep session state, source telemetry,
+recording queue, Flashback queue, and audio-drop fields in the root
+`CaptureDiagnosticsSnapshot.cs` compatibility partial until those families are
+large enough to justify their own owner.
 
 `tests/Sussudio.Tests/RecordingQueue.Tests.cs` is now the shared recording
 queue source-reader helper shell. Capture health snapshot ownership coverage is

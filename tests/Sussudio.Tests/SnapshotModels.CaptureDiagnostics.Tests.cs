@@ -10,6 +10,14 @@ static partial class Program
 {
     private static Task CaptureDiagnosticsSnapshot_DefaultsAndRoundTripsCoreTelemetry()
     {
+        var diagnosticsRootText = ReadRepoFile("Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.cs");
+        var diagnosticsMjpegText = ReadRepoFile("Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.Mjpeg.cs");
+        AssertContains(diagnosticsRootText, "public partial class CaptureDiagnosticsSnapshot");
+        AssertContains(diagnosticsMjpegText, "public partial class CaptureDiagnosticsSnapshot");
+        AssertContains(diagnosticsMjpegText, "public int MjpegDecodeSampleCount { get; init; }");
+        AssertContains(diagnosticsMjpegText, "public double[] VisualCenterCadenceRecentChangeIntervalsMs { get; init; } = Array.Empty<double>();");
+        AssertDoesNotContain(diagnosticsRootText, "public int MjpegDecodeSampleCount { get; init; }");
+
         var snapshotType = RequireType("Sussudio.Models.CaptureDiagnosticsSnapshot");
         var decoderType = RequireType("Sussudio.Models.MjpegDecoderHealthSnapshot");
 

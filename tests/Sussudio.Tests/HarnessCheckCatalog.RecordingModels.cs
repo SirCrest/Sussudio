@@ -66,7 +66,7 @@ static partial class Program
     private static async Task AddRecordingModelSnapshotChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "CaptureDiagnosticsSnapshot preserves diagnostics telemetry contract",
+            "CaptureDiagnosticsSnapshot preserves diagnostics telemetry contract and MJPEG ownership",
             CaptureDiagnosticsSnapshot_DefaultsAndRoundTripsCoreTelemetry);
         await AddCheckAsync(results,
             "CaptureHealthSnapshot extends diagnostics with health telemetry",
