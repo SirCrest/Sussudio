@@ -755,14 +755,16 @@ adapter surface.
 preview snapshot UI-dispatch adapter and UI-thread-only preview state sampling.
 Read-only preview runtime snapshot construction now lives in
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`,
-which owns preview-state orchestration and blank/stall suspicion input
-selection.
+which owns preview-state orchestration.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotInput.cs` owns
 the UI-thread sampled preview snapshot input contract shared by the snapshot
 controller and D3D projection builder.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotMapper.cs` owns
 final preview runtime snapshot DTO flattening from sampled input, D3D
 projection, and health policy output.
+`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthInputFactory.cs`
+owns blank/stall suspicion input projection from sampled input, D3D projection,
+and controller-provided clock/tick values.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthPolicy.cs`
 owns preview startup elapsed timing plus blank/stall suspicion policy.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameCounterPolicy.cs`

@@ -55,6 +55,9 @@ static partial class Program
             "Preview runtime snapshot health policy preserves suspicion rules",
             PreviewRuntimeSnapshotHealthPolicy_PreservesSuspicionRules);
         await AddCheckAsync(results,
+            "Preview runtime snapshot health input factory projects controller inputs",
+            PreviewRuntimeSnapshotHealthInputFactory_ProjectsControllerInputs);
+        await AddCheckAsync(results,
             "Preview runtime D3D frame-counter policy preserves CPU fallback counters",
             PreviewRuntimeD3DFrameCounterPolicy_PreservesCpuFallbackCounters);
         await AddCheckAsync(results,

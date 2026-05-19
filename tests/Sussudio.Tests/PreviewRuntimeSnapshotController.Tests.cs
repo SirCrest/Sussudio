@@ -144,6 +144,47 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task PreviewRuntimeSnapshotHealthInputFactory_ProjectsControllerInputs()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
+        var factoryType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealthInputFactory");
+        var build = factoryType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
+                    ?? throw new InvalidOperationException("PreviewRuntimeSnapshotHealthInputFactory.Build not found.");
+        var now = DateTimeOffset.UtcNow;
+
+        var input = Activator.CreateInstance(inputType)
+                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+        SetPropertyOrBackingField(input, "IsPreviewing", true);
+        SetPropertyOrBackingField(input, "IsStartupWaitingForFirstVisual", true);
+        SetPropertyOrBackingField(input, "StartupRequestedUtc", now.AddMilliseconds(-2500));
+        SetPropertyOrBackingField(input, "StartupTimeoutMs", 1200);
+        SetPropertyOrBackingField(input, "LastPresentedTick", 42L);
+
+        var projection = Activator.CreateInstance(projectionType)
+                         ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
+        SetPropertyOrBackingField(projection, "RendererAttached", true);
+        SetPropertyOrBackingField(projection, "GpuActive", false);
+        SetPropertyOrBackingField(projection, "FramesArrived", 55L);
+        SetPropertyOrBackingField(projection, "FramesDisplayed", 6L);
+
+        var healthInput = build.Invoke(null, new object[] { input, projection, 999L, now })
+                          ?? throw new InvalidOperationException("PreviewRuntimeSnapshotHealthInputFactory returned null.");
+        AssertEqual(true, GetBoolProperty(healthInput, "IsPreviewing"), "health input previewing");
+        AssertEqual(true, GetBoolProperty(healthInput, "IsStartupWaitingForFirstVisual"), "health input waiting for first visual");
+        AssertEqual(GetPropertyValue(input, "StartupRequestedUtc"), GetPropertyValue(healthInput, "StartupRequestedUtc"), "health input startup request time");
+        AssertEqual(1200, GetIntProperty(healthInput, "StartupTimeoutMs"), "health input startup timeout");
+        AssertEqual(true, GetBoolProperty(healthInput, "RendererAttached"), "health input renderer attached");
+        AssertEqual(false, GetBoolProperty(healthInput, "GpuActive"), "health input GPU active");
+        AssertEqual(55L, GetLongProperty(healthInput, "FramesArrived"), "health input frames arrived");
+        AssertEqual(6L, GetLongProperty(healthInput, "FramesDisplayed"), "health input frames displayed");
+        AssertEqual(42L, GetLongProperty(healthInput, "LastPresentedTick"), "health input last presented tick");
+        AssertEqual(999L, GetLongProperty(healthInput, "CurrentTick"), "health input current tick");
+        AssertEqual(now, GetPropertyValue(healthInput, "UtcNow"), "health input clock");
+
+        return Task.CompletedTask;
+    }
+
     private static Task PreviewRuntimeD3DFrameCounterPolicy_PreservesCpuFallbackCounters()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");

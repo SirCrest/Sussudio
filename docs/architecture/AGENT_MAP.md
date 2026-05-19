@@ -1158,13 +1158,16 @@ Primary current owners:
 - `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the stable automation
   preview snapshot UI-dispatch adapter and UI-thread-only preview state
   sampling. `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`
-  owns read-only preview runtime snapshot orchestration and blank/stall
-  suspicion input selection. `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotInput.cs`
+  owns read-only preview runtime snapshot orchestration.
+  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotInput.cs`
   owns the UI-thread sampled preview snapshot input contract shared by the
   snapshot controller and D3D projection builder.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotMapper.cs`
   owns final preview runtime snapshot DTO flattening from sampled input, D3D
   projection, and health policy output.
+  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthInputFactory.cs`
+  owns blank/stall suspicion input projection from sampled input, D3D
+  projection, and controller-provided clock/tick values.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthPolicy.cs`
   owns preview startup elapsed timing plus blank/stall suspicion policy.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameCounterPolicy.cs`
