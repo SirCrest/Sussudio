@@ -14,6 +14,7 @@ static partial class Program
         var sharedFormatterValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Values.cs");
         var sharedFormatterDisplayValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.DisplayValues.cs");
         var sharedFormatterFlashbackSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.cs");
+        var sharedFormatterFlashbackPlaybackSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.Playback.cs");
         var sharedFormatterMjpegTimingSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs");
         var sharedFormatterPreviewSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Preview.cs");
         var sharedFormatterPreviewD3DSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs");
@@ -95,10 +96,13 @@ static partial class Program
         AssertContains(sharedFormatterFlashbackSource, "Export: active=");
         AssertContains(sharedFormatterFlashbackSource, "FlashbackExportThroughputBytesPerSec");
         AssertContains(sharedFormatterFlashbackSource, "forceRotateFallbacks=");
-        AssertContains(sharedFormatterFlashbackSource, "private static void AppendFlashbackPlaybackStatusSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterFlashbackSource, "private static void AppendFlashbackPlaybackMetricsSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterFlashbackSource, "Playback Decode:");
-        AssertContains(sharedFormatterFlashbackSource, "A/V Drift:");
+        AssertDoesNotContain(sharedFormatterFlashbackSource, "Playback Decode:");
+        AssertDoesNotContain(sharedFormatterFlashbackSource, "A/V Drift:");
+        AssertContains(sharedFormatterFlashbackPlaybackSource, "private static void AppendFlashbackPlaybackStatusSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterFlashbackPlaybackSource, "private static void AppendFlashbackPlaybackMetricsSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterFlashbackPlaybackSource, "Playback Commands:");
+        AssertContains(sharedFormatterFlashbackPlaybackSource, "Playback Decode:");
+        AssertContains(sharedFormatterFlashbackPlaybackSource, "A/V Drift:");
         AssertDoesNotContain(sharedFormatterRootSource, "builder.AppendLine(\"== Thread Health ==\");");
         AssertDoesNotContain(sharedFormatterRootSource, "WasapiPlaybackQueueDurationMs");
         AssertContains(sharedFormatterThreadHealthSource, "private static void AppendThreadHealthSection(StringBuilder builder, JsonElement snapshot)");
