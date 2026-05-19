@@ -10,18 +10,19 @@ public partial class MainViewModel
     {
         public void RebuildFrameRateOptions()
         {
-            var previousRate = _viewModel.SelectedFrameRate;
+            var previousRate = _context.GetSelectedFrameRate();
             var options = new List<FrameRateOption>();
-            var selectedResolutionKey = _viewModel.GetEffectiveResolutionKey(_viewModel.SelectedResolution);
-            var timingFamily = _viewModel.ResolvePreferredTimingFamily(selectedResolutionKey, previousRate);
-            if (_viewModel._latestSourceTelemetry.HasFrameRate &&
-                FrameRateTimingPolicy.TryInferFrameRateTimingFamily(_viewModel._latestSourceTelemetry.FrameRateArg, _viewModel._latestSourceTelemetry.FrameRateExact, out var sourceFamilyHint))
+            var selectedResolutionKey = _context.GetEffectiveResolutionKey(_context.GetSelectedResolution());
+            var timingFamily = _context.ResolvePreferredTimingFamily(selectedResolutionKey, previousRate);
+            var sourceTelemetry = _context.GetLatestSourceTelemetry();
+            if (sourceTelemetry.HasFrameRate &&
+                FrameRateTimingPolicy.TryInferFrameRateTimingFamily(sourceTelemetry.FrameRateArg, sourceTelemetry.FrameRateExact, out var sourceFamilyHint))
             {
                 timingFamily = sourceFamilyHint;
             }
 
             if (!string.IsNullOrWhiteSpace(selectedResolutionKey) &&
-                _viewModel._resolutionToFormats.TryGetValue(selectedResolutionKey, out var formats))
+                _context.GetResolutionToFormats().TryGetValue(selectedResolutionKey, out var formats))
             {
                 options = formats
                     .GroupBy(format => FrameRateTimingPolicy.GetFriendlyFrameRateBucket(format.FrameRateExact))
@@ -34,11 +35,11 @@ public partial class MainViewModel
                         // In SDR mode, enable if 8-bit formats exist. Also enable if only
                         // 10-bit formats exist for this rate (e.g., 4K HFR paths that only
                         // advertise P010) - UpdateSelectedFormat handles the fallback.
-                        var enabled = _viewModel.IsHdrEnabled ? hdrFormats.Count > 0 : allFormats.Count > 0;
+                        var enabled = _context.IsHdrEnabled() ? hdrFormats.Count > 0 : allFormats.Count > 0;
                         List<MediaFormat> selectionPool;
-                        if (_viewModel.IsHdrEnabled && hdrFormats.Count > 0)
+                        if (_context.IsHdrEnabled() && hdrFormats.Count > 0)
                             selectionPool = hdrFormats;
-                        else if (!_viewModel.IsHdrEnabled && sdrFormats.Count > 0)
+                        else if (!_context.IsHdrEnabled() && sdrFormats.Count > 0)
                             selectionPool = sdrFormats;
                         else
                             selectionPool = allFormats;
@@ -62,13 +63,13 @@ public partial class MainViewModel
                     .ToList();
             }
 
-            var sourceRate = _viewModel.ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);
+            var sourceRate = _context.ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);
             var sourceFilter = FrameRateSourceFilterPolicy.Apply(
                 options,
                 sourceRate.Rate,
                 sourceRate.Arg,
-                _viewModel.BuildFrameRateTimingVariants(selectedResolutionKey),
-                _viewModel.ShowAllCaptureOptions);
+                _context.BuildFrameRateTimingVariants(selectedResolutionKey),
+                _context.ShowAllCaptureOptions());
             var sourceTimingFamilyKnown = sourceFilter.SourceTimingFamilyKnown;
             var sourceTimingFamily = sourceFilter.SourceTimingFamily;
             options = sourceFilter.Options.ToList();
@@ -84,60 +85,60 @@ public partial class MainViewModel
             var availableOptions = autoFrameRateOption == null
                 ? options
                 : new[] { autoFrameRateOption }.Concat(options).ToList();
-            _viewModel.DetectedSourceFrameRate = sourceRate.Rate;
-            _viewModel.DetectedSourceFrameRateArg = sourceRate.Arg;
-            _viewModel.SourceFrameRateOrigin = sourceRate.Origin;
+            _context.SetDetectedSourceFrameRate(sourceRate.Rate);
+            _context.SetDetectedSourceFrameRateArg(sourceRate.Arg);
+            _context.SetSourceFrameRateOrigin(sourceRate.Origin);
 
-            _viewModel._isRebuildingModeOptions = true;
+            _context.SetIsRebuildingModeOptions(true);
             try
             {
-                _viewModel.AvailableFrameRates.Clear();
+                _context.AvailableFrameRates.Clear();
                 foreach (var option in availableOptions)
                 {
-                    _viewModel.AvailableFrameRates.Add(option);
+                    _context.AvailableFrameRates.Add(option);
                 }
 
                 var selection = FrameRateAutoSelectionPolicy.Select(new FrameRateAutoSelectionRequest(
                     options,
                     AutoFrameRateOptionAvailable: autoFrameRateOption != null,
                     ForceAutoSelection: false,
-                    IsAutoFrameRateSelected: _viewModel.IsAutoFrameRateSelected,
-                    HasUserOverriddenFrameRateForCurrentMode: _viewModel._hasUserOverriddenFrameRateForCurrentMode,
-                    IsHdrEnabled: _viewModel.IsHdrEnabled,
-                    PendingSdrAutoSelectionForDeviceChange: _viewModel._pendingSdrAutoSelectionForDeviceChange,
-                    PendingSdrAutoFriendlyFrameRateBucket: _viewModel._pendingSdrAutoFriendlyFrameRateBucket,
+                    IsAutoFrameRateSelected: _context.IsAutoFrameRateSelected(),
+                    HasUserOverriddenFrameRateForCurrentMode: _context.HasUserOverriddenFrameRateForCurrentMode(),
+                    IsHdrEnabled: _context.IsHdrEnabled(),
+                    PendingSdrAutoSelectionForDeviceChange: _context.IsPendingSdrAutoSelectionForDeviceChange(),
+                    PendingSdrAutoFriendlyFrameRateBucket: _context.GetPendingSdrAutoFriendlyFrameRateBucket(),
                     Source: new FrameRateAutoSelectionSource(sourceRate.Rate, sourceTimingFamilyKnown, sourceTimingFamily),
                     PreviousRate: previousRate));
 
                 if (autoFrameRateOption != null)
                 {
-                    _viewModel.IsAutoFrameRateSelected = selection.SelectAutoOption;
+                    _context.SetIsAutoFrameRateSelected(selection.SelectAutoOption);
                 }
                 var fallbackRate = previousRate > 0
                     ? previousRate
                     : 60;
-                _viewModel.ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);
-                if (_viewModel.IsHdrEnabled && selection.Selected is { IsEnabled: false })
+                _context.ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);
+                if (_context.IsHdrEnabled() && selection.Selected is { IsEnabled: false })
                 {
-                    _viewModel.StatusText = $"No HDR-capable frame rate is available for {_viewModel.GetSelectedResolutionDisplayText()}.";
+                    _context.SetStatusText($"No HDR-capable frame rate is available for {_context.GetSelectedResolutionDisplayText()}.");
                 }
 
-                if (!_viewModel.IsHdrEnabled && _viewModel._pendingSdrAutoSelectionForDeviceChange && selection.Selected != null)
+                if (!_context.IsHdrEnabled() && _context.IsPendingSdrAutoSelectionForDeviceChange() && selection.Selected != null)
                 {
-                    _viewModel._pendingSdrAutoSelectionForDeviceChange = false;
-                    _viewModel._pendingSdrAutoFriendlyFrameRateBucket = null;
+                    _context.SetPendingSdrAutoSelectionForDeviceChange(false);
+                    _context.SetPendingSdrAutoFriendlyFrameRateBucket(null);
                 }
             }
             finally
             {
-                _viewModel._isApplyingAutomaticFrameRateSelection = false;
-                _viewModel._isRebuildingModeOptions = false;
+                _context.SetIsApplyingAutomaticFrameRateSelection(false);
+                _context.SetIsRebuildingModeOptions(false);
             }
 
             RebuildVideoFormatOptions();
             UpdateSelectedFormat();
-            _viewModel.UpdateTargetSummary();
-            _viewModel._forceSourceAutoRetarget = false;
+            _context.UpdateTargetSummary();
+            _context.SetForceSourceAutoRetarget(false);
         }
     }
 }

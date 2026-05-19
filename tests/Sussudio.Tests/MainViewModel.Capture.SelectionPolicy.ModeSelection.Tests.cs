@@ -25,7 +25,8 @@ static partial class Program
         AssertDoesNotContain(frameRateOptionsText, "private void ApplyResolvedFrameRateSelection(");
         AssertDoesNotContain(frameRateOptionsText, "private void ResetModeSelectionState()");
         AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selection.Selected, SelectedFrameRate > 0 ? SelectedFrameRate : 60);");
-        AssertContains(frameRateRebuildControllerText, "_viewModel.ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
+        AssertContains(frameRateRebuildControllerText, "_context.ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
+        AssertDoesNotContain(frameRateRebuildControllerText, "_viewModel.");
         AssertContains(modeSelectionText, "private void ResetFrameRateSelectionState()");
         AssertContains(modeSelectionText, "_hasUserOverriddenFrameRateForCurrentMode = false;");
         AssertContains(modeSelectionText, "IsAutoFrameRateSelected = true;");

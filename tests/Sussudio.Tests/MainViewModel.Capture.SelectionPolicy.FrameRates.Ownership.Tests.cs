@@ -15,7 +15,7 @@ static partial class Program
 
         AssertContains(captureModeTransactionsText, "=> _captureModeOptionRebuildController.RebuildFrameRateOptions();");
         AssertContains(frameRateRebuildControllerText, "FrameRateSourceFilterPolicy.Apply(");
-        AssertContains(frameRateRebuildControllerText, "_viewModel.ShowAllCaptureOptions);");
+        AssertContains(frameRateRebuildControllerText, "_context.ShowAllCaptureOptions());");
         AssertContains(mainViewModelText, "RebuildFrameRateOptions();");
         AssertContains(showAllCaptureOptionsChanged, "if (IsRecording)");
         AssertContains(showAllCaptureOptionsChanged, "_pendingModeOptionsRefresh = true;");
@@ -56,9 +56,11 @@ static partial class Program
         AssertDoesNotContain(captureModeOptionsControllerText, "public void RebuildFrameRateOptions()");
         AssertContains(frameRateRebuildControllerText, "private sealed partial class MainViewModelCaptureModeOptionRebuildController");
         AssertContains(frameRateRebuildControllerText, "public void RebuildFrameRateOptions()");
-        AssertContains(frameRateRebuildControllerText, "var sourceRate = _viewModel.ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);");
-        AssertContains(frameRateRebuildControllerText, "_viewModel.AvailableFrameRates.Clear();");
-        AssertContains(frameRateRebuildControllerText, "_viewModel.ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
+        AssertContains(frameRateRebuildControllerText, "var sourceRate = _context.ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);");
+        AssertContains(frameRateRebuildControllerText, "_context.AvailableFrameRates.Clear();");
+        AssertContains(frameRateRebuildControllerText, "_context.ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
+        AssertDoesNotContain(captureModeOptionsControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(frameRateRebuildControllerText, "_viewModel.");
         AssertContains(modeSelectionText, "private void ApplyResolvedFrameRateSelection(FrameRateOption? selected, double fallbackRate)");
         AssertContains(sourceFilterPolicyText, "private static class FrameRateSourceFilterPolicy");
         AssertContains(sourceFilterPolicyText, "internal static FrameRateSourceFilterResult Apply(");
@@ -87,11 +89,11 @@ static partial class Program
 
         AssertContains(frameRateOptionsText, "FrameRateAutoSelectionPolicy.Select(new FrameRateAutoSelectionRequest(");
         AssertContains(frameRateRebuildControllerText, "FrameRateAutoSelectionPolicy.Select(new FrameRateAutoSelectionRequest(");
-        AssertContains(frameRateRebuildControllerText, "_viewModel.AvailableFrameRates.Clear();");
-        AssertContains(frameRateRebuildControllerText, "_viewModel.AvailableFrameRates.Add(option);");
-        AssertContains(frameRateRebuildControllerText, "_viewModel.IsAutoFrameRateSelected = selection.SelectAutoOption;");
-        AssertContains(frameRateRebuildControllerText, "_viewModel.ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
-        AssertContains(frameRateRebuildControllerText, "_viewModel._pendingSdrAutoSelectionForDeviceChange = false;");
+        AssertContains(frameRateRebuildControllerText, "_context.AvailableFrameRates.Clear();");
+        AssertContains(frameRateRebuildControllerText, "_context.AvailableFrameRates.Add(option);");
+        AssertContains(frameRateRebuildControllerText, "_context.SetIsAutoFrameRateSelected(selection.SelectAutoOption);");
+        AssertContains(frameRateRebuildControllerText, "_context.ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
+        AssertContains(frameRateRebuildControllerText, "_context.SetPendingSdrAutoSelectionForDeviceChange(false);");
         AssertDoesNotContain(frameRateOptionsText, "OrderBy(option => Math.Abs(option.Value - sourceRate.Rate.Value))");
         AssertDoesNotContain(captureModeTransactionsText, "OrderBy(option => Math.Abs(option.Value - sourceRate.Rate.Value))");
         AssertContains(autoSelectionPolicyText, "private static class FrameRateAutoSelectionPolicy");

@@ -3559,7 +3559,7 @@ owner, fold it back into that owner and update the source-shape tests and
    auto-selection entry points now live in `MainViewModel.FrameRateOptions.cs`.
    `MainViewModel.CaptureModeTransactions.cs` keeps the resolution, frame-rate,
    selected-format, and video-format rebuild compatibility adapters, while
-   frame-rate option rebuilding and observable collection mutation live in
+   frame-rate option rebuilding and observable collection mutation through graph-built context ports live in
    `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.FrameRate.cs`. Pure
    frame-rate option choice, including pending SDR bucket preference,
    Source-rate nearest match with timing-family tie-break, generic auto fallback,
@@ -3609,7 +3609,8 @@ owner, fold it back into that owner and update the source-shape tests and
    keeps selected-format and video-format rebuild compatibility adapters, while
    `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
    owns selected-format assignment, pixel-format option collection mutation, and
-   capture-format request shaping for the controller family.
+   capture-format request shaping for the controller family through graph-built
+   context ports.
    `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs` owns the pure
    selected-format and mode-tuple video-format filtering policy.
    `MainViewModel.CaptureModeTransactions.cs` owns HDR toggle side effects:
@@ -3636,7 +3637,7 @@ owner, fold it back into that owner and update the source-shape tests and
     automatic resolution dropdown option construction inside the capture option
     rebuild controller family, automatic
     resolution-selection adaptation, auto-resolution state refresh, and
-    resolution dropdown mutation. Effective Source resolution state and
+    resolution dropdown mutation through graph-built context ports. Effective Source resolution state and
     state-backed delegates to the pure selection policy live in
     `MainViewModel.ResolutionOptions.cs`.
     Automatic resolution ranking and source-aware frame-rate selection now

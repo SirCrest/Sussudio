@@ -21,7 +21,9 @@ static partial class Program
         AssertContains(captureModeOptionsControllerText, "public void RebuildVideoFormatOptions()");
         AssertContains(captureModeOptionsControllerText, "CaptureFormatSelectionPolicy.Select(");
         AssertContains(captureModeOptionsControllerText, "CaptureFormatSelectionPolicy\n                .SelectModeTupleFormats(");
-        AssertContains(captureModeOptionsControllerText, "_viewModel.AvailableVideoFormats.Clear();");
+        AssertContains(captureModeOptionsControllerText, "_context.AvailableVideoFormats.Clear();");
+        AssertContains(captureModeOptionsControllerText, "private sealed class MainViewModelCaptureModeOptionRebuildControllerContext");
+        AssertDoesNotContain(captureModeOptionsControllerText, "_viewModel.");
         AssertDoesNotContain(captureModeTransactionsText, "FrameRateTimingPolicy.SelectPreferredFrameRateFormat(");
         AssertDoesNotContain(captureModeTransactionsText, "private static bool IsHdrModeCandidate(");
         AssertDoesNotContain(captureModeTransactionsText, "ShouldPreserveMjpegHighFrameRateMode(");

@@ -11,16 +11,16 @@ public partial class MainViewModel
     {
         public void RebuildResolutionOptions()
         {
-            var previousSelection = _viewModel.SelectedResolution;
-            var previousRate = _viewModel.SelectedFrameRate;
+            var previousSelection = _context.GetSelectedResolution();
+            var previousRate = _context.GetSelectedFrameRate();
             var desiredSelection = !string.IsNullOrWhiteSpace(previousSelection)
                 ? previousSelection
-                : _viewModel._lastKnownResolutionKey;
+                : _context.GetLastKnownResolutionKey();
             var options = CaptureModeOptionsBuilder.BuildResolutionOptions(
-                    _viewModel._resolutionToFormats,
-                    _viewModel.IsHdrEnabled,
-                    _viewModel.ShowAllCaptureOptions,
-                    _viewModel._latestSourceTelemetry)
+                    _context.GetResolutionToFormats(),
+                    _context.IsHdrEnabled(),
+                    _context.ShowAllCaptureOptions(),
+                    _context.GetLatestSourceTelemetry())
                 .ToList();
 
             var autoSelection = ResolveAutoCaptureSelection(options);
@@ -30,79 +30,79 @@ public partial class MainViewModel
 
             if (options.Count == 0)
             {
-                if (_viewModel.SelectedDevice != null && _viewModel.IsPreviewing && _viewModel.AvailableResolutions.Count > 0)
+                if (_context.GetSelectedDevice() != null && _context.IsPreviewing() && _context.AvailableResolutions.Count > 0)
                 {
-                    var retainedSelection = _viewModel.AvailableResolutions.FirstOrDefault(option =>
-                            string.Equals(option.Value, _viewModel.SelectedResolution, StringComparison.OrdinalIgnoreCase))
-                        ?? _viewModel.AvailableResolutions.FirstOrDefault(option => option.IsEnabled)
-                        ?? _viewModel.AvailableResolutions.FirstOrDefault();
+                    var retainedSelection = _context.AvailableResolutions.FirstOrDefault(option =>
+                            string.Equals(option.Value, _context.GetSelectedResolution(), StringComparison.OrdinalIgnoreCase))
+                        ?? _context.AvailableResolutions.FirstOrDefault(option => option.IsEnabled)
+                        ?? _context.AvailableResolutions.FirstOrDefault();
                     if (retainedSelection != null)
                     {
-                        _viewModel._isRebuildingModeOptions = true;
-                        _viewModel._isApplyingAutomaticResolutionSelection = true;
+                        _context.SetIsRebuildingModeOptions(true);
+                        _context.SetIsApplyingAutomaticResolutionSelection(true);
                         try
                         {
-                            var previousSelectedResolution = _viewModel.SelectedResolution;
-                            _viewModel.SelectedResolution = retainedSelection.Value;
+                            var previousSelectedResolution = _context.GetSelectedResolution();
+                            _context.SetSelectedResolution(retainedSelection.Value);
                             if (string.Equals(previousSelectedResolution, retainedSelection.Value, StringComparison.OrdinalIgnoreCase))
                             {
-                                _viewModel.OnPropertyChanged(nameof(_viewModel.SelectedResolution));
+                                _context.NotifySelectedResolutionChanged();
                             }
 
-                            if (_viewModel.TryResolveResolutionKey(retainedSelection.Value, out var retainedResolutionKey))
+                            if (_context.TryResolveResolutionKey(retainedSelection.Value, out var retainedResolutionKey))
                             {
-                                _viewModel._lastKnownResolutionKey = retainedResolutionKey;
+                                _context.SetLastKnownResolutionKey(retainedResolutionKey);
                             }
                         }
                         finally
                         {
-                            _viewModel._isApplyingAutomaticResolutionSelection = false;
-                            _viewModel._isRebuildingModeOptions = false;
+                            _context.SetIsApplyingAutomaticResolutionSelection(false);
+                            _context.SetIsRebuildingModeOptions(false);
                         }
                     }
 
                     RebuildDependentOptions();
-                    _viewModel.UpdateTargetSummary();
+                    _context.UpdateTargetSummary();
                     return;
                 }
 
-                _viewModel._isRebuildingModeOptions = true;
+                _context.SetIsRebuildingModeOptions(true);
                 try
                 {
-                    _viewModel.AvailableResolutions.Clear();
-                    _viewModel._isApplyingAutomaticResolutionSelection = true;
-                    _viewModel.SelectedResolution = null;
-                    _viewModel._isApplyingAutomaticResolutionSelection = false;
+                    _context.AvailableResolutions.Clear();
+                    _context.SetIsApplyingAutomaticResolutionSelection(true);
+                    _context.SetSelectedResolution(null);
+                    _context.SetIsApplyingAutomaticResolutionSelection(false);
                     ClearAutoResolutionState();
-                    _viewModel.HdrResolutionSupportHint = string.Empty;
-                    _viewModel.DisabledResolutionReason = string.Empty;
+                    _context.SetHdrResolutionSupportHint(string.Empty);
+                    _context.SetDisabledResolutionReason(string.Empty);
                 }
                 finally
                 {
-                    _viewModel._isApplyingAutomaticResolutionSelection = false;
-                    _viewModel._isRebuildingModeOptions = false;
+                    _context.SetIsApplyingAutomaticResolutionSelection(false);
+                    _context.SetIsRebuildingModeOptions(false);
                 }
 
                 RebuildDependentOptions();
-                _viewModel.UpdateTargetSummary();
+                _context.UpdateTargetSummary();
                 return;
             }
 
-            var allowSourceAutoSelect = _viewModel.IsHdrEnabled && (_viewModel._forceSourceAutoRetarget || !_viewModel._hasUserOverriddenResolutionForCurrentMode);
+            var allowSourceAutoSelect = _context.IsHdrEnabled() && (_context.IsForceSourceAutoRetarget() || !_context.HasUserOverriddenResolutionForCurrentMode());
             var selection = CaptureResolutionSelectionPolicy.Select(new CaptureResolutionSelectionRequest(
                 options,
-                _viewModel._resolutionToFormats,
-                _viewModel._latestSourceTelemetry,
+                _context.GetResolutionToFormats(),
+                _context.GetLatestSourceTelemetry(),
                 desiredSelection,
                 previousRate,
-                _viewModel.IsHdrEnabled,
+                _context.IsHdrEnabled(),
                 allowSourceAutoSelect,
-                _viewModel._pendingSdrAutoSelectionForDeviceChange));
+                _context.IsPendingSdrAutoSelectionForDeviceChange()));
             var selected = selection.Selected;
             var hdrHint = selection.HdrHint;
-            if (!_viewModel.IsHdrEnabled && selection.SdrAutoFriendlyFrameRateBucket.HasValue)
+            if (!_context.IsHdrEnabled() && selection.SdrAutoFriendlyFrameRateBucket.HasValue)
             {
-                _viewModel._pendingSdrAutoFriendlyFrameRateBucket = selection.SdrAutoFriendlyFrameRateBucket.Value;
+                _context.SetPendingSdrAutoFriendlyFrameRateBucket(selection.SdrAutoFriendlyFrameRateBucket.Value);
             }
 
             var selectAutoOption = autoOption != null && ShouldSelectAutoResolutionOption(previousSelection);
@@ -113,55 +113,55 @@ public partial class MainViewModel
                 ? options
                 : new[] { autoOption }.Concat(options).ToList();
 
-            _viewModel._isRebuildingModeOptions = true;
+            _context.SetIsRebuildingModeOptions(true);
             try
             {
                 UpdateAutoResolutionState(autoSelection);
-                _viewModel.AvailableResolutions.Clear();
+                _context.AvailableResolutions.Clear();
                 foreach (var option in availableOptions)
                 {
-                    _viewModel.AvailableResolutions.Add(option);
+                    _context.AvailableResolutions.Add(option);
                 }
 
-                _viewModel._isApplyingAutomaticResolutionSelection = true;
+                _context.SetIsApplyingAutomaticResolutionSelection(true);
                 if (selectedDropdownOption != null)
                 {
-                    var previousSelectedResolution = _viewModel.SelectedResolution;
-                    _viewModel.SelectedResolution = selectedDropdownOption.Value;
+                    var previousSelectedResolution = _context.GetSelectedResolution();
+                    _context.SetSelectedResolution(selectedDropdownOption.Value);
                     if (string.Equals(previousSelectedResolution, selectedDropdownOption.Value, StringComparison.OrdinalIgnoreCase))
                     {
-                        _viewModel.OnPropertyChanged(nameof(_viewModel.SelectedResolution));
+                        _context.NotifySelectedResolutionChanged();
                     }
                 }
 
-                _viewModel._isApplyingAutomaticResolutionSelection = false;
+                _context.SetIsApplyingAutomaticResolutionSelection(false);
                 if (selected != null)
                 {
-                    _viewModel._lastKnownResolutionKey = selected.Value;
+                    _context.SetLastKnownResolutionKey(selected.Value);
                 }
 
-                if (_viewModel.IsHdrEnabled)
+                if (_context.IsHdrEnabled())
                 {
-                    _viewModel.HdrResolutionSupportHint = hdrHint ?? _viewModel.BuildHdrSupportHintForResolution(selected?.Value);
+                    _context.SetHdrResolutionSupportHint(hdrHint ?? _context.BuildHdrSupportHintForResolution(selected?.Value));
                 }
                 else
                 {
-                    _viewModel.HdrResolutionSupportHint = string.Empty;
+                    _context.SetHdrResolutionSupportHint(string.Empty);
                 }
 
-                if (_viewModel.IsHdrEnabled && selected is { IsEnabled: false })
+                if (_context.IsHdrEnabled() && selected is { IsEnabled: false })
                 {
-                    _viewModel.StatusText = "No HDR-capable resolution is available for this device.";
+                    _context.SetStatusText("No HDR-capable resolution is available for this device.");
                 }
 
-                _viewModel.DisabledResolutionReason = selected is { IsEnabled: false }
+                _context.SetDisabledResolutionReason(selected is { IsEnabled: false }
                     ? selected.DisableReason
-                    : string.Empty;
+                    : string.Empty);
             }
             finally
             {
-                _viewModel._isApplyingAutomaticResolutionSelection = false;
-                _viewModel._isRebuildingModeOptions = false;
+                _context.SetIsApplyingAutomaticResolutionSelection(false);
+                _context.SetIsRebuildingModeOptions(false);
             }
 
             RebuildDependentOptions();
@@ -173,14 +173,14 @@ public partial class MainViewModel
         private AutoCaptureSelection? ResolveAutoCaptureSelection(IReadOnlyList<ResolutionOption> options)
             => AutoCaptureSelectionPolicy.Select(new AutoCaptureSelectionRequest(
                 options,
-                _viewModel._resolutionToFormats,
-                _viewModel._latestSourceTelemetry,
-                _viewModel.IsHdrEnabled));
+                _context.GetResolutionToFormats(),
+                _context.GetLatestSourceTelemetry(),
+                _context.IsHdrEnabled()));
 
         private bool ShouldSelectAutoResolutionOption(string? previousSelection)
             => IsAutoResolutionValue(previousSelection) ||
                string.IsNullOrWhiteSpace(previousSelection) ||
-               !_viewModel._hasUserOverriddenResolutionForCurrentMode;
+               !_context.HasUserOverriddenResolutionForCurrentMode();
 
         private ResolutionOption CreateAutoResolutionOption()
             => new()
@@ -197,16 +197,16 @@ public partial class MainViewModel
 
         private void UpdateAutoResolutionState(AutoCaptureSelection? selection)
         {
-            _viewModel.AutoResolvedWidth = selection?.Resolution.Width;
-            _viewModel.AutoResolvedHeight = selection?.Resolution.Height;
-            _viewModel.AutoResolvedFrameRate = selection?.ExactFrameRate;
+            _context.SetAutoResolvedWidth(selection?.Resolution.Width);
+            _context.SetAutoResolvedHeight(selection?.Resolution.Height);
+            _context.SetAutoResolvedFrameRate(selection?.ExactFrameRate);
         }
 
         private void ClearAutoResolutionState()
         {
-            _viewModel.AutoResolvedWidth = null;
-            _viewModel.AutoResolvedHeight = null;
-            _viewModel.AutoResolvedFrameRate = null;
+            _context.SetAutoResolvedWidth(null);
+            _context.SetAutoResolvedHeight(null);
+            _context.SetAutoResolvedFrameRate(null);
         }
     }
 }

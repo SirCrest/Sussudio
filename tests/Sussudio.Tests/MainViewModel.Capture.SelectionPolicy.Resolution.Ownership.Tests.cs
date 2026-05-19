@@ -26,8 +26,10 @@ static partial class Program
         AssertContains(resolutionOptionRebuildControllerText, "private AutoCaptureSelection? ResolveAutoCaptureSelection(");
         AssertContains(resolutionOptionRebuildControllerText, "AutoCaptureSelectionPolicy.Select(new AutoCaptureSelectionRequest(");
         AssertContains(resolutionOptionRebuildControllerText, "CaptureModeOptionsBuilder.BuildResolutionOptions(");
-        AssertContains(resolutionOptionRebuildControllerText, "_viewModel.AvailableResolutions.Clear();");
-        AssertContains(resolutionOptionRebuildControllerText, "_viewModel.AvailableResolutions.Add(option);");
+        AssertContains(resolutionOptionRebuildControllerText, "_context.AvailableResolutions.Clear();");
+        AssertContains(resolutionOptionRebuildControllerText, "_context.AvailableResolutions.Add(option);");
+        AssertDoesNotContain(captureModeOptionsControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(resolutionOptionRebuildControllerText, "_viewModel.");
         AssertContains(resolutionOptionRebuildControllerText, "=> RebuildFrameRateOptions();");
         AssertDoesNotContain(captureModeOptionsControllerText, "public void RebuildResolutionOptions()");
         AssertDoesNotContain(captureModeOptionsControllerText, "_viewModel.AvailableResolutions.Clear();");
@@ -58,7 +60,7 @@ static partial class Program
         AssertContains(resolutionOptionsText, "/// Effective resolution state and selection-policy delegates.");
         AssertContains(captureModeTransactionsText, "/// Capture-mode transactions that coordinate option rebuilds");
         AssertContains(resolutionOptionRebuildControllerText, "private void UpdateAutoResolutionState(AutoCaptureSelection? selection)");
-        AssertContains(resolutionOptionRebuildControllerText, "_viewModel.AutoResolvedWidth = selection?.Resolution.Width;");
+        AssertContains(resolutionOptionRebuildControllerText, "_context.SetAutoResolvedWidth(selection?.Resolution.Width);");
         AssertContains(resolutionOptionRebuildControllerText, "private void ClearAutoResolutionState()");
         AssertContains(capturePresentationText, "/// Capture presentation adapters that apply runtime/source state to ViewModel labels.");
         AssertContains(capturePresentationText, "private string GetSelectedResolutionDisplayText()");

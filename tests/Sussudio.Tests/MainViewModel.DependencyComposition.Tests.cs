@@ -118,7 +118,11 @@ static partial class Program
         AssertContains(controllerGraphText, "var recordingCapabilityController = CreateRecordingCapabilityController(viewModel);");
         AssertContains(controllerGraphText, "var captureSettingsAutomationController = CreateCaptureSettingsAutomationController(viewModel);");
         AssertContains(controllerGraphText, "var recordingSettingsAutomationController = CreateRecordingSettingsAutomationController(viewModel);");
-        AssertContains(controllerGraphText, "new MainViewModelCaptureModeOptionRebuildController(viewModel)");
+        AssertContains(controllerGraphText, "private static MainViewModelCaptureModeOptionRebuildController CreateCaptureModeOptionRebuildController(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelCaptureModeOptionRebuildController(\n                new MainViewModelCaptureModeOptionRebuildControllerContext");
+        AssertContains(controllerGraphText, "TryGetEffectiveResolutionSelection = viewModel.TryGetEffectiveResolutionSelection,");
+        AssertContains(controllerGraphText, "ApplyResolvedFrameRateSelection = viewModel.ApplyResolvedFrameRateSelection,");
+        AssertContains(controllerGraphText, "SetSelectedFormat = value => viewModel.SelectedFormat = value,");
         AssertContains(controllerGraphText, "var deviceFormatProbeController = CreateDeviceFormatProbeController(viewModel);");
         AssertContains(controllerGraphText, "var sourceTelemetryController = CreateSourceTelemetryController(viewModel);");
         AssertContains(controllerGraphText, "var deviceRefreshController = CreateDeviceRefreshController(viewModel, previewLifecycleController);");
@@ -305,6 +309,12 @@ static partial class Program
         AssertContains(controllerGraphText, "ReplaceAvailableRecordingFormats = formats =>");
         AssertContains(controllerGraphText, "NotifySelectedRecordingFormatChanged = () => viewModel.OnPropertyChanged(nameof(SelectedRecordingFormat)),");
         AssertContains(captureModeOptionRebuildControllerText, "private sealed partial class MainViewModelCaptureModeOptionRebuildController");
+        AssertContains(captureModeOptionRebuildControllerText, "private sealed class MainViewModelCaptureModeOptionRebuildControllerContext");
+        AssertContains(captureModeOptionRebuildControllerText, "private readonly MainViewModelCaptureModeOptionRebuildControllerContext _context;");
+        AssertDoesNotContain(captureModeOptionRebuildControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(captureModeOptionRebuildControllerText, "_viewModel.");
+        AssertDoesNotContain(captureModeOptionFrameRateRebuildControllerText, "_viewModel.");
+        AssertDoesNotContain(captureModeOptionResolutionRebuildControllerText, "_viewModel.");
         AssertContains(captureModeOptionFrameRateRebuildControllerText, "private sealed partial class MainViewModelCaptureModeOptionRebuildController");
         AssertEqual(
             true,
