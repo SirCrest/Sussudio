@@ -38,16 +38,16 @@ public sealed partial class AutomationDiagnosticsHub
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var viewModelSnapshot = await _viewModel
+        var viewModelSnapshot = await _snapshotQueryPort
             .GetViewModelRuntimeSnapshotAsync(cancellationToken)
             .ConfigureAwait(false);
-        var captureRuntime = await _viewModel
+        var captureRuntime = await _snapshotQueryPort
             .GetCaptureRuntimeSnapshotAsync(cancellationToken)
             .ConfigureAwait(false);
-        var health = await _viewModel
+        var health = await _snapshotQueryPort
             .GetCaptureHealthSnapshotAsync(cancellationToken)
             .ConfigureAwait(false);
-        var recordingStats = await _viewModel
+        var recordingStats = await _snapshotQueryPort
             .GetRecordingStatsSnapshotAsync(cancellationToken)
             .ConfigureAwait(false);
         var previewRuntime = await _previewSnapshotProvider(cancellationToken).ConfigureAwait(false);

@@ -2826,6 +2826,12 @@ Refactor direction:
   adapters not covered by controller ownership tests.
 - Keep `MainViewModel` as a compatibility facade while moving feature state to
   capture, recording, audio, Flashback, diagnostics, and automation adapters.
+- `Sussudio/Services/Automation/IAutomationViewModel.cs` keeps the aggregate
+  compatibility contract and grouped feature ports. Keep those ports in one
+  file until a consumer needs a stronger reason to split them. The automation
+  dispatcher consumes readiness/device-selection/snapshot-query ports, and
+  `AutomationDiagnosticsHub` consumes the snapshot-query port for read-only
+  diagnostic and verification snapshots.
 - `MainViewModelDependencies.cs` owns the default service graph for the root
   compatibility view model until a fuller app composition root injects feature
   view models and narrower ports.

@@ -317,7 +317,10 @@ device selection, capture settings, audio, preview/recording, UI, Flashback,
 and probes in one file. Keep the ports grouped there until a consumer needs a
 separate file; avoid tiny interface files that only reduce line count. The
 dispatcher consumes the readiness port for device-ready gating and the
-device-selection/snapshot-query ports for device commands. `AutomationCommandDispatcher.UiSettingsCommands.cs` owns UI/settings
+device-selection/snapshot-query ports for device commands. `AutomationDiagnosticsHub`
+consumes the snapshot-query port for read-only runtime, health, and recording
+verification snapshots instead of depending on the full aggregate surface.
+`AutomationCommandDispatcher.UiSettingsCommands.cs` owns UI/settings
 automation command application, including show-all capture options, preview
 volume, stats visibility, settings visibility, frame-time overlay visibility,
 Flashback timeline visibility, and stats-section expand/collapse response text.

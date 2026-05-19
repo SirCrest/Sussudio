@@ -120,6 +120,12 @@ static partial class Program
         AssertContains(diagnostics.VerificationText, "private RecordingVerificationResult? CaptureLastVerificationForSnapshot(");
         AssertContains(diagnostics.VerificationText, "private void ScheduleAutoVerificationIfNeeded(");
         AssertDoesNotContain(diagnostics.HubText, "public async Task<RecordingVerificationResult> VerifyLastRecordingAsync");
+        AssertContains(diagnostics.HubText, "private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;");
+        AssertContains(diagnostics.HubText, "_snapshotQueryPort = viewModel;");
+        AssertDoesNotContain(diagnostics.HubText, "private readonly IAutomationViewModel _viewModel;");
+        AssertContains(diagnostics.SnapshotsText, "await _snapshotQueryPort\n            .GetViewModelRuntimeSnapshotAsync(cancellationToken)");
+        AssertContains(diagnostics.SnapshotsText, "await _snapshotQueryPort\n            .GetCaptureRuntimeSnapshotAsync(cancellationToken)");
+        AssertContains(diagnostics.VerificationText, "await _snapshotQueryPort\n                .GetCaptureRuntimeSnapshotAsync(cancellationToken)");
         AssertContains(diagnostics.PreviewPacingText, "private static PreviewPacingClassification ClassifyPreviewPacing(");
         AssertContains(diagnostics.SnapshotsText, "ClassifyPreviewPacing(");
         AssertDoesNotContain(diagnostics.SnapshotsText, "new PreviewPacingClassificationInput");

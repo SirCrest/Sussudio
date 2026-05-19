@@ -17,7 +17,7 @@ namespace Sussudio.Services.Automation;
 // diagnostic events and performance-timeline samples.
 public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 {
-    private readonly IAutomationViewModel _viewModel;
+    private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;
     private readonly Func<CancellationToken, Task<PreviewRuntimeSnapshot>> _previewSnapshotProvider;
     private readonly IRecordingVerifier _recordingVerifier;
     private readonly object _stateLock = new();
@@ -91,7 +91,8 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         Func<CancellationToken, Task<PreviewRuntimeSnapshot>> previewSnapshotProvider,
         IRecordingVerifier recordingVerifier)
     {
-        _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+        ArgumentNullException.ThrowIfNull(viewModel);
+        _snapshotQueryPort = viewModel;
         _previewSnapshotProvider = previewSnapshotProvider ?? throw new ArgumentNullException(nameof(previewSnapshotProvider));
         _recordingVerifier = recordingVerifier ?? throw new ArgumentNullException(nameof(recordingVerifier));
         _perfectionCaptureDropPercentThreshold = EnvironmentHelpers.GetDoubleFromEnv("SUSSUDIO_PERF_CAPTURE_DROP_PCT", 0.10, 0.0, 50.0);

@@ -13,7 +13,7 @@ public sealed partial class AutomationDiagnosticsHub
         Interlocked.Increment(ref _verificationInProgress);
         try
         {
-            var runtimeSnapshot = await _viewModel
+            var runtimeSnapshot = await _snapshotQueryPort
                 .GetCaptureRuntimeSnapshotAsync(cancellationToken)
                 .ConfigureAwait(false);
 
@@ -68,7 +68,7 @@ public sealed partial class AutomationDiagnosticsHub
         Interlocked.Increment(ref _verificationInProgress);
         try
         {
-            var runtimeSnapshot = await _viewModel
+            var runtimeSnapshot = await _snapshotQueryPort
                 .GetCaptureRuntimeSnapshotAsync(cancellationToken)
                 .ConfigureAwait(false);
             runtimeSnapshot = ApplyVerificationProfile(runtimeSnapshot, filePath, verificationProfile);
