@@ -141,6 +141,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var validationText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs")
             .Replace("\r\n", "\n");
+        var formatValidationText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.Format.cs")
+            .Replace("\r\n", "\n");
         var hdrValidationText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.Hdr.cs")
             .Replace("\r\n", "\n");
         var resultsText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Results.cs")
@@ -151,7 +153,13 @@ static partial class Program
         AssertContains(ffprobeText, "private ProcessSpec CreateFfprobeProcessSpec(");
         AssertContains(parsingText, "private static Dictionary<string, string> ParseKeyValueOutput(string output)");
         AssertContains(parsingText, "private static double? TryParseRational(string? value)");
-        AssertContains(validationText, "private static void ValidateContainer(");
+        AssertContains(formatValidationText, "private static void ValidateContainer(");
+        AssertContains(formatValidationText, "private static void ValidateCodec(");
+        AssertContains(formatValidationText, "private static string ResolveExpectedFormat(");
+        AssertContains(formatValidationText, "private static bool IsFlashbackRecording(");
+        AssertContains(validationText, "private static void ValidateDimensions(");
+        AssertContains(validationText, "private static double? ResolveExpectedFrameRate(");
+        AssertContains(validationText, "private static void ValidateCadence(");
         AssertContains(hdrValidationText, "private readonly record struct HdrValidationResult(");
         AssertContains(hdrValidationText, "private static HdrValidationResult ValidateHdrMetadata(");
         AssertContains(resultsText, "private static (string? Code, string? Expected, string? Actual) ParsePrimaryMismatch(");
@@ -161,6 +169,12 @@ static partial class Program
         AssertContains(resultsText, "private static RecordingVerificationResult CreateEarlyFailure(");
         AssertDoesNotContain(rootText, "private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(");
         AssertDoesNotContain(rootText, "private static void ValidateContainer(");
+        AssertDoesNotContain(validationText, "private static void ValidateContainer(");
+        AssertDoesNotContain(validationText, "private static void ValidateCodec(");
+        AssertDoesNotContain(validationText, "private static string ResolveExpectedFormat(");
+        AssertDoesNotContain(validationText, "private static bool IsFlashbackRecording(");
+        AssertDoesNotContain(formatValidationText, "private static void ValidateDimensions(");
+        AssertDoesNotContain(formatValidationText, "private static void ValidateCadence(");
         AssertDoesNotContain(validationText, "private static HdrValidationResult ValidateHdrMetadata(");
         AssertDoesNotContain(rootText, "private static (string? Code, string? Expected, string? Actual) ParsePrimaryMismatch(");
         AssertDoesNotContain(rootText, "private static HdrParityResult BuildHdrParityResult(");
