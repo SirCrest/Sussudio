@@ -3,8 +3,7 @@ static partial class Program
     private static string ReadDiagnosticSessionBackgroundTasksSource()
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionBackgroundTasks.cs",
-            "tools/Common/DiagnosticSessionBackgroundTasks.FaultDrain.cs",
-            "tools/Common/DiagnosticSessionBackgroundTasks.Models.cs");
+            "tools/Common/DiagnosticSessionBackgroundTasks.FaultDrain.cs");
 
     private static string ReadDiagnosticSessionCleanupActionsSource()
         => ReadNormalizedSourceFiles(

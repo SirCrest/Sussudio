@@ -73,5 +73,13 @@ internal sealed partial class DiagnosticSessionBackgroundTasks
 
         return result;
     }
-
 }
+
+internal readonly record struct DiagnosticSessionBackgroundTaskDrainResult(
+    PresentMonProbeResult? PresentMon,
+    FlashbackRecordingSettingsDeferredPresetState RecordingSettingsDeferredPresetState);
+
+internal readonly record struct DiagnosticSessionBackgroundTaskRegistration(
+    int AwaitOrder,
+    string Stage,
+    Task Task);

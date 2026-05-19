@@ -3171,12 +3171,10 @@ Primary owners:
   same artifact set.
 - `tools/Common/DiagnosticSessionBackgroundTasks.cs` owns diagnostic-session
   background task registration, deterministic await order, normal registered
-  scenario/deferred recording-settings completion, and normal PresentMon task
-  completion.
+  scenario/deferred recording-settings completion, normal PresentMon task
+  completion, and the small background-task handoff records.
 - `tools/Common/DiagnosticSessionBackgroundTasks.FaultDrain.cs` owns
   interrupted background-task warning collection and fault drain.
-- `tools/Common/DiagnosticSessionBackgroundTasks.Models.cs` owns the small
-  background-task handoff records.
 - `tools/Common/DiagnosticSessionScenarioStartup.cs` owns diagnostic-session
   optional background startup orchestration.
 - `tools/Common/DiagnosticSessionScenarioStartup.Registrations.cs` owns
