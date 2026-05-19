@@ -955,7 +955,11 @@ Entry points:
 - `FlashbackEncoderSink.ForceRotate.cs` owns export force-rotate state/status/idle waits, export force-rotate requests, the `ForceRotateRequest` state machine, timeout/cancellation classification, pending-request cleanup, and force-rotate drain abort policy.
 - `FlashbackEncoderSink.ForceRotateExecution.cs` owns encoding-thread force-rotate request capture, queue drain-to-rotate ordering, commit/rotation execution, result completion, failure logging, and draining-gate cleanup.
 - `FlashbackEncoderSink.Inputs.cs` owns raw/lease/GPU video enqueue entry points, audio/microphone enqueue entry points, and hot WASAPI writer adapters.
-- `FlashbackEncoderSink.Lifetime.cs` owns `StopAsync`, `Dispose`/`DisposeAsync`, deferred cleanup, cancellation/disposal helpers, and stop-drain timeout classification.
+- `FlashbackEncoderSink.Lifetime.cs` owns `StopAsync`, stop drain timeout
+  classification, and final stop result reporting.
+  `FlashbackEncoderSink.DisposeLifecycle.cs` owns `Dispose`/`DisposeAsync`,
+  deferred cleanup, final dispose reset, cancellation/disposal helpers, and
+  best-effort encoder/buffer manager disposal.
 - `FlashbackEncoderSink.Recording.cs` owns the `IRecordingSink.StartAsync` adapter, retroactive recording begin/cancel/end lifecycle, recording PTS boundaries, and recording availability checks.
 - `FlashbackEncoderSink.RuntimeState.cs` owns public counters, queue-depth/status projections, encoder format summaries, fatal-error callback registration, and the frame-encoded event surface.
 - `FlashbackExporter.cs` owns shared native export state and constants.

@@ -136,4 +136,32 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task FlashbackEncoderSink_StopAndDisposeLifecyclesStaySplit()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
+        var lifetimeText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Lifetime.cs")
+            .Replace("\r\n", "\n");
+        var disposeLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.DisposeLifecycle.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(lifetimeText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
+        AssertContains(lifetimeText, "private async Task<FinalizeResult> StopCoreAsync(CancellationToken cancellationToken)");
+        AssertContains(lifetimeText, "FLASHBACK_SINK_STOP_DRAIN_TIMEOUT");
+        AssertContains(lifetimeText, "FLASHBACK_SINK_STOP_FAIL");
+        AssertContains(disposeLifecycleText, "public void Dispose()");
+        AssertContains(disposeLifecycleText, "public async ValueTask DisposeAsync()");
+        AssertContains(disposeLifecycleText, "private void ScheduleDeferredDisposeCleanup(Task encodingTask)");
+        AssertContains(disposeLifecycleText, "private void FinalizeDisposeCore()");
+        AssertContains(disposeLifecycleText, "private void CancelEncodingCts(string operation)");
+        AssertContains(disposeLifecycleText, "private void DisposeEncoderBestEffort(string operation)");
+        AssertDoesNotContain(lifetimeText, "public async ValueTask DisposeAsync()");
+        AssertDoesNotContain(lifetimeText, "private void FinalizeDisposeCore()");
+        AssertDoesNotContain(disposeLifecycleText, "private async Task<FinalizeResult> StopCoreAsync(CancellationToken cancellationToken)");
+        AssertDoesNotContain(rootText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
+        AssertDoesNotContain(rootText, "public async ValueTask DisposeAsync()");
+
+        return Task.CompletedTask;
+    }
 }
