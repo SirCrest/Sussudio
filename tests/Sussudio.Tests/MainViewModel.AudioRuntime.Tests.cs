@@ -70,7 +70,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioRampTraceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs").Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var audioRampTraceRecorderText = ReadRepoFile("Sussudio/ViewModels/AudioRampTraceRecorder.cs").Replace("\r\n", "\n");
+        var audioRampTraceRecorderRootText = ReadRepoFile("Sussudio/ViewModels/AudioRampTraceRecorder.cs").Replace("\r\n", "\n");
+        var audioRampTraceRecorderCaptureText = ReadRepoFile("Sussudio/ViewModels/AudioRampTraceRecorder.Capture.cs").Replace("\r\n", "\n");
+        var audioRampTraceRecorderText = string.Join("\n", audioRampTraceRecorderRootText, audioRampTraceRecorderCaptureText);
         var playbackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs").Replace("\r\n", "\n");
         var playbackRenderText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.RenderThread.cs").Replace("\r\n", "\n");
         var playbackVolumeText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.Volume.cs").Replace("\r\n", "\n");
@@ -90,7 +92,8 @@ static partial class Program
         AssertContains(traceModelsText, "public double PlaybackCurrentVolumePercent { get; init; }");
         AssertContains(traceModelsText, "public long PlaybackOutputAgeMs { get; init; }");
 
-        AssertContains(audioRampTraceRecorderText, "internal sealed class AudioRampTraceRecorder");
+        AssertContains(audioRampTraceRecorderRootText, "internal sealed partial class AudioRampTraceRecorder");
+        AssertContains(audioRampTraceRecorderCaptureText, "internal sealed partial class AudioRampTraceRecorder");
         AssertContains(audioRampTraceRecorderText, "private const int AudioRampTraceCapacity = 2048;");
         AssertContains(audioRampTraceRecorderText, "private const int AudioRampTraceSampleIntervalMs = 10;");
         AssertContains(audioRampTraceRecorderText, "private const int AudioRampTracePostCompleteSampleMs = 250;");
@@ -100,6 +103,8 @@ static partial class Program
         AssertContains(audioRampTraceRecorderText, "RunSamplerAsync");
         AssertContains(audioRampTraceRecorderText, "Task.Delay(AudioRampTraceSampleIntervalMs");
         AssertContains(audioRampTraceRecorderText, "AUDIO_RAMP_TRACE_SAMPLER_FAIL");
+        AssertDoesNotContain(audioRampTraceRecorderRootText, "private async Task RunSamplerAsync");
+        AssertDoesNotContain(audioRampTraceRecorderRootText, "public void RecordPoint(");
         AssertContains(audioRampTraceText, "=> _audioRampTraceRecorder.GetSnapshot(maxEntries);");
         AssertContains(audioRampTraceText, "private AudioRampTraceRecorder CreateAudioRampTraceRecorder()");
         AssertContains(audioRampTraceText, "new AudioRampTraceRecorderContext");
