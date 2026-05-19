@@ -506,8 +506,9 @@ frame-rate/enable-disable owner files.
 partials now own the snapshot-model xUnit contract suite. Snapshot model
 coverage is split into CaptureDiagnosticsSnapshot, CaptureHealthSnapshot,
 SourceSignalTelemetrySnapshot, SourceTelemetryDetailEntry, and source telemetry
-automation projection owner files, with shared reflection/spec helpers kept in
-the same partial family.
+automation projection owner files. AutomationSnapshot CPU MJPEG and
+AutomationOptions DTO checks are ported into the same partial family, with
+shared reflection/spec helpers kept there.
 
 `Sussudio/Models/Capture/CaptureHealthSnapshot.Flashback.cs` now owns the
 Flashback playback, Flashback encoder/backend, and Flashback export health DTO

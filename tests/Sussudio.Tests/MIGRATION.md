@@ -39,7 +39,8 @@ add xUnit alongside, and port incrementally.
 - `XUnit.SnapshotModelsTests.cs` and its `SnapshotModels.*` partials own the
   former legacy CaptureDiagnosticsSnapshot, CaptureHealthSnapshot,
   SourceSignalTelemetrySnapshot, SourceTelemetryDetailEntry, and source
-  telemetry automation projection contract checks.
+  telemetry automation projection contract checks, plus AutomationSnapshot CPU
+  MJPEG and AutomationOptions DTO shape checks.
 - `XUnit.SmallContractsTests.cs` owns the former legacy audio input, audio
   level event, capture device, and automation window action small contracts.
 - `XUnit.CaptureConfigurationModelsTests.cs` owns shared reflection helpers for

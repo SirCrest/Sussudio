@@ -1,9 +1,12 @@
 using System;
-using System.Threading.Tasks;
+using Xunit;
 
-static partial class Program
+namespace Sussudio.Tests;
+
+public partial class SnapshotModelsTests
 {
-    private static Task AutomationSnapshot_ExposesFullCpuMjpegMetrics()
+    [Fact]
+    public void AutomationSnapshot_ExposesFullCpuMjpegMetrics()
     {
         var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
 
@@ -197,7 +200,5 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("VisualCenterCadenceRepeatFramePercent"), "AutomationSnapshot.VisualCenterCadenceRepeatFramePercent");
         AssertNotNull(snapshotType.GetProperty("VisualCenterCadenceMotionConfidence"), "AutomationSnapshot.VisualCenterCadenceMotionConfidence");
         AssertNotNull(snapshotType.GetProperty("VisualCenterCadenceRecentChangeIntervalsMs"), "AutomationSnapshot.VisualCenterCadenceRecentChangeIntervalsMs");
-
-        return Task.CompletedTask;
     }
 }

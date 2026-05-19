@@ -1,9 +1,12 @@
 using System;
-using System.Threading.Tasks;
+using Xunit;
 
-static partial class Program
+namespace Sussudio.Tests;
+
+public partial class SnapshotModelsTests
 {
-    private static Task AutomationOptionsSnapshot_ExposesAdvancedControlState()
+    [Fact]
+    public void AutomationOptionsSnapshot_ExposesAdvancedControlState()
     {
         var optionsType = RequireType("Sussudio.Models.AutomationOptionsSnapshot");
         var stringOptionType = RequireType("Sussudio.Models.AutomationStringOption");
@@ -33,7 +36,5 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("ShowAllCaptureOptions"), "AutomationSnapshot.ShowAllCaptureOptions");
         AssertNotNull(snapshotType.GetProperty("PreviewVolumePercent"), "AutomationSnapshot.PreviewVolumePercent");
         AssertNotNull(snapshotType.GetProperty("IsStatsVisible"), "AutomationSnapshot.IsStatsVisible");
-
-        return Task.CompletedTask;
     }
 }

@@ -1636,9 +1636,9 @@ Primary current owners:
   `SnapshotModels.ReflectionJson.cs` owns shared reflection JSON round-trip and
   registered-property coverage helpers.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.CpuMjpeg.Tests.cs` owns
-  automation snapshot CPU MJPEG metric shape checks.
+  xUnit automation snapshot CPU MJPEG metric shape checks.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.Options.Tests.cs` owns
-  automation options DTO shape checks.
+  xUnit automation options DTO shape checks.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.CpuMjpegContractSpec.cs` owns
   the CPU MJPEG automation snapshot property-list contract used by that check.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.Tests.cs` owns xUnit

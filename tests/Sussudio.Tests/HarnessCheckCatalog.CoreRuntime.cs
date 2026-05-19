@@ -111,9 +111,6 @@ static partial class Program
             "Diagnostics snapshot mirrors MJPEG timing metrics",
             GetDiagnosticsSnapshot_PropagatesMjpegTimingMetrics);
         await AddCheckAsync(results,
-            "Automation snapshot contract exposes full CPU MJPEG metrics",
-            AutomationSnapshot_ExposesFullCpuMjpegMetrics);
-        await AddCheckAsync(results,
             "Frame ledger retains bounded recent events",
             FrameLedger_RetainsBoundedRecentEvents);
         await AddCheckAsync(results,
