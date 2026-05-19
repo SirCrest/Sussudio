@@ -2731,8 +2731,11 @@ Primary current owners:
   rebuild compatibility adapters, while
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
   owns selected-format assignment, video-format option collection mutation, and
-  capture-format request shaping for the controller family through graph-built
-  context ports.
+  capture-format request shaping for the controller family.
+  `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.Context.cs`
+  owns the capture-mode option rebuild graph-port contract for option
+  collections, source telemetry, resolution/frame-rate selection state,
+  automatic retarget flags, format-change suppression, and projected status text.
   `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs`
   owns pure selected capture-format choice and mode-tuple video-format filtering.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`

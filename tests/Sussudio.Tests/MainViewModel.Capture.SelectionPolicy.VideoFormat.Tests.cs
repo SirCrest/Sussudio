@@ -10,6 +10,7 @@ static partial class Program
     {
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
+        var captureModeOptionsControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.Context.cs").Replace("\r\n", "\n");
         var policyText = ReadRepoFile("Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(captureModeTransactionsText, "/// Capture-mode transactions that coordinate option rebuilds");
@@ -22,7 +23,7 @@ static partial class Program
         AssertContains(captureModeOptionsControllerText, "CaptureFormatSelectionPolicy.Select(");
         AssertContains(captureModeOptionsControllerText, "CaptureFormatSelectionPolicy\n                .SelectModeTupleFormats(");
         AssertContains(captureModeOptionsControllerText, "_context.AvailableVideoFormats.Clear();");
-        AssertContains(captureModeOptionsControllerText, "private sealed class MainViewModelCaptureModeOptionRebuildControllerContext");
+        AssertContains(captureModeOptionsControllerContextText, "private sealed class MainViewModelCaptureModeOptionRebuildControllerContext");
         AssertDoesNotContain(captureModeOptionsControllerText, "_viewModel.");
         AssertDoesNotContain(captureModeTransactionsText, "FrameRateTimingPolicy.SelectPreferredFrameRateFormat(");
         AssertDoesNotContain(captureModeTransactionsText, "private static bool IsHdrModeCandidate(");
