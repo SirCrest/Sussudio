@@ -2595,7 +2595,7 @@ Primary current owners:
   source-telemetry/HDR/live-info/timer/disk-space bootstrap through
   graph-built context ports, while
   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs`
-  owns runtime event subscription/unsubscription, system-resume preview rebind
+  owns runtime event subscription/unsubscription through graph-built context ports, system-resume preview rebind
   handling, audio-device-invalidated rebind scheduling through the preview
   lifecycle owner, capture status/error fan-out, capture pre-cleanup renderer
   stop fan-out, and frame-captured callbacks.

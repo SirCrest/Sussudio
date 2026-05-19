@@ -7,11 +7,11 @@ static partial class Program
         var mainViewModelText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(mainViewModelText, "_viewModel.IsInitialized = _viewModel._captureService.IsInitialized;");
-        AssertContains(mainViewModelText, "_viewModel.IsPreviewing = _viewModel._captureService.IsVideoPreviewActive;");
-        AssertContains(mainViewModelText, "_viewModel.IsRecording = _viewModel._captureService.IsRecording;");
-        AssertContains(mainViewModelText, "_viewModel.UpdateLiveCaptureInfo(runtimeSnapshot);");
-        AssertContains(mainViewModelText, "_viewModel.UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);");
+        AssertContains(mainViewModelText, "_context.SetIsInitialized(_context.IsCaptureInitialized());");
+        AssertContains(mainViewModelText, "_context.SetIsPreviewing(_context.IsVideoPreviewActive());");
+        AssertContains(mainViewModelText, "_context.SetIsRecording(_context.IsCaptureRecording());");
+        AssertContains(mainViewModelText, "_context.UpdateLiveCaptureInfo(runtimeSnapshot);");
+        AssertContains(mainViewModelText, "_context.UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);");
 
         return Task.CompletedTask;
     }

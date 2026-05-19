@@ -3471,7 +3471,7 @@ owner, fold it back into that owner and update the source-shape tests and
    source-telemetry/HDR/live-info/timer/disk-space bootstrap through
    graph-built context ports now live in
    `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs`,
-   while runtime event subscription/unsubscription, system-resume preview rebind
+   while runtime event subscription/unsubscription through graph-built context ports, system-resume preview rebind
    handling, audio-device-invalidated rebind scheduling through the preview
    lifecycle owner, capture status/error fan-out, capture pre-cleanup renderer
    stop fan-out, and frame-captured callbacks now live in
