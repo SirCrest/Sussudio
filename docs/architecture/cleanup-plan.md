@@ -598,7 +598,8 @@ mode options, capture settings/MJPEG HFR/bitrate policy, recording selection,
 encoder support, and recording pipeline option checks stay near their
 production owners without creating one-fact files.
 `tests/Sussudio.Tests/XUnit.FlashbackModelsTests.cs` owns Flashback DTO
-contracts.
+contracts, with reflection/nullability assertion helpers in
+`tests/Sussudio.Tests/XUnit.FlashbackModels.PropertyAssertions.cs`.
 
 `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` now keeps only shared
 pooled-frame and jitter-buffer helpers. Pooled-frame coverage is split into

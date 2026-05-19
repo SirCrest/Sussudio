@@ -51,7 +51,8 @@ add xUnit alongside, and port incrementally.
   encoder support, and recording pipeline option contract checks.
 - `XUnit.FlashbackModelsTests.cs` owns the former legacy Flashback buffer,
   session, playback-state, export progress, export segment, and export request
-  model contract checks.
+  model contract checks; `XUnit.FlashbackModels.PropertyAssertions.cs` owns the
+  shared reflection/nullability assertion helpers for that suite.
 - `XUnit.ToolFormatterContractsTests.cs` owns focused tool formatter contract
   checks.
 - Additional focused `[Fact]`/`[Theory]` files such as

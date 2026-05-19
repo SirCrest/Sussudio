@@ -1997,7 +1997,9 @@ Primary current owners:
   contract checks.
 - `tests/Sussudio.Tests/XUnit.FlashbackModelsTests.cs` owns xUnit coverage for
   Flashback buffer, session, playback-state, export progress, segment, and
-  request DTO contract tests.
+  request DTO contract tests. `XUnit.FlashbackModels.PropertyAssertions.cs`
+  owns the shared reflection/nullability assertion helpers for that contract
+  suite.
 - Focused capture session coordinator coverage lives in
   `tests/Sussudio.Tests/CaptureSessionCoordinator.Api.Tests.cs`,
   `CaptureSessionCoordinator.Contracts`,
