@@ -61,19 +61,11 @@ static partial class Program
 
     private static async Task AddFlashbackChecksAsync(List<CheckResult> results)
     {
-        await AddFlashbackModelChecksAsync(results);
         await AddFlashbackPlaybackStartupChecksAsync(results);
         await AddFlashbackEncoderSinkCoreChecksAsync(results);
         await AddFlashbackPlaybackTimelineChecksAsync(results);
         await AddFlashbackDecoderChecksAsync(results);
         await AddFlashbackEncoderSinkDrainChecksAsync(results);
         await AddFlashbackExporterChecksAsync(results);
-    }
-
-    private static async Task AddFlashbackModelChecksAsync(List<CheckResult> results)
-    {
-        await AddCheckAsync(results,
-            "Flashback buffer options max disk bytes scales with duration",
-            FlashbackBufferOptions_MaxDiskBytes_ScalesWithDuration);
     }
 }

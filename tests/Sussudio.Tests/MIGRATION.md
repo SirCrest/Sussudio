@@ -49,10 +49,10 @@ add xUnit alongside, and port incrementally.
   output path/file naming, bitrate policy, and MJPEG HFR policy checks.
 - `XUnit.RecordingConfigurationPolicyTests.cs` owns recording selection policy,
   encoder support, and recording pipeline option contract checks.
-- `XUnit.FlashbackModelsTests.cs` owns the former legacy Flashback buffer,
-  session, playback-state, export progress, export segment, and export request
-  model contract checks; `XUnit.FlashbackModels.PropertyAssertions.cs` owns the
-  shared reflection/nullability assertion helpers for that suite.
+- `XUnit.FlashbackModelsTests.cs` owns the former legacy Flashback buffer option
+  sizing, session, playback-state, export progress, export segment, and export
+  request model contract checks; `XUnit.FlashbackModels.PropertyAssertions.cs`
+  owns the shared reflection/nullability assertion helpers for that suite.
 - `XUnit.ToolFormatterContractsTests.cs` owns focused tool formatter contract
   checks.
 - Additional focused `[Fact]`/`[Theory]` files such as

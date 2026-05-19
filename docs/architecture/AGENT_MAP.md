@@ -2028,10 +2028,10 @@ Primary current owners:
   recording selection policy, encoder support, and recording pipeline option
   contract checks.
 - `tests/Sussudio.Tests/XUnit.FlashbackModelsTests.cs` owns xUnit coverage for
-  Flashback buffer, session, playback-state, export progress, segment, and
-  request DTO contract tests. `XUnit.FlashbackModels.PropertyAssertions.cs`
-  owns the shared reflection/nullability assertion helpers for that contract
-  suite.
+  Flashback buffer option sizing, session, playback-state, export progress,
+  segment, and request DTO contract tests.
+  `XUnit.FlashbackModels.PropertyAssertions.cs` owns the shared
+  reflection/nullability assertion helpers for that contract suite.
 - Focused capture session coordinator coverage lives in
   `tests/Sussudio.Tests/CaptureSessionCoordinator.Api.Tests.cs`,
   `CaptureSessionCoordinator.Contracts`,
@@ -2134,8 +2134,8 @@ Primary current owners:
   reflection/tool-result, pipe-capture, and JSON assertion helpers respectively.
 - `tests/Sussudio.Tests/Flashback.Tests.cs` owns shared Flashback test helper
   source readers and helper methods only.
-- `tests/Sussudio.Tests/Flashback.Buffer.Tests.cs` owns Flashback buffer option
-  and initialization contract tests.
+- `tests/Sussudio.Tests/Flashback.Buffer.Tests.cs` owns Flashback buffer manager
+  initialization contract tests.
 - `tests/Sussudio.Tests/Flashback.Buffer.Helpers.cs` owns shared Flashback
   buffer test factories, completed-segment insertion, and sized-file helpers.
 - `tests/Sussudio.Tests/Flashback.Buffer.SourceOwnership.Tests.cs` owns

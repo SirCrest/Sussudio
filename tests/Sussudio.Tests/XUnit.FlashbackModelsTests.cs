@@ -5,6 +5,34 @@ namespace Sussudio.Tests;
 public partial class FlashbackModelsTests
 {
     [Fact]
+    public void FlashbackBufferOptions_MaxDiskBytes_ScalesWithDuration()
+    {
+        var asm = SussudioAssembly.Load();
+        var optionsType = RequireType(asm, "Sussudio.Models.FlashbackBufferOptions");
+        var options = CreateInstance(optionsType);
+
+        const long safetyBytesPerSecond = 57L * 1024L * 1024L;
+
+        Set(options, "BufferDuration", TimeSpan.FromMinutes(5));
+        var maxBytes = Get<long>(options, "MaxDiskBytes");
+        Assert.Equal(300L * safetyBytesPerSecond, maxBytes);
+
+        Set(options, "BufferDuration", TimeSpan.FromMinutes(1));
+        var oneMinuteBytes = Get<long>(options, "MaxDiskBytes");
+        Assert.Equal(60L * safetyBytesPerSecond, oneMinuteBytes);
+        Assert.Equal(maxBytes, oneMinuteBytes * 5);
+
+        Set(options, "BufferDuration", TimeSpan.Zero);
+        Assert.Equal(0L, Get<long>(options, "MaxDiskBytes"));
+
+        Set(options, "BufferDuration", TimeSpan.FromTicks(-1));
+        Assert.Equal(0L, Get<long>(options, "MaxDiskBytes"));
+
+        Set(options, "BufferDuration", TimeSpan.MaxValue);
+        Assert.Equal(long.MaxValue, Get<long>(options, "MaxDiskBytes"));
+    }
+
+    [Fact]
     public void FlashbackModels_PreserveBufferSessionExportContracts()
     {
         var asm = SussudioAssembly.Load();
