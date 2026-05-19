@@ -109,7 +109,36 @@ public partial class MainViewModel
                     BuildCaptureSettings = viewModel.BuildCaptureSettings,
                     InvokeOnUiThreadAsync = (operation, cancellationToken) => viewModel.InvokeOnUiThreadAsync(operation, cancellationToken),
                     RampPreviewVolumeDownForStopAsync = viewModel.RampPreviewVolumeDownForStopAsync,
-                    CreateReinitializeController = controller => new MainViewModelPreviewReinitializeController(viewModel, controller),
+                    CreateReinitializeController = controller => new MainViewModelPreviewReinitializeController(
+                        new MainViewModelPreviewReinitializeControllerContext
+                        {
+                            SelectedDevice = () => viewModel.SelectedDevice,
+                            SelectedFormat = () => viewModel.SelectedFormat,
+                            IsRecording = () => viewModel.IsRecording,
+                            IsInitialized = () => viewModel.IsInitialized,
+                            SetIsInitialized = value => viewModel.IsInitialized = value,
+                            IsPreviewing = () => viewModel.IsPreviewing,
+                            IsPreviewReinitializing = () => viewModel.IsPreviewReinitializing,
+                            SetIsPreviewReinitializing = value => viewModel.IsPreviewReinitializing = value,
+                            SetStatusText = value => viewModel.StatusText = value,
+                            CancelPreviewRestartAfterReinitialize = () => viewModel._cancelPreviewRestartAfterReinitialize,
+                            SetCancelPreviewRestartAfterReinitialize = value => viewModel._cancelPreviewRestartAfterReinitialize = value,
+                            IncrementReinitializeGeneration = () => Interlocked.Increment(ref viewModel._previewReinitializeGeneration),
+                            ReadReinitializeGeneration = () => Volatile.Read(ref viewModel._previewReinitializeGeneration),
+                            PendingFlashbackCycleTask = () => viewModel._pendingFlashbackCycleTask,
+                            ClearPendingFlashbackCycleIfSameAndCompleted = task =>
+                            {
+                                if (ReferenceEquals(viewModel._pendingFlashbackCycleTask, task) && task.IsCompleted)
+                                {
+                                    viewModel._pendingFlashbackCycleTask = null;
+                                }
+                            },
+                            WaitReinitializeGateAsync = viewModel._previewReinitializeGate.WaitAsync,
+                            ReleaseReinitializeGate = () => viewModel._previewReinitializeGate.Release(),
+                            NotifyPreviewReinitRequestedAsync = viewModel.NotifyPreviewReinitRequestedAsync,
+                            NotifyRendererStopAsync = viewModel.NotifyRendererStopAsync,
+                        },
+                        controller),
                     SelectedDevice = () => viewModel.SelectedDevice,
                     SetSelectedDevice = device => viewModel.SelectedDevice = device,
                     IsInitialized = () => viewModel.IsInitialized,

@@ -88,7 +88,11 @@ static partial class Program
         AssertContains(controllerGraphText, "BuildCaptureSettings = viewModel.BuildCaptureSettings,");
         AssertContains(controllerGraphText, "InvokeOnUiThreadAsync = (operation, cancellationToken) => viewModel.InvokeOnUiThreadAsync(operation, cancellationToken),");
         AssertContains(controllerGraphText, "RampPreviewVolumeDownForStopAsync = viewModel.RampPreviewVolumeDownForStopAsync,");
-        AssertContains(controllerGraphText, "CreateReinitializeController = controller => new MainViewModelPreviewReinitializeController(viewModel, controller),");
+        AssertContains(controllerGraphText, "CreateReinitializeController = controller => new MainViewModelPreviewReinitializeController(");
+        AssertContains(controllerGraphText, "new MainViewModelPreviewReinitializeControllerContext");
+        AssertContains(controllerGraphText, "IncrementReinitializeGeneration = () => Interlocked.Increment(ref viewModel._previewReinitializeGeneration),");
+        AssertContains(controllerGraphText, "ReadReinitializeGeneration = () => Volatile.Read(ref viewModel._previewReinitializeGeneration),");
+        AssertContains(controllerGraphText, "ClearPendingFlashbackCycleIfSameAndCompleted = task =>");
         AssertContains(controllerGraphText, "SelectedDevice = () => viewModel.SelectedDevice,");
         AssertContains(controllerGraphText, "SetSelectedDevice = device => viewModel.SelectedDevice = device,");
         AssertContains(controllerGraphText, "IsInitialized = () => viewModel.IsInitialized,");
@@ -212,6 +216,10 @@ static partial class Program
         AssertContains(previewLifecycleControllerText, "_previewReinitializeController = _context.CreateReinitializeController(this);");
         AssertContains(previewLifecycleControllerText, "public Task ReinitializeDeviceAsync(string reason)");
         AssertContains(previewReinitializeControllerText, "private sealed class MainViewModelPreviewReinitializeController");
+        AssertContains(previewReinitializeControllerText, "private sealed class MainViewModelPreviewReinitializeControllerContext");
+        AssertContains(previewReinitializeControllerText, "private readonly MainViewModelPreviewReinitializeControllerContext _context;");
+        AssertDoesNotContain(previewReinitializeControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(previewReinitializeControllerText, "_viewModel.");
         AssertContains(previewReinitializeControllerText, "public async Task ReinitializeDeviceAsync(string reason)");
         AssertContains(previewReinitializeControllerText, "public void CancelPendingPreviewRestart()");
         AssertContains(previewReinitializeControllerText, "public void ResetPendingPreviewRestartCancellation()");

@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Sussudio.Models;
 
 namespace Sussudio.ViewModels;
 
@@ -11,53 +12,53 @@ public partial class MainViewModel
     /// </summary>
     private sealed class MainViewModelPreviewReinitializeController
     {
-        private readonly MainViewModel _viewModel;
+        private readonly MainViewModelPreviewReinitializeControllerContext _context;
         private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;
 
         public MainViewModelPreviewReinitializeController(
-            MainViewModel viewModel,
+            MainViewModelPreviewReinitializeControllerContext context,
             MainViewModelPreviewLifecycleController previewLifecycleController)
         {
-            _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
             _previewLifecycleController = previewLifecycleController ?? throw new ArgumentNullException(nameof(previewLifecycleController));
         }
 
         public void CancelPendingPreviewRestart()
         {
-            if (_viewModel.IsPreviewReinitializing)
+            if (_context.IsPreviewReinitializing())
             {
-                _viewModel._cancelPreviewRestartAfterReinitialize = true;
+                _context.SetCancelPreviewRestartAfterReinitialize(true);
             }
         }
 
         public void ResetPendingPreviewRestartCancellation()
         {
-            _viewModel._cancelPreviewRestartAfterReinitialize = false;
+            _context.SetCancelPreviewRestartAfterReinitialize(false);
         }
 
         public async Task ReinitializeDeviceAsync(string reason)
         {
-            if (_viewModel.SelectedDevice == null || _viewModel.SelectedFormat == null)
+            if (_context.SelectedDevice() == null || _context.SelectedFormat() == null)
             {
                 return;
             }
 
-            if (_viewModel.IsRecording)
+            if (_context.IsRecording())
             {
                 Logger.Log($"REINIT_REJECTED_RECORDING reason='{reason}' — stop recording before changing capture settings.");
-                _viewModel.StatusText = "Stop recording before changing capture settings.";
+                _context.SetStatusText("Stop recording before changing capture settings.");
                 return;
             }
 
-            var reinitializeGeneration = Interlocked.Increment(ref _viewModel._previewReinitializeGeneration);
+            var reinitializeGeneration = _context.IncrementReinitializeGeneration();
             await Task.Delay(PreviewReinitializeDebounceMs).ConfigureAwait(true);
-            if (Volatile.Read(ref _viewModel._previewReinitializeGeneration) != reinitializeGeneration)
+            if (_context.ReadReinitializeGeneration() != reinitializeGeneration)
             {
                 Logger.Log($"REINIT_COALESCED reason='{reason}' generation={reinitializeGeneration}");
                 return;
             }
 
-            var pendingCycle = _viewModel._pendingFlashbackCycleTask;
+            var pendingCycle = _context.PendingFlashbackCycleTask();
             if (pendingCycle != null)
             {
                 try
@@ -70,7 +71,7 @@ public partial class MainViewModel
                 catch (TimeoutException ex)
                 {
                     Logger.Log($"REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={FlashbackCycleBeforeReinitializeTimeoutMs}");
-                    _viewModel.StatusText = $"Failed to apply format: {ex.Message}";
+                    _context.SetStatusText($"Failed to apply format: {ex.Message}");
                     return;
                 }
                 catch (Exception ex)
@@ -78,61 +79,82 @@ public partial class MainViewModel
                     Logger.Log($"REINIT_WAIT_FLASHBACK_CYCLE_FAULT reason={reason} type={ex.GetType().Name} msg='{ex.Message}'");
                 }
 
-                if (ReferenceEquals(_viewModel._pendingFlashbackCycleTask, pendingCycle) && pendingCycle.IsCompleted)
-                {
-                    _viewModel._pendingFlashbackCycleTask = null;
-                }
+                _context.ClearPendingFlashbackCycleIfSameAndCompleted(pendingCycle);
             }
 
-            await _viewModel._previewReinitializeGate.WaitAsync();
-            var shouldRestartPreview = _viewModel.IsPreviewing;
+            await _context.WaitReinitializeGateAsync();
+            var shouldRestartPreview = _context.IsPreviewing();
             try
             {
-                _viewModel.StatusText = "Applying new settings...";
+                _context.SetStatusText("Applying new settings...");
                 Logger.Log($"=== Reinitializing device ({reason}) ===");
 
                 if (shouldRestartPreview)
                 {
-                    _viewModel.IsPreviewReinitializing = true;
+                    _context.SetIsPreviewReinitializing(true);
                     ResetPendingPreviewRestartCancellation();
-                    await _viewModel.NotifyPreviewReinitRequestedAsync(reason);
-                    await _viewModel.NotifyRendererStopAsync();
+                    await _context.NotifyPreviewReinitRequestedAsync(reason);
+                    await _context.NotifyRendererStopAsync();
                 }
 
-                if (_viewModel.IsPreviewing)
+                if (_context.IsPreviewing())
                 {
                     await _previewLifecycleController.StopPreviewAsync(userInitiated: false, teardownPipeline: true, CancellationToken.None);
                 }
 
-                _viewModel.IsInitialized = false;
+                _context.SetIsInitialized(false);
                 Logger.LogFatalBreadcrumb($"REINIT phase=init_device reason={reason}");
                 await _previewLifecycleController.InitializeDeviceAsync();
                 Logger.LogFatalBreadcrumb($"REINIT phase=init_device_done reason={reason}");
 
-                if (_viewModel.IsInitialized && shouldRestartPreview && !_viewModel._cancelPreviewRestartAfterReinitialize)
+                if (_context.IsInitialized() && shouldRestartPreview && !_context.CancelPreviewRestartAfterReinitialize())
                 {
                     Logger.LogFatalBreadcrumb($"REINIT phase=start_preview reason={reason}");
                     await _previewLifecycleController.StartPreviewAsync(userInitiated: false);
                     Logger.LogFatalBreadcrumb($"REINIT phase=start_preview_done reason={reason}");
 
-                    _viewModel.StatusText = $"Preview: {_viewModel.SelectedFormat.Width}x{_viewModel.SelectedFormat.Height}@{_viewModel.SelectedFormat.FrameRate}fps";
+                    var selectedFormat = _context.SelectedFormat()!;
+                    _context.SetStatusText($"Preview: {selectedFormat.Width}x{selectedFormat.Height}@{selectedFormat.FrameRate}fps");
                 }
             }
             catch (Exception ex)
             {
                 Logger.LogException(ex);
-                _viewModel.StatusText = $"Failed to apply format: {ex.Message}";
+                _context.SetStatusText($"Failed to apply format: {ex.Message}");
             }
             finally
             {
                 ResetPendingPreviewRestartCancellation();
                 if (shouldRestartPreview)
                 {
-                    _viewModel.IsPreviewReinitializing = false;
+                    _context.SetIsPreviewReinitializing(false);
                 }
 
-                _viewModel._previewReinitializeGate.Release();
+                _context.ReleaseReinitializeGate();
             }
         }
+    }
+
+    private sealed class MainViewModelPreviewReinitializeControllerContext
+    {
+        public required Func<CaptureDevice?> SelectedDevice { get; init; }
+        public required Func<MediaFormat?> SelectedFormat { get; init; }
+        public required Func<bool> IsRecording { get; init; }
+        public required Func<bool> IsInitialized { get; init; }
+        public required Action<bool> SetIsInitialized { get; init; }
+        public required Func<bool> IsPreviewing { get; init; }
+        public required Func<bool> IsPreviewReinitializing { get; init; }
+        public required Action<bool> SetIsPreviewReinitializing { get; init; }
+        public required Action<string> SetStatusText { get; init; }
+        public required Func<bool> CancelPreviewRestartAfterReinitialize { get; init; }
+        public required Action<bool> SetCancelPreviewRestartAfterReinitialize { get; init; }
+        public required Func<int> IncrementReinitializeGeneration { get; init; }
+        public required Func<int> ReadReinitializeGeneration { get; init; }
+        public required Func<Task?> PendingFlashbackCycleTask { get; init; }
+        public required Action<Task> ClearPendingFlashbackCycleIfSameAndCompleted { get; init; }
+        public required Func<Task> WaitReinitializeGateAsync { get; init; }
+        public required Action ReleaseReinitializeGate { get; init; }
+        public required Func<string, Task> NotifyPreviewReinitRequestedAsync { get; init; }
+        public required Func<Task> NotifyRendererStopAsync { get; init; }
     }
 }

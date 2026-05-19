@@ -316,15 +316,15 @@ static partial class Program
         AssertDoesNotContain(viewModelSharedStateText, "private int _previewReinitializeGeneration;");
         AssertContains(viewModelFiles["MainViewModel.PreviewState.cs"], "=> _previewLifecycleController.ReinitializeDeviceAsync(reason);");
         AssertContains(rawPreviewLifecycleControllerText, "=> _previewReinitializeController.ReinitializeDeviceAsync(reason);");
-        AssertContains(rawPreviewReinitializeControllerText, "var reinitializeGeneration = Interlocked.Increment(ref _viewModel._previewReinitializeGeneration);");
+        AssertContains(rawPreviewReinitializeControllerText, "var reinitializeGeneration = _context.IncrementReinitializeGeneration();");
         AssertContains(rawPreviewReinitializeControllerText, "await Task.Delay(PreviewReinitializeDebounceMs).ConfigureAwait(true);");
-        AssertContains(rawPreviewReinitializeControllerText, "Volatile.Read(ref _viewModel._previewReinitializeGeneration) != reinitializeGeneration");
+        AssertContains(rawPreviewReinitializeControllerText, "_context.ReadReinitializeGeneration() != reinitializeGeneration");
         AssertContains(rawPreviewReinitializeControllerText, "REINIT_COALESCED reason='{reason}' generation={reinitializeGeneration}");
         AssertContains(rawPreviewReinitializeControllerText, "await AwaitWithTimeoutAsync(");
         AssertContains(rawPreviewReinitializeControllerText, "\"Flashback encoder settings cycle before reinitialize\").ConfigureAwait(false);");
         AssertContains(rawPreviewReinitializeControllerText, "REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={FlashbackCycleBeforeReinitializeTimeoutMs}");
         AssertContains(rawPreviewReinitializeControllerText, "REINIT_WAIT_FLASHBACK_CYCLE_FAULT");
-        AssertContains(rawPreviewReinitializeControllerText, "if (ReferenceEquals(_viewModel._pendingFlashbackCycleTask, pendingCycle) && pendingCycle.IsCompleted)\n                {\n                    _viewModel._pendingFlashbackCycleTask = null;\n                }");
+        AssertContains(rawPreviewReinitializeControllerText, "_context.ClearPendingFlashbackCycleIfSameAndCompleted(pendingCycle);");
 
         return Task.CompletedTask;
     }

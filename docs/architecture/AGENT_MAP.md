@@ -2640,7 +2640,7 @@ Primary current owners:
   `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`
   owns debounced reinitialization, restart-cancellation state,
   Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
-  and reinit gate release.
+  and reinit gate release through graph-built context ports.
   `MainViewModel.RecordingState.cs` owns the stable recording facade:
   toggle, desired-state, graceful-stop, the direct emergency-stop coordinator
   bridge, recording option selections, output path, counters, and observable

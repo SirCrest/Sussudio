@@ -3513,7 +3513,7 @@ owner, fold it back into that owner and update the source-shape tests and
    `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`
    owns debounced reinitialization, restart-cancellation state,
    Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
-   and gate release. Output folder display plus browse/open-recordings button workflows now live in
+   and gate release through graph-built context ports. Output folder display plus browse/open-recordings button workflows now live in
    `Sussudio/Controllers/Recording/Output/OutputPathController.cs`.
    Recording facade entry points, including the direct emergency-stop
    coordinator bridge, now live in `MainViewModel.RecordingState.cs`, while
@@ -3704,7 +3704,7 @@ owner, fold it back into that owner and update the source-shape tests and
    Automation preview enable/disable idempotence, pending-reinit cancellation,
    and preview start/stop routing now live in
    `MainViewModelPreviewLifecycleController.cs` plus
-   `MainViewModelPreviewReinitializeController.cs`, with the stable
+   graph-built `MainViewModelPreviewReinitializeController.cs` context ports, with the stable
    `MainViewModel.PreviewState.cs` compatibility facade preserving the automation surface.
    Automation HDR and true-HDR preview recording-time guard enforcement and HDR
    availability checks now live in `MainViewModel.CaptureModeTransactions.cs`
