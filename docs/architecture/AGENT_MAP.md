@@ -1286,8 +1286,8 @@ Primary current owners:
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs`.
 - `tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs` owns xUnit contract
   checks for stats overlay lifecycle wiring and stats section chrome.
-- `tests/Sussudio.Tests/StatsDockPresentation.Tests.cs` owns legacy harness
-  contract checks for stats dock refresh orchestration, diagnostic row update
+- `tests/Sussudio.Tests/StatsDockPresentation.Tests.cs` owns xUnit contract
+  checks for stats dock refresh orchestration, diagnostic row update
   delegation, hardware row projection, and row chrome pooling.
 - `Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs` owns diagnostic row
   presentation, empty-state rows, group headers, and diagnostic row pooling.

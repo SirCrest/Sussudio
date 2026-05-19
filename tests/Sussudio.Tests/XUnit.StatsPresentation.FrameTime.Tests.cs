@@ -135,4 +135,27 @@ public partial class StatsPresentationTests
         => Assert.True(
             Math.Abs(expected - actual) <= tolerance,
             $"Expected {expected:0.####}, got {actual:0.####}; tolerance {tolerance:0.####}.");
+
+    private static void AssertContains(string actual, string expectedSubstring)
+        => Assert.Contains(expectedSubstring, actual, StringComparison.Ordinal);
+
+    private static void AssertDoesNotContain(string actual, string unexpectedSubstring)
+        => Assert.DoesNotContain(unexpectedSubstring, actual, StringComparison.Ordinal);
+
+    private static void AssertOccursBefore(string actual, string first, string second)
+    {
+        var firstIndex = actual.IndexOf(first, StringComparison.Ordinal);
+        if (firstIndex < 0)
+        {
+            throw new InvalidOperationException($"Assertion failed: expected source to contain '{first}'.");
+        }
+
+        var secondIndex = actual.IndexOf(second, StringComparison.Ordinal);
+        if (secondIndex < 0)
+        {
+            throw new InvalidOperationException($"Assertion failed: expected source to contain '{second}'.");
+        }
+
+        Assert.True(firstIndex < secondIndex, $"Expected '{first}' to occur before '{second}'.");
+    }
 }

@@ -1,8 +1,11 @@
-using System.Threading.Tasks;
+using Xunit;
 
-static partial class Program
+namespace Sussudio.Tests;
+
+public partial class StatsPresentationTests
 {
-    private static Task StatsPanels_UseSourceTelemetry_ForHdmiInput()
+    [Fact]
+    public void StatsPanels_UseSourceTelemetry_ForHdmiInput()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsDockRefreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
@@ -31,7 +34,5 @@ static partial class Program
         AssertContains(nativeXuText, "Colorimetry = aviInfo.Colorimetry,");
         AssertContains(nativeXuText, "Quantization = aviInfo.Quantization,");
         AssertContains(nativeXuText, "HdrTransferFunction = ResolveHdrTransferFunction(hdrInfo.Eotf),");
-
-        return Task.CompletedTask;
     }
 }

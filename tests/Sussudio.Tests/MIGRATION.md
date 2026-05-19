@@ -62,6 +62,9 @@ add xUnit alongside, and port incrementally.
   owns the shared reflection/nullability assertion helpers for that suite.
 - `Flashback.Playback.Markers.Tests.cs` owns the former legacy Flashback
   playback in/out marker API, normalization, disposal, and marker clamp checks.
+- `StatsDockPresentation.Tests.cs`, `StatsPresentation.Ownership.Tests.cs`,
+  and `StatsPresentation.SourceTelemetry.Tests.cs` own the former legacy stats
+  dock, row chrome, builder ownership, and HDMI source telemetry panel checks.
 - `XUnit.ToolFormatterContractsTests.cs` owns focused tool formatter contract
   checks.
 - Additional focused `[Fact]`/`[Theory]` files such as

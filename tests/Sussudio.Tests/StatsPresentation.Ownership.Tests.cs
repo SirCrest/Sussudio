@@ -1,8 +1,11 @@
-using System.Threading.Tasks;
+using Xunit;
 
-static partial class Program
+namespace Sussudio.Tests;
+
+public partial class StatsPresentationTests
 {
-    private static Task StatsPresentationLogic_LivesInFocusedBuilder()
+    [Fact]
+    public void StatsPresentationLogic_LivesInFocusedBuilder()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
@@ -143,7 +146,5 @@ static partial class Program
         AssertDoesNotContain(statsOverlayText, "private static List<(string Label, string Value)> ParseDiagnosticSummary");
         AssertDoesNotContain(statsOverlayText, "StatsPresentationBuilder.BuildDockPresentation(snapshot)");
         AssertDoesNotContain(statsOverlayText, "StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)");
-
-        return Task.CompletedTask;
     }
 }

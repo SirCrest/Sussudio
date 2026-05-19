@@ -43,7 +43,6 @@ static partial class Program
         await AddPresentationPreviewMainWindowInitialChecksAsync(results);
         await AddPresentationPreviewCaptureChecksAsync(results);
         await AddPresentationPreviewMainViewModelChecksAsync(results);
-        await AddPresentationPreviewStatsInitialChecksAsync(results);
         await AddPresentationPreviewMainWindowChecksAsync(results);
         await AddPresentationPreviewStatsChecksAsync(results);
         await AddPresentationPreviewD3DChecksAsync(results);

@@ -1,6 +1,11 @@
-static partial class Program
+using Xunit;
+
+namespace Sussudio.Tests;
+
+public partial class StatsPresentationTests
 {
-    private static Task StatsDockPresentationApplication_LivesInController()
+    [Fact]
+    public void StatsDockPresentationApplication_LivesInController()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
@@ -51,11 +56,10 @@ static partial class Program
         AssertDoesNotContain(statsOverlayText, "private void UpdateStatsDock()");
         AssertDoesNotContain(statsOverlayText, "private void RefreshDiagnosticsSection()");
         AssertDoesNotContain(statsOverlayText, "private void UpdateDiagnosticsSection(");
-
-        return Task.CompletedTask;
     }
 
-    private static Task StatsDockRowChrome_LivesInFocusedController()
+    [Fact]
+    public void StatsDockRowChrome_LivesInFocusedController()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsDockCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockControllerGraph.cs").Replace("\r\n", "\n");
@@ -196,7 +200,5 @@ static partial class Program
         AssertDoesNotContain(statsOverlayText, "private void UpdateGpuSection()");
         AssertDoesNotContain(statsOverlayText, "_statsDiagnosticRowsController.UpdateDiagnostics(presentation);");
         AssertDoesNotContain(statsOverlayText, "new List<StatsHardwareRowPresentation>");
-
-        return Task.CompletedTask;
     }
 }
