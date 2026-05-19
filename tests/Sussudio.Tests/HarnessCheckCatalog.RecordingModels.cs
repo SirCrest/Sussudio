@@ -60,9 +60,6 @@ static partial class Program
         await AddCheckAsync(results,
             "RollbackAsync is safe with null context",
             ArtifactManager_RollbackAsync_SafeWithNullContext);
-        await AddCheckAsync(results,
-            "RecordingStats computes totals and preserves estimate flag",
-            RecordingStats_ComputesTotalsAndPreservesEstimateFlag);
     }
 
 }

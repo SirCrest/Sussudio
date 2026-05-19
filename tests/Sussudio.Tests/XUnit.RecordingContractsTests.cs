@@ -66,6 +66,43 @@ public class RecordingContractsTests
     }
 
     [Fact]
+    public void RecordingStats_ComputesTotalsAndPreservesEstimateFlag()
+    {
+        var asm = SussudioAssembly.Load();
+        var statsType = asm.GetType("Sussudio.Models.RecordingStats", throwOnError: true)!;
+
+        Assert.True(statsType.IsValueType);
+        Assert.True(statsType.IsDefined(typeof(System.Runtime.CompilerServices.IsReadOnlyAttribute), inherit: false));
+
+        foreach (var propertyName in new[] { "VideoBytes", "AudioBytes", "TotalBytes", "IsFlashbackEstimate", "IsFailure" })
+        {
+            var property = statsType.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+            Assert.NotNull(property);
+            Assert.Null(property!.SetMethod);
+        }
+
+        var ctor = statsType.GetConstructor(new[] { typeof(long), typeof(long), typeof(bool), typeof(bool) });
+        Assert.NotNull(ctor);
+
+        var finalStats = ctor!.Invoke(new object[] { 123L, 456L, false, false });
+        Assert.Equal(123L, GetLongProperty(finalStats, "VideoBytes"));
+        Assert.Equal(456L, GetLongProperty(finalStats, "AudioBytes"));
+        Assert.Equal(579L, GetLongProperty(finalStats, "TotalBytes"));
+        Assert.False(GetBoolProperty(finalStats, "IsFlashbackEstimate"));
+        Assert.False(GetBoolProperty(finalStats, "IsFailure"));
+
+        var flashbackStats = ctor.Invoke(new object[] { 10L, 5L, true, false });
+        Assert.Equal(15L, GetLongProperty(flashbackStats, "TotalBytes"));
+        Assert.True(GetBoolProperty(flashbackStats, "IsFlashbackEstimate"));
+
+        var failureStats = ctor.Invoke(new object[] { 0L, 0L, false, true });
+        Assert.True(GetBoolProperty(failureStats, "IsFailure"));
+
+        var negativeCorrection = ctor.Invoke(new object[] { 100L, -20L, false, false });
+        Assert.Equal(80L, GetLongProperty(negativeCorrection, "TotalBytes"));
+    }
+
+    [Fact]
     public void FinalizeResult_Failure_DeduplicatesAndFiltersArtifacts()
     {
         var asm = SussudioAssembly.Load();
@@ -82,6 +119,12 @@ public class RecordingContractsTests
         var preserved = (System.Collections.IEnumerable)resultType.GetProperty("PreservedArtifacts")!.GetValue(failure)!;
         Assert.Equal(new[] { "/path/a.mp4", "/path/b.m4a" }, preserved.Cast<object>().Select(value => (string)value).ToArray());
     }
+
+    private static bool GetBoolProperty(object instance, string propertyName)
+        => (bool)instance.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)!.GetValue(instance)!;
+
+    private static long GetLongProperty(object instance, string propertyName)
+        => (long)instance.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)!.GetValue(instance)!;
 }
 
 // Resolves the staged Sussudio.dll the same way the legacy runner does.

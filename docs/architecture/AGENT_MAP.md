@@ -1833,7 +1833,7 @@ Primary current owners:
   and publish policy contract checks.
 - `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns recording
   service contract DTO checks such as GpuPipelineHandles,
-  RecordingContextRequest, and FinalizeResult.
+  RecordingContextRequest, FinalizeResult, and RecordingStats.
 - `tests/Sussudio.Tests/RecordingArtifactManager.Tests.cs` owns temp artifact
   finalize/rollback behavior for recording output cleanup.
 - `tests/Sussudio.Tests/LibAvEncoder.Options.Tests.cs` owns LibAvEncoder
