@@ -2788,8 +2788,10 @@ Diagnostic session DTOs live in model files without tiny property-only shards:
 shared tool invocation defaults and the ssctl diagnostic-session usage string,
 while `DiagnosticSessionScenarioCatalog.cs` owns scenario name constants,
 normalization, the MCP-compatible scenario description, the CLI help-list
-constant, scenario setup requirement queries, scenario ordering, export
-verification artifact lookup, and per-scenario plan assignment.
+constant, setup requirement queries, and export verification artifact lookup.
+`DiagnosticSessionScenarioCatalog.Entries.cs` owns scenario ordering,
+requirement metadata, export verification filenames, and per-scenario plan
+assignment.
 `DiagnosticSessionRunner.cs` owns the
 public compatibility entry points; `DiagnosticSessionRunExecution.cs` owns the
 visible run phase sequence around context creation, initial snapshot, scenario
@@ -3056,13 +3058,15 @@ timeline artifact input and final health snapshot refresh while the runner
 keeps the high-level post-cleanup phase order.
 
 Diagnostic-session scenario metadata now lives in
-`tools/Common/DiagnosticSessionScenarioCatalog.cs`. It owns scenario names,
-HelpList/Description text, normalization, ordering, setup requirements, export
-verification filenames/queries, and the plan assigned to each normalized
-scenario. `tools/Common/DiagnosticSessionScenarioPlan.cs` owns the plan DTO plus
-grouped warning/validation policy switches, including the
-preview-cycle grouped predicate, so the runner does not grow direct scenario
-string comparisons.
+`tools/Common/DiagnosticSessionScenarioCatalog.cs` and
+`tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs`. The root catalog
+owns scenario names, HelpList/Description text, normalization, requirement
+queries, and export-verification lookup. The entries file owns scenario
+ordering, setup requirement metadata, export verification filenames, and the
+plan assigned to each normalized scenario.
+`tools/Common/DiagnosticSessionScenarioPlan.cs` owns the plan DTO plus grouped
+warning/validation policy switches, including the preview-cycle grouped
+predicate, so the runner does not grow direct scenario string comparisons.
 
 Diagnostic-session cleanup restore validation now lives in
 `tools/Common/DiagnosticSessionCleanupPolicy.cs`. It owns warnings for preview,
@@ -3129,8 +3133,8 @@ surfaces with focused coverage.
 Diagnostic-session Flashback preview-cycle scenarios now live in a focused
 partial family. `.Registrations.cs` owns task registration, priority,
 task-label, and started-action wiring while preview-cycle scenario selection
-stays in `DiagnosticSessionScenarioCatalog.cs` and grouped preview-cycle policy
-stays in `DiagnosticSessionScenarioPlan.cs`.
+stays in the `DiagnosticSessionScenarioCatalog` family and grouped
+preview-cycle policy stays in `DiagnosticSessionScenarioPlan.cs`.
 `.Flashback.cs`, `.Playback.cs`, and `.Recording.cs` own preview stop/restart
 flows for normal Flashback, playback, and recording-backed diagnostics. Normal
 Flashback and playback-preview-cycle export-while-preview-off verification live
@@ -3352,6 +3356,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRunContext.PhaseContexts.cs`
 - `DiagnosticSessionSampler.cs`
 - `DiagnosticSessionScenarioCatalog.cs`
+- `DiagnosticSessionScenarioCatalog.Entries.cs`
 - `DiagnosticSessionScenarioPlan.cs`
 - `DiagnosticSessionScenarioSetup.cs`
 - `DiagnosticSessionScenarioStartup.cs`

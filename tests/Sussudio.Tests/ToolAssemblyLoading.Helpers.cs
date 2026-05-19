@@ -96,7 +96,9 @@ static partial class Program
         var root = GetRepoRoot();
         var projectDirectory = GetToolProjectDirectory(relativeAssemblyPath);
         var inputDirectories = EnumerateToolInputDirectories(projectDirectory)
-            .Concat(EnumerateToolInputDirectories(Path.Combine(root, "tools", "Common")))
+            .Concat(UsesCommonToolSources(projectDirectory)
+                ? EnumerateToolInputDirectories(Path.Combine(root, "tools", "Common"))
+                : Array.Empty<string>())
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
         var inputFiles = inputDirectories
@@ -158,6 +160,36 @@ static partial class Program
                 yield return Path.GetFullPath(Path.Combine(projectFileDirectory, expanded));
             }
         }
+    }
+
+    private static bool UsesCommonToolSources(string projectDirectory)
+    {
+        foreach (var projectFile in Directory.EnumerateFiles(projectDirectory, "*.csproj"))
+        {
+            XDocument project;
+            try
+            {
+                project = XDocument.Load(projectFile);
+            }
+            catch
+            {
+                continue;
+            }
+
+            foreach (var include in project.Descendants()
+                         .Where(element => string.Equals(element.Name.LocalName, "Compile", StringComparison.OrdinalIgnoreCase))
+                         .Select(element => element.Attribute("Include")?.Value)
+                         .Where(value => !string.IsNullOrWhiteSpace(value)))
+            {
+                var normalized = include!.Replace('\\', '/');
+                if (normalized.Contains("../Common/", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static string GetToolProjectDirectory(string relativeAssemblyPath)

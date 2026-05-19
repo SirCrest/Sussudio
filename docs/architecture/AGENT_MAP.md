@@ -3213,9 +3213,10 @@ Primary owners:
   options plus the shared tool invocation defaults and ssctl usage string.
 - `tools/Common/DiagnosticSessionScenarioCatalog.cs` owns scenario name
   constants, MCP-compatible scenario description text, the CLI help-list
-  constant, normalization, scenario ordering, setup requirements, export
-  verification filenames/queries, and the plan assigned to each normalized
-  scenario.
+  constant, normalization, requirement queries, and export-verification lookup.
+  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs` owns scenario
+  ordering, setup requirement metadata, export verification filenames, and the
+  plan assigned to each normalized scenario.
 - `tools/Common/DiagnosticSessionResult.cs` owns diagnostic-session summary DTO
   fields: core metadata, artifact paths, terminal state, actions, warnings,
   overview, capture/source, preview, Flashback recording, and Flashback export.
@@ -3659,9 +3660,11 @@ Invariants:
   formatting; ssctl and MCP both flow through `DiagnosticSessionRunner.Format`.
 - Preserve pipe error-code semantics when refactoring diagnostic-session retry:
   `pipe-access-denied` is permanent, while connect failed/timeout are retried.
-- Add new diagnostic-session scenario names, requirements, export verification
-  metadata, and plan metadata in `tools/Common/DiagnosticSessionScenarioCatalog.cs`
-  before wiring scenario behavior into `DiagnosticSessionRunner`.
+- Add new diagnostic-session scenario names in
+  `tools/Common/DiagnosticSessionScenarioCatalog.cs`, then add requirements,
+  export verification metadata, and plan metadata in
+  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs` before wiring
+  scenario behavior into `DiagnosticSessionRunner`.
 - Keep diagnostic-session grouped policy derivation in
   `tools/Common/DiagnosticSessionScenarioPlan.cs`; the runner should consume
   named properties instead of comparing normalized scenario strings directly.

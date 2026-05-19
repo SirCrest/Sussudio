@@ -199,7 +199,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var flashbackWarningsSucceeded = !isFlashbackScenario ||");
         AssertContains(diagnosticSessionText, "IsToleratedFlashbackScenarioWarning(");
         AssertContains(diagnosticSessionText, "flashbackWarningsSucceeded,");
-        AssertContains(diagnosticScenariosText, "internal static class DiagnosticSessionScenarioCatalog");
+        AssertContains(diagnosticScenariosText, "internal static partial class DiagnosticSessionScenarioCatalog");
         AssertContains(diagnosticScenariosText, "internal static IReadOnlyList<DiagnosticSessionScenarioCatalogEntry> Entries { get; }");
         AssertContains(diagnosticScenariosText, "internal const string HelpList =");
         AssertContains(diagnosticScenariosText, "internal const string Description =");
