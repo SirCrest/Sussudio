@@ -2897,7 +2897,8 @@ Primary owners:
 - `tools/KsAudioNodeProbe/Program.cs` owns KS audio node probe argument parsing,
   interface selection, open failure handling, and workflow dispatch;
   `Program.ScanWorkflows.cs` owns set-and-hold, topology, brute-force,
-  extended-node, ADC volume, mux, and mute probe workflows;
+  and full-probe orchestration; `Program.ScanWorkflows.Extended.cs` owns
+  extended-node mutation tests, ADC volume, mux, and mute probe workflows;
   `Program.Constants.cs` owns probe constants; `Program.NativeTypes.cs` owns
   native interop DTOs; and `Program.NativeInterop.cs` owns SetupAPI, file-handle,
   KS property transfer, topology enumeration, and Win32 formatting helpers.
