@@ -3591,7 +3591,8 @@ owner, fold it back into that owner and update the source-shape tests and
    owns startup refresh orchestration: requesting the combined discovery result,
    applying audio-device startup selection, replacing the capture-device collection,
    starting background format probes, restoring saved capture-device selection,
-   and directly auto-starting preview through the preview lifecycle owner. The shallow `MainViewModel.DeviceManagement.cs`
+   and directly auto-starting preview through graph-built context ports plus the
+   preview lifecycle owner. The shallow `MainViewModel.DeviceManagement.cs`
    partial was retired rather than preserving a sub-100-line facade. Selected
    capture-device reactions, capability projection, source telemetry reset, and
    device-native audio-control refresh handoff live in `MainViewModel.DeviceSelection.cs`. Capture-mode property-change

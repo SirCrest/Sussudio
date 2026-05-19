@@ -101,7 +101,11 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.DeviceManagement.cs")),
             "shallow MainViewModel device-management partial");
-        AssertContains(deviceRefreshControllerText, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n            {\n                _viewModel.StatusText = \"Device scan canceled\";\n                throw;\n            }");
+        AssertContains(deviceRefreshControllerText, "private sealed class MainViewModelDeviceRefreshControllerContext");
+        AssertContains(deviceRefreshControllerText, "private readonly MainViewModelDeviceRefreshControllerContext _context;");
+        AssertDoesNotContain(deviceRefreshControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");
+        AssertContains(deviceRefreshControllerText, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n            {\n                _context.SetStatusText(\"Device scan canceled\");\n                throw;\n            }");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationAudioInputSelection.cs")),

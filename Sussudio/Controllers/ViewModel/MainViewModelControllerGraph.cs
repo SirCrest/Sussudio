@@ -69,7 +69,7 @@ public partial class MainViewModel
             var captureModeOptionRebuildController = new MainViewModelCaptureModeOptionRebuildController(viewModel);
             var deviceFormatProbeController = CreateDeviceFormatProbeController(viewModel);
             var sourceTelemetryController = CreateSourceTelemetryController(viewModel);
-            var deviceRefreshController = new MainViewModelDeviceRefreshController(viewModel, previewLifecycleController);
+            var deviceRefreshController = CreateDeviceRefreshController(viewModel, previewLifecycleController);
             var runtimeLifecycleController = CreateRuntimeLifecycleController(viewModel, previewLifecycleController);
             var disposalController = CreateDisposalController(viewModel);
 
@@ -312,6 +312,34 @@ public partial class MainViewModel
                             UpdateTargetSummary = viewModel.UpdateTargetSummary,
                         }),
                 });
+        }
+
+        private static MainViewModelDeviceRefreshController CreateDeviceRefreshController(
+            MainViewModel viewModel,
+            MainViewModelPreviewLifecycleController previewLifecycleController)
+        {
+            return new MainViewModelDeviceRefreshController(
+                new MainViewModelDeviceRefreshControllerContext
+                {
+                    SetStatusText = value => viewModel.StatusText = value,
+                    IncrementDeviceScanGeneration = () => Interlocked.Increment(ref viewModel._deviceScanGeneration),
+                    GetSelectedAudioInputDeviceId = () => viewModel.SelectedAudioInputDevice?.Id,
+                    GetSelectedMicrophoneDeviceId = () => viewModel.SelectedMicrophoneDevice?.Id,
+                    GetSelectedDeviceId = () => viewModel.SelectedDevice?.Id,
+                    EnumerateCaptureDeviceDiscoveryAsync = () =>
+                        viewModel._deviceService.EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false),
+                    ApplyStartupAudioDeviceScan = viewModel.ApplyStartupAudioDeviceScan,
+                    ReplaceDevices = devices => ReplaceCollection(viewModel.Devices, devices),
+                    GetDevices = () => viewModel.Devices,
+                    BeginBackgroundFormatProbe = (device, scanGeneration) =>
+                        viewModel._deviceService.BeginBackgroundFormatProbe(device, scanGeneration),
+                    GetLastDiscoverySummary = () => viewModel._deviceService.LastDiscoverySummary,
+                    SetSelectedDevice = device => viewModel.SelectedDevice = device,
+                    GetSelectedDevice = () => viewModel.SelectedDevice,
+                    GetPendingSavedDeviceId = () => viewModel._pendingSavedDeviceId,
+                    SetPendingSavedDeviceId = value => viewModel._pendingSavedDeviceId = value,
+                },
+                previewLifecycleController);
         }
 
         private static MainViewModelRuntimeLifecycleController CreateRuntimeLifecycleController(

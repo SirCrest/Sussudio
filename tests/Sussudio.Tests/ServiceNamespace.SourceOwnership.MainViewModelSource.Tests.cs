@@ -208,10 +208,14 @@ static partial class Program
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceManagement.cs")),
             "shallow MainViewModel device-management partial");
         AssertContains(deviceRefreshControllerText, "private sealed class MainViewModelDeviceRefreshController");
+        AssertContains(deviceRefreshControllerText, "private sealed class MainViewModelDeviceRefreshControllerContext");
+        AssertContains(deviceRefreshControllerText, "private readonly MainViewModelDeviceRefreshControllerContext _context;");
+        AssertDoesNotContain(deviceRefreshControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");
         AssertContains(deviceRefreshControllerText, "public async Task RefreshDevicesAsync(CancellationToken cancellationToken = default)");
-        AssertContains(deviceRefreshControllerText, "EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)");
-        AssertContains(deviceRefreshControllerText, "ReplaceCollection(_viewModel.Devices, devices.ToList());");
-        AssertContains(deviceRefreshControllerText, "_viewModel._deviceService.BeginBackgroundFormatProbe(discoveredDevice, scanGeneration);");
+        AssertContains(deviceRefreshControllerText, "_context.EnumerateCaptureDeviceDiscoveryAsync()");
+        AssertContains(deviceRefreshControllerText, "_context.ReplaceDevices(devices.ToList());");
+        AssertContains(deviceRefreshControllerText, "_context.BeginBackgroundFormatProbe(discoveredDevice, scanGeneration);");
         AssertContains(deviceRefreshControllerText, "private async Task ApplySuccessfulDeviceScanAsync");
         AssertContains(deviceRefreshControllerText, "await _previewLifecycleController.StartPreviewAsync(userInitiated: false, cancellationToken);");
         AssertDoesNotContain(deviceRefreshControllerText, "await _viewModel.StartPreviewAsync(userInitiated: false, cancellationToken);");

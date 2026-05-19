@@ -116,7 +116,7 @@ static partial class Program
         AssertContains(controllerGraphText, "new MainViewModelCaptureModeOptionRebuildController(viewModel)");
         AssertContains(controllerGraphText, "var deviceFormatProbeController = CreateDeviceFormatProbeController(viewModel);");
         AssertContains(controllerGraphText, "var sourceTelemetryController = CreateSourceTelemetryController(viewModel);");
-        AssertContains(controllerGraphText, "new MainViewModelDeviceRefreshController(viewModel, previewLifecycleController)");
+        AssertContains(controllerGraphText, "var deviceRefreshController = CreateDeviceRefreshController(viewModel, previewLifecycleController);");
         AssertOccursBefore(
             controllerGraphText,
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
@@ -124,7 +124,7 @@ static partial class Program
         AssertOccursBefore(
             controllerGraphText,
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
-            "var deviceRefreshController = new MainViewModelDeviceRefreshController(viewModel, previewLifecycleController);");
+            "var deviceRefreshController = CreateDeviceRefreshController(viewModel, previewLifecycleController);");
         AssertContains(controllerGraphText, "private static MainViewModelRuntimeLifecycleController CreateRuntimeLifecycleController(");
         AssertContains(controllerGraphText, "new MainViewModelRuntimeLifecycleController(\n                new MainViewModelRuntimeLifecycleControllerContext");
         AssertContains(controllerGraphText, "CreateEventIngressController = () => CreateRuntimeEventIngressController(viewModel, previewLifecycleController),");
@@ -231,8 +231,16 @@ static partial class Program
         AssertContains(previewReinitializeControllerText, "public void CancelPendingPreviewRestart()");
         AssertContains(previewReinitializeControllerText, "public void ResetPendingPreviewRestartCancellation()");
         AssertContains(deviceRefreshControllerText, "private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;");
+        AssertContains(deviceRefreshControllerText, "private sealed class MainViewModelDeviceRefreshControllerContext");
+        AssertContains(deviceRefreshControllerText, "private readonly MainViewModelDeviceRefreshControllerContext _context;");
+        AssertDoesNotContain(deviceRefreshControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");
         AssertContains(deviceRefreshControllerText, "await _previewLifecycleController.StartPreviewAsync(userInitiated: false, cancellationToken);");
         AssertDoesNotContain(deviceRefreshControllerText, "await _viewModel.StartPreviewAsync(userInitiated: false, cancellationToken);");
+        AssertContains(controllerGraphText, "private static MainViewModelDeviceRefreshController CreateDeviceRefreshController(");
+        AssertContains(controllerGraphText, "new MainViewModelDeviceRefreshControllerContext");
+        AssertContains(controllerGraphText, "viewModel._deviceService.EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)");
+        AssertContains(controllerGraphText, "BeginBackgroundFormatProbe = (device, scanGeneration) =>");
         AssertContains(deviceAudioRequestControllerText, "private sealed partial class MainViewModelDeviceAudioRequestController");
         AssertContains(deviceAudioRequestControllerText, "public void HandleSelectedDeviceAudioModeChanged(string value)");
         AssertDoesNotContain(deviceAudioRequestControllerText, "public void HandleAnalogAudioGainPercentChanged(double value)");

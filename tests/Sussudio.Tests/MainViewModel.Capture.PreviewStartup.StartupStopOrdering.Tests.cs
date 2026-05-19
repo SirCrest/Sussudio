@@ -65,6 +65,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
+        var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs")
+            .Replace("\r\n", "\n");
         var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs")
             .Replace("\r\n", "\n");
 
@@ -96,22 +98,22 @@ static partial class Program
         AssertContains(splitEncodeRefresh, "_context.SetSelectedSplitEncodeMode(\"Auto\");");
 
         AssertContains(rootViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
+        AssertContains(controllerGraphText, "viewModel._deviceService.EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)");
 
         var refreshDevices = ExtractMemberCode(deviceRefreshControllerText, "RefreshDevicesAsync");
-        AssertContains(refreshDevices, "var discovery = await _viewModel._deviceService");
-        AssertContains(refreshDevices, ".EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)");
+        AssertContains(refreshDevices, "var discovery = await _context.EnumerateCaptureDeviceDiscoveryAsync()");
         AssertContains(refreshDevices, "ApplyStartupAudioDeviceScan(");
-        AssertOccursBefore(refreshDevices, ".EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)", "ApplyStartupAudioDeviceScan(");
-        AssertOccursBefore(refreshDevices, "ApplyStartupAudioDeviceScan(", "ReplaceCollection(_viewModel.Devices, devices.ToList());");
-        AssertOccursBefore(refreshDevices, "ReplaceCollection(_viewModel.Devices, devices.ToList());", "_viewModel._deviceService.BeginBackgroundFormatProbe(discoveredDevice, scanGeneration);");
-        AssertOccursBefore(refreshDevices, "_viewModel._deviceService.BeginBackgroundFormatProbe(discoveredDevice, scanGeneration);", "ApplySuccessfulDeviceScanAsync(");
+        AssertOccursBefore(refreshDevices, "_context.EnumerateCaptureDeviceDiscoveryAsync()", "ApplyStartupAudioDeviceScan(");
+        AssertOccursBefore(refreshDevices, "ApplyStartupAudioDeviceScan(", "_context.ReplaceDevices(devices.ToList());");
+        AssertOccursBefore(refreshDevices, "_context.ReplaceDevices(devices.ToList());", "_context.BeginBackgroundFormatProbe(discoveredDevice, scanGeneration);");
+        AssertOccursBefore(refreshDevices, "_context.BeginBackgroundFormatProbe(discoveredDevice, scanGeneration);", "ApplySuccessfulDeviceScanAsync(");
         var successfulScan = ExtractTextBetween(
             deviceRefreshControllerText,
             "private async Task ApplySuccessfulDeviceScanAsync",
             "\n    }\n}");
-        AssertOccursBefore(successfulScan, "var savedDeviceId = _viewModel._pendingSavedDeviceId;", "await _previewLifecycleController.StartPreviewAsync(userInitiated: false, cancellationToken);");
-        AssertOccursBefore(successfulScan, "_viewModel.SelectedDevice = nextSelectedDevice;", "await _previewLifecycleController.StartPreviewAsync(userInitiated: false, cancellationToken);");
-        AssertOccursBefore(refreshDevices, ".EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)", "ApplySuccessfulDeviceScanAsync(");
+        AssertOccursBefore(successfulScan, "var savedDeviceId = _context.GetPendingSavedDeviceId();", "await _previewLifecycleController.StartPreviewAsync(userInitiated: false, cancellationToken);");
+        AssertOccursBefore(successfulScan, "_context.SetSelectedDevice(nextSelectedDevice);", "await _previewLifecycleController.StartPreviewAsync(userInitiated: false, cancellationToken);");
+        AssertOccursBefore(refreshDevices, "_context.EnumerateCaptureDeviceDiscoveryAsync()", "ApplySuccessfulDeviceScanAsync(");
 
         return Task.CompletedTask;
     }
