@@ -41,4 +41,25 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task NvmlMonitor_NativeInteropLivesInFocusedPartial()
+    {
+        var monitorText = ReadRepoFile("Sussudio/Services/Gpu/NvmlMonitor.cs");
+        var nativeInteropText = ReadRepoFile("Sussudio/Services/Gpu/NvmlMonitor.NativeInterop.cs");
+
+        AssertContains(monitorText, "public sealed partial class NvmlMonitor : IDisposable");
+        AssertContains(monitorText, "private void Poll(object? state)");
+        AssertContains(monitorText, "public NvmlSnapshot? GetLatestSnapshot()");
+        AssertContains(monitorText, "TryLoadNativeLibrary()");
+        AssertDoesNotContain(monitorText, "[DllImport(\"nvml.dll\"");
+        AssertDoesNotContain(monitorText, "private struct NvmlUtilization");
+
+        AssertContains(nativeInteropText, "public sealed partial class NvmlMonitor");
+        AssertContains(nativeInteropText, "private static bool TryLoadNativeLibrary()");
+        AssertContains(nativeInteropText, "private static unsafe string? GetDeviceName(IntPtr device)");
+        AssertContains(nativeInteropText, "private struct NvmlUtilization");
+        AssertContains(nativeInteropText, "[DllImport(\"nvml.dll\"");
+
+        return Task.CompletedTask;
+    }
 }

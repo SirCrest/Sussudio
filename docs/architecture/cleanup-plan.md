@@ -1889,6 +1889,14 @@ owns adoption of caller-provided CUDA device/frame contexts,
 `NvdecMjpegDecoder.Lifetime.cs` owns disposal plus FFmpeg error text. Keep
 shared-context ownership and disposal order unchanged when touching these files.
 
+NVML telemetry ownership is now split between
+`Sussudio/Services/Gpu/NvmlMonitor.cs`, which owns optional diagnostic polling,
+snapshot publication, timer/lifetime behavior, and graceful unavailable
+handling, and `Sussudio/Services/Gpu/NvmlMonitor.NativeInterop.cs`, which owns
+raw NVML constants, structs, library loading, device-name lookup, and P/Invoke
+declarations. Keep native declarations out of the polling lifecycle file so
+the diagnostic-only runtime contract stays easy to audit.
+
 Automation snapshot contracts now live in named model files under
 `Sussudio/Models/Automation/`. The broad automation evidence DTO is split as an
 `AutomationSnapshot*.cs` partial family by domain: root lifecycle/diagnostics,
