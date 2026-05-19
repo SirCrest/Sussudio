@@ -2881,7 +2881,9 @@ Primary owners:
   shared raw-payload formatting;
   `Program.AtCommands.cs` owns direct AT read/write/input subcommands;
   `Program.DefaultExperiment.cs` owns the default baseline/experiment/restore
-  runner;
+  runner and analog-gain sequence;
+  `Program.DefaultExperiment.Reporting.cs` owns default experiment AT
+  read/decode/diff/snapshot reporting;
   `Program.I2cCommands.cs` owns the exploratory `i2c-cmd` router/basic
   get/set/scan paths; `Program.I2cCommands.SelectorProbe.cs` owns selector
   transport probing for that command family;
