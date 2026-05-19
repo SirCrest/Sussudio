@@ -3654,8 +3654,10 @@ owner, fold it back into that owner and update the source-shape tests and
     handoff through graph-built context ports live in
     `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`;
     UI-side late-probe retarget application, session mismatch checks, and
-    active-capture restore through graph-built context ports live in
-    `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs`, while
+    active-capture restore live in
+    `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs`;
+    its graph-port contract now lives in
+    `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.Context.cs`, while
     pure late-probe retarget decisions live in
     `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`.
     The presentation-preview ownership tests for this capture selection policy

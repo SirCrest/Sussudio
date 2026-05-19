@@ -21,6 +21,7 @@ static partial class Program
         var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs").Replace("\r\n", "\n");
         var deviceFormatProbeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
         var deviceFormatProbeRetargetApplierText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs").Replace("\r\n", "\n");
+        var deviceFormatProbeRetargetApplierContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.Context.cs").Replace("\r\n", "\n");
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs").Replace("\r\n", "\n");
         var runtimeEventIngressControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs").Replace("\r\n", "\n");
         var runtimeEventIngressContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Context.cs").Replace("\r\n", "\n");
@@ -366,7 +367,7 @@ static partial class Program
         AssertContains(deviceFormatProbeControllerText, "_retargetApplier.TryApplyDeviceFormatProbeRetarget(");
         AssertDoesNotContain(deviceFormatProbeControllerText, "private bool TryApplyDeviceFormatProbeRetarget(");
         AssertContains(deviceFormatProbeRetargetApplierText, "private sealed class MainViewModelDeviceFormatProbeRetargetApplier");
-        AssertContains(deviceFormatProbeRetargetApplierText, "private sealed class MainViewModelDeviceFormatProbeRetargetApplierContext");
+        AssertContains(deviceFormatProbeRetargetApplierContextText, "private sealed class MainViewModelDeviceFormatProbeRetargetApplierContext");
         AssertContains(deviceFormatProbeRetargetApplierText, "private readonly MainViewModelDeviceFormatProbeRetargetApplierContext _context;");
         AssertDoesNotContain(deviceFormatProbeRetargetApplierText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceFormatProbeRetargetApplierText, "_viewModel.");
