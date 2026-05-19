@@ -61,6 +61,9 @@ static partial class Program
             "Preview runtime D3D frame-counter policy preserves CPU fallback counters",
             PreviewRuntimeD3DFrameCounterPolicy_PreservesCpuFallbackCounters);
         await AddCheckAsync(results,
+            "Preview runtime D3D display cadence policy preserves null renderer defaults",
+            PreviewRuntimeD3DDisplayCadencePolicy_PreservesNullRendererDefaults);
+        await AddCheckAsync(results,
             "Preview runtime D3D render CPU timing policy preserves null renderer defaults",
             PreviewRuntimeD3DRenderCpuTimingPolicy_PreservesNullRendererDefaults);
         await AddCheckAsync(results,
