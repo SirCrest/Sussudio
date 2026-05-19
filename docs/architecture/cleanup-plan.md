@@ -3483,6 +3483,11 @@ owner, fold it back into that owner and update the source-shape tests and
    source-telemetry/HDR/live-info/timer/disk-space bootstrap through
    graph-built context ports now live in
    `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs`,
+   The runtime lifecycle graph-port contract for timer creation, runtime
+   snapshot sampling, telemetry bootstrap, live-info/HDR projection, recording
+   stats refresh, Flashback bitrate refresh, disk-space refresh, and watcher
+   disposal lives in
+   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.Context.cs`,
    while runtime event handling through graph-built context ports now lives in
    `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs`
    for system-resume preview rebind handling, audio-device-invalidated rebind

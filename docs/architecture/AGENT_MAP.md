@@ -2597,7 +2597,11 @@ Primary current owners:
   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs`
   owns periodic timer refresh orchestration and initial
   source-telemetry/HDR/live-info/timer/disk-space bootstrap through
-  graph-built context ports, while
+  graph-built context ports. `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.Context.cs`
+  owns the runtime lifecycle graph-port contract for timer creation, runtime
+  snapshot sampling, telemetry bootstrap, live-info/HDR projection, recording
+  stats refresh, Flashback bitrate refresh, disk-space refresh, and watcher
+  disposal, while
   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs`
   owns runtime event handling through graph-built context ports:
   system-resume preview rebind handling, audio-device-invalidated rebind
