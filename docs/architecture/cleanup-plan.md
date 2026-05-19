@@ -38,6 +38,12 @@ routing through `LoggingJsonContext`, and fatal breadcrumbs. Keep WMI/system
 evidence and JSON payload routing out of the writer root so the saturation and
 shutdown behavior remains easy to audit.
 
+Runtime path resolution is split from the public cached path API without
+changing repo/temp/log path behavior. `Sussudio/RuntimePaths.cs` owns the public
+`GetRepo*` API and lazy cache fields. `Sussudio/RuntimePaths.Resolution.cs` owns
+repo-root marker discovery, latest-build parent fallback, log-root override and
+fallback policy, guarded directory creation, and trace fallback diagnostics.
+
 FFmpeg runtime location is split from capability probing without changing the
 public locator surface. `Sussudio/Services/Runtime/FfmpegRuntimeLocator.cs` owns
 app-local, Program Files, and PATH-based runtime/tool resolution.

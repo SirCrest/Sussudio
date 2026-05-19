@@ -48,6 +48,27 @@ public sealed class RuntimeContractsTests
     }
 
     [Fact]
+    public void RuntimePaths_ResolutionPolicyLivesInFocusedPartial()
+    {
+        var rootText = RuntimeContractSource.ReadRepoFile("Sussudio/RuntimePaths.cs")
+            .Replace("\r\n", "\n");
+        var resolutionText = RuntimeContractSource.ReadRepoFile("Sussudio/RuntimePaths.Resolution.cs")
+            .Replace("\r\n", "\n");
+
+        Assert.Contains("public static partial class RuntimePaths", rootText);
+        Assert.Contains("public static string GetRepoRoot() => RepoRoot.Value;", rootText);
+        Assert.Contains("public static string GetRepoLogFile(string fileName)", rootText);
+        Assert.DoesNotContain("private static string ResolveRepoRoot()", rootText);
+        Assert.DoesNotContain("private static string ResolveLogRoot()", rootText);
+        Assert.Contains("private static string ResolveRepoRoot()", resolutionText);
+        Assert.Contains("private static string ResolveLogRoot()", resolutionText);
+        Assert.Contains("private static bool TryResolveLatestBuildParent(", resolutionText);
+        Assert.Contains("private static bool IsRepoMarkerDirectory(", resolutionText);
+        Assert.Contains("private static bool TryEnsureDirectory(", resolutionText);
+        Assert.Contains("RuntimePaths: {context}, falling back:", resolutionText);
+    }
+
+    [Fact]
     public void MmcssThreadRegistration_UsesUnicodeAvrtEntryPoint()
     {
         var source = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Runtime/MmcssThreadRegistration.cs");
