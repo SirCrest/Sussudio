@@ -14,6 +14,7 @@ static partial class Program
         var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs").Replace("\r\n", "\n");
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
         var controllerGraphCaptureModesText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureModes.cs").Replace("\r\n", "\n");
+        var controllerGraphDeviceText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Device.cs").Replace("\r\n", "\n");
         var controllerGraphRecordingText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Recording.cs").Replace("\r\n", "\n");
         var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs").Replace("\r\n", "\n");
         var deviceFormatProbeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
@@ -80,6 +81,7 @@ static partial class Program
         AssertDoesNotContain(rootText, "[ObservableProperty]");
         AssertContains(controllerGraphText, "private sealed partial class MainViewModelControllerGraph");
         AssertContains(controllerGraphCaptureModesText, "private sealed partial class MainViewModelControllerGraph");
+        AssertContains(controllerGraphDeviceText, "private sealed partial class MainViewModelControllerGraph");
         AssertContains(controllerGraphRecordingText, "private sealed partial class MainViewModelControllerGraph");
         AssertContains(controllerGraphText, "public static MainViewModelControllerGraph Create(MainViewModel viewModel)");
         AssertContains(controllerGraphText, "private static MainViewModelUiDispatchController CreateUiDispatchController(MainViewModel viewModel)");
@@ -255,10 +257,10 @@ static partial class Program
         AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");
         AssertContains(deviceRefreshControllerText, "await _previewLifecycleController.StartPreviewAsync(userInitiated: false, cancellationToken);");
         AssertDoesNotContain(deviceRefreshControllerText, "await _viewModel.StartPreviewAsync(userInitiated: false, cancellationToken);");
-        AssertContains(controllerGraphText, "private static MainViewModelDeviceRefreshController CreateDeviceRefreshController(");
-        AssertContains(controllerGraphText, "new MainViewModelDeviceRefreshControllerContext");
-        AssertContains(controllerGraphText, "viewModel._deviceService.EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)");
-        AssertContains(controllerGraphText, "BeginBackgroundFormatProbe = (device, scanGeneration) =>");
+        AssertContains(controllerGraphDeviceText, "private static MainViewModelDeviceRefreshController CreateDeviceRefreshController(");
+        AssertContains(controllerGraphDeviceText, "new MainViewModelDeviceRefreshControllerContext");
+        AssertContains(controllerGraphDeviceText, "viewModel._deviceService.EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)");
+        AssertContains(controllerGraphDeviceText, "BeginBackgroundFormatProbe = (device, scanGeneration) =>");
         AssertContains(deviceAudioRequestControllerText, "private sealed partial class MainViewModelDeviceAudioRequestController");
         AssertContains(deviceAudioRequestControllerText, "private sealed class MainViewModelDeviceAudioRequestControllerContext");
         AssertContains(deviceAudioRequestControllerText, "private readonly MainViewModelDeviceAudioRequestControllerContext _context;");
@@ -271,10 +273,10 @@ static partial class Program
         AssertContains(deviceAudioRequestControllerGainText, "public void ScheduleAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
         AssertDoesNotContain(deviceAudioRequestControllerGainText, "_viewModel.");
         AssertContains(deviceAudioRequestControllerText, "public void CancelPendingAudioControlWork()");
-        AssertContains(controllerGraphText, "private static MainViewModelDeviceAudioRequestController CreateDeviceAudioRequestController(MainViewModel viewModel)");
-        AssertContains(controllerGraphText, "new MainViewModelDeviceAudioRequestControllerContext");
-        AssertContains(controllerGraphText, "ApplyDeviceAudioModeAsync = (reason, targetDevice, cancellationToken) =>");
-        AssertContains(controllerGraphText, "ApplyAnalogAudioGainAsync = (reason, targetDevice, cancellationToken) =>");
+        AssertContains(controllerGraphDeviceText, "private static MainViewModelDeviceAudioRequestController CreateDeviceAudioRequestController(MainViewModel viewModel)");
+        AssertContains(controllerGraphDeviceText, "new MainViewModelDeviceAudioRequestControllerContext");
+        AssertContains(controllerGraphDeviceText, "ApplyDeviceAudioModeAsync = (reason, targetDevice, cancellationToken) =>");
+        AssertContains(controllerGraphDeviceText, "ApplyAnalogAudioGainAsync = (reason, targetDevice, cancellationToken) =>");
         AssertContains(captureSettingsAutomationControllerText, "private sealed class MainViewModelCaptureSettingsAutomationController");
         AssertEqual(
             true,
@@ -359,9 +361,9 @@ static partial class Program
             deviceFormatProbeRetargetApplierText.Split('\n').Length >= 100,
             "device format probe retarget applier is a substantial ownership file");
         AssertContains(deviceFormatProbeRetargetApplierText, "public bool TryApplyDeviceFormatProbeRetarget(");
-        AssertContains(controllerGraphText, "private static MainViewModelDeviceFormatProbeController CreateDeviceFormatProbeController(MainViewModel viewModel)");
-        AssertContains(controllerGraphText, "new MainViewModelDeviceFormatProbeControllerContext");
-        AssertContains(controllerGraphText, "new MainViewModelDeviceFormatProbeRetargetApplierContext");
+        AssertContains(controllerGraphDeviceText, "private static MainViewModelDeviceFormatProbeController CreateDeviceFormatProbeController(MainViewModel viewModel)");
+        AssertContains(controllerGraphDeviceText, "new MainViewModelDeviceFormatProbeControllerContext");
+        AssertContains(controllerGraphDeviceText, "new MainViewModelDeviceFormatProbeRetargetApplierContext");
         var sourceTelemetryControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs")
             .Replace("\r\n", "\n");
         AssertContains(sourceTelemetryControllerText, "private sealed class MainViewModelSourceTelemetryController");
@@ -369,11 +371,11 @@ static partial class Program
         AssertContains(sourceTelemetryControllerText, "private readonly MainViewModelSourceTelemetryControllerContext _context;");
         AssertDoesNotContain(sourceTelemetryControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(sourceTelemetryControllerText, "_viewModel.");
-        AssertContains(controllerGraphText, "private static MainViewModelSourceTelemetryController CreateSourceTelemetryController(MainViewModel viewModel)");
-        AssertContains(controllerGraphText, "new MainViewModelSourceTelemetryControllerContext");
-        AssertContains(controllerGraphText, "SetLatestSourceTelemetry = snapshot => viewModel._latestSourceTelemetry = snapshot,");
-        AssertContains(controllerGraphText, "RebuildResolutionOptions = viewModel.RebuildResolutionOptions,");
-        AssertContains(controllerGraphText, "UpdateTargetSummary = viewModel.UpdateTargetSummary,");
+        AssertContains(controllerGraphDeviceText, "private static MainViewModelSourceTelemetryController CreateSourceTelemetryController(MainViewModel viewModel)");
+        AssertContains(controllerGraphDeviceText, "new MainViewModelSourceTelemetryControllerContext");
+        AssertContains(controllerGraphDeviceText, "SetLatestSourceTelemetry = snapshot => viewModel._latestSourceTelemetry = snapshot,");
+        AssertContains(controllerGraphDeviceText, "RebuildResolutionOptions = viewModel.RebuildResolutionOptions,");
+        AssertContains(controllerGraphDeviceText, "UpdateTargetSummary = viewModel.UpdateTargetSummary,");
         AssertContains(sourceTelemetryControllerText, "public void OnSourceTelemetryUpdated(object? sender, SourceSignalTelemetrySnapshot snapshot)");
         AssertContains(sourceTelemetryControllerText, "public void ApplySourceTelemetrySnapshot(SourceSignalTelemetrySnapshot snapshot, bool allowAutoRetarget)");
         AssertContains(sourceTelemetryControllerText, "public void RefreshSourceTelemetrySummaryAge()");

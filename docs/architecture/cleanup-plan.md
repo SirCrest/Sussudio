@@ -3461,6 +3461,9 @@ owner, fold it back into that owner and update the source-shape tests and
    owns controller graph construction order and UI-dispatch context wiring, while
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureModes.cs`
    owns capture settings automation and capture option rebuild graph ports, and
+   `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Device.cs`
+   owns device audio request, device refresh, late format probe, and source
+   telemetry graph ports, and
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Recording.cs`
    owns recording transition, recording capability, and recording settings
    automation graph ports.
