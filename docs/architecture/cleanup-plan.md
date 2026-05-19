@@ -3468,7 +3468,8 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.Dispatching.cs` keeps the stable private adapter names and
    preview event fan-out;
    periodic timer refresh orchestration and initial
-   source-telemetry/HDR/live-info/timer/disk-space bootstrap now live in
+   source-telemetry/HDR/live-info/timer/disk-space bootstrap through
+   graph-built context ports now live in
    `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs`,
    while runtime event subscription/unsubscription, system-resume preview rebind
    handling, audio-device-invalidated rebind scheduling through the preview

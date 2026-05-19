@@ -2592,7 +2592,8 @@ Primary current owners:
   preview event fan-out for the partial family.
   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs`
   owns periodic timer refresh orchestration and initial
-  source-telemetry/HDR/live-info/timer/disk-space bootstrap, while
+  source-telemetry/HDR/live-info/timer/disk-space bootstrap through
+  graph-built context ports, while
   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs`
   owns runtime event subscription/unsubscription, system-resume preview rebind
   handling, audio-device-invalidated rebind scheduling through the preview

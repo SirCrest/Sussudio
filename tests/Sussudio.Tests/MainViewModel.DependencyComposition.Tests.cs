@@ -124,11 +124,14 @@ static partial class Program
             controllerGraphText,
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
             "var deviceRefreshController = new MainViewModelDeviceRefreshController(viewModel, previewLifecycleController);");
-        AssertContains(controllerGraphText, "new MainViewModelRuntimeLifecycleController(viewModel, previewLifecycleController)");
+        AssertContains(controllerGraphText, "private static MainViewModelRuntimeLifecycleController CreateRuntimeLifecycleController(");
+        AssertContains(controllerGraphText, "new MainViewModelRuntimeLifecycleController(\n                new MainViewModelRuntimeLifecycleControllerContext");
+        AssertContains(controllerGraphText, "CreateEventIngressController = () => new MainViewModelRuntimeEventIngressController(viewModel, previewLifecycleController),");
+        AssertContains(controllerGraphText, "GetRuntimeSnapshot = viewModel._captureService.GetRuntimeSnapshot,");
         AssertOccursBefore(
             controllerGraphText,
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
-            "var runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(viewModel, previewLifecycleController);");
+            "var runtimeLifecycleController = CreateRuntimeLifecycleController(viewModel, previewLifecycleController);");
         AssertContains(controllerGraphText, "new MainViewModelDisposalController(viewModel)");
         AssertContains(controllerGraphText, "public MainViewModelDisposalController DisposalController { get; }");
         AssertDoesNotContain(controllerGraphText, "RuntimeLifecycleController.Start();");
@@ -289,17 +292,22 @@ static partial class Program
 
         AssertContains(runtimeLifecycleControllerText, "private sealed class MainViewModelRuntimeLifecycleController");
         AssertContains(runtimeLifecycleControllerText, "private readonly MainViewModelRuntimeEventIngressController _eventIngressController;");
-        AssertContains(runtimeLifecycleControllerText, "_eventIngressController = new MainViewModelRuntimeEventIngressController(_viewModel, previewLifecycleController);");
+        AssertContains(runtimeLifecycleControllerText, "private sealed class MainViewModelRuntimeLifecycleControllerContext");
+        AssertContains(runtimeLifecycleControllerText, "private readonly MainViewModelRuntimeLifecycleControllerContext _context;");
+        AssertDoesNotContain(runtimeLifecycleControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(runtimeLifecycleControllerText, "_viewModel.");
+        AssertContains(runtimeLifecycleControllerText, "_eventIngressController = _context.CreateEventIngressController();");
         AssertContains(runtimeLifecycleControllerText, "public void Start()");
         AssertContains(runtimeLifecycleControllerText, "=> _eventIngressController.Attach();");
         AssertContains(runtimeLifecycleControllerText, "_eventIngressController.Detach();");
         AssertContains(runtimeLifecycleControllerText, "public void InitializePresentation()");
-        AssertContains(runtimeLifecycleControllerText, "_viewModel._latestSourceTelemetry = _viewModel._captureService.GetLatestSourceTelemetrySnapshot();");
-        AssertContains(runtimeLifecycleControllerText, "_viewModel._sourceTelemetryController.ApplySourceTelemetrySnapshot(_viewModel._latestSourceTelemetry, allowAutoRetarget: false);");
-        AssertContains(runtimeLifecycleControllerText, "_viewModel.UpdateHdrRuntimeStatusFromCapture();");
-        AssertContains(runtimeLifecycleControllerText, "_viewModel.UpdateLiveCaptureInfo();");
+        AssertContains(runtimeLifecycleControllerText, "var latestSourceTelemetry = _context.GetLatestSourceTelemetrySnapshot();");
+        AssertContains(runtimeLifecycleControllerText, "_context.SetLatestSourceTelemetrySnapshot(latestSourceTelemetry);");
+        AssertContains(runtimeLifecycleControllerText, "_context.ApplySourceTelemetrySnapshot(latestSourceTelemetry, false);");
+        AssertContains(runtimeLifecycleControllerText, "_context.UpdateHdrRuntimeStatusFromCapture();");
+        AssertContains(runtimeLifecycleControllerText, "_context.UpdateLiveCaptureInfo();");
         AssertContains(runtimeLifecycleControllerText, "SetupTimer();");
-        AssertContains(runtimeLifecycleControllerText, "_viewModel.UpdateDiskSpace();");
+        AssertContains(runtimeLifecycleControllerText, "_context.UpdateDiskSpace();");
         AssertContains(runtimeEventIngressControllerText, "private sealed class MainViewModelRuntimeEventIngressController");
         AssertContains(runtimeEventIngressControllerText, "private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;");
         AssertContains(runtimeEventIngressControllerText, "_previewLifecycleController = previewLifecycleController ?? throw new ArgumentNullException(nameof(previewLifecycleController));");

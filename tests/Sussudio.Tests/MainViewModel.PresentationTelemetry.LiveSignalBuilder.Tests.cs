@@ -18,8 +18,8 @@ static partial class Program
             System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("LiveSignalTextPresentationBuilder.Build was not found.");
 
-        AssertContains(runtimeLifecycleControllerText, "_viewModel.UpdateLiveCaptureInfo(runtimeSnapshot);");
-        AssertContains(runtimeLifecycleControllerText, "_viewModel.ResetLiveCaptureInfo();");
+        AssertContains(runtimeLifecycleControllerText, "_context.UpdateLiveCaptureInfo(runtimeSnapshot);");
+        AssertContains(runtimeLifecycleControllerText, "_context.ResetLiveCaptureInfo();");
         AssertDoesNotContain(runtimeLifecycleControllerText, "IsAudioPreviewActive =");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private void UpdateLiveCaptureInfo(");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private void ResetLiveCaptureInfo()");

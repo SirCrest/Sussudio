@@ -108,7 +108,10 @@ static partial class Program
             File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioMonitoring.cs")),
             "OnIsAudioPreviewEnabledChanged");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "private void SetupTimer()");
-        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel.UpdateDiskSpace();");
+        AssertContains(mainViewModelRuntimeLifecycleControllerText, "private readonly MainViewModelRuntimeLifecycleControllerContext _context;");
+        AssertDoesNotContain(mainViewModelRuntimeLifecycleControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(mainViewModelRuntimeLifecycleControllerText, "_viewModel.");
+        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_context.UpdateDiskSpace();");
         AssertContains(mainViewModelRecordingStateText, "public Task ToggleRecordingAsync()");
         AssertContains(mainViewModelRecordingStateText, "internal Task SetRecordingDesiredStateAsync");
         AssertContains(mainViewModelRecordingStateText, "public Task StopRecordingAndWaitAsync(CancellationToken cancellationToken = default)");
@@ -125,7 +128,7 @@ static partial class Program
         AssertContains(outputDriveSpacePresentationBuilderText, "Suppressed exception in MainViewModel.RefreshDiskSpace");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "private void OnSystemPowerModeChanged");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "e.Mode != PowerModes.Resume");
-        AssertContains(mainViewModelRuntimeLifecycleControllerText, "new MainViewModelRuntimeEventIngressController(_viewModel, previewLifecycleController)");
+        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_eventIngressController = _context.CreateEventIngressController();");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_previewLifecycleController.ReinitializeDeviceAsync(\"audio device invalidated\")");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_previewLifecycleController.ReinitializeDeviceAsync(\"system resume\")");
         AssertDoesNotContain(mainViewModelRuntimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"system resume\")");
@@ -160,12 +163,14 @@ static partial class Program
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_viewModel._captureService.SourceTelemetryUpdated -= _viewModel._sourceTelemetryController.OnSourceTelemetryUpdated;");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_viewModel._audioDeviceWatcher.DevicesChanged -= _viewModel.OnAudioDevicesChanged;");
-        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel._sourceTelemetryController.ApplySourceTelemetrySnapshot(_viewModel._latestSourceTelemetry, allowAutoRetarget: false);");
-        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel.UpdateHdrRuntimeStatusFromCapture();");
-        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel.UpdateLiveCaptureInfo();");
+        AssertContains(mainViewModelRuntimeLifecycleControllerText, "var latestSourceTelemetry = _context.GetLatestSourceTelemetrySnapshot();");
+        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_context.SetLatestSourceTelemetrySnapshot(latestSourceTelemetry);");
+        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_context.ApplySourceTelemetrySnapshot(latestSourceTelemetry, false);");
+        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_context.UpdateHdrRuntimeStatusFromCapture();");
+        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_context.UpdateLiveCaptureInfo();");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "SetupTimer();");
-        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel.UpdateDiskSpace();");
-        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel._audioDeviceWatcher.Dispose();");
+        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_context.UpdateDiskSpace();");
+        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_context.DisposeAudioDeviceWatcher();");
         AssertContains(mainViewModelDisposalText, "private void CancelActiveFlashbackExportForDispose()");
         AssertContains(mainViewModelDisposalText, "_disposalController.Dispose();");
         AssertContains(mainViewModelDisposalControllerText, "private sealed class MainViewModelDisposalController");

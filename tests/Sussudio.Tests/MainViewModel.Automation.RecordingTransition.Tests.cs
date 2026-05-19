@@ -181,7 +181,7 @@ static partial class Program
         AssertContains(bitrateSampleWindowText, "private static double? ComputeAverageBitrate(Queue<(long Tick, long Bytes)> samples)");
         AssertContains(recordingRuntimeText, "_pendingModeOptionsRefresh = false;");
         AssertContains(recordingRuntimeText, "RebuildResolutionOptions();");
-        AssertContains(runtimeLifecycleControllerText, "_viewModel.UpdateRecordingStats();");
+        AssertContains(runtimeLifecycleControllerText, "_context.UpdateRecordingStats();");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private void UpdateRecordingStats()");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private static double? ComputeAverageBitrate(");
         AssertDoesNotContain(runtimeLifecycleControllerText, "partial void OnIsRecordingChanged(bool value)");
