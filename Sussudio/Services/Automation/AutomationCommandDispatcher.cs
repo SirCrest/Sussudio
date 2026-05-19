@@ -32,19 +32,6 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
     private const int DefaultWaitTimeoutMs = 10_000;
     private const int DefaultWaitPollMs = 250;
 
-    public AutomationCommandDispatcher(
-        IAutomationViewModel viewModel,
-        IAutomationDiagnosticsHub diagnosticsHub,
-        IAutomationWindowControl windowControl,
-        string? authToken = null)
-        : this(
-            AutomationViewModelPorts.From(viewModel),
-            diagnosticsHub,
-            windowControl,
-            authToken)
-    {
-    }
-
     internal AutomationCommandDispatcher(
         AutomationViewModelPorts ports,
         IAutomationDiagnosticsHub diagnosticsHub,

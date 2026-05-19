@@ -11,12 +11,12 @@ static partial class Program
         var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
         var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
         var windowControlType = RequireType("Sussudio.Services.Contracts.IAutomationWindowControl");
-        var constructor = dispatcherType.GetConstructors()
-            .Single(ctor => ctor.GetParameters().Length == 4);
+        var viewModel = CreateThrowingProxy(viewModelType);
+        var constructor = GetAutomationCommandDispatcherConstructor(dispatcherType);
 
         return constructor.Invoke(new[]
         {
-            CreateThrowingProxy(viewModelType),
+            CreateAutomationViewModelPorts(viewModel),
             CreateThrowingProxy(diagnosticsType),
             CreateThrowingProxy(windowControlType),
             authToken
@@ -30,16 +30,34 @@ static partial class Program
         string? authToken)
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
-        var constructor = dispatcherType.GetConstructors()
-            .Single(ctor => ctor.GetParameters().Length == 4);
+        var constructor = GetAutomationCommandDispatcherConstructor(dispatcherType);
 
         return constructor.Invoke(new[]
         {
-            viewModel,
+            CreateAutomationViewModelPorts(viewModel),
             diagnosticsHub,
             windowControl,
             authToken
         });
+    }
+
+    private static ConstructorInfo GetAutomationCommandDispatcherConstructor(Type dispatcherType)
+        => dispatcherType
+            .GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            .Single(ctor =>
+            {
+                var parameters = ctor.GetParameters();
+                return parameters.Length == 4 &&
+                       parameters[0].ParameterType.FullName == "Sussudio.Services.Automation.AutomationViewModelPorts";
+            });
+
+    private static object CreateAutomationViewModelPorts(object viewModel)
+    {
+        var portsType = RequireType("Sussudio.Services.Automation.AutomationViewModelPorts");
+        var fromMethod = portsType.GetMethod("From", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+                         ?? throw new InvalidOperationException("AutomationViewModelPorts.From was not found.");
+        return fromMethod.Invoke(null, new[] { viewModel })
+               ?? throw new InvalidOperationException("AutomationViewModelPorts.From returned null.");
     }
 
     private static object CreateConfiguredProxy(Type interfaceType, Func<MethodInfo?, object?[]?, object?> handler)

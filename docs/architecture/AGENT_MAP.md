@@ -136,9 +136,9 @@ Automation diagnostics ownership:
 
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.cs` owns the
   command envelope, manifest/auth/readiness gates, port-typed trivial-handler
-  dispatch, and error shaping. The public constructor still accepts the
-  aggregate automation ViewModel contract, but this dispatcher root should
-  assign it into narrow ports rather than storing the aggregate dependency.
+  dispatch, and error shaping. Construct it with `AutomationViewModelPorts`;
+  this dispatcher root should not expose or store the aggregate automation
+  ViewModel dependency.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.AudioControlCommands.cs`
   owns device-audio mode, analog audio gain, and microphone-enable command
   bodies behind the custom command router.

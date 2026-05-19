@@ -153,9 +153,9 @@ static partial class Program
         AssertContains(interfaceText, "internal readonly record struct AutomationViewModelPorts(");
         AssertContains(interfaceText, "public static AutomationViewModelPorts From(IAutomationViewModel viewModel)");
         AssertContains(interfaceText, "ArgumentNullException.ThrowIfNull(viewModel);");
-        AssertContains(dispatcherText, "AutomationViewModelPorts.From(viewModel)");
         AssertContains(dispatcherText, "internal AutomationCommandDispatcher(");
         AssertContains(dispatcherText, "AutomationViewModelPorts ports,");
+        AssertDoesNotContain(dispatcherText, "public AutomationCommandDispatcher(\n        IAutomationViewModel viewModel,");
         AssertContains(dispatcherText, "_readinessPort = ports.Readiness");
         AssertContains(dispatcherText, "_snapshotQueryPort = ports.SnapshotQuery");
         AssertDoesNotContain(dispatcherText, "_readinessPort = viewModel;");
