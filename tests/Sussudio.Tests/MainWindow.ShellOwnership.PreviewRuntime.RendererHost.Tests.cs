@@ -20,6 +20,7 @@ static partial class Program
         var previewRendererStartupPlanBuilderText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererStartupPlanBuilder.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs").Replace("\r\n", "\n");
+        var previewRuntimeSnapshotHealthPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthPolicy.cs").Replace("\r\n", "\n");
         var previewRuntimeD3DProjectionText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs").Replace("\r\n", "\n");
         var previewRuntimeD3DProjectionBuilderText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.Builder.cs").Replace("\r\n", "\n");
         var previewSurfaceShadowControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs").Replace("\r\n", "\n");
@@ -134,10 +135,12 @@ static partial class Program
         AssertContains(agentMapText, "PreviewRendererHostController.D3D.cs");
         AssertContains(agentMapText, "PreviewRendererHostController.Reinit.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotInput.cs");
+        AssertContains(agentMapText, "PreviewRuntimeSnapshotHealthPolicy.cs");
         AssertContains(cleanupPlanText, "PreviewRendererHostController.Lifecycle.cs");
         AssertContains(cleanupPlanText, "PreviewRendererHostController.D3D.cs");
         AssertContains(cleanupPlanText, "PreviewRendererHostController.Reinit.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotInput.cs");
+        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotHealthPolicy.cs");
         AssertContains(previewRendererText, "=> _previewRendererHostController.RendererReinitUnsafeWindows;");
         AssertContains(previewRendererText, "=> _previewRendererHostController.DisposeD3DPreviewRendererForReinit();");
 
@@ -174,9 +177,17 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotControllerText, "internal static class PreviewRuntimeSnapshotController");
         AssertContains(previewRuntimeSnapshotControllerText, "public static PreviewRuntimeSnapshot Build(PreviewRuntimeSnapshotInput input)");
         AssertContains(previewRuntimeSnapshotControllerText, "var d3dProjection = PreviewRuntimeD3DProjection.Build(input);");
+        AssertContains(previewRuntimeSnapshotControllerText, "var health = PreviewRuntimeSnapshotHealthPolicy.Evaluate(new PreviewRuntimeSnapshotHealthInput");
         AssertContains(previewRuntimeSnapshotControllerText, "return new PreviewRuntimeSnapshot");
-        AssertContains(previewRuntimeSnapshotControllerText, "BlankSuspected = blankSuspected,");
-        AssertContains(previewRuntimeSnapshotControllerText, "StallSuspected = stallSuspected,");
+        AssertContains(previewRuntimeSnapshotControllerText, "BlankSuspected = health.BlankSuspected,");
+        AssertContains(previewRuntimeSnapshotControllerText, "StallSuspected = health.StallSuspected,");
+        AssertContains(previewRuntimeSnapshotHealthPolicyText, "internal static class PreviewRuntimeSnapshotHealthPolicy");
+        AssertContains(previewRuntimeSnapshotHealthPolicyText, "public static PreviewRuntimeSnapshotHealth Evaluate(PreviewRuntimeSnapshotHealthInput input)");
+        AssertContains(previewRuntimeSnapshotHealthPolicyText, "var startupTimedOut = input.IsPreviewing");
+        AssertContains(previewRuntimeSnapshotHealthPolicyText, "input.FramesArrived > 30");
+        AssertContains(previewRuntimeSnapshotHealthPolicyText, "input.CurrentTick - input.LastPresentedTick > 3000");
+        AssertDoesNotContain(previewRuntimeSnapshotControllerText, "var startupTimedOut = input.IsPreviewing");
+        AssertDoesNotContain(previewRuntimeSnapshotControllerText, "input.LastPresentedTick > 0");
         AssertContains(previewRuntimeD3DProjectionText, "internal sealed partial class PreviewRuntimeD3DProjection");
         AssertContains(previewRuntimeD3DProjectionBuilderText, "internal sealed partial class PreviewRuntimeD3DProjection");
         AssertContains(previewRuntimeD3DProjectionBuilderText, "public static PreviewRuntimeD3DProjection Build(PreviewRuntimeSnapshotInput input)");

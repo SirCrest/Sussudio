@@ -52,6 +52,9 @@ static partial class Program
             "Preview runtime snapshot controller preserves null-D3D policy",
             PreviewRuntimeSnapshotController_PreservesNullD3dProjectionPolicy);
         await AddCheckAsync(results,
+            "Preview runtime snapshot health policy preserves suspicion rules",
+            PreviewRuntimeSnapshotHealthPolicy_PreservesSuspicionRules);
+        await AddCheckAsync(results,
             "Window title formatting lives in controller and MainWindow is the adapter",
             MainWindowTitlePresentation_LivesInController);
         await AddCheckAsync(results,

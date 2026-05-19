@@ -8,26 +8,20 @@ internal static class PreviewRuntimeSnapshotController
     public static PreviewRuntimeSnapshot Build(PreviewRuntimeSnapshotInput input)
     {
         var d3dProjection = PreviewRuntimeD3DProjection.Build(input);
-        var nowTick = Environment.TickCount64;
-        var previewPipelineActive = input.IsPreviewing && d3dProjection.RendererAttached;
-
-        var startupElapsedMs = input.StartupRequestedUtc.HasValue
-            ? Math.Max(0, (DateTimeOffset.UtcNow - input.StartupRequestedUtc.Value).TotalMilliseconds)
-            : (double?)null;
-        var startupTimedOut = input.IsPreviewing &&
-                              input.IsStartupWaitingForFirstVisual &&
-                              startupElapsedMs.GetValueOrDefault() >= input.StartupTimeoutMs;
-        var blankSuspected = !d3dProjection.GpuActive && previewPipelineActive &&
-                             d3dProjection.FramesArrived > 30 &&
-                             d3dProjection.FramesDisplayed == 0;
-        if (!blankSuspected && startupTimedOut)
+        var health = PreviewRuntimeSnapshotHealthPolicy.Evaluate(new PreviewRuntimeSnapshotHealthInput
         {
-            blankSuspected = true;
-        }
-
-        var stallSuspected = !d3dProjection.GpuActive && previewPipelineActive &&
-                             input.LastPresentedTick > 0 &&
-                             nowTick - input.LastPresentedTick > 3000;
+            IsPreviewing = input.IsPreviewing,
+            IsStartupWaitingForFirstVisual = input.IsStartupWaitingForFirstVisual,
+            StartupRequestedUtc = input.StartupRequestedUtc,
+            StartupTimeoutMs = input.StartupTimeoutMs,
+            RendererAttached = d3dProjection.RendererAttached,
+            GpuActive = d3dProjection.GpuActive,
+            FramesArrived = d3dProjection.FramesArrived,
+            FramesDisplayed = d3dProjection.FramesDisplayed,
+            LastPresentedTick = input.LastPresentedTick,
+            CurrentTick = Environment.TickCount64,
+            UtcNow = DateTimeOffset.UtcNow
+        });
 
         return new PreviewRuntimeSnapshot
         {
@@ -40,7 +34,7 @@ internal static class PreviewRuntimeSnapshotController
             RendererAttached = d3dProjection.RendererAttached,
             StartupState = input.StartupState,
             StartupAttemptId = input.StartupAttemptId,
-            StartupElapsedMs = startupElapsedMs,
+            StartupElapsedMs = health.StartupElapsedMs,
             StartupTimeoutMs = input.StartupTimeoutMs,
             StartupGpuSignalMediaOpened = input.StartupGpuSignalMediaOpened,
             StartupGpuSignalFirstFrame = input.StartupGpuSignalFirstFrame,
@@ -69,8 +63,8 @@ internal static class PreviewRuntimeSnapshotController
             DisplayCadenceJitterStdDevMs = d3dProjection.DisplayCadenceJitterStdDevMs,
             DisplayCadenceSlowFrameCount = d3dProjection.DisplayCadenceSlowFrameCount,
             DisplayCadenceSlowFramePercent = d3dProjection.DisplayCadenceSlowFramePercent,
-            BlankSuspected = blankSuspected,
-            StallSuspected = stallSuspected,
+            BlankSuspected = health.BlankSuspected,
+            StallSuspected = health.StallSuspected,
             RendererMode = d3dProjection.RendererMode,
             D3DPresentSyncInterval = d3dProjection.D3DPresentSyncInterval,
             D3DMaxFrameLatency = d3dProjection.D3DMaxFrameLatency,

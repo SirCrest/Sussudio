@@ -1162,6 +1162,8 @@ Primary current owners:
   suspicion. `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotInput.cs`
   owns the UI-thread sampled preview snapshot input contract shared by the
   snapshot controller and D3D projection builder.
+  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthPolicy.cs`
+  owns preview startup elapsed timing plus blank/stall suspicion policy.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs`
   owns the renderer projection data contract. `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.Builder.cs`
   owns renderer frame-counter override, cadence projection, D3D diagnostic field

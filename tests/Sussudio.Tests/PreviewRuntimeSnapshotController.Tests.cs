@@ -79,4 +79,68 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task PreviewRuntimeSnapshotHealthPolicy_PreservesSuspicionRules()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealthInput");
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealthPolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeSnapshotHealthPolicy.Evaluate not found.");
+        var now = DateTimeOffset.UtcNow;
+
+        var cpuPathInput = Activator.CreateInstance(inputType)
+                           ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealthInput.");
+        SetPropertyOrBackingField(cpuPathInput, "IsPreviewing", true);
+        SetPropertyOrBackingField(cpuPathInput, "IsStartupWaitingForFirstVisual", true);
+        SetPropertyOrBackingField(cpuPathInput, "StartupRequestedUtc", now.AddMilliseconds(-2000));
+        SetPropertyOrBackingField(cpuPathInput, "StartupTimeoutMs", 1000);
+        SetPropertyOrBackingField(cpuPathInput, "RendererAttached", true);
+        SetPropertyOrBackingField(cpuPathInput, "GpuActive", false);
+        SetPropertyOrBackingField(cpuPathInput, "FramesArrived", 31L);
+        SetPropertyOrBackingField(cpuPathInput, "FramesDisplayed", 0L);
+        SetPropertyOrBackingField(cpuPathInput, "LastPresentedTick", 1000L);
+        SetPropertyOrBackingField(cpuPathInput, "CurrentTick", 4001L);
+        SetPropertyOrBackingField(cpuPathInput, "UtcNow", now);
+
+        var cpuPathHealth = evaluate.Invoke(null, new[] { cpuPathInput })
+                            ?? throw new InvalidOperationException("PreviewRuntimeSnapshotHealthPolicy returned null.");
+        AssertEqual(true, GetDoubleProperty(cpuPathHealth, "StartupElapsedMs") >= 2000, "startup elapsed uses supplied clock");
+        AssertEqual(true, GetBoolProperty(cpuPathHealth, "BlankSuspected"), "CPU path blank suspected");
+        AssertEqual(true, GetBoolProperty(cpuPathHealth, "StallSuspected"), "CPU path stall suspected");
+
+        var gpuPathInput = Activator.CreateInstance(inputType)
+                           ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealthInput.");
+        SetPropertyOrBackingField(gpuPathInput, "IsPreviewing", true);
+        SetPropertyOrBackingField(gpuPathInput, "RendererAttached", true);
+        SetPropertyOrBackingField(gpuPathInput, "GpuActive", true);
+        SetPropertyOrBackingField(gpuPathInput, "FramesArrived", 31L);
+        SetPropertyOrBackingField(gpuPathInput, "FramesDisplayed", 0L);
+        SetPropertyOrBackingField(gpuPathInput, "LastPresentedTick", 1000L);
+        SetPropertyOrBackingField(gpuPathInput, "CurrentTick", 4001L);
+        SetPropertyOrBackingField(gpuPathInput, "UtcNow", now);
+
+        var gpuPathHealth = evaluate.Invoke(null, new[] { gpuPathInput })
+                            ?? throw new InvalidOperationException("PreviewRuntimeSnapshotHealthPolicy returned null.");
+        AssertEqual(false, GetBoolProperty(gpuPathHealth, "BlankSuspected"), "GPU path does not use CPU blank suspicion");
+        AssertEqual(false, GetBoolProperty(gpuPathHealth, "StallSuspected"), "GPU path does not use CPU stall suspicion");
+
+        var timeoutInput = Activator.CreateInstance(inputType)
+                           ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealthInput.");
+        SetPropertyOrBackingField(timeoutInput, "IsPreviewing", true);
+        SetPropertyOrBackingField(timeoutInput, "IsStartupWaitingForFirstVisual", true);
+        SetPropertyOrBackingField(timeoutInput, "StartupRequestedUtc", now.AddMilliseconds(-1500));
+        SetPropertyOrBackingField(timeoutInput, "StartupTimeoutMs", 1000);
+        SetPropertyOrBackingField(timeoutInput, "RendererAttached", true);
+        SetPropertyOrBackingField(timeoutInput, "GpuActive", false);
+        SetPropertyOrBackingField(timeoutInput, "FramesArrived", 0L);
+        SetPropertyOrBackingField(timeoutInput, "FramesDisplayed", 0L);
+        SetPropertyOrBackingField(timeoutInput, "CurrentTick", 4001L);
+        SetPropertyOrBackingField(timeoutInput, "UtcNow", now);
+
+        var timeoutHealth = evaluate.Invoke(null, new[] { timeoutInput })
+                            ?? throw new InvalidOperationException("PreviewRuntimeSnapshotHealthPolicy returned null.");
+        AssertEqual(true, GetBoolProperty(timeoutHealth, "BlankSuspected"), "startup timeout marks blank suspected");
+
+        return Task.CompletedTask;
+    }
 }
