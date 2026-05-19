@@ -3525,9 +3525,11 @@ owner, fold it back into that owner and update the source-shape tests and
    implementation now lives in
    `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`:
    device initialization, preview start/stop, selected-device apply, and the
-   reinitialize facade, with graph-built context ports for preview state/events,
-   capture/session operations, source telemetry refresh, UI dispatch,
-   audio-preview activity, and preview-volume ramp-down. Sibling ViewModel controllers receive that preview
+   reinitialize facade. The preview lifecycle graph-port contract now lives in
+   `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.Context.cs`
+   for preview state/events, capture/session operations, source telemetry
+   refresh, UI dispatch, audio-preview activity, and preview-volume ramp-down.
+   Sibling ViewModel controllers receive that preview
    lifecycle owner directly from `MainViewModelControllerGraph` instead of
    routing controller-to-controller calls back through the root facade.
    `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`
