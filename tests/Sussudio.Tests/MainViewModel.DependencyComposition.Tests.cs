@@ -103,6 +103,8 @@ static partial class Program
         AssertContains(stateText, "public void SetWindowHandle(IntPtr handle)");
         AssertContains(stateText, "_windowHandle = handle;");
         AssertDoesNotContain(rootText, "public void SetWindowHandle(IntPtr handle)");
+        AssertContains(stateText, "private static void ReplaceCollection<T>(ObservableCollection<T> target, IReadOnlyList<T> source)");
+        AssertDoesNotContain(rootText, "private static void ReplaceCollection<T>(ObservableCollection<T> target, IReadOnlyList<T> source)");
         AssertDoesNotContain(stateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
         AssertDoesNotContain(captureModeTransactionsText, "_automationCaptureModeGate");
         AssertDoesNotContain(stateText, "public partial bool IsPreviewing");

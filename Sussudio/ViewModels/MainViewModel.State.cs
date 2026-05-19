@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Sussudio.ViewModels;
@@ -11,6 +13,15 @@ public partial class MainViewModel
     public void SetWindowHandle(IntPtr handle)
     {
         _windowHandle = handle;
+    }
+
+    private static void ReplaceCollection<T>(ObservableCollection<T> target, IReadOnlyList<T> source)
+    {
+        target.Clear();
+        foreach (var item in source)
+        {
+            target.Add(item);
+        }
     }
 
     [ObservableProperty]

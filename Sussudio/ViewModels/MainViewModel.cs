@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -100,15 +98,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     internal Task StopRecordingForEmergencyAsync(CancellationToken cancellationToken = default)
         => _sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);
-
-    private static void ReplaceCollection<T>(ObservableCollection<T> target, IReadOnlyList<T> source)
-    {
-        target.Clear();
-        foreach (var item in source)
-        {
-            target.Add(item);
-        }
-    }
 
     public MainViewModel()
         : this(MainViewModelDependencies.CreateDefault())
