@@ -47,7 +47,7 @@ public partial class MainViewModel
 
             if (!_viewModel.IsInitialized)
             {
-                await _viewModel.InitializeDeviceAsync(cancellationToken);
+                await _previewLifecycleController.InitializeDeviceAsync(cancellationToken);
                 if (!_viewModel.IsInitialized)
                 {
                     throw new InvalidOperationException(

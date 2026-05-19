@@ -2630,6 +2630,9 @@ Primary current owners:
   reinitialization. `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`
   owns the underlying preview lifecycle operations: device initialization,
   preview start/stop, selected-device apply, and the reinitialize facade.
+  Sibling ViewModel controllers receive that preview lifecycle owner directly
+  from `MainViewModelControllerGraph` instead of routing controller-to-controller
+  calls back through the root facade.
   `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`
   owns debounced reinitialization, restart-cancellation state,
   Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
@@ -2642,7 +2645,8 @@ Primary current owners:
   transition gating, and in-flight transition wait/error propagation.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`
   owns concrete start/stop operation execution plus failure/cancellation state
-  repair.
+  repair, including direct use of the preview lifecycle owner for recording
+  startup initialization.
   `MainViewModel.RecordingState.cs` owns recording option selections, output
   path, counters, and observable transition flags.
   `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs` owns
@@ -2720,7 +2724,7 @@ Primary current owners:
   owns startup refresh orchestration: requesting the combined discovery result,
   applying audio-device startup selection, replacing the capture-device collection,
   starting background format probes, restoring saved capture-device selection,
-  and auto-starting preview. The shallow `MainViewModel.DeviceManagement.cs`
+  and directly auto-starting preview through the preview lifecycle owner. The shallow `MainViewModel.DeviceManagement.cs`
   partial was retired instead of keeping another sub-100-line facade. Selected
   capture-device reactions, capability projection, source telemetry reset, and
   device-native audio-control refresh handoff live in `MainViewModel.DeviceSelection.cs`; capture-mode property-change hooks live

@@ -191,7 +191,8 @@ static partial class Program
         AssertContains(deviceRefreshControllerText, "ReplaceCollection(_viewModel.Devices, devices.ToList());");
         AssertContains(deviceRefreshControllerText, "_viewModel._deviceService.BeginBackgroundFormatProbe(discoveredDevice, scanGeneration);");
         AssertContains(deviceRefreshControllerText, "private async Task ApplySuccessfulDeviceScanAsync");
-        AssertContains(deviceRefreshControllerText, "await _viewModel.StartPreviewAsync(userInitiated: false, cancellationToken);");
+        AssertContains(deviceRefreshControllerText, "await _previewLifecycleController.StartPreviewAsync(userInitiated: false, cancellationToken);");
+        AssertDoesNotContain(deviceRefreshControllerText, "await _viewModel.StartPreviewAsync(userInitiated: false, cancellationToken);");
         AssertContains(deviceSelectionText, "partial void OnSelectedDeviceChanged(CaptureDevice? value)");
         AssertContains(deviceSelectionText, "CancelPendingAudioControlWork();");
         AssertContains(deviceSelectionText, "RequestDeviceAudioControlsRefresh(value);");

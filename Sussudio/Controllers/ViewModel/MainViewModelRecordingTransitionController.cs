@@ -12,6 +12,7 @@ public partial class MainViewModel
     private sealed partial class MainViewModelRecordingTransitionController
     {
         private readonly MainViewModel _viewModel;
+        private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;
         private int _recordingToggleInProgress;
         // Holds the in-flight ToggleRecordingAsync task so the window-close path can
         // observe (and await) an already-running stop instead of short-circuiting on
@@ -19,9 +20,12 @@ public partial class MainViewModel
         private volatile Task? _activeRecordingToggleTask;
         private int _activeRecordingTransitionTarget = -1;
 
-        public MainViewModelRecordingTransitionController(MainViewModel viewModel)
+        public MainViewModelRecordingTransitionController(
+            MainViewModel viewModel,
+            MainViewModelPreviewLifecycleController previewLifecycleController)
         {
             _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            _previewLifecycleController = previewLifecycleController ?? throw new ArgumentNullException(nameof(previewLifecycleController));
         }
 
         public Task ToggleRecordingAsync()

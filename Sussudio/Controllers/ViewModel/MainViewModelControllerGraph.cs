@@ -58,8 +58,8 @@ public partial class MainViewModel
             ArgumentNullException.ThrowIfNull(viewModel);
 
             var uiDispatchController = CreateUiDispatchController(viewModel);
-            var recordingTransitionController = new MainViewModelRecordingTransitionController(viewModel);
             var previewLifecycleController = new MainViewModelPreviewLifecycleController(viewModel);
+            var recordingTransitionController = new MainViewModelRecordingTransitionController(viewModel, previewLifecycleController);
             var deviceAudioRequestController = new MainViewModelDeviceAudioRequestController(viewModel);
             var recordingCapabilityController = new MainViewModelRecordingCapabilityController(viewModel);
             var captureSettingsAutomationController = new MainViewModelCaptureSettingsAutomationController(viewModel);
@@ -67,7 +67,7 @@ public partial class MainViewModel
             var captureModeOptionRebuildController = new MainViewModelCaptureModeOptionRebuildController(viewModel);
             var deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(viewModel);
             var sourceTelemetryController = new MainViewModelSourceTelemetryController(viewModel);
-            var deviceRefreshController = new MainViewModelDeviceRefreshController(viewModel);
+            var deviceRefreshController = new MainViewModelDeviceRefreshController(viewModel, previewLifecycleController);
             var runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(viewModel);
             var disposalController = new MainViewModelDisposalController(viewModel);
 

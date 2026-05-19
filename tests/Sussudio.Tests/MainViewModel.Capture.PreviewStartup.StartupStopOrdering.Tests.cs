@@ -109,8 +109,8 @@ static partial class Program
             deviceRefreshControllerText,
             "private async Task ApplySuccessfulDeviceScanAsync",
             "\n    }\n}");
-        AssertOccursBefore(successfulScan, "var savedDeviceId = _viewModel._pendingSavedDeviceId;", "await _viewModel.StartPreviewAsync(userInitiated: false, cancellationToken);");
-        AssertOccursBefore(successfulScan, "_viewModel.SelectedDevice = nextSelectedDevice;", "await _viewModel.StartPreviewAsync(userInitiated: false, cancellationToken);");
+        AssertOccursBefore(successfulScan, "var savedDeviceId = _viewModel._pendingSavedDeviceId;", "await _previewLifecycleController.StartPreviewAsync(userInitiated: false, cancellationToken);");
+        AssertOccursBefore(successfulScan, "_viewModel.SelectedDevice = nextSelectedDevice;", "await _previewLifecycleController.StartPreviewAsync(userInitiated: false, cancellationToken);");
         AssertOccursBefore(refreshDevices, ".EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)", "ApplySuccessfulDeviceScanAsync(");
 
         return Task.CompletedTask;

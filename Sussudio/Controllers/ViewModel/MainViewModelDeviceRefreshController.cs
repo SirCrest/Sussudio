@@ -14,10 +14,14 @@ public partial class MainViewModel
     private sealed class MainViewModelDeviceRefreshController
     {
         private readonly MainViewModel _viewModel;
+        private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;
 
-        public MainViewModelDeviceRefreshController(MainViewModel viewModel)
+        public MainViewModelDeviceRefreshController(
+            MainViewModel viewModel,
+            MainViewModelPreviewLifecycleController previewLifecycleController)
         {
             _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            _previewLifecycleController = previewLifecycleController ?? throw new ArgumentNullException(nameof(previewLifecycleController));
         }
 
         public async Task RefreshDevicesAsync(CancellationToken cancellationToken = default)
@@ -106,7 +110,7 @@ public partial class MainViewModel
 
             try
             {
-                await _viewModel.StartPreviewAsync(userInitiated: false, cancellationToken);
+                await _previewLifecycleController.StartPreviewAsync(userInitiated: false, cancellationToken);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {

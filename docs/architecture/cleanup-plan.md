@@ -3503,7 +3503,10 @@ owner, fold it back into that owner and update the source-shape tests and
    implementation now lives in
    `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`:
    device initialization, preview start/stop, selected-device apply, and the
-   reinitialize facade. `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`
+   reinitialize facade. Sibling ViewModel controllers receive that preview
+   lifecycle owner directly from `MainViewModelControllerGraph` instead of
+   routing controller-to-controller calls back through the root facade.
+   `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`
    owns debounced reinitialization, restart-cancellation state,
    Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
    and gate release. Output folder display plus browse/open-recordings button workflows now live in
@@ -3514,7 +3517,8 @@ owner, fold it back into that owner and update the source-shape tests and
    gating, and in-flight transition wait/error propagation now live in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`;
    concrete start/stop operation execution plus failure/cancellation state
-   repair live in
+   repair, including direct use of the preview lifecycle owner for recording
+   startup initialization, live in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`.
    Recording option selections, output
    path, counters, and transition flags now live in
@@ -3582,7 +3586,7 @@ owner, fold it back into that owner and update the source-shape tests and
    owns startup refresh orchestration: requesting the combined discovery result,
    applying audio-device startup selection, replacing the capture-device collection,
    starting background format probes, restoring saved capture-device selection,
-   and auto-starting preview. The shallow `MainViewModel.DeviceManagement.cs`
+   and directly auto-starting preview through the preview lifecycle owner. The shallow `MainViewModel.DeviceManagement.cs`
    partial was retired rather than preserving a sub-100-line facade. Selected
    capture-device reactions, capability projection, source telemetry reset, and
    device-native audio-control refresh handoff live in `MainViewModel.DeviceSelection.cs`. Capture-mode property-change

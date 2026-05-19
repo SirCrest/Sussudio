@@ -20,8 +20,10 @@ static partial class Program
         var runtimeEventIngressControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs").Replace("\r\n", "\n");
         var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs").Replace("\r\n", "\n");
         var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs").Replace("\r\n", "\n");
+        var recordingTransitionControllerOperationsText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs").Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs").Replace("\r\n", "\n");
         var previewReinitializeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs").Replace("\r\n", "\n");
+        var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs").Replace("\r\n", "\n");
         var deviceAudioRequestControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs").Replace("\r\n", "\n");
         var deviceAudioRequestControllerGainText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.Gain.cs").Replace("\r\n", "\n");
         var captureSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs").Replace("\r\n", "\n");
@@ -79,8 +81,8 @@ static partial class Program
         AssertContains(controllerGraphText, "DispatcherQueue = viewModel._dispatcherQueue,");
         AssertContains(controllerGraphText, "IsDisposing = () => Volatile.Read(ref viewModel._disposeState) != 0,");
         AssertContains(controllerGraphText, "SetStatusText = value => viewModel.StatusText = value,");
-        AssertContains(controllerGraphText, "new MainViewModelRecordingTransitionController(viewModel)");
         AssertContains(controllerGraphText, "new MainViewModelPreviewLifecycleController(viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelRecordingTransitionController(viewModel, previewLifecycleController)");
         AssertContains(controllerGraphText, "new MainViewModelDeviceAudioRequestController(viewModel)");
         AssertContains(controllerGraphText, "new MainViewModelRecordingCapabilityController(viewModel)");
         AssertContains(controllerGraphText, "new MainViewModelCaptureSettingsAutomationController(viewModel)");
@@ -88,6 +90,15 @@ static partial class Program
         AssertContains(controllerGraphText, "new MainViewModelCaptureModeOptionRebuildController(viewModel)");
         AssertContains(controllerGraphText, "new MainViewModelDeviceFormatProbeController(viewModel)");
         AssertContains(controllerGraphText, "new MainViewModelSourceTelemetryController(viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelDeviceRefreshController(viewModel, previewLifecycleController)");
+        AssertOccursBefore(
+            controllerGraphText,
+            "var previewLifecycleController = new MainViewModelPreviewLifecycleController(viewModel);",
+            "var recordingTransitionController = new MainViewModelRecordingTransitionController(viewModel, previewLifecycleController);");
+        AssertOccursBefore(
+            controllerGraphText,
+            "var previewLifecycleController = new MainViewModelPreviewLifecycleController(viewModel);",
+            "var deviceRefreshController = new MainViewModelDeviceRefreshController(viewModel, previewLifecycleController);");
         AssertContains(controllerGraphText, "new MainViewModelRuntimeLifecycleController(viewModel)");
         AssertContains(controllerGraphText, "new MainViewModelDisposalController(viewModel)");
         AssertContains(controllerGraphText, "public MainViewModelDisposalController DisposalController { get; }");
@@ -132,8 +143,11 @@ static partial class Program
         AssertContains(uiDispatchControllerText, "public required DispatcherQueue DispatcherQueue { get; init; }");
         AssertContains(uiDispatchControllerText, "public required Func<bool> IsDisposing { get; init; }");
         AssertContains(recordingTransitionControllerText, "private sealed partial class MainViewModelRecordingTransitionController");
+        AssertContains(recordingTransitionControllerText, "private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;");
         AssertContains(recordingTransitionControllerText, "public Task SetRecordingDesiredStateAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(recordingTransitionControllerText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(recordingTransitionControllerOperationsText, "await _previewLifecycleController.InitializeDeviceAsync(cancellationToken);");
+        AssertDoesNotContain(recordingTransitionControllerOperationsText, "await _viewModel.InitializeDeviceAsync(cancellationToken);");
         AssertContains(previewLifecycleControllerText, "private sealed class MainViewModelPreviewLifecycleController");
         AssertContains(previewLifecycleControllerText, "public async Task InitializeDeviceAsync(CancellationToken cancellationToken = default)");
         AssertContains(previewLifecycleControllerText, "public async Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
@@ -144,6 +158,9 @@ static partial class Program
         AssertContains(previewReinitializeControllerText, "public async Task ReinitializeDeviceAsync(string reason)");
         AssertContains(previewReinitializeControllerText, "public void CancelPendingPreviewRestart()");
         AssertContains(previewReinitializeControllerText, "public void ResetPendingPreviewRestartCancellation()");
+        AssertContains(deviceRefreshControllerText, "private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;");
+        AssertContains(deviceRefreshControllerText, "await _previewLifecycleController.StartPreviewAsync(userInitiated: false, cancellationToken);");
+        AssertDoesNotContain(deviceRefreshControllerText, "await _viewModel.StartPreviewAsync(userInitiated: false, cancellationToken);");
         AssertContains(deviceAudioRequestControllerText, "private sealed partial class MainViewModelDeviceAudioRequestController");
         AssertContains(deviceAudioRequestControllerText, "public void HandleSelectedDeviceAudioModeChanged(string value)");
         AssertDoesNotContain(deviceAudioRequestControllerText, "public void HandleAnalogAudioGainPercentChanged(double value)");
