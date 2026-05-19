@@ -190,10 +190,10 @@ static partial class Program
         AssertContains(disposalText, "var exportCts = Interlocked.Exchange(ref _exportCts, null);");
         AssertContains(disposalText, "CancelFlashbackExportCts(exportCts);");
         AssertContains(rawDisposalText, "private void CancelActiveFlashbackExportForDispose()");
-        AssertContains(disposalControllerText, "_viewModel.CancelActiveFlashbackExportForDispose();");
-        AssertContains(disposalControllerText, "_viewModel._runtimeLifecycleController.StopForDispose();");
-        AssertOccursBefore(disposalControllerText, "_viewModel.CancelActiveFlashbackExportForDispose();", "_viewModel._runtimeLifecycleController.StopForDispose();");
-        AssertOccursBefore(disposalControllerText, "_viewModel._runtimeLifecycleController.StopForDispose();", "var stepTimeoutMs = EnvironmentHelpers.GetIntFromEnv(");
+        AssertContains(disposalControllerText, "_context.CancelActiveFlashbackExport();");
+        AssertContains(disposalControllerText, "_context.StopRuntimeForDispose();");
+        AssertOccursBefore(disposalControllerText, "_context.CancelActiveFlashbackExport();", "_context.StopRuntimeForDispose();");
+        AssertOccursBefore(disposalControllerText, "_context.StopRuntimeForDispose();", "var stepTimeoutMs = EnvironmentHelpers.GetIntFromEnv(");
         AssertContains(rawDisposalText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"viewmodel_dispose\");");
         AssertContains(flashbackExportOperationText, "private abstract record ExportFlashbackOutcome");
         AssertContains(flashbackExportOperationText, "private async Task<ExportFlashbackOutcome> ExportFlashbackCoreAsync");

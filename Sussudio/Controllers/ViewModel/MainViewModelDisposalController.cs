@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Services.Runtime;
 
@@ -14,11 +13,11 @@ public partial class MainViewModel
     {
         private const int DefaultDisposeTimeoutMs = 30000;
 
-        private readonly MainViewModel _viewModel;
+        private readonly MainViewModelDisposalControllerContext _context;
 
-        public MainViewModelDisposalController(MainViewModel viewModel)
+        public MainViewModelDisposalController(MainViewModelDisposalControllerContext context)
         {
-            _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public void Dispose()
@@ -65,14 +64,14 @@ public partial class MainViewModel
 
         private async Task DisposeCoreAsync()
         {
-            if (Interlocked.Exchange(ref _viewModel._disposeState, 1) == 1)
+            if (!_context.TryBeginDispose())
             {
                 return;
             }
 
-            _viewModel.CancelActiveFlashbackExportForDispose();
-            _viewModel._deviceAudioRequestController.CancelPendingAudioControlWork();
-            _viewModel._runtimeLifecycleController.StopForDispose();
+            _context.CancelActiveFlashbackExport();
+            _context.CancelPendingAudioControlWork();
+            _context.StopRuntimeForDispose();
 
             var stepTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
                 "SUSSUDIO_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS",
@@ -81,12 +80,12 @@ public partial class MainViewModel
                 300000);
 
             await RunDisposeStepAsync(
-                _viewModel._sessionCoordinator.CleanupAsync(),
+                _context.CleanupSessionCoordinatorAsync(),
                 stepTimeoutMs,
                 "Coordinator cleanup",
                 "ViewModel cleanup during dispose failed").ConfigureAwait(false);
             await RunDisposeStepAsync(
-                _viewModel._sessionCoordinator.DisposeAsync().AsTask(),
+                _context.DisposeSessionCoordinatorAsync(),
                 stepTimeoutMs,
                 "Coordinator dispose",
                 "Coordinator dispose failed").ConfigureAwait(false);
@@ -94,14 +93,14 @@ public partial class MainViewModel
             try
             {
                 await AwaitWithTimeoutAsync(
-                    _viewModel._captureService.DisposeAsync().AsTask(),
+                    _context.DisposeCaptureServiceAsync(),
                     stepTimeoutMs,
                     "Capture service dispose").ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 Logger.Log($"Capture service async dispose failed: {ex.Message}");
-                _viewModel._captureService.Dispose();
+                _context.DisposeCaptureService();
             }
         }
 
@@ -127,5 +126,17 @@ public partial class MainViewModel
                 Logger.Log($"{failureLogPrefix}: {ex.Message}");
             }
         }
+    }
+
+    private sealed class MainViewModelDisposalControllerContext
+    {
+        public required Func<bool> TryBeginDispose { get; init; }
+        public required Action CancelActiveFlashbackExport { get; init; }
+        public required Action CancelPendingAudioControlWork { get; init; }
+        public required Action StopRuntimeForDispose { get; init; }
+        public required Func<Task> CleanupSessionCoordinatorAsync { get; init; }
+        public required Func<Task> DisposeSessionCoordinatorAsync { get; init; }
+        public required Func<Task> DisposeCaptureServiceAsync { get; init; }
+        public required Action DisposeCaptureService { get; init; }
     }
 }

@@ -174,9 +174,12 @@ static partial class Program
         AssertContains(mainViewModelDisposalText, "private void CancelActiveFlashbackExportForDispose()");
         AssertContains(mainViewModelDisposalText, "_disposalController.Dispose();");
         AssertContains(mainViewModelDisposalControllerText, "private sealed class MainViewModelDisposalController");
-        AssertContains(mainViewModelDisposalControllerText, "_viewModel.CancelActiveFlashbackExportForDispose();");
-        AssertContains(mainViewModelDisposalControllerText, "_viewModel._runtimeLifecycleController.StopForDispose();");
-        AssertContains(mainViewModelDisposalControllerText, "_viewModel._captureService.Dispose();");
+        AssertContains(mainViewModelDisposalControllerText, "private readonly MainViewModelDisposalControllerContext _context;");
+        AssertDoesNotContain(mainViewModelDisposalControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(mainViewModelDisposalControllerText, "_viewModel.");
+        AssertContains(mainViewModelDisposalControllerText, "_context.CancelActiveFlashbackExport();");
+        AssertContains(mainViewModelDisposalControllerText, "_context.StopRuntimeForDispose();");
+        AssertContains(mainViewModelDisposalControllerText, "_context.DisposeCaptureService();");
         AssertDoesNotContain(mainViewModelDisposalText, "PowerModeChanged -=");
         AssertDoesNotContain(mainViewModelDisposalText, "AudioLevelUpdated -=");
         AssertDoesNotContain(mainViewModelRecordingRuntimeText, "OnSystemPowerModeChanged");
@@ -233,7 +236,7 @@ static partial class Program
         AssertDoesNotContain(mainViewModelText, "private void CancelPendingAudioControlWork()");
         AssertDoesNotContain(mainViewModelText, "_deviceAudioModeCts");
         AssertDoesNotContain(mainViewModelDisposalText, "_gainFlashDebounceCts");
-        AssertContains(mainViewModelDisposalControllerText, "_viewModel._deviceAudioRequestController.CancelPendingAudioControlWork();");
+        AssertContains(mainViewModelDisposalControllerText, "_context.CancelPendingAudioControlWork();");
         AssertContains(audioDeviceDiscoveryText, "private void OnAudioDevicesChanged()");
         AssertContains(audioDeviceDiscoveryText, "private void ApplyStartupAudioDeviceScan(");
         AssertContains(audioDeviceDiscoveryText, "private async Task RefreshAudioDeviceListAsync()");

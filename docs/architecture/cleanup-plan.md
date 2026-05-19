@@ -3529,7 +3529,7 @@ owner, fold it back into that owner and update the source-shape tests and
    Recording option selections, output path, counters, and transition flags also
    live in `MainViewModel.RecordingState.cs`. Bounded teardown, dispose timeout policy,
    watcher disposal, coordinator cleanup/dispose, and capture-service
-   async-dispose fallback now live in
+   async-dispose fallback through graph-built context ports now live in
    `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs`.
    `MainViewModel.Disposal.cs` remains the public dispose adapter and active
    Flashback export cancellation owner. Automation-facing capture runtime, health,
