@@ -57,12 +57,16 @@ static partial class Program
 
         var nativeXuAudioServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Audio", "NativeXuAudioControlService.cs"));
         var nativeXuAudioTransportText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Audio", "NativeXuAudioControlService.Transport.cs"));
+        var nativeXuAudioRawTransportText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Audio", "NativeXuAudioControlService.RawTransport.cs"));
         AssertContains(nativeXuAudioServiceText, "ReadPreferredPayloadAsync(device, cancellationToken)");
         AssertContains(nativeXuAudioTransportText, "device?.NativeXuInterfacePath");
         AssertContains(nativeXuAudioTransportText, "missing-selected-interface");
         AssertContains(nativeXuAudioTransportText, "NATIVEXU_AUDIO_PAYLOAD_READ missing-selected-interface");
-        AssertContains(nativeXuAudioTransportText, "NativeXuDeviceSupport.EnumerateSelectedInterfacePath(selectedInterfacePath)");
         AssertContains(nativeXuAudioTransportText, "EnumerateCandidates(vendorId, productId, device?.NativeXuInterfacePath)");
+        AssertContains(nativeXuAudioRawTransportText, "NativeXuDeviceSupport.EnumerateSelectedInterfacePath(selectedInterfacePath)");
+        AssertContains(nativeXuAudioRawTransportText, "NativeXuDeviceSupport.TryAcquireTransportGateAsync(cancellationToken)");
+        AssertContains(nativeXuAudioRawTransportText, "TryXuGetDirect(");
+        AssertContains(nativeXuAudioRawTransportText, "TryXuSetViaOutput(");
 
         var cudaInteropText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.cs"));
         var cudaInteropInitializationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Initialization.cs"));

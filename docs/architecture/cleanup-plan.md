@@ -133,9 +133,10 @@ activation, and AudioClient3 shared-stream initialization.
 `NativeXuAudioControlService.Profiles.cs` owns 4K X selector-3 byte indexes,
 HDMI/Analog reference payloads, gain-profile placeholders, hex parsing, and
 payload decode/confidence helpers. `NativeXuAudioControlService.Transport.cs`
-owns selector-3 XU read/modify/write, dev-specific candidate enumeration, raw
-payload normalization/rehydration, and retrying the shared native transport
-gate from `NativeXuDeviceSupport.cs`.
+owns selector-3 payload read/update workflow and verification against mutated
+control bytes. `NativeXuAudioControlService.RawTransport.cs` owns dev-specific
+candidate enumeration, raw XU GET/SET, raw payload normalization/rehydration,
+and retrying the shared native transport gate from `NativeXuDeviceSupport.cs`.
 `NativeXuAudioControlService.cs` owns the public service flow and snapshot DTOs.
 `AutomationDiagnosticsHub.SnapshotProjection.WasapiAudio.cs` owns WASAPI
 capture/playback callback, queue, gap, glitch, and latency projection consumed

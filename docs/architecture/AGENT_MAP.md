@@ -1466,8 +1466,8 @@ Primary current owners:
   device audio refresh, saved-state guard, and device-audio request-controller
   ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.NativeXuAudioControlService.AudioMeters.Tests.cs`
-  owns native XU audio-control service profile/transport ownership and audio
-  meter callback-state assertions.
+  owns native XU audio-control service profile, payload workflow, raw transport
+  ownership, and audio meter callback-state assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.OutputPath.Tests.cs` owns
   assertions that output folder picker ownership stays out of `MainViewModel`.
 - `tests/Sussudio.Tests/MainViewModel.Capture.TestHelpers.cs` owns shared
