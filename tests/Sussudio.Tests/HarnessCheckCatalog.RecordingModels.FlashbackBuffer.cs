@@ -34,6 +34,9 @@ static partial class Program
             "FlashbackBufferManager segment mutation lives in focused partial",
             FlashbackBufferManager_SegmentMutationLiveInFocusedPartial);
         await AddCheckAsync(results,
+            "FlashbackBufferManager live accounting lives in focused partial",
+            FlashbackBufferManager_LiveAccountingLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "FlashbackBufferManager lifecycle helpers live in focused partial",
             FlashbackBufferManager_LifecycleHelpersLiveInFocusedPartial);
         await AddCheckAsync(results,
