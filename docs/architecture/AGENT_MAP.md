@@ -1325,9 +1325,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.RendererHost.Tests.cs`
   owns MainWindow preview renderer host, preview surface/shadow controller, and
   preview runtime/snapshot ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.ShellOwnership.NativeBootstrap.Tests.cs`
+  owns MainWindow native bootstrap, adapter, and first-frame reveal ownership
+  assertions.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.WindowLifecycle.Tests.cs`
-  owns MainWindow close lifecycle, recording-stop close protection, native
-  bootstrap, and first-frame native reveal ownership assertions.
+  owns MainWindow close lifecycle, recording-stop close protection, and
+  shutdown cleanup ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.ShellPreview.Tests.cs`
   owns MainWindow controller-adapter ownership assertions for control bar,
   shell elevation, preview-transition, preview startup overlay, and preview

@@ -752,7 +752,7 @@ scheduling/cancellation, initial shell size, icon, and uncloaking now live in
 `_hwnd` field consumed by screenshot and window automation paths.
 MainWindow shell ownership tests mirror these runtime owners through focused
 `MainWindow.ShellOwnership.*.Tests.cs` files for chrome, startup, preview
-runtime, and window lifecycle contracts.
+runtime, native bootstrap, and window lifecycle contracts.
 MainWindow Flashback ownership tests mirror the Flashback controller owners
 through focused `MainWindow.FlashbackOwnership.*.Tests.cs` files: polling,
 timeline presentation, playhead/CTI motion, playback presentation/coordinator

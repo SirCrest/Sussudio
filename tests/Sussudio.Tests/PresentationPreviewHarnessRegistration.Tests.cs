@@ -32,6 +32,7 @@ static partial class Program
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.Startup.Launch.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.Startup.SplashPhrase.Tests.cs",
+        "tests/Sussudio.Tests/MainWindow.ShellOwnership.NativeBootstrap.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.WindowLifecycle.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Automation.Hdr.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Automation.Preview.Tests.cs",

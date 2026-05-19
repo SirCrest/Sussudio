@@ -58,8 +58,11 @@ static partial class Program
             "Window title controller formats build stamp and recording suffix",
             WindowTitleController_FormatsBuildStampAndRecordingSuffix);
         await AddCheckAsync(results,
-            "MainWindow close lifecycle and native bootstrap are split",
-            MainWindowCloseLifecycleAndNativeHelpers_AreSplit);
+            "MainWindow native bootstrap lives in controller",
+            MainWindowNativeBootstrap_LivesInFocusedController);
+        await AddCheckAsync(results,
+            "MainWindow close lifecycle and shutdown cleanup are split",
+            MainWindowCloseLifecycleAndShutdownCleanup_AreSplit);
         await AddCheckAsync(results,
             "Control bar hover animations live in controller",
             ControlBarHoverAnimations_LiveInController);
