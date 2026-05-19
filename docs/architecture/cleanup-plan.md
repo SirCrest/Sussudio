@@ -1193,6 +1193,14 @@ output telemetry. `LibAvEncoder.NativeResourceRelease.cs` owns native
 frame/context/buffer release, hardware texture pool release, and encoder state
 reset; keep generic error helpers in `LibAvEncoder.Diagnostics.cs`.
 
+Recording artifact context creation stays in
+`Sussudio/Services/Recording/RecordingArtifactManager.cs`, including temp/final
+output file naming and HDR-active context fields. Recording artifact finalization
+now lives in
+`Sussudio/Services/Recording/RecordingArtifactManager.Finalization.cs`, including
+mux success/failure cleanup, final-output validation, rollback, preserved
+temp-artifact discovery, and best-effort artifact deletion.
+
 LibAv recording sink queue ownership now lives in
 `Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs`. Keep public
 video/GPU/CUDA enqueue entry points, caller-side validation, and shared

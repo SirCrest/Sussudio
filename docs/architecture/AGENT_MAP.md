@@ -827,6 +827,11 @@ Entry points:
   writing, close-result logging, and final output telemetry.
 - `LibAvEncoder.NativeResourceRelease.cs` owns native frame/context/buffer
   release, hardware texture pool release, and encoder state reset.
+- `Sussudio/Services/Recording/RecordingArtifactManager.cs` owns recording
+  context creation, temp/final output file naming, and HDR-active context
+  fields. `Sussudio/Services/Recording/RecordingArtifactManager.Finalization.cs`
+  owns mux success/failure finalization, final-output validation, rollback,
+  preserved temp-artifact discovery, and best-effort artifact deletion.
 - `Sussudio/Services/Recording/Verification/RecordingVerifier.cs` owns strict verification orchestration and keeps the
   public verifier surface stable.
 - `Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs` owns ffprobe path resolution, process specs,

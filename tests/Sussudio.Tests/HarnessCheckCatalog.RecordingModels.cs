@@ -44,6 +44,9 @@ static partial class Program
     private static async Task AddRecordingModelRecordingContractChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
+            "Recording artifact manager finalization lives in focused partial",
+            ArtifactManager_FinalizationLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "FinalizeContext returns success when post-mux audio disabled",
             ArtifactManager_FinalizeContext_ReturnsSuccess_WhenPostMuxDisabled);
         await AddCheckAsync(results,

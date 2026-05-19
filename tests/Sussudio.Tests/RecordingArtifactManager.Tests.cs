@@ -5,6 +5,27 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
+    private static Task ArtifactManager_FinalizationLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Recording/RecordingArtifactManager.cs");
+        var finalizationText = ReadRepoFile("Sussudio/Services/Recording/RecordingArtifactManager.Finalization.cs");
+
+        AssertContains(rootText, "public sealed partial class RecordingArtifactManager");
+        AssertContains(rootText, "public async Task<RecordingContext> CreateContextAsync(");
+        AssertContains(rootText, "private static RecordingContext BuildContext(");
+        AssertDoesNotContain(rootText, "public FinalizeResult FinalizeContext(");
+        AssertDoesNotContain(rootText, "public Task RollbackAsync(");
+        AssertDoesNotContain(rootText, "private static bool TryValidateFinalOutput(");
+
+        AssertContains(finalizationText, "public sealed partial class RecordingArtifactManager");
+        AssertContains(finalizationText, "public FinalizeResult FinalizeContext(");
+        AssertContains(finalizationText, "public Task RollbackAsync(");
+        AssertContains(finalizationText, "private static bool TryValidateFinalOutput(");
+        AssertContains(finalizationText, "private static IReadOnlyList<string> GetExistingTempArtifacts(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task ArtifactManager_FinalizeContext_ReturnsSuccess_WhenPostMuxDisabled()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
