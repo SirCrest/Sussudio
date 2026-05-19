@@ -2532,8 +2532,8 @@ Primary current owners:
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.cs` owns compatibility-facade
   construction, dependency assignment, collaborator construction, and small bridge
-  methods. `MainViewModel.State.cs` owns shared shell/status/live-info flags
-  and non-preview coordination gates; `MainViewModel.PreviewState.cs` owns
+  methods. `MainViewModel.State.cs` owns shared shell/status/live-info flags,
+  native window handle state, and non-preview coordination gates; `MainViewModel.PreviewState.cs` owns
   preview lifecycle flags, preview reinitialize coordination, and preview
   request events; `MainViewModel.CaptureState.cs` owns capture-selection, source
   telemetry, and HDR state; `MainViewModel.AudioState.cs` owns audio and

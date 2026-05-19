@@ -144,11 +144,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _runtimeLifecycleController.Start();
         _runtimeLifecycleController.InitializePresentation();
     }
-    public void SetWindowHandle(IntPtr handle)
-    {
-        _windowHandle = handle;
-    }
-
     // -- Capture and recording lifecycle facade methods stay in this root compatibility facade -----
     // -- Recording observable state is in MainViewModel.RecordingState.cs -----
     // -- Capture settings projection adapter is in MainViewModel.CaptureSettings.cs -----

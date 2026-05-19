@@ -8,6 +8,11 @@ public partial class MainViewModel
     private IntPtr _windowHandle;
     private const string LiveInfoUnavailable = "\u2014";
 
+    public void SetWindowHandle(IntPtr handle)
+    {
+        _windowHandle = handle;
+    }
+
     [ObservableProperty]
     public partial bool IsStatsVisible { get; set; }
 

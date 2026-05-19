@@ -99,6 +99,10 @@ static partial class Program
         AssertContains(stateText, "public partial bool IsStatsVisible");
         AssertContains(stateText, "public partial bool IsSettingsVisible");
         AssertContains(stateText, "public partial string StatusText");
+        AssertContains(stateText, "private IntPtr _windowHandle;");
+        AssertContains(stateText, "public void SetWindowHandle(IntPtr handle)");
+        AssertContains(stateText, "_windowHandle = handle;");
+        AssertDoesNotContain(rootText, "public void SetWindowHandle(IntPtr handle)");
         AssertDoesNotContain(stateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
         AssertDoesNotContain(captureModeTransactionsText, "_automationCaptureModeGate");
         AssertDoesNotContain(stateText, "public partial bool IsPreviewing");
