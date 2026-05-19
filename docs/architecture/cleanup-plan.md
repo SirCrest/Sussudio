@@ -3780,8 +3780,12 @@ owner, fold it back into that owner and update the source-shape tests and
    collections, selected capture-mode state, preview reinitialization checks,
    UI-thread dispatch, and format-change suppression.
    Startup FFmpeg capability probes for recording formats and split-encode modes
-   plus observable recording-format option rebuilds through graph-built context ports now live in
+   plus observable recording-format option rebuilds now live in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`.
+   `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.Context.cs`
+   owns the recording-capability graph-port contract for default encoder names,
+   observable recording/split-encode option collections, selected recording
+   format state, HDR/status state, FFmpeg-missing state, and UI dispatch.
    The old `MainViewModel.Automation.cs` catch-all has been retired.
 
 5. Extract capture resource owners behind the transition policy.

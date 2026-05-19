@@ -2854,7 +2854,11 @@ Primary current owners:
   recording-format coordinator updates, and Flashback encoder setting cycles.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`
   owns startup FFmpeg capability probes for recording formats and split-encode
-  modes through graph-built context ports plus observable recording-format option rebuilds.
+  modes plus observable recording-format option rebuilds.
+  `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.Context.cs`
+  owns the recording-capability graph-port contract for default encoder names,
+  observable recording/split-encode option collections, selected recording
+  format state, HDR/status state, FFmpeg-missing state, and UI dispatch.
 
 Refactor direction:
 
