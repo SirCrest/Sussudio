@@ -51,6 +51,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackRecordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
             .Replace("\r\n", "\n");
+        var flashbackRecordingSessionContextText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.SessionContext.cs")
+            .Replace("\r\n", "\n");
 
         AssertDoesNotContain(rootText, "public Task StartRecordingAsync(");
         AssertDoesNotContain(rootText, "public Task StopRecordingAsync(");
@@ -141,6 +143,9 @@ static partial class Program
         AssertContains(libAvFinalizeText, "private readonly record struct LibAvVideoBoundaryStopResult(");
         AssertContains(flashbackFinalizeText, "var fbRecordingContext = _recordingBackend.DetachFlashbackBackend();");
         AssertContains(flashbackRecordingText, "_recordingBackend.IsFlashbackBackend(_flashbackSink)");
+        AssertContains(flashbackRecordingSessionContextText, "private FlashbackSessionContext CreateFlashbackSessionContext(");
+        AssertContains(flashbackRecordingSessionContextText, "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveFlashbackSessionFrameRateParts(");
+        AssertDoesNotContain(flashbackRecordingText, "private FlashbackSessionContext CreateFlashbackSessionContext(");
 
         return Task.CompletedTask;
     }

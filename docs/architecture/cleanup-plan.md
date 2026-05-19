@@ -974,11 +974,13 @@ owns active encoding-setting application, recording-format changes,
 encoder-setting cycles, and rollback after failed Flashback buffer cycles while
 backend resource construction stays in the Flashback preview backend partials.
 
-Flashback recording policy and session-context helpers now live in
-`Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs`. That file owns
-Flashback backend ownership checks, session-context construction, frame-rate
-rational inference, codec/HDR guardrails, encoded-frame forwarding, and
-recording topology validation. Preview-backend producer wiring now belongs to
+Flashback recording backend ownership, audio attachment, encoded-frame
+forwarding, and recording topology validation now live in
+`Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs`. Flashback
+recording session-context policy now lives in
+`Sussudio/Services/Capture/CaptureService.FlashbackRecording.SessionContext.cs`;
+keep codec/HDR guardrails, frame-rate rational inference, and compatibility
+snapshot fields there. Preview-backend producer wiring now belongs to
 `Sussudio/Services/Flashback/FlashbackBackendResources.cs`, which owns the
 video/audio/microphone attach and detach request shapes used by preview startup,
 buffer cycling, and teardown. `Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs`
