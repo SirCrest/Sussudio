@@ -1,17 +1,23 @@
+using System.Collections;
+using System.Globalization;
 using System.Reflection;
+using Xunit;
 
-static partial class Program
+namespace Sussudio.Tests;
+
+public class MainWindowUiContractStatsSnapshotTests
 {
-    private static Task StatsSnapshotConstruction_LivesInFocusedBuilder()
+    [Fact]
+    public void StatsSnapshotConstruction_LivesInFocusedBuilder()
     {
-        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
-        var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
-        var statsOverlayCompositionGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs").Replace("\r\n", "\n");
-        var statsSnapshotProviderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSnapshotProvider.cs").Replace("\r\n", "\n");
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs").Replace("\r\n", "\n");
-        var statsSnapshotText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshot.cs").Replace("\r\n", "\n");
-        var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
+        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs");
+        var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
+        var statsOverlayCompositionGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs");
+        var statsSnapshotProviderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSnapshotProvider.cs");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs");
+        var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs");
+        var statsSnapshotText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshot.cs");
+        var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs");
 
         AssertContains(statsSnapshotBuilderText, "internal static class StatsSnapshotBuilder");
         AssertContains(statsSnapshotBuilderText, "public static StatsSnapshot Build(");
@@ -45,11 +51,10 @@ static partial class Program
         AssertDoesNotContain(statsOverlayText, "return StatsSnapshotBuilder.Build(health, renderer, viewState);");
         AssertContains(statsWindowText, "private readonly Func<StatsSnapshot> _dataProvider;");
         AssertDoesNotContain(statsWindowText, "public sealed record StatsSnapshot(");
-
-        return Task.CompletedTask;
     }
 
-    private static Task StatsSnapshotBuilder_MapsHealthAndRendererMetrics()
+    [Fact]
+    public void StatsSnapshotBuilder_MapsHealthAndRendererMetrics()
     {
         var health = CreateInstance("Sussudio.Models.CaptureHealthSnapshot");
         SetPropertyOrBackingField(health, "ExpectedFrameRate", 120d);
@@ -124,22 +129,82 @@ static partial class Program
         var snapshot = build.Invoke(null, new[] { health, renderMetrics, viewState })
             ?? throw new InvalidOperationException("StatsSnapshotBuilder.Build returned null.");
 
-        AssertEqual(60, GetIntProperty(snapshot, "SourceCadenceSamples"), "SourceCadenceSamples");
-        AssertNearlyEqual(119.8d, GetDoubleProperty(snapshot, "SourceObservedFps"), 0.0001, "SourceObservedFps");
-        AssertEqual(20, GetIntProperty(snapshot, "PreviewCadenceSamples"), "PreviewCadenceSamples");
-        AssertNearlyEqual(118.2d, GetDoubleProperty(snapshot, "PreviewOnePercentLowFps"), 0.0001, "PreviewOnePercentLowFps");
-        AssertNearlyEqual(0.0d, GetDoubleProperty(snapshot, "PreviewSlowPct"), 0.0001, "PreviewSlowPct sanitizes NaN");
-        AssertNearlyEqual(99.5d, GetDoubleProperty(snapshot, "PerformanceScore"), 0.0001, "PerformanceScore");
-        AssertEqual(true, GetBoolProperty(snapshot, "Previewing"), "Previewing");
-        AssertEqual(false, GetBoolProperty(snapshot, "Recording"), "Recording");
-        AssertEqual(1920, GetIntProperty(snapshot, "CaptureWidth"), "CaptureWidth");
-        AssertEqual("NativeXu", GetStringProperty(snapshot, "TelemetryOrigin"), "TelemetryOrigin");
-        AssertEqual("High", GetStringProperty(snapshot, "TelemetryConfidence"), "TelemetryConfidence");
-        AssertEqual("Warning", GetStringProperty(snapshot, "DiagnosticHealthStatus"), "DiagnosticHealthStatus");
-        AssertEqual("source_capture", GetStringProperty(snapshot, "DiagnosticLikelyStage"), "DiagnosticLikelyStage");
-        AssertEqual(2, GetCountProperty(GetPropertyValue(snapshot, "SourceTelemetryDetails")), "SourceTelemetryDetails count");
-        AssertEqual(2, GetCountProperty(GetPropertyValue(snapshot, "PreviewRecentPresentIntervalsMs")), "PreviewRecentPresentIntervalsMs count");
-
-        return Task.CompletedTask;
+        Assert.Equal(60, GetIntProperty(snapshot, "SourceCadenceSamples"));
+        AssertNearlyEqual(119.8d, GetDoubleProperty(snapshot, "SourceObservedFps"), 0.0001);
+        Assert.Equal(20, GetIntProperty(snapshot, "PreviewCadenceSamples"));
+        AssertNearlyEqual(118.2d, GetDoubleProperty(snapshot, "PreviewOnePercentLowFps"), 0.0001);
+        AssertNearlyEqual(0.0d, GetDoubleProperty(snapshot, "PreviewSlowPct"), 0.0001);
+        AssertNearlyEqual(99.5d, GetDoubleProperty(snapshot, "PerformanceScore"), 0.0001);
+        Assert.True(GetBoolProperty(snapshot, "Previewing"));
+        Assert.False(GetBoolProperty(snapshot, "Recording"));
+        Assert.Equal(1920, GetIntProperty(snapshot, "CaptureWidth"));
+        Assert.Equal("NativeXu", GetStringProperty(snapshot, "TelemetryOrigin"));
+        Assert.Equal("High", GetStringProperty(snapshot, "TelemetryConfidence"));
+        Assert.Equal("Warning", GetStringProperty(snapshot, "DiagnosticHealthStatus"));
+        Assert.Equal("source_capture", GetStringProperty(snapshot, "DiagnosticLikelyStage"));
+        Assert.Equal(2, GetCountProperty(GetPropertyValue(snapshot, "SourceTelemetryDetails")));
+        Assert.Equal(2, GetCountProperty(GetPropertyValue(snapshot, "PreviewRecentPresentIntervalsMs")));
     }
+
+    private static Type RequireType(string typeName)
+        => SussudioAssembly.Load().GetType(typeName, throwOnError: true)!;
+
+    private static object CreateInstance(string typeName)
+        => Activator.CreateInstance(RequireType(typeName))
+           ?? throw new InvalidOperationException($"Failed to create {typeName}.");
+
+    private static object ParseEnum(string typeName, string value)
+        => Enum.Parse(RequireType(typeName), value);
+
+    private static void SetPropertyOrBackingField(object instance, string propertyName, object? value)
+    {
+        var property = instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+        if (property?.SetMethod != null)
+        {
+            property.SetValue(instance, value);
+            return;
+        }
+
+        var field = instance.GetType().GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException($"Backing field for {propertyName} was not found.");
+        field.SetValue(instance, value);
+    }
+
+    private static object? GetPropertyValue(object instance, string propertyName)
+        => instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance)
+            ?.GetValue(instance);
+
+    private static int GetIntProperty(object instance, string propertyName)
+        => Convert.ToInt32(GetPropertyValue(instance, propertyName), CultureInfo.InvariantCulture);
+
+    private static double GetDoubleProperty(object instance, string propertyName)
+        => Convert.ToDouble(GetPropertyValue(instance, propertyName), CultureInfo.InvariantCulture);
+
+    private static bool GetBoolProperty(object instance, string propertyName)
+        => Convert.ToBoolean(GetPropertyValue(instance, propertyName), CultureInfo.InvariantCulture);
+
+    private static string GetStringProperty(object instance, string propertyName)
+        => GetPropertyValue(instance, propertyName) as string
+           ?? throw new InvalidOperationException($"{propertyName} was not a string.");
+
+    private static int GetCountProperty(object? value)
+        => value is ICollection collection
+            ? collection.Count
+            : value is IEnumerable enumerable
+                ? enumerable.Cast<object>().Count()
+                : throw new InvalidOperationException("Expected collection value.");
+
+    private static string ReadRepoFile(string relativePath)
+        => RuntimeContractSource.ReadRepoFile(relativePath).Replace("\r\n", "\n");
+
+    private static void AssertContains(string actual, string expectedSubstring)
+        => Assert.Contains(expectedSubstring, actual, StringComparison.Ordinal);
+
+    private static void AssertDoesNotContain(string actual, string unexpectedSubstring)
+        => Assert.DoesNotContain(unexpectedSubstring, actual, StringComparison.Ordinal);
+
+    private static void AssertNearlyEqual(double expected, double actual, double tolerance)
+        => Assert.True(
+            Math.Abs(expected - actual) <= tolerance,
+            $"Expected {expected:0.####}, got {actual:0.####}; tolerance {tolerance:0.####}.");
 }

@@ -1373,8 +1373,8 @@ Primary current owners:
   rectangle policy behavior checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.Dispatching.Tests.cs` owns
   MainWindow UI-dispatching contract checks.
-- `tests/Sussudio.Tests/MainWindowUiContract.StatsSnapshot.Tests.cs` owns stats
-  snapshot builder contract checks.
+- `tests/Sussudio.Tests/MainWindowUiContract.StatsSnapshot.Tests.cs` owns
+  xUnit stats snapshot builder contract checks.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.Chrome.Tests.cs` owns
   MainWindow shell chrome ownership assertions for the settings shelf, window
   title, live signal info, and status-strip presentation.

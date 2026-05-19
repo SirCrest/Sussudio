@@ -65,6 +65,8 @@ add xUnit alongside, and port incrementally.
 - `StatsDockPresentation.Tests.cs`, `StatsPresentation.Ownership.Tests.cs`,
   and `StatsPresentation.SourceTelemetry.Tests.cs` own the former legacy stats
   dock, row chrome, builder ownership, and HDMI source telemetry panel checks.
+- `MainWindowUiContract.StatsSnapshot.Tests.cs` owns the former legacy stats
+  snapshot construction and health/renderer metric projection checks.
 - `XUnit.ToolFormatterContractsTests.cs` owns focused tool formatter contract
   checks.
 - Additional focused `[Fact]`/`[Theory]` files such as
