@@ -11,18 +11,22 @@ static partial class Program
             .Replace("\r\n", "\n");
         var submissionText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs")
             .Replace("\r\n", "\n");
+        var nv12SubmissionText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Nv12Submission.cs")
+            .Replace("\r\n", "\n");
 
-        AssertContains(submissionText, "private bool _loggedNv12ShaderMissing;");
-        AssertContains(submissionText, "private int _lastNv12IsHdr = -1;");
+        AssertContains(nv12SubmissionText, "private bool _loggedNv12ShaderMissing;");
+        AssertContains(nv12SubmissionText, "private int _lastNv12IsHdr = -1;");
         AssertContains(pendingFramesText, "private readonly ManualResetEventSlim _frameReadyEvent = new(false);");
         AssertContains(pendingFramesText, "private readonly ConcurrentQueue<PendingFrame> _pendingFrames = new();");
         AssertContains(pendingFramesText, "private int _pendingFrameCount;");
         AssertContains(submissionText, "public void SubmitRawFrame(");
         AssertContains(submissionText, "public void SubmitRawFrameLease(");
         AssertContains(submissionText, "public void SubmitTexture(");
-        AssertContains(submissionText, "public void SubmitNv12PlaneTextures(");
-        AssertContains(submissionText, "private void EnqueueNv12Frame(");
+        AssertContains(nv12SubmissionText, "public void SubmitNv12PlaneTextures(");
+        AssertContains(nv12SubmissionText, "private void EnqueueNv12Frame(");
         AssertContains(submissionText, "EnqueuePendingFrame(frame);");
+        AssertDoesNotContain(submissionText, "public void SubmitNv12PlaneTextures(");
+        AssertDoesNotContain(submissionText, "private void EnqueueNv12Frame(");
         AssertDoesNotContain(rootText, "public void SubmitRawFrame(");
         AssertDoesNotContain(rootText, "public void SubmitRawFrameLease(");
         AssertDoesNotContain(rootText, "public void SubmitTexture(");

@@ -1610,9 +1610,12 @@ leave `WaitForSingleObject` in `D3D11PreviewRenderer.FrameLatency.cs`.
 
 D3D preview renderer frame submission now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs`. Keep public raw
-frame, lease, texture, and NV12 plane submission entry points plus the NV12
-pending-frame adapter there; keep render-thread start/stop and disposal in
-`D3D11PreviewRenderer.Lifecycle.cs` and panel sizing in the root renderer.
+frame, lease, and single shared-texture submission entry points there. The
+dual-plane NV12 submission guard, HDR transition logging, COM AddRef/release,
+and pending-frame adapter live in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.Nv12Submission.cs`; keep
+render-thread start/stop and disposal in `D3D11PreviewRenderer.Lifecycle.cs`
+and panel sizing in the root renderer.
 
 D3D preview renderer lifecycle now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs`. Keep
