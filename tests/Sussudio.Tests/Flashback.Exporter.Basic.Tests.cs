@@ -16,6 +16,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var sourceText = exportOperationsText
             + "\n" + exportCoreText
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRequestPreparation.cs")
+                .Replace("\r\n", "\n")
             + "\n" + exportPlanningText
             + "\n" + ReadCaptureServiceRecordingFinalizationSource();
 
@@ -29,7 +31,8 @@ static partial class Program
         AssertEqual(25, (int)resolve.Invoke(null, new object[] { 0.0, 90L, false })!, "Flashback export throttle severe frame age");
         AssertContains(sourceText, "throttleHighResolutionBaseline && IsHighResolutionFlashbackExport(flashbackSink)");
         AssertContains(sourceText, "FastStart = false");
-        AssertContains(sourceText, "AdaptiveThrottleDelayMsProvider = CreateFlashbackExportThrottleDelayProvider(\n                    flashbackSink,\n                    throttleHighResolutionBaseline)");
+        AssertContains(sourceText, "AdaptiveThrottleDelayMsProvider = CreateFlashbackExportThrottleDelayProvider(");
+        AssertContains(sourceText, "flashbackSink,\n                throttleHighResolutionBaseline)");
         AssertContains(sourceText, "ct: ct,");
         AssertContains(sourceText, "requireCompleteLiveEdge: true");
         AssertContains(sourceText, "throttleHighResolutionBaseline: false");

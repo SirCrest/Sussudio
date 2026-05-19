@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
@@ -94,125 +93,26 @@ public partial class CaptureService
             exportId = BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);
             var diagnosticProgress = CreateFlashbackExportProgressSink(exportId, progress);
 
-            FinalizeResult result;
-            IReadOnlyList<string>? segmentPaths = null;
-            string? tsPath = null;
-            var forceRotateFallbackUsed = false;
-
-            if (flashbackSink != null)
+            var preparedExport = PrepareFlashbackExportRequest(
+                bufferManager,
+                flashbackSink,
+                exportId,
+                inPoint,
+                outPoint,
+                outputPath,
+                requireCompleteLiveEdge,
+                force,
+                throttleHighResolutionBaseline,
+                ct);
+            if (preparedExport.FailureResult is { } preparationFailure)
             {
-                var forceRotateResult = flashbackSink.ForceRotateForExport(inPoint, outPoint, ct);
-                segmentPaths = forceRotateResult.SegmentPaths;
-                if (forceRotateResult.Status == FlashbackForceRotateStatus.Failed)
-                {
-                    var preservedArtifacts = bufferManager.GetValidSegmentPaths(inPoint, outPoint);
-                    result = FinalizeResult.Failure(
-                        outputPath,
-                        "Flashback export failed: live-edge segment rotation failed.",
-                        preservedArtifacts);
-                    RecordLastFlashbackExportResult(exportId, result);
-                    CompleteFlashbackExportDiagnostics(exportId, result);
-                    Logger.Log(
-                        "FLASHBACK_EXPORT_FORCE_ROTATE_FAILED " +
-                        $"preserved_segments={preservedArtifacts.Count} " +
-                        $"in_ms={(long)inPoint.TotalMilliseconds} " +
-                        $"out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)}");
-                    return result;
-                }
-
-                if (forceRotateResult.Status == FlashbackForceRotateStatus.CommittedPending)
-                {
-                    var preservedArtifacts = bufferManager.GetValidSegmentPaths(inPoint, outPoint);
-                    result = FinalizeResult.Failure(
-                        outputPath,
-                        requireCompleteLiveEdge
-                            ? "Flashback recording finalize failed: live-edge segment was not closed before timeout."
-                            : "Flashback export failed: live-edge segment rotation committed but did not complete before timeout.",
-                        preservedArtifacts);
-                    RecordLastFlashbackExportResult(exportId, result);
-                    CompleteFlashbackExportDiagnostics(exportId, result);
-                    Logger.Log(
-                        "FLASHBACK_EXPORT_FORCE_ROTATE_COMMITTED_PENDING_FAIL " +
-                        $"preserved_segments={preservedArtifacts.Count} " +
-                        $"in_ms={(long)inPoint.TotalMilliseconds} " +
-                        $"out_ms={(long)outPoint.TotalMilliseconds}");
-                    return result;
-                }
-
-                if (segmentPaths.Count == 0)
-                {
-                    if (requireCompleteLiveEdge)
-                    {
-                        var preservedArtifacts = bufferManager.GetValidSegmentPaths(inPoint, outPoint);
-                        result = FinalizeResult.Failure(
-                            outputPath,
-                            "Flashback recording finalize failed: live-edge segment was not closed before timeout.",
-                            preservedArtifacts);
-                        RecordLastFlashbackExportResult(exportId, result);
-                        CompleteFlashbackExportDiagnostics(exportId, result);
-                        Logger.Log(
-                            "FLASHBACK_RECORDING_EXPORT_INCOMPLETE_FAIL " +
-                            $"preserved_segments={preservedArtifacts.Count} " +
-                            $"in_ms={(long)inPoint.TotalMilliseconds} " +
-                            $"out_ms={(long)outPoint.TotalMilliseconds}");
-                        return result;
-                    }
-
-                    // ForceRotate timed out (AV1 encoder can be too slow to drain
-                    // within the 3-second window). Completed segments before the
-                    // active one are already finalized - query them directly.
-                    // NOTE: The encoding thread may still be completing the rotation.
-                    // This returns only already-completed segments - the live-edge
-                    // segment may be missed if it hasn't been finalized yet. This is
-                    // acceptable: the previous behavior returned a near-empty file.
-                    segmentPaths = bufferManager?.GetValidSegmentPaths(inPoint, outPoint);
-                    if (segmentPaths is { Count: > 0 })
-                    {
-                        forceRotateFallbackUsed = true;
-                        RecordFlashbackExportForceRotateFallback(exportId, segmentPaths.Count, inPoint, outPoint);
-                        Logger.Log($"FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout segments={segmentPaths.Count} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)outPoint.TotalMilliseconds}");
-                    }
-                    else
-                    {
-                        segmentPaths = null;
-                    }
-                }
+                return preparationFailure;
             }
 
-            // Fallback: single-file export if no segments available
-            if (segmentPaths == null)
-            {
-                tsPath = bufferManager?.ActiveFilePath;
-                if (string.IsNullOrWhiteSpace(tsPath))
-                {
-                    result = FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
-                    RecordLastFlashbackExportResult(exportId, result);
-                    CompleteFlashbackExportDiagnostics(exportId, result);
-                    return result;
-                }
-
-                Logger.Log(
-                    "FLASHBACK_EXPORT_ACTIVE_FILE_FALLBACK " +
-                    $"path='{tsPath}' in_ms={(long)inPoint.TotalMilliseconds} " +
-                    $"out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)}");
-            }
-
-            var request = new FlashbackExportRequest
-            {
-                Segments = BuildFlashbackExportSegments(bufferManager, segmentPaths),
-                SegmentPaths = segmentPaths,
-                InputTsPath = tsPath,
-                InPoint = inPoint,
-                OutPoint = outPoint,
-                OutputPath = outputPath,
-                FastStart = false,
-                Force = force,
-                AdaptiveThrottleDelayMsProvider = CreateFlashbackExportThrottleDelayProvider(
-                    flashbackSink,
-                    throttleHighResolutionBaseline),
-            };
-            result = await exporter.ExportAsync(request, diagnosticProgress, ct).ConfigureAwait(false);
-            if (forceRotateFallbackUsed && result.Succeeded)
+            var request = preparedExport.Request
+                ?? throw new InvalidOperationException("Flashback export request preparation returned no request.");
+            var result = await exporter.ExportAsync(request, diagnosticProgress, ct).ConfigureAwait(false);
+            if (preparedExport.ForceRotateFallbackUsed && result.Succeeded)
             {
                 result = FinalizeResult.Success(
                     result.OutputPath,

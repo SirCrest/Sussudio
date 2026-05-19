@@ -13,8 +13,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var exportCoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             .Replace("\r\n", "\n");
+        var exportRequestPreparationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRequestPreparation.cs")
+            .Replace("\r\n", "\n");
         var captureServiceText = exportOperationsText
             + "\n" + exportCoreText
+            + "\n" + exportRequestPreparationText
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
                 .Replace("\r\n", "\n")
@@ -43,8 +46,9 @@ static partial class Program
         AssertDoesNotContain(exportOperationsText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
         AssertContains(exportCoreText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
         AssertContains(exportCoreText, "bufferManager.PauseEviction();");
-        AssertContains(exportCoreText, "ForceRotateForExport");
-        AssertContains(exportCoreText, "CreateFlashbackExportThrottleDelayProvider");
+        AssertContains(exportRequestPreparationText, "private FlashbackExportPreparationResult PrepareFlashbackExportRequest(");
+        AssertContains(exportRequestPreparationText, "ForceRotateForExport");
+        AssertContains(exportRequestPreparationText, "CreateFlashbackExportThrottleDelayProvider");
 
         var rangeExport = ExtractTextBetween(
             captureServiceText,
@@ -92,10 +96,12 @@ static partial class Program
         AssertContains(exportCore, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
         AssertOccursBefore(exportCore, "if (bufferManager == null)", "var exporter = snapshotExporter;");
         AssertContains(exportCore, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackExporter ??= new FlashbackExporter();\n            }");
-        AssertContains(exportCore, "var forceRotateFallbackUsed = false;");
-        AssertContains(exportCore, "forceRotateFallbackUsed = true;");
+        AssertContains(exportCore, "var preparedExport = PrepareFlashbackExportRequest(");
+        AssertContains(exportCore, "if (preparedExport.FailureResult is { } preparationFailure)");
+        AssertContains(exportRequestPreparationText, "var forceRotateFallbackUsed = false;");
+        AssertContains(exportRequestPreparationText, "forceRotateFallbackUsed = true;");
         AssertContains(exportCore, "live-edge partial fallback: active segment was not closed before timeout; export may omit the newest frames");
-        AssertContains(exportCore, "if (forceRotateFallbackUsed && result.Succeeded)\n            {\n                result = FinalizeResult.Success(");
+        AssertContains(exportCore, "if (preparedExport.ForceRotateFallbackUsed && result.Succeeded)\n            {\n                result = FinalizeResult.Success(");
         AssertContains(exportCore, "RecordLastFlashbackExportResult(exportId, result);\n            CompleteFlashbackExportDiagnostics(exportId, result);");
 
         var backendCleanup = ExtractTextBetween(
