@@ -4,7 +4,9 @@ static partial class Program
 {
     private static Task MainViewModelPreviewLifecycle_LivesInController()
     {
-        var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+        var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n");
+        var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.PreviewState.cs")
             .Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
             .Replace("\r\n", "\n");
@@ -15,8 +17,8 @@ static partial class Program
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n");
 
-        AssertContains(captureText, "private Task ReinitializeDeviceAsync(string reason)");
-        AssertContains(captureText, "=> _previewLifecycleController.ReinitializeDeviceAsync(reason);");
+        AssertContains(previewStateText, "private Task ReinitializeDeviceAsync(string reason)");
+        AssertContains(previewStateText, "=> _previewLifecycleController.ReinitializeDeviceAsync(reason);");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Capture.cs")),
@@ -53,9 +55,10 @@ static partial class Program
         AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.InitializeDeviceAsync();");
         AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.StartPreviewAsync(userInitiated: false);");
         AssertContains(previewReinitializeControllerText, "_viewModel._previewReinitializeGate.Release();");
-        AssertDoesNotContain(captureText, "private async Task ReinitializeDeviceAsync(string reason)");
-        AssertContains(captureText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
-        AssertContains(captureText, "public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)");
+        AssertDoesNotContain(previewStateText, "private async Task ReinitializeDeviceAsync(string reason)");
+        AssertDoesNotContain(rootText, "private Task ReinitializeDeviceAsync(string reason)");
+        AssertContains(previewStateText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
+        AssertContains(previewStateText, "public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)");
         AssertContains(agentMapText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`");
         AssertContains(agentMapText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`");
         AssertDoesNotContain(cleanupPlanText, "`MainViewModel.PreviewReinitialization.cs`");

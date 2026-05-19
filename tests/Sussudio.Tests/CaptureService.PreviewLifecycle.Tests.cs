@@ -13,7 +13,7 @@ static partial class Program
             + "\n" + ReadCaptureServicePreviewLifecycleSource()
             + "\n" + ReadCaptureServiceAudioSource();
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
-        var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+        var viewModelPreviewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.PreviewState.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)");
@@ -28,8 +28,8 @@ static partial class Program
         AssertContains(coordinatorText, "public Task StopAudioPreviewWithTeardownAsync(CancellationToken cancellationToken = default)");
         AssertDoesNotContain(coordinatorText, "public Task StopVideoPreviewAsync(bool");
         AssertDoesNotContain(coordinatorText, "public Task StopAudioPreviewAsync(bool");
-        AssertContains(viewModelText, "public Task StopPreviewAsync()\n        => StopPreviewAsync(userInitiated: true, teardownPipeline: false, CancellationToken.None);");
-        AssertContains(viewModelText, "public Task StopPreviewAsync(bool userInitiated)\n        => StopPreviewAsync(userInitiated, teardownPipeline: false, CancellationToken.None);");
+        AssertContains(viewModelPreviewStateText, "public Task StopPreviewAsync()\n        => StopPreviewAsync(userInitiated: true, teardownPipeline: false, CancellationToken.None);");
+        AssertContains(viewModelPreviewStateText, "public Task StopPreviewAsync(bool userInitiated)\n        => StopPreviewAsync(userInitiated, teardownPipeline: false, CancellationToken.None);");
 
         return Task.CompletedTask;
     }

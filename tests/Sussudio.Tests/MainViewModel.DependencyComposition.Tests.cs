@@ -124,6 +124,16 @@ static partial class Program
         AssertDoesNotContain(captureModeTransactionsText, "_automationCaptureModeGate");
         AssertDoesNotContain(stateText, "public partial bool IsPreviewing");
         AssertDoesNotContain(stateText, "public event EventHandler? PreviewStartRequested");
+        AssertDoesNotContain(rootText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
+        AssertDoesNotContain(rootText, "public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)");
+        AssertDoesNotContain(rootText, "private Task ReinitializeDeviceAsync(string reason)");
+        AssertContains(previewStateText, "internal void SetPreviewFrameSink(IPreviewFrameSink? sink)");
+        AssertContains(previewStateText, "internal void CancelPendingPreviewRestart()");
+        AssertContains(previewStateText, "private Task InitializeDeviceAsync(CancellationToken cancellationToken = default)");
+        AssertContains(previewStateText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
+        AssertContains(previewStateText, "public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)");
+        AssertContains(previewStateText, "public Task ApplySelectedDeviceAsync(CaptureDevice device, CancellationToken cancellationToken = default)");
+        AssertContains(previewStateText, "private Task ReinitializeDeviceAsync(string reason)");
         AssertContains(previewStateText, "public partial bool IsPreviewing");
         AssertContains(previewStateText, "public partial bool IsPreviewReinitializing");
         AssertContains(previewStateText, "public partial bool IsInitialized");

@@ -2534,9 +2534,9 @@ Primary current owners:
   construction, dependency assignment, collaborator construction, and small bridge
   methods. `MainViewModel.State.cs` owns shared shell/status/live-info flags,
   native window handle state, UI collection replacement, and non-preview
-  coordination gates; `MainViewModel.PreviewState.cs` owns
-  preview lifecycle flags, preview reinitialize coordination, and preview
-  request events; `MainViewModel.CaptureState.cs` owns capture-selection, source
+  coordination gates; `MainViewModel.PreviewState.cs` owns preview lifecycle
+  compatibility entry points, preview-sink handoff, preview lifecycle flags,
+  preview reinitialize coordination, and preview request events; `MainViewModel.CaptureState.cs` owns capture-selection, source
   telemetry, and HDR state; `MainViewModel.AudioState.cs` owns audio and
   microphone state; `MainViewModel.DeviceAudioState.cs` owns device-native
   audio/XU UI state; `MainViewModel.FlashbackState.cs` owns Flashback
@@ -2626,9 +2626,9 @@ Primary current owners:
   projection policy/input DTOs: selected frame-rate option seed, auto-resolved
   effective FPS, negotiated rational/source-telemetry overrides,
   rational/decimal fallbacks, requested pixel format, and MJPEG decode forcing.
-  `MainViewModel.cs` keeps the compatibility facade entry points for device
-  initialization, preview start/stop, selected-device apply, and preview
-  reinitialization. `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`
+  `MainViewModel.PreviewState.cs` keeps the compatibility facade entry points
+  for device initialization, preview start/stop, selected-device apply, and
+  preview reinitialization. `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`
   owns the underlying preview lifecycle operations: device initialization,
   preview start/stop, selected-device apply, and the reinitialize facade.
   Sibling ViewModel controllers receive that preview lifecycle owner directly

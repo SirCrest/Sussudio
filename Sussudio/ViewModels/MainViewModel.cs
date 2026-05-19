@@ -4,11 +4,9 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Dispatching;
 using Sussudio.Controllers;
-using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Automation;
 using Sussudio.Services.Capture;
-using Sussudio.Services.Preview;
 
 namespace Sussudio.ViewModels;
 
@@ -41,43 +39,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly MainViewModelCaptureModeOptionRebuildController _captureModeOptionRebuildController;
     private readonly MainViewModelDisposalController _disposalController;
 
-    internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
-    {
-        _captureService.SetPreviewFrameSink(sink);
-    }
-
-    internal void CancelPendingPreviewRestart()
-        => _previewLifecycleController.CancelPendingPreviewRestart();
-
-    private Task InitializeDeviceAsync(CancellationToken cancellationToken = default)
-        => _previewLifecycleController.InitializeDeviceAsync(cancellationToken);
-
-    public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)
-        => _previewLifecycleController.StartPreviewAsync(userInitiated, cancellationToken);
-
-    public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
-        => _previewLifecycleController.SetPreviewEnabledAsync(enabled, cancellationToken);
-
-    public Task StopPreviewAsync()
-        => StopPreviewAsync(userInitiated: true, teardownPipeline: false, CancellationToken.None);
-
-    public Task StopPreviewAsync(bool userInitiated)
-        => StopPreviewAsync(userInitiated, teardownPipeline: false, CancellationToken.None);
-
-    public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline)
-        => StopPreviewAsync(userInitiated, teardownPipeline, CancellationToken.None);
-
-    public Task ApplySelectedDeviceAsync(CaptureDevice device, CancellationToken cancellationToken = default)
-        => _previewLifecycleController.ApplySelectedDeviceAsync(device, cancellationToken);
-
     public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)
         => _deviceRefreshController.RefreshDevicesAsync(cancellationToken);
-
-    private Task ReinitializeDeviceAsync(string reason)
-        => _previewLifecycleController.ReinitializeDeviceAsync(reason);
-
-    public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)
-        => _previewLifecycleController.StopPreviewAsync(userInitiated, teardownPipeline, cancellationToken);
 
     public Task ToggleRecordingAsync()
         => _recordingTransitionController.ToggleRecordingAsync();
@@ -133,13 +96,13 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _runtimeLifecycleController.Start();
         _runtimeLifecycleController.InitializePresentation();
     }
-    // -- Capture and recording lifecycle facade methods stay in this root compatibility facade -----
+    // -- Device refresh and recording lifecycle facade methods stay in this root compatibility facade -----
     // -- Recording observable state is in MainViewModel.RecordingState.cs -----
     // -- Capture settings projection adapter is in MainViewModel.CaptureSettings.cs -----
     // -- Automation methods are split across MainViewModel.Automation*.cs ---------
 
     // -- Partial class references ----
-    // Capture lifecycle facade: this file; preview lifecycle owner: MainViewModelPreviewLifecycleController.cs; preview reinitialize transaction: MainViewModelPreviewReinitializeController.cs
+    // Preview lifecycle facade/state/events: MainViewModel.PreviewState.cs; preview lifecycle owner: MainViewModelPreviewLifecycleController.cs; preview reinitialize transaction: MainViewModelPreviewReinitializeController.cs
     // Recording lifecycle facade: this file; transition owner: MainViewModelRecordingTransitionController.cs
     // Recording state: MainViewModel.RecordingState.cs
     // Capture settings projection: MainViewModel.CaptureSettings.cs and CaptureSettingsProjectionBuilder.cs

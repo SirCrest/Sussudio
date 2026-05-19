@@ -3449,7 +3449,8 @@ owner, fold it back into that owner and update the source-shape tests and
    split by owner: `MainViewModel.State.cs` owns shared shell/status/live-info
    flags, native window handle state, UI collection replacement, and
    non-preview coordination gates, `MainViewModel.PreviewState.cs`
-   owns preview lifecycle flags, preview reinitialize coordination, and preview
+   owns preview lifecycle compatibility entry points, preview-sink handoff,
+   preview lifecycle flags, preview reinitialize coordination, and preview
    request events, `MainViewModel.CaptureState.cs` owns capture-selection,
    source, and HDR state, `MainViewModel.AudioState.cs` owns audio/microphone
    state, `MainViewModel.DeviceAudioState.cs` owns device-native audio/XU UI
@@ -3498,9 +3499,9 @@ owner, fold it back into that owner and update the source-shape tests and
    selected-option seeding, auto-resolved effective FPS, runtime/source rational
    overrides, rational/decimal fallbacks, requested pixel format, and MJPEG
    decode forcing.
-   `MainViewModel.cs` keeps the stable compatibility facade entry points for
-   device initialization, preview start/stop, selected-device apply, and preview
-   reinitialization. Preview lifecycle
+   `MainViewModel.PreviewState.cs` keeps the stable compatibility facade entry
+   points for device initialization, preview start/stop, selected-device apply,
+   and preview reinitialization. Preview lifecycle
    implementation now lives in
    `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`:
    device initialization, preview start/stop, selected-device apply, and the
