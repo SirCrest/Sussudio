@@ -18,6 +18,7 @@ static partial class Program
         var deviceFormatProbeRetargetApplierText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs").Replace("\r\n", "\n");
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs").Replace("\r\n", "\n");
         var runtimeEventIngressControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs").Replace("\r\n", "\n");
+        var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs").Replace("\r\n", "\n");
         var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs").Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs").Replace("\r\n", "\n");
         var previewReinitializeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs").Replace("\r\n", "\n");
@@ -55,6 +56,7 @@ static partial class Program
         AssertContains(rootText, "_deviceFormatProbeController = controllerGraph.DeviceFormatProbeController;");
         AssertContains(rootText, "_sourceTelemetryController = controllerGraph.SourceTelemetryController;");
         AssertContains(rootText, "_runtimeLifecycleController = controllerGraph.RuntimeLifecycleController;");
+        AssertContains(rootText, "_disposalController = controllerGraph.DisposalController;");
         AssertContains(rootText, "_runtimeLifecycleController.Start();");
         AssertContains(rootText, "_runtimeLifecycleController.InitializePresentation();");
         AssertDoesNotContain(rootText, "new MainViewModelUiDispatchController(");
@@ -87,6 +89,8 @@ static partial class Program
         AssertContains(controllerGraphText, "new MainViewModelDeviceFormatProbeController(viewModel)");
         AssertContains(controllerGraphText, "new MainViewModelSourceTelemetryController(viewModel)");
         AssertContains(controllerGraphText, "new MainViewModelRuntimeLifecycleController(viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelDisposalController(viewModel)");
+        AssertContains(controllerGraphText, "public MainViewModelDisposalController DisposalController { get; }");
         AssertDoesNotContain(controllerGraphText, "RuntimeLifecycleController.Start();");
         AssertOccursBefore(
             rootText,
@@ -229,7 +233,21 @@ static partial class Program
         AssertContains(runtimeEventIngressControllerText, "_viewModel._captureService.StatusChanged -= OnCaptureStatusChanged;");
         AssertContains(runtimeEventIngressControllerText, "_viewModel._captureService.AudioLevelUpdated -= _viewModel.OnAudioLevelUpdated;");
         AssertContains(runtimeEventIngressControllerText, "SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;");
-        AssertContains(disposalText, "_runtimeLifecycleController.StopForDispose();");
+        AssertContains(disposalText, "private void CancelActiveFlashbackExportForDispose()");
+        AssertContains(disposalText, "=> _disposalController.Dispose();");
+        AssertContains(disposalText, "=> await _disposalController.DisposeAsync().ConfigureAwait(false);");
+        AssertContains(disposalControllerText, "private sealed class MainViewModelDisposalController");
+        AssertEqual(
+            true,
+            disposalControllerText.Split('\n').Length >= 100,
+            "view-model disposal controller is a substantial ownership file");
+        AssertContains(disposalControllerText, "private const int DefaultDisposeTimeoutMs = 30000;");
+        AssertContains(disposalControllerText, "private async Task DisposeCoreAsync()");
+        AssertContains(disposalControllerText, "_viewModel.CancelActiveFlashbackExportForDispose();");
+        AssertContains(disposalControllerText, "_viewModel._deviceAudioRequestController.CancelPendingAudioControlWork();");
+        AssertContains(disposalControllerText, "_viewModel._runtimeLifecycleController.StopForDispose();");
+        AssertContains(disposalControllerText, "SUSSUDIO_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS");
+        AssertContains(disposalControllerText, "SUSSUDIO_VIEWMODEL_DISPOSE_TIMEOUT_MS");
         AssertDoesNotContain(disposalText, "_captureService.StatusChanged -= OnCaptureStatusChanged;");
         AssertDoesNotContain(disposalText, "SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;");
 

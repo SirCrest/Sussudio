@@ -20,7 +20,8 @@ public partial class MainViewModel
             MainViewModelCaptureModeOptionRebuildController captureModeOptionRebuildController,
             MainViewModelDeviceFormatProbeController deviceFormatProbeController,
             MainViewModelSourceTelemetryController sourceTelemetryController,
-            MainViewModelRuntimeLifecycleController runtimeLifecycleController)
+            MainViewModelRuntimeLifecycleController runtimeLifecycleController,
+            MainViewModelDisposalController disposalController)
         {
             UiDispatchController = uiDispatchController;
             RecordingTransitionController = recordingTransitionController;
@@ -33,6 +34,7 @@ public partial class MainViewModel
             DeviceFormatProbeController = deviceFormatProbeController;
             SourceTelemetryController = sourceTelemetryController;
             RuntimeLifecycleController = runtimeLifecycleController;
+            DisposalController = disposalController;
         }
 
         public MainViewModelUiDispatchController UiDispatchController { get; }
@@ -46,6 +48,7 @@ public partial class MainViewModel
         public MainViewModelDeviceFormatProbeController DeviceFormatProbeController { get; }
         public MainViewModelSourceTelemetryController SourceTelemetryController { get; }
         public MainViewModelRuntimeLifecycleController RuntimeLifecycleController { get; }
+        public MainViewModelDisposalController DisposalController { get; }
 
         public static MainViewModelControllerGraph Create(MainViewModel viewModel)
         {
@@ -62,6 +65,7 @@ public partial class MainViewModel
             var deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(viewModel);
             var sourceTelemetryController = new MainViewModelSourceTelemetryController(viewModel);
             var runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(viewModel);
+            var disposalController = new MainViewModelDisposalController(viewModel);
 
             return new MainViewModelControllerGraph(
                 uiDispatchController,
@@ -74,7 +78,8 @@ public partial class MainViewModel
                 captureModeOptionRebuildController,
                 deviceFormatProbeController,
                 sourceTelemetryController,
-                runtimeLifecycleController);
+                runtimeLifecycleController,
+                disposalController);
         }
 
         private static MainViewModelUiDispatchController CreateUiDispatchController(MainViewModel viewModel)

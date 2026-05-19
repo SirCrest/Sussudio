@@ -2625,8 +2625,11 @@ Primary current owners:
   repair.
   `MainViewModel.RecordingState.cs` owns recording option selections, output
   path, counters, and observable transition flags.
-  `MainViewModel.Disposal.cs` owns bounded teardown, watcher disposal, and
-  export-cancellation cleanup.
+  `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs` owns
+  bounded teardown, dispose timeout policy, watcher disposal, coordinator
+  cleanup/dispose, capture-service async-dispose fallback, and disposal-step
+  logging. `MainViewModel.Disposal.cs` is the public dispose adapter and owns
+  active Flashback export cancellation during teardown.
   `MainViewModel.AutomationSnapshots.cs` owns automation-facing capture runtime,
   health, and recording snapshot projection. `MainViewModel.AutomationSnapshots.cs`
   also owns automation-facing source/preview probes and preview frame capture.

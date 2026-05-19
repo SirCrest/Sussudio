@@ -3476,8 +3476,12 @@ Remaining `tools/Common` ownership:
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`.
    Recording option selections, output
    path, counters, and transition flags now live in
-   `MainViewModel.RecordingState.cs`. Bounded teardown and watcher disposal now live
-   in `MainViewModel.Disposal.cs`. Automation-facing capture runtime, health,
+   `MainViewModel.RecordingState.cs`. Bounded teardown, dispose timeout policy,
+   watcher disposal, coordinator cleanup/dispose, and capture-service
+   async-dispose fallback now live in
+   `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs`.
+   `MainViewModel.Disposal.cs` remains the public dispose adapter and active
+   Flashback export cancellation owner. Automation-facing capture runtime, health,
    recording snapshot projection, source/preview probes, and preview
    frame capture also live in `MainViewModel.AutomationSnapshots.cs`; automation-facing
    view-model runtime snapshot UI-thread capture now lives in

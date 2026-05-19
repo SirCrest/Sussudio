@@ -51,6 +51,7 @@ static partial class Program
         var mainViewModelSourceTelemetryControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelSourceTelemetryController.cs"));
         var mainViewModelRuntimeLifecycleControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeLifecycleController.cs"));
         var mainViewModelRuntimeEventIngressControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeEventIngressController.cs"));
+        var mainViewModelDisposalControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDisposalController.cs"));
         var mainViewModelRecordingRuntimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.RecordingRuntime.cs"));
         var outputDriveSpacePresentationBuilderText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "OutputDriveSpacePresentationBuilder.cs"));
         var mainViewModelCapturePresentationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CapturePresentation.cs"));
@@ -151,7 +152,12 @@ static partial class Program
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "SetupTimer();");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel.UpdateDiskSpace();");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel._audioDeviceWatcher.Dispose();");
-        AssertContains(mainViewModelDisposalText, "_runtimeLifecycleController.StopForDispose();");
+        AssertContains(mainViewModelDisposalText, "private void CancelActiveFlashbackExportForDispose()");
+        AssertContains(mainViewModelDisposalText, "_disposalController.Dispose();");
+        AssertContains(mainViewModelDisposalControllerText, "private sealed class MainViewModelDisposalController");
+        AssertContains(mainViewModelDisposalControllerText, "_viewModel.CancelActiveFlashbackExportForDispose();");
+        AssertContains(mainViewModelDisposalControllerText, "_viewModel._runtimeLifecycleController.StopForDispose();");
+        AssertContains(mainViewModelDisposalControllerText, "_viewModel._captureService.Dispose();");
         AssertDoesNotContain(mainViewModelDisposalText, "PowerModeChanged -=");
         AssertDoesNotContain(mainViewModelDisposalText, "AudioLevelUpdated -=");
         AssertDoesNotContain(mainViewModelRecordingRuntimeText, "OnSystemPowerModeChanged");
@@ -193,7 +199,7 @@ static partial class Program
         AssertDoesNotContain(deviceManagementText, "private void CancelPendingAudioControlWork()");
         AssertDoesNotContain(deviceManagementText, "_deviceAudioModeCts");
         AssertDoesNotContain(mainViewModelDisposalText, "_gainFlashDebounceCts");
-        AssertContains(mainViewModelDisposalText, "_deviceAudioRequestController.CancelPendingAudioControlWork();");
+        AssertContains(mainViewModelDisposalControllerText, "_viewModel._deviceAudioRequestController.CancelPendingAudioControlWork();");
         AssertContains(audioDeviceDiscoveryText, "private void OnAudioDevicesChanged()");
         AssertContains(audioDeviceDiscoveryText, "private void ApplyStartupAudioDeviceScan(");
         AssertContains(audioDeviceDiscoveryText, "private async Task RefreshAudioDeviceListAsync()");

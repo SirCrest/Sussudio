@@ -163,6 +163,8 @@ static partial class Program
         var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackExportAutomation.cs"];
         var rawDisposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs")
             .Replace("\r\n", "\n");
+        var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs")
+            .Replace("\r\n", "\n");
         var rawFlashbackExportText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExport.cs")
             .Replace("\r\n", "\n");
         var rawFlashbackExportOperationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExportOperation.cs")
@@ -187,8 +189,11 @@ static partial class Program
         AssertContains(disposalText, "Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertContains(disposalText, "var exportCts = Interlocked.Exchange(ref _exportCts, null);");
         AssertContains(disposalText, "CancelFlashbackExportCts(exportCts);");
-        AssertContains(rawDisposalText, "_runtimeLifecycleController.StopForDispose();");
-        AssertOccursBefore(rawDisposalText, "_runtimeLifecycleController.StopForDispose();", "var stepTimeoutMs = EnvironmentHelpers.GetIntFromEnv(");
+        AssertContains(rawDisposalText, "private void CancelActiveFlashbackExportForDispose()");
+        AssertContains(disposalControllerText, "_viewModel.CancelActiveFlashbackExportForDispose();");
+        AssertContains(disposalControllerText, "_viewModel._runtimeLifecycleController.StopForDispose();");
+        AssertOccursBefore(disposalControllerText, "_viewModel.CancelActiveFlashbackExportForDispose();", "_viewModel._runtimeLifecycleController.StopForDispose();");
+        AssertOccursBefore(disposalControllerText, "_viewModel._runtimeLifecycleController.StopForDispose();", "var stepTimeoutMs = EnvironmentHelpers.GetIntFromEnv(");
         AssertContains(rawDisposalText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"viewmodel_dispose\");");
         AssertContains(flashbackExportOperationText, "private abstract record ExportFlashbackOutcome");
         AssertContains(flashbackExportOperationText, "private async Task<ExportFlashbackOutcome> ExportFlashbackCoreAsync");

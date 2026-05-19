@@ -38,6 +38,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly MainViewModelCaptureSettingsAutomationController _captureSettingsAutomationController;
     private readonly MainViewModelRecordingSettingsAutomationController _recordingSettingsAutomationController;
     private readonly MainViewModelCaptureModeOptionRebuildController _captureModeOptionRebuildController;
+    private readonly MainViewModelDisposalController _disposalController;
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
@@ -122,6 +123,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _deviceFormatProbeController = controllerGraph.DeviceFormatProbeController;
         _sourceTelemetryController = controllerGraph.SourceTelemetryController;
         _runtimeLifecycleController = controllerGraph.RuntimeLifecycleController;
+        _disposalController = controllerGraph.DisposalController;
 
         _runtimeLifecycleController.Start();
         _runtimeLifecycleController.InitializePresentation();
@@ -169,7 +171,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Frame-rate/mode selection state: MainViewModel.ModeSelectionState.cs
     // Frame-rate timing state wrappers: MainViewModel.FrameRateTiming.cs; pure timing policy: FrameRateTimingPolicy.cs
     // Resolution option rebuild adapter: MainViewModel.CaptureModeTransactions.cs; rebuild owner: MainViewModelCaptureModeOptionRebuildController.Resolution.cs; effective resolution state-backed policy delegates: MainViewModel.ResolutionOptions.cs
-    // Disposal / teardown: MainViewModel.Disposal.cs
+    // Disposal / teardown: MainViewModel.Disposal.cs; bounded policy owner: MainViewModelDisposalController.cs
     // Recording runtime status and output drive presentation: MainViewModel.RecordingRuntime.cs
     // Capture presentation labels: MainViewModel.CapturePresentation.cs
     // Source telemetry ingress/projection: MainViewModelSourceTelemetryController.cs
