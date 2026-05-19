@@ -1374,9 +1374,11 @@ fatal-error callback registration, and the frame-encoded event surface there.
 Flashback decoder audio output now lives in
 `Sussudio/Services/Flashback/FlashbackDecoder.AudioOutput.cs`. Keep audio packet
 delivery, audio codec/resampler initialization, audio callback failure handling,
-resampler output conversion, and bounded audio sample/byte sizing there. D3D11 device-context initialization, D3D11VA decoder selection, and hardware
-configuration diagnostics now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs`. Decoded video frame
+resampler output conversion, and bounded audio sample/byte sizing there. D3D11 device-context initialization, get-format callback behavior, and hardware
+decoder context setup now live in
+`Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs`. D3D11VA decoder
+selection and hardware-configuration diagnostics now live in
+`Sussudio/Services/Flashback/FlashbackDecoder.D3D11Discovery.cs`. Decoded video frame
 output and hardware/software frame selection now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs`. Software plane
 copies and YUV-to-NV12/P010 conversion kernels now live in
