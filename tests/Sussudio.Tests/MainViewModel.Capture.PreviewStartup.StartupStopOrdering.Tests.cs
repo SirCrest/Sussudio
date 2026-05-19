@@ -117,7 +117,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.Bindings.cs")
             .Replace("\r\n", "\n");
-        var previewActionsText = ReadRepoFile("Sussudio/MainWindow.PreviewActions.cs")
+        var previewActionsText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
             .Replace("\r\n", "\n");
         var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
             .Replace("\r\n", "\n");
@@ -125,7 +125,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewFadeInController.cs")
             .Replace("\r\n", "\n");
-        var previewAudioFadeText = ReadRepoFile("Sussudio/MainWindow.PreviewAudioFade.cs")
+        var previewAudioFadeText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
             .Replace("\r\n", "\n");
         var previewAudioFadeControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewAudioFadeController.cs")
             .Replace("\r\n", "\n");
@@ -229,7 +229,7 @@ static partial class Program
     {
         var previewAudioFadeControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewAudioFadeController.cs")
             .Replace("\r\n", "\n");
-        var previewActionsText = ReadRepoFile("Sussudio/MainWindow.PreviewActions.cs")
+        var previewActionsText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
             .Replace("\r\n", "\n");
         var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
             .Replace("\r\n", "\n");

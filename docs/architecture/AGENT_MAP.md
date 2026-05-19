@@ -1208,8 +1208,9 @@ Primary current owners:
   focused partials or controllers, including initial recording lockout,
   device-selection change hooks, stats visibility sync, and status-strip
   projection.
-- `Sussudio/MainWindow.PreviewActions.cs` owns only the preview button XAML
-  command adapter. `PreviewButtonActionController` owns the preview
+- `Sussudio/MainWindow.PreviewTransitions.cs` owns the preview button XAML
+  command adapter alongside preview transition/presentation wiring.
+  `PreviewButtonActionController` owns the preview
   fade/reinit/start/stop command behavior. One-line XAML command bridges for
   capture-device, recording, output-path, and preview-screenshot buttons live in
   their feature adapter partials beside the owning controllers.
@@ -2328,8 +2329,8 @@ Primary current owners:
 - `Sussudio/Controllers/Preview/PreviewButtonActionController.cs` owns preview button
   command choreography: pending-reinit cancel, user stop intent, audio/visual
   fade-out ordering, preview start/stop calls, reinit animation reset, and
-  unavailable-placeholder reveal. `MainWindow.PreviewActions.cs` keeps the XAML
-  event name stable.
+  unavailable-placeholder reveal. `MainWindow.PreviewTransitions.cs` keeps the
+  XAML event name stable as part of the preview transition/presentation adapter.
 - `Sussudio/Controllers/Recording/RecordingStatePresentationPolicy.cs` owns pure
   recording-state lockout decisions: recording-time capture/audio control
   enablement, analog gain enablement, transition button enablement, FFmpeg
@@ -2352,7 +2353,7 @@ Primary current owners:
   view-model live-signal label formatting and pixel-format/codec suffix policy.
 - `Sussudio/Controllers/Preview/PreviewAudioFadeController.cs` owns preview-volume
   fade-in/fade-out state, saved target volume, storyboard lifetime, and volume
-  save suppression. `MainWindow.PreviewAudioFade.cs` is the XAML-facing adapter.
+  save suppression. `MainWindow.PreviewTransitions.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs` owns preview
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and the

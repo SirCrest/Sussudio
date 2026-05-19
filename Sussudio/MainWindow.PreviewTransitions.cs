@@ -6,16 +6,46 @@ using Microsoft.UI.Xaml.Media.Animation;
 
 namespace Sussudio;
 
-// XAML-facing preview transition adapter. PreviewTransitionAnimationController
-// owns preview content/shell fade and scale transitions plus unavailable-state
-// placeholder presentation; focused controllers own delayed fade-in and startup
-// overlay presentation.
+// XAML-facing preview transition/presentation adapter. Focused controllers own
+// button actions, audio fades, delayed fade-in, reinit transitions, startup
+// overlay presentation, and preview content/shell animations.
 public sealed partial class MainWindow
 {
+    private PreviewAudioFadeController _previewAudioFadeController = null!;
+    private PreviewButtonActionController _previewButtonActionController = null!;
     private PreviewFadeInController _previewFadeInController = null!;
     private PreviewReinitTransitionController _previewReinitTransitionController = null!;
     private PreviewStartupOverlayController _previewStartupOverlayController = null!;
     private PreviewTransitionAnimationController _previewTransitionAnimationController = null!;
+
+    private void InitializePreviewAudioFadeController()
+    {
+        _previewAudioFadeController = new PreviewAudioFadeController(new PreviewAudioFadeControllerContext
+        {
+            ViewModel = ViewModel,
+            PreviewVolumeSlider = PreviewVolumeSlider,
+            PreviewVolumeLabel = PreviewVolumeLabel,
+        });
+    }
+
+    private void InitializePreviewButtonActionController()
+    {
+        _previewButtonActionController = new PreviewButtonActionController(new PreviewButtonActionControllerContext
+        {
+            ViewModel = ViewModel,
+            SetPreviewStopRequestedByUser = SetPreviewStopRequestedByUser,
+            GetPreviewStartupAttemptId = () => PreviewStartupAttemptId,
+            StopPreviewFadeInTimer = StopPreviewFadeInTimer,
+            StartPreviewAudioFadeOutAsync = () => StartPreviewAudioFadeOutAsync(),
+            AnimatePreviewOutAsync = AnimatePreviewOutAsync,
+            ClearPreviewReinitAnimation = operationName =>
+            {
+                _previewReinitTransitionController.Clear(operationName, operationName: operationName);
+            },
+            ResetPreviewContentTransform = ResetPreviewContentTransform,
+            RevealPreviewUnavailablePlaceholder = RevealPreviewUnavailablePlaceholder,
+        });
+    }
 
     private void InitializePreviewFadeInController()
     {
@@ -56,6 +86,10 @@ public sealed partial class MainWindow
     private void InitializePreviewReinitTransitionController()
         => _previewReinitTransitionController = new PreviewReinitTransitionController();
 
+    private bool IsPreviewAudioFadeInActive => _previewAudioFadeController.IsFadingIn;
+
+    private bool IsPreviewAudioFadeAnimationActive => _previewAudioFadeController.IsAnimationActive;
+
     private bool IsPreviewReinitAnimating
         => _previewReinitTransitionController.IsAnimating;
 
@@ -70,6 +104,18 @@ public sealed partial class MainWindow
 
     private void StopPreviewFadeInTimer()
         => _previewFadeInController.Stop();
+
+    private void PrimePreviewAudioFadeIn()
+        => _previewAudioFadeController.PrimeFadeIn();
+
+    private void StartPreviewAudioFadeIn(int durationMs = 900)
+        => _previewAudioFadeController.StartFadeIn(durationMs);
+
+    private Task StartPreviewAudioFadeOutAsync(int durationMs = 450)
+        => _previewAudioFadeController.StartFadeOutAsync(durationMs);
+
+    private void CancelPreviewAudioFadeInForUser()
+        => _previewAudioFadeController.CancelFadeInForUser();
 
     private void StartPreviewStartupOverlay()
         => _previewStartupOverlayController.Start();
@@ -87,6 +133,14 @@ public sealed partial class MainWindow
     {
         FadeInVideoFrameShadow(delayMs: 0, durationMs: 400);
         return _previewTransitionAnimationController.AnimatePreviewInAsync();
+    }
+
+    private Task TogglePreviewFromButtonAsync()
+        => _previewButtonActionController.TogglePreviewAsync(nameof(PreviewButton_Click));
+
+    private void PreviewButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = RunUiEventHandlerAsync(() => TogglePreviewFromButtonAsync(), nameof(PreviewButton_Click));
     }
 
     private async Task ViewModel_PreviewReinitRequested(string reason)

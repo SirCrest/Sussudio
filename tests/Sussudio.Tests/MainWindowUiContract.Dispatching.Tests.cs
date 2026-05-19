@@ -8,7 +8,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var closeLifecycleSource = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs")
             .Replace("\r\n", "\n");
-        var previewActionsSource = ReadRepoFile("Sussudio/MainWindow.PreviewActions.cs")
+        var previewActionsSource = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
             .Replace("\r\n", "\n");
         var flashbackSource = ReadRepoFile("Sussudio/MainWindow.FlashbackCommands.cs")
             .Replace("\r\n", "\n");

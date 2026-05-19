@@ -2478,7 +2478,8 @@ now lives in `Sussudio/Controllers/Preview/PreviewButtonPresentationController.c
 preview lifecycle property/event routing. Preview
 button command choreography now lives in
 `Sussudio/Controllers/Preview/PreviewButtonActionController.cs`, while
-`MainWindow.PreviewActions.cs` keeps the XAML event name stable.
+`MainWindow.PreviewTransitions.cs` keeps the XAML event name stable as part of
+the preview transition/presentation adapter.
 
 Demo-visible record-button chrome now lives in
 `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs`: recording glow,
@@ -2506,7 +2507,7 @@ auto-resolution display text live together in
 Preview-volume fade-in/fade-out state, saved target volume, storyboard lifetime,
 and volume save suppression now live in
 `Sussudio/Controllers/Preview/PreviewAudioFadeController.cs`.
-`MainWindow.PreviewAudioFade.cs` is the XAML-facing adapter.
+`MainWindow.PreviewTransitions.cs` is the XAML-facing adapter.
 Preview-audio volume transition mechanics now live in the
 `Sussudio/ViewModels/PreviewAudioVolumeTransitionController*.cs` family.
 `PreviewAudioVolumeTransitionController.cs` owns save suppression/override
