@@ -9,14 +9,17 @@ static partial class Program
         var pipeServerText = (
             ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.Connections.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.ConnectionSession.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.Responses.cs"))
             .Replace("\r\n", "\n");
 
-        AssertContains(pipeServerText, "var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(requestTimeout.Token, cancellationToken);");
+        AssertContains(pipeServerText, "private sealed class ConnectionSession");
+        AssertContains(pipeServerText, "var session = new ConnectionSession(this, server, cancellationToken);");
+        AssertContains(pipeServerText, "var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(requestTimeout.Token, _serverCancellation);");
         AssertContains(pipeServerText, "if (await WaitForDispatchCompletionAsync(dispatchTask, requestCancellation.Token).ConfigureAwait(false))");
         AssertContains(pipeServerText, "using var registration = cancellationToken.Register(");
         AssertContains(pipeServerText, "ObserveTimedOutDispatch(dispatchTask, request.Command, requestTimeout, requestCancellation);");
-        AssertContains(pipeServerText, "Request timed out after {_requestTimeoutMs} ms.");
+        AssertContains(pipeServerText, "Request timed out after {_owner._requestTimeoutMs} ms.");
         AssertContains(pipeServerText, "\"request-timeout\"");
 
         return Task.CompletedTask;

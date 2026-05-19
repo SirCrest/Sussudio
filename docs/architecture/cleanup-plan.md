@@ -352,10 +352,13 @@ against the shared automation command catalog.
 
 Automation pipe hosting is split across `NamedPipeAutomationServer.*.cs`.
 Keep constructor/configuration state in the root file, server start/stop and
-accept-loop behavior in `NamedPipeAutomationServer.Lifecycle.cs`, per-connection
-JSON framing and dispatch timeouts in `NamedPipeAutomationServer.Connections.cs`,
-Windows pipe security/PInvoke in `NamedPipeAutomationServer.Security.cs`, and
-error/timeout responses plus fallback tracing in `NamedPipeAutomationServer.Responses.cs`.
+accept-loop behavior in `NamedPipeAutomationServer.Lifecycle.cs`,
+per-connection safety/disposal and request-session handoff in
+`NamedPipeAutomationServer.Connections.cs`, per-request JSON framing, client PID
+logging, dispatch timeouts, late-dispatch observation, and response writing in
+`NamedPipeAutomationServer.ConnectionSession.cs`, Windows pipe security/PInvoke
+in `NamedPipeAutomationServer.Security.cs`, and error/timeout responses plus
+fallback tracing in `NamedPipeAutomationServer.Responses.cs`.
 
 App project build workflow is split so `Sussudio/Sussudio.csproj` stays focused
 on app identity, assets, packages, runtime config, and project references, while
