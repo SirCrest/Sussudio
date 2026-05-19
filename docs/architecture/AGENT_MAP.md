@@ -870,7 +870,7 @@ Entry points:
   remains the transition/readiness coordinator and delegates backend mechanics
   into this owner.
 - `FlashbackBufferManager.cs` owns buffer live counters, byte/PTS accounting updates, and core state.
-- `FlashbackBufferManager.SegmentMutation.cs` owns active segment path generation, active segment start/abandonment, completion registration, and same-path segment extension.
+- `FlashbackBufferManager.SegmentMutation.cs` owns active segment path generation, active segment start, and generated-path abandonment. `FlashbackBufferManager.SegmentCompletion.cs` owns completion registration, duplicate-path rejection, and same-path segment extension.
 - `FlashbackBufferManager.Lifecycle.cs` owns initialization, segment extension setup, recovery-preserve markers, disposal, and disposed-state guards.
 - `FlashbackBufferManager.SegmentQueries.cs` owns read-only segment counts, active-path projection, segment path lookup, start-PTS lookup, and segment-info projection.
 - `FlashbackBufferManager.Retention.cs` owns eviction selection, eviction file deletion, and disk-budget/window retention policy.

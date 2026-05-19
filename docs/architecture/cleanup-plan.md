@@ -1446,8 +1446,11 @@ and pause-driven disk-warning state now live in
 session live counters, byte/PTS accounting helpers, and PTS/disk updates.
 Flashback buffer segment mutation now lives in
 `Sussudio/Services/Flashback/FlashbackBufferManager.SegmentMutation.cs`. Keep
-active segment path generation, active segment start/abandonment, completion
-registration, and same-path segment extension there.
+active segment path generation and active segment start/abandonment there.
+Flashback buffer segment completion now lives in
+`Sussudio/Services/Flashback/FlashbackBufferManager.SegmentCompletion.cs`. Keep
+completion registration, duplicate-path rejection, and same-path segment
+extension there.
 Flashback buffer initialization, segment-extension setup, recovery-preserve
 markers, disposal, and disposed-state guards now live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs`.
