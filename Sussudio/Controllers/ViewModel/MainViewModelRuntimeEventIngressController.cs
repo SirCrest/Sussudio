@@ -14,10 +14,14 @@ public partial class MainViewModel
     private sealed class MainViewModelRuntimeEventIngressController
     {
         private readonly MainViewModel _viewModel;
+        private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;
 
-        public MainViewModelRuntimeEventIngressController(MainViewModel viewModel)
+        public MainViewModelRuntimeEventIngressController(
+            MainViewModel viewModel,
+            MainViewModelPreviewLifecycleController previewLifecycleController)
         {
             _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            _previewLifecycleController = previewLifecycleController ?? throw new ArgumentNullException(nameof(previewLifecycleController));
         }
 
         public void Attach()
@@ -105,7 +109,7 @@ public partial class MainViewModel
                     {
                         Logger.Log("AUDCLNT_E_DEVICE_INVALIDATED received \u2014 scheduling audio rebind.");
                         _viewModel.EnqueueUiOperation(
-                            () => _viewModel.ReinitializeDeviceAsync("audio device invalidated"),
+                            () => _previewLifecycleController.ReinitializeDeviceAsync("audio device invalidated"),
                             "audio device invalidated reinit");
                     }
                 }
@@ -162,7 +166,7 @@ public partial class MainViewModel
                 }
 
                 Logger.Log("SYSTEM_RESUMING_REINIT_SCHEDULED");
-                return _viewModel.ReinitializeDeviceAsync("system resume");
+                return _previewLifecycleController.ReinitializeDeviceAsync("system resume");
             }, "system resume reinit");
         }
     }

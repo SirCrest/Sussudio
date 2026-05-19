@@ -99,7 +99,11 @@ static partial class Program
             controllerGraphText,
             "var previewLifecycleController = new MainViewModelPreviewLifecycleController(viewModel);",
             "var deviceRefreshController = new MainViewModelDeviceRefreshController(viewModel, previewLifecycleController);");
-        AssertContains(controllerGraphText, "new MainViewModelRuntimeLifecycleController(viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelRuntimeLifecycleController(viewModel, previewLifecycleController)");
+        AssertOccursBefore(
+            controllerGraphText,
+            "var previewLifecycleController = new MainViewModelPreviewLifecycleController(viewModel);",
+            "var runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(viewModel, previewLifecycleController);");
         AssertContains(controllerGraphText, "new MainViewModelDisposalController(viewModel)");
         AssertContains(controllerGraphText, "public MainViewModelDisposalController DisposalController { get; }");
         AssertDoesNotContain(controllerGraphText, "RuntimeLifecycleController.Start();");
@@ -224,7 +228,7 @@ static partial class Program
 
         AssertContains(runtimeLifecycleControllerText, "private sealed class MainViewModelRuntimeLifecycleController");
         AssertContains(runtimeLifecycleControllerText, "private readonly MainViewModelRuntimeEventIngressController _eventIngressController;");
-        AssertContains(runtimeLifecycleControllerText, "_eventIngressController = new MainViewModelRuntimeEventIngressController(_viewModel);");
+        AssertContains(runtimeLifecycleControllerText, "_eventIngressController = new MainViewModelRuntimeEventIngressController(_viewModel, previewLifecycleController);");
         AssertContains(runtimeLifecycleControllerText, "public void Start()");
         AssertContains(runtimeLifecycleControllerText, "=> _eventIngressController.Attach();");
         AssertContains(runtimeLifecycleControllerText, "_eventIngressController.Detach();");
@@ -236,6 +240,12 @@ static partial class Program
         AssertContains(runtimeLifecycleControllerText, "SetupTimer();");
         AssertContains(runtimeLifecycleControllerText, "_viewModel.UpdateDiskSpace();");
         AssertContains(runtimeEventIngressControllerText, "private sealed class MainViewModelRuntimeEventIngressController");
+        AssertContains(runtimeEventIngressControllerText, "private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;");
+        AssertContains(runtimeEventIngressControllerText, "_previewLifecycleController = previewLifecycleController ?? throw new ArgumentNullException(nameof(previewLifecycleController));");
+        AssertContains(runtimeEventIngressControllerText, "_previewLifecycleController.ReinitializeDeviceAsync(\"audio device invalidated\")");
+        AssertContains(runtimeEventIngressControllerText, "_previewLifecycleController.ReinitializeDeviceAsync(\"system resume\")");
+        AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"audio device invalidated\")");
+        AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"system resume\")");
         AssertEqual(
             true,
             runtimeEventIngressControllerText.Split('\n').Length >= 100,

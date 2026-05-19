@@ -118,7 +118,10 @@ static partial class Program
         AssertContains(outputDriveSpacePresentationBuilderText, "Suppressed exception in MainViewModel.RefreshDiskSpace");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "private void OnSystemPowerModeChanged");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "e.Mode != PowerModes.Resume");
-        AssertContains(mainViewModelRuntimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"system resume\")");
+        AssertContains(mainViewModelRuntimeLifecycleControllerText, "new MainViewModelRuntimeEventIngressController(_viewModel, previewLifecycleController)");
+        AssertContains(mainViewModelRuntimeEventIngressControllerText, "_previewLifecycleController.ReinitializeDeviceAsync(\"audio device invalidated\")");
+        AssertContains(mainViewModelRuntimeEventIngressControllerText, "_previewLifecycleController.ReinitializeDeviceAsync(\"system resume\")");
+        AssertDoesNotContain(mainViewModelRuntimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"system resume\")");
         AssertContains(mainViewModelCapturePresentationText, "partial void OnIsPreviewingChanged(bool value)");
         AssertContains(mainViewModelCapturePresentationText, "ResetLiveCaptureInfo();");
         AssertDoesNotContain(mainViewModelRuntimeLifecycleControllerText, "private void UpdateDiskSpace()");

@@ -15,10 +15,12 @@ public partial class MainViewModel
         private readonly MainViewModelRuntimeEventIngressController _eventIngressController;
         private DispatcherQueueTimer? _timer;
 
-        public MainViewModelRuntimeLifecycleController(MainViewModel viewModel)
+        public MainViewModelRuntimeLifecycleController(
+            MainViewModel viewModel,
+            MainViewModelPreviewLifecycleController previewLifecycleController)
         {
             _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
-            _eventIngressController = new MainViewModelRuntimeEventIngressController(_viewModel);
+            _eventIngressController = new MainViewModelRuntimeEventIngressController(_viewModel, previewLifecycleController);
         }
 
         public void Start()

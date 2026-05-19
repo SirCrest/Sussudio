@@ -2595,8 +2595,9 @@ Primary current owners:
   source-telemetry/HDR/live-info/timer/disk-space bootstrap, while
   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs`
   owns runtime event subscription/unsubscription, system-resume preview rebind
-  handling, capture status/error fan-out, capture pre-cleanup renderer stop
-  fan-out, and frame-captured callbacks.
+  handling, audio-device-invalidated rebind scheduling through the preview
+  lifecycle owner, capture status/error fan-out, capture pre-cleanup renderer
+  stop fan-out, and frame-captured callbacks.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`
   owns late device-format probe event ingress, UI enqueue/generation checks,
   selected-device capability refresh, and handoff to the retarget applier.

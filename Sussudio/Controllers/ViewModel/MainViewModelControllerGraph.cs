@@ -68,7 +68,7 @@ public partial class MainViewModel
             var deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(viewModel);
             var sourceTelemetryController = new MainViewModelSourceTelemetryController(viewModel);
             var deviceRefreshController = new MainViewModelDeviceRefreshController(viewModel, previewLifecycleController);
-            var runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(viewModel);
+            var runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(viewModel, previewLifecycleController);
             var disposalController = new MainViewModelDisposalController(viewModel);
 
             return new MainViewModelControllerGraph(
