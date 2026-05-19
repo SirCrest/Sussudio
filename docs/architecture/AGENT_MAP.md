@@ -2516,10 +2516,12 @@ Primary current owners:
   owns the audio ramp diagnostic ring buffer and sampler, while
   `Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs` keeps the
   automation-facing adapter methods plus trace recorder and preview-volume
-  transition controller wiring. `PreviewAudioVolumeTransitionController`
-  owns preview-volume save suppression/override state plus the preview-audio
-  ramp constants, easing, priming, restoring, and property-to-session volume
-  forwarding. `MainViewModel.AudioMonitoring.cs` owns preview monitoring
+  transition controller wiring. `PreviewAudioVolumeTransitionController.cs`
+  owns preview-volume save suppression/override state, priming, restoring,
+  trace adapters, and property-to-session volume forwarding.
+  `PreviewAudioVolumeTransitionController.Ramps.cs` owns preview-audio ramp
+  constants, easing, and async ramp-down/ramp-up execution.
+  `MainViewModel.AudioMonitoring.cs` owns preview monitoring
   coordinator sequencing. `MainViewModel.AudioPropertyChanges.cs` owns audio
   capture and audio-preview property-change handlers.
   `MainViewModel.AudioInputSelection.cs`

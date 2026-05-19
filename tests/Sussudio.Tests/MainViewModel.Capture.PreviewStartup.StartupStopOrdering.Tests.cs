@@ -237,7 +237,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioMonitoringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs")
             .Replace("\r\n", "\n");
-        var audioVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs")
+        var audioVolumeTransitionText = string.Join(
+                "\n",
+                ReadRepoFile("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs"),
+                ReadRepoFile("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.Ramps.cs"))
             .Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
             .Replace("\r\n", "\n");

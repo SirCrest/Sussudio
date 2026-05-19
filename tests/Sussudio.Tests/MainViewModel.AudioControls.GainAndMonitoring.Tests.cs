@@ -55,7 +55,10 @@ static partial class Program
         var monitoringCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs");
         var audioPropertyChangesCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioPropertyChanges.cs");
         var audioInputSelectionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioInputSelection.cs");
-        var transitionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs");
+        var transitionCode =
+            ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs") +
+            "\n" +
+            ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.Ramps.cs");
         var previewChanged = ExtractMemberCode(monitoringCode, "OnPreviewVolumeChanged");
         var handlePreviewChanged = ExtractMemberCode(transitionCode, "HandlePreviewVolumeChanged");
         var rampDown = ExtractMemberCode(transitionCode, "RampDownForAudioTransitionAsync");
@@ -74,7 +77,7 @@ static partial class Program
         AssertContains(monitoringCode, "internal void SavePreviewVolume() => SaveSettings();");
         AssertDoesNotContain(monitoringCode, "OnIsAudioPreviewEnabledChanged");
         AssertDoesNotContain(monitoringCode, "private const int PreviewAudioRampDownSteps");
-        AssertContains(transitionCode, "internal sealed class PreviewAudioVolumeTransitionController");
+        AssertContains(transitionCode, "internal sealed partial class PreviewAudioVolumeTransitionController");
         AssertContains(transitionCode, "private const int RampDownSteps = 18;");
         AssertContains(transitionCode, "private const int RampDownDelayMs = 25;");
         AssertContains(transitionCode, "private const int RampUpSteps = 30;");

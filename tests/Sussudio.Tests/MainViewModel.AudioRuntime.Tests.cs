@@ -63,7 +63,11 @@ static partial class Program
     {
         var traceModelsText = ReadRepoFile("Sussudio/Models/Audio/AudioRampTraceModels.cs").Replace("\r\n", "\n");
         var audioMonitoringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs").Replace("\r\n", "\n");
-        var audioVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs").Replace("\r\n", "\n");
+        var audioVolumeTransitionText = string.Join(
+            "\n",
+            ReadRepoFile("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs"),
+            ReadRepoFile("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.Ramps.cs"))
+            .Replace("\r\n", "\n");
         var audioRampTraceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs").Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var audioRampTraceRecorderText = ReadRepoFile("Sussudio/ViewModels/AudioRampTraceRecorder.cs").Replace("\r\n", "\n");
@@ -115,6 +119,7 @@ static partial class Program
         AssertContains(audioVolumeTransitionText, "BeginTraceSession(");
         AssertContains(audioVolumeTransitionText, "RecordTracePoint(\"volume-set\")");
         AssertContains(audioVolumeTransitionText, "RecordTracePoint(\"primed\"");
+        AssertContains(audioVolumeTransitionText, "public Task RampDownForStopAsync(CancellationToken cancellationToken)");
         AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"monitoring-started\"");
         AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"monitoring-stopped\"");
         AssertContains(audioRampTraceText, "GetAudioRampTraceSnapshotAsync");
