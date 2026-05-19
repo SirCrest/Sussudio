@@ -223,6 +223,41 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task PreviewRuntimeD3DRendererStatePolicy_PreservesNullRendererDefaults()
+    {
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DRendererStatePolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeD3DRendererStatePolicy.Evaluate not found.");
+
+        var previewingState = evaluate.Invoke(null, new object[] { null!, true })
+                              ?? throw new InvalidOperationException("PreviewRuntimeD3DRendererStatePolicy returned null.");
+        AssertEqual("CpuSoftwareBitmap", GetStringProperty(previewingState, "RendererMode"), "null D3D previewing renderer mode");
+        AssertEqual(0, GetIntProperty(previewingState, "PresentSyncInterval"), "null D3D present sync interval");
+        AssertEqual(0, GetIntProperty(previewingState, "MaxFrameLatency"), "null D3D max frame latency");
+        AssertEqual(0, GetIntProperty(previewingState, "SwapChainBufferCount"), "null D3D swap-chain buffer count");
+        AssertEqual(string.Empty, GetStringProperty(previewingState, "SwapChainAddress"), "null D3D swap-chain address");
+        AssertEqual(0L, GetLongProperty(previewingState, "RenderThreadFailureCount"), "null D3D render-thread failure count");
+        AssertEqual(string.Empty, GetStringProperty(previewingState, "LastRenderThreadFailureType"), "null D3D failure type");
+        AssertEqual(string.Empty, GetStringProperty(previewingState, "LastRenderThreadFailureMessage"), "null D3D failure message");
+        AssertEqual(0, GetIntProperty(previewingState, "LastRenderThreadFailureHResult"), "null D3D failure HRESULT");
+        AssertEqual(0, GetIntProperty(previewingState, "PendingFrameCount"), "null D3D pending frame count");
+        AssertEqual("None", GetStringProperty(previewingState, "InputColorSpace"), "null D3D input color space");
+        AssertEqual("None", GetStringProperty(previewingState, "OutputColorSpace"), "null D3D output color space");
+        var recentSlowFrames = GetPropertyValue(previewingState, "RecentSlowFrames") as Array
+                               ?? throw new InvalidOperationException("RecentSlowFrames was not an array.");
+        AssertEqual(0, recentSlowFrames.Length, "null D3D recent slow-frame count");
+        AssertEqual("None", GetStringProperty(previewingState, "GpuPlaybackState"), "null D3D GPU playback state");
+        AssertEqual(0, GetIntProperty(previewingState, "NaturalVideoWidth"), "null D3D natural video width");
+        AssertEqual(0, GetIntProperty(previewingState, "NaturalVideoHeight"), "null D3D natural video height");
+        AssertEqual(0d, GetDoubleProperty(previewingState, "PositionMs"), "null D3D GPU position");
+
+        var idleState = evaluate.Invoke(null, new object[] { null!, false })
+                        ?? throw new InvalidOperationException("PreviewRuntimeD3DRendererStatePolicy returned null for idle.");
+        AssertEqual("None", GetStringProperty(idleState, "RendererMode"), "null D3D idle renderer mode");
+
+        return Task.CompletedTask;
+    }
+
     private static Task PreviewRuntimeD3DDisplayCadencePolicy_PreservesNullRendererDefaults()
     {
         var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DDisplayCadencePolicy");

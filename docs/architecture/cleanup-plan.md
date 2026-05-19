@@ -769,6 +769,10 @@ and controller-provided clock/tick values.
 owns preview startup elapsed timing plus blank/stall suspicion policy.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameCounterPolicy.cs`
 owns the D3D-vs-CPU frame-counter fallback rules used by preview diagnostics.
+`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DRendererStatePolicy.cs`
+owns renderer state projection defaults, including renderer mode fallback,
+swap-chain details, render-thread failure fields, color spaces, recent slow
+frames, and GPU playback state.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DDisplayCadencePolicy.cs`
 owns D3D display cadence projection defaults, including recent present intervals,
 low-FPS summaries, jitter, and slow-frame percentages.
@@ -790,7 +794,7 @@ handle state, wait counters, last result, and wait timing metrics.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs` owns
 the renderer projection data contract.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.Builder.cs`
-owns remaining D3D diagnostic field mapping and GPU playback projection.
+owns remaining D3D diagnostic field composition.
 Close routing/finalization handling remains in the explicit window close
 lifecycle owners below.
 

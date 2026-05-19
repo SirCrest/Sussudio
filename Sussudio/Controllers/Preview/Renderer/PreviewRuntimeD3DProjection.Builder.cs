@@ -1,7 +1,3 @@
-using System;
-using Sussudio.Models;
-using Sussudio.Services.Preview;
-
 namespace Sussudio.Controllers;
 
 internal sealed partial class PreviewRuntimeD3DProjection
@@ -10,6 +6,7 @@ internal sealed partial class PreviewRuntimeD3DProjection
     {
         var d3d = input.D3DRenderer;
         var frameCounters = PreviewRuntimeD3DFrameCounterPolicy.Evaluate(input);
+        var rendererState = PreviewRuntimeD3DRendererStatePolicy.Evaluate(d3d, input.IsPreviewing);
         var displayCadence = PreviewRuntimeD3DDisplayCadencePolicy.Evaluate(d3d, input.PreviewMinPresentationIntervalMs);
         var renderCpuTiming = PreviewRuntimeD3DRenderCpuTimingPolicy.Evaluate(d3d);
         var frameOwnership = PreviewRuntimeD3DFrameOwnershipPolicy.Evaluate(d3d);
@@ -24,7 +21,7 @@ internal sealed partial class PreviewRuntimeD3DProjection
             FramesArrived = frameCounters.FramesArrived,
             FramesDisplayed = frameCounters.FramesDisplayed,
             FramesDropped = frameCounters.FramesDropped,
-            RendererMode = d3d?.RendererMode ?? (input.IsPreviewing ? "CpuSoftwareBitmap" : "None"),
+            RendererMode = rendererState.RendererMode,
             DisplayCadenceSampleCount = displayCadence.SampleCount,
             DisplayCadenceObservedFps = displayCadence.ObservedFps,
             DisplayCadenceExpectedIntervalMs = displayCadence.ExpectedIntervalMs,
@@ -39,20 +36,20 @@ internal sealed partial class PreviewRuntimeD3DProjection
             DisplayCadenceJitterStdDevMs = displayCadence.JitterStdDevMs,
             DisplayCadenceSlowFrameCount = displayCadence.SlowFrameCount,
             DisplayCadenceSlowFramePercent = displayCadence.SlowFramePercent,
-            D3DPresentSyncInterval = d3d?.PresentSyncInterval ?? 0,
-            D3DMaxFrameLatency = d3d?.DxgiMaxFrameLatency ?? 0,
-            D3DSwapChainBufferCount = d3d?.SwapChainBufferCount ?? 0,
-            D3DSwapChainAddress = d3d?.SwapChainAddress ?? string.Empty,
+            D3DPresentSyncInterval = rendererState.PresentSyncInterval,
+            D3DMaxFrameLatency = rendererState.MaxFrameLatency,
+            D3DSwapChainBufferCount = rendererState.SwapChainBufferCount,
+            D3DSwapChainAddress = rendererState.SwapChainAddress,
             D3DFramesSubmitted = frameCounters.D3DFramesSubmitted,
             D3DFramesRendered = frameCounters.D3DFramesRendered,
             D3DFramesDropped = frameCounters.D3DFramesDropped,
-            D3DRenderThreadFailureCount = d3d?.RenderThreadFailureCount ?? 0,
-            D3DLastRenderThreadFailureType = d3d?.LastRenderThreadFailureType ?? string.Empty,
-            D3DLastRenderThreadFailureMessage = d3d?.LastRenderThreadFailureMessage ?? string.Empty,
-            D3DLastRenderThreadFailureHResult = d3d?.LastRenderThreadFailureHResult ?? 0,
-            D3DPendingFrameCount = d3d?.PendingFrameCount ?? 0,
-            D3DInputColorSpace = d3d?.InputColorSpaceLabel ?? "None",
-            D3DOutputColorSpace = d3d?.OutputColorSpaceLabel ?? "None",
+            D3DRenderThreadFailureCount = rendererState.RenderThreadFailureCount,
+            D3DLastRenderThreadFailureType = rendererState.LastRenderThreadFailureType,
+            D3DLastRenderThreadFailureMessage = rendererState.LastRenderThreadFailureMessage,
+            D3DLastRenderThreadFailureHResult = rendererState.LastRenderThreadFailureHResult,
+            D3DPendingFrameCount = rendererState.PendingFrameCount,
+            D3DInputColorSpace = rendererState.InputColorSpace,
+            D3DOutputColorSpace = rendererState.OutputColorSpace,
             D3DCpuTimingSampleCount = renderCpuTiming.SampleCount,
             D3DInputUploadCpuAvgMs = renderCpuTiming.InputUploadAverageMs,
             D3DInputUploadCpuP95Ms = renderCpuTiming.InputUploadP95Ms,
@@ -118,12 +115,12 @@ internal sealed partial class PreviewRuntimeD3DProjection
             D3DLastDroppedQpc = frameOwnership.LastDroppedQpc,
             D3DLastDroppedUtcUnixMs = frameOwnership.LastDroppedUtcUnixMs,
             D3DLastDropReason = frameOwnership.LastDropReason,
-            D3DRecentSlowFrames = d3d?.GetRecentSlowFrameDiagnostics() ?? Array.Empty<PreviewSlowFrameDiagnostic>(),
+            D3DRecentSlowFrames = rendererState.RecentSlowFrames,
             EstimatedPipelineLatencyMs = pipelineLatency.EstimatedPipelineLatencyMs,
-            GpuPlaybackState = d3d == null ? "None" : (d3d.IsRendering ? "Rendering" : "Idle"),
-            GpuNaturalVideoWidth = d3d?.NaturalWidth ?? 0,
-            GpuNaturalVideoHeight = d3d?.NaturalHeight ?? 0,
-            GpuPositionMs = 0
+            GpuPlaybackState = rendererState.GpuPlaybackState,
+            GpuNaturalVideoWidth = rendererState.NaturalVideoWidth,
+            GpuNaturalVideoHeight = rendererState.NaturalVideoHeight,
+            GpuPositionMs = rendererState.PositionMs
         };
     }
 }
