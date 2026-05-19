@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -30,6 +32,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly MainViewModelUiDispatchController _uiDispatchController;
     private readonly MainViewModelDeviceFormatProbeController _deviceFormatProbeController;
     private readonly MainViewModelSourceTelemetryController _sourceTelemetryController;
+    private readonly MainViewModelDeviceRefreshController _deviceRefreshController;
     private readonly MainViewModelRuntimeLifecycleController _runtimeLifecycleController;
     private readonly MainViewModelRecordingTransitionController _recordingTransitionController;
     private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;
@@ -69,6 +72,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public Task ApplySelectedDeviceAsync(CaptureDevice device, CancellationToken cancellationToken = default)
         => _previewLifecycleController.ApplySelectedDeviceAsync(device, cancellationToken);
 
+    public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)
+        => _deviceRefreshController.RefreshDevicesAsync(cancellationToken);
+
     private Task ReinitializeDeviceAsync(string reason)
         => _previewLifecycleController.ReinitializeDeviceAsync(reason);
 
@@ -94,6 +100,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     internal Task StopRecordingForEmergencyAsync(CancellationToken cancellationToken = default)
         => _sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);
+
+    private static void ReplaceCollection<T>(ObservableCollection<T> target, IReadOnlyList<T> source)
+    {
+        target.Clear();
+        foreach (var item in source)
+        {
+            target.Add(item);
+        }
+    }
 
     public MainViewModel()
         : this(MainViewModelDependencies.CreateDefault())
@@ -122,6 +137,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _captureModeOptionRebuildController = controllerGraph.CaptureModeOptionRebuildController;
         _deviceFormatProbeController = controllerGraph.DeviceFormatProbeController;
         _sourceTelemetryController = controllerGraph.SourceTelemetryController;
+        _deviceRefreshController = controllerGraph.DeviceRefreshController;
         _runtimeLifecycleController = controllerGraph.RuntimeLifecycleController;
         _disposalController = controllerGraph.DisposalController;
 
@@ -160,7 +176,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Watcher-driven audio endpoint discovery: MainViewModel.AudioDeviceDiscovery.cs
     // Audio capture/preview property changes: MainViewModel.AudioPropertyChanges.cs
     // Audio input/microphone property changes: focused partials
-    // Device management: MainViewModel.DeviceManagement.cs
+    // Device refresh facade: this file; refresh owner: MainViewModelDeviceRefreshController.cs
     // Device selection reactions: MainViewModel.DeviceSelection.cs
     // Device format probe reconciliation: MainViewModelDeviceFormatProbeController.cs; pure retarget policy: DeviceFormatProbeRetargetPolicy.cs
     // Capture mode transactions: MainViewModel.CaptureModeTransactions.cs

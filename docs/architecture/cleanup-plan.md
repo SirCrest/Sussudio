@@ -852,7 +852,8 @@ export forwarding, and active playback-controller readiness checks now live in
 `Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs`.
 
 Device discovery ownership is split across `DeviceService.*.cs`. Keep root
-enumeration orchestration in `DeviceService.cs`, format cache serialization in
+capture/audio enumeration orchestration and the combined discovery result in
+`DeviceService.cs`, format cache serialization in
 `DeviceService.FormatCache.cs`, inline/background format probing in
 `DeviceService.FormatProbe.cs`, device priority/capability scoring in
 `DeviceService.Scoring.cs`, audio endpoint association in
@@ -3552,10 +3553,16 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.FrameRateTiming.cs` keeps the stateful wrappers over
    resolution capabilities, runtime snapshots, source telemetry, selected
    formats, and UI selection state;
-   keep device enumeration and collection replacement in
-   `MainViewModel.DeviceManagement.cs`, while selected capture-device reactions,
-   capability projection, source telemetry reset, and device-native audio-control
-   refresh handoff live in `MainViewModel.DeviceSelection.cs`. Capture-mode property-change
+   the root `MainViewModel.cs` keeps the public capture-device refresh
+   compatibility facade, while
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs`
+   owns startup refresh orchestration: requesting the combined discovery result,
+   applying audio-device startup selection, replacing the capture-device collection,
+   starting background format probes, restoring saved capture-device selection,
+   and auto-starting preview. The shallow `MainViewModel.DeviceManagement.cs`
+   partial was retired rather than preserving a sub-100-line facade. Selected
+   capture-device reactions, capability projection, source telemetry reset, and
+   device-native audio-control refresh handoff live in `MainViewModel.DeviceSelection.cs`. Capture-mode property-change
    hooks live in `MainViewModel.CaptureModePropertyChanges.cs` and startup
    audio-list and watcher-driven audio endpoint refresh adaptation live in
    `MainViewModel.AudioDeviceDiscovery.cs`. Pure audio-device filtering and

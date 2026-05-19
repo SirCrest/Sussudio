@@ -43,8 +43,15 @@ public partial class DeviceService
 
     public async Task<ObservableCollection<CaptureDevice>> EnumerateVideoCaptureDevicesAsync(bool waitForFormatProbes = true)
     {
+        var discovery = await EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes).ConfigureAwait(false);
+        return discovery.CaptureDevices;
+    }
+
+    public async Task<DeviceDiscoveryResult> EnumerateCaptureDeviceDiscoveryAsync(bool waitForFormatProbes = true)
+    {
         var discoveryStopwatch = Stopwatch.StartNew();
         var discovered = new ObservableCollection<CaptureDevice>();
+        var noAudioDevices = Array.Empty<AudioInputDevice>();
 
         List<MfDeviceEnumerator.MfVideoDeviceInfo> videoDevices;
         List<AudioInputDevice> audioDevices;
@@ -60,7 +67,7 @@ public partial class DeviceService
         {
             LastDiscoverySummary = $"Video devices: enumeration failed ({ex.GetType().Name}: {ex.Message})";
             Logger.Log($"Device discovery failed while querying MF/WASAPI enumerators: {ex}");
-            return discovered;
+            return new DeviceDiscoveryResult(discovered, noAudioDevices);
         }
 
         if (videoDevices.Count == 0)
@@ -126,7 +133,7 @@ public partial class DeviceService
             $"first-list-ms={discoveryStopwatch.ElapsedMilliseconds}, format-probes={(waitForFormatProbes ? "inline" : "background")}";
         Logger.Log($"Device discovery summary: {LastDiscoverySummary}");
 
-        return discovered;
+        return new DeviceDiscoveryResult(discovered, audioDevices);
     }
 
     private sealed record DeviceCandidate(
@@ -137,6 +144,10 @@ public partial class DeviceService
         bool PreferredByName,
         bool LikelyByCapability,
         bool LikelyByName);
+
+    public sealed record DeviceDiscoveryResult(
+        ObservableCollection<CaptureDevice> CaptureDevices,
+        IReadOnlyList<AudioInputDevice> AudioInputDevices);
 
     public sealed record DeviceFormatProbeCompletedEventArgs(
         string DeviceId,

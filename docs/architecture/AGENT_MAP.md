@@ -455,8 +455,8 @@ Important entry points:
   steady-state resolution for `CaptureService`; `CaptureService.Coordination.cs`
   owns the named session-state mutation helpers used by normal transitions,
   cleanup, disposal, and fatal cleanup.
-- `DeviceService.cs` owns capture/audio device enumeration orchestration and
-  discovery summary state.
+- `DeviceService.cs` owns capture/audio device enumeration orchestration, the
+  combined discovery result used by startup refresh, and discovery summary state.
 - `DeviceService.FormatCache.cs` owns persisted format-cache DTOs and
   load/save/delete helpers.
 - `DeviceService.FormatProbe.cs` owns inline/background Media Foundation format
@@ -2701,10 +2701,15 @@ Primary current owners:
   `Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs` owns pure recording
   codec filtering, selected-codec fallback policy, string-to-model format/quality
   parsing, and custom bitrate clamp policy shared by UI and automation.
-  Video device enumeration and collection replacement stay in
-  `MainViewModel.DeviceManagement.cs`; selected capture-device reactions,
-  capability projection, source telemetry reset, and device-native audio-control
-  refresh handoff live in `MainViewModel.DeviceSelection.cs`; capture-mode property-change hooks live
+  the root `MainViewModel.cs` keeps the public capture-device refresh facade,
+  while `Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs`
+  owns startup refresh orchestration: requesting the combined discovery result,
+  applying audio-device startup selection, replacing the capture-device collection,
+  starting background format probes, restoring saved capture-device selection,
+  and auto-starting preview. The shallow `MainViewModel.DeviceManagement.cs`
+  partial was retired instead of keeping another sub-100-line facade. Selected
+  capture-device reactions, capability projection, source telemetry reset, and
+  device-native audio-control refresh handoff live in `MainViewModel.DeviceSelection.cs`; capture-mode property-change hooks live
   in `MainViewModel.CaptureModePropertyChanges.cs`; startup audio-list and
   watcher-driven audio endpoint refresh adaptation lives in `MainViewModel.AudioDeviceDiscovery.cs`.
   `Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs` owns pure capture-card

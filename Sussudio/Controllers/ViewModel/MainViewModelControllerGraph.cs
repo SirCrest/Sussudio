@@ -20,6 +20,7 @@ public partial class MainViewModel
             MainViewModelCaptureModeOptionRebuildController captureModeOptionRebuildController,
             MainViewModelDeviceFormatProbeController deviceFormatProbeController,
             MainViewModelSourceTelemetryController sourceTelemetryController,
+            MainViewModelDeviceRefreshController deviceRefreshController,
             MainViewModelRuntimeLifecycleController runtimeLifecycleController,
             MainViewModelDisposalController disposalController)
         {
@@ -33,6 +34,7 @@ public partial class MainViewModel
             CaptureModeOptionRebuildController = captureModeOptionRebuildController;
             DeviceFormatProbeController = deviceFormatProbeController;
             SourceTelemetryController = sourceTelemetryController;
+            DeviceRefreshController = deviceRefreshController;
             RuntimeLifecycleController = runtimeLifecycleController;
             DisposalController = disposalController;
         }
@@ -47,6 +49,7 @@ public partial class MainViewModel
         public MainViewModelCaptureModeOptionRebuildController CaptureModeOptionRebuildController { get; }
         public MainViewModelDeviceFormatProbeController DeviceFormatProbeController { get; }
         public MainViewModelSourceTelemetryController SourceTelemetryController { get; }
+        public MainViewModelDeviceRefreshController DeviceRefreshController { get; }
         public MainViewModelRuntimeLifecycleController RuntimeLifecycleController { get; }
         public MainViewModelDisposalController DisposalController { get; }
 
@@ -64,6 +67,7 @@ public partial class MainViewModel
             var captureModeOptionRebuildController = new MainViewModelCaptureModeOptionRebuildController(viewModel);
             var deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(viewModel);
             var sourceTelemetryController = new MainViewModelSourceTelemetryController(viewModel);
+            var deviceRefreshController = new MainViewModelDeviceRefreshController(viewModel);
             var runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(viewModel);
             var disposalController = new MainViewModelDisposalController(viewModel);
 
@@ -78,6 +82,7 @@ public partial class MainViewModel
                 captureModeOptionRebuildController,
                 deviceFormatProbeController,
                 sourceTelemetryController,
+                deviceRefreshController,
                 runtimeLifecycleController,
                 disposalController);
         }

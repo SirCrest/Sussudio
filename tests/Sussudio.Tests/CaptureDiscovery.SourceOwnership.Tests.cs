@@ -17,6 +17,11 @@ static partial class Program
         var mfInteropHelpersText = ReadRepoFile("Sussudio/Services/Capture/MfInteropHelpers.cs").Replace("\r\n", "\n");
 
         AssertContains(deviceRootText, "var likelyByCapability = LooksLikeHighBandwidthCapture(captureDevice);");
+        AssertContains(deviceRootText, "public async Task<DeviceDiscoveryResult> EnumerateCaptureDeviceDiscoveryAsync(");
+        AssertContains(deviceRootText, "public async Task<ObservableCollection<CaptureDevice>> EnumerateVideoCaptureDevicesAsync(");
+        AssertContains(deviceRootText, "return discovery.CaptureDevices;");
+        AssertContains(deviceRootText, "var audioTask = MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync();");
+        AssertContains(deviceRootText, "return new DeviceDiscoveryResult(discovered, audioDevices);");
         AssertContains(deviceRootText, "foreach (var candidate in selected.OrderByDescending(GetDevicePriority))");
         AssertContains(deviceScoringText, "private static int GetDevicePriority(DeviceCandidate candidate)");
         AssertContains(deviceScoringText, "if (candidate.PreferredByName) priority += 400;");
