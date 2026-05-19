@@ -2599,6 +2599,9 @@ Primary current owners:
   system-resume preview rebind handling, audio-device-invalidated rebind
   scheduling through the preview lifecycle owner, capture status/error fan-out,
   capture pre-cleanup renderer stop fan-out, and frame-captured callbacks.
+  `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Context.cs`
+  owns the runtime event ingress graph-port contract that both handlers and
+  subscription wiring consume.
   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Subscriptions.cs`
   owns runtime event subscription/unsubscription ordering through graph-built
   context ports, including the desktop power-resume signal.

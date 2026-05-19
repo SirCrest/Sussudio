@@ -23,6 +23,7 @@ static partial class Program
         var deviceFormatProbeRetargetApplierText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs").Replace("\r\n", "\n");
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs").Replace("\r\n", "\n");
         var runtimeEventIngressControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs").Replace("\r\n", "\n");
+        var runtimeEventIngressContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Context.cs").Replace("\r\n", "\n");
         var runtimeEventIngressSubscriptionsText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Subscriptions.cs").Replace("\r\n", "\n");
         var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs").Replace("\r\n", "\n");
         var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs").Replace("\r\n", "\n");
@@ -405,7 +406,7 @@ static partial class Program
         AssertContains(runtimeLifecycleControllerText, "_context.UpdateDiskSpace();");
         AssertContains(runtimeEventIngressControllerText, "private sealed partial class MainViewModelRuntimeEventIngressController");
         AssertContains(runtimeEventIngressSubscriptionsText, "private sealed partial class MainViewModelRuntimeEventIngressController");
-        AssertContains(runtimeEventIngressControllerText, "private sealed class MainViewModelRuntimeEventIngressControllerContext");
+        AssertContains(runtimeEventIngressContextText, "private sealed class MainViewModelRuntimeEventIngressControllerContext");
         AssertContains(runtimeEventIngressControllerText, "private readonly MainViewModelRuntimeEventIngressControllerContext _context;");
         AssertDoesNotContain(runtimeEventIngressControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.");
@@ -413,6 +414,8 @@ static partial class Program
         AssertContains(runtimeEventIngressControllerText, "_context.ReinitializeDeviceAsync(\"system resume\")");
         AssertContains(controllerGraphRuntimeText, "private static MainViewModelRuntimeEventIngressController CreateRuntimeEventIngressController(");
         AssertContains(controllerGraphRuntimeText, "new MainViewModelRuntimeEventIngressControllerContext");
+        AssertContains(runtimeEventIngressContextText, "public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }");
+        AssertContains(runtimeEventIngressContextText, "public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }");
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"audio device invalidated\")");
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"system resume\")");
         AssertEqual(

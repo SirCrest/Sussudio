@@ -51,6 +51,7 @@ static partial class Program
         var mainViewModelSourceTelemetryControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelSourceTelemetryController.cs"));
         var mainViewModelRuntimeLifecycleControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeLifecycleController.cs"));
         var mainViewModelRuntimeEventIngressControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeEventIngressController.cs"));
+        var mainViewModelRuntimeEventIngressContextText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeEventIngressController.Context.cs"));
         var mainViewModelRuntimeEventIngressSubscriptionsText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeEventIngressController.Subscriptions.cs"));
         var mainViewModelDisposalControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDisposalController.cs"));
         var mainViewModelRecordingStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.RecordingState.cs"));
@@ -147,8 +148,10 @@ static partial class Program
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "public void InitializePresentation()");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "private sealed partial class MainViewModelRuntimeEventIngressController");
         AssertContains(mainViewModelRuntimeEventIngressSubscriptionsText, "private sealed partial class MainViewModelRuntimeEventIngressController");
-        AssertContains(mainViewModelRuntimeEventIngressControllerText, "private sealed class MainViewModelRuntimeEventIngressControllerContext");
+        AssertContains(mainViewModelRuntimeEventIngressContextText, "private sealed class MainViewModelRuntimeEventIngressControllerContext");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "private readonly MainViewModelRuntimeEventIngressControllerContext _context;");
+        AssertContains(mainViewModelRuntimeEventIngressContextText, "public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }");
+        AssertContains(mainViewModelRuntimeEventIngressContextText, "public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }");
         AssertDoesNotContain(mainViewModelRuntimeEventIngressControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(mainViewModelRuntimeEventIngressControllerText, "_viewModel.");
         AssertContains(mainViewModelRuntimeEventIngressSubscriptionsText, "public void Attach()");

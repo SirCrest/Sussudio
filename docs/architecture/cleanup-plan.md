@@ -3488,6 +3488,10 @@ owner, fold it back into that owner and update the source-shape tests and
    for system-resume preview rebind handling, audio-device-invalidated rebind
    scheduling through the preview lifecycle owner, capture status/error fan-out,
    capture pre-cleanup renderer stop fan-out, and frame-captured callbacks.
+   The runtime event ingress graph-port contract now lives in
+   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Context.cs`
+   so handler logic and subscription wiring consume the same explicit port
+   surface without owning construction details.
    Runtime event subscription/unsubscription ordering through graph-built
    context ports now lives in
    `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Subscriptions.cs`,
