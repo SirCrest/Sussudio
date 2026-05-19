@@ -3171,6 +3171,8 @@ Primary owners:
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs` owns timeline
   table text rendering. `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs`
   owns first-vs-last trend text and target-summary orchestration.
+  `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.cs`
+  owns Flashback playback, command, failure, cleanup, and export trend text.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs` owns compact
   cell, byte, D3D bottleneck, cleanup, export, and optional-value formatting.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs` owns 1%-low
