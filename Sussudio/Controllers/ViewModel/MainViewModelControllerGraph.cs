@@ -103,14 +103,26 @@ public partial class MainViewModel
         private static MainViewModelPreviewLifecycleController CreatePreviewLifecycleController(MainViewModel viewModel)
         {
             return new MainViewModelPreviewLifecycleController(
-                viewModel,
                 new MainViewModelPreviewLifecycleControllerContext
                 {
                     SessionCoordinator = viewModel._sessionCoordinator,
                     BuildCaptureSettings = viewModel.BuildCaptureSettings,
                     InvokeOnUiThreadAsync = (operation, cancellationToken) => viewModel.InvokeOnUiThreadAsync(operation, cancellationToken),
                     RampPreviewVolumeDownForStopAsync = viewModel.RampPreviewVolumeDownForStopAsync,
+                    CreateReinitializeController = controller => new MainViewModelPreviewReinitializeController(viewModel, controller),
+                    SelectedDevice = () => viewModel.SelectedDevice,
+                    SetSelectedDevice = device => viewModel.SelectedDevice = device,
+                    IsInitialized = () => viewModel.IsInitialized,
+                    SetIsInitialized = value => viewModel.IsInitialized = value,
+                    IsPreviewing = () => viewModel.IsPreviewing,
+                    SetIsPreviewing = value => viewModel.IsPreviewing = value,
+                    IsPreviewReinitializing = () => viewModel.IsPreviewReinitializing,
+                    IsRecording = () => viewModel.IsRecording,
+                    ShouldStartAudioPreview = () => viewModel.IsAudioPreviewEnabled && viewModel.IsAudioEnabled,
                     IsAudioPreviewActive = () => viewModel._captureService.IsAudioPreviewActive,
+                    SetStatusText = value => viewModel.StatusText = value,
+                    RaisePreviewStartRequested = () => viewModel.PreviewStartRequested?.Invoke(viewModel, EventArgs.Empty),
+                    RaisePreviewStopRequested = () => viewModel.PreviewStopRequested?.Invoke(viewModel, EventArgs.Empty),
                     ApplyLatestSourceTelemetryForPreviewStart = () =>
                         viewModel._sourceTelemetryController.ApplySourceTelemetrySnapshot(
                             viewModel._captureService.GetLatestSourceTelemetrySnapshot(),

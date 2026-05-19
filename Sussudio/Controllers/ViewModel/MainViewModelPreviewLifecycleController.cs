@@ -13,17 +13,13 @@ public partial class MainViewModel
     /// </summary>
     private sealed class MainViewModelPreviewLifecycleController
     {
-        private readonly MainViewModel _viewModel;
         private readonly MainViewModelPreviewLifecycleControllerContext _context;
         private readonly MainViewModelPreviewReinitializeController _previewReinitializeController;
 
-        public MainViewModelPreviewLifecycleController(
-            MainViewModel viewModel,
-            MainViewModelPreviewLifecycleControllerContext context)
+        public MainViewModelPreviewLifecycleController(MainViewModelPreviewLifecycleControllerContext context)
         {
-            _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
             _context = context ?? throw new ArgumentNullException(nameof(context));
-            _previewReinitializeController = new MainViewModelPreviewReinitializeController(_viewModel, this);
+            _previewReinitializeController = _context.CreateReinitializeController(this);
         }
 
         public void CancelPendingPreviewRestart()
@@ -31,7 +27,8 @@ public partial class MainViewModel
 
         public async Task InitializeDeviceAsync(CancellationToken cancellationToken = default)
         {
-            if (_viewModel.SelectedDevice == null)
+            var selectedDevice = _context.SelectedDevice();
+            if (selectedDevice == null)
             {
                 Logger.Log("ERROR: SelectedDevice is NULL");
                 return;
@@ -40,28 +37,28 @@ public partial class MainViewModel
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                _viewModel.StatusText = "Initializing device...";
+                _context.SetStatusText("Initializing device...");
                 var settings = _context.BuildCaptureSettings();
                 Logger.Log(
-                    $"CAPTURE_INIT device='{_viewModel.SelectedDevice.Name}' id='{_viewModel.SelectedDevice.Id}' format={settings.Format} {settings.Width}x{settings.Height}@{settings.FrameRate} hdr={settings.HdrEnabled} audio={settings.AudioEnabled}");
+                    $"CAPTURE_INIT device='{selectedDevice.Name}' id='{selectedDevice.Id}' format={settings.Format} {settings.Width}x{settings.Height}@{settings.FrameRate} hdr={settings.HdrEnabled} audio={settings.AudioEnabled}");
 
-                await _context.SessionCoordinator.InitializeAsync(_viewModel.SelectedDevice, settings, cancellationToken);
+                await _context.SessionCoordinator.InitializeAsync(selectedDevice, settings, cancellationToken);
 
-                _viewModel.IsInitialized = true;
-                _viewModel.StatusText = "Device ready";
+                _context.SetIsInitialized(true);
+                _context.SetStatusText("Device ready");
                 Logger.Log("CAPTURE_INIT_READY");
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                _viewModel.StatusText = "Device initialization canceled";
-                _viewModel.IsInitialized = false;
+                _context.SetStatusText("Device initialization canceled");
+                _context.SetIsInitialized(false);
                 throw;
             }
             catch (Exception ex)
             {
                 Logger.LogException(ex);
-                _viewModel.StatusText = $"Failed to initialize: {ex.Message}";
-                _viewModel.IsInitialized = false;
+                _context.SetStatusText($"Failed to initialize: {ex.Message}");
+                _context.SetIsInitialized(false);
             }
         }
 
@@ -73,34 +70,34 @@ public partial class MainViewModel
                 _previewReinitializeController.ResetPendingPreviewRestartCancellation();
             }
 
-            _viewModel.PreviewStartRequested?.Invoke(_viewModel, EventArgs.Empty);
-            Logger.Log($"PREVIEW_START requested initialized={_viewModel.IsInitialized} audio={_viewModel.IsAudioPreviewEnabled && _viewModel.IsAudioEnabled}");
+            _context.RaisePreviewStartRequested();
+            Logger.Log($"PREVIEW_START requested initialized={_context.IsInitialized()} audio={_context.ShouldStartAudioPreview()}");
 
-            if (!_viewModel.IsInitialized)
+            if (!_context.IsInitialized())
             {
                 await InitializeDeviceAsync(cancellationToken);
             }
 
-            if (_viewModel.IsInitialized)
+            if (_context.IsInitialized())
             {
                 var settings = _context.BuildCaptureSettings();
                 await _context.SessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken).ConfigureAwait(true);
 
-                _viewModel.IsPreviewing = true;
-                _viewModel.StatusText = "Preview starting...";
+                _context.SetIsPreviewing(true);
+                _context.SetStatusText("Preview starting...");
 
-                if (_viewModel.IsAudioPreviewEnabled && _viewModel.IsAudioEnabled)
+                if (_context.ShouldStartAudioPreview())
                 {
                     await _context.SessionCoordinator.StartAudioPreviewAsync(cancellationToken);
                 }
 
                 _context.ApplyLatestSourceTelemetryForPreviewStart();
-                Logger.Log($"PREVIEW_START_READY audio={_viewModel.IsAudioPreviewEnabled && _viewModel.IsAudioEnabled}");
+                Logger.Log($"PREVIEW_START_READY audio={_context.ShouldStartAudioPreview()}");
             }
             else
             {
                 Logger.Log("Cannot start preview - device not initialized");
-                _viewModel.StatusText = "Cannot start preview - device not initialized";
+                _context.SetStatusText("Cannot start preview - device not initialized");
             }
         }
 
@@ -108,16 +105,16 @@ public partial class MainViewModel
         {
             return _context.InvokeOnUiThreadAsync(async () =>
             {
-                if (!enabled && _viewModel.IsPreviewReinitializing)
+                if (!enabled && _context.IsPreviewReinitializing())
                 {
                     CancelPendingPreviewRestart();
-                    if (!_viewModel.IsPreviewing)
+                    if (!_context.IsPreviewing())
                     {
                         return;
                     }
                 }
 
-                if (enabled == _viewModel.IsPreviewing)
+                if (enabled == _context.IsPreviewing())
                 {
                     return;
                 }
@@ -136,45 +133,46 @@ public partial class MainViewModel
         public async Task ApplySelectedDeviceAsync(CaptureDevice device, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (_viewModel.IsRecording)
+            if (_context.IsRecording())
             {
-                _viewModel.StatusText = "Stop recording before switching capture devices.";
+                _context.SetStatusText("Stop recording before switching capture devices.");
                 return;
             }
 
-            if (_viewModel.SelectedDevice != null &&
-                string.Equals(_viewModel.SelectedDevice.Id, device.Id, StringComparison.OrdinalIgnoreCase))
+            var selectedDevice = _context.SelectedDevice();
+            if (selectedDevice != null &&
+                string.Equals(selectedDevice.Id, device.Id, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
 
-            Logger.Log($"DEVICE_APPLY_REQUEST device='{device.Name}' id='{device.Id}' preview={_viewModel.IsPreviewing} initialized={_viewModel.IsInitialized}");
-            _viewModel.SelectedDevice = device;
+            Logger.Log($"DEVICE_APPLY_REQUEST device='{device.Name}' id='{device.Id}' preview={_context.IsPreviewing()} initialized={_context.IsInitialized()}");
+            _context.SetSelectedDevice(device);
 
-            if (_viewModel.IsPreviewing)
+            if (_context.IsPreviewing())
             {
                 await ReinitializeDeviceAsync("device selection apply").ConfigureAwait(true);
                 return;
             }
 
-            _viewModel.IsInitialized = false;
-            _viewModel.StatusText = $"Selected device: {device.Name}";
+            _context.SetIsInitialized(false);
+            _context.SetStatusText($"Selected device: {device.Name}");
         }
 
         public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (userInitiated && _viewModel.IsPreviewReinitializing)
+            if (userInitiated && _context.IsPreviewReinitializing())
             {
                 CancelPendingPreviewRestart();
             }
 
-            if (userInitiated && !_viewModel.IsPreviewReinitializing && _context.IsAudioPreviewActive())
+            if (userInitiated && !_context.IsPreviewReinitializing() && _context.IsAudioPreviewActive())
             {
                 await _context.RampPreviewVolumeDownForStopAsync(cancellationToken);
             }
 
-            _viewModel.PreviewStopRequested?.Invoke(_viewModel, EventArgs.Empty);
+            _context.RaisePreviewStopRequested();
             var commitStoppedState = false;
             try
             {
@@ -202,7 +200,7 @@ public partial class MainViewModel
             {
                 if (commitStoppedState)
                 {
-                    _viewModel.IsPreviewing = false;
+                    _context.SetIsPreviewing(false);
                 }
             }
 
@@ -218,9 +216,9 @@ public partial class MainViewModel
                 }
             }
 
-            if (!_viewModel.IsPreviewReinitializing)
+            if (!_context.IsPreviewReinitializing())
             {
-                _viewModel.StatusText = "Preview stopped";
+                _context.SetStatusText("Preview stopped");
             }
         }
 
@@ -234,7 +232,20 @@ public partial class MainViewModel
         public required Func<CaptureSettings> BuildCaptureSettings { get; init; }
         public required Func<Func<Task>, CancellationToken, Task> InvokeOnUiThreadAsync { get; init; }
         public required Func<CancellationToken, Task> RampPreviewVolumeDownForStopAsync { get; init; }
+        public required Func<MainViewModelPreviewLifecycleController, MainViewModelPreviewReinitializeController> CreateReinitializeController { get; init; }
+        public required Func<CaptureDevice?> SelectedDevice { get; init; }
+        public required Action<CaptureDevice> SetSelectedDevice { get; init; }
+        public required Func<bool> IsInitialized { get; init; }
+        public required Action<bool> SetIsInitialized { get; init; }
+        public required Func<bool> IsPreviewing { get; init; }
+        public required Action<bool> SetIsPreviewing { get; init; }
+        public required Func<bool> IsPreviewReinitializing { get; init; }
+        public required Func<bool> IsRecording { get; init; }
+        public required Func<bool> ShouldStartAudioPreview { get; init; }
         public required Func<bool> IsAudioPreviewActive { get; init; }
+        public required Action<string> SetStatusText { get; init; }
+        public required Action RaisePreviewStartRequested { get; init; }
+        public required Action RaisePreviewStopRequested { get; init; }
         public required Action ApplyLatestSourceTelemetryForPreviewStart { get; init; }
     }
 }

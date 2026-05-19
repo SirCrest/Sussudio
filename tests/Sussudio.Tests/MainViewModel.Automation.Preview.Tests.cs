@@ -27,7 +27,7 @@ static partial class Program
         AssertContains(previewLifecycleControllerText, "public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(previewLifecycleControllerText, "return _context.InvokeOnUiThreadAsync(async () =>");
         AssertContains(previewLifecycleControllerText, "CancelPendingPreviewRestart();");
-        AssertContains(previewLifecycleControllerText, "if (enabled == _viewModel.IsPreviewing)");
+        AssertContains(previewLifecycleControllerText, "if (enabled == _context.IsPreviewing())");
         AssertContains(previewLifecycleControllerText, "await StartPreviewAsync(userInitiated: true, cancellationToken);");
         AssertContains(previewLifecycleControllerText, "await StopPreviewAsync(userInitiated: true, teardownPipeline: false, cancellationToken);");
         AssertContains(captureServiceText, "private const int PreviewFrameCaptureRendererWaitTimeoutMs = 2000;");
