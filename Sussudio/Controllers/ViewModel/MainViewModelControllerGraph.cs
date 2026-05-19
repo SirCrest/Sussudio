@@ -58,7 +58,7 @@ public partial class MainViewModel
             ArgumentNullException.ThrowIfNull(viewModel);
 
             var uiDispatchController = CreateUiDispatchController(viewModel);
-            var previewLifecycleController = new MainViewModelPreviewLifecycleController(viewModel);
+            var previewLifecycleController = CreatePreviewLifecycleController(viewModel);
             var recordingTransitionController = new MainViewModelRecordingTransitionController(viewModel, previewLifecycleController);
             var deviceAudioRequestController = new MainViewModelDeviceAudioRequestController(viewModel);
             var recordingCapabilityController = new MainViewModelRecordingCapabilityController(viewModel);
@@ -97,6 +97,24 @@ public partial class MainViewModel
                     Log = message => Logger.Log(message),
                     LogException = exception => Logger.LogException(exception),
                     SetStatusText = value => viewModel.StatusText = value,
+                });
+        }
+
+        private static MainViewModelPreviewLifecycleController CreatePreviewLifecycleController(MainViewModel viewModel)
+        {
+            return new MainViewModelPreviewLifecycleController(
+                viewModel,
+                new MainViewModelPreviewLifecycleControllerContext
+                {
+                    SessionCoordinator = viewModel._sessionCoordinator,
+                    BuildCaptureSettings = viewModel.BuildCaptureSettings,
+                    InvokeOnUiThreadAsync = (operation, cancellationToken) => viewModel.InvokeOnUiThreadAsync(operation, cancellationToken),
+                    RampPreviewVolumeDownForStopAsync = viewModel.RampPreviewVolumeDownForStopAsync,
+                    IsAudioPreviewActive = () => viewModel._captureService.IsAudioPreviewActive,
+                    ApplyLatestSourceTelemetryForPreviewStart = () =>
+                        viewModel._sourceTelemetryController.ApplySourceTelemetrySnapshot(
+                            viewModel._captureService.GetLatestSourceTelemetrySnapshot(),
+                            allowAutoRetarget: true),
                 });
         }
     }

@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
+using Sussudio.Services.Capture;
 
 namespace Sussudio.ViewModels;
 
@@ -13,11 +14,15 @@ public partial class MainViewModel
     private sealed class MainViewModelPreviewLifecycleController
     {
         private readonly MainViewModel _viewModel;
+        private readonly MainViewModelPreviewLifecycleControllerContext _context;
         private readonly MainViewModelPreviewReinitializeController _previewReinitializeController;
 
-        public MainViewModelPreviewLifecycleController(MainViewModel viewModel)
+        public MainViewModelPreviewLifecycleController(
+            MainViewModel viewModel,
+            MainViewModelPreviewLifecycleControllerContext context)
         {
             _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
             _previewReinitializeController = new MainViewModelPreviewReinitializeController(_viewModel, this);
         }
 
@@ -36,11 +41,11 @@ public partial class MainViewModel
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 _viewModel.StatusText = "Initializing device...";
-                var settings = _viewModel.BuildCaptureSettings();
+                var settings = _context.BuildCaptureSettings();
                 Logger.Log(
                     $"CAPTURE_INIT device='{_viewModel.SelectedDevice.Name}' id='{_viewModel.SelectedDevice.Id}' format={settings.Format} {settings.Width}x{settings.Height}@{settings.FrameRate} hdr={settings.HdrEnabled} audio={settings.AudioEnabled}");
 
-                await _viewModel._sessionCoordinator.InitializeAsync(_viewModel.SelectedDevice, settings, cancellationToken);
+                await _context.SessionCoordinator.InitializeAsync(_viewModel.SelectedDevice, settings, cancellationToken);
 
                 _viewModel.IsInitialized = true;
                 _viewModel.StatusText = "Device ready";
@@ -78,18 +83,18 @@ public partial class MainViewModel
 
             if (_viewModel.IsInitialized)
             {
-                var settings = _viewModel.BuildCaptureSettings();
-                await _viewModel._sessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken).ConfigureAwait(true);
+                var settings = _context.BuildCaptureSettings();
+                await _context.SessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken).ConfigureAwait(true);
 
                 _viewModel.IsPreviewing = true;
                 _viewModel.StatusText = "Preview starting...";
 
                 if (_viewModel.IsAudioPreviewEnabled && _viewModel.IsAudioEnabled)
                 {
-                    await _viewModel._sessionCoordinator.StartAudioPreviewAsync(cancellationToken);
+                    await _context.SessionCoordinator.StartAudioPreviewAsync(cancellationToken);
                 }
 
-                _viewModel._sourceTelemetryController.ApplySourceTelemetrySnapshot(_viewModel._captureService.GetLatestSourceTelemetrySnapshot(), allowAutoRetarget: true);
+                _context.ApplyLatestSourceTelemetryForPreviewStart();
                 Logger.Log($"PREVIEW_START_READY audio={_viewModel.IsAudioPreviewEnabled && _viewModel.IsAudioEnabled}");
             }
             else
@@ -101,7 +106,7 @@ public partial class MainViewModel
 
         public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
         {
-            return _viewModel.InvokeOnUiThreadAsync(async () =>
+            return _context.InvokeOnUiThreadAsync(async () =>
             {
                 if (!enabled && _viewModel.IsPreviewReinitializing)
                 {
@@ -164,9 +169,9 @@ public partial class MainViewModel
                 CancelPendingPreviewRestart();
             }
 
-            if (userInitiated && !_viewModel.IsPreviewReinitializing && _viewModel._captureService.IsAudioPreviewActive)
+            if (userInitiated && !_viewModel.IsPreviewReinitializing && _context.IsAudioPreviewActive())
             {
-                await _viewModel.RampPreviewVolumeDownForStopAsync(cancellationToken);
+                await _context.RampPreviewVolumeDownForStopAsync(cancellationToken);
             }
 
             _viewModel.PreviewStopRequested?.Invoke(_viewModel, EventArgs.Empty);
@@ -175,11 +180,11 @@ public partial class MainViewModel
             {
                 if (teardownPipeline)
                 {
-                    await _viewModel._sessionCoordinator.StopVideoPreviewWithTeardownAsync(cancellationToken);
+                    await _context.SessionCoordinator.StopVideoPreviewWithTeardownAsync(cancellationToken);
                 }
                 else
                 {
-                    await _viewModel._sessionCoordinator.StopVideoPreviewAsync(cancellationToken);
+                    await _context.SessionCoordinator.StopVideoPreviewAsync(cancellationToken);
                 }
 
                 commitStoppedState = true;
@@ -201,15 +206,15 @@ public partial class MainViewModel
                 }
             }
 
-            if (_viewModel._captureService.IsAudioPreviewActive)
+            if (_context.IsAudioPreviewActive())
             {
                 if (teardownPipeline)
                 {
-                    await _viewModel._sessionCoordinator.StopAudioPreviewWithTeardownAsync(cancellationToken);
+                    await _context.SessionCoordinator.StopAudioPreviewWithTeardownAsync(cancellationToken);
                 }
                 else
                 {
-                    await _viewModel._sessionCoordinator.StopAudioPreviewAsync(cancellationToken);
+                    await _context.SessionCoordinator.StopAudioPreviewAsync(cancellationToken);
                 }
             }
 
@@ -221,5 +226,15 @@ public partial class MainViewModel
 
         public Task ReinitializeDeviceAsync(string reason)
             => _previewReinitializeController.ReinitializeDeviceAsync(reason);
+    }
+
+    private sealed class MainViewModelPreviewLifecycleControllerContext
+    {
+        public required CaptureSessionCoordinator SessionCoordinator { get; init; }
+        public required Func<CaptureSettings> BuildCaptureSettings { get; init; }
+        public required Func<Func<Task>, CancellationToken, Task> InvokeOnUiThreadAsync { get; init; }
+        public required Func<CancellationToken, Task> RampPreviewVolumeDownForStopAsync { get; init; }
+        public required Func<bool> IsAudioPreviewActive { get; init; }
+        public required Action ApplyLatestSourceTelemetryForPreviewStart { get; init; }
     }
 }

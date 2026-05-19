@@ -3505,7 +3505,9 @@ owner, fold it back into that owner and update the source-shape tests and
    implementation now lives in
    `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`:
    device initialization, preview start/stop, selected-device apply, and the
-   reinitialize facade. Sibling ViewModel controllers receive that preview
+   reinitialize facade, with graph-built context ports for capture/session
+   operations, source telemetry refresh, UI dispatch, audio-preview activity,
+   and preview-volume ramp-down. Sibling ViewModel controllers receive that preview
    lifecycle owner directly from `MainViewModelControllerGraph` instead of
    routing controller-to-controller calls back through the root facade.
    `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`
@@ -3703,7 +3705,7 @@ owner, fold it back into that owner and update the source-shape tests and
    and preview start/stop routing now live in
    `MainViewModelPreviewLifecycleController.cs` plus
    `MainViewModelPreviewReinitializeController.cs`, with the stable
-   `MainViewModel.cs` compatibility facade preserving the automation surface.
+   `MainViewModel.PreviewState.cs` compatibility facade preserving the automation surface.
    Automation HDR and true-HDR preview recording-time guard enforcement and HDR
    availability checks now live in `MainViewModel.CaptureModeTransactions.cs`
    beside HDR mode change side effects.
