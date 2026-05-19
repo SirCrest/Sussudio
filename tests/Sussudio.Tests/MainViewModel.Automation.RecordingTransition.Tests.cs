@@ -71,6 +71,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var recordingTransitionControllerRootText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
             .Replace("\r\n", "\n");
+        var recordingTransitionControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Context.cs")
+            .Replace("\r\n", "\n");
         var recordingTransitionControllerOperationsText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs")
             .Replace("\r\n", "\n");
         var recordingTransitionControllerText = recordingTransitionControllerRootText
@@ -143,7 +145,7 @@ static partial class Program
         AssertDoesNotContain(rootViewModelText, "public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(rootViewModelText, "internal Task SetRecordingDesiredStateAsync");
         AssertContains(recordingTransitionControllerRootText, "private sealed partial class MainViewModelRecordingTransitionController");
-        AssertContains(recordingTransitionControllerRootText, "private sealed class MainViewModelRecordingTransitionControllerContext");
+        AssertContains(recordingTransitionControllerContextText, "private sealed class MainViewModelRecordingTransitionControllerContext");
         AssertContains(recordingTransitionControllerRootText, "private readonly MainViewModelRecordingTransitionControllerContext _context;");
         AssertDoesNotContain(recordingTransitionControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(recordingTransitionControllerText, "_viewModel.");

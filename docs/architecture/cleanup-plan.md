@@ -3548,6 +3548,10 @@ owner, fold it back into that owner and update the source-shape tests and
    desired-state routing, graceful stop, transition gating, and in-flight
    transition wait/error propagation now live in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`;
+   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Context.cs`
+   owns the recording transition graph-port contract for UI dispatch,
+   recording/session state, capture settings construction, coordinator start/stop
+   calls, recording timer state, and status/count presentation updates;
    concrete start/stop operation execution plus failure/cancellation state
    repair through graph-built context ports, including direct use of the preview
    lifecycle owner for recording startup initialization, live in

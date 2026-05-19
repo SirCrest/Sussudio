@@ -2662,6 +2662,10 @@ Primary current owners:
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`
   owns recording toggle serialization, desired-state routing, graceful stop,
   transition gating, and in-flight transition wait/error propagation.
+  `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Context.cs`
+  owns the recording transition graph-port contract for UI dispatch,
+  recording/session state, capture settings construction, coordinator start/stop
+  calls, recording timer state, and status/count presentation updates.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`
   owns concrete start/stop operation execution plus failure/cancellation state
   repair through graph-built context ports, including direct use of the preview

@@ -27,6 +27,7 @@ static partial class Program
         var runtimeEventIngressSubscriptionsText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Subscriptions.cs").Replace("\r\n", "\n");
         var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs").Replace("\r\n", "\n");
         var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs").Replace("\r\n", "\n");
+        var recordingTransitionControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Context.cs").Replace("\r\n", "\n");
         var recordingTransitionControllerOperationsText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs").Replace("\r\n", "\n");
         var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs").Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs").Replace("\r\n", "\n");
@@ -212,7 +213,7 @@ static partial class Program
         AssertContains(uiDispatchControllerText, "public required DispatcherQueue DispatcherQueue { get; init; }");
         AssertContains(uiDispatchControllerText, "public required Func<bool> IsDisposing { get; init; }");
         AssertContains(recordingTransitionControllerText, "private sealed partial class MainViewModelRecordingTransitionController");
-        AssertContains(recordingTransitionControllerText, "private sealed class MainViewModelRecordingTransitionControllerContext");
+        AssertContains(recordingTransitionControllerContextText, "private sealed class MainViewModelRecordingTransitionControllerContext");
         AssertContains(recordingTransitionControllerText, "private readonly MainViewModelRecordingTransitionControllerContext _context;");
         AssertDoesNotContain(recordingTransitionControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(recordingTransitionControllerText, "_viewModel.");
