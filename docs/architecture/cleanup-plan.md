@@ -2350,7 +2350,10 @@ execution now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekScrubCommands.cs`.
 Keep frozen valid-start sampling, scrub update coalescing, exact resume targets,
 and audio/preview suppression/resume ordering there.
-Playback-thread play/pause/go-live/nudge command execution remains in
+Playback-thread play command execution now lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadPlayCommand.cs`.
+Keep exact resume, file-open/reopen, audio prebuffer, and rendering resume
+ordering there. Pause/go-live/nudge command execution remains in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`.
 Playback thread exit cleanup now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCleanup.cs`.

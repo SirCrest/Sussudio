@@ -14,6 +14,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var threadSeekScrubCommandsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekScrubCommands.cs")
             .Replace("\r\n", "\n");
+        var threadPlayCommandText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadPlayCommand.cs")
+            .Replace("\r\n", "\n");
         var threadCommandsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
             .Replace("\r\n", "\n");
 
@@ -31,7 +33,9 @@ static partial class Program
         AssertDoesNotContain(threadCommandsText, "private void HandleBeginScrubCommand(");
         AssertDoesNotContain(threadCommandsText, "private void HandleUpdateScrubCommand(");
         AssertDoesNotContain(threadCommandsText, "private void HandleEndScrubCommand(");
-        AssertContains(threadCommandsText, "private void HandlePlayCommand(");
+        AssertContains(threadPlayCommandText, "private void HandlePlayCommand(");
+        AssertContains(threadPlayCommandText, "PrimePlaybackAudioBuffer(decoder, prebufferedFrames, ref fileOpen, seekTarget, \"play\", cts.Token);");
+        AssertDoesNotContain(threadCommandsText, "private void HandlePlayCommand(");
         AssertContains(threadCommandsText, "private void HandlePauseCommand(");
         AssertContains(threadCommandsText, "private void HandleGoLiveCommand(");
         AssertContains(threadCommandsText, "private void HandleNudgeCommand(");
