@@ -11,17 +11,18 @@ internal static class PreviewRuntimeSnapshotMapper
         PreviewRuntimeSnapshotHealth health,
         DateTimeOffset timestampUtc)
     {
+        var surface = PreviewRuntimeSnapshotSurfaceProjectionPolicy.Evaluate(input, d3dProjection, health);
         var startup = PreviewRuntimeSnapshotStartupProjectionPolicy.Evaluate(input, health);
 
         return new PreviewRuntimeSnapshot
         {
             TimestampUtc = timestampUtc,
-            IsPreviewing = input.IsPreviewing,
-            GpuActive = d3dProjection.GpuActive,
-            PlaceholderVisible = input.PlaceholderVisible,
-            GpuElementVisible = input.GpuElementVisible,
-            CpuElementVisible = input.CpuElementVisible,
-            RendererAttached = d3dProjection.RendererAttached,
+            IsPreviewing = surface.IsPreviewing,
+            GpuActive = surface.GpuActive,
+            PlaceholderVisible = surface.PlaceholderVisible,
+            GpuElementVisible = surface.GpuElementVisible,
+            CpuElementVisible = surface.CpuElementVisible,
+            RendererAttached = surface.RendererAttached,
             StartupState = startup.State,
             StartupAttemptId = startup.AttemptId,
             StartupElapsedMs = startup.ElapsedMs,
@@ -36,9 +37,9 @@ internal static class PreviewRuntimeSnapshotMapper
             StartupRecoveryAttemptCount = startup.RecoveryAttemptCount,
             StartupLastFailureReason = startup.LastFailureReason,
             FirstVisualConfirmed = startup.FirstVisualConfirmed,
-            FramesArrived = d3dProjection.FramesArrived,
-            FramesDisplayed = d3dProjection.FramesDisplayed,
-            FramesDropped = d3dProjection.FramesDropped,
+            FramesArrived = surface.FramesArrived,
+            FramesDisplayed = surface.FramesDisplayed,
+            FramesDropped = surface.FramesDropped,
             DisplayCadenceSampleCount = d3dProjection.DisplayCadenceSampleCount,
             DisplayCadenceObservedFps = d3dProjection.DisplayCadenceObservedFps,
             DisplayCadenceExpectedIntervalMs = d3dProjection.DisplayCadenceExpectedIntervalMs,
@@ -53,8 +54,8 @@ internal static class PreviewRuntimeSnapshotMapper
             DisplayCadenceJitterStdDevMs = d3dProjection.DisplayCadenceJitterStdDevMs,
             DisplayCadenceSlowFrameCount = d3dProjection.DisplayCadenceSlowFrameCount,
             DisplayCadenceSlowFramePercent = d3dProjection.DisplayCadenceSlowFramePercent,
-            BlankSuspected = health.BlankSuspected,
-            StallSuspected = health.StallSuspected,
+            BlankSuspected = surface.BlankSuspected,
+            StallSuspected = surface.StallSuspected,
             RendererMode = d3dProjection.RendererMode,
             D3DPresentSyncInterval = d3dProjection.D3DPresentSyncInterval,
             D3DMaxFrameLatency = d3dProjection.D3DMaxFrameLatency,

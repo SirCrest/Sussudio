@@ -58,6 +58,9 @@ static partial class Program
             "Preview runtime snapshot health input factory projects controller inputs",
             PreviewRuntimeSnapshotHealthInputFactory_ProjectsControllerInputs);
         await AddCheckAsync(results,
+            "Preview runtime snapshot surface projection preserves visibility and health fields",
+            PreviewRuntimeSnapshotSurfaceProjectionPolicy_PreservesVisibilityAndHealthFields);
+        await AddCheckAsync(results,
             "Preview runtime snapshot startup projection preserves sampled startup fields",
             PreviewRuntimeSnapshotStartupProjectionPolicy_PreservesSampledStartupFields);
         await AddCheckAsync(results,

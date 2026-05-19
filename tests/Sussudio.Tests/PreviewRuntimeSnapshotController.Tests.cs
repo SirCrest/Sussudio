@@ -223,6 +223,50 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task PreviewRuntimeSnapshotSurfaceProjectionPolicy_PreservesVisibilityAndHealthFields()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
+        var healthType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth");
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotSurfaceProjectionPolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeSnapshotSurfaceProjectionPolicy.Evaluate not found.");
+
+        var input = Activator.CreateInstance(inputType)
+                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+        SetPropertyOrBackingField(input, "IsPreviewing", true);
+        SetPropertyOrBackingField(input, "PlaceholderVisible", false);
+        SetPropertyOrBackingField(input, "GpuElementVisible", true);
+        SetPropertyOrBackingField(input, "CpuElementVisible", false);
+
+        var d3dProjection = Activator.CreateInstance(projectionType)
+                            ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
+        SetPropertyOrBackingField(d3dProjection, "GpuActive", true);
+        SetPropertyOrBackingField(d3dProjection, "RendererAttached", true);
+        SetPropertyOrBackingField(d3dProjection, "FramesArrived", 101L);
+        SetPropertyOrBackingField(d3dProjection, "FramesDisplayed", 99L);
+        SetPropertyOrBackingField(d3dProjection, "FramesDropped", 2L);
+
+        var health = Activator.CreateInstance(healthType, new object?[] { null, true, false })
+                     ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
+        var surface = evaluate.Invoke(null, new object?[] { input, d3dProjection, health })
+                      ?? throw new InvalidOperationException("PreviewRuntimeSnapshotSurfaceProjectionPolicy returned null.");
+
+        AssertEqual(true, GetBoolProperty(surface, "IsPreviewing"), "surface projection previewing");
+        AssertEqual(true, GetBoolProperty(surface, "GpuActive"), "surface projection GPU active");
+        AssertEqual(false, GetBoolProperty(surface, "PlaceholderVisible"), "surface projection placeholder visible");
+        AssertEqual(true, GetBoolProperty(surface, "GpuElementVisible"), "surface projection GPU element visible");
+        AssertEqual(false, GetBoolProperty(surface, "CpuElementVisible"), "surface projection CPU element visible");
+        AssertEqual(true, GetBoolProperty(surface, "RendererAttached"), "surface projection renderer attached");
+        AssertEqual(101L, GetLongProperty(surface, "FramesArrived"), "surface projection frames arrived");
+        AssertEqual(99L, GetLongProperty(surface, "FramesDisplayed"), "surface projection frames displayed");
+        AssertEqual(2L, GetLongProperty(surface, "FramesDropped"), "surface projection frames dropped");
+        AssertEqual(true, GetBoolProperty(surface, "BlankSuspected"), "surface projection blank suspected");
+        AssertEqual(false, GetBoolProperty(surface, "StallSuspected"), "surface projection stall suspected");
+
+        return Task.CompletedTask;
+    }
+
     private static Task PreviewRuntimeSnapshotStartupProjectionPolicy_PreservesSampledStartupFields()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");

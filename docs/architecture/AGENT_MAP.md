@@ -1165,6 +1165,9 @@ Primary current owners:
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotMapper.cs`
   owns final preview runtime snapshot DTO flattening from sampled input, D3D
   projection, and named projection policies.
+  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotSurfaceProjectionPolicy.cs`
+  owns previewing, renderer attachment, visibility, frame-count, and blank/stall
+  health projection into the runtime snapshot.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotStartupProjectionPolicy.cs`
   owns sampled preview-startup field projection into the runtime snapshot,
   including startup health elapsed time.
