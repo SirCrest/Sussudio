@@ -26,6 +26,7 @@ static partial class Program
         var previewRuntimeD3DFrameCounterPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameCounterPolicy.cs").Replace("\r\n", "\n");
         var previewRuntimeD3DFrameOwnershipPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameOwnershipPolicy.cs").Replace("\r\n", "\n");
         var previewRuntimeD3DFrameStatisticsPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameStatisticsPolicy.cs").Replace("\r\n", "\n");
+        var previewRuntimeD3DFrameLatencyWaitPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameLatencyWaitPolicy.cs").Replace("\r\n", "\n");
         var previewRuntimeD3DProjectionText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs").Replace("\r\n", "\n");
         var previewRuntimeD3DProjectionBuilderText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.Builder.cs").Replace("\r\n", "\n");
         var previewSurfaceShadowControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs").Replace("\r\n", "\n");
@@ -146,6 +147,7 @@ static partial class Program
         AssertContains(agentMapText, "PreviewRuntimeD3DFrameCounterPolicy.cs");
         AssertContains(agentMapText, "PreviewRuntimeD3DFrameOwnershipPolicy.cs");
         AssertContains(agentMapText, "PreviewRuntimeD3DFrameStatisticsPolicy.cs");
+        AssertContains(agentMapText, "PreviewRuntimeD3DFrameLatencyWaitPolicy.cs");
         AssertContains(cleanupPlanText, "PreviewRendererHostController.Lifecycle.cs");
         AssertContains(cleanupPlanText, "PreviewRendererHostController.D3D.cs");
         AssertContains(cleanupPlanText, "PreviewRendererHostController.Reinit.cs");
@@ -156,6 +158,7 @@ static partial class Program
         AssertContains(cleanupPlanText, "PreviewRuntimeD3DFrameCounterPolicy.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeD3DFrameOwnershipPolicy.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeD3DFrameStatisticsPolicy.cs");
+        AssertContains(cleanupPlanText, "PreviewRuntimeD3DFrameLatencyWaitPolicy.cs");
         AssertContains(previewRendererText, "=> _previewRendererHostController.RendererReinitUnsafeWindows;");
         AssertContains(previewRendererText, "=> _previewRendererHostController.DisposeD3DPreviewRendererForReinit();");
 
@@ -228,7 +231,7 @@ static partial class Program
         AssertContains(previewRuntimeD3DProjectionBuilderText, "var rendererCadence = d3d?.GetPresentCadenceMetrics(input.PreviewMinPresentationIntervalMs);");
         AssertContains(previewRuntimeD3DProjectionBuilderText, "var frameOwnership = PreviewRuntimeD3DFrameOwnershipPolicy.Evaluate(d3d);");
         AssertContains(previewRuntimeD3DProjectionBuilderText, "var frameStatistics = PreviewRuntimeD3DFrameStatisticsPolicy.Evaluate(d3d);");
-        AssertContains(previewRuntimeD3DProjectionBuilderText, "var d3dFrameLatencyWait = d3d?.GetFrameLatencyWaitMetrics();");
+        AssertContains(previewRuntimeD3DProjectionBuilderText, "var frameLatencyWait = PreviewRuntimeD3DFrameLatencyWaitPolicy.Evaluate(d3d);");
         AssertContains(previewRuntimeD3DProjectionBuilderText, "FramesArrived = frameCounters.FramesArrived,");
         AssertContains(previewRuntimeD3DProjectionBuilderText, "D3DFramesSubmitted = frameCounters.D3DFramesSubmitted,");
         AssertContains(previewRuntimeD3DFrameCounterPolicyText, "internal static class PreviewRuntimeD3DFrameCounterPolicy");
@@ -238,16 +241,22 @@ static partial class Program
         AssertContains(previewRuntimeD3DFrameStatisticsPolicyText, "internal static class PreviewRuntimeD3DFrameStatisticsPolicy");
         AssertContains(previewRuntimeD3DFrameStatisticsPolicyText, "public static PreviewRuntimeD3DFrameStatistics Evaluate(D3D11PreviewRenderer? d3d)");
         AssertContains(previewRuntimeD3DFrameStatisticsPolicyText, "PresentCount: frameStats?.PresentCount ?? -1,");
+        AssertContains(previewRuntimeD3DFrameLatencyWaitPolicyText, "internal static class PreviewRuntimeD3DFrameLatencyWaitPolicy");
+        AssertContains(previewRuntimeD3DFrameLatencyWaitPolicyText, "public static PreviewRuntimeD3DFrameLatencyWait Evaluate(D3D11PreviewRenderer? d3d)");
+        AssertContains(previewRuntimeD3DFrameLatencyWaitPolicyText, "SampleCount: frameLatencyWait?.Timing.SampleCount ?? 0,");
         AssertContains(previewRuntimeD3DFrameOwnershipPolicyText, "internal static class PreviewRuntimeD3DFrameOwnershipPolicy");
         AssertContains(previewRuntimeD3DFrameOwnershipPolicyText, "public static PreviewRuntimeD3DFrameOwnership Evaluate(D3D11PreviewRenderer? d3d)");
         AssertContains(previewRuntimeD3DFrameOwnershipPolicyText, "LastSubmittedSourceSequenceNumber: frameOwnership?.LastSubmittedSourceSequenceNumber ?? -1,");
         AssertContains(previewRuntimeD3DFrameOwnershipPolicyText, "LastDroppedSourceSequenceNumber: frameOwnership?.LastDroppedSourceSequenceNumber ?? -1,");
         AssertContains(previewRuntimeD3DProjectionBuilderText, "D3DLastSubmittedSourceSequenceNumber = frameOwnership.LastSubmittedSourceSequenceNumber,");
         AssertContains(previewRuntimeD3DProjectionBuilderText, "D3DFrameStatsPresentCount = frameStatistics.PresentCount,");
+        AssertContains(previewRuntimeD3DProjectionBuilderText, "D3DFrameLatencyWaitEnabled = frameLatencyWait.Enabled,");
         AssertDoesNotContain(previewRuntimeD3DProjectionBuilderText, "var d3dFrameOwnership = d3d?.GetFrameOwnershipMetrics();");
         AssertDoesNotContain(previewRuntimeD3DProjectionBuilderText, "d3dFrameOwnership?.LastSubmittedSourceSequenceNumber ?? -1");
         AssertDoesNotContain(previewRuntimeD3DProjectionBuilderText, "var d3dFrameStats = d3d?.GetDxgiFrameStatisticsMetrics();");
         AssertDoesNotContain(previewRuntimeD3DProjectionBuilderText, "d3dFrameStats?.PresentCount ?? -1");
+        AssertDoesNotContain(previewRuntimeD3DProjectionBuilderText, "var d3dFrameLatencyWait = d3d?.GetFrameLatencyWaitMetrics();");
+        AssertDoesNotContain(previewRuntimeD3DProjectionBuilderText, "d3dFrameLatencyWait?.Timing.SampleCount ?? 0");
         AssertContains(previewRuntimeD3DProjectionBuilderText, "D3DRecentSlowFrames = d3d?.GetRecentSlowFrameDiagnostics() ?? Array.Empty<PreviewSlowFrameDiagnostic>(),");
         AssertContains(previewRuntimeD3DProjectionBuilderText, "EstimatedPipelineLatencyMs = d3dPipelineLatency?.AverageMs ?? 0,");
         AssertContains(previewRuntimeD3DProjectionBuilderText, "GpuPlaybackState = d3d == null ? \"None\" : (d3d.IsRendering ? \"Rendering\" : \"Idle\"),");

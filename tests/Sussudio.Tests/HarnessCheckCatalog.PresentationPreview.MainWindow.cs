@@ -64,6 +64,9 @@ static partial class Program
             "Preview runtime D3D frame-statistics policy preserves null renderer defaults",
             PreviewRuntimeD3DFrameStatisticsPolicy_PreservesNullRendererDefaults);
         await AddCheckAsync(results,
+            "Preview runtime D3D frame-latency wait policy preserves null renderer defaults",
+            PreviewRuntimeD3DFrameLatencyWaitPolicy_PreservesNullRendererDefaults);
+        await AddCheckAsync(results,
             "Preview runtime D3D frame-ownership policy preserves null renderer defaults",
             PreviewRuntimeD3DFrameOwnershipPolicy_PreservesNullRendererDefaults);
         await AddCheckAsync(results,

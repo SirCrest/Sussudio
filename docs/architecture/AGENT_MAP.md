@@ -1178,9 +1178,12 @@ Primary current owners:
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameStatisticsPolicy.cs`
   owns DXGI frame-statistics projection defaults, including the null-renderer
   present-count sentinels used by preview diagnostics.
+  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameLatencyWaitPolicy.cs`
+  owns D3D frame-latency wait projection defaults, including null-renderer wait
+  handle state, wait counters, last result, and wait timing metrics.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs`
   owns the renderer projection data contract. `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.Builder.cs`
-  owns renderer cadence projection, D3D diagnostic field mapping, estimated
+  owns renderer cadence projection, remaining D3D diagnostic field mapping, estimated
   pipeline latency, and GPU playback projection.
   Window close routing/finalization ownership is detailed in the window close
   section below:

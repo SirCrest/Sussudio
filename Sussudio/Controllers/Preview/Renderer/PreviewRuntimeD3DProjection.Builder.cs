@@ -14,7 +14,7 @@ internal sealed partial class PreviewRuntimeD3DProjection
         var d3dRenderCpuTiming = d3d?.GetRenderCpuTimingMetrics();
         var frameOwnership = PreviewRuntimeD3DFrameOwnershipPolicy.Evaluate(d3d);
         var frameStatistics = PreviewRuntimeD3DFrameStatisticsPolicy.Evaluate(d3d);
-        var d3dFrameLatencyWait = d3d?.GetFrameLatencyWaitMetrics();
+        var frameLatencyWait = PreviewRuntimeD3DFrameLatencyWaitPolicy.Evaluate(d3d);
         var d3dPipelineLatency = d3d?.GetPipelineLatencyMetrics();
 
         return new PreviewRuntimeD3DProjection
@@ -75,19 +75,19 @@ internal sealed partial class PreviewRuntimeD3DProjection
             D3DPipelineLatencyP95Ms = d3dPipelineLatency?.P95Ms ?? 0,
             D3DPipelineLatencyP99Ms = d3dPipelineLatency?.P99Ms ?? 0,
             D3DPipelineLatencyMaxMs = d3dPipelineLatency?.MaxMs ?? 0,
-            D3DFrameLatencyWaitEnabled = d3dFrameLatencyWait?.Enabled ?? false,
-            D3DFrameLatencyWaitHandleActive = d3dFrameLatencyWait?.HandleActive ?? false,
-            D3DFrameLatencyWaitCallCount = d3dFrameLatencyWait?.CallCount ?? 0,
-            D3DFrameLatencyWaitSignaledCount = d3dFrameLatencyWait?.SignaledCount ?? 0,
-            D3DFrameLatencyWaitTimeoutCount = d3dFrameLatencyWait?.TimeoutCount ?? 0,
-            D3DFrameLatencyWaitUnexpectedResultCount = d3dFrameLatencyWait?.UnexpectedResultCount ?? 0,
-            D3DFrameLatencyWaitLastResult = d3dFrameLatencyWait?.LastResult ?? 0,
-            D3DFrameLatencyWaitLastMs = d3dFrameLatencyWait?.LastWaitMs ?? 0,
-            D3DFrameLatencyWaitSampleCount = d3dFrameLatencyWait?.Timing.SampleCount ?? 0,
-            D3DFrameLatencyWaitAvgMs = d3dFrameLatencyWait?.Timing.AverageMs ?? 0,
-            D3DFrameLatencyWaitP95Ms = d3dFrameLatencyWait?.Timing.P95Ms ?? 0,
-            D3DFrameLatencyWaitP99Ms = d3dFrameLatencyWait?.Timing.P99Ms ?? 0,
-            D3DFrameLatencyWaitMaxMs = d3dFrameLatencyWait?.Timing.MaxMs ?? 0,
+            D3DFrameLatencyWaitEnabled = frameLatencyWait.Enabled,
+            D3DFrameLatencyWaitHandleActive = frameLatencyWait.HandleActive,
+            D3DFrameLatencyWaitCallCount = frameLatencyWait.CallCount,
+            D3DFrameLatencyWaitSignaledCount = frameLatencyWait.SignaledCount,
+            D3DFrameLatencyWaitTimeoutCount = frameLatencyWait.TimeoutCount,
+            D3DFrameLatencyWaitUnexpectedResultCount = frameLatencyWait.UnexpectedResultCount,
+            D3DFrameLatencyWaitLastResult = frameLatencyWait.LastResult,
+            D3DFrameLatencyWaitLastMs = frameLatencyWait.LastWaitMs,
+            D3DFrameLatencyWaitSampleCount = frameLatencyWait.SampleCount,
+            D3DFrameLatencyWaitAvgMs = frameLatencyWait.AverageMs,
+            D3DFrameLatencyWaitP95Ms = frameLatencyWait.P95Ms,
+            D3DFrameLatencyWaitP99Ms = frameLatencyWait.P99Ms,
+            D3DFrameLatencyWaitMaxMs = frameLatencyWait.MaxMs,
             D3DFrameStatsSampleCount = frameStatistics.SampleCount,
             D3DFrameStatsSuccessCount = frameStatistics.SuccessCount,
             D3DFrameStatsFailureCount = frameStatistics.FailureCount,
