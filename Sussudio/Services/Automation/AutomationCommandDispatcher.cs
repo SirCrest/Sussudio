@@ -21,6 +21,8 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
     private readonly IAutomationCaptureSettingsPort _captureSettingsPort;
     private readonly IAutomationAudioPort _audioPort;
     private readonly IAutomationPreviewRecordingPort _previewRecordingPort;
+    private readonly IAutomationUiPort _uiPort;
+    private readonly IAutomationFlashbackPort _flashbackPort;
     private readonly IAutomationProbePort _probePort;
     private readonly IAutomationDiagnosticsHub _diagnosticsHub;
     private readonly IAutomationWindowControl _windowControl;
@@ -44,6 +46,8 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
         _captureSettingsPort = viewModel;
         _audioPort = viewModel;
         _previewRecordingPort = viewModel;
+        _uiPort = viewModel;
+        _flashbackPort = viewModel;
         _probePort = viewModel;
         _diagnosticsHub = diagnosticsHub ?? throw new ArgumentNullException(nameof(diagnosticsHub));
         _windowControl = windowControl ?? throw new ArgumentNullException(nameof(windowControl));

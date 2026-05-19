@@ -126,7 +126,7 @@ static partial class Program
         AssertDoesNotContain(interfaceText, "bool FlashbackEndScrub();");
         AssertDoesNotContain(interfaceText, "VideoSourceProbeResult ProbeVideoSource();");
         AssertDoesNotContain(interfaceText, "PreviewColorProbeResult ProbePreviewColor();");
-        AssertContains(dispatcherText, "await _viewModel.ExecuteFlashbackActionAsync(action, position, cancellationToken).ConfigureAwait(false)");
+        AssertContains(dispatcherText, "await _flashbackPort.ExecuteFlashbackActionAsync(action, position, cancellationToken).ConfigureAwait(false)");
         AssertContains(dispatcherText, "return CreateFlashbackActionRejectedResponse(");
         AssertContains(dispatcherText, "errorCode: \"flashback-action-failed\"");
         AssertContains(dispatcherText, "RequestedPositionMs = requestedPositionMs");
@@ -140,14 +140,14 @@ static partial class Program
         AssertContains(dispatcherText, "AutomationFlashbackAction.BeginScrub => RequireDouble(payload, \"positionMs\")");
         AssertContains(dispatcherText, "AutomationFlashbackAction.UpdateScrub => RequireDouble(payload, \"positionMs\")");
         AssertContains(dispatcherText, "AutomationFlashbackAction.EndScrub => GetDouble(payload, \"positionMs\")");
-        AssertContains(dispatcherText, "await _viewModel.SetFlashbackEnabledAsync(enabled, cancellationToken).ConfigureAwait(false)");
-        AssertContains(dispatcherText, "await _viewModel.GetFlashbackSegmentsAsync(cancellationToken).ConfigureAwait(false)");
         AssertContains(dispatcherText, "private readonly IAutomationReadinessPort _readinessPort;");
         AssertContains(dispatcherText, "private readonly IAutomationDeviceSelectionPort _deviceSelectionPort;");
         AssertContains(dispatcherText, "private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;");
         AssertContains(dispatcherText, "private readonly IAutomationCaptureSettingsPort _captureSettingsPort;");
         AssertContains(dispatcherText, "private readonly IAutomationAudioPort _audioPort;");
         AssertContains(dispatcherText, "private readonly IAutomationPreviewRecordingPort _previewRecordingPort;");
+        AssertContains(dispatcherText, "private readonly IAutomationUiPort _uiPort;");
+        AssertContains(dispatcherText, "private readonly IAutomationFlashbackPort _flashbackPort;");
         AssertContains(dispatcherText, "private readonly IAutomationProbePort _probePort;");
         AssertContains(dispatcherText, "_readinessPort.IsInitialized || _readinessPort.Devices.Count > 0");
         AssertContains(dispatcherText, "await _deviceSelectionPort.RefreshDevicesForAutomationAsync(cancellationToken).ConfigureAwait(false);");
@@ -158,6 +158,10 @@ static partial class Program
         AssertContains(dispatcherText, "await _previewRecordingPort.SetRecordingEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _probePort.ProbeVideoSourceAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _probePort.ProbePreviewColorAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await _uiPort.SetStatsSectionVisibleAsync(section, visible, cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await _snapshotQueryPort.GetAudioRampTraceSnapshotAsync(maxEntries, cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await _flashbackPort.SetFlashbackEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await _flashbackPort.GetFlashbackSegmentsAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "vm.SetHdrEnabledAsync(v, ct)");
         AssertContains(dispatcherText, "vm.SetTrueHdrPreviewEnabledAsync(v, ct)");
         AssertDoesNotContain(dispatcherText, "_viewModel.IsMicrophoneEnabled =");

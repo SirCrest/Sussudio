@@ -2831,7 +2831,8 @@ Refactor direction:
   file until a consumer needs a stronger reason to split them. The automation
   dispatcher consumes readiness/device-selection/snapshot-query,
   capture-settings, audio, and preview-recording ports for matching command
-  families, plus the probe port for preview/source capture probes. Window
+  families, plus the UI, Flashback, and probe ports for matching focused
+  command partials. Audio-ramp trace reads use the snapshot-query port. Window
   screenshots remain on `IAutomationWindowControl`. `AutomationDiagnosticsHub`
   consumes the snapshot-query port for read-only diagnostic and verification
   snapshots.

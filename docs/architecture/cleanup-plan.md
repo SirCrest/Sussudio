@@ -321,7 +321,9 @@ device-selection/snapshot-query ports for device commands, the audio port for
 device-audio/microphone commands, and the capture-settings plus
 preview-recording ports for MJPEG decoder, output path, and recording commands.
 Visual probe commands consume the probe port while window screenshots remain on
-the window-control surface.
+the window-control surface. Stats-section UI commands consume the UI port,
+audio-ramp trace reads consume the snapshot-query port, and Flashback commands
+consume the Flashback port.
 `AutomationDiagnosticsHub` consumes the snapshot-query port for read-only
 runtime, health, and recording verification snapshots instead of depending on
 the full aggregate surface.

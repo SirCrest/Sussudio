@@ -82,6 +82,11 @@ static partial class Program
         AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteFlashbackGetSegmentsCommandAsync(");
         AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteRestartFlashbackCommandAsync(");
         AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetFlashbackEnabledCommandAsync(");
+        AssertContains(flashbackCommandsText, "_flashbackPort.ExecuteFlashbackActionAsync(action, position, cancellationToken)");
+        AssertContains(flashbackCommandsText, "_flashbackPort.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken)");
+        AssertContains(flashbackCommandsText, "_flashbackPort.GetFlashbackSegmentsAsync(cancellationToken)");
+        AssertContains(flashbackCommandsText, "_flashbackPort.RestartFlashbackAsync(cancellationToken)");
+        AssertContains(flashbackCommandsText, "_flashbackPort.SetFlashbackEnabledAsync(enabled, cancellationToken)");
         AssertDoesNotContain(customCommandsText, "ExportFlashbackAutomationAsync(seconds");
         AssertDoesNotContain(customCommandsText, "CreateFlashbackActionRejectedResponse(");
 

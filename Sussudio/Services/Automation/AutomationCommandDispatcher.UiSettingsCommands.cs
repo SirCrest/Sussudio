@@ -54,7 +54,7 @@ public sealed partial class AutomationCommandDispatcher
     {
         var section = RequireString(payload, "section");
         var visible = RequireBool(payload, "visible");
-        await _viewModel.SetStatsSectionVisibleAsync(section, visible, cancellationToken).ConfigureAwait(false);
+        await _uiPort.SetStatsSectionVisibleAsync(section, visible, cancellationToken).ConfigureAwait(false);
         return CreateAcknowledgedResponse(correlationId, $"Stats section '{section}' {(visible ? "expanded" : "collapsed")}.");
     }
 }

@@ -36,7 +36,7 @@ public sealed partial class AutomationCommandDispatcher
         var position = positionMs.HasValue
             ? TimeSpan.FromMilliseconds(positionMs.Value)
             : (TimeSpan?)null;
-        if (!await _viewModel.ExecuteFlashbackActionAsync(action, position, cancellationToken).ConfigureAwait(false))
+        if (!await _flashbackPort.ExecuteFlashbackActionAsync(action, position, cancellationToken).ConfigureAwait(false))
         {
             return CreateFlashbackActionRejectedResponse(
                 correlationId,
@@ -97,7 +97,7 @@ public sealed partial class AutomationCommandDispatcher
             RequireString(payload, "outputPath"));
         var useSelectionRange = GetBool(payload, "useSelectionRange") ?? false;
         var force = GetBool(payload, "force") ?? false;
-        var exportResult = await _viewModel.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken).ConfigureAwait(false);
+        var exportResult = await _flashbackPort.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken).ConfigureAwait(false);
         var failureKind = exportResult.Succeeded
             ? string.Empty
             : CaptureService.ClassifyFlashbackExportFailureKind(exportResult.StatusMessage);
@@ -121,7 +121,7 @@ public sealed partial class AutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var segments = await _viewModel.GetFlashbackSegmentsAsync(cancellationToken).ConfigureAwait(false);
+        var segments = await _flashbackPort.GetFlashbackSegmentsAsync(cancellationToken).ConfigureAwait(false);
         return CreateResponse(
             correlationId,
             $"Found {segments.Count} segment(s).",
@@ -132,7 +132,7 @@ public sealed partial class AutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        await _viewModel.RestartFlashbackAsync(cancellationToken).ConfigureAwait(false);
+        await _flashbackPort.RestartFlashbackAsync(cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, "Flashback restarted.");
     }
 
@@ -142,7 +142,7 @@ public sealed partial class AutomationCommandDispatcher
         CancellationToken cancellationToken)
     {
         var enabled = GetBool(payload, "enabled") ?? throw new InvalidOperationException("Missing 'enabled' parameter.");
-        await _viewModel.SetFlashbackEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
+        await _flashbackPort.SetFlashbackEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Flashback {(enabled ? "enabled" : "disabled")}.");
     }
 }

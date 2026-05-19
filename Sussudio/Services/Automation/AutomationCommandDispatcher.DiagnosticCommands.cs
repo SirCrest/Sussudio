@@ -31,7 +31,7 @@ public sealed partial class AutomationCommandDispatcher
         CancellationToken cancellationToken)
     {
         var maxEntries = GetInt(payload, "maxEntries") ?? 512;
-        var trace = await _viewModel.GetAudioRampTraceSnapshotAsync(maxEntries, cancellationToken).ConfigureAwait(false);
+        var trace = await _snapshotQueryPort.GetAudioRampTraceSnapshotAsync(maxEntries, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, "Audio ramp trace retrieved.", data: trace);
     }
 }

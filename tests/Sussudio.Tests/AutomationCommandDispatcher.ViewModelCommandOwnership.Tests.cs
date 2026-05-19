@@ -91,7 +91,7 @@ static partial class Program
         AssertContains(uiSettingsCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetStatsSectionVisibleCommandAsync(");
         AssertContains(uiSettingsCommandsText, "var section = RequireString(payload, \"section\");");
         AssertContains(uiSettingsCommandsText, "var visible = RequireBool(payload, \"visible\");");
-        AssertContains(uiSettingsCommandsText, "_viewModel.SetStatsSectionVisibleAsync(section, visible, cancellationToken)");
+        AssertContains(uiSettingsCommandsText, "_uiPort.SetStatsSectionVisibleAsync(section, visible, cancellationToken)");
         AssertContains(uiSettingsCommandsText, "Stats section '{section}' {(visible ? \"expanded\" : \"collapsed\")}.");
 
         return Task.CompletedTask;
