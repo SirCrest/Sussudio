@@ -372,13 +372,17 @@ static partial class Program
         AssertContains(controllerGraphDeviceText, "new MainViewModelDeviceFormatProbeRetargetApplierContext");
         var sourceTelemetryControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs")
             .Replace("\r\n", "\n");
+        var sourceTelemetryControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.Context.cs")
+            .Replace("\r\n", "\n");
         AssertContains(sourceTelemetryControllerText, "private sealed class MainViewModelSourceTelemetryController");
-        AssertContains(sourceTelemetryControllerText, "private sealed class MainViewModelSourceTelemetryControllerContext");
+        AssertContains(sourceTelemetryControllerContextText, "private sealed class MainViewModelSourceTelemetryControllerContext");
         AssertContains(sourceTelemetryControllerText, "private readonly MainViewModelSourceTelemetryControllerContext _context;");
         AssertDoesNotContain(sourceTelemetryControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(sourceTelemetryControllerText, "_viewModel.");
         AssertContains(controllerGraphDeviceText, "private static MainViewModelSourceTelemetryController CreateSourceTelemetryController(MainViewModel viewModel)");
         AssertContains(controllerGraphDeviceText, "new MainViewModelSourceTelemetryControllerContext");
+        AssertContains(sourceTelemetryControllerContextText, "public required Func<SourceSignalTelemetrySnapshot> GetLatestSourceTelemetry { get; init; }");
+        AssertContains(sourceTelemetryControllerContextText, "public required Action RebuildResolutionOptions { get; init; }");
         AssertContains(controllerGraphDeviceText, "SetLatestSourceTelemetry = snapshot => viewModel._latestSourceTelemetry = snapshot,");
         AssertContains(controllerGraphDeviceText, "RebuildResolutionOptions = viewModel.RebuildResolutionOptions,");
         AssertContains(controllerGraphDeviceText, "UpdateTargetSummary = viewModel.UpdateTargetSummary,");
