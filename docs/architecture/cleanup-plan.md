@@ -1362,8 +1362,10 @@ delivery, audio codec/resampler initialization, audio callback failure handling,
 resampler output conversion, and bounded audio sample/byte sizing there. D3D11VA decoder selection and hardware
 configuration diagnostics now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs`. Decoded video frame
-output, plane copies, and YUV-to-NV12/P010 conversion now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs`. Keep file
+output and hardware/software frame selection now live in
+`Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs`. Software plane
+copies and YUV-to-NV12/P010 conversion kernels now live in
+`Sussudio/Services/Flashback/FlashbackDecoder.VideoConversion.cs`. Keep file
 open/close and initialization/disposal lifecycle in the root decoder. Video
 frame receive, packet feeding, inline audio interleave during video reads, and
 decode phase timing state now live in
