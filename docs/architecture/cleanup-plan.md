@@ -185,9 +185,14 @@ startup cache policy consumed by the automation snapshot DTO.
 Flashback video, GPU, and audio queue/backpressure projection consumed by the
 automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs` owns
-Flashback playback state, frame cadence metrics, audio-master delay/fallback,
-seek-cap/decode timing, and playback command queue projection consumed by the
-automation snapshot DTO.
+Flashback playback state, frame cadence metrics, stage counters, and routing to
+the playback leaf projections consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.AudioMaster.cs`
+owns audio-master delay/fallback projection,
+`AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.Decode.cs` owns
+seek-cap/decode timing projection, and
+`AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.Commands.cs`
+owns playback command queue projection.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs` owns D3D preview
 swap-chain, renderer state, submitted/rendered/dropped frame flow, waitable
 frame-latency, and frame-statistics projection consumed by the automation

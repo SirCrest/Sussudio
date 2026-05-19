@@ -105,6 +105,12 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackPlaybackProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs")
             .Replace("\r\n", "\n");
+        var flashbackPlaybackAudioMasterProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.AudioMaster.cs")
+            .Replace("\r\n", "\n");
+        var flashbackPlaybackDecodeProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.Decode.cs")
+            .Replace("\r\n", "\n");
+        var flashbackPlaybackCommandProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.Commands.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var flashbackPlayback = BuildFlashbackPlaybackProjection(health);");
         AssertContains(snapshotFlatteningText, "FlashbackPlaybackState = flashbackPlayback.State,");
@@ -131,22 +137,28 @@ static partial class Program
         AssertDoesNotContain(flashbackPlaybackProjectionText, "LastCommandFailure = commands.LastFailure");
         AssertDoesNotContain(flashbackPlaybackProjectionText, "LastCommandFailure = health.FlashbackPlaybackLastCommandFailure");
         AssertContains(flashbackPlaybackProjectionText, "private readonly record struct FlashbackPlaybackProjection");
+        AssertDoesNotContain(flashbackPlaybackProjectionText, "private static FlashbackPlaybackAudioMasterProjection BuildFlashbackPlaybackAudioMasterProjection(");
+        AssertDoesNotContain(flashbackPlaybackProjectionText, "private static FlashbackPlaybackDecodeProjection BuildFlashbackPlaybackDecodeProjection(");
+        AssertDoesNotContain(flashbackPlaybackProjectionText, "private static FlashbackPlaybackCommandProjection BuildFlashbackPlaybackCommandProjection(");
+        AssertDoesNotContain(flashbackPlaybackProjectionText, "private readonly record struct FlashbackPlaybackAudioMasterProjection");
+        AssertDoesNotContain(flashbackPlaybackProjectionText, "private readonly record struct FlashbackPlaybackDecodeProjection");
+        AssertDoesNotContain(flashbackPlaybackProjectionText, "private readonly record struct FlashbackPlaybackCommandProjection");
 
-        AssertContains(flashbackPlaybackProjectionText, "private static FlashbackPlaybackAudioMasterProjection BuildFlashbackPlaybackAudioMasterProjection(CaptureHealthSnapshot health)");
-        AssertContains(flashbackPlaybackProjectionText, "Fallbacks = health.FlashbackPlaybackAudioMasterFallbacks,");
-        AssertContains(flashbackPlaybackProjectionText, "LastFallbackReason = health.FlashbackPlaybackAudioMasterLastFallbackReason,");
-        AssertContains(flashbackPlaybackProjectionText, "private readonly record struct FlashbackPlaybackAudioMasterProjection");
+        AssertContains(flashbackPlaybackAudioMasterProjectionText, "private static FlashbackPlaybackAudioMasterProjection BuildFlashbackPlaybackAudioMasterProjection(CaptureHealthSnapshot health)");
+        AssertContains(flashbackPlaybackAudioMasterProjectionText, "Fallbacks = health.FlashbackPlaybackAudioMasterFallbacks,");
+        AssertContains(flashbackPlaybackAudioMasterProjectionText, "LastFallbackReason = health.FlashbackPlaybackAudioMasterLastFallbackReason,");
+        AssertContains(flashbackPlaybackAudioMasterProjectionText, "private readonly record struct FlashbackPlaybackAudioMasterProjection");
 
-        AssertContains(flashbackPlaybackProjectionText, "private static FlashbackPlaybackDecodeProjection BuildFlashbackPlaybackDecodeProjection(CaptureHealthSnapshot health)");
-        AssertContains(flashbackPlaybackProjectionText, "SeekForwardDecodeCapHits = health.FlashbackPlaybackSeekForwardDecodeCapHits,");
-        AssertContains(flashbackPlaybackProjectionText, "MaxPhase = health.FlashbackPlaybackMaxDecodePhase,");
-        AssertContains(flashbackPlaybackProjectionText, "MaxPositionMs = health.FlashbackPlaybackMaxDecodePositionMs");
-        AssertContains(flashbackPlaybackProjectionText, "private readonly record struct FlashbackPlaybackDecodeProjection");
+        AssertContains(flashbackPlaybackDecodeProjectionText, "private static FlashbackPlaybackDecodeProjection BuildFlashbackPlaybackDecodeProjection(CaptureHealthSnapshot health)");
+        AssertContains(flashbackPlaybackDecodeProjectionText, "SeekForwardDecodeCapHits = health.FlashbackPlaybackSeekForwardDecodeCapHits,");
+        AssertContains(flashbackPlaybackDecodeProjectionText, "MaxPhase = health.FlashbackPlaybackMaxDecodePhase,");
+        AssertContains(flashbackPlaybackDecodeProjectionText, "MaxPositionMs = health.FlashbackPlaybackMaxDecodePositionMs");
+        AssertContains(flashbackPlaybackDecodeProjectionText, "private readonly record struct FlashbackPlaybackDecodeProjection");
 
-        AssertContains(flashbackPlaybackProjectionText, "private static FlashbackPlaybackCommandProjection BuildFlashbackPlaybackCommandProjection(CaptureHealthSnapshot health)");
-        AssertContains(flashbackPlaybackProjectionText, "ThreadAlive = health.FlashbackPlaybackThreadAlive,");
-        AssertContains(flashbackPlaybackProjectionText, "LastFailure = health.FlashbackPlaybackLastCommandFailure");
-        AssertContains(flashbackPlaybackProjectionText, "private readonly record struct FlashbackPlaybackCommandProjection");
+        AssertContains(flashbackPlaybackCommandProjectionText, "private static FlashbackPlaybackCommandProjection BuildFlashbackPlaybackCommandProjection(CaptureHealthSnapshot health)");
+        AssertContains(flashbackPlaybackCommandProjectionText, "ThreadAlive = health.FlashbackPlaybackThreadAlive,");
+        AssertContains(flashbackPlaybackCommandProjectionText, "LastFailure = health.FlashbackPlaybackLastCommandFailure");
+        AssertContains(flashbackPlaybackCommandProjectionText, "private readonly record struct FlashbackPlaybackCommandProjection");
 
         return Task.CompletedTask;
     }
