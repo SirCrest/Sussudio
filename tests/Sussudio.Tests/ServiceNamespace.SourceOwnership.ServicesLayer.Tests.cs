@@ -127,11 +127,16 @@ static partial class Program
 
         var captureServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.cs"));
         var captureServiceTelemetryText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.Telemetry.cs"));
+        var captureServiceTelemetryFallbackText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.TelemetryFallback.cs"));
         AssertContains(captureServiceTelemetryText, "pollGeneration != Volatile.Read(ref _telemetryPollGeneration)");
         AssertContains(captureServiceText, "_telemetryPollSync");
         AssertContains(captureServiceTelemetryText, "lock (_telemetryPollSync)");
         AssertContains(captureServiceTelemetryText, "StartTelemetryPollCoreLocked");
         AssertContains(captureServiceTelemetryText, "StartTelemetryPollCore");
         AssertContains(captureServiceTelemetryText, "Telemetry poll start deferred until canceled poll exits");
+        AssertDoesNotContain(captureServiceTelemetryText, "private SourceSignalTelemetrySnapshot BuildFallbackTelemetry()");
+        AssertDoesNotContain(captureServiceTelemetryText, "private static SourceSignalTelemetrySnapshot MergeTelemetryWithFallback(");
+        AssertContains(captureServiceTelemetryFallbackText, "private SourceSignalTelemetrySnapshot BuildFallbackTelemetry()");
+        AssertContains(captureServiceTelemetryFallbackText, "private static SourceSignalTelemetrySnapshot MergeTelemetryWithFallback(");
     }
 }

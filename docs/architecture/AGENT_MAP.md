@@ -694,7 +694,10 @@ Important entry points:
   classification.
 - `CaptureService.ObservedPixelTelemetry.cs` owns observed pixel-format
   normalization, reset, and explicit counter updates.
-- `CaptureService.Telemetry.cs` owns source telemetry polling and fallback merge.
+- `Sussudio/Services/Capture/CaptureService.Telemetry.cs` owns source telemetry
+  polling and provider reads.
+- `Sussudio/Services/Capture/CaptureService.TelemetryFallback.cs` owns fallback
+  snapshot construction and merge policy.
 - `CaptureService.CaptureFormatTelemetry.cs` owns capture-format runtime
   telemetry, NTSC frame-rate correction, and frame-rate argument formatting.
 - `UnifiedVideoCapture.cs` owns public control/configuration surface, capture
