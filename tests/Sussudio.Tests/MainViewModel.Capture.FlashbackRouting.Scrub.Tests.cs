@@ -30,8 +30,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var fullScreenWindowText = ReadRepoFile("Sussudio/MainWindow.FullScreen.cs")
             .Replace("\r\n", "\n");
-        var fullScreenFlashbackBridgeText = ReadRepoFile("Sussudio/MainWindow.FullScreenFlashbackBridge.cs")
-            .Replace("\r\n", "\n");
         var fullScreenControllerText = (
             ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.cs")
             + "\n" + ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Transitions.cs"))
@@ -111,22 +109,24 @@ static partial class Program
         AssertDoesNotContain(flashbackScrubText, "private static bool IsUsableFlashbackTrackDimension(double value)");
         AssertDoesNotContain(flashbackScrubText, "private static bool IsUsableFlashbackDuration(TimeSpan value)");
         AssertContains(fullScreenWindowText, "HandleFlashbackFullScreenKeyDown(sender, e);");
-        AssertContains(fullScreenFlashbackBridgeText, "if (!ViewModel.IsFlashbackEnabled || FlashbackTimelinePanel.Visibility != Visibility.Visible)");
-        AssertContains(fullScreenFlashbackBridgeText, "if (_flashbackCommandController.HandleFullScreenKeyboardCommand(e.Key))\n        {\n            e.Handled = true;\n        }");
+        AssertContains(fullScreenWindowText, "if (!ViewModel.IsFlashbackEnabled || FlashbackTimelinePanel.Visibility != Visibility.Visible)");
+        AssertContains(fullScreenWindowText, "if (_flashbackCommandController.HandleFullScreenKeyboardCommand(e.Key))\n        {\n            e.Handled = true;\n        }");
         AssertContains(fullScreenControllerText, "var timelineVisibleAtExit = _context.ShouldShowFlashbackTimeline();");
-        AssertContains(fullScreenFlashbackBridgeText, "private bool ShouldShowFlashbackTimeline()");
-        AssertContains(fullScreenFlashbackBridgeText, "return ViewModel.IsFlashbackEnabled && ViewModel.IsFlashbackTimelineVisible;");
-        AssertContains(fullScreenFlashbackBridgeText, "=> _flashbackScrubInteractionController.EndForFullScreen();");
+        AssertContains(fullScreenWindowText, "private bool ShouldShowFlashbackTimeline()");
+        AssertContains(fullScreenWindowText, "return ViewModel.IsFlashbackEnabled && ViewModel.IsFlashbackTimelineVisible;");
+        AssertContains(fullScreenWindowText, "=> _flashbackScrubInteractionController.EndForFullScreen();");
         AssertContains(flashbackScrubControllerText, "var carriedPosition = _lastPointerPosition;\n        Logger.Log($\"FLASHBACK_SCRUB_END_FULLSCREEN carried_position_ms={(long?)carriedPosition?.TotalMilliseconds}\");");
         AssertContains(flashbackScrubControllerText, "var ended = carriedPosition.HasValue\n            ? _context.ViewModel.FlashbackEndScrubAt(carriedPosition.Value)\n            : _context.ViewModel.FlashbackEndScrub();\n        if (!ended)");
         AssertContains(flashbackScrubControllerText, "ReportFlashbackPlaybackRejection(\"scrub end (fullscreen_enter)\", \"FLASHBACK_UI_SCRUB_END_REJECTED reason=fullscreen_enter\")");
         AssertDoesNotContain(flashbackScrubControllerText, "var carriedPosition = _context.ViewModel.FlashbackPlaybackPosition;");
         AssertDoesNotContain(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge left\", \"FLASHBACK_UI_NUDGE_REJECTED direction=left\")");
         AssertDoesNotContain(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge right\", \"FLASHBACK_UI_NUDGE_REJECTED direction=right\")");
-        AssertDoesNotContain(fullScreenFlashbackBridgeText, "ReportFlashbackPlaybackRejection(\"nudge left\", \"FLASHBACK_UI_NUDGE_REJECTED direction=left\")");
-        AssertDoesNotContain(fullScreenFlashbackBridgeText, "ReportFlashbackPlaybackRejection(\"nudge right\", \"FLASHBACK_UI_NUDGE_REJECTED direction=right\")");
-        AssertDoesNotContain(fullScreenWindowText, "private bool ShouldShowFlashbackTimeline()");
-        AssertDoesNotContain(fullScreenWindowText, "private void EndFlashbackScrubForFullScreen()");
+        AssertDoesNotContain(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge left\", \"FLASHBACK_UI_NUDGE_REJECTED direction=left\")");
+        AssertDoesNotContain(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge right\", \"FLASHBACK_UI_NUDGE_REJECTED direction=right\")");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.FullScreenFlashbackBridge.cs")),
+            "Flashback fullscreen bridge is consolidated into the fullscreen adapter");
         AssertDoesNotContain(flashbackScrubText, "private bool _isFlashbackScrubbing;");
         AssertDoesNotContain(flashbackScrubText, "private TimeSpan? _lastScrubPointerPosition;");
         AssertDoesNotContain(flashbackScrubText, "private long _lastScrubUpdateTick;");

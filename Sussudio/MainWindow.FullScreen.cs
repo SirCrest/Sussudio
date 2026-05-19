@@ -9,7 +9,8 @@ using Sussudio.Controllers;
 namespace Sussudio;
 
 // XAML-facing full-screen adapter. FullScreenController owns the transition
-// state and overlay mechanics; this partial keeps MainWindow event names stable.
+// state and overlay mechanics; Flashback controllers own keyboard commands and
+// scrub state. This partial keeps MainWindow event names stable.
 public sealed partial class MainWindow
 {
     private void InitializeFullScreenController()
@@ -63,6 +64,20 @@ public sealed partial class MainWindow
         HandleFlashbackFullScreenKeyDown(sender, e);
     }
 
+    private void HandleFlashbackFullScreenKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        // Flashback keyboard shortcuts (only when timeline is visible).
+        if (!ViewModel.IsFlashbackEnabled || FlashbackTimelinePanel.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        if (_flashbackCommandController.HandleFullScreenKeyboardCommand(e.Key))
+        {
+            e.Handled = true;
+        }
+    }
+
     private void PreviewBorder_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
     {
         ToggleFullScreen();
@@ -97,6 +112,14 @@ public sealed partial class MainWindow
 
     private Task ExitFullScreenAsync()
         => _fullScreenController.ExitAsync();
+
+    private bool ShouldShowFlashbackTimeline()
+    {
+        return ViewModel.IsFlashbackEnabled && ViewModel.IsFlashbackTimelineVisible;
+    }
+
+    private void EndFlashbackScrubForFullScreen()
+        => _flashbackScrubInteractionController.EndForFullScreen();
 
     #endregion
 
