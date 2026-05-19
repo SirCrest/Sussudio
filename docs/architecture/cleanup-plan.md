@@ -3459,8 +3459,10 @@ owner, fold it back into that owner and update the source-shape tests and
    compatibility facade, dependency assignment, startup timing, and small
    bridge methods. `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs`
    owns controller graph construction order, while
+   `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.UiDispatch.cs`
+   owns UI-dispatch graph ports,
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Presentation.cs`
-   owns UI-dispatch and preview lifecycle graph ports,
+   owns preview lifecycle graph ports,
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureSettingsAutomation.cs`
    owns capture settings automation graph ports, and
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureModes.cs`

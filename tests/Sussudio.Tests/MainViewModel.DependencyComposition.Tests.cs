@@ -26,6 +26,7 @@ static partial class Program
         var controllerGraphRuntimeText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Runtime.cs").Replace("\r\n", "\n");
         var controllerGraphRuntimeDisposalText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RuntimeDisposal.cs").Replace("\r\n", "\n");
         var controllerGraphRuntimeEventIngressText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RuntimeEventIngress.cs").Replace("\r\n", "\n");
+        var controllerGraphUiDispatchText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.UiDispatch.cs").Replace("\r\n", "\n");
         var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs").Replace("\r\n", "\n");
         var uiDispatchControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.Context.cs").Replace("\r\n", "\n");
         var deviceFormatProbeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
@@ -112,11 +113,11 @@ static partial class Program
         AssertContains(controllerGraphRecordingText, "private sealed partial class MainViewModelControllerGraph");
         AssertContains(controllerGraphRuntimeText, "private sealed partial class MainViewModelControllerGraph");
         AssertContains(controllerGraphText, "public static MainViewModelControllerGraph Create(MainViewModel viewModel)");
-        AssertContains(controllerGraphPresentationText, "private static MainViewModelUiDispatchController CreateUiDispatchController(MainViewModel viewModel)");
         AssertContains(controllerGraphPresentationText, "private static MainViewModelPreviewLifecycleController CreatePreviewLifecycleController(MainViewModel viewModel)");
-        AssertContains(controllerGraphPresentationText, "DispatcherQueue = viewModel._dispatcherQueue,");
-        AssertContains(controllerGraphPresentationText, "IsDisposing = () => Volatile.Read(ref viewModel._disposeState) != 0,");
-        AssertContains(controllerGraphPresentationText, "SetStatusText = value => viewModel.StatusText = value,");
+        AssertContains(controllerGraphUiDispatchText, "private static MainViewModelUiDispatchController CreateUiDispatchController(MainViewModel viewModel)");
+        AssertContains(controllerGraphUiDispatchText, "DispatcherQueue = viewModel._dispatcherQueue,");
+        AssertContains(controllerGraphUiDispatchText, "IsDisposing = () => Volatile.Read(ref viewModel._disposeState) != 0,");
+        AssertContains(controllerGraphUiDispatchText, "SetStatusText = value => viewModel.StatusText = value,");
         AssertContains(controllerGraphText, "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);");
         AssertContains(controllerGraphPresentationText, "new MainViewModelPreviewLifecycleController(\n                new MainViewModelPreviewLifecycleControllerContext");
         AssertContains(controllerGraphPresentationText, "SessionCoordinator = viewModel._sessionCoordinator,");
