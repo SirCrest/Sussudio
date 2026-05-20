@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task D3D11PreviewRenderer_SubmissionLivesInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_SubmissionLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
@@ -39,7 +39,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task D3D11PreviewRenderer_LifecycleLivesInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_LifecycleLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");

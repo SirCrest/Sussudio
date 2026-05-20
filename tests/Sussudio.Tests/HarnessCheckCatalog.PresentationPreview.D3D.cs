@@ -6,9 +6,6 @@ static partial class Program
     private static async Task AddPresentationPreviewD3DChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "D3D preview frame submission lives in focused partial",
-            D3D11PreviewRenderer_SubmissionLivesInFocusedPartial);
-        await AddCheckAsync(results,
             "D3D preview panel binding lives in focused partial",
             D3D11PreviewRenderer_PanelBindingLivesInFocusedPartial);
         await AddCheckAsync(results,
@@ -38,9 +35,6 @@ static partial class Program
         await AddCheckAsync(results,
             "D3D preview input resources live in focused partial",
             D3D11PreviewRenderer_InputResourcesLiveInFocusedPartial);
-        await AddCheckAsync(results,
-            "D3D preview lifecycle lives in focused partial",
-            D3D11PreviewRenderer_LifecycleLivesInFocusedPartial);
         await AddCheckAsync(results,
             "D3D preview device initialization lives in focused partial",
             D3D11PreviewRenderer_DeviceInitializationLivesInFocusedPartial);

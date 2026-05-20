@@ -977,6 +977,11 @@ through
 keeping configuration, native interop, frame types, frame ownership, DXGI frame
 statistics, slow-frame diagnostics, and metric tracking contracts in xUnit after
 their removal from the legacy harness catalog.
+Presentation-preview D3D runtime-capture source-ownership checks now execute
+through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DRuntimeCaptureOwnershipTests.cs`,
+keeping public frame submission and lifecycle contracts in xUnit after their
+removal from the legacy harness catalog.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the

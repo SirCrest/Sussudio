@@ -2575,6 +2575,10 @@ Primary current owners:
   group for configuration, native interop, frame types, frame ownership, DXGI
   frame statistics, slow-frame diagnostics, and metric tracking checks after
   their removal from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DRuntimeCaptureOwnershipTests.cs`
+  owns the former presentation-preview D3D runtime-capture source-ownership
+  group for public frame submission and lifecycle checks after their removal
+  from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral

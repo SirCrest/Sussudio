@@ -230,6 +230,9 @@ add xUnit alongside, and port incrementally.
   former legacy presentation-preview D3D contracts/metrics source-ownership
   group: configuration, native interop, frame types, frame ownership, DXGI frame
   statistics, slow-frame diagnostics, and metric tracking checks.
+- `XUnit.PresentationPreviewD3DRuntimeCaptureOwnershipTests.cs` owns the former
+  legacy presentation-preview D3D runtime-capture source-ownership group: public
+  frame submission and lifecycle checks.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, and test-project shape guard checks.
 - `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy
