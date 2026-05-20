@@ -1,6 +1,5 @@
 using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
-using static Sussudio.Tools.DiagnosticSessionFlashbackSegments;
 using static Sussudio.Tools.DiagnosticSessionFlashbackWaits;
 using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 
@@ -23,35 +22,15 @@ internal static partial class DiagnosticSessionFlashbackSegmentPlaybackScenarios
         var baselineSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
         TryGetSnapshot(baselineSnapshotResponse, out var baselineSnapshot);
 
-        var playbackTarget = await WaitForFlashbackPlayableCompletedSegmentAsync(
+        var playbackTarget = await AcquireFlashbackSegmentPlaybackTargetAsync(
+                actions,
+                warnings,
                 sendCommandAsync,
-                TimeSpan.FromSeconds(5),
                 cancellationToken)
             .ConfigureAwait(false);
 
         if (playbackTarget is null)
         {
-            var rotationOk = await CreateFlashbackCompletedSegmentViaRecordingAsync(
-                    actions,
-                    warnings,
-                    sendCommandAsync,
-                    cancellationToken)
-                .ConfigureAwait(false);
-            if (!rotationOk)
-            {
-                return;
-            }
-
-            playbackTarget = await WaitForFlashbackPlayableCompletedSegmentAsync(
-                    sendCommandAsync,
-                    TimeSpan.FromSeconds(20),
-                    cancellationToken)
-                .ConfigureAwait(false);
-        }
-
-        if (playbackTarget is null)
-        {
-            warnings.Add("flashback segment playback: no playable completed segment became available after recording-assisted rotation");
             return;
         }
 

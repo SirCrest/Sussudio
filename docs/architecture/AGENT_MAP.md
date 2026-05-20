@@ -4296,6 +4296,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Registrations.cs`
   owns completed-segment playback scenario registration, priority, task label,
   and started action string.
+- `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Target.cs`
+  owns completed-segment playback target acquisition, recording-assisted retry
+  routing, and unavailable-target warning policy.
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.LiveRestore.cs`
   owns completed-segment playback go-live restore and final playback-state
   warning policy.

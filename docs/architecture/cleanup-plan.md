@@ -3767,9 +3767,10 @@ not reintroduce an empty family root.
 Diagnostic-session Flashback segment playback now lives in
 `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios*.cs`. The root
 owns completed-segment boundary-crossing choreography, `.Registrations.cs` owns
-task registration, priority, label, and started action, `.LiveRestore.cs` owns
-go-live restore and final playback-state warning policy, `.Validation.cs` owns
-post-boundary snapshot/FPS/command-health warning policy, and
+task registration, priority, label, and started action, `.Target.cs` owns
+playback target acquisition plus recording-assisted retry routing,
+`.LiveRestore.cs` owns go-live restore and final playback-state warning policy,
+`.Validation.cs` owns post-boundary snapshot/FPS/command-health warning policy, and
 recording-assisted segment rotation plus best-effort stop cleanup live beside it
 in `DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`
 while the `DiagnosticSessionFlashbackSegments.*` family stays read-only segment
@@ -3963,6 +3964,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.Registrations.cs`
+- `DiagnosticSessionFlashbackSegmentPlaybackScenarios.Target.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.LiveRestore.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`

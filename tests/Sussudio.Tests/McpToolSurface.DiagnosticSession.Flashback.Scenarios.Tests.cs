@@ -220,6 +220,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentPlaybackLiveRestoreText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.LiveRestore.cs")
             .Replace("\r\n", "\n");
+        var segmentPlaybackTargetText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Target.cs")
+            .Replace("\r\n", "\n");
         var segmentPlaybackValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs")
             .Replace("\r\n", "\n");
 
@@ -227,12 +229,19 @@ static partial class Program
         AssertContains(segmentPlaybackText, "internal static async Task RunFlashbackSegmentPlaybackAsync(");
         AssertContains(segmentPlaybackRootText, "flashback segment playback live headroom established");
         AssertContains(segmentPlaybackRootText, "flashback segment playback started near boundary");
+        AssertContains(segmentPlaybackRootText, "AcquireFlashbackSegmentPlaybackTargetAsync(");
         AssertContains(segmentPlaybackRootText, "ValidateFlashbackSegmentPlaybackSnapshot(");
         AssertContains(segmentPlaybackRootText, "ReturnFlashbackSegmentPlaybackLiveAsync(");
+        AssertDoesNotContain(segmentPlaybackRootText, "WaitForFlashbackPlayableCompletedSegmentAsync(");
+        AssertDoesNotContain(segmentPlaybackRootText, "recording-assisted rotation started");
         AssertDoesNotContain(segmentPlaybackRootText, "frameCount >= 180");
         AssertDoesNotContain(segmentPlaybackRootText, "playback FPS below source-rate target after warm sample");
         AssertDoesNotContain(segmentPlaybackRootText, "internal static void RegisterSelectedFlashbackSegmentPlaybackScenarioTask(");
         AssertDoesNotContain(segmentPlaybackRootText, "\"go-live\"");
+        AssertContains(segmentPlaybackTargetText, "private static async Task<FlashbackSegmentPlaybackTarget?> AcquireFlashbackSegmentPlaybackTargetAsync(");
+        AssertContains(segmentPlaybackTargetText, "WaitForFlashbackPlayableCompletedSegmentAsync(");
+        AssertContains(segmentPlaybackTargetText, "CreateFlashbackCompletedSegmentViaRecordingAsync(");
+        AssertContains(segmentPlaybackTargetText, "no playable completed segment became available after recording-assisted rotation");
         AssertContains(segmentPlaybackValidationText, "private static void ValidateFlashbackSegmentPlaybackSnapshot(");
         AssertContains(segmentPlaybackValidationText, "frameCount >= 180");
         AssertContains(segmentPlaybackValidationText, "playback FPS below source-rate target after warm sample");
