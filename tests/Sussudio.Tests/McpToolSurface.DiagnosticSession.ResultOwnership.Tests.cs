@@ -7,6 +7,7 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var modelText = ReadDiagnosticSessionModelsSource();
         var resultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.cs");
+        var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.Preview.cs");
         var playbackResultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.FlashbackPlayback.cs");
 
         AssertContains(modelText, "public sealed class DiagnosticSessionOptions");
@@ -21,12 +22,15 @@ static partial class Program
         AssertContains(resultText, "// Flashback recording/export summary.");
         AssertContains(resultText, "public bool FlashbackRecordingBackendObserved { get; init; }");
         AssertContains(resultText, "public string FlashbackExportStatusAtEnd { get; init; } = string.Empty;");
-        AssertContains(resultText, "// Preview cadence, scheduler, D3D, and visual-cadence summary.");
-        AssertContains(resultText, "public long PreviewSchedulerDroppedAtEnd { get; init; }");
-        AssertContains(resultText, "public double VisualCadenceOutputFpsAtEnd { get; init; }");
+        AssertContains(previewResultText, "public long PreviewSchedulerDroppedAtEnd { get; init; }");
+        AssertContains(previewResultText, "public double VisualCadenceOutputFpsAtEnd { get; init; }");
+        AssertContains(previewResultText, "public double PreviewD3DInputUploadCpuP99MsAtEnd { get; init; }");
         AssertContains(resultText, "public PresentMonProbeResult? PresentMon { get; init; }");
         AssertDoesNotContain(resultText, "public int FlashbackPlaybackPendingCommandsAtEnd");
+        AssertDoesNotContain(resultText, "public long PreviewSchedulerDroppedAtEnd");
+        AssertDoesNotContain(resultText, "public double VisualCadenceOutputFpsAtEnd");
         AssertDoesNotContain(playbackResultText, "PreviewScheduler");
+        AssertDoesNotContain(previewResultText, "FlashbackPlayback");
         AssertContains(modelText, "public sealed class DiagnosticSessionSample");
         AssertContains(modelText, "public string TerminalState { get; set; }");
         AssertContains(modelText, "public JsonElement Snapshot { get; init; }");

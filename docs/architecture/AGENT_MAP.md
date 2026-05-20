@@ -3641,9 +3641,11 @@ Primary owners:
   plan assigned to each normalized scenario.
 - `tools/Common/DiagnosticSessionResult.cs` owns diagnostic-session summary DTO
   fields: core metadata, artifact paths, terminal state, actions, warnings,
-  overview, capture/source, preview, Flashback recording, and Flashback export.
-  `DiagnosticSessionResult.FlashbackPlayback.cs` owns Flashback playback
-  command, cadence, decode, audio-master, and stage fields.
+  overview, capture/source, Flashback recording, and Flashback export.
+  `DiagnosticSessionResult.Preview.cs` owns preview cadence, scheduler, D3D,
+  and visual-cadence fields. `DiagnosticSessionResult.FlashbackPlayback.cs`
+  owns Flashback playback command, cadence, decode, audio-master, and stage
+  fields.
 - `tools/Common/DiagnosticSessionSample.cs` owns sampled snapshot DTOs.
 - `tools/Common/DiagnosticSessionResultBuilder.cs` owns diagnostic-session
   result phase orchestration, artifact-write handoff, summary-write handoff,

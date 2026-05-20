@@ -3040,9 +3040,10 @@ text policy stays in
 `MainWindow.OutputPath.cs` is the XAML-facing adapter used by binding setup and
 button events.
 
-Diagnostic session DTOs live in model files without tiny property-only shards:
+Diagnostic session DTOs live in feature-oriented model files:
 `tools/Common/DiagnosticSessionOptions.cs`,
 `tools/Common/DiagnosticSessionResult.cs`,
+`tools/Common/DiagnosticSessionResult.Preview.cs`,
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.cs`,
 `tools/Common/DiagnosticSessionSample.cs`. `DiagnosticSessionOptions.cs` also owns
 shared tool invocation defaults and the ssctl diagnostic-session usage string,
@@ -3601,6 +3602,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionMetrics.Counters.cs`
 - `DiagnosticSessionOptions.cs`
 - `DiagnosticSessionResult.cs`
+- `DiagnosticSessionResult.Preview.cs`
 - `DiagnosticSessionResult.FlashbackPlayback.cs`
 - `DiagnosticSessionSample.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
