@@ -3370,9 +3370,10 @@ plus simple playback command and playback stage/seek-cap rows,
 `.FlashbackExport.cs` owns Flashback export summary text, and
 `.FlashbackPlayback.Performance.cs` owns playback cadence/audio-master
 performance text. `.FlashbackPlayback.Decode.cs` owns playback decode text,
-`.Preview.cs` owns preview section ordering plus preview scheduler, D3D
-performance/slow-frame, D3D CPU timing, and visual cadence text. `.Artifacts.cs`
-owns artifact/action/warning sections, and
+`.Preview.cs` owns preview section ordering plus preview scheduler text,
+`.PreviewD3D.cs` owns D3D performance/slow-frame and CPU timing text, and
+`.PreviewVisualCadence.cs` owns visual cadence text. `.Artifacts.cs` owns
+artifact/action/warning sections, and
 `DiagnosticSessionOptionalTextFormatter.cs` owns shared optional text helpers.
 The runner keeps `Format(...)` as a compatibility wrapper so existing ssctl
 and MCP callers do not need to know about the formatter owner.
@@ -3945,6 +3946,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs`
 - `DiagnosticSessionResultFormatter.Preview.cs`
+- `DiagnosticSessionResultFormatter.PreviewD3D.cs`
+- `DiagnosticSessionResultFormatter.PreviewVisualCadence.cs`
 - `DiagnosticSessionResultFormatter.Artifacts.cs`
 - `DiagnosticSessionRunState.cs`
 - `DiagnosticSessionLiveStateWriter.cs`
