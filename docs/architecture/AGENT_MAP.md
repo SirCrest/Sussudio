@@ -1965,6 +1965,9 @@ Primary current owners:
   and timing-policy ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.PolicyBehavior.Tests.cs`
   owns automatic frame-rate choice and pure timing-policy behavior assertions.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewFrameRateSelectionContractsTests.cs`
+  owns xUnit execution for the former legacy presentation-preview frame-rate
+  selection/timing catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.VideoFormat.Tests.cs`
   owns selected capture-format and mode-tuple video-format filtering policy
   assertions.

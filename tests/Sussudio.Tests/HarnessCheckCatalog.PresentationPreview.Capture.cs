@@ -6,18 +6,6 @@ static partial class Program
     private static async Task AddPresentationPreviewCaptureChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Show all capture options unlocks source-filtered frame rates",
-            ShowAllCaptureOptions_UnlocksSourceFilteredFrameRates);
-        await AddCheckAsync(results,
-            "Frame-rate source filter policy lives in focused helper",
-            FrameRateSourceFilterPolicy_LivesInFocusedHelper);
-        await AddCheckAsync(results,
-            "Frame-rate auto selection policy lives in focused helper",
-            FrameRateAutoSelectionPolicy_LivesInFocusedHelper);
-        await AddCheckAsync(results,
-            "Frame-rate auto selection policy preserves behavior",
-            FrameRateAutoSelectionPolicy_PreservesSelectionBehavior);
-        await AddCheckAsync(results,
             "Resolution selection policy lives in focused partial",
             ResolutionSelectionPolicy_LivesInFocusedPartial);
         await AddCheckAsync(results,
@@ -41,12 +29,6 @@ static partial class Program
         await AddCheckAsync(results,
             "Mode selection state lives in focused partial",
             ModeSelectionState_LivesInFocusedPartial);
-        await AddCheckAsync(results,
-            "Frame-rate timing policy lives in focused partial",
-            FrameRateTimingPolicy_LivesInFocusedPartial);
-        await AddCheckAsync(results,
-            "Frame-rate timing policy preserves pure timing behavior",
-            FrameRateTimingPolicy_PreservesPureTimingBehavior);
         await AddCheckAsync(results,
             "Capture format selection policy lives in focused helper",
             CaptureFormatSelectionPolicy_LivesInFocusedHelper);

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FrameRateAutoSelectionPolicy_PreservesSelectionBehavior()
+    internal static Task FrameRateAutoSelectionPolicy_PreservesSelectionBehavior()
     {
         var frameRateType = RequireType("Sussudio.Models.FrameRateOption");
 
@@ -108,7 +108,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FrameRateTimingPolicy_PreservesPureTimingBehavior()
+    internal static Task FrameRateTimingPolicy_PreservesPureTimingBehavior()
     {
         var mediaFormatType = RequireType("Sussudio.Models.MediaFormat");
         var policyType = RequireType("Sussudio.ViewModels.FrameRateTimingPolicy");

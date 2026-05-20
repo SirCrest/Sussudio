@@ -4256,6 +4256,9 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.Capture.SelectionPolicy.FrameRates.Ownership.Tests.cs`, while
    automatic-selection and pure timing-policy behavior checks live in
    `MainViewModel.Capture.SelectionPolicy.FrameRates.PolicyBehavior.Tests.cs`.
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewFrameRateSelectionContractsTests.cs`
+   owns xUnit execution for those frame-rate selection/timing checks after
+   their removal from the legacy presentation-preview capture catalog.
    Shared frame-rate selection reset,
    resolved automatic frame-rate application, disabled frame-rate reason
    projection, and capture-mode reset flags live in

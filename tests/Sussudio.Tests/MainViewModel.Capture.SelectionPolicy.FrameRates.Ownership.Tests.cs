@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task ShowAllCaptureOptions_UnlocksSourceFilteredFrameRates()
+    internal static Task ShowAllCaptureOptions_UnlocksSourceFilteredFrameRates()
     {
         var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
@@ -37,7 +37,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FrameRateSourceFilterPolicy_LivesInFocusedHelper()
+    internal static Task FrameRateSourceFilterPolicy_LivesInFocusedHelper()
     {
         var frameRateOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
@@ -79,7 +79,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FrameRateAutoSelectionPolicy_LivesInFocusedHelper()
+    internal static Task FrameRateAutoSelectionPolicy_LivesInFocusedHelper()
     {
         var frameRateOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
@@ -120,7 +120,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FrameRateTimingPolicy_LivesInFocusedPartial()
+    internal static Task FrameRateTimingPolicy_LivesInFocusedPartial()
     {
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");

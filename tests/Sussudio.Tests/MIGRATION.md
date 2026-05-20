@@ -210,6 +210,10 @@ add xUnit alongside, and port incrementally.
 - `XUnit.PresentationPreviewCaptureSelectionContractsTests.cs` owns the former
   legacy presentation-preview MainWindow capture selection binding, routing,
   collection sync, focused owner, device-audio projection, and normalizer checks.
+- `XUnit.PresentationPreviewFrameRateSelectionContractsTests.cs` owns the
+  former legacy presentation-preview frame-rate selection group:
+  `ShowAllCaptureOptions`, source-filter, auto-selection, and timing-policy
+  behavior/ownership checks.
 - `XUnit.PresentationPreviewCaptureOptionContractsTests.cs` owns the former
   legacy presentation-preview MainWindow capture device action, option
   presentation, affordance policy, option binding, and tooltip formatter checks.
