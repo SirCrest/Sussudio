@@ -3654,6 +3654,8 @@ owner, fold it back into that owner and update the source-shape tests and
    bitrate sampling, and recording-settings/Flashback-cycle owners.
    Diagnostics refresh core ownership is split behind a small orchestrator into
    evaluation, runtime/HDR, and snapshot-projection owners.
+   MainWindow window-lifecycle coverage separates close-protection behavior
+   from close lifecycle and shutdown cleanup ownership.
 
 3. Continue converting MainWindow partial concerns into controllers.
 
