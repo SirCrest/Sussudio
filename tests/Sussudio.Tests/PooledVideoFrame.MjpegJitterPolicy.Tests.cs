@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MjpegPreviewJitter_ExposesAdaptiveDeadlinePolicy()
+    internal static Task MjpegPreviewJitter_ExposesAdaptiveDeadlinePolicy()
     {
         var source = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FrameIngress.cs")
@@ -62,7 +62,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MjpegPreviewJitter_EmitLoopLivesInFocusedPartial()
+    internal static Task MjpegPreviewJitter_EmitLoopLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs")
             .Replace("\r\n", "\n");

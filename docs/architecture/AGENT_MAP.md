@@ -2164,6 +2164,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/MjpegPipeline.Tests.cs` owns CPU MJPEG pipeline
   source-shape, focused-partial ownership, startup-drop, known-loss, and
   shared-reorder behavior checks.
+  `tests/Sussudio.Tests/XUnit.MjpegPipelineContractsTests.cs` owns the xUnit
+  execution surface for these CPU MJPEG runtime, cadence, pooled-frame,
+  preview-jitter, and queued lease-release contracts after their removal from
+  the legacy harness catalog.
 - `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.Behavior.Tests.cs` owns
   CaptureService runtime snapshot behavior scenarios for observed formats,
   source-telemetry alignment, HDR pipeline parity, and inactive thread probes.

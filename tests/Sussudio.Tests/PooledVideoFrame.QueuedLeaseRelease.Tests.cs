@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task D3DPreviewPendingFrame_ReleasesQueuedLease()
+    internal static Task D3DPreviewPendingFrame_ReleasesQueuedLease()
     {
         var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
         var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
@@ -41,7 +41,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MjpegLeasedVideoPackets_ReleaseQueuedLeases()
+    internal static Task MjpegLeasedVideoPackets_ReleaseQueuedLeases()
     {
         AssertLeasedPacketReturnDisposesLease(
             sinkTypeName: "Sussudio.Services.Recording.LibAvRecordingSink",

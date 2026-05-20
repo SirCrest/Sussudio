@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task ParallelMjpegDecodePipeline_SharedReorder_DoesNotSynthesizeRecordingSkips()
+    internal static Task ParallelMjpegDecodePipeline_SharedReorder_DoesNotSynthesizeRecordingSkips()
     {
         var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Workers.cs")
@@ -51,7 +51,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ParallelMjpegDecodePipeline_CompressedQueueLivesInFocusedPartial()
+    internal static Task ParallelMjpegDecodePipeline_CompressedQueueLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
             .Replace("\r\n", "\n");
@@ -76,7 +76,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ParallelMjpegDecodePipeline_WorkersLiveInFocusedPartial()
+    internal static Task ParallelMjpegDecodePipeline_WorkersLiveInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
             .Replace("\r\n", "\n");
@@ -97,7 +97,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ParallelMjpegDecodePipeline_ReorderLivesInFocusedPartial()
+    internal static Task ParallelMjpegDecodePipeline_ReorderLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
             .Replace("\r\n", "\n");
@@ -132,7 +132,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ParallelMjpegDecodePipeline_LifecycleLivesInFocusedPartial()
+    internal static Task ParallelMjpegDecodePipeline_LifecycleLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
             .Replace("\r\n", "\n");
@@ -168,7 +168,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ParallelMjpegDecodePipeline_DropsStartupNonJpegBeforeSequencing()
+    internal static Task ParallelMjpegDecodePipeline_DropsStartupNonJpegBeforeSequencing()
     {
         var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.CompressedQueue.cs");
         var guardIndex = source.IndexOf("!HasJpegStartOfImage(jpegData)", StringComparison.Ordinal);
@@ -183,7 +183,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ParallelMjpegDecodePipeline_KnownLossSkipsInsteadOfSignalingFatal()
+    internal static Task ParallelMjpegDecodePipeline_KnownLossSkipsInsteadOfSignalingFatal()
     {
         var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
         var pipeline = RuntimeHelpers.GetUninitializedObject(pipelineType);

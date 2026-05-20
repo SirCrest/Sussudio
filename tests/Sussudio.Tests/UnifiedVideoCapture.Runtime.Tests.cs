@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task UnifiedVideoCapture_CpuMjpegEmitReportsNv12()
+    internal static Task UnifiedVideoCapture_CpuMjpegEmitReportsNv12()
     {
         var unifiedVideoCapture = CreateInstance("Sussudio.Services.Capture.UnifiedVideoCapture");
         var observed = string.Empty;
@@ -46,7 +46,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static async Task UnifiedVideoCapture_RetainsMjpegPipeline_WhenStopFails()
+    internal static async Task UnifiedVideoCapture_RetainsMjpegPipeline_WhenStopFails()
     {
         var unifiedVideoCapture = CreateInstance("Sussudio.Services.Capture.UnifiedVideoCapture");
         var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");

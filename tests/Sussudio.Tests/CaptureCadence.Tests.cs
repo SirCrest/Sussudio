@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps()
+    internal static Task FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps()
     {
         var trackerSource = ReadRepoFile("Sussudio/Services/Capture/FrameFingerprintCadenceTracker.cs").Replace("\r\n", "\n");
         var trackerMetricsSource = ReadRepoFile("Sussudio/Services/Capture/FrameFingerprintCadenceTracker.Metrics.cs").Replace("\r\n", "\n");
@@ -67,7 +67,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task VisualCadenceTracker_UsesExactCropPixelsWithOnePassDiff()
+    internal static Task VisualCadenceTracker_UsesExactCropPixelsWithOnePassDiff()
     {
         var trackerSource = ReadRepoFile("Sussudio/Services/Capture/VisualCadenceTracker.cs").Replace("\r\n", "\n");
         var trackerSamplingSource = ReadRepoFile("Sussudio/Services/Capture/VisualCadenceTracker.Sampling.cs").Replace("\r\n", "\n");

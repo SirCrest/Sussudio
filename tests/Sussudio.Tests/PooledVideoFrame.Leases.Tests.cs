@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task PooledVideoFrame_LeaseLifecycle_ReturnsBufferAfterLastRelease()
+    internal static Task PooledVideoFrame_LeaseLifecycle_ReturnsBufferAfterLastRelease()
     {
         var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
         var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
@@ -53,7 +53,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PooledVideoFrame_AddLeaseAfterReturn_Throws()
+    internal static Task PooledVideoFrame_AddLeaseAfterReturn_Throws()
     {
         var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
         var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
@@ -78,7 +78,7 @@ static partial class Program
         throw new InvalidOperationException("AddLease after return should throw ObjectDisposedException.");
     }
 
-    private static Task PooledVideoFrame_OwnerDisposeClosesNewLeasesButExistingLeaseRemainsReadable()
+    internal static Task PooledVideoFrame_OwnerDisposeClosesNewLeasesButExistingLeaseRemainsReadable()
     {
         var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
         var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
@@ -109,7 +109,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MjpegPooledFrameFanout_ExposesLeaseContracts()
+    internal static Task MjpegPooledFrameFanout_ExposesLeaseContracts()
     {
         var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
         var leaseType = RequireType("Sussudio.Services.Contracts.PooledVideoFrameLease");

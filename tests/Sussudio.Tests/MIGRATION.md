@@ -68,6 +68,9 @@ add xUnit alongside, and port incrementally.
   finalization and rollback behavior checks for recording output cleanup.
 - `MjpegPipeline.Timing.Tests.cs` owns the former legacy CPU MJPEG timing
   metric, stopwatch timeout, and software decoder shape checks.
+- `XUnit.MjpegPipelineContractsTests.cs` owns the former legacy CPU MJPEG
+  pipeline, pooled-frame lease/fan-out, preview jitter, cadence, and queued
+  lease-release checks.
 - `XUnit.FlashbackModelsTests.cs` owns the former legacy Flashback buffer option
   sizing, session, playback-state, export progress, export segment, and export
   request model contract checks; `XUnit.FlashbackModels.PropertyAssertions.cs`

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MjpegPreviewJitter_DropsSoftDeadlineOverflowToRecoverLatency()
+    internal static Task MjpegPreviewJitter_DropsSoftDeadlineOverflowToRecoverLatency()
     {
         var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
         var jitter = CreateUnstartedJitterBuffer(jitterType, targetDepth: 3);
@@ -39,7 +39,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MjpegPreviewJitter_DropsExpiredFramesBelowTargetDepth()
+    internal static Task MjpegPreviewJitter_DropsExpiredFramesBelowTargetDepth()
     {
         var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
         var jitter = CreateUnstartedJitterBuffer(jitterType, targetDepth: 6);
@@ -63,7 +63,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MjpegPreviewJitter_SkipsMissingPreviewSequenceAfterDeadline()
+    internal static Task MjpegPreviewJitter_SkipsMissingPreviewSequenceAfterDeadline()
     {
         var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
         var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
@@ -100,7 +100,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MjpegPreviewJitter_LateSequenceDoesNotCountAsQueued()
+    internal static Task MjpegPreviewJitter_LateSequenceDoesNotCountAsQueued()
     {
         var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
         var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
@@ -132,7 +132,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MjpegPreviewJitter_ClearResetsPreviewSequence()
+    internal static Task MjpegPreviewJitter_ClearResetsPreviewSequence()
     {
         var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
         var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
@@ -180,7 +180,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MjpegPreviewJitter_ReprimesAfterSuppressionResume()
+    internal static Task MjpegPreviewJitter_ReprimesAfterSuppressionResume()
     {
         var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
         var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
