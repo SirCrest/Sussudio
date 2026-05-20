@@ -4227,7 +4227,11 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackExport.cs`
   owns playback-preview-cycle export-while-preview-off verification.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
-  owns Flashback-recording-backed preview stop/restart diagnostic flow.
+  owns Flashback-recording-backed preview stop/restart diagnostic command
+  choreography.
+- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingValidation.cs`
+  owns recording-backed preview-cycle readiness, preview-off counter, and
+  restart/frame-flow validation.
 - `tools/Common/DiagnosticSessionFlashbackRejectedExports.cs` owns Flashback
   rejected-export diagnostic scenario dispatch.
 - `tools/Common/DiagnosticSessionFlashbackRejectedExports.Inactive.cs` owns

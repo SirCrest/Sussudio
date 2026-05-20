@@ -3723,8 +3723,10 @@ command choreography for normal Flashback, playback, and recording-backed
 diagnostics. Playback-preview-cycle warmup, stopped-state, and restart
 frame-flow validation live in `.PlaybackValidation.cs`. Normal Flashback and
 playback-preview-cycle export-while-preview-off verification live in
-`.FlashbackExport.cs` and `.PlaybackExport.cs` while startup only delegates
-selected scenario registration.
+`.FlashbackExport.cs` and `.PlaybackExport.cs`. Recording-backed readiness,
+preview-off counter, and restart frame-flow validation live in
+`.RecordingValidation.cs` while startup only delegates selected scenario
+registration.
 
 Diagnostic-session Flashback rejected-export scenarios now live in the
 `tools/Common/DiagnosticSessionFlashbackRejectedExports*.cs` partial family.
@@ -3900,6 +3902,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackValidation.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackExport.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
+- `DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingValidation.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackRejectedExports.Inactive.cs`
 - `DiagnosticSessionFlashbackRejectedExports.Recording.cs`

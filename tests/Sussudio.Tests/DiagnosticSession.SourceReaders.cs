@@ -59,7 +59,8 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs",
             "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackValidation.cs",
             "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackExport.cs",
-            "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs");
+            "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs",
+            "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingValidation.cs");
 
     private static string ReadDiagnosticSessionFlashbackRecordingSettingsScenariosSource()
         => ReadNormalizedSourceFiles(

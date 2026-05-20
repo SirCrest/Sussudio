@@ -55,6 +55,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackExportText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackExport.cs")
             .Replace("\r\n", "\n");
+        var recordingCycleText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs")
+            .Replace("\r\n", "\n");
+        var recordingValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingValidation.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(cyclesText, "internal static partial class DiagnosticSessionFlashbackPreviewCycleScenarios");
         AssertContains(cyclesText, "internal static async Task RunFlashbackPreviewCycleAsync(");
@@ -87,6 +91,19 @@ static partial class Program
         AssertContains(playbackExportText, "flashback playback preview cycle export verified");
         AssertContains(cyclesText, "internal static async Task RunFlashbackRecordingPreviewCycleAsync(");
         AssertContains(cyclesText, "flashback recording preview cycle preview stopped");
+        AssertContains(recordingCycleText, "CaptureRecordingPreviewCycleCountersBeforeStopAsync(");
+        AssertContains(recordingCycleText, "ValidateRecordingPreviewCycleStoppedAsync(");
+        AssertContains(recordingCycleText, "ValidateRecordingPreviewCycleRestartedAsync(");
+        AssertDoesNotContain(recordingCycleText, "WaitForFlashbackRecordingReadyAsync(");
+        AssertDoesNotContain(recordingCycleText, "recording counters did not advance while preview was off");
+        AssertDoesNotContain(recordingCycleText, "VideoFramesFlowing");
+        AssertContains(recordingValidationText, "private readonly record struct RecordingPreviewCycleCounters(");
+        AssertContains(recordingValidationText, "private static async Task<RecordingPreviewCycleCounters?> CaptureRecordingPreviewCycleCountersBeforeStopAsync(");
+        AssertContains(recordingValidationText, "WaitForFlashbackRecordingReadyAsync(");
+        AssertContains(recordingValidationText, "private static async Task<bool> ValidateRecordingPreviewCycleStoppedAsync(");
+        AssertContains(recordingValidationText, "flashback recording preview cycle: recording counters did not advance while preview was off");
+        AssertContains(recordingValidationText, "private static async Task ValidateRecordingPreviewCycleRestartedAsync(");
+        AssertContains(recordingValidationText, "VideoFramesFlowing");
         AssertDoesNotContain(cyclesText, "internal static bool IsPreviewCycleScenario(");
         AssertContains(cyclesText, "internal static void RegisterSelectedFlashbackPreviewCycleScenarioTasks(");
         AssertContains(cyclesText, "13,\n                \"flashback-preview-cycle-task\",");
