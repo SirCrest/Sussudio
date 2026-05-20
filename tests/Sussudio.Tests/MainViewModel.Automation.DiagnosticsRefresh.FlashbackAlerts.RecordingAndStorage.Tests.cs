@@ -24,8 +24,8 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "status.Equals(\"Succeeded\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(diagnostics.SourceFamilyText, "status.Equals(\"Cancelled\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(diagnostics.SourceFamilyText, "snapshot.FlashbackExportFailureKind");
-        AssertContains(diagnostics.SourceFamilyText, "FlashbackBackendSettingsStale = flashbackRecordingFlattening.BackendSettingsStale,");
-        AssertContains(diagnostics.SourceFamilyText, "BackendSettingsStale = flashbackRecording.BackendSettingsStale,");
+        AssertContains(diagnostics.SourceFamilyText, "FlashbackBackendSettingsStale = flashbackRecordingFlattening.Backend.SettingsStale,");
+        AssertContains(diagnostics.SourceFamilyText, "SettingsStale = flashbackRecording.BackendSettingsStale,");
         AssertContains(diagnostics.SourceFamilyText, "BackendSettingsStale = health.FlashbackBackendSettingsStale,");
         AssertContains(diagnostics.SourceFamilyText, "backendStale={health.FlashbackBackendSettingsStale}");
         AssertContains(diagnostics.SourceFamilyText, "kind={failureKind}");

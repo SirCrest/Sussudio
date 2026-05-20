@@ -204,12 +204,14 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.Backend.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs")
                 .Replace("\r\n", "\n");
-        AssertContains(automationDiagnosticsHubText, "FlashbackExportVerificationFormat = flashbackRecordingFlattening.ExportVerificationFormat,");
+        AssertContains(automationDiagnosticsHubText, "FlashbackExportVerificationFormat = flashbackRecordingFlattening.Backend.ExportVerificationFormat,");
         AssertContains(automationDiagnosticsHubText, "ExportVerificationFormat = flashbackRecording.ExportVerificationFormat,");
         AssertContains(automationDiagnosticsHubText, "ExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
-        AssertContains(automationDiagnosticsHubText, "FlashbackCodecDowngradeReason = flashbackRecordingFlattening.CodecDowngradeReason,");
+        AssertContains(automationDiagnosticsHubText, "FlashbackCodecDowngradeReason = flashbackRecordingFlattening.Backend.CodecDowngradeReason,");
         AssertContains(automationDiagnosticsHubText, "CodecDowngradeReason = flashbackRecording.CodecDowngradeReason,");
         AssertContains(automationDiagnosticsHubText, "CodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason,");
         AssertDoesNotContain(captureServiceText, "var fbFileNameFormatOverride =");

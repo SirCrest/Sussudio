@@ -238,8 +238,19 @@ startup cache policy consumed by the automation snapshot DTO.
 Flashback video, GPU, and audio queue/backpressure projection consumed by the
 automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.cs`
-owns final Flashback recording, startup-cache, backend, encoder, and
-queue/backpressure projection-to-`AutomationSnapshot` field flattening.
+owns final Flashback recording projection-to-`AutomationSnapshot` field
+flattening plus failure, cleanup, and force-rotate fields.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.StartupCache.cs`
+owns flattened Flashback startup-cache storage fields.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.Queues.cs`
+owns flattened Flashback video, GPU, and audio queue/backpressure fields.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.Runtime.cs`
+owns flattened active recording output/runtime fields.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.Backend.cs`
+owns flattened backend settings drift, export-verification, and codec downgrade
+fields.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.Encoder.cs`
+owns flattened encoder identity, bitrate, dimension, and frame-rate fields.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs` owns
 Flashback playback state, frame cadence metrics, stage counters, and routing to
 the playback leaf projections consumed by the automation snapshot DTO.
