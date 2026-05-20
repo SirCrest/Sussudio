@@ -4,6 +4,9 @@ static partial class Program
 {
     private static Task MainViewModelRuntimeControllers_UseDependencyCompositionContexts()
     {
+        var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
+        var controllerGraphRuntimeText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Runtime.cs").Replace("\r\n", "\n");
+        var controllerGraphRuntimeDisposalText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RuntimeDisposal.cs").Replace("\r\n", "\n");
         var controllerGraphSourceTelemetryText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.SourceTelemetry.cs").Replace("\r\n", "\n");
         var controllerGraphRuntimeEventIngressText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RuntimeEventIngress.cs").Replace("\r\n", "\n");
         var sourceTelemetryControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs").Replace("\r\n", "\n");
@@ -32,6 +35,16 @@ static partial class Program
         AssertContains(sourceTelemetryControllerText, "public void OnSourceTelemetryUpdated(object? sender, SourceSignalTelemetrySnapshot snapshot)");
         AssertContains(sourceTelemetryControllerText, "public void ApplySourceTelemetrySnapshot(SourceSignalTelemetrySnapshot snapshot, bool allowAutoRetarget)");
         AssertContains(sourceTelemetryControllerText, "public void RefreshSourceTelemetrySummaryAge()");
+
+        AssertContains(controllerGraphRuntimeText, "private sealed partial class MainViewModelControllerGraph");
+        AssertContains(controllerGraphRuntimeText, "private static MainViewModelRuntimeLifecycleController CreateRuntimeLifecycleController(");
+        AssertContains(controllerGraphRuntimeText, "new MainViewModelRuntimeLifecycleController(\n                new MainViewModelRuntimeLifecycleControllerContext");
+        AssertContains(controllerGraphRuntimeText, "CreateEventIngressController = () => CreateRuntimeEventIngressController(viewModel, previewLifecycleController),");
+        AssertContains(controllerGraphRuntimeText, "GetRuntimeSnapshot = viewModel._captureService.GetRuntimeSnapshot,");
+        AssertOccursBefore(
+            controllerGraphText,
+            "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
+            "var runtimeLifecycleController = CreateRuntimeLifecycleController(viewModel, previewLifecycleController);");
 
         AssertContains(runtimeLifecycleControllerText, "private sealed class MainViewModelRuntimeLifecycleController");
         AssertContains(runtimeLifecycleControllerText, "private readonly MainViewModelRuntimeEventIngressController _eventIngressController;");
@@ -86,6 +99,12 @@ static partial class Program
         AssertContains(runtimeEventIngressSubscriptionsText, "_context.DetachCaptureStatusChanged(OnCaptureStatusChanged);");
         AssertContains(runtimeEventIngressSubscriptionsText, "_context.DetachAudioLevelUpdated(_context.OnAudioLevelUpdated);");
         AssertContains(runtimeEventIngressSubscriptionsText, "SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;");
+
+        AssertContains(controllerGraphRuntimeDisposalText, "private static MainViewModelDisposalController CreateDisposalController(MainViewModel viewModel)");
+        AssertContains(controllerGraphRuntimeDisposalText, "new MainViewModelDisposalController(\n                new MainViewModelDisposalControllerContext");
+        AssertContains(controllerGraphRuntimeDisposalText, "TryBeginDispose = () => Interlocked.Exchange(ref viewModel._disposeState, 1) == 0,");
+        AssertContains(controllerGraphRuntimeDisposalText, "CleanupSessionCoordinatorAsync = () => viewModel._sessionCoordinator.CleanupAsync(),");
+        AssertContains(controllerGraphText, "public MainViewModelDisposalController DisposalController { get; }");
 
         AssertContains(disposalText, "private void CancelActiveFlashbackExportForDispose()");
         AssertContains(disposalText, "=> _disposalController.Dispose();");
