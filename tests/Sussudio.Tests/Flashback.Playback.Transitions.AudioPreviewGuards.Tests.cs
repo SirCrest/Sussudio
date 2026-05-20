@@ -5,6 +5,10 @@ static partial class Program
     private static Task FlashbackPlaybackController_PlaybackTransitions_UseBestEffortAudioPreviewGuards()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+        var audioMasterText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs")
+            .Replace("\r\n", "\n");
         var wasapiPlaybackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs")
             .Replace("\r\n", "\n");
         var wasapiPlaybackQueueText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.Queue.cs")
@@ -87,6 +91,14 @@ static partial class Program
         AssertContains(sourceText, "const double MaxAudioMasterCorrectionMs = 250.0;");
         AssertContains(sourceText, "const double syncThresholdMs = 100.0;");
         AssertContains(sourceText, "private string _pendingAudioMasterFallbackReason = string.Empty;");
+        AssertContains(audioMasterText, "private long _audioClockPtsTicks;");
+        AssertContains(audioMasterText, "private long _audioClockWallTicks;");
+        AssertContains(audioMasterText, "private long _playbackAudioMasterFallbacks;");
+        AssertContains(audioMasterText, "private string _playbackAudioMasterLastFallbackReason = string.Empty;");
+        AssertContains(audioMasterText, "private string _pendingAudioMasterFallbackReason = string.Empty;");
+        AssertDoesNotContain(rootText, "private long _audioClockPtsTicks;");
+        AssertDoesNotContain(rootText, "private long _playbackAudioMasterFallbacks;");
+        AssertDoesNotContain(rootText, "private string _pendingAudioMasterFallbackReason = string.Empty;");
         AssertContains(sourceText, "private static bool IsTransientAudioMasterFallbackCandidate(string reason)");
         AssertContains(sourceText, "string.Equals(reason, \"unavailable\", StringComparison.Ordinal)");
         AssertContains(sourceText, "string.Equals(reason, \"stale-clock\", StringComparison.Ordinal)");

@@ -57,23 +57,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     // --- A/V sync tracking (ffplay-style audio-master clock) ---
     private long _lastAudioPtsTicks;  // PTS of last audio chunk delivered to WASAPI
     private long _lastVideoPtsTicks;  // PTS of last video frame displayed
-    // Audio clock extrapolation: between WASAPI rendering PTS updates (~21ms for AAC),
-    // we estimate the current audio position by adding wall-clock elapsed time.
-    private long _audioClockPtsTicks;       // Last sampled audio rendering PTS
-    private long _audioClockWallTicks;      // Stopwatch.GetTimestamp() when _audioClockPtsTicks was sampled
     private long _playbackDroppedFrames;    // Frames dropped because video was too far behind audio
-    private long _playbackAudioMasterDelayDoubles;
-    private long _playbackAudioMasterDelayShrinks;
-    private long _playbackAudioMasterFallbacks;
-    private long _playbackAudioMasterUnavailableFallbacks;
-    private long _playbackAudioMasterStaleFallbacks;
-    private long _playbackAudioMasterDriftOutlierFallbacks;
-    private string _playbackAudioMasterLastFallbackReason = string.Empty;
-    private double _playbackAudioMasterLastFallbackDriftMs;
-    private double _playbackAudioMasterLastFallbackClockAgeMs;
-    private string _pendingAudioMasterFallbackReason = string.Empty;
-    private double _pendingAudioMasterFallbackDriftMs;
-    private long _pendingAudioMasterFallbackClockAgeTicks;
     private readonly string _playbackMmcssTask = Environment.GetEnvironmentVariable("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_TASK") ?? "Playback";
     private readonly int _playbackMmcssPriority = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_PRIORITY", 1, -2, 2);
 

@@ -6,6 +6,23 @@ namespace Sussudio.Services.Flashback;
 
 internal sealed partial class FlashbackPlaybackController
 {
+    // Last sampled audio rendering PTS plus the wall-clock anchor used for
+    // extrapolated audio-master pacing between WASAPI render callbacks.
+    private long _audioClockPtsTicks;
+    private long _audioClockWallTicks;
+    private long _playbackAudioMasterDelayDoubles;
+    private long _playbackAudioMasterDelayShrinks;
+    private long _playbackAudioMasterFallbacks;
+    private long _playbackAudioMasterUnavailableFallbacks;
+    private long _playbackAudioMasterStaleFallbacks;
+    private long _playbackAudioMasterDriftOutlierFallbacks;
+    private string _playbackAudioMasterLastFallbackReason = string.Empty;
+    private double _playbackAudioMasterLastFallbackDriftMs;
+    private double _playbackAudioMasterLastFallbackClockAgeMs;
+    private string _pendingAudioMasterFallbackReason = string.Empty;
+    private double _pendingAudioMasterFallbackDriftMs;
+    private long _pendingAudioMasterFallbackClockAgeTicks;
+
     // --- Audio-master playback pacing ---
 
     /// <summary>
