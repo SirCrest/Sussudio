@@ -10,6 +10,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs")
             .Replace("\r\n", "\n");
+        var playbackPtsCadenceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackPtsCadence.cs")
+            .Replace("\r\n", "\n");
 
         AssertDoesNotContain(sourceText, "TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0))");
         AssertContains(sourceText, "frameDuration = ResolveFrameDuration(decoder);");
@@ -27,8 +29,12 @@ static partial class Program
         AssertContains(sourceText, "public double PlaybackTargetFps => _playbackTargetFps;");
         AssertContains(sourceText, "return TimeSpan.FromSeconds(1.0 / fps);");
         AssertContains(sourceText, "TrackDecodedPtsCadence(videoFrame.Pts, frameDuration);");
-        AssertContains(sourceText, "private void TrackDecodedPtsCadence(TimeSpan pts, TimeSpan expectedFrameDuration)");
-        AssertContains(sourceText, "FLASHBACK_PLAYBACK_PTS_CADENCE_MISMATCH");
+        AssertContains(playbackPtsCadenceText, "private void TrackDecodedPtsCadence(TimeSpan pts, TimeSpan expectedFrameDuration)");
+        AssertContains(playbackPtsCadenceText, "private void ResetPlaybackPtsCadenceBaseline()");
+        AssertContains(playbackPtsCadenceText, "private void RecordPlaybackPtsCadenceMismatch(");
+        AssertContains(playbackPtsCadenceText, "FLASHBACK_PLAYBACK_PTS_CADENCE_MISMATCH");
+        AssertDoesNotContain(playbackTimingText, "private void TrackDecodedPtsCadence(TimeSpan pts, TimeSpan expectedFrameDuration)");
+        AssertDoesNotContain(playbackTimingText, "FLASHBACK_PLAYBACK_PTS_CADENCE_MISMATCH");
         AssertContains(sourceText, "public long PlaybackPtsCadenceMismatchCount => Interlocked.Read(ref _playbackPtsCadenceMismatchCount);");
         AssertContains(sourceText, "Interlocked.Exchange(ref _playbackPtsCadenceMismatchCount, 0);");
 
