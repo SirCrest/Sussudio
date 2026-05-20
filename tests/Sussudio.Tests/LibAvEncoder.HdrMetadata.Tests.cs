@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task LibAvEncoder_GetHdrBitstreamFilterName_MapsCodecs()
+    internal static Task LibAvEncoder_GetHdrBitstreamFilterName_MapsCodecs()
     {
         var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("GetHdrBitstreamFilterName",
@@ -29,7 +29,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvEncoder_Invert_SwapsNumeratorDenominator()
+    internal static Task LibAvEncoder_Invert_SwapsNumeratorDenominator()
     {
         var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("Invert",
@@ -53,7 +53,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvEncoder_ChromaticityAndLuminanceRationals_ParseCorrectly()
+    internal static Task LibAvEncoder_ChromaticityAndLuminanceRationals_ParseCorrectly()
     {
         var hdrType = RequireType("Sussudio.Services.Recording.HdrMasterDisplayMetadata");
 

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task LibAvEncoder_VideoBitstreamFilterSpec_ChainsHdrAndMpegTsFilters()
+    internal static Task LibAvEncoder_VideoBitstreamFilterSpec_ChainsHdrAndMpegTsFilters()
     {
         var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("GetVideoBitstreamFilterSpec",
@@ -49,7 +49,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvEncoder_MapNvencPreset_MapsCorrectly()
+    internal static Task LibAvEncoder_MapNvencPreset_MapsCorrectly()
     {
         var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("MapNvencPreset",
@@ -65,7 +65,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvEncoder_MpegTsNvencDumpsHeadersForRotatedSegments()
+    internal static Task LibAvEncoder_MpegTsNvencDumpsHeadersForRotatedSegments()
     {
         var sourceText = ReadLibAvEncoderSource();
 

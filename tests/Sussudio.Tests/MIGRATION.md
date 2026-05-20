@@ -71,6 +71,10 @@ add xUnit alongside, and port incrementally.
   model execution surface for LibAv sink loop/source-ownership checks,
   capture runtime failure/runtime-flag checks, and Flashback buffer manager
   behavior/source-ownership checks.
+- `XUnit.CoreRuntimeRecordingContractsTests.cs` owns the former legacy core
+  runtime recording subgroup: recording verifier, LibAv encoder, Flashback
+  recording integrity, shared formatter, and dedicated LibAv verification
+  script checks.
 - `RecordingArtifactManager.Tests.cs` owns the former legacy temp artifact
   finalization and rollback behavior checks for recording output cleanup.
 - `MjpegPipeline.Timing.Tests.cs` owns the former legacy CPU MJPEG timing

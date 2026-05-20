@@ -844,6 +844,11 @@ Flashback exporter checks now execute through
 cleanup, request validation, failure classification, segment, cancellation,
 output path/finalization, and source-ownership contracts in xUnit after their
 removal from the legacy harness catalog.
+Core runtime recording checks now execute through
+`tests/Sussudio.Tests/XUnit.CoreRuntimeRecordingContractsTests.cs`, keeping
+recording verifier, LibAv encoder, Flashback integrity, shared formatter, and
+dedicated LibAv verification script contracts in xUnit after their removal from
+the legacy harness catalog.
 
 Projection ownership checks are split into snapshot/status, audio, capture and
 source, MJPEG, recording, system resources and A/V sync, preview, and Flashback

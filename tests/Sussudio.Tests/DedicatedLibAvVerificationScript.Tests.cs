@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 // Tests for the dedicated libav verification script contract.
 static partial class Program
 {
-    private static Task DedicatedLibAvVerificationScript_UsesFlashbackOffAndStrictVerification()
+    internal static Task DedicatedLibAvVerificationScript_UsesFlashbackOffAndStrictVerification()
     {
         var scriptText = ReadRepoFile("tools/verify-dedicated-libav-recording.ps1")
             .Replace("\r\n", "\n");

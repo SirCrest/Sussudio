@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task RecordingVerifier_DetectsResolutionMismatch()
+    internal static async Task RecordingVerifier_DetectsResolutionMismatch()
     {
         var tempFile = Path.Combine(Path.GetTempPath(), $"rv_res_{Guid.NewGuid():N}.mp4");
         File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
@@ -35,7 +35,7 @@ static partial class Program
 
     // ── Integration test: frame rate mismatch ──
 
-    private static async Task RecordingVerifier_DetectsFrameRateMismatch()
+    internal static async Task RecordingVerifier_DetectsFrameRateMismatch()
     {
         var tempFile = Path.Combine(Path.GetTempPath(), $"rv_fps_{Guid.NewGuid():N}.mp4");
         File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });

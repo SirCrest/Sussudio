@@ -134,6 +134,5 @@ static partial class Program
         await AddCheckAsync(results,
             "CaptureService recording integrity ownership lives in focused partials",
             CaptureService_RecordingIntegrityLivesInFocusedPartials);
-        await AddCoreRuntimeRecordingChecksAsync(results);
     }
 }

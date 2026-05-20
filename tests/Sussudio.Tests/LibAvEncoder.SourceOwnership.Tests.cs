@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task LibAvEncoder_PacketWritingLivesInFocusedPartial()
+    internal static Task LibAvEncoder_PacketWritingLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
@@ -21,7 +21,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvEncoder_FrameCopyLivesInFocusedPartial()
+    internal static Task LibAvEncoder_FrameCopyLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
@@ -37,7 +37,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvEncoder_VideoSubmissionLivesInFocusedPartial()
+    internal static Task LibAvEncoder_VideoSubmissionLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
@@ -61,7 +61,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvEncoder_InitializationLivesInFocusedPartial()
+    internal static Task LibAvEncoder_InitializationLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
@@ -79,7 +79,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvEncoder_SetupAndModelsLiveInFocusedPartials()
+    internal static Task LibAvEncoder_SetupAndModelsLiveInFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
@@ -172,7 +172,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvEncoder_OutputLifecycleLivesInFocusedPartials()
+    internal static Task LibAvEncoder_OutputLifecycleLivesInFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
@@ -217,7 +217,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvEncoder_FragmentedMp4UsesShortFragmentsForPlayback()
+    internal static Task LibAvEncoder_FragmentedMp4UsesShortFragmentsForPlayback()
     {
         var sourceText = ReadLibAvEncoderSource();
 

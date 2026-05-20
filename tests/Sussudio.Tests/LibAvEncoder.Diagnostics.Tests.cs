@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task LibAvEncoder_ThrowIfError_ThrowsOnNegative()
+    internal static Task LibAvEncoder_ThrowIfError_ThrowsOnNegative()
     {
         var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("ThrowIfError",
@@ -30,7 +30,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvEncoder_DiagnosticsHelpersLiveInFocusedPartial()
+    internal static Task LibAvEncoder_DiagnosticsHelpersLiveInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");

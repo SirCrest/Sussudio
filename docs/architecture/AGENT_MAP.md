@@ -2411,9 +2411,11 @@ Primary current owners:
 - `tests/Sussudio.Tests/HarnessCheckCatalog.CoreRuntime.cs` owns runtime,
   telemetry, capture-service snapshot, recording-integrity, and basic app
   contract check registration.
-- `tests/Sussudio.Tests/HarnessCheckCatalog.CoreRuntime.Recording.cs` owns
-  recording verifier, LibAv encoder, Flashback integrity, and recording-facing
-  automation contract registration.
+- `tests/Sussudio.Tests/XUnit.CoreRuntimeRecordingContractsTests.cs` owns the
+  former core-runtime recording registration group for recording verifier,
+  LibAv encoder, Flashback integrity, recording-facing shared formatter, and
+  dedicated LibAv verification script checks after their removal from the
+  legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.RuntimeHelpersTests.cs` owns pure runtime helper
   contracts for AtomicMax, TelemetryAgeHelper, EnvironmentHelpers, and
   RingBufferHelpers.

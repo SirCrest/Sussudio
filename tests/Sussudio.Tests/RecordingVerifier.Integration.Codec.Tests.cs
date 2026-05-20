@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task RecordingVerifier_PassesVerification_WhenAllFieldsMatch_Hevc()
+    internal static async Task RecordingVerifier_PassesVerification_WhenAllFieldsMatch_Hevc()
     {
         var tempFile = Path.Combine(Path.GetTempPath(), $"rv_hevc_{Guid.NewGuid():N}.mp4");
         File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
@@ -36,7 +36,7 @@ static partial class Program
 
     // ── Integration test: codec mismatch ──
 
-    private static async Task RecordingVerifier_DetectsCodecMismatch_WhenH264InsteadOfHevc()
+    internal static async Task RecordingVerifier_DetectsCodecMismatch_WhenH264InsteadOfHevc()
     {
         var tempFile = Path.Combine(Path.GetTempPath(), $"rv_codec_{Guid.NewGuid():N}.mp4");
         File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
@@ -68,7 +68,7 @@ static partial class Program
 
     // ── Integration test: H264 codec match ──
 
-    private static async Task RecordingVerifier_PassesVerification_ForH264Format()
+    internal static async Task RecordingVerifier_PassesVerification_ForH264Format()
     {
         var tempFile = Path.Combine(Path.GetTempPath(), $"rv_h264_{Guid.NewGuid():N}.mp4");
         File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });

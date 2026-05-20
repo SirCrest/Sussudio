@@ -4,7 +4,7 @@ static partial class Program
 {
     // ── Integration test: NTSC frame rate tolerance ──
 
-    private static async Task RecordingVerifier_PassesNtscFrameRateWithinTolerance()
+    internal static async Task RecordingVerifier_PassesNtscFrameRateWithinTolerance()
     {
         var tempFile = Path.Combine(Path.GetTempPath(), $"rv_ntsc_{Guid.NewGuid():N}.mp4");
         File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });

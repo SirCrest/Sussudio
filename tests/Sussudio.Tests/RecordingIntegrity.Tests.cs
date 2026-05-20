@@ -42,7 +42,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackRecordingIntegrity_UsesRecordingScopedSequenceGaps()
+    internal static Task FlashbackRecordingIntegrity_UsesRecordingScopedSequenceGaps()
     {
         var unifiedText = ReadUnifiedVideoCaptureSource();
         var snapshotsText = ReadCaptureServiceRecordingIntegritySource();
@@ -111,7 +111,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task SharedFormatter_RendersRecordingIntegrity()
+    internal static Task SharedFormatter_RendersRecordingIntegrity()
     {
         var toolAssembly = LoadToolAssembly(System.IO.Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
         var formatterType = toolAssembly.GetType("Sussudio.Tools.AutomationSnapshotFormatter")

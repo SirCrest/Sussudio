@@ -26,7 +26,7 @@ static partial class Program
 
     // ── RecordingVerifier: VerifyAsync early-exit paths ──
 
-    private static async Task RecordingVerifier_ReturnsFailure_WhenFileDoesNotExist()
+    internal static async Task RecordingVerifier_ReturnsFailure_WhenFileDoesNotExist()
     {
         var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
         var verifier = Activator.CreateInstance(verifierType)!;
@@ -46,7 +46,7 @@ static partial class Program
         AssertContains(GetStringProperty(result, "Message"), "does not exist");
     }
 
-    private static async Task RecordingVerifier_ReturnsFailure_WhenFileIsEmpty()
+    internal static async Task RecordingVerifier_ReturnsFailure_WhenFileIsEmpty()
     {
         var tempFile = Path.Combine(Path.GetTempPath(), $"rv_test_{Guid.NewGuid():N}.mp4");
         File.WriteAllBytes(tempFile, Array.Empty<byte>());
@@ -72,7 +72,7 @@ static partial class Program
         }
     }
 
-    private static async Task RecordingVerifier_ReturnsFailure_WhenOutputPathIsNull()
+    internal static async Task RecordingVerifier_ReturnsFailure_WhenOutputPathIsNull()
     {
         var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
         var verifier = Activator.CreateInstance(verifierType)!;
@@ -90,7 +90,7 @@ static partial class Program
 
     // ── RecordingVerifier: contract surface ──
 
-    private static Task RecordingVerifier_ImplementsIRecordingVerifier()
+    internal static Task RecordingVerifier_ImplementsIRecordingVerifier()
     {
         var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
         var interfaceType = RequireType("Sussudio.Services.Contracts.IRecordingVerifier");
@@ -112,7 +112,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task RecordingVerifier_CadenceAnalysisLivesInFocusedPartial()
+    internal static Task RecordingVerifier_CadenceAnalysisLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.cs")
             .Replace("\r\n", "\n");
@@ -131,7 +131,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task RecordingVerifier_ProbeValidationAndResultsLiveInFocusedPartials()
+    internal static Task RecordingVerifier_ProbeValidationAndResultsLiveInFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.cs")
             .Replace("\r\n", "\n");
@@ -190,7 +190,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task RecordingVerificationResult_HasExpectedProperties()
+    internal static Task RecordingVerificationResult_HasExpectedProperties()
     {
         var resultType = RequireType("Sussudio.Models.RecordingVerificationResult");
 

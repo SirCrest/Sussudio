@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task LibAvEncoder_GetExpectedFrameSizeBytes_CalculatesCorrectly()
+    internal static Task LibAvEncoder_GetExpectedFrameSizeBytes_CalculatesCorrectly()
     {
         var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("GetExpectedFrameSizeBytes",

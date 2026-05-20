@@ -4,7 +4,7 @@ static partial class Program
 {
     // ── Integration test: HDR validation passes with correct metadata ──
 
-    private static async Task RecordingVerifier_PassesHdrValidation_WhenAllHdrFieldsPresent()
+    internal static async Task RecordingVerifier_PassesHdrValidation_WhenAllHdrFieldsPresent()
     {
         var tempFile = Path.Combine(Path.GetTempPath(), $"rv_hdr_{Guid.NewGuid():N}.mp4");
         File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
@@ -53,7 +53,7 @@ static partial class Program
 
     // ── Integration test: HDR colorimetry mismatch ──
 
-    private static async Task RecordingVerifier_DetectsHdrColorimetryMismatch()
+    internal static async Task RecordingVerifier_DetectsHdrColorimetryMismatch()
     {
         var tempFile = Path.Combine(Path.GetTempPath(), $"rv_hdr_bad_{Guid.NewGuid():N}.mp4");
         File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });

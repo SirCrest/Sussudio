@@ -4,7 +4,7 @@ static partial class Program
 {
     // ── Integration test: ffprobe unavailable ──
 
-    private static async Task RecordingVerifier_ReturnsFailure_WhenFfprobeUnavailable()
+    internal static async Task RecordingVerifier_ReturnsFailure_WhenFfprobeUnavailable()
     {
         var tempFile = Path.Combine(Path.GetTempPath(), $"rv_ffprobe_{Guid.NewGuid():N}.mp4");
         File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 }); // minimal mp4 header
@@ -26,7 +26,7 @@ static partial class Program
 
     // ── Integration test: ffprobe exit code failure ──
 
-    private static async Task RecordingVerifier_ReturnsFailure_WhenFfprobeExitsNonZero()
+    internal static async Task RecordingVerifier_ReturnsFailure_WhenFfprobeExitsNonZero()
     {
         var tempFile = Path.Combine(Path.GetTempPath(), $"rv_exit_{Guid.NewGuid():N}.mp4");
         File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });

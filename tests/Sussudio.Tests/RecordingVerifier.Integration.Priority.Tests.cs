@@ -4,7 +4,7 @@ static partial class Program
 {
     // ── Integration test: codec match (HEVC) ──
 
-    private static async Task RecordingVerifier_RunsFfprobeBelowNormalPriority()
+    internal static async Task RecordingVerifier_RunsFfprobeBelowNormalPriority()
     {
         var tempFile = Path.Combine(Path.GetTempPath(), $"rv_priority_{Guid.NewGuid():N}.mp4");
         File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });

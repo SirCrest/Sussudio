@@ -4,7 +4,7 @@ static partial class Program
 {
     // ── Integration test: resolution mismatch ──
 
-    private static async Task RecordingVerifier_UsesFlashbackExportVerificationFormat()
+    internal static async Task RecordingVerifier_UsesFlashbackExportVerificationFormat()
     {
         var tempFile = Path.Combine(Path.GetTempPath(), $"rv_flashback_{Guid.NewGuid():N}.mp4");
         File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
@@ -36,7 +36,7 @@ static partial class Program
         }
     }
 
-    private static async Task RecordingVerifier_UsesFlashbackRecordingVerificationFormat()
+    internal static async Task RecordingVerifier_UsesFlashbackRecordingVerificationFormat()
     {
         var tempFile = Path.Combine(Path.GetTempPath(), $"rv_flashback_recording_{Guid.NewGuid():N}.mp4");
         File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });

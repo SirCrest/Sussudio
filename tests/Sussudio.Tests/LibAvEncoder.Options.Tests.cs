@@ -5,7 +5,7 @@ static partial class Program
 {
     // LibAvEncoder: ValidateOptions
 
-    private static Task LibAvEncoder_ValidateOptions_AcceptsValidOptions()
+    internal static Task LibAvEncoder_ValidateOptions_AcceptsValidOptions()
     {
         var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("ValidateOptions",
@@ -16,7 +16,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvEncoder_ValidateOptions_RejectsEmptyOutputPath()
+    internal static Task LibAvEncoder_ValidateOptions_RejectsEmptyOutputPath()
     {
         var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("ValidateOptions", BindingFlags.Static | BindingFlags.NonPublic)!;
@@ -29,7 +29,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvEncoder_ValidateOptions_RejectsZeroDimensions()
+    internal static Task LibAvEncoder_ValidateOptions_RejectsZeroDimensions()
     {
         var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("ValidateOptions", BindingFlags.Static | BindingFlags.NonPublic)!;
@@ -42,7 +42,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvEncoder_ValidateOptions_RejectsHdrWithH264()
+    internal static Task LibAvEncoder_ValidateOptions_RejectsHdrWithH264()
     {
         var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("ValidateOptions", BindingFlags.Static | BindingFlags.NonPublic)!;
@@ -57,7 +57,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvEncoder_ValidateOptions_RejectsHdrWithoutP010()
+    internal static Task LibAvEncoder_ValidateOptions_RejectsHdrWithoutP010()
     {
         var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("ValidateOptions", BindingFlags.Static | BindingFlags.NonPublic)!;
@@ -72,7 +72,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvEncoder_ValidateOptions_RejectsMismatchedFrameRateParts()
+    internal static Task LibAvEncoder_ValidateOptions_RejectsMismatchedFrameRateParts()
     {
         var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("ValidateOptions", BindingFlags.Static | BindingFlags.NonPublic)!;
