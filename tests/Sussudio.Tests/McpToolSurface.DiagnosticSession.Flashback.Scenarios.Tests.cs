@@ -284,6 +284,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var postStopText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs")
             .Replace("\r\n", "\n");
+        var postStopRestoreText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStopRestore.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(modelsText, "internal readonly record struct FlashbackRecordingSettingsDeferredPresetState(");
         AssertContains(duringRecordingText, "internal static partial class DiagnosticSessionFlashbackRecordingSettingsScenarios");
@@ -303,7 +305,13 @@ static partial class Program
         AssertContains(postStopText, "internal static partial class DiagnosticSessionFlashbackRecordingSettingsScenarios");
         AssertContains(postStopText, "internal static async Task VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(");
         AssertContains(postStopText, "flashback recording settings deferred post-stop buffer verified");
-        AssertContains(postStopText, "flashback recording settings deferred preset restored to");
+        AssertContains(postStopText, "RestoreFlashbackRecordingSettingsOriginalPresetAsync(");
+        AssertDoesNotContain(postStopText, "\"SetPreset\"");
+        AssertDoesNotContain(postStopText, "flashback recording settings deferred preset restored to");
+        AssertContains(postStopRestoreText, "private static async Task RestoreFlashbackRecordingSettingsOriginalPresetAsync(");
+        AssertContains(postStopRestoreText, "\"SetPreset\"");
+        AssertContains(postStopRestoreText, "flashback recording settings deferred preset restored to");
+        AssertContains(postStopRestoreText, "selected preset was not restored");
         AssertDoesNotContain(duringRecordingText, "internal readonly record struct FlashbackRecordingSettingsDeferredPresetState(");
         AssertDoesNotContain(duringRecordingText, "private static async Task VerifyFlashbackRecordingSettingsCommandRejectedDuringRecordingAsync(");
         AssertDoesNotContain(duringRecordingText, "RestartFlashback unexpectedly succeeded during recording");

@@ -3760,9 +3760,11 @@ restart/disable rejection-message policy lives in
 `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingRejections.cs`,
 and active recording backend/file/counter stability checks live in
 `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingValidation.cs`.
-Post-stop preset verification, encoder-frame check, and original-preset restore
-live in `DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`. Do
-not reintroduce an empty family root.
+Post-stop preset verification and encoder-frame checks live in
+`DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`, while
+original-preset restore command execution and post-restore verification live in
+`DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStopRestore.cs`. Do not
+reintroduce an empty family root.
 
 Diagnostic-session Flashback segment playback now lives in
 `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios*.cs`. The root
@@ -3962,6 +3964,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingRejections.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingValidation.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`
+- `DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStopRestore.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.Target.cs`

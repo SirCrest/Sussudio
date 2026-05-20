@@ -53,43 +53,12 @@ internal static partial class DiagnosticSessionFlashbackRecordingSettingsScenari
 
         actions.Add("flashback recording settings deferred post-stop buffer verified");
 
-        if (string.IsNullOrWhiteSpace(presetState.OriginalPreset) ||
-            string.Equals(presetState.OriginalPreset, presetState.DeferredPreset, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        var restoreResponse = await sendCommandAsync(
-                "SetPreset",
-                new Dictionary<string, object?> { ["preset"] = presetState.OriginalPreset },
-                null)
+        await RestoreFlashbackRecordingSettingsOriginalPresetAsync(
+                actions,
+                warnings,
+                presetState,
+                sendCommandAsync,
+                cancellationToken)
             .ConfigureAwait(false);
-        actions.Add($"flashback recording settings deferred preset restored to {presetState.OriginalPreset}");
-        if (!AutomationSnapshotFormatter.IsSuccess(restoreResponse))
-        {
-            warnings.Add(
-                $"flashback recording settings deferred: preset restore failed - {AutomationSnapshotFormatter.Get(restoreResponse, "Message", "unknown error")}");
-            return;
-        }
-
-        if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
-        {
-            warnings.Add("flashback recording settings deferred: Flashback buffer did not become ready after preset restore");
-            return;
-        }
-
-        var restoredSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
-        if (!TryGetSnapshot(restoredSnapshotResponse, out var restoredSnapshot))
-        {
-            warnings.Add("flashback recording settings deferred: no post-restore snapshot returned");
-            return;
-        }
-
-        if (!string.Equals(GetString(restoredSnapshot, "SelectedPreset"), presetState.OriginalPreset, StringComparison.OrdinalIgnoreCase))
-        {
-            warnings.Add(
-                "flashback recording settings deferred: selected preset was not restored " +
-                $"expected={presetState.OriginalPreset} actual={GetString(restoredSnapshot, "SelectedPreset") ?? "<null>"}");
-        }
     }
 }

@@ -4289,8 +4289,9 @@ Primary owners:
   owns active-recording post-mutation backend, file-path, and counter
   stability checks.
 - `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`
-  owns post-stop preset verification, encoder-frame check, and original-preset
-  restore.
+  owns post-stop preset verification, encoder-frame check, and restore routing.
+- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStopRestore.cs`
+  owns original-preset restore command execution and post-restore verification.
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs` owns the
   Flashback completed-segment playback boundary-crossing choreography.
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Registrations.cs`
