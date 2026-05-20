@@ -114,18 +114,6 @@ static partial class Program
             "Preview fade-in reveal lives in controller",
             PreviewFadeInReveal_LivesInController);
         await AddCheckAsync(results,
-            "Recording button chrome lives in controller",
-            RecordingButtonChrome_LivesInController);
-        await AddCheckAsync(results,
-            "Recording state presentation lives in controller",
-            RecordingStatePresentation_LivesInController);
-        await AddCheckAsync(results,
-            "Recording state presentation policy preserves lockout rules",
-            RecordingStatePresentationPolicy_PreservesLockoutRules);
-        await AddCheckAsync(results,
-            "Recording button action lives in controller",
-            RecordingButtonAction_LivesInController);
-        await AddCheckAsync(results,
             "Preview audio fade state lives in controller",
             PreviewAudioFadeState_LivesInController);
         await AddCheckAsync(results,

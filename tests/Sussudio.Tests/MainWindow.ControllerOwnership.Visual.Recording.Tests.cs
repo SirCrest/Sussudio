@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task RecordingButtonChrome_LivesInController()
+    internal static Task RecordingButtonChrome_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
@@ -85,7 +85,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task RecordingStatePresentation_LivesInController()
+    internal static Task RecordingStatePresentation_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
@@ -147,7 +147,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task RecordingStatePresentationPolicy_PreservesLockoutRules()
+    internal static Task RecordingStatePresentationPolicy_PreservesLockoutRules()
     {
         var policyType = RequireType("Sussudio.Controllers.RecordingStatePresentationPolicy");
         var inputType = RequireType("Sussudio.Controllers.RecordingStatePresentationInput");
