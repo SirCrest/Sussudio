@@ -560,6 +560,21 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.cs`
   owns final preview runtime projection-to-`AutomationSnapshot` field
   flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.Frame.cs`
+  owns final preview frame-counter and estimated-pipeline-latency field
+  flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.Cadence.cs`
+  owns final preview display-cadence field flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.Surface.cs`
+  owns final preview surface visibility and renderer-attachment field
+  flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.Startup.cs`
+  owns final preview startup/readiness field flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.GpuPlayback.cs`
+  owns final preview GPU playback state and position field flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.Color.cs`
+  owns final preview HDR, tone-map, color-context, and adapter metadata field
+  flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs`
   owns process memory, CPU, GC, and thread-pool projection consumed by
   `AutomationSnapshot`.
