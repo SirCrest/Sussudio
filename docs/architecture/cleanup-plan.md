@@ -2299,10 +2299,18 @@ backend-specific queue/counter normalization live in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotRecordingActiveBackend.cs`;
 Flashback export diagnostic and derived progress/throughput projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs`.
-Flashback playback health snapshot orchestration, state/frame sampling, cadence
-metrics, decode timing, audio-master fallback sampling, and command telemetry
-sampling now live together in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs`,
+Flashback playback health snapshot orchestration now lives in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs`;
+state/frame/segment/PTS/seek-cap/submit-failure/A/V drift sampling lives in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.State.cs`;
+playback cadence metric sampling lives in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.Cadence.cs`;
+decode timing and max-phase metric sampling lives in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.Decode.cs`;
+audio-master pacing/fallback sampling lives in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.AudioMaster.cs`;
+and playback command telemetry sampling lives in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.Commands.cs`,
 while the private playback health projection field records live in the single
 substantial model owner
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.Models.cs`.
