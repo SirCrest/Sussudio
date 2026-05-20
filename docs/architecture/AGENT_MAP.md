@@ -497,11 +497,24 @@ Automation diagnostics ownership:
   owns final CPU MJPEG timing projection-to-`AutomationSnapshot` field
   flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.cs`
-  owns MJPEG preview jitter queue, timing, drop, underflow, and adaptive-depth
-  projection inputs consumed by `AutomationSnapshot`.
+  owns MJPEG preview jitter projection routing consumed by
+  `AutomationSnapshot`. Its focused owners split queue counters, timing
+  samples, adaptive drop/depth counters, and last scheduler event projection
+  inputs:
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Queue.cs`,
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Timing.cs`,
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Adaptive.cs`,
+  and
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Events.cs`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPreviewJitter.cs`
-  owns final MJPEG preview jitter projection-to-`AutomationSnapshot` field
-  flattening.
+  owns final MJPEG preview jitter projection-to-`AutomationSnapshot` routing.
+  Its focused flattening owners mirror queue counters, timing samples, adaptive
+  drop/depth counters, and last scheduler event fields:
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPreviewJitter.Queue.cs`,
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPreviewJitter.Timing.cs`,
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPreviewJitter.Adaptive.cs`,
+  and
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPreviewJitter.Events.cs`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPacketHash.cs`
   owns MJPEG packet duplicate-run / unique-frame projection inputs consumed by
   `AutomationSnapshot`.

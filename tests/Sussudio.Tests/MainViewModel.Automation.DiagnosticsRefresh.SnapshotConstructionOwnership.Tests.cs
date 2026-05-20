@@ -33,6 +33,10 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegTimingText, "private static MjpegTimingFlattenedProjection BuildMjpegTimingFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegPreviewJitterFlattenedProjection(mjpeg.PreviewJitter)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegPreviewJitterText, "private static MjpegPreviewJitterFlattenedProjection BuildMjpegPreviewJitterFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegPreviewJitterQueueText, "private static MjpegPreviewJitterQueueFlattenedProjection BuildMjpegPreviewJitterQueueFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegPreviewJitterTimingText, "private static MjpegPreviewJitterTimingFlattenedProjection BuildMjpegPreviewJitterTimingFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegPreviewJitterAdaptiveText, "private static MjpegPreviewJitterAdaptiveFlattenedProjection BuildMjpegPreviewJitterAdaptiveFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegPreviewJitterEventsText, "private static MjpegPreviewJitterEventFlattenedProjection BuildMjpegPreviewJitterEventFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegPacketHashFlattenedProjection(mjpeg.PacketHash)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegPacketHashText, "private static MjpegPacketHashFlattenedProjection BuildMjpegPacketHashFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSourceFlattenedProjection(sourceSignal, sourceTelemetry)");

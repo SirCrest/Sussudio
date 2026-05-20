@@ -18,6 +18,10 @@ static partial class Program
         public string SnapshotProjectionFlatteningMjpegText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningMjpegTimingText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningMjpegPreviewJitterText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningMjpegPreviewJitterQueueText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningMjpegPreviewJitterTimingText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningMjpegPreviewJitterAdaptiveText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningMjpegPreviewJitterEventsText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningMjpegPacketHashText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSourceText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSourceSignalText { get; init; } = string.Empty;
@@ -72,6 +76,10 @@ static partial class Program
         public string SnapshotProjectionMjpegText { get; init; } = string.Empty;
         public string SnapshotProjectionMjpegTimingText { get; init; } = string.Empty;
         public string SnapshotProjectionMjpegPreviewJitterText { get; init; } = string.Empty;
+        public string SnapshotProjectionMjpegPreviewJitterQueueText { get; init; } = string.Empty;
+        public string SnapshotProjectionMjpegPreviewJitterTimingText { get; init; } = string.Empty;
+        public string SnapshotProjectionMjpegPreviewJitterAdaptiveText { get; init; } = string.Empty;
+        public string SnapshotProjectionMjpegPreviewJitterEventsText { get; init; } = string.Empty;
         public string SnapshotProjectionMjpegPacketHashText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackExportText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackPlaybackText { get; init; } = string.Empty;
