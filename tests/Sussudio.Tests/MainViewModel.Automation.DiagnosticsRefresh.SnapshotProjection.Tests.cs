@@ -27,9 +27,12 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var audioDrops = BuildAudioDropsProjection(health);");
         AssertContains(diagnostics.SnapshotProjectionAudioText, "private static AudioDropsProjection BuildAudioDropsProjection(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SnapshotProjectionAudioText, "QueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "AudioQueueDropsRealtime = audioDrops.QueueDropsRealtime,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var audioDropsFlattening = BuildAudioDropsFlattenedProjection(audioDrops);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningAudioDropsText, "QueueDropsRealtime = audioDrops.QueueDropsRealtime,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "AudioQueueDropsRealtime = audioDropsFlattening.QueueDropsRealtime,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "AudioDropsQueueSaturated = health.AudioDropsQueueSaturated,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "AudioQueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "AudioQueueDropsRealtime = audioDrops.QueueDropsRealtime,");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var captureFormat = BuildCaptureFormatProjection(captureRuntime);");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var sourceTelemetry = BuildSourceTelemetryProjection(viewModelSnapshot, captureRuntime);");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var sourceFlattening = BuildSourceFlattenedProjection(sourceSignal, sourceTelemetry);");

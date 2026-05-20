@@ -183,6 +183,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningProcessResourcesText, "private static ProcessResourceFlattenedProjection BuildProcessResourceFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildAvSyncFlattenedProjection(avSync)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningAvSyncText, "private static AvSyncFlattenedProjection BuildAvSyncFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildAudioDropsFlattenedProjection(audioDrops)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningAudioDropsText, "private static AudioDropsFlattenedProjection BuildAudioDropsFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureCommandFlattenedProjection(captureCommands)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureCommandsText, "private static CaptureCommandFlattenedProjection BuildCaptureCommandFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "new AutomationSnapshot");

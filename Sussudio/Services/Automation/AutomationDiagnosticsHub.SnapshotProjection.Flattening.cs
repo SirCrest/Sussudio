@@ -11,6 +11,7 @@ public sealed partial class AutomationDiagnosticsHub
         var snapshotEvaluation = projections.SnapshotEvaluation;
         var audioAndIngest = projections.AudioAndIngest;
         var audioDrops = projections.AudioDrops;
+        var audioDropsFlattening = BuildAudioDropsFlattenedProjection(audioDrops);
         var captureCommands = projections.CaptureCommands;
         var captureCommandFlattening = BuildCaptureCommandFlattenedProjection(captureCommands);
         var userSettings = projections.UserSettings;
@@ -524,11 +525,11 @@ public sealed partial class AutomationDiagnosticsHub
             FlashbackGpuFramesDropped = flashbackRecording.Queues.GpuFramesDropped,
             FlashbackGpuQueueRejectedFrames = flashbackRecording.Queues.GpuQueueRejectedFrames,
             FlashbackGpuQueueLastRejectReason = flashbackRecording.Queues.GpuQueueLastRejectReason,
-            AudioDropsQueueSaturated = audioDrops.QueueSaturated,
-            AudioDropsBacklogEviction = audioDrops.BacklogEviction,
-            AudioChunksDropped = audioDrops.ChunksDropped,
-            AudioQueueDropsRealtime = audioDrops.QueueDropsRealtime,
-            AudioQueueDropsFileWriter = audioDrops.QueueDropsFileWriter,
+            AudioDropsQueueSaturated = audioDropsFlattening.QueueSaturated,
+            AudioDropsBacklogEviction = audioDropsFlattening.BacklogEviction,
+            AudioChunksDropped = audioDropsFlattening.ChunksDropped,
+            AudioQueueDropsRealtime = audioDropsFlattening.QueueDropsRealtime,
+            AudioQueueDropsFileWriter = audioDropsFlattening.QueueDropsFileWriter,
             EstimatedPipelineLatencyMs = previewSummary.EstimatedPipelineLatencyMs,
             ExpectedCaptureFrameRate = captureCadenceFlattening.ExpectedFrameRate,
             CaptureCadenceSampleCount = captureCadenceFlattening.SampleCount,

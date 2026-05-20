@@ -100,6 +100,8 @@ threshold projection consumed by the automation snapshot DTO.
 signal projection, audio drop counter projection, derived real-time/file-writer
 drop totals, and composes ingest and WASAPI projection owners into the
 automation snapshot audio/ingest DTO fields.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioDrops.cs` owns
+final audio-drop projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureIngest.cs` owns capture
 audio/video reader, source-reader, and ingest counter projection consumed by the
 automation snapshot DTO.
