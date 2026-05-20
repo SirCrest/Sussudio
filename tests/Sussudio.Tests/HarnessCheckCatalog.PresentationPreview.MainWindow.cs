@@ -200,11 +200,5 @@ static partial class Program
         await AddCheckAsync(results,
             "Output path button actions live in controller",
             OutputPathButtonActions_LiveInController);
-        await AddCheckAsync(results,
-            "Preview screenshot button workflow lives in controller",
-            PreviewScreenshotButtonWorkflow_LivesInController);
-        await AddCheckAsync(results,
-            "Preview screenshot plan policy preserves path and text contracts",
-            PreviewScreenshotPlanPolicy_PreservesPathAndTextContracts);
     }
 }

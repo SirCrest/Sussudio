@@ -166,6 +166,9 @@ add xUnit alongside, and port incrementally.
 - `XUnit.PresentationPreviewMainWindowInitialContractsTests.cs` owns the former
   legacy presentation-preview MainWindow initial registration group: close
   cancellation and window screenshot helper ownership checks.
+- `XUnit.PresentationPreviewScreenshotContractsTests.cs` owns the former legacy
+  presentation-preview MainWindow preview screenshot workflow and plan-policy
+  checks.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, and test-project shape guard checks.
 - `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy

@@ -2494,6 +2494,10 @@ Primary current owners:
   owns the former presentation-preview MainWindow initial registration group for
   close cancellation and window screenshot helper ownership after its removal
   from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewScreenshotContractsTests.cs`
+  owns the former presentation-preview MainWindow preview screenshot workflow
+  and plan-policy checks after their removal from the legacy offline harness
+  catalog.
 - `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral

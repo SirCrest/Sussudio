@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task PreviewScreenshotButtonWorkflow_LivesInController()
+    internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.Screenshot.cs").Replace("\r\n", "\n");
@@ -61,7 +61,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewScreenshotPlanPolicy_PreservesPathAndTextContracts()
+    internal static Task PreviewScreenshotPlanPolicy_PreservesPathAndTextContracts()
     {
         var policyType = RequireType("Sussudio.Controllers.PreviewScreenshotPlanPolicy");
         var create = policyType.GetMethod("Create", BindingFlags.Static | BindingFlags.Public)
