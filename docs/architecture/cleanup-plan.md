@@ -2707,9 +2707,11 @@ over-budget snap telemetry, and recovery handoff now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSoftwareBudget.cs`;
 the live-state recovery implementation remains in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLiveRecovery.cs`.
-Audio-master pacing, audio clock state, clock-drift calculation, and wall-clock
-sleep/spin pacing now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs`.
+Audio-master clock sample state, stale-clock detection, and clock-drift
+projection now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterClock.cs`;
+audio-master pacing correction policy and wall-clock sleep/spin pacing now live
+in `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs`.
 Audio-master fallback accounting state, fallback classification, pending
 fallback suppression, and fallback reason/drift/clock-age telemetry updates now
 live in

@@ -6,10 +6,6 @@ namespace Sussudio.Services.Flashback;
 
 internal sealed partial class FlashbackPlaybackController
 {
-    // Last sampled audio rendering PTS plus the wall-clock anchor used for
-    // extrapolated audio-master pacing between WASAPI render callbacks.
-    private long _audioClockPtsTicks;
-    private long _audioClockWallTicks;
     private long _playbackAudioMasterDelayDoubles;
     private long _playbackAudioMasterDelayShrinks;
 
@@ -25,29 +21,10 @@ internal sealed partial class FlashbackPlaybackController
     /// </summary>
     private void PaceFrameInterval(Stopwatch pacingStopwatch, TimeSpan frameDuration, long videoPtsTicks)
     {
-        var audioPb = _audioPlayback;
-        var renderingPts = audioPb?.RenderingPtsTicks ?? 0;
-
-        // Update audio clock extrapolation state when WASAPI reports a new PTS.
-        if (renderingPts > 0 && renderingPts != Volatile.Read(ref _audioClockPtsTicks))
-        {
-            Interlocked.Exchange(ref _audioClockPtsTicks, renderingPts);
-            Interlocked.Exchange(ref _audioClockWallTicks, Stopwatch.GetTimestamp());
-        }
-
-        var audioClockPts = Volatile.Read(ref _audioClockPtsTicks);
-        var audioClockWall = Volatile.Read(ref _audioClockWallTicks);
-        var wallElapsed = Stopwatch.GetTimestamp() - audioClockWall;
-        var wallElapsedTicks = (long)((double)wallElapsed / Stopwatch.Frequency * TimeSpan.TicksPerSecond);
-
         // If the audio clock hasn't been updated in >200ms, WASAPI is likely underrunning -
         // fall through to wall-clock pacing instead of extrapolating against a stale sample.
-        const long StaleThresholdTicks = TimeSpan.TicksPerMillisecond * 200;
-        if (audioClockPts > 0 && wallElapsedTicks <= StaleThresholdTicks)
+        if (TryGetFreshAudioMasterClock(out var extrapolatedAudioTicks, out var wallElapsedTicks, out var hasAudioClockSample))
         {
-            // Extrapolate: audioClock = lastSampledPts + wallElapsedSinceSample.
-            var extrapolatedAudioTicks = audioClockPts + wallElapsedTicks;
-
             // diff > 0 = video ahead of audio, < 0 = video behind.
             var diffTicks = videoPtsTicks - extrapolatedAudioTicks;
             var diffMs = diffTicks / (double)TimeSpan.TicksPerMillisecond;
@@ -122,48 +99,9 @@ internal sealed partial class FlashbackPlaybackController
         }
 
         // Fallback: no audio clock available - pure wall-clock pacing.
-        var fallbackReason = audioClockPts <= 0 ? "unavailable" : "stale-clock";
-        RecordAudioMasterFallback(fallbackReason, 0, audioClockPts <= 0 ? 0 : wallElapsedTicks);
+        var fallbackReason = hasAudioClockSample ? "stale-clock" : "unavailable";
+        RecordAudioMasterFallback(fallbackReason, 0, hasAudioClockSample ? wallElapsedTicks : 0);
         WallClockPace(pacingStopwatch, frameDuration);
-    }
-
-    /// <summary>
-    /// Re-syncs the cached audio clock from WASAPI (matching the resync done at the top
-    /// of <see cref="PaceFrameInterval"/>) and returns the extrapolated drift in
-    /// milliseconds (positive = video ahead of audio). Returns false if the audio clock
-    /// is unavailable, has never been sampled, or is stale (>200ms since last update) -
-    /// callers must fall back to wall-clock pacing in that case.
-    /// </summary>
-    private bool TryComputeAudioMasterDriftMs(long videoPtsTicks, out double driftMs)
-    {
-        driftMs = 0;
-
-        var audioPb = _audioPlayback;
-        var renderingPts = audioPb?.RenderingPtsTicks ?? 0;
-        if (renderingPts > 0 && renderingPts != Volatile.Read(ref _audioClockPtsTicks))
-        {
-            Interlocked.Exchange(ref _audioClockPtsTicks, renderingPts);
-            Interlocked.Exchange(ref _audioClockWallTicks, Stopwatch.GetTimestamp());
-        }
-
-        var audioClockPts = Volatile.Read(ref _audioClockPtsTicks);
-        if (audioClockPts <= 0)
-        {
-            return false;
-        }
-
-        var audioClockWall = Volatile.Read(ref _audioClockWallTicks);
-        var wallElapsed = Stopwatch.GetTimestamp() - audioClockWall;
-        var wallElapsedTicks = (long)((double)wallElapsed / Stopwatch.Frequency * TimeSpan.TicksPerSecond);
-        const long StaleThresholdTicks = TimeSpan.TicksPerMillisecond * 200;
-        if (wallElapsedTicks > StaleThresholdTicks)
-        {
-            return false;
-        }
-
-        var extrapolatedAudioTicks = audioClockPts + wallElapsedTicks;
-        driftMs = (videoPtsTicks - extrapolatedAudioTicks) / (double)TimeSpan.TicksPerMillisecond;
-        return true;
     }
 
     private void WallClockPace(Stopwatch pacingStopwatch, TimeSpan frameDuration)
