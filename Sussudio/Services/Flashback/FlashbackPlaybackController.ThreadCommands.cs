@@ -8,7 +8,7 @@ namespace Sussudio.Services.Flashback;
 
 internal sealed partial class FlashbackPlaybackController
 {
-    // --- Playback-thread pause/go-live/nudge command handlers ---
+    // --- Playback-thread pause/go-live/stop/nudge command handlers ---
 
     private void HandlePauseCommand(
         Channel<PlaybackCommand> commandChannel,
@@ -93,6 +93,20 @@ internal sealed partial class FlashbackPlaybackController
         RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, "go_live");
         Logger.Log("FLASHBACK_PLAYBACK_GO_LIVE");
         return;
+    }
+
+    private void HandleStopCommand(
+        ref FlashbackDecoder? decoder,
+        ref bool fileOpen,
+        ref bool isPlaying,
+        ref bool isScrubbing,
+        ref TimeSpan? pendingExactResumeTarget)
+    {
+        isPlaying = false;
+        isScrubbing = false;
+        pendingExactResumeTarget = null;
+        RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, "thread_stop");
+        Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
     }
 
     private void HandleNudgeCommand(
