@@ -15,6 +15,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackSegmentEdgesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs")
             .Replace("\r\n", "\n");
+        var playbackSegmentSwitchText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentSwitch.cs")
+            .Replace("\r\n", "\n");
         var decoderSegmentReopenText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderSegmentReopen.cs")
             .Replace("\r\n", "\n");
 
@@ -65,8 +67,9 @@ static partial class Program
         AssertContains(bufferText, "if (IsSameSegmentPath(_activeSegmentPath, currentPath))\n                return TryGetExistingActiveSegmentPath(out var activePath) ? activePath : null;");
         AssertContains(bufferText, "return GetOldestExistingSegmentPath()\n                ?? (TryGetExistingActiveSegmentPath(out var fallbackActivePath) ? fallbackActivePath : null);");
         AssertContains(bufferText, "public TimeSpan? GetSegmentStartPts(string path)");
-        AssertContains(playbackSegmentEdgesText, "var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);");
-        AssertContains(playbackSegmentEdgesText, "if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)");
+        AssertContains(playbackSegmentEdgesText, "TrySwitchToNextSegment(");
+        AssertContains(playbackSegmentSwitchText, "var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);");
+        AssertContains(playbackSegmentSwitchText, "if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)");
         AssertContains(decoderSegmentReopenText, "var currentSegmentStart = _bufferManager.GetSegmentStartPts(currentOpenFilePath);");
         AssertContains(decoderSegmentReopenText, "if (currentSegmentStart.HasValue && resumeTarget < currentSegmentStart.Value)");
 

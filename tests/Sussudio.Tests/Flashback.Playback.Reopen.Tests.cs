@@ -9,6 +9,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentEdgesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs")
             .Replace("\r\n", "\n");
+        var segmentSwitchText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentSwitch.cs")
+            .Replace("\r\n", "\n");
         var decoderFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs")
             .Replace("\r\n", "\n");
         var decoderCleanupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderCleanup.cs")
@@ -23,8 +25,13 @@ static partial class Program
         AssertContains(sourceText, "private bool TryReopenCurrentFileAndSeek(");
         AssertContains(decoderSegmentReopenText, "private bool TryReopenCurrentFmp4BeforeSegmentSwitch(");
         AssertContains(decoderSegmentReopenText, "private bool HandleActiveFmp4ReopenAtSegmentEdge(");
-        AssertContains(segmentEdgesText, "TryReopenCurrentFmp4BeforeSegmentSwitch(");
+        AssertContains(segmentSwitchText, "TryReopenCurrentFmp4BeforeSegmentSwitch(");
+        AssertContains(segmentEdgesText, "TrySwitchToNextSegment(");
         AssertContains(segmentEdgesText, "return HandleActiveFmp4ReopenAtSegmentEdge(");
+        AssertDoesNotContain(segmentEdgesText, "FLASHBACK_PLAYBACK_SEGMENT_SWITCH_ERROR");
+        AssertDoesNotContain(segmentEdgesText, "FLASHBACK_PLAYBACK_SEGMENT_SWITCH_SEEK_FAIL");
+        AssertContains(segmentSwitchText, "FLASHBACK_PLAYBACK_SEGMENT_SWITCH_ERROR");
+        AssertContains(segmentSwitchText, "FLASHBACK_PLAYBACK_SEGMENT_SWITCH_SEEK_FAIL");
         AssertDoesNotContain(segmentEdgesText, "FLASHBACK_PLAYBACK_FMP4_REOPEN_BEFORE_SEGMENT_SWITCH_ERROR");
         AssertDoesNotContain(segmentEdgesText, "FLASHBACK_PLAYBACK_FMP4_REOPEN_SEEK_FAIL");
         AssertContains(sourceText, "private bool TryReopenCurrentFileAndSeekKeyframe(");

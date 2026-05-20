@@ -23,6 +23,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackSoftwareBudgetText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSoftwareBudget.cs")
             .Replace("\r\n", "\n");
+        var playbackSegmentSwitchText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentSwitch.cs")
+            .Replace("\r\n", "\n");
         var audioMasterClockText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterClock.cs")
             .Replace("\r\n", "\n");
         var wasapiPlaybackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs")
@@ -180,7 +182,7 @@ static partial class Program
         AssertContains(sourceText, "PrimePlaybackAudioBuffer(decoder, prebufferedFrames, ref fileOpen, seekTarget, \"play\", cts.Token);");
         AssertContains(sourceText, "SafeResumePlaybackRendering(\"play\");");
         AssertContains(sourceText, "private void ResetPlaybackPtsCadenceBaseline()");
-        AssertContains(sourceText, "ResetPlaybackPtsCadenceBaseline();\n                    pacingStopwatch.Restart();\n                    return true;");
+        AssertContains(playbackSegmentSwitchText, "ResetPlaybackPtsCadenceBaseline();\n            pacingStopwatch.Restart();\n            playbackContinues = true;\n            return true;");
         AssertContains(sourceText, "if (string.IsNullOrEmpty(_pendingAudioMasterFallbackReason))");
         AssertContains(sourceText, "_pendingAudioMasterFallbackReason = reason;");
         AssertContains(sourceText, "CommitAudioMasterFallback(");

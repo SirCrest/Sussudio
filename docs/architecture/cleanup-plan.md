@@ -2712,9 +2712,12 @@ snap detection, including the recovery near-live snap threshold, there; recovery
 back to live state belongs in the playback live recovery owner. Playback frame reads, prebuffer cleanup, and A/V drift
 frame-skip catch-up policy live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`.
-Segment switch decisions and write-head waits now live in
+Segment-edge routing decisions and write-head waits now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs`;
-active fMP4 reopen/reseek recovery during segment-edge handling, including the
+the next-segment switch transaction, including next-file probing, decoder
+open/seek, switch counters, audio gate, and cadence-baseline reset, now lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentSwitch.cs`.
+Active fMP4 reopen/reseek recovery during segment-edge handling, including the
 shared decoder reopen transaction and post-seek audio gate, lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderSegmentReopen.cs`.
 
