@@ -78,6 +78,4 @@ public sealed partial class MainWindow
     public long RendererReinitUnsafeWindows
         => _previewRendererHostController.RendererReinitUnsafeWindows;
 
-    private void DisposeD3DPreviewRendererForReinit()
-        => _previewRendererHostController.DisposeD3DPreviewRendererForReinit();
 }

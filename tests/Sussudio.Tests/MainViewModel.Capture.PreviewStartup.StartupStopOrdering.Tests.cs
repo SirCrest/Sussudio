@@ -289,7 +289,7 @@ static partial class Program
 
         AssertDoesNotContain(previewPropertyChangedText, "private Task ViewModel_PreviewRendererStopRequested()");
         var previewReinitStop = ExtractMemberCode(previewReinitText, "ViewModel_PreviewRendererStopRequested");
-        AssertContains(previewReinitStop, "DisposeD3DPreviewRendererForReinit();");
+        AssertContains(previewReinitStop, "=> _previewRendererHostController.StopRendererForReinitTeardownAsync();");
         AssertDoesNotContain(previewReinitStop, "renderer.StopRenderThread();");
 
         return Task.CompletedTask;

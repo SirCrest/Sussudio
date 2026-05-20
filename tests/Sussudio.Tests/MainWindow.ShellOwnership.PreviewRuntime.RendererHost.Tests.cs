@@ -139,6 +139,10 @@ static partial class Program
         AssertContains(previewRendererHostLifecycleText, "_previewSource = new SoftwareBitmapSource();");
         AssertContains(previewRendererHostReinitText, "private void RecordPreviewRendererReinitUnsafeWindow(D3D11PreviewRenderer? previousRenderer, bool reinitAnimating)");
         AssertContains(previewRendererHostReinitText, "private void MarkPreviewRendererStopped()");
+        AssertContains(previewRendererHostReinitText, "public Task StopRendererForReinitTeardownAsync()");
+        AssertContains(previewRendererHostReinitText, "PREVIEW_REINIT_RENDERER_STOP: stopping render thread before pipeline teardown");
+        AssertContains(previewRendererHostReinitText, "catch (TimeoutException ex)");
+        AssertContains(previewRendererHostReinitText, "PREVIEW_REINIT_RENDERER_STOP_TIMEOUT: {ex.Message}; continuing reinit with orphan render thread expected to exit shortly.");
         AssertContains(previewRendererHostReinitText, "public void DisposeD3DPreviewRendererForReinit()");
         AssertContains(previewRendererHostReinitText, "renderer.RetireSharedDeviceReferenceForReinit();");
         AssertContains(previewRendererHostReinitText, "private void ReplacePreviewSwapChainPanelSurface()");
@@ -181,7 +185,7 @@ static partial class Program
         AssertContains(cleanupPlanText, "PreviewRuntimeD3DFrameStatisticsPolicy.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeD3DFrameLatencyWaitPolicy.cs");
         AssertContains(previewRendererText, "=> _previewRendererHostController.RendererReinitUnsafeWindows;");
-        AssertContains(previewRendererText, "=> _previewRendererHostController.DisposeD3DPreviewRendererForReinit();");
+        AssertDoesNotContain(previewRendererText, "DisposeD3DPreviewRendererForReinit");
 
         AssertContains(previewRendererStartupPlanBuilderText, "internal sealed record PreviewRendererStartupPlan(");
         AssertContains(previewRendererStartupPlanBuilderText, "internal static class PreviewRendererStartupPlanBuilder");

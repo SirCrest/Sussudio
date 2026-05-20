@@ -1152,9 +1152,9 @@ Primary current owners:
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.D3D.cs` owns D3D renderer
   startup and event/failure handling.
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Reinit.cs` owns D3D
-  reinit disposal, unsafe-window telemetry, stop tick accounting, and fresh
-  SwapChainPanel replacement. `MainWindow.PreviewRenderer.cs` is the XAML-facing
-  host/reinit adapter surface.
+  reinit renderer-stop/timeout policy, disposal, unsafe-window telemetry, stop
+  tick accounting, and fresh SwapChainPanel replacement.
+  `MainWindow.PreviewRenderer.cs` is the XAML-facing host adapter surface.
   `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs` owns preview
   surface content-fit sizing and GPU panel visibility.
   `Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs` owns
@@ -2481,6 +2481,7 @@ Primary current owners:
 - `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs` owns top-level
   preview resize log throttling and reset state. `MainWindow.PreviewRenderer.cs`
   owns the XAML-facing `SizeChanged` adapter and renderer-host reset handoff;
+  reinit renderer-stop/timeout policy lives with `PreviewRendererHostController.Reinit.cs`;
   preview surface presentation lives in `PreviewSurfacePresentationController`,
   and preview shadow visuals live in `PreviewSurfaceShadowController`.
 - `Sussudio/MainWindow.PropertyChangedRecording.cs` is the XAML-facing recording

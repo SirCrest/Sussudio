@@ -9,6 +9,7 @@ static partial class Program
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
         var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
         var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs").Replace("\r\n", "\n");
+        var previewRendererHostReinitText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Reinit.cs").Replace("\r\n", "\n");
         var recordingText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedRecording.cs").Replace("\r\n", "\n");
         var recordingStatePresentationControllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingStatePresentationController.cs").Replace("\r\n", "\n");
         var outputText = ReadRepoFile("Sussudio/MainWindow.OutputPath.cs").Replace("\r\n", "\n");
@@ -94,9 +95,11 @@ static partial class Program
         AssertContains(previewReinitTransitionControllerText, "D3D11_RENDERER_REINIT_FLAG flag=false");
         AssertDoesNotContain(previewReinitText, "private bool _isPreviewReinitAnimating;");
         var rendererStop = ExtractMemberCode(previewReinitText, "ViewModel_PreviewRendererStopRequested");
-        AssertContains(rendererStop, "DisposeD3DPreviewRendererForReinit();");
-        AssertContains(rendererStop, "catch (TimeoutException ex)");
-        AssertContains(rendererStop, "PREVIEW_REINIT_RENDERER_STOP_TIMEOUT: {ex.Message}; continuing reinit with orphan render thread expected to exit shortly.");
+        AssertContains(rendererStop, "=> _previewRendererHostController.StopRendererForReinitTeardownAsync();");
+        AssertContains(previewRendererHostReinitText, "public Task StopRendererForReinitTeardownAsync()");
+        AssertContains(previewRendererHostReinitText, "DisposeD3DPreviewRendererForReinit();");
+        AssertContains(previewRendererHostReinitText, "catch (TimeoutException ex)");
+        AssertContains(previewRendererHostReinitText, "PREVIEW_REINIT_RENDERER_STOP_TIMEOUT: {ex.Message}; continuing reinit with orphan render thread expected to exit shortly.");
         AssertDoesNotContain(rendererStop, "renderer.StopRenderThread();");
         AssertContains(recordingText, "private bool TryHandleRecordingPropertyChanged(string propertyName)");
         AssertContains(recordingText, "=> _recordingStatePresentationController.TryHandlePropertyChanged(propertyName);");
