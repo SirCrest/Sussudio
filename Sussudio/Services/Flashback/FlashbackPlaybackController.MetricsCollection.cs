@@ -29,11 +29,6 @@ internal sealed partial class FlashbackPlaybackController
     private double _playbackTargetFps;
     private double _playbackObservedFps;
     private double _playbackAvgFrameMs;
-    private long _lastPlaybackCadencePtsTicks = -1;
-    private long _playbackPtsCadenceMismatchCount;
-    private long _lastPlaybackPtsCadenceMismatchUtcUnixMs;
-    private double _lastPlaybackPtsCadenceDeltaMs;
-    private double _lastPlaybackPtsCadenceExpectedMs;
     private long _playbackSeekForwardDecodeCapHits;
     private int _lastPlaybackSeekHitForwardDecodeCap;
     private readonly Stopwatch _playbackFpsClock = new();

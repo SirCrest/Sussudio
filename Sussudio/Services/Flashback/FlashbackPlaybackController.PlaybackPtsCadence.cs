@@ -5,6 +5,12 @@ namespace Sussudio.Services.Flashback;
 
 internal sealed partial class FlashbackPlaybackController
 {
+    private long _lastPlaybackCadencePtsTicks = -1;
+    private long _playbackPtsCadenceMismatchCount;
+    private long _lastPlaybackPtsCadenceMismatchUtcUnixMs;
+    private double _lastPlaybackPtsCadenceDeltaMs;
+    private double _lastPlaybackPtsCadenceExpectedMs;
+
     private void TrackDecodedPtsCadence(TimeSpan pts, TimeSpan expectedFrameDuration)
     {
         if (pts <= TimeSpan.Zero || expectedFrameDuration <= TimeSpan.Zero)

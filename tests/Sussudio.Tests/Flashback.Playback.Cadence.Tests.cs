@@ -32,6 +32,11 @@ static partial class Program
         AssertContains(playbackPtsCadenceText, "private void TrackDecodedPtsCadence(TimeSpan pts, TimeSpan expectedFrameDuration)");
         AssertContains(playbackPtsCadenceText, "private void ResetPlaybackPtsCadenceBaseline()");
         AssertContains(playbackPtsCadenceText, "private void RecordPlaybackPtsCadenceMismatch(");
+        AssertContains(playbackPtsCadenceText, "private long _lastPlaybackCadencePtsTicks = -1;");
+        AssertContains(playbackPtsCadenceText, "private long _playbackPtsCadenceMismatchCount;");
+        AssertContains(playbackPtsCadenceText, "private long _lastPlaybackPtsCadenceMismatchUtcUnixMs;");
+        AssertContains(playbackPtsCadenceText, "private double _lastPlaybackPtsCadenceDeltaMs;");
+        AssertContains(playbackPtsCadenceText, "private double _lastPlaybackPtsCadenceExpectedMs;");
         AssertContains(playbackPtsCadenceText, "FLASHBACK_PLAYBACK_PTS_CADENCE_MISMATCH");
         AssertDoesNotContain(playbackTimingText, "private void TrackDecodedPtsCadence(TimeSpan pts, TimeSpan expectedFrameDuration)");
         AssertDoesNotContain(playbackTimingText, "FLASHBACK_PLAYBACK_PTS_CADENCE_MISMATCH");
@@ -126,6 +131,8 @@ static partial class Program
         AssertContains(metricsCollectionText, "private readonly Stopwatch _playbackFpsClock = new();");
         AssertContains(metricsCollectionText, "private const int PlaybackCadenceSampleCapacity = 240;");
         AssertContains(metricsCollectionText, "private readonly double[] _playbackFrameIntervalsMs = new double[PlaybackCadenceSampleCapacity];");
+        AssertDoesNotContain(metricsCollectionText, "private long _lastPlaybackCadencePtsTicks = -1;");
+        AssertDoesNotContain(metricsCollectionText, "private long _playbackPtsCadenceMismatchCount;");
         AssertContains(metricResetText, "private void ResetPlaybackMetrics()");
         AssertContains(metricResetText, "Interlocked.Exchange(ref _playbackPreviewPresentId, 0);");
         AssertContains(metricResetText, "lock (_playbackDecodeLock)");
