@@ -15,7 +15,7 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "return CaptureHealthSnapshotAssembler.Build(new CaptureHealthSnapshotAssemblyFields");
-        AssertContains(healthSnapshotText, "SessionState = _sessionState,");
+        AssertContains(healthSnapshotText, "SessionState = CurrentSessionState,");
         AssertContains(healthSnapshotText, "FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(currentSettings, unifiedVideoCapture),");
         AssertContains(healthSnapshotText, "LastFrameArrivalMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),");
         AssertContains(healthSnapshotAssemblerText, "private static class CaptureHealthSnapshotAssembler");

@@ -117,12 +117,16 @@ static partial class Program
     internal static Task CaptureService_RunTransition_UsesTransitionPolicy()
     {
         var serviceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Coordination.cs");
+        var stateMachineText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionStateMachine.cs");
 
         AssertContains(
             serviceText,
-            "CaptureSessionTransitionPolicy.ThrowIfDisallowed(_sessionState, transitionState);");
+            "_sessionStateMachine.EnterTransition(transitionState);");
         AssertContains(
-            serviceText,
+            stateMachineText,
+            "CaptureSessionTransitionPolicy.ThrowIfDisallowed(_state, transitionState);");
+        AssertContains(
+            stateMachineText,
             "CaptureSessionTransitionPolicy.ResolveSteadyState(");
 
         return Task.CompletedTask;
@@ -142,7 +146,7 @@ static partial class Program
         foreach (var owner in currentStateTransitionOwners)
         {
             var ownerText = ReadRepoFile(owner);
-            AssertContains(ownerText, "RunTransitionAsync(_sessionState,");
+            AssertContains(ownerText, "RunTransitionAsync(CurrentSessionState,");
         }
 
         var lifecycleTransitionOwners = new[]
@@ -159,7 +163,7 @@ static partial class Program
         foreach (var owner in lifecycleTransitionOwners)
         {
             var ownerText = ReadRepoFile(owner);
-            AssertDoesNotContain(ownerText, "RunTransitionAsync(_sessionState,");
+            AssertDoesNotContain(ownerText, "RunTransitionAsync(CurrentSessionState,");
         }
 
         return Task.CompletedTask;

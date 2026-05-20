@@ -50,7 +50,7 @@ public partial class CaptureService
     }
 
     public Task UpdateMicrophoneMonitorAsync(bool enabled, string? deviceId, string? deviceName, CancellationToken cancellationToken = default)
-        => RunTransitionAsync(_sessionState, async transitionToken =>
+        => RunTransitionAsync(CurrentSessionState, async transitionToken =>
         {
             var previousEnabled = _micMonitorEnabled;
             var previousDeviceId = _micMonitorDeviceId;

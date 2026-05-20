@@ -61,7 +61,7 @@ public partial class CaptureService
             IsInitialized = _isInitialized,
             IsRecording = _isRecording,
             IsAudioPreviewActive = _isAudioPreviewActive,
-            SessionState = _sessionState,
+            SessionState = CurrentSessionState,
             IngestAudio = ingestAudio,
             ReaderTransport = readerTransport,
             HdrPipeline = hdrPipeline,

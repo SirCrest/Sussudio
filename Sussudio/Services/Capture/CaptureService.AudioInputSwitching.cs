@@ -12,7 +12,7 @@ namespace Sussudio.Services.Capture;
 public partial class CaptureService
 {
     public Task UpdateAudioInputAsync(string? audioDeviceId, string? audioDeviceName, CancellationToken cancellationToken = default)
-        => RunTransitionAsync(_sessionState, async transitionToken =>
+        => RunTransitionAsync(CurrentSessionState, async transitionToken =>
         {
             transitionToken.ThrowIfCancellationRequested();
             var previousDeviceId = _audioDeviceId;

@@ -45,7 +45,7 @@ public partial class CaptureService
     /// uses the new codec. No-op if not previewing or if a recording is active.
     /// </summary>
     public Task UpdateRecordingFormatAsync(RecordingFormat format, CancellationToken cancellationToken = default)
-        => RunTransitionAsync(_sessionState, async transitionToken =>
+        => RunTransitionAsync(CurrentSessionState, async transitionToken =>
         {
             if (_currentSettings == null || format == _currentSettings.Format)
                 return;
@@ -104,7 +104,7 @@ public partial class CaptureService
         string? nvencPreset = null,
         string? splitEncodeMode = null,
         CancellationToken cancellationToken = default)
-        => RunTransitionAsync(_sessionState, async transitionToken =>
+        => RunTransitionAsync(CurrentSessionState, async transitionToken =>
         {
             if (_currentSettings == null) return;
 

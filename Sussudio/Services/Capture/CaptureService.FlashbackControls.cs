@@ -33,7 +33,7 @@ public partial class CaptureService
     }
 
     public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
-        => RunTransitionAsync(_sessionState, async transitionToken =>
+        => RunTransitionAsync(CurrentSessionState, async transitionToken =>
         {
             if (_isRecording && IsFlashbackRecordingBackendActive() && !enabled)
             {
@@ -111,7 +111,7 @@ public partial class CaptureService
     /// parameters (bitrate, codec, etc.) may have changed.
     /// </summary>
     public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)
-        => RunTransitionAsync(_sessionState, async transitionToken =>
+        => RunTransitionAsync(CurrentSessionState, async transitionToken =>
         {
             if (_isRecording && IsFlashbackRecordingBackendActive())
             {
@@ -125,7 +125,7 @@ public partial class CaptureService
     public Task RestartFlashbackAsync(CaptureSettings settings, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        return RunTransitionAsync(_sessionState, async transitionToken =>
+        return RunTransitionAsync(CurrentSessionState, async transitionToken =>
         {
             if (_isRecording && IsFlashbackRecordingBackendActive())
             {

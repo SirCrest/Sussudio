@@ -611,9 +611,10 @@ Important entry points:
   read-only Flashback status/projections, export forwarding, and active
   playback-controller readiness checks.
 - `CaptureSessionTransitionPolicy.cs` owns pure transition legality and
-  steady-state resolution for `CaptureService`; `CaptureService.Coordination.cs`
-  owns the named session-state mutation helpers used by normal transitions,
-  cleanup, disposal, and fatal cleanup.
+  steady-state resolution for `CaptureService`;
+  `Sussudio/Services/Capture/CaptureSessionStateMachine.cs` owns mutable
+  session state, transition generation, and state mutation methods used by
+  normal transitions, cleanup, disposal, and fatal cleanup.
 - `DeviceService.cs` owns capture/audio device enumeration orchestration, the
   combined discovery result used by startup refresh, and discovery summary state.
 - `DeviceService.FormatCache.cs` owns persisted format-cache DTOs and
@@ -666,9 +667,7 @@ Important entry points:
   teardown, Flashback segment preservation when cleanup finalization fails, and
   the call to Coordination's final cleanup session-state reset helper.
 - `CaptureService.Coordination.cs` owns transition serialization, steady-state
-  resolution, named `_sessionState` mutation helpers for transition, cleanup,
-  faulted, disposed, and post-cleanup reset states, and initialization/disposal
-  guards.
+  input sampling, state-machine delegation, and initialization/disposal guards.
 - `CaptureService.DisposalLifecycle.cs` owns disposal-triggered cleanup and
   dispose flow; it calls Coordination's disposed-state helper.
 - `CaptureService.ResourceRelease.cs` owns best-effort semaphore
@@ -684,7 +683,7 @@ Important entry points:
   Coordination helpers.
 - `CaptureService.FlashbackBackendFailureCleanup.cs` owns Flashback backend
   cleanup launch, GPU device-lost classification, recovery segment preservation,
-  and generation-stale guards. It must not write `_sessionState`.
+  and generation-stale guards. It must not write session state directly.
 - `CaptureService.FlashbackControls.cs` owns Flashback public state, segment
   access, enable/disable mutations, restart entry points, and committed restart
   orchestration after preview backend teardown.
@@ -2249,9 +2248,9 @@ Primary current owners:
   backend failure cleanup source placement, and faulted-session state
   assertions.
 - `tests/Sussudio.Tests/CaptureService.SessionStateOwnership.Tests.cs` owns
-  CaptureService `_sessionState` writer-file and writer-count ownership, asserts
-  that lifecycle partials route state changes through coordination helpers, and
-  keeps the no-session-state-write guard for Flashback backend failure cleanup.
+  CaptureService session-state-machine ownership, asserts that lifecycle
+  partials route state changes through coordination/state-machine helpers, and
+  keeps the no-direct-session-state-write guard for failure cleanup.
 - `tests/Sussudio.Tests/CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`
   owns CaptureService health snapshot assembly, capture-cadence, MJPEG, and
   AV-sync ownership assertions plus shared health snapshot assertion helpers.

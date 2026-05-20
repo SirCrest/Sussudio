@@ -41,7 +41,7 @@ public partial class CaptureService
 
         return CaptureHealthSnapshotAssembler.Build(new CaptureHealthSnapshotAssemblyFields
         {
-            SessionState = _sessionState,
+            SessionState = CurrentSessionState,
             IsRecording = isRecording,
             RecordingBackend = ResolveRecordingBackendName(),
             RecordingElapsedMs = isRecording ? _recordingStopwatch.ElapsedMilliseconds : 0,

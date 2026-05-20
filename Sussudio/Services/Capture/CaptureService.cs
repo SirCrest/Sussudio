@@ -33,7 +33,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private bool _isRecording;
     private bool _isVideoPreviewActive;
     private bool _isAudioPreviewActive;
-    private CaptureSessionState _sessionState = CaptureSessionState.Uninitialized;
+    private readonly CaptureSessionStateMachine _sessionStateMachine = new();
     private CaptureDevice? _currentDevice;
     private CaptureSettings? _currentSettings;
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
@@ -133,7 +133,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private int _flashbackCleanupInProgress;
     private int _flashbackRecordingStartInProgress;
     private int _flashbackRecordingFinalizeInProgress;
-    private long _sessionGeneration;
     private readonly CaptureVideoPipelineResources _videoPipeline = new();
     private UnifiedVideoCapture? _unifiedVideoCapture
     {
@@ -225,7 +224,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     public bool IsInitialized => _isInitialized;
     public bool IsVideoPreviewActive => _isVideoPreviewActive;
     public bool IsAudioPreviewActive => _isAudioPreviewActive;
-    public CaptureSessionState SessionState => _sessionState;
+    public CaptureSessionState SessionState => CurrentSessionState;
 
     public CaptureService() : this(new ProcessSupervisor(), null)
     {

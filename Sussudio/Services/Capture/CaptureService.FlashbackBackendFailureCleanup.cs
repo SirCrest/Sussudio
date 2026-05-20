@@ -35,7 +35,7 @@ public partial class CaptureService
             return;
         }
 
-        var generationAtFault = Interlocked.Read(ref _sessionGeneration);
+        var generationAtFault = CurrentSessionGeneration;
 
         _ = Task.Run(async () =>
         {
@@ -44,7 +44,7 @@ public partial class CaptureService
                 await _sessionTransitionLock.WaitAsync(CancellationToken.None).ConfigureAwait(false);
                 try
                 {
-                    if (Interlocked.Read(ref _sessionGeneration) != generationAtFault)
+                    if (CurrentSessionGeneration != generationAtFault)
                     {
                         Logger.Log("FLASHBACK_FATAL_CLEANUP_SKIP_STALE reason='session_generation_changed_before_cleanup'");
                         return;

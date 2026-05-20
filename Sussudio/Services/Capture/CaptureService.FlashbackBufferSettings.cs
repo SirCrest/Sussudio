@@ -18,7 +18,7 @@ public partial class CaptureService
         int bufferMinutes,
         bool gpuDecode,
         CancellationToken cancellationToken = default)
-        => RunTransitionAsync(_sessionState, transitionToken =>
+        => RunTransitionAsync(CurrentSessionState, transitionToken =>
         {
             if (_currentSettings != null)
             {

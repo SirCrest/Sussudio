@@ -42,36 +42,36 @@ public partial class CaptureService
     }
 
     private void EnterTransitionState(CaptureSessionState transitionState)
-    {
-        CaptureSessionTransitionPolicy.ThrowIfDisallowed(_sessionState, transitionState);
-        Interlocked.Increment(ref _sessionGeneration);
-        _sessionState = transitionState;
-    }
+        => _sessionStateMachine.EnterTransition(transitionState);
 
     private void ResolveSessionSteadyState()
-        => _sessionState = ResolveSteadyState();
+        => _sessionStateMachine.ResolveSteadyState(BuildSteadyStateInputs());
 
-    private CaptureSessionState ResolveSteadyState()
-    {
-        return CaptureSessionTransitionPolicy.ResolveSteadyState(
+    private CaptureSessionState CurrentSessionState
+        => _sessionStateMachine.State;
+
+    private long CurrentSessionGeneration
+        => _sessionStateMachine.Generation;
+
+    private CaptureSessionSteadyStateInputs BuildSteadyStateInputs()
+        => new(
             _isDisposed != 0,
             _isRecording,
             _isVideoPreviewActive,
             _isAudioPreviewActive,
             _isInitialized);
-    }
 
     private void EnterCleanupState()
-        => _sessionState = CaptureSessionState.CleaningUp;
+        => _sessionStateMachine.EnterCleanup();
 
     private void EnterFaultedState()
-        => _sessionState = CaptureSessionState.Faulted;
+        => _sessionStateMachine.EnterFaulted();
 
     private void EnterDisposedState()
-        => _sessionState = CaptureSessionState.Disposed;
+        => _sessionStateMachine.EnterDisposed();
 
     private void ResetSessionStateAfterCleanup()
-        => _sessionState = _isDisposed != 0 ? CaptureSessionState.Disposed : CaptureSessionState.Uninitialized;
+        => _sessionStateMachine.ResetAfterCleanup(_isDisposed != 0);
 
     private void EnsureInitialized()
     {
