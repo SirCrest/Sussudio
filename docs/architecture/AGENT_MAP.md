@@ -4316,7 +4316,13 @@ Primary owners:
   polling waits used by Flashback diagnostic scenarios, including preview
   active, Flashback active, recording-ready, and buffer-ready waits.
 - `tools/Common/DiagnosticSessionFlashbackWaits.Playback.cs` owns Flashback
-  playback boundary, state, warmup, and position polling waits.
+  playback state polling.
+- `tools/Common/DiagnosticSessionFlashbackWaits.PlaybackBoundary.cs` owns
+  Flashback playback boundary-crossing polling.
+- `tools/Common/DiagnosticSessionFlashbackWaits.PlaybackWarmSample.cs` owns
+  Flashback warmed-playback frame-count/FPS polling.
+- `tools/Common/DiagnosticSessionFlashbackWaits.PlaybackPosition.cs` owns
+  Flashback playback position convergence polling.
 - `tools/Common/DiagnosticSessionFlashbackValidation.Recording.cs` owns
   Flashback recording warning policy over projected recording metrics.
 - `tools/Common/DiagnosticSessionFlashbackValidation.Playback.cs` owns Flashback

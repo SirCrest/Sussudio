@@ -7,9 +7,10 @@ namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionFlashbackWaits
 {
-    internal static async Task<JsonElement?> WaitForFlashbackPlaybackStateAsync(
+    internal static async Task<JsonElement?> WaitForFlashbackPlaybackWarmSampleAsync(
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
-        string expectedState,
+        long baselineFrameCount,
+        double minimumSeconds,
         TimeSpan timeout,
         CancellationToken cancellationToken)
     {
@@ -23,7 +24,23 @@ internal static partial class DiagnosticSessionFlashbackWaits
             {
                 lastSnapshot = snapshot;
                 var state = GetString(snapshot, "FlashbackPlaybackState") ?? "Unknown";
-                if (string.Equals(state, expectedState, StringComparison.OrdinalIgnoreCase))
+                var frameCount = GetNullableLong(snapshot, "FlashbackPlaybackFrameCount") ?? 0;
+                var sessionFrameCount = frameCount >= baselineFrameCount
+                    ? frameCount - baselineFrameCount
+                    : frameCount;
+                var targetFps = GetDouble(snapshot, "FlashbackPlaybackTargetFps");
+                if (targetFps <= 0)
+                {
+                    targetFps = GetDouble(snapshot, "SelectedExactFrameRate");
+                }
+
+                var minimumFrames = Math.Max(
+                    240,
+                    targetFps > 0
+                        ? (long)Math.Ceiling(targetFps * minimumSeconds)
+                        : 240);
+                if (sessionFrameCount >= minimumFrames &&
+                    string.Equals(state, "Playing", StringComparison.OrdinalIgnoreCase))
                 {
                     return snapshot;
                 }
