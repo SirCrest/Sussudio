@@ -8,6 +8,10 @@ static partial class Program
         var source = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs")
+            + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.Preview.cs")
+            + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.FlashbackPlayback.cs")
+            + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.FlashbackExport.cs")
+            + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.System.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Preview.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Flashback.cs")
@@ -27,11 +31,29 @@ static partial class Program
         var flashbackExportTrendSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.Export.cs");
         var summariesSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs");
         var pressureSummariesSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Summaries.Pressure.cs");
+        var rowsModelSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs");
+        var rowsPreviewModelSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.Preview.cs");
+        var rowsFlashbackPlaybackModelSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.FlashbackPlayback.cs");
+        var rowsFlashbackExportModelSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.FlashbackExport.cs");
+        var rowsSystemModelSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.System.cs");
         AssertDoesNotContain(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs"), "private sealed class TimelineRow");
         AssertDoesNotContain(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs"), "new StringBuilder()");
         AssertDoesNotContain(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs"), "== Trend Summary");
         AssertDoesNotContain(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs"), "private sealed class TimelineRow");
-        AssertContains(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs"), "private sealed class TimelineRow");
+        AssertContains(rowsModelSource, "private sealed partial class TimelineRow");
+        AssertContains(rowsPreviewModelSource, "private sealed partial class TimelineRow");
+        AssertContains(rowsFlashbackPlaybackModelSource, "private sealed partial class TimelineRow");
+        AssertContains(rowsFlashbackExportModelSource, "private sealed partial class TimelineRow");
+        AssertContains(rowsSystemModelSource, "private sealed partial class TimelineRow");
+        AssertContains(rowsModelSource, "public double PreviewFivePercentLowFps { get; init; }");
+        AssertContains(rowsPreviewModelSource, "public string PreviewPacingSlowStageEvidence { get; init; } = string.Empty;");
+        AssertContains(rowsFlashbackPlaybackModelSource, "public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;");
+        AssertContains(rowsFlashbackExportModelSource, "public double FlashbackExportThroughputBytesPerSec { get; init; }");
+        AssertContains(rowsSystemModelSource, "public int IoThreads { get; init; }");
+        AssertDoesNotContain(rowsModelSource, "MjpegPreviewJitter");
+        AssertDoesNotContain(rowsPreviewModelSource, "FlashbackPlayback");
+        AssertDoesNotContain(rowsFlashbackPlaybackModelSource, "FlashbackExportActive");
+        AssertDoesNotContain(rowsFlashbackExportModelSource, "GcPause");
         AssertContains(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs"), "BuildPerformanceTimelineText");
         AssertDoesNotContain(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs"), "== Trend Summary");
         AssertContains(formattingSource, "FormatOptional");
