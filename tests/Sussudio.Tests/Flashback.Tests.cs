@@ -45,6 +45,7 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekCommands.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekScrubCommands.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadEndScrubCommand.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadPlayCommand.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCleanup.cs").Replace("\r\n", "\n"),

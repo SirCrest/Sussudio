@@ -2605,8 +2605,12 @@ and audio/preview suppression/resume ordering there instead of growing the
 generic playback command partial. Playback-thread scrub begin/update/end command
 execution now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekScrubCommands.cs`.
-Keep frozen valid-start sampling, scrub update coalescing, exact resume targets,
-and audio/preview suppression/resume ordering there.
+Keep frozen valid-start sampling, scrub update coalescing, and scrub-display
+failure recovery there. Playback-thread end-scrub resume and paused exact-resume
+target handling now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadEndScrubCommand.cs`.
+Keep end-scrub seek/reopen, playback audio prebuffer priming, and rendering
+resume ordering there.
 Playback-thread play command execution now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadPlayCommand.cs`.
 Keep exact resume, file-open/reopen, audio prebuffer, and rendering resume
