@@ -116,6 +116,9 @@ Entry points:
   client exception taxonomy shared by command transports and retry policy.
 - `AutomationResponseState.cs` owns tolerant parsing for automation response
   `Success`, `Status`, and `RetryAfterMs` fields.
+- `AutomationSyntheticErrorResponse.cs` owns the structured automation
+  error-envelope factory and exception-to-error-code mapping shared by tool
+  clients.
 - `AutomationPipeSecurityPolicy.cs` owns the fallback-security predicate shared
   by app and tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.CommandKinds.Tests.cs` owns the
@@ -3704,9 +3707,6 @@ Primary owners:
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.ResponseState.cs` owns
   tolerant response state parsing handoff to
   `Sussudio.Automation.Contracts/AutomationResponseState.cs`.
-- `tools/Common/AutomationPipeClient/AutomationSyntheticErrorResponse.cs` owns
-  the shared structured error-envelope factory and common transport/protocol
-  exception-to-envelope mapper used by the shared command transport.
 - Fixed MCP routes whose commands exist in `AutomationCommandKind` should call
   the typed MCP `PipeClient.SendCommandAsync(AutomationCommandKind, ...)`
   overload at the pipe seam; fixed ssctl routes should do the same through

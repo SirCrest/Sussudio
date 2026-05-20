@@ -205,6 +205,8 @@ public sealed class AutomationToolContractsProtocolXunitTests
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var automationPipeClientModelsText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationPipeClientModels.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var automationSyntheticErrorResponseText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationSyntheticErrorResponse.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
 
         Assert.Contains("internal static partial class AutomationPipeClient", sharedClientText);
         Assert.Contains("internal static async Task<string> SendRequestAsync(", sharedClientText);
@@ -260,17 +262,18 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("AutomationSyntheticErrorResponse.Create(ex.Message, \"unknown-command\")", sharedClientText);
         Assert.Contains("catch (Exception ex) when (AutomationSyntheticErrorResponse.CanCreateFromException(ex))", sharedClientText);
         Assert.Contains("AutomationSyntheticErrorResponse.Create(ex)", sharedClientText);
-        Assert.Contains("internal static class AutomationSyntheticErrorResponse", sharedClientText);
-        Assert.Contains("[\"CommandLifecycle\"] = \"failed\"", sharedClientText);
-        Assert.Contains("[\"Snapshot\"] = null", sharedClientText);
-        Assert.Contains("public static bool CanCreateFromException(Exception exception)", sharedClientText);
-        Assert.Contains("public static JsonElement Create(Exception exception)", sharedClientText);
-        Assert.Contains("AutomationPipeConnectException ex => Create(ex.Message, ex.ErrorCode)", sharedClientText);
-        Assert.Contains("AutomationPipeResponseTimeoutException ex => Create(ex.Message, \"pipe-response-timeout\")", sharedClientText);
-        Assert.Contains("AutomationPipeProtocolException ex => Create(ex.Message, \"pipe-protocol-error\")", sharedClientText);
-        Assert.Contains("\"pipe-invalid-json\"", sharedClientText);
-        Assert.Contains("\"pipe-io-error\"", sharedClientText);
-        Assert.Contains("\"pipe-canceled\"", sharedClientText);
+        Assert.DoesNotContain("internal static class AutomationSyntheticErrorResponse", sharedClientText);
+        Assert.Contains("public static class AutomationSyntheticErrorResponse", automationSyntheticErrorResponseText);
+        Assert.Contains("[\"CommandLifecycle\"] = \"failed\"", automationSyntheticErrorResponseText);
+        Assert.Contains("[\"Snapshot\"] = null", automationSyntheticErrorResponseText);
+        Assert.Contains("public static bool CanCreateFromException(Exception exception)", automationSyntheticErrorResponseText);
+        Assert.Contains("public static JsonElement Create(Exception exception)", automationSyntheticErrorResponseText);
+        Assert.Contains("AutomationPipeConnectException ex => Create(ex.Message, ex.ErrorCode)", automationSyntheticErrorResponseText);
+        Assert.Contains("AutomationPipeResponseTimeoutException ex => Create(ex.Message, \"pipe-response-timeout\")", automationSyntheticErrorResponseText);
+        Assert.Contains("AutomationPipeProtocolException ex => Create(ex.Message, \"pipe-protocol-error\")", automationSyntheticErrorResponseText);
+        Assert.Contains("\"pipe-invalid-json\"", automationSyntheticErrorResponseText);
+        Assert.Contains("\"pipe-io-error\"", automationSyntheticErrorResponseText);
+        Assert.Contains("\"pipe-canceled\"", automationSyntheticErrorResponseText);
 
         Assert.Contains("using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;", diagnosticSessionCommandChannelText);
         Assert.Contains("SendCommandWithConnectRetryAsync(", diagnosticSessionCommandChannelText);
@@ -282,6 +285,24 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("IsPermanentPipeConnectFailure(ex.ErrorCode)", diagnosticSessionPipeRetryText);
         Assert.Contains("\"pipe-access-denied\"", diagnosticSessionPipeRetryText);
         Assert.DoesNotContain("private static async Task<JsonElement?> SendCommandWithConnectRetryAsync(", diagnosticSessionText);
+    }
+
+    [Fact]
+    public void AutomationSyntheticErrorResponse_CreatesStableErrorEnvelope()
+    {
+        var response = AutomationSyntheticErrorResponse.Create("boom", "pipe-boom");
+
+        Assert.False(response.GetProperty("Success").GetBoolean());
+        Assert.Equal("error", response.GetProperty("Status").GetString());
+        Assert.Equal("failed", response.GetProperty("CommandLifecycle").GetString());
+        Assert.Equal("boom", response.GetProperty("Message").GetString());
+        Assert.Equal("pipe-boom", response.GetProperty("ErrorCode").GetString());
+        Assert.Equal(JsonValueKind.Null, response.GetProperty("RetryAfterMs").ValueKind);
+        Assert.Equal(JsonValueKind.Null, response.GetProperty("ElapsedMs").ValueKind);
+        Assert.Equal(JsonValueKind.Null, response.GetProperty("Data").ValueKind);
+        Assert.Equal(JsonValueKind.Null, response.GetProperty("Snapshot").ValueKind);
+        Assert.False(string.IsNullOrWhiteSpace(response.GetProperty("CorrelationId").GetString()));
+        Assert.Equal(JsonValueKind.String, response.GetProperty("TimestampUtc").ValueKind);
     }
 
     [Fact]

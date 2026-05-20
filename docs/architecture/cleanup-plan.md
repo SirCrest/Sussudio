@@ -3757,9 +3757,9 @@ shaping, and explicit ssctl/MCP unknown-command policy mode,
 handoff to `Sussudio.Automation.Contracts/AutomationResponseState.cs`,
 `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs` owns the command
 result handoff and pipe client exception taxonomy, and
-`AutomationSyntheticErrorResponse.cs` owns shared structured error-envelope
-creation and common transport/protocol exception mapping for the shared command
-transport.
+`Sussudio.Automation.Contracts/AutomationSyntheticErrorResponse.cs` owns shared
+structured error-envelope creation and common transport/protocol exception
+mapping for the shared command transport.
 
 PresentMon model ownership and result formatting are split from the probe runner.
 `tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon options, result,
@@ -3798,7 +3798,6 @@ Remaining `tools/Common` ownership:
 - `AutomationPipeClient/AutomationPipeClient.Commands.cs`
 - `AutomationPipeClient/AutomationCommandTransport.cs`
 - `AutomationPipeClient/AutomationPipeClient.ResponseState.cs`
-- `AutomationPipeClient/AutomationSyntheticErrorResponse.cs`
 - `DiagnosticSessionBackgroundTasks.cs`
 - `DiagnosticSessionBackgroundTasks.FaultDrain.cs`
 - `DiagnosticSessionCleanupActions.cs`

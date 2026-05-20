@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Sussudio.Tools;
 
-internal static class AutomationSyntheticErrorResponse
+public static class AutomationSyntheticErrorResponse
 {
     public static JsonElement Create(string message, string errorCode)
     {
