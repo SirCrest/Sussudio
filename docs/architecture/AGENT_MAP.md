@@ -2559,6 +2559,11 @@ Primary current owners:
   owns the former presentation-preview MainWindow output path display,
   truncation formatter, and button-action checks after their removal from the
   legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelOutputPathContractsTests.cs`
+  owns the former presentation-preview MainViewModel output path and disk-space
+  presentation group for retired output picker partial ownership, invalid-path
+  fallback behavior, and focused free-space presentation helper ownership after
+  their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`
   owns the former presentation-preview D3D pacing group for transition-drain,
   frame-capture cancellation, and shared-device reference lifecycle checks after

@@ -957,6 +957,11 @@ Presentation-preview output path checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewOutputPathContractsTests.cs`,
 keeping output path display, truncation formatter, and button-action contracts
 in xUnit after their removal from the legacy harness catalog.
+Presentation-preview MainViewModel output path checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelOutputPathContractsTests.cs`,
+keeping retired output picker partial ownership, invalid-path fallback behavior,
+and focused free-space presentation helper ownership in xUnit after their
+removal from the legacy harness catalog.
 Presentation-preview D3D pacing checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`,
 keeping transition-drain, frame-capture cancellation, and shared-device

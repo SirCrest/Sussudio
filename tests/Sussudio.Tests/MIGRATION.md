@@ -216,6 +216,10 @@ add xUnit alongside, and port incrementally.
 - `XUnit.PresentationPreviewOutputPathContractsTests.cs` owns the former legacy
   presentation-preview MainWindow output path display, truncation formatter, and
   button-action checks.
+- `XUnit.PresentationPreviewMainViewModelOutputPathContractsTests.cs` owns the
+  former legacy presentation-preview MainViewModel output path and disk-space
+  presentation group: retired output picker partial ownership, invalid-path
+  fallback behavior, and focused free-space presentation helper ownership.
 - `XUnit.PresentationPreviewD3DPacingContractsTests.cs` owns the former legacy
   presentation-preview D3D pacing registration group: transition-drain,
   frame-capture cancellation, and shared-device reference lifecycle checks.

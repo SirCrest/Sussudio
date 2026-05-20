@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task OutputDriveSpacePresentationBuilder_InvalidPathReturnsEmpty()
+    internal static Task OutputDriveSpacePresentationBuilder_InvalidPathReturnsEmpty()
     {
         var builderType = RequireType("Sussudio.ViewModels.OutputDriveSpacePresentationBuilder");
         var buildMethod = builderType.GetMethod(
@@ -20,7 +20,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task OutputDriveSpacePresentationBuilder_LivesInFocusedHelper()
+    internal static Task OutputDriveSpacePresentationBuilder_LivesInFocusedHelper()
     {
         var bridgeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingRuntime.cs")
             .Replace("\r\n", "\n");

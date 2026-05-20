@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainViewModelOutputPathSelection_LivesInFocusedPartial()
+    internal static Task MainViewModelOutputPathSelection_LivesInFocusedPartial()
     {
         var mainViewModelFiles = ReadMainViewModelCodeFiles();
         var mainViewModelText = string.Join("\n", mainViewModelFiles.Values);
