@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task D3D11PreviewRenderer_PresentCadenceMetrics_HasExpectedProperties()
+    internal static Task D3D11PreviewRenderer_PresentCadenceMetrics_HasExpectedProperties()
     {
         var metricsType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer+PresentCadenceMetrics");
 
@@ -23,7 +23,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task D3D11PreviewRenderer_PresentCadenceSuppression_SkipsSamplesAndResetsBaseline()
+    internal static Task D3D11PreviewRenderer_PresentCadenceSuppression_SkipsSamplesAndResetsBaseline()
     {
         var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
         var renderer = System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(rendererType);

@@ -959,6 +959,10 @@ Presentation-preview D3D geometry/screenshot checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DGeometryContractsTests.cs`,
 keeping letterbox, black-edge, PNG CRC, and 16-bit PNG capture contracts in
 xUnit after their removal from the legacy harness catalog.
+Presentation-preview D3D present-cadence checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DCadenceContractsTests.cs`,
+keeping cadence DTO shape and suppression-baseline behavior contracts in xUnit
+after their removal from the legacy harness catalog.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the

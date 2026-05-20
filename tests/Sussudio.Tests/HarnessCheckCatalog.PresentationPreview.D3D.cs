@@ -9,12 +9,6 @@ static partial class Program
             "D3D preview device lost exceptions classify correctly",
             D3D11PreviewRenderer_IsDeviceLostException_ClassifiesCorrectly);
         await AddCheckAsync(results,
-            "D3D preview present cadence metrics expose expected properties",
-            D3D11PreviewRenderer_PresentCadenceMetrics_HasExpectedProperties);
-        await AddCheckAsync(results,
-            "D3D preview present cadence ignores suppressed frames",
-            D3D11PreviewRenderer_PresentCadenceSuppression_SkipsSamplesAndResetsBaseline);
-        await AddCheckAsync(results,
             "D3D preview diagnostics expose swap-chain and render timing contract",
             D3D11PreviewRenderer_DiagnosticsContract_ExposesSwapChainAndRenderTiming);
         await AddCheckAsync(results,
