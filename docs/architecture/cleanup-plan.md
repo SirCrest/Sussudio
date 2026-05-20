@@ -2919,9 +2919,11 @@ fingerprint, jitter, D3D, and slow-stage trend text in
 `PerformanceTimelineTools.Rendering.Trend.Preview.cs`, Flashback playback,
 command, failure, cleanup, and export trend text in
 `PerformanceTimelineTools.Rendering.Trend.Flashback.cs`,
-compact value/byte/export formatting helpers in
+compact value and command-message formatting helpers in
 `PerformanceTimelineTools.Formatting.cs`, preview jitter-depth and D3D
-bottleneck formatting in `PerformanceTimelineTools.Formatting.Preview.cs`, and
+bottleneck formatting in `PerformanceTimelineTools.Formatting.Preview.cs`,
+Flashback stage, cleanup, export, and byte-rate formatting in
+`PerformanceTimelineTools.Formatting.Flashback.cs`, and
 target/pressure summaries in `PerformanceTimelineTools.Summaries.cs`.
 The frame-pacing verdict MCP tool follows the same shape: keep MCP attributes,
 method signature, pipe command orchestration, and response shaping in

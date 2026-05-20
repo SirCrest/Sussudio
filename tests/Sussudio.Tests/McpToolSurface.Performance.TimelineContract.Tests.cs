@@ -10,6 +10,7 @@ static partial class Program
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Preview.cs")
+            + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Flashback.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Preview.cs")
@@ -17,6 +18,7 @@ static partial class Program
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs");
         var formattingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs");
         var previewFormattingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Preview.cs");
+        var flashbackFormattingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Flashback.cs");
         var trendSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs");
         var previewTrendSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Preview.cs");
         var flashbackTrendSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.cs");
@@ -28,10 +30,16 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs"), "BuildPerformanceTimelineText");
         AssertDoesNotContain(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs"), "== Trend Summary");
         AssertContains(formattingSource, "FormatOptional");
+        AssertContains(formattingSource, "CompactCell");
         AssertDoesNotContain(formattingSource, "FormatD3DP99Bottleneck");
         AssertDoesNotContain(formattingSource, "FormatJitterDepthCell");
+        AssertDoesNotContain(formattingSource, "FormatFlashbackStageCell");
+        AssertDoesNotContain(formattingSource, "FormatExportFailureKind");
         AssertContains(previewFormattingSource, "private static string FormatJitterDepthCell(TimelineRow row)");
         AssertContains(previewFormattingSource, "private static string FormatD3DP99Bottleneck(TimelineRow row)");
+        AssertContains(flashbackFormattingSource, "private static string FormatFlashbackStageCell(TimelineRow row)");
+        AssertContains(flashbackFormattingSource, "private static string FormatExportFailureKind(string failureKind)");
+        AssertContains(flashbackFormattingSource, "private static string FormatBytesPerSecond(double bytesPerSecond)");
         AssertContains(trendSource, "AppendTrendSummary");
         AssertContains(trendSource, "== Trend Summary");
         AssertContains(trendSource, "AppendPreviewTrendSummary(builder, first, last);");
