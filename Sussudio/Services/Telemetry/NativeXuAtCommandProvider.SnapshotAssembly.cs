@@ -192,19 +192,8 @@ public sealed partial class NativeXuAtCommandProvider
             results.Hdr2SdrColorParam, results.ColorRangeSetting,
             results.RawTiming, vicCode, vfreqHz100);
 
-        if (IsValidFlashAudioData(results.FlashAudio))
-        {
-            var gainByte = results.FlashAudio.Response[2];
-            var y = gainByte / 255.0;
-            var gainPct = (Math.Exp(4.0 * y) - 1.0) / (Math.Exp(4.0) - 1.0) * 100.0;
-            var mutable = new List<SourceTelemetryDetailEntry>(detailEntries);
-            var lastAudioIdx = mutable.FindLastIndex(d => d.Group == TelemetryLabels.GroupAudioInput);
-            var insertIdx = lastAudioIdx >= 0 ? lastAudioIdx + 1 : mutable.Count;
-            mutable.Insert(insertIdx,
-                new SourceTelemetryDetailEntry(TelemetryLabels.GroupAudioInput, TelemetryLabels.AnalogGain,
-                    $"0x{gainByte:X2} ({gainPct:0}%)", gainByte.ToString(CultureInfo.InvariantCulture)));
-            detailEntries = mutable;
-        }
+        detailEntries = AppendFlashAudioAnalogGainDetail(detailEntries, results.FlashAudio);
+        var analogGainByte = ResolveAnalogGainByte(results.FlashAudio);
 
         return new NodeReadAttempt(
             new SourceSignalTelemetrySnapshot
@@ -230,9 +219,7 @@ public sealed partial class NativeXuAtCommandProvider
                 InputSource = ResolveAudioInputSource(results.FlashAudio, sourceInputSource),
                 AdcOnOff = adcOnOff,
                 AdcVolumeGain = adcVolumeGain,
-                AnalogGainByte = IsValidFlashAudioData(results.FlashAudio)
-                    ? (int?)results.FlashAudio.Response[2]
-                    : null,
+                AnalogGainByte = analogGainByte,
                 UacVolumeGain = uacVolumeGain,
                 UacOut1Mute = uacOut1Mute,
                 UacOut2Mute = uacOut2Mute,

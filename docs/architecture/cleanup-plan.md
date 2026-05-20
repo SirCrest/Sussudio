@@ -1371,7 +1371,8 @@ format, mismatch, HDR, and cadence owner files.
 
 Native XU source telemetry detail row assembly now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.Build.cs`.
-Flash-audio input interpretation and input-source display text live in
+Flash-audio input interpretation, analog-gain detail row insertion, and
+input-source display text live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs`.
 AT detail byte/number/hex/ascii display formatters live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs`.
@@ -1425,8 +1426,9 @@ interface enumeration.
 Native XU source snapshot assembly now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs`.
 Keep VIC/frame-rate lookup, AT-command-result decode, diagnostic/detail
-assembly, flash-audio analog-gain row insertion, and full-vs-rolling logging
-and audio-origin policy switches there.
+assembly, and full-vs-rolling logging and audio-origin policy switches there.
+Flash-audio analog-gain row insertion belongs to the audio-input telemetry
+detail partial.
 
 Native XU payload decoding now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.PayloadDecoding.cs`.

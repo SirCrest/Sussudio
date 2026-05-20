@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Sussudio.Models;
 
@@ -43,6 +45,40 @@ public sealed partial class NativeXuAtCommandProvider
         }
 
         return null;
+    }
+
+    private static int? ResolveAnalogGainByte(AtCommandResult flashResult)
+        => IsValidFlashAudioData(flashResult)
+            ? flashResult.Response[2]
+            : null;
+
+    private static IReadOnlyList<SourceTelemetryDetailEntry> AppendFlashAudioAnalogGainDetail(
+        IReadOnlyList<SourceTelemetryDetailEntry> detailEntries,
+        AtCommandResult flashResult)
+    {
+        var analogGainByte = ResolveAnalogGainByte(flashResult);
+        if (!analogGainByte.HasValue)
+        {
+            return detailEntries;
+        }
+
+        var mutable = new List<SourceTelemetryDetailEntry>(detailEntries);
+        var lastAudioIdx = mutable.FindLastIndex(d => d.Group == TelemetryLabels.GroupAudioInput);
+        var insertIdx = lastAudioIdx >= 0 ? lastAudioIdx + 1 : mutable.Count;
+        mutable.Insert(insertIdx,
+            new SourceTelemetryDetailEntry(
+                TelemetryLabels.GroupAudioInput,
+                TelemetryLabels.AnalogGain,
+                FormatAnalogGainDisplayValue((byte)analogGainByte.Value),
+                analogGainByte.Value.ToString(CultureInfo.InvariantCulture)));
+        return mutable;
+    }
+
+    private static string FormatAnalogGainDisplayValue(byte gainByte)
+    {
+        var y = gainByte / 255.0;
+        var gainPct = (Math.Exp(4.0 * y) - 1.0) / (Math.Exp(4.0) - 1.0) * 100.0;
+        return $"0x{gainByte:X2} ({gainPct:0}%)";
     }
 
     private static (string Value, string? RawValue) FormatInputSourceDetail(byte[] data)

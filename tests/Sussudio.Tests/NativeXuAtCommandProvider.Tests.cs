@@ -62,8 +62,11 @@ static partial class Program
         AssertContains(snapshotAssemblyText, "private readonly record struct NativeXuSnapshotCommandResults(");
         AssertContains(snapshotAssemblyText, "private static NodeReadAttempt BuildSnapshotFromCommandResults(");
         AssertContains(snapshotAssemblyText, "BuildDetailEntries(");
+        AssertContains(snapshotAssemblyText, "AppendFlashAudioAnalogGainDetail(detailEntries, results.FlashAudio)");
         AssertContains(snapshotAssemblyText, "new SourceSignalTelemetrySnapshot");
         AssertContains(snapshotAssemblyText, "ResolveSnapshotAudioInputOrigin(");
+        AssertDoesNotContain(snapshotAssemblyText, "TelemetryLabels.AnalogGain");
+        AssertDoesNotContain(snapshotAssemblyText, "Math.Exp(4.0 * y)");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.InterfaceRead.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.RollingCommandGroups.cs");
@@ -181,6 +184,9 @@ static partial class Program
         AssertContains(audioInputText, "private static bool IsValidFlashAudioData(AtCommandResult flashResult)");
         AssertContains(audioInputText, "private static string? ResolveAudioInputSource(");
         AssertContains(audioInputText, "private static SourceAudioInputMode? ResolveAudioInputMode(");
+        AssertContains(audioInputText, "private static int? ResolveAnalogGainByte(AtCommandResult flashResult)");
+        AssertContains(audioInputText, "private static IReadOnlyList<SourceTelemetryDetailEntry> AppendFlashAudioAnalogGainDetail(");
+        AssertContains(audioInputText, "TelemetryLabels.AnalogGain");
         AssertContains(audioInputText, "private static (string Value, string? RawValue) FormatInputSourceDetail(byte[] data)");
         AssertContains(formattersText, "private static (string Value, string? RawValue) FormatUsbHostProtocolDetail(byte[] data)");
         AssertContains(formattersText, "private static (string Value, string? RawValue) FormatAsciiOrHexDetail(byte[] data)");
