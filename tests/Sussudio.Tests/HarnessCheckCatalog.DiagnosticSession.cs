@@ -6,30 +6,6 @@ static partial class Program
     private static async Task AddDiagnosticSessionChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Diagnostic session pipe retry policy has a named owner",
-            DiagnosticSessionPipeRetryPolicy_OwnsConnectRetryClassification);
-        await AddCheckAsync(results,
-            "Diagnostic session command channel has a named owner",
-            DiagnosticSessionCommandChannel_OwnsSerializedCommandSending);
-        await AddCheckAsync(results,
-            "Diagnostic session JSON artifacts have a named owner",
-            DiagnosticSessionJsonArtifacts_OwnsArtifactsAndResponseExtraction);
-        await AddCheckAsync(results,
-            "Diagnostic session run state has a named owner",
-            DiagnosticSessionRunState_OwnsTerminalState);
-        await AddCheckAsync(results,
-            "Diagnostic session live-state writer has a named owner",
-            DiagnosticSessionLiveStateWriter_OwnsBreadcrumbFile);
-        await AddCheckAsync(results,
-            "Diagnostic session run context has a named owner",
-            DiagnosticSessionRunContext_OwnsMutableRunInfrastructure);
-        await AddCheckAsync(results,
-            "Diagnostic session run bootstrap has a named owner",
-            DiagnosticSessionRunBootstrap_OwnsNormalizedSessionIdentity);
-        await AddCheckAsync(results,
-            "Diagnostic session output lock has a named owner",
-            DiagnosticSessionOutputLock_OwnsExclusiveOutputDirectoryLock);
-        await AddCheckAsync(results,
             "Diagnostic session scenario phase has a named owner",
             DiagnosticSessionRunExecutionScenario_OwnsScenarioPhase);
         await AddCheckAsync(results,

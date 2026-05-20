@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task DiagnosticSessionRunState_OwnsTerminalState()
+    internal static Task DiagnosticSessionRunState_OwnsTerminalState()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var contextText = ReadDiagnosticSessionRunContextSource();
@@ -27,7 +27,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionLiveStateWriter_OwnsBreadcrumbFile()
+    internal static Task DiagnosticSessionLiveStateWriter_OwnsBreadcrumbFile()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var contextText = ReadDiagnosticSessionRunContextSource();
@@ -52,7 +52,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionRunContext_OwnsMutableRunInfrastructure()
+    internal static Task DiagnosticSessionRunContext_OwnsMutableRunInfrastructure()
     {
         var executionText = ReadDiagnosticSessionRunExecutionRootSource();
         var contextText = ReadDiagnosticSessionRunContextSource();
@@ -96,7 +96,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionRunBootstrap_OwnsNormalizedSessionIdentity()
+    internal static Task DiagnosticSessionRunBootstrap_OwnsNormalizedSessionIdentity()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var contextText = ReadDiagnosticSessionRunContextSource();
@@ -127,7 +127,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionOutputLock_OwnsExclusiveOutputDirectoryLock()
+    internal static Task DiagnosticSessionOutputLock_OwnsExclusiveOutputDirectoryLock()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var lockText = ReadRepoFile("tools/Common/DiagnosticSessionOutputLock.cs")

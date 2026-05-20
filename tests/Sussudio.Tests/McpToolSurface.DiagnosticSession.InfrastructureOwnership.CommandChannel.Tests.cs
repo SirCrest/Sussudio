@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task DiagnosticSessionPipeRetryPolicy_OwnsConnectRetryClassification()
+    internal static Task DiagnosticSessionPipeRetryPolicy_OwnsConnectRetryClassification()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var channelText = ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
@@ -28,7 +28,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionCommandChannel_OwnsSerializedCommandSending()
+    internal static Task DiagnosticSessionCommandChannel_OwnsSerializedCommandSending()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var executionText = ReadDiagnosticSessionRunExecutionRootSource();

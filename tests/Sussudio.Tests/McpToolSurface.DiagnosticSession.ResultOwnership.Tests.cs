@@ -67,7 +67,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionJsonArtifacts_OwnsArtifactsAndResponseExtraction()
+    internal static Task DiagnosticSessionJsonArtifacts_OwnsArtifactsAndResponseExtraction()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var initialSnapshotText = ReadRepoFile("tools/Common/DiagnosticSessionInitialSnapshot.cs")
