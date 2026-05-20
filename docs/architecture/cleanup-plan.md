@@ -215,6 +215,8 @@ failure deltas.
 frame counters, estimated pipeline latency, display-cadence, startup/readiness,
 GPU playback state, preview HDR state, renderer mode, and preview color-context
 projection consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.cs`
+owns final preview runtime projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs` owns process
 memory, CPU, GC, and thread-pool projection consumed by the automation snapshot
 DTO.

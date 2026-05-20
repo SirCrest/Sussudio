@@ -419,6 +419,9 @@ Automation diagnostics ownership:
   owns preview frame counters, estimated pipeline latency, display-cadence,
   startup/readiness, GPU playback state, preview HDR state, renderer mode, and
   preview color-context projection consumed by `AutomationSnapshot`.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.cs`
+  owns final preview runtime projection-to-`AutomationSnapshot` field
+  flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs`
   owns process memory, CPU, GC, and thread-pool projection consumed by
   `AutomationSnapshot`.
