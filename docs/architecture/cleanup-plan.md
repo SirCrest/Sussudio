@@ -179,6 +179,8 @@ snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.MjpegTiming.cs` owns CPU MJPEG
 decode, interop-copy, callback, reorder, pipeline timing, decoder count, and
 per-decoder projection inputs consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegTiming.cs` owns
+final CPU MJPEG timing projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.cs` owns MJPEG
 preview jitter queue, timing, drop, underflow, and adaptive-depth projection
 inputs consumed by the automation snapshot DTO.

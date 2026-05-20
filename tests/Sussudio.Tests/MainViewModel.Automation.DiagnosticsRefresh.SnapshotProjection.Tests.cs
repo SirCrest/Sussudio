@@ -228,6 +228,14 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionMjpegText, "PacketHash = packetHash,");
         AssertContains(diagnostics.SnapshotProjectionMjpegPacketHashText, "private static MjpegPacketHashProjection BuildMjpegPacketHashProjection(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SnapshotProjectionMjpegPacketHashText, "Pattern = health.MjpegPacketHashPattern,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var mjpegTimingFlattening = BuildMjpegTimingFlattenedProjection(mjpeg.Timing);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegTimingText, "DecodeSampleCount = timing.DecodeSampleCount,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegTimingText, "PipelineMaxMs = timing.PipelineMaxMs,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegTimingText, "PerDecoder = timing.PerDecoder");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "MjpegDecodeSampleCount = mjpegTimingFlattening.DecodeSampleCount,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "MjpegPerDecoder = mjpegTimingFlattening.PerDecoder,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "MjpegDecodeSampleCount = mjpeg.Timing.DecodeSampleCount,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "MjpegPerDecoder = mjpeg.Timing.PerDecoder,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "MjpegPacketHashPattern = health.MjpegPacketHashPattern,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "MjpegPerDecoder = health.MjpegPerDecoder is { Length: > 0 } perDecoder");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var recordingIntegrity = BuildRecordingIntegrityProjection(captureRuntime);");

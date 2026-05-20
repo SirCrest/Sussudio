@@ -43,6 +43,7 @@ static partial class Program
             SnapshotProjectionFlatteningCaptureTransportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureTransport.cs"),
             SnapshotProjectionFlatteningCaptureCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureCadence.cs"),
             SnapshotProjectionFlatteningVisualCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.VisualCadence.cs"),
+            SnapshotProjectionFlatteningMjpegTimingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegTiming.cs"),
             SnapshotProjectionFlatteningSourceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.cs"),
             SnapshotProjectionFlatteningSettingsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.Settings.cs"),
             SnapshotProjectionFlatteningHdrPipelineText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.HdrPipeline.cs"),
@@ -153,6 +154,7 @@ static partial class Program
         public string SnapshotProjectionFlatteningCaptureTransportText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningCaptureCadenceText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningVisualCadenceText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningMjpegTimingText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSourceText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSettingsText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningHdrPipelineText { get; init; } = string.Empty;
@@ -242,6 +244,7 @@ static partial class Program
                 SnapshotProjectionFlatteningCaptureTransportText,
                 SnapshotProjectionFlatteningCaptureCadenceText,
                 SnapshotProjectionFlatteningVisualCadenceText,
+                SnapshotProjectionFlatteningMjpegTimingText,
                 SnapshotProjectionFlatteningSourceText,
                 SnapshotProjectionFlatteningSettingsText,
                 SnapshotProjectionFlatteningHdrPipelineText,
