@@ -3733,9 +3733,11 @@ stays in the `DiagnosticSessionScenarioCatalog` family and grouped
 preview-cycle policy stays in `DiagnosticSessionScenarioPlan.cs`.
 `.Flashback.cs`, `.Playback.cs`, and `.Recording.cs` own preview stop/restart
 command choreography for normal Flashback, playback, and recording-backed
-diagnostics. Normal Flashback preview-cycle encoded-frame, preview-off, and
-restart frame-flow validation live in `.FlashbackValidation.cs`;
-playback-preview-cycle validation is split by runtime phase:
+diagnostics. Normal Flashback preview-cycle validation is split by runtime
+phase: `.FlashbackPreStop.cs` owns pre-stop encoded-frame capture,
+`.FlashbackStopped.cs` owns preview-off Flashback/encoder validation, and
+`.FlashbackRestartValidation.cs` owns restart frame-flow validation.
+Playback-preview-cycle validation is also split by runtime phase:
 `.PlaybackPreStop.cs` owns pre-stop frame warmup, `.PlaybackStopped.cs` owns
 preview-stopped state validation, and `.PlaybackRestart.cs` owns restart
 frame-flow validation. Normal Flashback and playback-preview-cycle
@@ -3945,7 +3947,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.Recording.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
-- `DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackValidation.cs`
+- `DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackPreStop.cs`
+- `DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackStopped.cs`
+- `DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackRestartValidation.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackExport.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackPreStop.cs`

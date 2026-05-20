@@ -4246,9 +4246,12 @@ Primary owners:
   labels, and started action strings.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
   owns normal Flashback preview stop/restart diagnostic command choreography.
-- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackValidation.cs`
-  owns normal Flashback preview-cycle encoded-frame, preview-off, and
-  restart/frame-flow validation.
+- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackPreStop.cs`
+  owns normal Flashback preview-cycle pre-stop encoded-frame capture.
+- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackStopped.cs`
+  owns normal Flashback preview-cycle preview-off Flashback/encoder validation.
+- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackRestartValidation.cs`
+  owns normal Flashback preview-cycle restart/frame-flow validation.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackExport.cs`
   owns normal Flashback preview-cycle export-while-preview-off verification.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
