@@ -9,6 +9,7 @@ static partial class Program
         var resultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.cs");
         var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.Preview.cs");
         var playbackResultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.FlashbackPlayback.cs");
+        var flashbackRecordingExportResultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.FlashbackRecordingExport.cs");
 
         AssertContains(modelText, "public sealed class DiagnosticSessionOptions");
         AssertContains(modelText, "public sealed partial class DiagnosticSessionResult");
@@ -19,16 +20,20 @@ static partial class Program
         AssertContains(resultText, "public string SourceTelemetrySummaryAtEnd { get; init; } = string.Empty;");
         AssertContains(playbackResultText, "public int FlashbackPlaybackPendingCommandsAtEnd { get; init; }");
         AssertContains(playbackResultText, "public bool FlashbackPlaybackLastSeekHitForwardDecodeCapAtEnd { get; init; }");
-        AssertContains(resultText, "// Flashback recording/export summary.");
-        AssertContains(resultText, "public bool FlashbackRecordingBackendObserved { get; init; }");
-        AssertContains(resultText, "public string FlashbackExportStatusAtEnd { get; init; } = string.Empty;");
+        AssertContains(flashbackRecordingExportResultText, "// Flashback recording/export summary.");
+        AssertContains(flashbackRecordingExportResultText, "public bool FlashbackRecordingBackendObserved { get; init; }");
+        AssertContains(flashbackRecordingExportResultText, "public string FlashbackExportStatusAtEnd { get; init; } = string.Empty;");
         AssertContains(previewResultText, "public long PreviewSchedulerDroppedAtEnd { get; init; }");
         AssertContains(previewResultText, "public double VisualCadenceOutputFpsAtEnd { get; init; }");
         AssertContains(previewResultText, "public double PreviewD3DInputUploadCpuP99MsAtEnd { get; init; }");
         AssertContains(resultText, "public PresentMonProbeResult? PresentMon { get; init; }");
         AssertDoesNotContain(resultText, "public int FlashbackPlaybackPendingCommandsAtEnd");
+        AssertDoesNotContain(resultText, "public bool FlashbackRecordingBackendObserved");
+        AssertDoesNotContain(resultText, "public string FlashbackExportStatusAtEnd");
         AssertDoesNotContain(resultText, "public long PreviewSchedulerDroppedAtEnd");
         AssertDoesNotContain(resultText, "public double VisualCadenceOutputFpsAtEnd");
+        AssertDoesNotContain(flashbackRecordingExportResultText, "FlashbackPlayback");
+        AssertDoesNotContain(flashbackRecordingExportResultText, "PreviewScheduler");
         AssertDoesNotContain(playbackResultText, "PreviewScheduler");
         AssertDoesNotContain(previewResultText, "FlashbackPlayback");
         AssertContains(modelText, "public sealed class DiagnosticSessionSample");

@@ -87,6 +87,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionResult.cs",
             "tools/Common/DiagnosticSessionResult.Preview.cs",
             "tools/Common/DiagnosticSessionResult.FlashbackPlayback.cs",
+            "tools/Common/DiagnosticSessionResult.FlashbackRecordingExport.cs",
             "tools/Common/DiagnosticSessionSample.cs");
 
     private static string ReadDiagnosticSessionResultBuilderSource()
