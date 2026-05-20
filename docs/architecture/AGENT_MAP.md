@@ -1452,6 +1452,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.RendererHost.Tests.cs`
   owns MainWindow preview renderer host, preview surface/shadow controller, and
   preview runtime/snapshot ownership assertions.
+- `tests/Sussudio.Tests/PreviewRuntimeSnapshotController.D3DPolicies.Tests.cs`
+  owns preview runtime snapshot D3D null-renderer and CPU fallback policy
+  regression checks.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.NativeBootstrap.Tests.cs`
   owns MainWindow native bootstrap, adapter, and first-frame reveal ownership
   assertions.
