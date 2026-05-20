@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task NvmlSnapshot_ComputedProperties_ConvertUnits()
+    internal static Task NvmlSnapshot_ComputedProperties_ConvertUnits()
     {
         var snapshotType = RequireType("Sussudio.Services.Gpu.NvmlSnapshot");
         // Constructor: GpuName, GpuUtil%, MemUtil%, NvdecUtil%, NvencUtil%, PcieTxKB, PcieRxKB,

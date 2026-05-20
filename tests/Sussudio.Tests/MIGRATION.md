@@ -93,6 +93,10 @@ add xUnit alongside, and port incrementally.
   checks.
 - `XUnit.SsctlFormatterContractsTests.cs` owns the former legacy ssctl
   formatter snapshot, source ownership, and timeline output contract checks.
+- `XUnit.ToolModelContractsTests.cs` owns the former legacy NVML snapshot and
+  CaptureSessionSnapshot default-state tool-contract checks.
+  `XUnit.TargetAssemblyBootstrap.cs` lets xUnit wrapper facts initialize the
+  staged app assembly before calling legacy reflection helpers.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, and test-project shape guard checks.
 - `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy

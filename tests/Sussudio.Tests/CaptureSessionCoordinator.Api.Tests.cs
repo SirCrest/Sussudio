@@ -116,7 +116,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureSessionSnapshot_DefaultState()
+    internal static Task CaptureSessionSnapshot_DefaultState()
     {
         var snapshotType = RequireType("Sussudio.Services.Capture.CaptureSessionSnapshot");
         var snapshot = RuntimeHelpers.GetUninitializedObject(snapshotType);

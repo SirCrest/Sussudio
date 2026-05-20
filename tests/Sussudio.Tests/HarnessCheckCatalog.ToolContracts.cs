@@ -5,16 +5,6 @@ static partial class Program
 {
     private static async Task AddToolContractChecksAsync(List<CheckResult> results)
     {
-        // --- NvmlSnapshot computed properties ---
-        await AddCheckAsync(results,
-            "NvmlSnapshot computed properties convert units correctly",
-            NvmlSnapshot_ComputedProperties_ConvertUnits);
-
-        // --- CaptureSessionSnapshot defaults ---
-        await AddCheckAsync(results,
-            "CaptureSessionSnapshot has correct default state",
-            CaptureSessionSnapshot_DefaultState);
-
         // --- Tool CommandMap & Formatter Alignment ---
         await AddCheckAsync(results,
             "RTK I2C probe guards unsafe native paths",
