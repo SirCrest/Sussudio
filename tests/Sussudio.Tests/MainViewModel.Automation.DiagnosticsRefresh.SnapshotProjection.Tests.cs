@@ -261,7 +261,15 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var recordingIntegrity = BuildRecordingIntegrityProjection(captureRuntime);");
         AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityText, "private static RecordingIntegrityProjection BuildRecordingIntegrityProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityText, "Status = captureRuntime.RecordingIntegrityStatus,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var recordingIntegrityFlattening = BuildRecordingIntegrityFlattenedProjection(recordingIntegrity);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingIntegrityText, "Status = recordingIntegrity.Status,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingIntegrityText, "AudioFramesWrittenToSink = recordingIntegrity.AudioFramesWrittenToSink,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingIntegrityText, "EncoderAvSyncDriftMs = recordingIntegrity.EncoderAvSyncDriftMs,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "RecordingIntegrityStatus = recordingIntegrityFlattening.Status,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "RecordingIntegrityReason = recordingIntegrityFlattening.Reason,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "RecordingIntegrityStatus = captureRuntime.RecordingIntegrityStatus,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "RecordingIntegrityStatus = recordingIntegrity.Status,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "RecordingIntegrityReason = recordingIntegrity.Reason,");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var recordingBackend = BuildRecordingBackendProjection(captureRuntime);");
         AssertContains(diagnostics.SnapshotProjectionRecordingOutputText, "private static RecordingBackendProjection BuildRecordingBackendProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnostics.SnapshotProjectionRecordingOutputText, "MuxResult = ResolveMuxResult(captureRuntime.MuxSucceeded)");

@@ -80,6 +80,7 @@ static partial class Program
             SnapshotProjectionPreviewRuntimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs"),
             SnapshotProjectionProcessResourcesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs"),
             SnapshotProjectionRecordingIntegrityText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs"),
+            SnapshotProjectionFlatteningRecordingIntegrityText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.cs"),
             SnapshotProjectionRecordingPipelineText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs"),
             SnapshotProjectionRecordingOutputText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.RecordingOutput.cs"),
             SnapshotProjectionSourceSignalText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs"),
@@ -194,6 +195,7 @@ static partial class Program
         public string SnapshotProjectionPreviewRuntimeText { get; init; } = string.Empty;
         public string SnapshotProjectionProcessResourcesText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingIntegrityText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningRecordingIntegrityText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingPipelineText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingOutputText { get; init; } = string.Empty;
         public string SnapshotProjectionSourceSignalText { get; init; } = string.Empty;
@@ -284,6 +286,7 @@ static partial class Program
                 SnapshotProjectionPreviewRuntimeText,
                 SnapshotProjectionProcessResourcesText,
                 SnapshotProjectionRecordingIntegrityText,
+                SnapshotProjectionFlatteningRecordingIntegrityText,
                 SnapshotProjectionRecordingPipelineText,
                 SnapshotProjectionRecordingOutputText,
                 SnapshotProjectionSourceSignalText,
