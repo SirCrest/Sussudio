@@ -1837,9 +1837,16 @@ Primary current owners:
   owns preview startup signal controller/adapter ownership, readiness-signal
   controller, and startup/failure formatter assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.StartupStopOrdering.Tests.cs`
-  owns preview lifecycle-event/fade-in ownership, startup discovery/probe
-  ordering, preview reveal priming, and preview stop audio-ramp ordering
-  assertions.
+  owns preview lifecycle-event and fade-in source-shape ownership assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.DeviceDiscoveryOrdering.Tests.cs`
+  owns startup ordering assertions that device discovery begins before
+  recording-capability probe completion.
+- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.PreviewRevealOrdering.Tests.cs`
+  owns preview reveal priming assertions for UI, audio, fade-in, launch, and
+  unavailable-placeholder ordering.
+- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.StopAudioRampOrdering.Tests.cs`
+  owns preview stop ordering assertions that audio ramps down before preview
+  teardown.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
   Flashback export backend-lease, export-operation lock, ViewModel export
   routing, and export CTS lifecycle assertions.
