@@ -105,7 +105,8 @@ add xUnit alongside, and port incrementally.
   architecture-doc reference drift and migration-inventory guard checks.
 - Additional focused `[Fact]`/`[Theory]` files such as
   `AutomationContracts.ProtocolXunit.Tests.cs`,
-  `AutomationToolContracts.ProtocolXunit.Tests.cs`,
+  `AutomationToolContracts.ProtocolXunit.Tests.cs` (automation client timeout
+  policy plus pipe/tool protocol contracts),
   `RuntimeContracts.Tests.cs`, `WindowSnapRegionLayoutPolicy.Tests.cs`,
   `CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`,
   `CaptureService.HealthSnapshots.FlashbackOwnership.Tests.cs`, and

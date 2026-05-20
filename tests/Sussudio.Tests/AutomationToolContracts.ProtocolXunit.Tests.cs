@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using Sussudio.Tools;
 using Xunit;
 
 namespace Sussudio.Tests;
@@ -23,6 +24,48 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("$_.FullName -notmatch \"\\\\(bin|obj)\\\\\"", scriptText);
         Assert.DoesNotContain("Sussudio\\Models\\AutomationCommandKind.cs", scriptText);
         Assert.DoesNotContain("Models\\AutomationCommandKind.cs", scriptText);
+    }
+
+    [Fact]
+    public void AutomationClient_UsesCatalogTimeoutPolicy_ForRecordingAndFlashbackCommands()
+    {
+        var protocolText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationPipeProtocol.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var catalogEntriesText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.Entries.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var clientText = RuntimeContractSource.ReadRepoFile("tools/AutomationClient/Program.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var pipeClientText = RuntimeContractSource.ReadAutomationPipeClientSource();
+
+        Assert.Contains("public const int DefaultResponseTimeoutMs = 15000;", protocolText);
+        Assert.Contains("public const int ExtendedResponseTimeoutMs = 60000;", protocolText);
+        Assert.Contains("public const int RecordingResponseTimeoutMs = 150000;", protocolText);
+        Assert.Contains("public const int FlashbackMutationResponseTimeoutMs = 305000;", protocolText);
+        Assert.Contains("commandName = ResolveCanonicalCommandName(commandName);", protocolText);
+        Assert.Contains("AutomationCommandCatalog.TryGet(commandName, out var metadata)", protocolText);
+        Assert.Contains("? metadata.ResponseTimeoutMs", protocolText);
+        Assert.Contains("AutomationCommandKind.SetRecordingEnabled", catalogEntriesText);
+        Assert.Contains("AutomationPipeProtocol.RecordingResponseTimeoutMs", catalogEntriesText);
+        Assert.Contains("AutomationCommandKind.FlashbackExport", catalogEntriesText);
+        Assert.Contains("AutomationPipeProtocol.FlashbackMutationResponseTimeoutMs", catalogEntriesText);
+        Assert.DoesNotContain("AlignResponseTimeoutWithServerRequest", protocolText);
+        Assert.DoesNotContain("AlignResponseTimeoutWithServerRequest", pipeClientText);
+        Assert.Contains("AutomationPipeProtocol.TryGetCommandName(commandValue, out var canonicalCommandName)", clientText);
+        Assert.Contains("AutomationPipeProtocol.GetDefaultResponseTimeout(timeoutCommandName)", clientText);
+        Assert.Contains("public int? ResponseTimeoutMs { get; set; }", clientText);
+
+        foreach (var acceptedName in new[] { "SetRecordingEnabled", "setrecordingenabled", "set-recording-enabled", "17" })
+        {
+            Assert.Equal(150000, AutomationPipeProtocol.GetDefaultResponseTimeout(acceptedName));
+        }
+
+        Assert.Equal(15000, AutomationPipeProtocol.GetDefaultResponseTimeout("GetSnapshot"));
+        Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport"));
+
+        foreach (var acceptedName in new[] { "SetFlashbackEnabled", "set-flashback-enabled", "RestartFlashback" })
+        {
+            Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout(acceptedName));
+        }
     }
 
     [Fact]
