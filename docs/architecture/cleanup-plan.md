@@ -3769,16 +3769,17 @@ task registration, priority, label, and started action, `.LiveRestore.cs` owns
 go-live restore and final playback-state warning policy, `.Validation.cs` owns
 post-boundary snapshot/FPS/command-health warning policy, and
 recording-assisted segment rotation plus best-effort stop cleanup live beside it
-in `DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs` while
-`DiagnosticSessionFlashbackSegments.cs` stays read-only segment parsing and wait
-policy.
+in `DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`
+while the `DiagnosticSessionFlashbackSegments.*` family stays read-only segment
+parsing and wait policy.
 
 Diagnostic-session Flashback segment handling now lives in a small read-only
 family. `DiagnosticSessionFlashbackSegments.Models.cs` owns segment DTOs,
-`.Parsing.cs` owns `FlashbackGetSegments` response parsing, and
-`DiagnosticSessionFlashbackSegments.cs` owns completed-segment waits and
-playable-boundary headroom waits while the runner keeps scenario command
-sequencing.
+`.Parsing.cs` owns `FlashbackGetSegments` response parsing,
+`.CompletedWaits.cs` owns completed-segment discovery waits,
+`.PlaybackTargetWaits.cs` owns playable completed-segment target selection, and
+`.PlaybackHeadroomWaits.cs` owns playback-boundary headroom polling while the
+runner keeps scenario command sequencing.
 
 Diagnostic-session Flashback snapshot waits now live in
 `tools/Common/DiagnosticSessionFlashbackWaits.cs`. The root owns read-only
@@ -3956,7 +3957,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.LiveRestore.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`
-- `DiagnosticSessionFlashbackSegments.cs`
+- `DiagnosticSessionFlashbackSegments.CompletedWaits.cs`
+- `DiagnosticSessionFlashbackSegments.PlaybackTargetWaits.cs`
+- `DiagnosticSessionFlashbackSegments.PlaybackHeadroomWaits.cs`
 - `DiagnosticSessionFlashbackSegments.Models.cs`
 - `DiagnosticSessionFlashbackSegments.Parsing.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`

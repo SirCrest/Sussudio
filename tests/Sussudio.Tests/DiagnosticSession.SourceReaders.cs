@@ -92,6 +92,14 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs",
             "tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs");
 
+    private static string ReadDiagnosticSessionFlashbackSegmentsSource()
+        => ReadNormalizedSourceFiles(
+            "tools/Common/DiagnosticSessionFlashbackSegments.CompletedWaits.cs",
+            "tools/Common/DiagnosticSessionFlashbackSegments.PlaybackTargetWaits.cs",
+            "tools/Common/DiagnosticSessionFlashbackSegments.PlaybackHeadroomWaits.cs",
+            "tools/Common/DiagnosticSessionFlashbackSegments.Models.cs",
+            "tools/Common/DiagnosticSessionFlashbackSegments.Parsing.cs");
+
     private static string ReadDiagnosticSessionFlashbackStressScenarioSource()
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionFlashbackStressScenario.cs",

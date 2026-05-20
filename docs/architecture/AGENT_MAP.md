@@ -4301,9 +4301,14 @@ Primary owners:
   Flashback segment probe and playback-target DTOs.
 - `tools/Common/DiagnosticSessionFlashbackSegments.Parsing.cs` owns
   `FlashbackGetSegments` response parsing.
-- `tools/Common/DiagnosticSessionFlashbackSegments.cs` owns read-only
-  completed-segment waits and playable-boundary headroom waits. Do not add
-  state-mutating scenario steps there.
+- `tools/Common/DiagnosticSessionFlashbackSegments.CompletedWaits.cs` owns
+  read-only completed-segment discovery waits.
+- `tools/Common/DiagnosticSessionFlashbackSegments.PlaybackTargetWaits.cs`
+  owns playable completed-segment target selection and buffered-boundary
+  projection.
+- `tools/Common/DiagnosticSessionFlashbackSegments.PlaybackHeadroomWaits.cs`
+  owns read-only playback boundary headroom polling. Do not add state-mutating
+  scenario steps to the segment helper family.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns Flashback
   stress thresholds and stress/scrub-stress task registration.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.Stress.cs` owns the
