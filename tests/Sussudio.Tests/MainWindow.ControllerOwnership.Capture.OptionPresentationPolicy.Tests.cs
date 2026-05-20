@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureOptionPresentationPolicy_PreservesAffordanceRules()
+    internal static Task CaptureOptionPresentationPolicy_PreservesAffordanceRules()
     {
         var policyType = RequireType("Sussudio.Controllers.CaptureOptionPresentationPolicy");
         var inputType = RequireType("Sussudio.Controllers.CaptureOptionPresentationInput");

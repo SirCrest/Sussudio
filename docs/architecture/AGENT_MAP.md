@@ -2518,6 +2518,10 @@ Primary current owners:
   owns the former presentation-preview MainWindow capture selection binding,
   routing, collection sync, focused owner, device-audio projection, and
   normalizer checks after their removal from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureOptionContractsTests.cs`
+  owns the former presentation-preview MainWindow capture device action, option
+  presentation, affordance policy, option binding, and tooltip formatter checks
+  after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral

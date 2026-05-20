@@ -114,21 +114,6 @@ static partial class Program
             "Preview fade-in reveal lives in controller",
             PreviewFadeInReveal_LivesInController);
         await AddCheckAsync(results,
-            "Capture device button actions live in controller",
-            CaptureDeviceButtonActions_LiveInController);
-        await AddCheckAsync(results,
-            "Capture option presentation lives in controller",
-            CaptureOptionPresentation_LivesInController);
-        await AddCheckAsync(results,
-            "Capture option presentation policy preserves affordance rules",
-            CaptureOptionPresentationPolicy_PreservesAffordanceRules);
-        await AddCheckAsync(results,
-            "Capture option bindings live in controller",
-            CaptureOptionBindings_LiveInController);
-        await AddCheckAsync(results,
-            "Capture option tooltip formatter preserves text policy",
-            CaptureOptionTooltipFormatter_PreservesTooltipTextPolicy);
-        await AddCheckAsync(results,
             "Output path display lives in controller",
             OutputPathDisplay_LivesInController);
         await AddCheckAsync(results,

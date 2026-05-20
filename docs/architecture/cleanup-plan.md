@@ -916,6 +916,11 @@ Presentation-preview capture selection checks now execute through
 keeping selection binding, property routing, collection sync, focused owner,
 device-audio projection, and normalizer contracts in xUnit after their removal
 from the legacy harness catalog.
+Presentation-preview capture option checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureOptionContractsTests.cs`,
+keeping capture device action, option presentation, affordance policy, option
+binding, and tooltip formatter contracts in xUnit after their removal from the
+legacy harness catalog.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the

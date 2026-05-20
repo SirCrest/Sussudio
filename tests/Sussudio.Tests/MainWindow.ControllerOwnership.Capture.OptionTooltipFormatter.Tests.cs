@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureOptionTooltipFormatter_PreservesTooltipTextPolicy()
+    internal static Task CaptureOptionTooltipFormatter_PreservesTooltipTextPolicy()
     {
         var formatterType = RequireType("Sussudio.Controllers.CaptureOptionTooltipFormatter");
         var buildHdrHintText = formatterType.GetMethod("BuildHdrHintText", BindingFlags.Public | BindingFlags.Static)
