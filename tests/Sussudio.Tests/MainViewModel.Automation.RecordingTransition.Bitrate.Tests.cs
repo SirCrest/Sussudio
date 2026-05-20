@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task BitrateSampleWindow_PreservesBoundedAverageBehavior()
+    internal static Task BitrateSampleWindow_PreservesBoundedAverageBehavior()
     {
         var windowType = RequireType("Sussudio.ViewModels.BitrateSampleWindow");
         var window = Activator.CreateInstance(

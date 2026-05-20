@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationCaptureModeChanges_AwaitReinitialization()
+    internal static Task AutomationCaptureModeChanges_AwaitReinitialization()
     {
         var viewModelStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs").Replace("\r\n", "\n");
         var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSettings.cs").Replace("\r\n", "\n");
@@ -73,7 +73,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationDeviceSelection_RoutesThroughApplyReinit()
+    internal static Task AutomationDeviceSelection_RoutesThroughApplyReinit()
     {
         var deviceSelectionAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs").Replace("\r\n", "\n");
         var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackPlaybackPresentation_LivesInController()
+    internal static Task FlashbackPlaybackPresentation_LivesInController()
     {
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");

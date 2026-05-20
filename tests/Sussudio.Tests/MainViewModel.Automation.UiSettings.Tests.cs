@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationPreviewVolume_PersistsThroughSettingsPath()
+    internal static Task AutomationPreviewVolume_PersistsThroughSettingsPath()
     {
         var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationUi.cs").Replace("\r\n", "\n");
         var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudio.cs").Replace("\r\n", "\n");
@@ -25,7 +25,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationUiSettings_PersistThroughSettingsPath()
+    internal static Task AutomationUiSettings_PersistThroughSettingsPath()
     {
         var settingsPersistenceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs").Replace("\r\n", "\n");
         var settingsLoadApplicationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.cs").Replace("\r\n", "\n");
@@ -78,7 +78,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task SettingsPersistenceProjection_LoadPlanPreservesSavedSemantics()
+    internal static Task SettingsPersistenceProjection_LoadPlanPreservesSavedSemantics()
     {
         var settings = CreateSettings(
             ("SelectedDeviceId", "device-1"),
@@ -139,7 +139,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task SettingsPersistenceProjection_SaveSettingsMapsPersistedValues()
+    internal static Task SettingsPersistenceProjection_SaveSettingsMapsPersistedValues()
     {
         var settings = BuildSettingsSaveSettings(
             selectedDeviceId: "device-2",

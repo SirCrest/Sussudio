@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainViewModelAutomation_RoutesRecordingThroughSharedTransitionGate()
+    internal static Task MainViewModelAutomation_RoutesRecordingThroughSharedTransitionGate()
     {
         var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");

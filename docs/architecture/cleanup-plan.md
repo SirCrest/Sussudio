@@ -859,6 +859,12 @@ Automation app-surface checks now execute through
 exception policy, converter/display formatting, LoggingJsonContext, MainWindow
 automation surface, pipe/auth, and Stream Deck auth-envelope checks in xUnit
 after their removal from the legacy harness catalog.
+Automation ViewModel/Flashback UI checks now execute through
+`tests/Sussudio.Tests/XUnit.AutomationViewModelFlashbackUiContractsTests.cs`,
+keeping automation settings, audio/device/capture/recording routes, async
+Flashback/probe surface, runtime snapshot ownership, scrub/toggle behavior,
+timeline geometry, and Flashback presentation controller ownership checks in
+xUnit after their removal from the legacy harness catalog.
 
 Projection ownership checks are split into snapshot/status, audio, capture and
 source, MJPEG, recording, system resources and A/V sync, preview, and Flashback

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainViewModelAutomation_RecordingSettingsRouteThroughControllerAndFlashbackCycle()
+    internal static Task MainViewModelAutomation_RecordingSettingsRouteThroughControllerAndFlashbackCycle()
     {
         var viewModelFiles = ReadMainViewModelCodeFiles();
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];

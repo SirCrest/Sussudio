@@ -89,10 +89,10 @@ public class MjpegPipelineTimingTests
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("GetRemainingTimeout not found.");
 
-        long futureDeadline = Stopwatch.GetTimestamp() + Stopwatch.Frequency * 2;
+        long futureDeadline = Stopwatch.GetTimestamp() + Stopwatch.Frequency * 60;
         var result = (TimeSpan)method.Invoke(null, new object[] { futureDeadline })!;
-        Assert.True(result.TotalMilliseconds > 1000,
-            $"Remaining timeout for 2s future deadline should be >1000ms, got {result.TotalMilliseconds:F1}");
+        Assert.True(result.TotalSeconds > 30 && result.TotalSeconds <= 60,
+            $"Remaining timeout for 60s future deadline should be bounded, got {result.TotalSeconds:F1}s");
 
         long pastDeadline = Stopwatch.GetTimestamp() - Stopwatch.Frequency;
         var pastResult = (TimeSpan)method.Invoke(null, new object[] { pastDeadline })!;

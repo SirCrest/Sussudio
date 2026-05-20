@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationAudioCommands_PreserveRuntimeGuards()
+    internal static Task AutomationAudioCommands_PreserveRuntimeGuards()
     {
         var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudio.cs")
             .Replace("\r\n", "\n");

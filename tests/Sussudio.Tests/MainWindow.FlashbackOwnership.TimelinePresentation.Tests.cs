@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackTimelineTrackLayout_LivesInController()
+    internal static Task FlashbackTimelineTrackLayout_LivesInController()
     {
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
         var timelineAdapterText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
@@ -63,7 +63,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackMarkerPresentation_LivesInController()
+    internal static Task FlashbackMarkerPresentation_LivesInController()
     {
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
@@ -106,7 +106,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackExportProgressPresentation_LivesInController()
+    internal static Task FlashbackExportProgressPresentation_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");

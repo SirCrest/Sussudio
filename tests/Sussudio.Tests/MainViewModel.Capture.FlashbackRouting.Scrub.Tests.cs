@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 static partial class Program
 {
-    private static Task MainWindowFlashbackScrub_EndsOnReleaseCancelAndCaptureLost()
+    internal static Task MainWindowFlashbackScrub_EndsOnReleaseCancelAndCaptureLost()
     {
         var flashbackWindowText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
@@ -141,7 +141,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackTimelineGeometry_PreservesScrubMath()
+    internal static Task FlashbackTimelineGeometry_PreservesScrubMath()
     {
         var geometryType = RequireType("Sussudio.Controllers.FlashbackTimelineGeometry");
         var tryComputeFraction = geometryType.GetMethod("TryComputeFraction", BindingFlags.Public | BindingFlags.Static)

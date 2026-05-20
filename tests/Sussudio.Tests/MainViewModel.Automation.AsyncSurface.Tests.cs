@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainViewModelAutomation_UsesAsyncFlashbackAndProbeSurface()
+    internal static Task MainViewModelAutomation_UsesAsyncFlashbackAndProbeSurface()
     {
         var automationInterfaceType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
         var readinessPortType = RequireType("Sussudio.Services.Automation.IAutomationReadinessPort");

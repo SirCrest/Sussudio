@@ -117,6 +117,11 @@ add xUnit alongside, and port incrementally.
   and display formatting, LoggingJsonContext, MainWindow automation IDs,
   full-screen/window dispatch adapters, pipe/auth, and Stream Deck auth-envelope
   checks.
+- `XUnit.AutomationViewModelFlashbackUiContractsTests.cs` owns the former
+  legacy automation ViewModel/Flashback UI registration group: automation
+  settings, audio/device/capture/recording routes, async Flashback/probe
+  surface, runtime snapshot ownership, scrub/toggle behavior, timeline
+  geometry, and Flashback presentation controller ownership checks.
 - `XUnit.ToolProbeContractsTests.cs` owns the former legacy PresentMon parser,
   ssctl pipe transport, KS audio-node, and EGAVDS probe contract checks.
 - `XUnit.AutomationSnapshotFormatterContractsTests.cs` owns the former legacy

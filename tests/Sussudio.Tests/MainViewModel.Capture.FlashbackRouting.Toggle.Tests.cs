@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 static partial class Program
 {
-    private static Task MainWindowFlashbackToggle_RollsBackUiStateOnFailure()
+    internal static Task MainWindowFlashbackToggle_RollsBackUiStateOnFailure()
     {
         var flashbackWindowText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
