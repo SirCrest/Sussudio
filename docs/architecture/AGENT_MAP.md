@@ -3833,7 +3833,11 @@ Primary owners:
 - `tools/ssctl/Formatters.Snapshot.Flashback.Playback.cs` owns Flashback
   playback state, command-queue, cadence, decode, frame, stage, and A/V drift
   snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG timing snapshot text.
+- `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG decode, compressed
+  queue, drop-reason, reorder, pipeline, and per-decoder timing snapshot text.
+- `tools/ssctl/Formatters.Snapshot.Mjpeg.PreviewJitter.cs` owns MJPEG
+  preview-jitter queue, input/output/latency, ownership, and underflow snapshot
+  text.
 - `tools/ssctl/Formatters.Snapshot.Preview.cs` owns preview renderer-mode
   routing, GPU playback summary, non-D3D fallback frame/cadence text, and D3D
   renderer delegation.
@@ -4449,8 +4453,12 @@ Primary owners:
   output path, and message text.
   `tools/Common/AutomationSnapshotFormatter.Flashback.Playback.cs` owns
   Flashback playback status, command, cadence, decode, frame, stage, and A/V
-  drift text. The
-  `tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs`,
+  drift text.
+  `tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs` owns MJPEG decode,
+  compressed queue, drop-reason, reorder, pipeline, and per-decoder timing
+  text. `tools/Common/AutomationSnapshotFormatter.MjpegTiming.PreviewJitter.cs`
+  owns MJPEG preview-jitter queue, input/output/latency, ownership, and
+  underflow text. The
   `tools/Common/AutomationSnapshotFormatter.Preview.cs`,
   `tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs`,
   `tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs`,

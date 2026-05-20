@@ -15,6 +15,7 @@ static partial class Program
         var ssctlSnapshotFlashbackExportSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.Export.cs");
         var ssctlSnapshotFlashbackPlaybackSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.Playback.cs");
         var ssctlSnapshotMjpegSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Mjpeg.cs");
+        var ssctlSnapshotMjpegPreviewJitterSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Mjpeg.PreviewJitter.cs");
         var ssctlSnapshotPreviewSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Preview.cs");
         var ssctlSnapshotPreviewD3DSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.PreviewD3D.cs");
         var ssctlSnapshotRuntimeSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Runtime.cs");
@@ -100,6 +101,11 @@ static partial class Program
         AssertContains(ssctlSnapshotCoreSectionsSource, "builder.AppendLine(\"== Memory & GC ==\");");
         AssertContains(ssctlSnapshotMjpegSource, "private static void AppendSnapshotMjpegTimingSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotMjpegSource, "var mjpegDecodeSamples = AutomationSnapshotFormatter.Get(snapshot, \"MjpegDecodeSampleCount\", \"0\");");
+        AssertContains(ssctlSnapshotMjpegSource, "AppendSnapshotMjpegPreviewJitterSection(builder, snapshot);");
+        AssertDoesNotContain(ssctlSnapshotMjpegSource, "Preview Jitter Latency:");
+        AssertContains(ssctlSnapshotMjpegPreviewJitterSource, "private static void AppendSnapshotMjpegPreviewJitterSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotMjpegPreviewJitterSource, "Preview Jitter Latency:");
+        AssertContains(ssctlSnapshotMjpegPreviewJitterSource, "Preview Jitter Underflow:");
         AssertContains(ssctlSnapshotPreviewSource, "private static void AppendSnapshotPreviewSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotPreviewSource, "var rendererMode = AutomationSnapshotFormatter.Get(snapshot, \"PreviewRendererMode\");");
         AssertContains(ssctlSnapshotPreviewSource, "AppendSnapshotPreviewD3DSection(builder, snapshot);");

@@ -575,7 +575,8 @@ throughput, force-rotate fallback, range, output path, and message text in
 `Formatters.Snapshot.Flashback.Export.cs`, Flashback playback status, command,
 cadence, decode, frame, stage, and A/V drift text in
 `Formatters.Snapshot.Flashback.Playback.cs`, MJPEG timing text in
-`Formatters.Snapshot.Mjpeg.cs`, D3D preview renderer text in
+`Formatters.Snapshot.Mjpeg.cs`, MJPEG preview-jitter queue, latency, ownership,
+and underflow text in `Formatters.Snapshot.Mjpeg.PreviewJitter.cs`, D3D preview renderer text in
 `Formatters.Snapshot.PreviewD3D.cs` including routing/header order, CPU timing,
 pipeline latency, frame ownership, frame-latency wait, DXGI frame-stat text, and
 delegation to the shared slow-frame formatter, thread-health text in
@@ -608,8 +609,11 @@ force-rotate fallback, range, output path, and message text lives in
 command, cadence, decode, frame, stage, and A/V drift text lives in
 `AutomationSnapshotFormatter.Flashback.Playback.cs`. Capture cadence also owns
 its AV-sync and source-signal leaf sections because those sections are only
-emitted from the cadence tail. MJPEG timing, preview routing, D3D preview text,
-and thread-health live in the remaining focused formatter partials. The
+emitted from the cadence tail. MJPEG timing lives in
+`AutomationSnapshotFormatter.MjpegTiming.cs`; MJPEG preview-jitter queue,
+latency, ownership, and underflow text lives in
+`AutomationSnapshotFormatter.MjpegTiming.PreviewJitter.cs`. Preview routing,
+D3D preview text, and thread-health live in the remaining focused formatter partials. The
 `AutomationSnapshotFormatter.PreviewD3D.cs` owner keeps D3D header/routing,
 CPU timing, frame-flow, frame-latency wait, and DXGI frame stats together while
 preserving output order. Slow-frame diagnostics stay in
