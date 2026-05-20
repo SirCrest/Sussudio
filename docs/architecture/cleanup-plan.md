@@ -151,6 +151,8 @@ by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureCommands.cs` owns capture
 session command queue counters, latency, last-command, and last-error
 projection inputs consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureCommands.cs`
+owns final capture-command projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns requested,
 actual, negotiated, observed, and encoder format projection inputs consumed by
 the automation snapshot DTO.

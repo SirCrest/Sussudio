@@ -140,8 +140,16 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionCaptureCommandsText, "private static CaptureCommandProjection BuildCaptureCommandProjection(ViewModelRuntimeSnapshot viewModelSnapshot)");
         AssertContains(diagnostics.SnapshotProjectionCaptureCommandsText, "CommandsEnqueued = viewModelSnapshot.CaptureCommandCommandsEnqueued,");
         AssertContains(diagnostics.SnapshotProjectionCaptureCommandsText, "LastError = viewModelSnapshot.CaptureCommandLastError");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var captureCommandFlattening = BuildCaptureCommandFlattenedProjection(captureCommands);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureCommandsText, "CommandsEnqueued = captureCommands.CommandsEnqueued,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureCommandsText, "MaxQueueLatencyMs = captureCommands.MaxQueueLatencyMs,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureCommandsText, "LastError = captureCommands.LastError");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "CaptureCommandCommandsEnqueued = captureCommandFlattening.CommandsEnqueued,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "CaptureCommandLastError = captureCommandFlattening.LastError,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "CaptureCommandCommandsEnqueued = viewModelSnapshot.CaptureCommandCommandsEnqueued,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "CaptureCommandLastError = viewModelSnapshot.CaptureCommandLastError,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "CaptureCommandCommandsEnqueued = captureCommands.CommandsEnqueued,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "CaptureCommandLastError = captureCommands.LastError,");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var userSettings = BuildUserSettingsProjection(viewModelSnapshot);");
         AssertContains(diagnostics.SnapshotProjectionUserSettingsText, "private static UserSettingsProjection BuildUserSettingsProjection(ViewModelRuntimeSnapshot viewModelSnapshot)");
         AssertContains(diagnostics.SnapshotProjectionUserSettingsText, "SelectedFriendlyFrameRate = viewModelSnapshot.SelectedFriendlyFrameRate ?? Math.Round(viewModelSnapshot.SelectedFrameRate),");

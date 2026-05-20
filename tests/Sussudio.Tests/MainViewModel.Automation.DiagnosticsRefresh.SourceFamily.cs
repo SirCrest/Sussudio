@@ -60,6 +60,7 @@ static partial class Program
             SnapshotProjectionCaptureIngestText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureIngest.cs"),
             SnapshotProjectionWasapiAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.WasapiAudio.cs"),
             SnapshotProjectionCaptureCommandsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureCommands.cs"),
+            SnapshotProjectionFlatteningCaptureCommandsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureCommands.cs"),
             SnapshotProjectionCaptureFormatText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs"),
             SnapshotProjectionCaptureTransportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureTransport.cs"),
             SnapshotProjectionCaptureCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs"),
@@ -178,6 +179,7 @@ static partial class Program
         public string SnapshotProjectionCaptureIngestText { get; init; } = string.Empty;
         public string SnapshotProjectionWasapiAudioText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureCommandsText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningCaptureCommandsText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureFormatText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureTransportText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureCadenceText { get; init; } = string.Empty;
@@ -275,6 +277,7 @@ static partial class Program
                 SnapshotProjectionCaptureIngestText,
                 SnapshotProjectionWasapiAudioText,
                 SnapshotProjectionCaptureCommandsText,
+                SnapshotProjectionFlatteningCaptureCommandsText,
                 SnapshotProjectionCaptureFormatText,
                 SnapshotProjectionCaptureTransportText,
                 SnapshotProjectionCaptureCadenceText,
