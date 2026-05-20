@@ -3681,10 +3681,13 @@ scenario owners.
 
 Diagnostic-session Flashback export scenarios now live in a focused partial
 family of named owners. Concurrent export, disable-during-export, rotated
-export, export during playback, and selection-range export flows each have
-their own named file. `DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
-owns export scenario task registration while diagnostic-session startup makes a
-single qualified call into that owner. Do not reintroduce an empty family root.
+export, export-during-playback command choreography, and selection-range export
+flows each have their own named file. Export-during-playback pre/post/final
+playback snapshot validation lives in
+`DiagnosticSessionFlashbackExportScenarios.PlaybackValidation.cs`.
+`DiagnosticSessionFlashbackExportScenarios.Registrations.cs` owns export
+scenario task registration while diagnostic-session startup makes a single
+qualified call into that owner. Do not reintroduce an empty family root.
 
 Diagnostic-session Flashback lifecycle checks now live in
 `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs`. They own the
@@ -3862,6 +3865,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`
 - `DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Playback.cs`
+- `DiagnosticSessionFlashbackExportScenarios.PlaybackValidation.cs`
 - `DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Range.cs`
 - `DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs`

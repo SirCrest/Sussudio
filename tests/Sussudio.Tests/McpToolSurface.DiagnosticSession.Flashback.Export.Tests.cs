@@ -7,6 +7,10 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var scenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
+        var playbackText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs")
+            .Replace("\r\n", "\n");
+        var playbackValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.PlaybackValidation.cs")
+            .Replace("\r\n", "\n");
         var scenariosTextWithoutSpaces = scenariosText.Replace(" ", string.Empty);
 
         AssertContains(scenariosText, "internal static partial class DiagnosticSessionFlashbackExportScenarios");
@@ -20,6 +24,17 @@ static partial class Program
         AssertContains(scenariosText, "TryParseFlashbackExportSegmentCount(exportMessage)");
         AssertContains(scenariosText, "internal static async Task RunFlashbackExportPlaybackAsync(");
         AssertContains(scenariosText, "flashback export during playback verified");
+        AssertContains(playbackText, "CaptureFlashbackExportPlaybackFrameCountBeforeExportAsync(");
+        AssertContains(playbackText, "ValidateFlashbackExportPlaybackAfterExportAsync(");
+        AssertContains(playbackText, "ValidateFlashbackExportPlaybackFinalStateAsync(");
+        AssertDoesNotContain(playbackText, "playback frame count did not advance during export");
+        AssertDoesNotContain(playbackText, "BuildPlaybackCommandHealth(finalSnapshot, baselineSnapshot)");
+        AssertContains(playbackValidationText, "private static async Task<long> CaptureFlashbackExportPlaybackFrameCountBeforeExportAsync(");
+        AssertContains(playbackValidationText, "flashback export playback: expected Playing before export");
+        AssertContains(playbackValidationText, "private static async Task ValidateFlashbackExportPlaybackAfterExportAsync(");
+        AssertContains(playbackValidationText, "flashback export playback: playback frame count did not advance during export");
+        AssertContains(playbackValidationText, "private static async Task ValidateFlashbackExportPlaybackFinalStateAsync(");
+        AssertContains(playbackValidationText, "BuildPlaybackCommandHealth(finalSnapshot, baselineSnapshot)");
         AssertContains(scenariosText, "internal static async Task RunFlashbackRangeExportAsync(");
         AssertContains(scenariosText, "private static async Task<FlashbackSelectionRange?> PrepareFlashbackSelectionRangeAsync(");
         AssertContains(scenariosText, "private static async Task MarkFlashbackSelectionPointAsync(");

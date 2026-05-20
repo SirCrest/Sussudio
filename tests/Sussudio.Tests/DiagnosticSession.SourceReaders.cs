@@ -24,6 +24,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Rotated.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs",
+            "tools/Common/DiagnosticSessionFlashbackExportScenarios.PlaybackValidation.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs",
