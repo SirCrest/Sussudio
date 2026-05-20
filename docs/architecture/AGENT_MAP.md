@@ -4258,10 +4258,13 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`
   owns recording-assisted segment rotation and best-effort stop cleanup for
   segment playback diagnostics.
+- `tools/Common/DiagnosticSessionFlashbackSegments.Models.cs` owns read-only
+  Flashback segment probe and playback-target DTOs.
+- `tools/Common/DiagnosticSessionFlashbackSegments.Parsing.cs` owns
+  `FlashbackGetSegments` response parsing.
 - `tools/Common/DiagnosticSessionFlashbackSegments.cs` owns read-only
-  diagnostic-session Flashback segment parsing, completed-segment waits, and
-  playable-boundary headroom waits. Do not add state-mutating scenario steps
-  there.
+  completed-segment waits and playable-boundary headroom waits. Do not add
+  state-mutating scenario steps there.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns Flashback
   stress thresholds and stress/scrub-stress task registration.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.Stress.cs` owns the

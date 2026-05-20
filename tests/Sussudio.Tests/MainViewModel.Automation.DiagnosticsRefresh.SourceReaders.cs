@@ -118,6 +118,8 @@ static partial class Program
                 + "\n" + ReadDiagnosticSessionFlashbackRecordingSettingsScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.cs")
+                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.Models.cs")
+                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.Parsing.cs")
                 + "\n" + ReadDiagnosticSessionFlashbackStressScenarioSource()
                 + "\n" + ReadDiagnosticSessionFlashbackValidationSource()
                 + "\n" + ReadDiagnosticSessionFlashbackWaitsSource()

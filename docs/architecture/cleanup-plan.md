@@ -3754,10 +3754,12 @@ and recording-assisted segment rotation plus best-effort stop cleanup live besid
 `DiagnosticSessionFlashbackSegments.cs` stays read-only segment parsing and wait
 policy.
 
-Diagnostic-session Flashback segment handling now lives in
-`tools/Common/DiagnosticSessionFlashbackSegments.cs`. It owns segment DTOs,
-`FlashbackGetSegments` parsing, completed-segment waits, and playable-boundary
-headroom waits while the runner keeps scenario command sequencing.
+Diagnostic-session Flashback segment handling now lives in a small read-only
+family. `DiagnosticSessionFlashbackSegments.Models.cs` owns segment DTOs,
+`.Parsing.cs` owns `FlashbackGetSegments` response parsing, and
+`DiagnosticSessionFlashbackSegments.cs` owns completed-segment waits and
+playable-boundary headroom waits while the runner keeps scenario command
+sequencing.
 
 Diagnostic-session Flashback snapshot waits now live in
 `tools/Common/DiagnosticSessionFlashbackWaits.cs`. The root owns read-only
@@ -3917,6 +3919,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`
 - `DiagnosticSessionFlashbackSegments.cs`
+- `DiagnosticSessionFlashbackSegments.Models.cs`
+- `DiagnosticSessionFlashbackSegments.Parsing.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`
 - `DiagnosticSessionFlashbackStressScenario.Stress.cs`
 - `DiagnosticSessionFlashbackStressScenario.WarmPlayback.cs`

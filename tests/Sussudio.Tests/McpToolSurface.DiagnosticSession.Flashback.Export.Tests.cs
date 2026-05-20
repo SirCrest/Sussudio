@@ -124,17 +124,25 @@ static partial class Program
         var segmentPlaybackText = ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource();
         var segmentsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.cs")
             .Replace("\r\n", "\n");
+        var segmentModelsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.Models.cs")
+            .Replace("\r\n", "\n");
+        var segmentParsingText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.Parsing.cs")
+            .Replace("\r\n", "\n");
 
-        AssertContains(segmentsText, "internal static class DiagnosticSessionFlashbackSegments");
-        AssertContains(segmentsText, "internal readonly record struct FlashbackSegmentProbe(");
-        AssertContains(segmentsText, "internal readonly record struct FlashbackSegmentPlaybackTarget(");
+        AssertContains(segmentsText, "internal static partial class DiagnosticSessionFlashbackSegments");
+        AssertContains(segmentModelsText, "internal readonly record struct FlashbackSegmentProbe(");
+        AssertContains(segmentModelsText, "internal readonly record struct FlashbackSegmentPlaybackTarget(");
         AssertContains(segmentsText, "internal static async Task<FlashbackSegmentProbe?> WaitForFlashbackCompletedSegmentAsync(");
-        AssertContains(segmentsText, "internal static bool TryGetFlashbackSegments(");
+        AssertContains(segmentParsingText, "internal static bool TryGetFlashbackSegments(");
         AssertContains(segmentsText, "internal static async Task<FlashbackSegmentPlaybackTarget?> WaitForFlashbackPlayableCompletedSegmentAsync(");
         AssertContains(segmentsText, "internal static async Task<bool> WaitForFlashbackSegmentPlaybackHeadroomAsync(");
         AssertContains(segmentsText, "\"FlashbackGetSegments\"");
-        AssertContains(segmentsText, "data.TryGetProperty(\"Segments\", out var segmentsElement)");
+        AssertContains(segmentParsingText, "data.TryGetProperty(\"Segments\", out var segmentsElement)");
         AssertContains(segmentsText, "const int requiredHeadroomMs = 8_000;");
+        AssertDoesNotContain(segmentsText, "internal readonly record struct FlashbackSegmentProbe(");
+        AssertDoesNotContain(segmentsText, "segments.Add(new FlashbackSegmentProbe(");
+        AssertDoesNotContain(segmentModelsText, "TryGetFlashbackSegments(");
+        AssertDoesNotContain(segmentParsingText, "WaitForFlashbackPlayableCompletedSegmentAsync(");
         AssertContains(exportScenariosText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegments;");
         AssertContains(segmentPlaybackText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegments;");
         AssertDoesNotContain(runnerText, "private readonly record struct FlashbackSegmentProbe(");
