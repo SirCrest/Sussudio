@@ -3720,13 +3720,14 @@ stays in the `DiagnosticSessionScenarioCatalog` family and grouped
 preview-cycle policy stays in `DiagnosticSessionScenarioPlan.cs`.
 `.Flashback.cs`, `.Playback.cs`, and `.Recording.cs` own preview stop/restart
 command choreography for normal Flashback, playback, and recording-backed
-diagnostics. Playback-preview-cycle warmup, stopped-state, and restart
-frame-flow validation live in `.PlaybackValidation.cs`. Normal Flashback and
-playback-preview-cycle export-while-preview-off verification live in
-`.FlashbackExport.cs` and `.PlaybackExport.cs`. Recording-backed readiness,
-preview-off counter, and restart frame-flow validation live in
-`.RecordingValidation.cs` while startup only delegates selected scenario
-registration.
+diagnostics. Normal Flashback preview-cycle encoded-frame, preview-off, and
+restart frame-flow validation live in `.FlashbackValidation.cs`;
+playback-preview-cycle warmup, stopped-state, and restart frame-flow validation
+live in `.PlaybackValidation.cs`. Normal Flashback and playback-preview-cycle
+export-while-preview-off verification live in `.FlashbackExport.cs` and
+`.PlaybackExport.cs`. Recording-backed readiness, preview-off counter, and
+restart frame-flow validation live in `.RecordingValidation.cs` while startup
+only delegates selected scenario registration.
 
 Diagnostic-session Flashback rejected-export scenarios now live in the
 `tools/Common/DiagnosticSessionFlashbackRejectedExports*.cs` partial family.
@@ -3897,6 +3898,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.Recording.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
+- `DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackValidation.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackExport.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackValidation.cs`
