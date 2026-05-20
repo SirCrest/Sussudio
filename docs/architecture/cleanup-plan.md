@@ -370,9 +370,13 @@ preview scheduler, renderer, present/display, and visual-cadence diagnostic
 lane text formatting.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Realtime.Recording.cs`
 owns recording and audio diagnostic lane text formatting.
-`AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs` owns
-Flashback recording, export, temp-cache, playback-command, and playback
-performance diagnostic lane text formatting.
+`AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.Recording.cs`
+owns Flashback recording diagnostic lane text formatting.
+`AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.Export.cs` owns
+Flashback export and temp-cache diagnostic lane text formatting.
+`AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.Playback.cs` owns
+Flashback playback command and playback performance diagnostic lane text
+formatting.
 `AutomationDiagnosticsHub.Evaluation.cs` owns performance scoring.
 `AutomationDiagnosticsHub.EvaluationPolicy.cs` owns shared alert-detail
 formatting and health classifiers used by both alerts and diagnostic
