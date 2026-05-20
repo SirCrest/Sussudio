@@ -3692,8 +3692,10 @@ pause/seek/play disable-and-re-enable task registration, flow, and post-disable
 playback queue assertions while startup only delegates to the lifecycle owner.
 
 Diagnostic-session Flashback metric projection now lives in a focused partial
-family of named owners. DTOs, recording metrics, playback session aggregation,
-playback result copying, and export metrics each have named owner files.
+family of named owners. Recording, playback-session, playback-result, and
+export DTO shapes have separate model owner files. Recording metrics, playback
+session aggregation, playback result copying, and export metrics each have
+named behavior owner files.
 Playback observation keeps active/relevant snapshot gating in the root while
 1% low capture, frame/decode maxima, and audio-master maxima live in focused
 observation partials. Export metrics also own force-rotate fallback total,
@@ -3856,7 +3858,10 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExportScenarios.Rotated.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.cs`
 - `DiagnosticSessionFlashbackMetrics.Export.cs`
-- `DiagnosticSessionFlashbackMetrics.Models.cs`
+- `DiagnosticSessionFlashbackMetrics.Models.Recording.cs`
+- `DiagnosticSessionFlashbackMetrics.Models.PlaybackSession.cs`
+- `DiagnosticSessionFlashbackMetrics.Models.PlaybackResult.cs`
+- `DiagnosticSessionFlashbackMetrics.Models.Export.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.OnePercentLow.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.FrameDecode.cs`

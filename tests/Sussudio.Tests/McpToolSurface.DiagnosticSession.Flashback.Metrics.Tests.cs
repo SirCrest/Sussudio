@@ -9,6 +9,14 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var metricsText = ReadDiagnosticSessionFlashbackMetricsSource();
+        var recordingModelsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.Models.Recording.cs")
+            .Replace("\r\n", "\n");
+        var playbackSessionModelsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.Models.PlaybackSession.cs")
+            .Replace("\r\n", "\n");
+        var playbackResultModelsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.Models.PlaybackResult.cs")
+            .Replace("\r\n", "\n");
+        var exportModelsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.Models.Export.cs")
+            .Replace("\r\n", "\n");
         var playbackSessionText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs")
             .Replace("\r\n", "\n");
         var playbackObservationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs")
@@ -21,10 +29,17 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(metricsText, "internal static partial class DiagnosticSessionFlashbackMetrics");
-        AssertContains(metricsText, "internal sealed class FlashbackRecordingSessionMetrics");
-        AssertContains(metricsText, "internal sealed class FlashbackPlaybackSessionMetrics");
-        AssertContains(metricsText, "internal sealed class FlashbackPlaybackResultMetrics");
-        AssertContains(metricsText, "internal sealed class FlashbackExportSessionMetrics");
+        AssertContains(recordingModelsText, "internal sealed class FlashbackRecordingSessionMetrics");
+        AssertContains(playbackSessionModelsText, "internal sealed class FlashbackPlaybackSessionMetrics");
+        AssertContains(playbackResultModelsText, "internal sealed class FlashbackPlaybackResultMetrics");
+        AssertContains(exportModelsText, "internal sealed class FlashbackExportSessionMetrics");
+        AssertContains(playbackSessionModelsText, "public JsonElement BaselineSnapshot { get; init; }");
+        AssertContains(playbackSessionModelsText, "public long MinOnePercentLowAudioMasterFallbacks { get; set; }");
+        AssertContains(playbackResultModelsText, "public long SeekForwardDecodeCapHitsDelta { get; init; }");
+        AssertContains(exportModelsText, "public long ForceRotateFallbacksAtEnd { get; set; }");
+        AssertDoesNotContain(recordingModelsText, "internal sealed class FlashbackPlaybackSessionMetrics");
+        AssertDoesNotContain(playbackSessionModelsText, "internal sealed class FlashbackPlaybackResultMetrics");
+        AssertDoesNotContain(playbackResultModelsText, "internal sealed class FlashbackExportSessionMetrics");
         AssertContains(metricsText, "internal static FlashbackRecordingSessionMetrics BuildFlashbackRecordingMetrics(");
         AssertContains(playbackSessionText, "internal static FlashbackPlaybackSessionMetrics BuildFlashbackPlaybackSessionMetrics(");
         AssertContains(playbackObservationText, "private static void ObservePlaybackSnapshot(");
@@ -39,7 +54,6 @@ static partial class Program
         AssertContains(playbackObservationAudioMasterText, "GetResetAwareCounterDelta(snapshot, metrics.BaselineSnapshot, \"FlashbackPlaybackAudioMasterFallbacks\")");
         AssertContains(metricsText, "internal static FlashbackPlaybackResultMetrics BuildFlashbackPlaybackResultMetrics(");
         AssertContains(metricsText, "internal static FlashbackExportSessionMetrics BuildFlashbackExportSessionMetrics(");
-        AssertContains(metricsText, "public long ForceRotateFallbacksAtEnd { get; set; }");
         AssertContains(metricsText, "metrics.ForceRotateFallbacksAtEnd = GetNullableLong(lastSnapshot, \"FlashbackExportForceRotateFallbacks\") ?? 0;");
         AssertContains(metricsText, "metrics.ForceRotateFallbacksDelta = GetCounterDelta(");
         AssertContains(metricsText, "metrics.LastForceRotateFallbackSegmentsAtEnd =");

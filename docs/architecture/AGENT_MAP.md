@@ -4180,8 +4180,11 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs` owns
   Flashback playback disable/re-enable lifecycle diagnostic task registration
   and flow.
-- `tools/Common/DiagnosticSessionFlashbackMetrics.Models.cs` owns session/result
-  DTOs. `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs`,
+- `tools/Common/DiagnosticSessionFlashbackMetrics.Models.Recording.cs`,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.Models.PlaybackSession.cs`,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.Models.PlaybackResult.cs`, and
+  `tools/Common/DiagnosticSessionFlashbackMetrics.Models.Export.cs` own
+  diagnostic-session Flashback metric DTO shapes. `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs`,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs`,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`, and
