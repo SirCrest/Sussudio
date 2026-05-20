@@ -2566,8 +2566,12 @@ math, active fMP4 segment detection, and playback path comparison.
 
 Flashback playback diagnostics now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs`. That
-partial owns public playback counters plus cadence/decode summary records.
-Private metric state, cadence sample rings, percentile math,
+partial owns public playback counters and the read-only A/V drift projection.
+Cadence summary DTO construction, percentile math, and low-FPS derivation live
+in `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackCadenceMetrics.cs`.
+Decode summary DTO construction and decode timing percentile projection live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackDecodeMetrics.cs`.
+Private metric state, cadence sample rings,
 seek-cap telemetry, and metric reset behavior now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.MetricsCollection.cs`.
 Playback decode duration rings, max decode phase timing state, decode timing

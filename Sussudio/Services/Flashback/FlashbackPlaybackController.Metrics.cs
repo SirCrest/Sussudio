@@ -5,25 +5,6 @@ namespace Sussudio.Services.Flashback;
 
 internal sealed partial class FlashbackPlaybackController
 {
-    public readonly record struct PlaybackCadenceMetrics(
-        int SampleCount,
-        double P95FrameMs,
-        double P99FrameMs,
-        double MaxFrameMs,
-        long SlowFrameCount,
-        double SlowFramePercent,
-        double OnePercentLowFps,
-        double FivePercentLowFps,
-        double SampleDurationMs,
-        double[] RecentFrameIntervalsMs);
-
-    public readonly record struct PlaybackDecodeMetrics(
-        int SampleCount,
-        double AvgMs,
-        double P95Ms,
-        double P99Ms,
-        double MaxMs);
-
     public long PlaybackFrameCount => Interlocked.Read(ref _playbackFrameCount);
     public long PlaybackLateFrames => Interlocked.Read(ref _playbackLateFrames);
     public long PlaybackDroppedFrames => Interlocked.Read(ref _playbackDroppedFrames);
@@ -87,76 +68,6 @@ internal sealed partial class FlashbackPlaybackController
     public string LastCommandProcessed => Volatile.Read(ref _lastCommandProcessed);
     public string LastCommandFailure => Volatile.Read(ref _lastCommandFailure);
     public bool PlaybackThreadAlive => _playbackThread is { IsAlive: true };
-
-    public PlaybackCadenceMetrics GetPlaybackCadenceMetrics()
-    {
-        double[] samples;
-        lock (_playbackCadenceLock)
-        {
-            if (_playbackFrameIntervalCount == 0)
-            {
-                return new PlaybackCadenceMetrics(0, 0, 0, 0, Interlocked.Read(ref _playbackSlowFrameCount), 0, 0, 0, 0, Array.Empty<double>());
-            }
-
-            samples = new double[_playbackFrameIntervalCount];
-            var oldest = (_playbackFrameIntervalHead - _playbackFrameIntervalCount + _playbackFrameIntervalsMs.Length) % _playbackFrameIntervalsMs.Length;
-            for (var i = 0; i < samples.Length; i++)
-            {
-                samples[i] = _playbackFrameIntervalsMs[(oldest + i) % _playbackFrameIntervalsMs.Length];
-            }
-        }
-
-        var sum = 0.0;
-        for (var i = 0; i < samples.Length; i++)
-        {
-            sum += samples[i];
-        }
-
-        var sorted = (double[])samples.Clone();
-        Array.Sort(sorted);
-        var p95 = PercentileFromSorted(sorted, 0.95);
-        var p99 = PercentileFromSorted(sorted, 0.99);
-        var max = sorted[^1];
-        var slow = Interlocked.Read(ref _playbackSlowFrameCount);
-        var totalFrames = Math.Max(1, Interlocked.Read(ref _playbackFrameCount));
-        var slowPercent = slow * 100.0 / totalFrames;
-        var onePercentLowFps = p99 > 0 ? 1000.0 / p99 : 0;
-        var fivePercentLowFps = p95 > 0 ? 1000.0 / p95 : 0;
-        return new PlaybackCadenceMetrics(samples.Length, p95, p99, max, slow, slowPercent, onePercentLowFps, fivePercentLowFps, sum, samples);
-    }
-
-    public PlaybackDecodeMetrics GetPlaybackDecodeMetrics()
-    {
-        double[] samples;
-        lock (_playbackDecodeLock)
-        {
-            if (_playbackDecodeDurationCount == 0)
-            {
-                return new PlaybackDecodeMetrics(0, 0, 0, 0, 0);
-            }
-
-            samples = new double[_playbackDecodeDurationCount];
-            var oldest = (_playbackDecodeDurationHead - _playbackDecodeDurationCount + _playbackDecodeDurationsMs.Length) % _playbackDecodeDurationsMs.Length;
-            for (var i = 0; i < samples.Length; i++)
-            {
-                samples[i] = _playbackDecodeDurationsMs[(oldest + i) % _playbackDecodeDurationsMs.Length];
-            }
-        }
-
-        var total = 0.0;
-        for (var i = 0; i < samples.Length; i++)
-        {
-            total += samples[i];
-        }
-
-        Array.Sort(samples);
-        return new PlaybackDecodeMetrics(
-            samples.Length,
-            total / samples.Length,
-            PercentileFromSorted(samples, 0.95),
-            PercentileFromSorted(samples, 0.99),
-            samples[^1]);
-    }
 
     /// <summary>
     /// Audio-video drift in milliseconds. Positive = audio ahead, negative = audio behind.

@@ -46,18 +46,6 @@ internal sealed partial class FlashbackPlaybackController
 
     // --- Playback metric collection and reset ---
 
-    private static double PercentileFromSorted(double[] sortedSamples, double percentile)
-    {
-        if (sortedSamples.Length == 0)
-        {
-            return 0;
-        }
-
-        var index = (int)Math.Ceiling(percentile * sortedSamples.Length) - 1;
-        index = Math.Clamp(index, 0, sortedSamples.Length - 1);
-        return sortedSamples[index];
-    }
-
     private bool SeekToWithCapTelemetry(
         FlashbackDecoder decoder,
         TimeSpan seekTarget,
