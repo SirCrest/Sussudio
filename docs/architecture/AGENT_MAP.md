@@ -2463,12 +2463,10 @@ Primary current owners:
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral
   classifier cases.
-- `tests/Sussudio.Tests/HarnessCheckCatalog.RecordingModels.cs` coordinates
-  recording/model check registration and owns compact registration groups for
-  LibAv sink, capture runtime, recording contracts/artifacts/stats, capture
-  settings, recording context, capture diagnostics, and capture health checks.
-  `HarnessCheckCatalog.RecordingModels.FlashbackBuffer.cs` owns the large
-  Flashback buffer registration group.
+- `tests/Sussudio.Tests/XUnit.RecordingModelContractsTests.cs` owns the former
+  legacy recording-model execution surface for LibAv sink loop/source-ownership
+  checks, capture runtime failure/runtime-flag checks, and the large Flashback
+  buffer manager behavior/source-ownership group.
 - Focused `tests/Sussudio.Tests/HarnessCheckCatalog.Flashback.*.cs` partials
   own Flashback model, playback, decoder, encoder sink, and exporter
   registration groups.

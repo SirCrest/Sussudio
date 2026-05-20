@@ -17,7 +17,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvRecordingSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches()
+    internal static Task LibAvRecordingSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches()
     {
         var libAvSource = ReadLibAvRecordingSinkSource();
         var encodingLoopText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.EncodingLoop.cs")
@@ -51,7 +51,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvRecordingSink_EncodingLoopAndPacketDrainsLiveInFocusedPartials()
+    internal static Task LibAvRecordingSink_EncodingLoopAndPacketDrainsLiveInFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
             .Replace("\r\n", "\n");
@@ -85,7 +85,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvRecordingSink_LifecycleHelpersLiveInFocusedPartials()
+    internal static Task LibAvRecordingSink_LifecycleHelpersLiveInFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
             .Replace("\r\n", "\n");

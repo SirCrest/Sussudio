@@ -11,7 +11,6 @@ static partial class Program
         await AddAutomationDiagnosticsChecksAsync(results);
         await AddPresentationPreviewChecksAsync(results);
         await AddMcpDiagnosticsPipelineChecksAsync(results);
-        await AddRecordingModelChecksAsync(results);
         await AddFlashbackChecksAsync(results);
         return results;
     }

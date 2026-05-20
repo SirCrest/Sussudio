@@ -67,6 +67,10 @@ add xUnit alongside, and port incrementally.
 - `XUnit.RecordingPipelineContractsTests.cs` owns the former legacy recording
   queue overload-policy, LibAv sink, WASAPI, capture fan-out, and CaptureService
   recording ownership checks.
+- `XUnit.RecordingModelContractsTests.cs` owns the former legacy recording
+  model execution surface for LibAv sink loop/source-ownership checks,
+  capture runtime failure/runtime-flag checks, and Flashback buffer manager
+  behavior/source-ownership checks.
 - `RecordingArtifactManager.Tests.cs` owns the former legacy temp artifact
   finalization and rollback behavior checks for recording output cleanup.
 - `MjpegPipeline.Timing.Tests.cs` owns the former legacy CPU MJPEG timing

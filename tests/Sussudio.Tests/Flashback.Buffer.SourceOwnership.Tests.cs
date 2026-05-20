@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackBufferManager_SegmentMutationLiveInFocusedPartial()
+    internal static Task FlashbackBufferManager_SegmentMutationLiveInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
@@ -28,7 +28,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_LiveAccountingLivesInFocusedPartial()
+    internal static Task FlashbackBufferManager_LiveAccountingLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
@@ -50,7 +50,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_MathHelpersLiveInFocusedPartial()
+    internal static Task FlashbackBufferManager_MathHelpersLiveInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
@@ -71,7 +71,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_SegmentQueriesLiveInFocusedPartial()
+    internal static Task FlashbackBufferManager_SegmentQueriesLiveInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
@@ -103,7 +103,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_LifecycleHelpersLiveInFocusedPartial()
+    internal static Task FlashbackBufferManager_LifecycleHelpersLiveInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
@@ -126,7 +126,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_PurgeLivesInFocusedPartial()
+    internal static Task FlashbackBufferManager_PurgeLivesInFocusedPartial()
     {
         var retentionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs")
             .Replace("\r\n", "\n");

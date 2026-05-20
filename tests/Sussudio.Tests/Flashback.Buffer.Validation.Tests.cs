@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackBufferManager_RejectsUnsafeSessionIds()
+    internal static Task FlashbackBufferManager_RejectsUnsafeSessionIds()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_session_id_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -41,7 +41,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_ValidatesSegmentExtensions()
+    internal static Task FlashbackBufferManager_ValidatesSegmentExtensions()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_segment_ext_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);

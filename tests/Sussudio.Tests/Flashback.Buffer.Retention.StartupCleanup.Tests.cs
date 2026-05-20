@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackBufferManager_AbandonsStartupGeneratedSegmentPath()
+    internal static Task FlashbackBufferManager_AbandonsStartupGeneratedSegmentPath()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_startup_abandon_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -50,7 +50,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_RemovesStaleLegacyRootSegments()
+    internal static Task FlashbackBufferManager_RemovesStaleLegacyRootSegments()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_legacy_cleanup_{Guid.NewGuid():N}");
         object? manager = null;
@@ -99,7 +99,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_PreservesUnrelatedEmptyTempDirectories()
+    internal static Task FlashbackBufferManager_PreservesUnrelatedEmptyTempDirectories()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_stale_empty_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -128,9 +128,9 @@ static partial class Program
             AssertEqual(false, Directory.Exists(staleFlashbackSession), "Plausible stale empty flashback session removed");
             AssertEqual(true, Directory.Exists(unrelatedEmptyDirectory), "Unrelated stale empty directory preserved");
 
-            var cleanupSource = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Sussudio", "Services", "Flashback", "FlashbackStartupCacheCleanup.cs"))
+            var cleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs")
                 .Replace("\r\n", "\n");
-            var scannerSource = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Sussudio", "Services", "Flashback", "FlashbackSessionRecoveryScanner.cs"))
+            var scannerSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackSessionRecoveryScanner.cs")
                 .Replace("\r\n", "\n");
             AssertContains(cleanupSource, "FLASHBACK_STALE_SESSION_SKIP reason=unrecognized_empty_dir");
             AssertContains(scannerSource, "internal static bool IsPlausibleFlashbackSessionDirectoryName(string name)");
@@ -144,7 +144,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_TrimsStartupSessionCacheBudget()
+    internal static Task FlashbackBufferManager_TrimsStartupSessionCacheBudget()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_cache_budget_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);

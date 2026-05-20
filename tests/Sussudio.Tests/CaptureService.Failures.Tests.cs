@@ -91,7 +91,7 @@ public sealed class CaptureServiceFailureOwnershipTests
 
 static partial class Program
 {
-    private static async Task CaptureService_StrictHfrFatalHandler_ClearsActiveSessionState()
+    internal static async Task CaptureService_StrictHfrFatalHandler_ClearsActiveSessionState()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();

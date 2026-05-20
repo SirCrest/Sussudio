@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackBufferManager_SegmentDiagnosticsClampActiveCounters()
+    internal static Task FlashbackBufferManager_SegmentDiagnosticsClampActiveCounters()
     {
         var source = ReadFlashbackBufferManagerSource();
 
@@ -24,7 +24,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_UpdateLatestPts_ClampsInvalidBufferDuration()
+    internal static Task FlashbackBufferManager_UpdateLatestPts_ClampsInvalidBufferDuration()
     {
         var source = ReadFlashbackBufferManagerSource();
         var cleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs")
@@ -51,7 +51,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_SegmentRotationKeepsTotalBytesWrittenMonotonic()
+    internal static Task FlashbackBufferManager_SegmentRotationKeepsTotalBytesWrittenMonotonic()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -80,7 +80,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_SamePathCompletionExtendsLatestSegment()
+    internal static Task FlashbackBufferManager_SamePathCompletionExtendsLatestSegment()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);

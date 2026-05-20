@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackBufferManager_GetValidSegmentPaths_ReturnsOverlapping()
+    internal static Task FlashbackBufferManager_GetValidSegmentPaths_ReturnsOverlapping()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -46,7 +46,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_GetSegmentInfoList_SkipsMissingFiles()
+    internal static Task FlashbackBufferManager_GetSegmentInfoList_SkipsMissingFiles()
     {
         var source = ReadFlashbackBufferManagerSource();
         AssertContains(source, "if (!File.Exists(seg.Path))\n                {\n                    continue;\n                }");
@@ -91,7 +91,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_ActiveFilePath_RequiresExistingFile()
+    internal static Task FlashbackBufferManager_ActiveFilePath_RequiresExistingFile()
     {
         var source = ReadFlashbackBufferManagerSource();
         AssertContains(source, "return TryGetExistingActiveSegmentPath(out var activePath)\n                    ? activePath\n                    : null;");
@@ -110,7 +110,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_SegmentCount_SkipsMissingFiles()
+    internal static Task FlashbackBufferManager_SegmentCount_SkipsMissingFiles()
     {
         var source = ReadFlashbackBufferManagerSource();
         AssertContains(source, "return _completedSegments.Count(seg => File.Exists(seg.Path)) +\n                    (TryGetExistingActiveSegmentPath(out _) ? 1 : 0);");

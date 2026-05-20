@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackBufferManager_GetSegmentFileForPosition_ReturnsCorrectSegment()
+    internal static Task FlashbackBufferManager_GetSegmentFileForPosition_ReturnsCorrectSegment()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -41,7 +41,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_GetValidSegmentFileForPosition_SkipsMissingFiles()
+    internal static Task FlashbackBufferManager_GetValidSegmentFileForPosition_SkipsMissingFiles()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -66,7 +66,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_GetValidSegmentFileForPosition_StaleLeftEdgeUsesOldest()
+    internal static Task FlashbackBufferManager_GetValidSegmentFileForPosition_StaleLeftEdgeUsesOldest()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -87,7 +87,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_GetNextSegmentFile_WalksForward()
+    internal static Task FlashbackBufferManager_GetNextSegmentFile_WalksForward()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -120,7 +120,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_SegmentPathLookupsNormalizeEquivalentPaths()
+    internal static Task FlashbackBufferManager_SegmentPathLookupsNormalizeEquivalentPaths()
     {
         var source = ReadFlashbackBufferManagerSource();
         AssertContains(source, "private static bool IsSameSegmentPath(string? left, string? right)");
@@ -155,7 +155,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_GetSegmentStartPts_SkipsMissingFiles()
+    internal static Task FlashbackBufferManager_GetSegmentStartPts_SkipsMissingFiles()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -190,7 +190,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_GetNextSegmentFile_SkipsMissingIndexedSegments()
+    internal static Task FlashbackBufferManager_GetNextSegmentFile_SkipsMissingIndexedSegments()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);

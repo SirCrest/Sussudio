@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackBufferManager_PurgesRetainLockedActivePath()
+    internal static Task FlashbackBufferManager_PurgesRetainLockedActivePath()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_locked_active_purge_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -64,7 +64,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_PurgeAllSegmentsCore_ReportsActiveBytesOnce()
+    internal static Task FlashbackBufferManager_PurgeAllSegmentsCore_ReportsActiveBytesOnce()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_full_purge_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -116,7 +116,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_PurgeCompletedSegments_AccountsForActiveBytesOnPartialPurge()
+    internal static Task FlashbackBufferManager_PurgeCompletedSegments_AccountsForActiveBytesOnPartialPurge()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_partial_purge_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);

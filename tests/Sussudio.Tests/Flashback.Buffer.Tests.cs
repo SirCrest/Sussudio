@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackBufferManager_InitializeClearsRecordingPts()
+    internal static Task FlashbackBufferManager_InitializeClearsRecordingPts()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_init_pts_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureErrors_RefreshViewModelRuntimeFlags()
+    internal static Task CaptureErrors_RefreshViewModelRuntimeFlags()
     {
         var mainViewModelText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs")
             .Replace("\r\n", "\n");

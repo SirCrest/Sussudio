@@ -809,6 +809,11 @@ production owners without creating one-fact files.
 option sizing behavior and DTO contracts, with reflection/nullability assertion
 helpers in
 `tests/Sussudio.Tests/XUnit.FlashbackModels.PropertyAssertions.cs`.
+`tests/Sussudio.Tests/XUnit.RecordingModelContractsTests.cs` owns the former
+legacy recording-model execution surface for LibAv sink loop/source-ownership
+checks, capture runtime failure/runtime-flag checks, and Flashback buffer
+manager behavior/source-ownership checks after their removal from the legacy
+offline harness catalog.
 
 `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` now keeps only shared
 pooled-frame and jitter-buffer helpers. Pooled-frame coverage is split into
@@ -3774,7 +3779,9 @@ owner, fold it back into that owner and update the source-shape tests and
    and capture fan-out/backend owners. These recording pipeline ownership
    checks now execute through
    `tests/Sussudio.Tests/XUnit.RecordingPipelineContractsTests.cs` after their
-   removal from the legacy harness catalog. D3D preview renderer tests are split
+   removal from the legacy harness catalog. Recording model execution checks now
+   run through `tests/Sussudio.Tests/XUnit.RecordingModelContractsTests.cs`
+   after their removal from the legacy harness catalog. D3D preview renderer tests are split
    into geometry, cadence, diagnostics-contract, source-ownership marker plus
    ContractsAndMetrics/RenderPipeline/RuntimeCapture owners, device-lost, and
    frame-flow owners. Automation tool contract tests are split into

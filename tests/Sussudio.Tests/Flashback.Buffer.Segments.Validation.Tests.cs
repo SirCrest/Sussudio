@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackBufferManager_SegmentCompletionRejectsInvalidMetadata()
+    internal static Task FlashbackBufferManager_SegmentCompletionRejectsInvalidMetadata()
     {
         var source = ReadFlashbackBufferManagerSource();
 
@@ -101,7 +101,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_SegmentCompletionRejectsOutsidePaths()
+    internal static Task FlashbackBufferManager_SegmentCompletionRejectsOutsidePaths()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         var outsideDir = Path.Combine(Path.GetTempPath(), $"fbtest_outside_{Guid.NewGuid():N}");
@@ -135,7 +135,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_TryDeleteFileRejectsOutsidePaths()
+    internal static Task FlashbackBufferManager_TryDeleteFileRejectsOutsidePaths()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         var outsideDir = Path.Combine(Path.GetTempPath(), $"fbdelete_outside_{Guid.NewGuid():N}");

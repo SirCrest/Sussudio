@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackBufferManager_IgnoresUpdatesAfterDispose()
+    internal static Task FlashbackBufferManager_IgnoresUpdatesAfterDispose()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_disposed_{Guid.NewGuid():N}");
         var manager = CreateInitializedBufferManager(tempDir);
@@ -41,7 +41,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_IgnoresDestructiveOperationsAfterDispose()
+    internal static Task FlashbackBufferManager_IgnoresDestructiveOperationsAfterDispose()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_disposed_purge_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackBufferManager_EvictOldestSegments_UpdatesTotalDiskBytes()
+    internal static Task FlashbackBufferManager_EvictOldestSegments_UpdatesTotalDiskBytes()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_evict_bytes_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -68,7 +68,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_EvictOldestSegments_KeepsRejectedSegmentsAccounted()
+    internal static Task FlashbackBufferManager_EvictOldestSegments_KeepsRejectedSegmentsAccounted()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_evict_locked_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -132,7 +132,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_EvictionPauseResume_Balanced()
+    internal static Task FlashbackBufferManager_EvictionPauseResume_Balanced()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         var manager = CreateInitializedBufferManager(tempDir);

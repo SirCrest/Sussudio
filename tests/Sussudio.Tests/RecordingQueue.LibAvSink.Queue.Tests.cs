@@ -53,7 +53,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvRecordingSink_AudioQueuesLiveInFocusedPartial()
+    internal static Task LibAvRecordingSink_AudioQueuesLiveInFocusedPartial()
     {
         var queueText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs")
             .Replace("\r\n", "\n");
@@ -81,7 +81,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvRecordingSink_VideoQueueSubmissionLivesInFocusedPartial()
+    internal static Task LibAvRecordingSink_VideoQueueSubmissionLivesInFocusedPartial()
     {
         var queueText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs")
             .Replace("\r\n", "\n");
