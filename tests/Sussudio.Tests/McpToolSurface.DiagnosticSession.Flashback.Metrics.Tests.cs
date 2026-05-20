@@ -27,6 +27,20 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackObservationAudioMasterText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs")
             .Replace("\r\n", "\n");
+        var playbackResultText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs")
+            .Replace("\r\n", "\n");
+        var playbackResultCommandsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Commands.cs")
+            .Replace("\r\n", "\n");
+        var playbackResultCadenceText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Cadence.cs")
+            .Replace("\r\n", "\n");
+        var playbackResultDecodeText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.cs")
+            .Replace("\r\n", "\n");
+        var playbackResultAudioMasterText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.AudioMaster.cs")
+            .Replace("\r\n", "\n");
+        var playbackResultStagesText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Stages.cs")
+            .Replace("\r\n", "\n");
+        var playbackResultProjectionsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Projections.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(metricsText, "internal static partial class DiagnosticSessionFlashbackMetrics");
         AssertContains(recordingModelsText, "internal sealed class FlashbackRecordingSessionMetrics");
@@ -52,7 +66,32 @@ static partial class Program
         AssertContains(playbackObservationFrameDecodeText, "metrics.MaxDecodePhaseObserved = GetString(snapshot, \"FlashbackPlaybackMaxDecodePhase\") ?? string.Empty;");
         AssertContains(playbackObservationAudioMasterText, "private static void ObservePlaybackAudioMasterMetrics(");
         AssertContains(playbackObservationAudioMasterText, "GetResetAwareCounterDelta(snapshot, metrics.BaselineSnapshot, \"FlashbackPlaybackAudioMasterFallbacks\")");
-        AssertContains(metricsText, "internal static FlashbackPlaybackResultMetrics BuildFlashbackPlaybackResultMetrics(");
+        AssertContains(playbackResultText, "internal static FlashbackPlaybackResultMetrics BuildFlashbackPlaybackResultMetrics(");
+        AssertContains(playbackResultText, "var commands = BuildFlashbackPlaybackResultCommandMetrics(observed, endSnapshot, metrics);");
+        AssertContains(playbackResultText, "PendingCommandsAtEnd = commands.PendingCommandsAtEnd,");
+        AssertContains(playbackResultCommandsText, "private static FlashbackPlaybackResultCommandMetrics BuildFlashbackPlaybackResultCommandMetrics(");
+        AssertContains(playbackResultCommandsText, "PendingCommandsAtEnd: observed ? GetInt(endSnapshot, \"FlashbackPlaybackPendingCommands\") : 0");
+        AssertContains(playbackResultCommandsText, "LastCommandFailureAtEnd: observed ? GetString(endSnapshot, \"FlashbackPlaybackLastCommandFailure\") ?? string.Empty : string.Empty");
+        AssertContains(playbackResultCadenceText, "private static FlashbackPlaybackResultCadenceMetrics BuildFlashbackPlaybackResultCadenceMetrics(");
+        AssertContains(playbackResultCadenceText, "DroppedFramesAtEnd: GetObservedLong(observed, endSnapshot, \"FlashbackPlaybackDroppedFrames\")");
+        AssertContains(playbackResultDecodeText, "private static FlashbackPlaybackResultDecodeMetrics BuildFlashbackPlaybackResultDecodeMetrics(");
+        AssertContains(playbackResultDecodeText, "MaxDecodePhaseAtEnd: observed ? GetString(endSnapshot, \"FlashbackPlaybackMaxDecodePhase\") ?? string.Empty : string.Empty");
+        AssertContains(playbackResultAudioMasterText, "private static FlashbackPlaybackResultAudioMasterMetrics BuildFlashbackPlaybackResultAudioMasterMetrics(");
+        AssertContains(playbackResultAudioMasterText, "AudioMasterFallbacksAtEnd: GetObservedLong(observed, endSnapshot, \"FlashbackPlaybackAudioMasterFallbacks\")");
+        AssertContains(playbackResultStagesText, "private static FlashbackPlaybackResultStageMetrics BuildFlashbackPlaybackResultStageMetrics(");
+        AssertContains(playbackResultStagesText, "GetCounterDelta(endSnapshot, metrics.BaselineSnapshot, \"FlashbackPlaybackSeekForwardDecodeCapHits\")");
+        AssertContains(playbackResultProjectionsText, "private readonly record struct FlashbackPlaybackResultCommandMetrics(");
+        AssertContains(playbackResultProjectionsText, "private readonly record struct FlashbackPlaybackResultCadenceMetrics(");
+        AssertContains(playbackResultProjectionsText, "private readonly record struct FlashbackPlaybackResultDecodeMetrics(");
+        AssertContains(playbackResultProjectionsText, "private readonly record struct FlashbackPlaybackResultAudioMasterMetrics(");
+        AssertContains(playbackResultProjectionsText, "private readonly record struct FlashbackPlaybackResultStageMetrics(");
+        AssertDoesNotContain(playbackResultText, "GetObservedLong(observed, endSnapshot, \"FlashbackPlaybackCommandsDropped\")");
+        AssertDoesNotContain(playbackResultText, "GetObservedDouble(observed, endSnapshot, \"FlashbackPlaybackDecodeMaxMs\")");
+        AssertDoesNotContain(playbackResultText, "GetObservedLong(observed, endSnapshot, \"FlashbackPlaybackAudioMasterFallbacks\")");
+        AssertDoesNotContain(playbackResultCommandsText, "FlashbackPlaybackDecodeMaxMs");
+        AssertDoesNotContain(playbackResultCadenceText, "FlashbackPlaybackAudioMasterFallbacks");
+        AssertDoesNotContain(playbackResultDecodeText, "FlashbackPlaybackSegmentSwitches");
+        AssertDoesNotContain(playbackResultAudioMasterText, "FlashbackPlaybackSeekForwardDecodeCapHits");
         AssertContains(metricsText, "internal static FlashbackExportSessionMetrics BuildFlashbackExportSessionMetrics(");
         AssertContains(metricsText, "metrics.ForceRotateFallbacksAtEnd = GetNullableLong(lastSnapshot, \"FlashbackExportForceRotateFallbacks\") ?? 0;");
         AssertContains(metricsText, "metrics.ForceRotateFallbacksDelta = GetCounterDelta(");

@@ -4190,14 +4190,23 @@ Primary owners:
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`, and
   `tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs` own read-only
   recording, playback session orchestration, playback snapshot observation,
-  result-copy, and export metric projections. Playback observation root owns
+  result-copy orchestration, and export metric projections. Playback observation root owns
   active/relevant snapshot gating and dispatches to focused observation helpers:
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.OnePercentLow.cs`
   owns 1% low window capture,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.FrameDecode.cs`
   owns frame/decode maxima, and
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs`
-  owns audio-master maxima.
+  owns audio-master maxima. Playback result-copy root keeps the final
+  `FlashbackPlaybackResultMetrics` initializer while focused helpers own
+  end-snapshot command, cadence, decode, audio-master, and stage metric reads:
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Commands.cs`,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Cadence.cs`,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.cs`,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.AudioMaster.cs`,
+  and `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Stages.cs`.
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Projections.cs`
+  owns the private grouped handoff records used only by that result-copy family.
   Export metrics include force-rotate fallback total, delta, and last fallback
   segment count; keep those counters derived outside export-observed relevance gating.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`

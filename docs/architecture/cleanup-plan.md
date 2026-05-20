@@ -3756,6 +3756,18 @@ buffer-ready checks. `DiagnosticSessionFlashbackWaits.Playback.cs` owns
 playback boundary, state, warmup, and position polling while the runner keeps
 scenario command sequencing.
 
+Diagnostic-session Flashback playback result metrics now keep final
+`FlashbackPlaybackResultMetrics` construction in
+`tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`, with
+end-snapshot reads split into named owners: `.PlaybackResult.Commands.cs` owns
+command queue and command failure fields, `.PlaybackResult.Cadence.cs` owns
+frame cadence and dropped-frame fields, `.PlaybackResult.Decode.cs` owns decode
+timing and max-phase fields, `.PlaybackResult.AudioMaster.cs` owns audio-master
+fallback fields, `.PlaybackResult.Stages.cs` owns playback stage counters and
+seek-forward decode-cap deltas, and `.PlaybackResult.Projections.cs` owns the
+private grouped handoff records. Preserve the final `init` DTO construction in
+the root unless a broader construction pattern replaces it deliberately.
+
 Diagnostic-session Flashback stress orchestration now lives in a focused
 partial family. `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns
 stress thresholds and stress/scrub-stress task registration, `.Stress.cs` owns the main stress command sequence,
@@ -3867,6 +3879,12 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.FrameDecode.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Commands.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Cadence.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackResult.AudioMaster.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Stages.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Projections.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
 - `DiagnosticSessionFlashbackMetrics.Recording.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
