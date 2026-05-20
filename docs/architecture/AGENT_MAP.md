@@ -3837,8 +3837,11 @@ Primary owners:
 - `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot
   active/failure gating and section ordering.
 - `tools/ssctl/Formatters.Snapshot.Flashback.Encoding.cs` owns Flashback
-  encoder, buffer, temp-cache, queue-latency, backpressure, failure, cleanup,
-  and GPU queue snapshot text.
+  encoding subsection order.
+- `tools/ssctl/Formatters.Snapshot.Flashback.Encoding.Status.cs` owns
+  Flashback encoder, buffer, temp-cache, and cleanup snapshot text.
+- `tools/ssctl/Formatters.Snapshot.Flashback.Encoding.Health.cs` owns
+  Flashback queue-latency, backpressure, failure, and GPU queue snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.Export.cs` owns Flashback export
   progress, result, throughput, force-rotate fallback, range, output path, and
   message snapshot text.
@@ -4478,8 +4481,11 @@ Primary owners:
   `tools/Common/AutomationSnapshotFormatter.Flashback.cs` owns the Flashback
   gate, header, and subsection ordering.
   `tools/Common/AutomationSnapshotFormatter.Flashback.Encoding.cs` owns
-  Flashback encoder, buffer, cache, queue-latency, backpressure, failure,
-  cleanup, and GPU queue text.
+  Flashback encoding subsection order.
+  `tools/Common/AutomationSnapshotFormatter.Flashback.Encoding.Status.cs` owns
+  Flashback encoder, buffer, cache, and cleanup text.
+  `tools/Common/AutomationSnapshotFormatter.Flashback.Encoding.Health.cs` owns
+  Flashback queue-latency, backpressure, failure, and GPU queue text.
   `tools/Common/AutomationSnapshotFormatter.Flashback.Export.cs` owns
   Flashback export progress, result, throughput, force-rotate fallback, range,
   output path, and message text.

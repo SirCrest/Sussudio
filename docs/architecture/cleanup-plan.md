@@ -571,8 +571,12 @@ embedded AV-sync drift, and source-signal text in
 `Formatters.Snapshot.Runtime.cs`, preview renderer-mode routing/non-D3D
 fallback text in `Formatters.Snapshot.Preview.cs`,
 diagnostic health/frame-lane text in `Formatters.Snapshot.DiagnosticLanes.cs`,
-Flashback snapshot gating/order, encoder/buffer/queue, and failure text in
-`Formatters.Snapshot.Flashback.cs`, Flashback export progress, result,
+Flashback snapshot gating/order and encoding subsection order in
+`Formatters.Snapshot.Flashback.cs` and
+`Formatters.Snapshot.Flashback.Encoding.cs`, Flashback encoder/buffer/cache
+text in `Formatters.Snapshot.Flashback.Encoding.Status.cs`, Flashback
+queue-latency, backpressure, failure, and GPU queue text in
+`Formatters.Snapshot.Flashback.Encoding.Health.cs`, Flashback export progress, result,
 throughput, force-rotate fallback, range, output path, and message text in
 `Formatters.Snapshot.Flashback.Export.cs`, Flashback playback status and
 command text in `Formatters.Snapshot.Flashback.Playback.Commands.cs`,
@@ -614,9 +618,12 @@ pipeline, diagnostics, and capture cadence text live in
 `AutomationSnapshotFormatter.Values.cs`, while byte/number/interval,
 frame-budget, and tick-age display helpers live in
 `AutomationSnapshotFormatter.DisplayValues.cs`; the Flashback gate/header/order
-lives in `AutomationSnapshotFormatter.Flashback.cs`; Flashback encoder, buffer,
-temp-cache, queue latency, backpressure, failure, and GPU queue text lives in
-`AutomationSnapshotFormatter.Flashback.Encoding.cs`. Flashback export progress,
+lives in `AutomationSnapshotFormatter.Flashback.cs`; Flashback encoding
+subsection order lives in `AutomationSnapshotFormatter.Flashback.Encoding.cs`.
+Flashback encoder, buffer, temp-cache, and cleanup text lives in
+`AutomationSnapshotFormatter.Flashback.Encoding.Status.cs`, while Flashback
+queue-latency, backpressure, failure, and GPU queue text lives in
+`AutomationSnapshotFormatter.Flashback.Encoding.Health.cs`. Flashback export progress,
 result, throughput, force-rotate fallback, range, output path, and message text
 lives in `AutomationSnapshotFormatter.Flashback.Export.cs`. Flashback playback
 status and command text lives in
