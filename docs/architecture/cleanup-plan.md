@@ -3633,7 +3633,9 @@ owner, fold it back into that owner and update the source-shape tests and
    tests are split into lease lifecycle, MJPEG jitter policy, MJPEG jitter
    queue behavior, and queued lease release owners. MainWindow shell ownership
    tests are split into chrome, startup, preview runtime, and window lifecycle
-   owners. MainViewModel dependency-composition ownership now keeps
+   owners. MainViewModel service-namespace source ownership is split into
+   device-audio, runtime, and device/capture owners behind the original
+   orchestrator. MainViewModel dependency-composition ownership now keeps
    capture/device controller dependency-context assertions in a focused
    capture-device owner, and source-telemetry, runtime lifecycle/event-ingress,
    and disposal controller dependency-context assertions in a focused runtime
