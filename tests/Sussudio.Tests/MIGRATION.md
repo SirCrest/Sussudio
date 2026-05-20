@@ -160,6 +160,9 @@ add xUnit alongside, and port incrementally.
   diagnostic-session tool entry checks.
 - `XUnit.PresentationPreviewHarnessRegistrationTests.cs` owns the former legacy
   presentation-preview harness registration guard.
+- `XUnit.PresentationPreviewMainViewModelInitialContractsTests.cs` owns the
+  former legacy presentation-preview MainViewModel initial registration group:
+  recording transition start/stop failure propagation.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, and test-project shape guard checks.
 - `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy

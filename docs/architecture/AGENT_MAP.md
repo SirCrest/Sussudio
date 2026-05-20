@@ -2486,6 +2486,10 @@ Primary current owners:
   registration groups. `tests/Sussudio.Tests/XUnit.PresentationPreviewHarnessRegistrationTests.cs`
   owns the xUnit execution surface that audits those registration groups against
   the focused UI ownership test inventory.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelInitialContractsTests.cs`
+  owns the former presentation-preview MainViewModel initial registration group
+  for recording transition start/stop failure propagation after its removal from
+  the legacy offline harness catalog.
 - `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral

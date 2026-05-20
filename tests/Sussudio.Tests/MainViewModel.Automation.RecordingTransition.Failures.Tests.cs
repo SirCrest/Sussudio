@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainViewModelCapture_RecordingFailuresPropagateToCallers()
+    internal static Task MainViewModelCapture_RecordingFailuresPropagateToCallers()
     {
         var recordingTransitionControllerRootText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
             .Replace("\r\n", "\n");

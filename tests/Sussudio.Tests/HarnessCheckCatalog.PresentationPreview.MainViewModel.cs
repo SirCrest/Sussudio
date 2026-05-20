@@ -3,13 +3,6 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task AddPresentationPreviewMainViewModelInitialChecksAsync(List<CheckResult> results)
-    {
-        await AddCheckAsync(results,
-            "Recording start and stop failures propagate to callers",
-            MainViewModelCapture_RecordingFailuresPropagateToCallers);
-    }
-
     private static async Task AddPresentationPreviewMainViewModelChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,

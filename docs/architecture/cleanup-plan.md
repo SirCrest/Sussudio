@@ -881,6 +881,10 @@ Automation diagnostics snapshot-projection checks now execute through
 keeping snapshot/status, audio, capture and source, MJPEG, recording, system
 resources and A/V sync, preview, and Flashback owner checks in xUnit after their
 removal from the legacy harness catalog.
+Presentation-preview MainViewModel initial checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelInitialContractsTests.cs`,
+keeping recording transition start/stop failure propagation checks in xUnit
+after their removal from the legacy harness catalog.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the
