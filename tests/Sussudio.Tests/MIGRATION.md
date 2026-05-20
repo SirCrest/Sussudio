@@ -99,6 +99,8 @@ add xUnit alongside, and port incrementally.
   staged app assembly before calling legacy reflection helpers.
 - `XUnit.NativeToolProbeContractsTests.cs` owns the former legacy RTK I2C probe
   unsafe-native-path guard check.
+- `XUnit.PresentationPreviewHarnessRegistrationTests.cs` owns the former legacy
+  presentation-preview harness registration guard.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, and test-project shape guard checks.
 - `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy

@@ -2448,7 +2448,9 @@ Primary current owners:
 - Focused `tests/Sussudio.Tests/HarnessCheckCatalog.PresentationPreview.*.cs`
   partials own presentation-preview capture/root
   policy, MainViewModel, MainWindow, stats, D3D renderer, and preview pacing
-  registration groups.
+  registration groups. `tests/Sussudio.Tests/XUnit.PresentationPreviewHarnessRegistrationTests.cs`
+  owns the xUnit execution surface that audits those registration groups against
+  the focused UI ownership test inventory.
 - `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral

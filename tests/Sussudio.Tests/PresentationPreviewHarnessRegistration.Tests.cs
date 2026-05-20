@@ -107,7 +107,7 @@ static partial class Program
         "CaptureErrors_RefreshViewModelRuntimeFlags"
     };
 
-    private static Task PresentationPreviewHarnessRegistration_CoversUiOwnershipChecks()
+    internal static Task PresentationPreviewHarnessRegistration_CoversUiOwnershipChecks()
     {
         var expectedMethods = EnumeratePresentationPreviewUiOwnershipCheckMethods()
             .OrderBy(entry => entry.File, StringComparer.Ordinal)
