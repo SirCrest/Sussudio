@@ -34,15 +34,6 @@ internal sealed partial class FlashbackPlaybackController
     public double PlaybackTargetFps => _playbackTargetFps;
     public double PlaybackObservedFps => _playbackObservedFps;
     public double PlaybackAvgFrameMs => _playbackAvgFrameMs;
-    public string PlaybackMaxDecodePhase => Volatile.Read(ref _playbackMaxDecodePhase);
-    public double PlaybackMaxDecodeReceiveMs => _playbackMaxDecodeReceiveMs;
-    public double PlaybackMaxDecodeFeedMs => _playbackMaxDecodeFeedMs;
-    public double PlaybackMaxDecodeReadMs => _playbackMaxDecodeReadMs;
-    public double PlaybackMaxDecodeSendMs => _playbackMaxDecodeSendMs;
-    public double PlaybackMaxDecodeAudioMs => _playbackMaxDecodeAudioMs;
-    public double PlaybackMaxDecodeConvertMs => _playbackMaxDecodeConvertMs;
-    public long PlaybackMaxDecodeUtcUnixMs => Interlocked.Read(ref _playbackMaxDecodeUtcUnixMs);
-    public long PlaybackMaxDecodePositionMs => Interlocked.Read(ref _playbackMaxDecodePositionMs);
     /// <summary>
     /// Audio-video drift in milliseconds. Positive = audio ahead, negative = audio behind.
     /// Uses the PTS of the chunk WASAPI is currently rendering (not just enqueued).

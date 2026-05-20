@@ -23,6 +23,16 @@ internal sealed partial class FlashbackPlaybackController
     private long _playbackMaxDecodeUtcUnixMs;
     private long _playbackMaxDecodePositionMs;
 
+    public string PlaybackMaxDecodePhase => Volatile.Read(ref _playbackMaxDecodePhase);
+    public double PlaybackMaxDecodeReceiveMs => _playbackMaxDecodeReceiveMs;
+    public double PlaybackMaxDecodeFeedMs => _playbackMaxDecodeFeedMs;
+    public double PlaybackMaxDecodeReadMs => _playbackMaxDecodeReadMs;
+    public double PlaybackMaxDecodeSendMs => _playbackMaxDecodeSendMs;
+    public double PlaybackMaxDecodeAudioMs => _playbackMaxDecodeAudioMs;
+    public double PlaybackMaxDecodeConvertMs => _playbackMaxDecodeConvertMs;
+    public long PlaybackMaxDecodeUtcUnixMs => Interlocked.Read(ref _playbackMaxDecodeUtcUnixMs);
+    public long PlaybackMaxDecodePositionMs => Interlocked.Read(ref _playbackMaxDecodePositionMs);
+
     private bool TryDecodeNextVideoFrameWithMetrics(
         FlashbackDecoder decoder,
         out DecodedVideoFrame frame,
