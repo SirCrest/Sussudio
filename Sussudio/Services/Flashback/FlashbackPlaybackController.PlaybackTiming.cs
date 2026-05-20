@@ -9,6 +9,12 @@ internal sealed partial class FlashbackPlaybackController
 {
     // --- Playback frame-rate, snap policy, and cadence accounting ---
 
+    private const double FallbackPlaybackFrameRate = 60.0;
+    private const double MaxPlaybackFrameRate = 1000.0;
+    private const double ContinuousPlaybackNearLiveSnapFrames = 3.0;
+    private static readonly TimeSpan ContinuousPlaybackNearLiveSnapMinimum = TimeSpan.FromMilliseconds(100);
+    private const double MaxContinuousSoftwarePlaybackPixelRate = 3840.0 * 2160.0 * 60.0;
+
     private TimeSpan ResolveContinuousPlaybackNearLiveSnapThreshold()
     {
         var fps = _playbackTargetFps;

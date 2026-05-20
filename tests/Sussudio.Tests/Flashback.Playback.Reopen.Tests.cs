@@ -5,6 +5,8 @@ static partial class Program
     private static Task FlashbackPlaybackController_Fmp4ReopenRetriesAreGuarded()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
         var segmentEdgesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs")
             .Replace("\r\n", "\n");
         var decoderFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs")
@@ -24,6 +26,10 @@ static partial class Program
         AssertContains(sourceText, "private bool TryReopenCurrentFileAndSeekKeyframe(");
         AssertContains(sourceText, "private static readonly TimeSpan ActiveFmp4ReopenNearLiveGuard = TimeSpan.FromMilliseconds(250);");
         AssertContains(sourceText, "private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);");
+        AssertContains(decoderReopenText, "private static readonly TimeSpan ActiveFmp4ReopenNearLiveGuard = TimeSpan.FromMilliseconds(250);");
+        AssertContains(decoderReopenText, "private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);");
+        AssertDoesNotContain(rootText, "private static readonly TimeSpan ActiveFmp4ReopenNearLiveGuard = TimeSpan.FromMilliseconds(250);");
+        AssertDoesNotContain(rootText, "private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);");
         AssertContains(sourceText, "private bool ShouldSkipActiveFmp4ReopenNearLive(TimeSpan seekTarget, string reason)");
         AssertContains(sourceText, "var latestPts = _bufferManager.LatestPts;");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_SKIP_NEAR_LIVE");

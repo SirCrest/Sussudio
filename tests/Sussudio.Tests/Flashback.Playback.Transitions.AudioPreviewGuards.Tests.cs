@@ -7,7 +7,11 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
+        var audioPrebufferText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioPrebuffer.cs")
+            .Replace("\r\n", "\n");
         var audioMasterText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs")
+            .Replace("\r\n", "\n");
+        var playbackTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs")
             .Replace("\r\n", "\n");
         var wasapiPlaybackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs")
             .Replace("\r\n", "\n");
@@ -27,6 +31,13 @@ static partial class Program
         AssertContains(sourceText, "private const int PlaybackAudioPrebufferTimeoutMs = 1000;");
         AssertContains(sourceText, "private const int PlaybackAudioPrebufferRetryDelayMs = 20;");
         AssertContains(sourceText, "private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;");
+        AssertContains(audioPrebufferText, "private const double PlaybackAudioPrebufferTargetMs = 180.0;");
+        AssertContains(audioPrebufferText, "private const double PlaybackAudioPrebufferDiscardThresholdMs = 250.0;");
+        AssertContains(audioPrebufferText, "private const int PlaybackAudioPrebufferTimeoutMs = 1000;");
+        AssertContains(audioPrebufferText, "private const int PlaybackAudioPrebufferRetryDelayMs = 20;");
+        AssertContains(audioPrebufferText, "private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;");
+        AssertDoesNotContain(rootText, "private const double PlaybackAudioPrebufferTargetMs = 180.0;");
+        AssertDoesNotContain(rootText, "private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;");
         AssertContains(sourceText, "var prebufferedFrames = new Queue<DecodedVideoFrame>();");
         AssertContains(sourceText, "ClearPrebufferedFrames(prebufferedFrames, $\"command_{cmd.Kind}\");");
         AssertContains(sourceText, "private void PrimePlaybackAudioBuffer(");
@@ -80,6 +91,8 @@ static partial class Program
         AssertContains(sourceText, "ReturnPlaybackAudioChunkBestEffort(chunk, \"playback_audio_before_gate\");");
         AssertContains(sourceText, "pb.EnqueuePooledSamples(chunk.Samples, chunk.ValidLength, chunk.Pts.Ticks);");
         AssertContains(sourceText, "private const double MaxContinuousSoftwarePlaybackPixelRate = 3840.0 * 2160.0 * 60.0;");
+        AssertContains(playbackTimingText, "private const double MaxContinuousSoftwarePlaybackPixelRate = 3840.0 * 2160.0 * 60.0;");
+        AssertDoesNotContain(rootText, "private const double MaxContinuousSoftwarePlaybackPixelRate = 3840.0 * 2160.0 * 60.0;");
         AssertContains(sourceText, "private bool TrySnapLiveForSoftwarePlaybackBudget(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
         AssertContains(sourceText, "private bool ShouldSnapLiveForSoftwarePlaybackBudget(");
         AssertContains(sourceText, "GpuDecodeEnabled &&\n               !decoder.IsD3D11HwAccelerated &&\n               pixelRate > MaxContinuousSoftwarePlaybackPixelRate");

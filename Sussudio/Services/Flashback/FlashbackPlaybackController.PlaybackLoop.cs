@@ -11,6 +11,8 @@ internal sealed partial class FlashbackPlaybackController
 {
     // --- Continuous playback frame loop ---
 
+    private static readonly TimeSpan RecoveryNearLiveSnapThreshold = TimeSpan.FromMilliseconds(2000);
+
     /// <summary>
     /// Decodes and submits the next frame at real-time pace.
     /// Decode-first structure: do the work, then wait for the remainder of the frame interval.

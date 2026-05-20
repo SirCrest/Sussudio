@@ -7,6 +7,9 @@ internal sealed partial class FlashbackPlaybackController
 {
     // --- Decoder seek/reopen recovery ---
 
+    private static readonly TimeSpan ActiveFmp4ReopenNearLiveGuard = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);
+
     private bool TrySeekWithActiveFmp4Reopen(
         FlashbackDecoder decoder,
         ref bool fileOpen,

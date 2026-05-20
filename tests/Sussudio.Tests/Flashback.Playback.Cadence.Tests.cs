@@ -6,6 +6,10 @@ static partial class Program
     private static Task FlashbackPlaybackController_FrameDuration_GuardsInvalidDecoderFps()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+        var playbackTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs")
+            .Replace("\r\n", "\n");
 
         AssertDoesNotContain(sourceText, "TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0))");
         AssertContains(sourceText, "frameDuration = ResolveFrameDuration(decoder);");
@@ -14,6 +18,10 @@ static partial class Program
         AssertContains(sourceText, "if (!double.IsFinite(fps) || fps <= 0)\n        {\n            fps = FallbackPlaybackFrameRate;\n        }");
         AssertContains(sourceText, "private const double FallbackPlaybackFrameRate = 60.0;");
         AssertContains(sourceText, "private const double MaxPlaybackFrameRate = 1000.0;");
+        AssertContains(playbackTimingText, "private const double FallbackPlaybackFrameRate = 60.0;");
+        AssertContains(playbackTimingText, "private const double MaxPlaybackFrameRate = 1000.0;");
+        AssertDoesNotContain(rootText, "private const double FallbackPlaybackFrameRate = 60.0;");
+        AssertDoesNotContain(rootText, "private const double MaxPlaybackFrameRate = 1000.0;");
         AssertContains(sourceText, "fps = Math.Min(fps, MaxPlaybackFrameRate);");
         AssertContains(sourceText, "_playbackTargetFps = fps;");
         AssertContains(sourceText, "public double PlaybackTargetFps => _playbackTargetFps;");

@@ -2616,8 +2616,8 @@ Flashback playback audio routing now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs`.
 Keep decoder audio callbacks, playback chunk validation/return, live audio
 suppress/restore, preview submission suppression, and audio renderer pause/
-resume/flush helpers there; keep decode-ahead prebuffer and rewind behavior in
-the audio prebuffer partial.
+resume/flush helpers there; keep decode-ahead prebuffer target/timeout/frame-
+budget policy and rewind behavior in the audio prebuffer partial.
 
 Flashback playback component lifecycle now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs`. Keep
@@ -2652,7 +2652,7 @@ continuous playback pacing in the controller core/thread partials.
 Flashback continuous playback progression now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLoop.cs`.
 Keep decoded-frame submission flow, decode-error snap-to-live, and near-live
-snap handling there. Playback frame reads, prebuffer cleanup, and A/V drift
+snap handling, including the recovery near-live snap threshold, there. Playback frame reads, prebuffer cleanup, and A/V drift
 frame-skip catch-up policy live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`.
 Segment switch decisions and write-head waits now live in
@@ -2664,7 +2664,8 @@ shared decoder reopen transaction and post-seek audio gate, lives in
 Flashback playback timing and cadence now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs`.
 Keep frame-rate resolution, pause-from-live target calculation,
-software-decode budget snaps, and decoded PTS/cadence tracking there.
+continuous-playback snap policy, software-decode budget snaps, and decoded
+PTS/cadence tracking there.
 Audio-master pacing, audio clock state, fallback accounting state,
 clock-drift calculation, and wall-clock sleep/spin pacing now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs`.

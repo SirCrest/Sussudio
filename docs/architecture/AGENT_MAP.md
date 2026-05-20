@@ -1081,7 +1081,7 @@ Entry points:
 - `FlashbackPlaybackController.DecoderFiles.cs` owns decoder creation, active file identity, file open checks, shared decoder close/open identity transitions, best-effort close handling, and decoder cleanup.
 - `FlashbackPlaybackController.DecoderReopen.cs` owns active fMP4 reopen
   retry, adjacent-segment seek fallback, keyframe-reopen recovery, and
-  near-live reopen guards.
+  near-live/adjacent-segment retry windows.
 - `FlashbackPlaybackController.DecoderSegmentReopen.cs` owns segment-edge fMP4
   reopen/reseek recovery and fMP4 reopen audio-gate restoration.
 - `FlashbackPlaybackController.Lifecycle.cs` owns initialize/update component references, preview-detach cleanup, deferred reattach, and dispose.
@@ -1116,7 +1116,7 @@ Entry points:
   abandoned command draining, and join/cancel diagnostics.
 - `FlashbackPlaybackController.ThreadCleanup.cs` owns playback-thread live-restore cleanup and playback CTS disposal warnings.
 - `FlashbackPlaybackController.AudioRouting.cs` owns decoder audio callback wiring, playback chunk validation/return, live audio suppress/restore, preview submission suppression, and audio renderer pause/resume/flush helpers.
-- `FlashbackPlaybackController.AudioPrebuffer.cs` owns playback startup/seek audio prebuffering and decoder rewind after decode-ahead audio priming.
+- `FlashbackPlaybackController.AudioPrebuffer.cs` owns playback startup/seek audio prebuffering, target/timeout/frame-budget policy, and decoder rewind after decode-ahead audio priming.
 - `FlashbackPlaybackController.AudioMasterPacing.cs` owns audio-master pacing,
   audio clock state, fallback accounting state, audio clock drift calculation,
   and wall-clock sleep/spin pacing.
@@ -1127,7 +1127,7 @@ Entry points:
 - `FlashbackPlaybackController.PlaybackSegmentEdges.cs` owns segment switch
   orchestration, write-head waits, and end-of-segment continuation policy; fMP4
   reopen mechanics stay in `FlashbackPlaybackController.DecoderSegmentReopen.cs`.
-- `FlashbackPlaybackController.PlaybackTiming.cs` owns frame-rate resolution, software-decode budget snaps, pause-from-live target calculation, and decoded PTS/cadence tracking.
+- `FlashbackPlaybackController.PlaybackTiming.cs` owns frame-rate resolution, continuous-playback snap policy, software-decode budget snaps, pause-from-live target calculation, and decoded PTS/cadence tracking.
 - `FlashbackPlaybackController.Markers.cs` owns in/out marker state, marker API, marker normalization, and out-point pause checks.
 - `FlashbackPlaybackController.PositionMapping.cs` owns scrub/seek clamp policy, saturating timestamp math, active fMP4 segment detection, and playback path comparison.
 - `FlashbackPlaybackController.Metrics.cs` owns playback diagnostic counters and cadence/decode summary records.

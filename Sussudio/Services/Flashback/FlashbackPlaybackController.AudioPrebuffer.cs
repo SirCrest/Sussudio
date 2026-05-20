@@ -10,6 +10,12 @@ internal sealed partial class FlashbackPlaybackController
 {
     // --- Audio prebuffer ---
 
+    private const double PlaybackAudioPrebufferTargetMs = 180.0;
+    private const double PlaybackAudioPrebufferDiscardThresholdMs = 250.0;
+    private const int PlaybackAudioPrebufferTimeoutMs = 1000;
+    private const int PlaybackAudioPrebufferRetryDelayMs = 20;
+    private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;
+
     private void PrimePlaybackAudioBuffer(
         FlashbackDecoder decoder,
         Queue<DecodedVideoFrame> prebufferedFrames,

@@ -16,14 +16,6 @@ namespace Sussudio.Services.Flashback;
 /// </summary>
 internal sealed partial class FlashbackPlaybackController : IDisposable
 {
-    private static readonly TimeSpan ActiveFmp4ReopenNearLiveGuard = TimeSpan.FromMilliseconds(250);
-    private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);
-    private const double PlaybackAudioPrebufferTargetMs = 180.0;
-    private const double PlaybackAudioPrebufferDiscardThresholdMs = 250.0;
-    private const int PlaybackAudioPrebufferTimeoutMs = 1000;
-    private const int PlaybackAudioPrebufferRetryDelayMs = 20;
-    private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;
-
     // --- Dependencies ---
     private readonly FlashbackBufferManager _bufferManager;
     private IPreviewFrameSink? _previewSink;
@@ -58,13 +50,6 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     private bool _wasPlayingBeforeScrub;
 
     private const int CommandQueueCapacity = 256;
-    private const double FallbackPlaybackFrameRate = 60.0;
-    private const double MaxPlaybackFrameRate = 1000.0;
-    private const double ContinuousPlaybackNearLiveSnapFrames = 3.0;
-    private static readonly TimeSpan ContinuousPlaybackNearLiveSnapMinimum = TimeSpan.FromMilliseconds(100);
-    private static readonly TimeSpan RecoveryNearLiveSnapThreshold = TimeSpan.FromMilliseconds(2000);
-    private const double MaxContinuousSoftwarePlaybackPixelRate = 3840.0 * 2160.0 * 60.0;
-
     public FlashbackPlaybackController(FlashbackBufferManager bufferManager)
     {
         _bufferManager = bufferManager ?? throw new ArgumentNullException(nameof(bufferManager));
