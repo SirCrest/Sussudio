@@ -3755,7 +3755,8 @@ string and typed commands, shared response-element validation, synthetic error
 shaping, and explicit ssctl/MCP unknown-command policy mode,
 `AutomationPipeClient.ResponseState.cs` owns tolerant response-state parsing
 handoff to `Sussudio.Automation.Contracts/AutomationResponseState.cs`,
-`AutomationPipeClient.Models.cs` owns command result and exception types, and
+`Sussudio.Automation.Contracts/AutomationPipeClientModels.cs` owns the command
+result handoff and pipe client exception taxonomy, and
 `AutomationSyntheticErrorResponse.cs` owns shared structured error-envelope
 creation and common transport/protocol exception mapping for the shared command
 transport.
@@ -3797,7 +3798,6 @@ Remaining `tools/Common` ownership:
 - `AutomationPipeClient/AutomationPipeClient.Commands.cs`
 - `AutomationPipeClient/AutomationCommandTransport.cs`
 - `AutomationPipeClient/AutomationPipeClient.ResponseState.cs`
-- `AutomationPipeClient/AutomationPipeClient.Models.cs`
 - `AutomationPipeClient/AutomationSyntheticErrorResponse.cs`
 - `DiagnosticSessionBackgroundTasks.cs`
 - `DiagnosticSessionBackgroundTasks.FaultDrain.cs`

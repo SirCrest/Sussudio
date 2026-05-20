@@ -203,6 +203,8 @@ public sealed class AutomationToolContractsProtocolXunitTests
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var automationResponseStateText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationResponseState.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var automationPipeClientModelsText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationPipeClientModels.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
 
         Assert.Contains("internal static partial class AutomationPipeClient", sharedClientText);
         Assert.Contains("internal static async Task<string> SendRequestAsync(", sharedClientText);
@@ -214,7 +216,10 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.DoesNotContain("internal static class AutomationResponseState", sharedClientText);
         Assert.Contains("public static class AutomationResponseState", automationResponseStateText);
         Assert.Contains("public static bool TryRead(", automationResponseStateText);
-        Assert.Contains("internal readonly record struct AutomationPipeCommandResult(", sharedClientText);
+        Assert.DoesNotContain("internal readonly record struct AutomationPipeCommandResult(", sharedClientText);
+        Assert.Contains("public readonly record struct AutomationPipeCommandResult(", automationPipeClientModelsText);
+        Assert.Contains("public class AutomationPipeException : Exception", automationPipeClientModelsText);
+        Assert.Contains("public sealed class AutomationPipeConnectException : AutomationPipeException", automationPipeClientModelsText);
         Assert.Contains("ConnectWithClassifiedErrorsAsync(", pipeClientTransportText);
         Assert.Contains("await writer.WriteLineAsync(requestJson)", pipeClientTransportText);
         Assert.DoesNotContain("catch (UnauthorizedAccessException ex)", pipeClientTransportText);
@@ -229,7 +234,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("AutomationPipeProtocol.AutomationKeyEnvVar", pipeClientConnectErrorsText);
         Assert.Contains("catch (Exception ex)", pipeClientConnectErrorsText);
         Assert.Contains("\"pipe-connect-failed\"", pipeClientConnectErrorsText);
-        Assert.Contains("public string ErrorCode { get; }", sharedClientText);
+        Assert.Contains("public string ErrorCode { get; }", automationPipeClientModelsText);
 
         Assert.Contains("AutomationCommandTransport.SendCommandAsync(", ssctlPipeText);
         Assert.Contains("kind,", ssctlPipeText);

@@ -112,6 +112,8 @@ Entry points:
   validation for path-bearing automation commands.
 - `AutomationPipeProtocol.cs` owns pipe names, auth env var, manifest revision,
   command resolution, and request envelope shape.
+- `AutomationPipeClientModels.cs` owns the pipe command result handoff and pipe
+  client exception taxonomy shared by command transports and retry policy.
 - `AutomationResponseState.cs` owns tolerant parsing for automation response
   `Success`, `Status`, and `RetryAfterMs` fields.
 - `AutomationPipeSecurityPolicy.cs` owns the fallback-security predicate shared
@@ -3700,9 +3702,8 @@ Primary owners:
   response-element validation, synthetic error shaping, and explicit ssctl/MCP
   unknown-command policy mode.
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.ResponseState.cs` owns
-  tolerant response state parsing.
-- `tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs` owns pipe
-  command result and exception types.
+  tolerant response state parsing handoff to
+  `Sussudio.Automation.Contracts/AutomationResponseState.cs`.
 - `tools/Common/AutomationPipeClient/AutomationSyntheticErrorResponse.cs` owns
   the shared structured error-envelope factory and common transport/protocol
   exception-to-envelope mapper used by the shared command transport.

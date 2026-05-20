@@ -17,6 +17,7 @@ static partial class Program
             "AutomationCommandCatalog.Manifest.cs",
             "AutomationCommandCatalog.PathValidation.cs",
             "AutomationPipeProtocol.cs",
+            "AutomationPipeClientModels.cs",
             "AutomationResponseState.cs",
             "AutomationPipeSecurityPolicy.cs"
         })
@@ -51,18 +52,22 @@ static partial class Program
             0,
             CountCompileInclude(appIncludes, @"..\tools\Common\AutomationCommandCatalog.cs"),
             "app project must not link AutomationCommandCatalog from tools/Common");
-            AssertEqual(
-                0,
-                CountCompileInclude(appIncludes, @"..\tools\Common\AutomationPipeProtocol.cs"),
-                "app project must not link AutomationPipeProtocol from tools/Common");
-            AssertEqual(
-                0,
-                CountCompileInclude(appIncludes, @"..\tools\Common\AutomationResponseState.cs"),
-                "app project must not link AutomationResponseState from tools/Common");
-            AssertEqual(
-                0,
-                CountCompileInclude(appIncludes, @"..\tools\Common\AutomationPipeSecurityPolicy.cs"),
+        AssertEqual(
+            0,
+            CountCompileInclude(appIncludes, @"..\tools\Common\AutomationPipeProtocol.cs"),
+            "app project must not link AutomationPipeProtocol from tools/Common");
+        AssertEqual(
+            0,
+            CountCompileInclude(appIncludes, @"..\tools\Common\AutomationResponseState.cs"),
+            "app project must not link AutomationResponseState from tools/Common");
+        AssertEqual(
+            0,
+            CountCompileInclude(appIncludes, @"..\tools\Common\AutomationPipeSecurityPolicy.cs"),
             "app project must not link AutomationPipeSecurityPolicy from tools/Common");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "tools", "Common", "AutomationPipeClient", "AutomationPipeClient.Models.cs")),
+            "tools/Common/AutomationPipeClient must not own AutomationPipeClient.Models.cs");
         AssertEqual(
             1,
             CountProjectReference(appReferences, @"..\Sussudio.Automation.Contracts\Sussudio.Automation.Contracts.csproj"),
