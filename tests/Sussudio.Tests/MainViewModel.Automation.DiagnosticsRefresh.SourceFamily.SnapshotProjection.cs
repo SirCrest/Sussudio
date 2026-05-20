@@ -20,6 +20,8 @@ static partial class Program
         public string SnapshotProjectionFlatteningMjpegPreviewJitterText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningMjpegPacketHashText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSourceText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningSourceSignalText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningSourceTelemetryText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSettingsText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningHdrPipelineText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningPreviewRuntimeText { get; init; } = string.Empty;

@@ -394,8 +394,14 @@ metadata projection consumed by the automation snapshot DTO.
 telemetry fallback policy, age calculation, and source-target summary inputs
 consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.cs` owns final
-source signal and source telemetry projection-to-`AutomationSnapshot` field
-flattening.
+source projection flattening and routes final source signal and source
+telemetry fields through focused flattening modules.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.Signal.cs`
+owns final source dimensions, frame-rate, HDR, video/audio format, firmware,
+input, USB, HDCP, and raw timing field flattening.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.Telemetry.cs`
+owns final source telemetry availability, confidence, detail, age, backend,
+suppression, circuit-state, summary, and target-summary field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.UserSettings.cs` owns selected
 device, selected capture/recording options, preview volume, and stats
 visibility projection consumed by the automation snapshot DTO.
