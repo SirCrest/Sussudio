@@ -3310,7 +3310,10 @@ Diagnostic session DTOs live in feature-oriented model files:
 `tools/Common/DiagnosticSessionResult.cs`,
 `tools/Common/DiagnosticSessionResult.Overview.cs`,
 `tools/Common/DiagnosticSessionResult.CaptureSource.cs`,
-`tools/Common/DiagnosticSessionResult.Preview.cs`,
+`tools/Common/DiagnosticSessionResult.PreviewCadence.cs`,
+`tools/Common/DiagnosticSessionResult.PreviewScheduler.cs`,
+`tools/Common/DiagnosticSessionResult.PreviewD3D.cs`,
+`tools/Common/DiagnosticSessionResult.PreviewVisualCadence.cs`,
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.Commands.cs`,
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.Cadence.cs`,
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.Decode.cs`,
@@ -3353,8 +3356,8 @@ DTO root owns core session metadata, terminal state, artifacts, actions, and
 warnings; the result partials own capture/source, Flashback playback command
 queue, Flashback playback cadence, Flashback playback decode, Flashback
 playback audio-master, Flashback playback stage/seek, Flashback recording,
-Flashback export, preview, process, recording verification, and PresentMon
-fields.
+Flashback export, preview cadence, preview scheduler, preview D3D, preview
+visual cadence, process, recording verification, and PresentMon fields.
 
 Diagnostic-session result text now lives in a focused partial family rooted at
 `tools/Common/DiagnosticSessionResultFormatter.cs`. The root owns the public
@@ -3882,7 +3885,10 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResult.cs`
 - `DiagnosticSessionResult.Overview.cs`
 - `DiagnosticSessionResult.CaptureSource.cs`
-- `DiagnosticSessionResult.Preview.cs`
+- `DiagnosticSessionResult.PreviewCadence.cs`
+- `DiagnosticSessionResult.PreviewScheduler.cs`
+- `DiagnosticSessionResult.PreviewD3D.cs`
+- `DiagnosticSessionResult.PreviewVisualCadence.cs`
 - `DiagnosticSessionResult.FlashbackPlayback.Commands.cs`
 - `DiagnosticSessionResult.FlashbackPlayback.Cadence.cs`
 - `DiagnosticSessionResult.FlashbackPlayback.Decode.cs`
