@@ -87,8 +87,4 @@ public sealed partial class AutomationDiagnosticsHub
         long RecentRendererSubmitted,
         double RecentRendererDropPercent);
 
-    private readonly record struct DiagnosticEvaluationRenderLane(
-        string Text,
-        long RecentSubmitted,
-        double RecentDropPercent);
 }

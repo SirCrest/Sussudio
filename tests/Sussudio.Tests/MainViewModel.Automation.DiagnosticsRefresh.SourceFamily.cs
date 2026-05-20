@@ -24,7 +24,10 @@ static partial class Program
             DiagnosticEvaluationRealtimePreviewSchedulerText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.PreviewScheduler.cs"),
             DiagnosticEvaluationRealtimePreviewPresentText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.PreviewPresent.cs"),
             DiagnosticEvaluationLanesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs"),
-            DiagnosticEvaluationLanesRealtimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Realtime.cs"),
+            DiagnosticEvaluationLanesRealtimeSourceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Realtime.Source.cs"),
+            DiagnosticEvaluationLanesRealtimeMjpegText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Realtime.Mjpeg.cs"),
+            DiagnosticEvaluationLanesRealtimePreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Realtime.Preview.cs"),
+            DiagnosticEvaluationLanesRealtimeRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Realtime.Recording.cs"),
             DiagnosticEvaluationLanesFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs"),
             AlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Alerts.cs"),
             SignalAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SignalAlerts.cs"),
@@ -151,7 +154,10 @@ static partial class Program
         public string DiagnosticEvaluationRealtimePreviewSchedulerText { get; init; } = string.Empty;
         public string DiagnosticEvaluationRealtimePreviewPresentText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesText { get; init; } = string.Empty;
-        public string DiagnosticEvaluationLanesRealtimeText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesRealtimeSourceText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesRealtimeMjpegText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesRealtimePreviewText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesRealtimeRecordingText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesFlashbackText { get; init; } = string.Empty;
         public string AlertsText { get; init; } = string.Empty;
         public string SignalAlertsText { get; init; } = string.Empty;
@@ -257,7 +263,10 @@ static partial class Program
                 DiagnosticEvaluationRealtimePreviewSchedulerText,
                 DiagnosticEvaluationRealtimePreviewPresentText,
                 DiagnosticEvaluationLanesText,
-                DiagnosticEvaluationLanesRealtimeText,
+                DiagnosticEvaluationLanesRealtimeSourceText,
+                DiagnosticEvaluationLanesRealtimeMjpegText,
+                DiagnosticEvaluationLanesRealtimePreviewText,
+                DiagnosticEvaluationLanesRealtimeRecordingText,
                 DiagnosticEvaluationLanesFlashbackText,
                 AlertsText,
                 SignalAlertsText,
