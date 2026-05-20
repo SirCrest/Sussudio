@@ -241,7 +241,8 @@ add xUnit alongside, and port incrementally.
   legacy presentation-preview D3D render-pipeline source-ownership group:
   render passes, shader rendering cache, shader sources, frame-latency wait,
   render thread, present accounting, viewport helpers, and screenshot encoding
-  checks. The legacy D3D catalog hook remains as an empty compatibility method.
+  checks. The legacy D3D catalog hook was removed after the final group moved
+  to xUnit.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, and test-project shape guard checks.
 - `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy

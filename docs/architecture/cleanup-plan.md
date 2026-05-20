@@ -994,7 +994,8 @@ through
 keeping render passes, shader rendering cache, shader sources, frame-latency
 wait, render thread, present accounting, viewport helpers, and screenshot
 encoding contracts in xUnit after their removal from the legacy D3D harness
-catalog. The legacy D3D catalog hook remains as an empty compatibility method.
+catalog. The empty legacy D3D catalog hook was removed after this final group
+moved to xUnit.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the

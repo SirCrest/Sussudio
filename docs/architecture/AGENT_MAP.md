@@ -2589,8 +2589,8 @@ Primary current owners:
   group for render passes, shader rendering cache, shader sources, frame-latency
   wait, render thread, present accounting, viewport helpers, and screenshot
   encoding checks after their removal from the legacy offline D3D harness
-  catalog. `HarnessCheckCatalog.PresentationPreview.D3D.cs` remains as an empty
-  compatibility hook for the topic registration call.
+  catalog. The empty `HarnessCheckCatalog.PresentationPreview.D3D.cs` hook was
+  removed after the final D3D group moved to xUnit.
 - `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral

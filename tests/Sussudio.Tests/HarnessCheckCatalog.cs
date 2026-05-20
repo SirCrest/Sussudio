@@ -19,7 +19,6 @@ static partial class Program
     {
         await AddPresentationPreviewCaptureChecksAsync(results);
         await AddPresentationPreviewMainViewModelChecksAsync(results);
-        await AddPresentationPreviewD3DChecksAsync(results);
     }
 
     private static async Task AddMcpDiagnosticsPipelineChecksAsync(List<CheckResult> results)
