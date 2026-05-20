@@ -8,6 +8,9 @@ internal sealed partial class FlashbackPlaybackController
     private long _playbackSeekForwardDecodeCapHits;
     private int _lastPlaybackSeekHitForwardDecodeCap;
 
+    public long PlaybackSeekForwardDecodeCapHits => Interlocked.Read(ref _playbackSeekForwardDecodeCapHits);
+    public bool LastPlaybackSeekHitForwardDecodeCap => Volatile.Read(ref _lastPlaybackSeekHitForwardDecodeCap) != 0;
+
     private bool SeekToWithCapTelemetry(
         FlashbackDecoder decoder,
         TimeSpan seekTarget,

@@ -38,8 +38,6 @@ internal sealed partial class FlashbackPlaybackController
     public long LastPlaybackPtsCadenceMismatchUtcUnixMs => Interlocked.Read(ref _lastPlaybackPtsCadenceMismatchUtcUnixMs);
     public double LastPlaybackPtsCadenceDeltaMs => _lastPlaybackPtsCadenceDeltaMs;
     public double LastPlaybackPtsCadenceExpectedMs => _lastPlaybackPtsCadenceExpectedMs;
-    public long PlaybackSeekForwardDecodeCapHits => Interlocked.Read(ref _playbackSeekForwardDecodeCapHits);
-    public bool LastPlaybackSeekHitForwardDecodeCap => Volatile.Read(ref _lastPlaybackSeekHitForwardDecodeCap) != 0;
     public string PlaybackMaxDecodePhase => Volatile.Read(ref _playbackMaxDecodePhase);
     public double PlaybackMaxDecodeReceiveMs => _playbackMaxDecodeReceiveMs;
     public double PlaybackMaxDecodeFeedMs => _playbackMaxDecodeFeedMs;
