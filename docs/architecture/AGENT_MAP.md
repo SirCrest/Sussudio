@@ -3279,8 +3279,12 @@ Primary owners:
   playback projection consumed by the final result initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackMetricResult.cs`
   owns Flashback playback result DTO value mapping for command queue, cadence,
-  1% low, slow-frame, dropped-frame, decode timing, audio-master/A/V drift,
-  submit, segment, write-head, near-live, and seek-cap values.
+  1% low, slow-frame, dropped-frame, decode timing, submit, segment,
+  write-head, near-live, and seek-cap values.
+- `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackAudioMasterResult.cs`
+  owns Flashback playback audio-master and A/V-drift result DTO value mapping,
+  including fallback counters, fallback reason/age, buffered/queued audio
+  duration, and observed absolute drift values.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackProjectionModels.cs`
   owns the Flashback playback projection record shapes used by the playback
   result mapping and final result initializer.
