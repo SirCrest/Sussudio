@@ -3752,7 +3752,8 @@ codes, `AutomationPipeClient.Commands.cs` owns command envelope sending and
 typed `AutomationCommandKind` command-id routing plus `not_ready` retry policy,
 `AutomationCommandTransport.cs` owns command-specific timeout selection for
 string and typed commands, shared response-element validation, synthetic error
-shaping, and explicit ssctl/MCP unknown-command policy mode,
+shaping, and handoff to
+`Sussudio.Automation.Contracts/AutomationUnknownCommandHandling.cs`,
 `AutomationPipeClient.ResponseState.cs` owns tolerant response-state parsing
 handoff to `Sussudio.Automation.Contracts/AutomationResponseState.cs`,
 `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs` owns the command

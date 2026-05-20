@@ -20,6 +20,7 @@ static partial class Program
             "AutomationPipeClientModels.cs",
             "AutomationResponseState.cs",
             "AutomationSyntheticErrorResponse.cs",
+            "AutomationUnknownCommandHandling.cs",
             "AutomationPipeSecurityPolicy.cs"
         })
         {

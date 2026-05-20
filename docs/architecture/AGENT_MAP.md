@@ -119,6 +119,8 @@ Entry points:
 - `AutomationSyntheticErrorResponse.cs` owns the structured automation
   error-envelope factory and exception-to-error-code mapping shared by tool
   clients.
+- `AutomationUnknownCommandHandling.cs` owns the shared throw-vs-synthetic
+  policy enum used by ssctl and MCP pipe callers.
 - `AutomationPipeSecurityPolicy.cs` owns the fallback-security predicate shared
   by app and tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.CommandKinds.Tests.cs` owns the
@@ -3702,8 +3704,8 @@ Primary owners:
   and `not_ready` retry behavior.
 - `tools/Common/AutomationPipeClient/AutomationCommandTransport.cs` owns
   command-specific timeout selection for string and typed commands, shared
-  response-element validation, synthetic error shaping, and explicit ssctl/MCP
-  unknown-command policy mode.
+  response-element validation, synthetic error shaping, and the handoff to
+  `Sussudio.Automation.Contracts/AutomationUnknownCommandHandling.cs`.
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.ResponseState.cs` owns
   tolerant response state parsing handoff to
   `Sussudio.Automation.Contracts/AutomationResponseState.cs`.

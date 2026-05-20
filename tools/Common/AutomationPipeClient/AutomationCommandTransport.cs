@@ -3,12 +3,6 @@ using Sussudio.Models;
 
 namespace Sussudio.Tools;
 
-internal enum AutomationUnknownCommandHandling
-{
-    ReturnSyntheticError,
-    ThrowArgumentException
-}
-
 internal static class AutomationCommandTransport
 {
     public static async Task<JsonElement> SendCommandAsync(

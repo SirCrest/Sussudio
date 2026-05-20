@@ -207,6 +207,8 @@ public sealed class AutomationToolContractsProtocolXunitTests
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var automationSyntheticErrorResponseText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationSyntheticErrorResponse.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var automationUnknownCommandHandlingText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationUnknownCommandHandling.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
 
         Assert.Contains("internal static partial class AutomationPipeClient", sharedClientText);
         Assert.Contains("internal static async Task<string> SendRequestAsync(", sharedClientText);
@@ -257,7 +259,10 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.DoesNotContain("private static JsonElement CreateSyntheticError", mcpPipeText);
         Assert.DoesNotContain("Sussudio is not running or not responding. Start the app and try again.", mcpPipeText);
         Assert.Contains("internal static class AutomationCommandTransport", sharedClientText);
-        Assert.Contains("internal enum AutomationUnknownCommandHandling", sharedClientText);
+        Assert.DoesNotContain("internal enum AutomationUnknownCommandHandling", sharedClientText);
+        Assert.Contains("public enum AutomationUnknownCommandHandling", automationUnknownCommandHandlingText);
+        Assert.Contains("ReturnSyntheticError", automationUnknownCommandHandlingText);
+        Assert.Contains("ThrowArgumentException", automationUnknownCommandHandlingText);
         Assert.Contains("AutomationPipeProtocol.GetDefaultResponseTimeout(kind)", sharedClientText);
         Assert.Contains("AutomationSyntheticErrorResponse.Create(ex.Message, \"unknown-command\")", sharedClientText);
         Assert.Contains("catch (Exception ex) when (AutomationSyntheticErrorResponse.CanCreateFromException(ex))", sharedClientText);
