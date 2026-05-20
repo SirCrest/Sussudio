@@ -17,7 +17,6 @@ static partial class Program
 
     private static async Task AddPresentationPreviewChecksAsync(List<CheckResult> results)
     {
-        await AddPresentationPreviewMainWindowInitialChecksAsync(results);
         await AddPresentationPreviewCaptureChecksAsync(results);
         await AddPresentationPreviewMainViewModelChecksAsync(results);
         await AddPresentationPreviewMainWindowChecksAsync(results);

@@ -2490,6 +2490,10 @@ Primary current owners:
   owns the former presentation-preview MainViewModel initial registration group
   for recording transition start/stop failure propagation after its removal from
   the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowInitialContractsTests.cs`
+  owns the former presentation-preview MainWindow initial registration group for
+  close cancellation and window screenshot helper ownership after its removal
+  from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral

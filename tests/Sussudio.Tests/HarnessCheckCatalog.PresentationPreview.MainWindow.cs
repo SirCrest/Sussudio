@@ -3,22 +3,6 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task AddPresentationPreviewMainWindowInitialChecksAsync(List<CheckResult> results)
-    {
-        await AddCheckAsync(results,
-            "Window close cancels until recording stop completes",
-            MainWindowClose_CancelsCloseUntilRecordingStopCompletes);
-        await AddCheckAsync(results,
-            "Window screenshot capture completes on dispatcher failure and cancellation",
-            MainWindowScreenshot_CompletesOnDispatcherFailureAndCancellation);
-        await AddCheckAsync(results,
-            "Window screenshot native capture lives in focused helper",
-            WindowScreenshotNativeCapture_LivesInFocusedHelper);
-        await AddCheckAsync(results,
-            "Window screenshot image encoding lives in focused helper",
-            WindowScreenshotImageEncoding_LivesInFocusedHelper);
-    }
-
     private static async Task AddPresentationPreviewMainWindowChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,

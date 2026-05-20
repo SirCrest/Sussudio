@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainWindowClose_CancelsCloseUntilRecordingStopCompletes()
+    internal static Task MainWindowClose_CancelsCloseUntilRecordingStopCompletes()
     {
         var windowCtorText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");

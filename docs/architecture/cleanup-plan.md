@@ -885,6 +885,10 @@ Presentation-preview MainViewModel initial checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelInitialContractsTests.cs`,
 keeping recording transition start/stop failure propagation checks in xUnit
 after their removal from the legacy harness catalog.
+Presentation-preview MainWindow initial checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowInitialContractsTests.cs`,
+keeping close cancellation and window screenshot helper ownership checks in
+xUnit after their removal from the legacy harness catalog.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the

@@ -125,7 +125,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MainWindowScreenshot_CompletesOnDispatcherFailureAndCancellation()
+    internal static Task MainWindowScreenshot_CompletesOnDispatcherFailureAndCancellation()
     {
         var windowText = ReadRepoFile("Sussudio/MainWindow.Screenshot.cs")
             .Replace("\r\n", "\n");
@@ -151,7 +151,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task WindowScreenshotNativeCapture_LivesInFocusedHelper()
+    internal static Task WindowScreenshotNativeCapture_LivesInFocusedHelper()
     {
         var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs")
             .Replace("\r\n", "\n");
@@ -176,7 +176,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task WindowScreenshotImageEncoding_LivesInFocusedHelper()
+    internal static Task WindowScreenshotImageEncoding_LivesInFocusedHelper()
     {
         var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs")
             .Replace("\r\n", "\n");
