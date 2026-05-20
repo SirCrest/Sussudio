@@ -3112,9 +3112,11 @@ projection owners. Overview
 outcome policy plus process CPU, recording verification, and PresentMon DTO
 projection values live in `DiagnosticSessionResultBuilder.OverviewResult.cs`.
 Diagnostic
-metric gathering, Flashback analysis warning appenders, and result-build handoff models live beside it in
-`DiagnosticSessionResultBuilder.Analysis.cs` and
-`DiagnosticSessionResultBuilder.Models.cs`. Diagnostic health verdict
+metric gathering and validation handoff orchestration live in
+`DiagnosticSessionResultBuilder.Analysis.cs`, while Flashback playback/export
+analysis warning text and thresholds live in
+`DiagnosticSessionResultBuilder.FlashbackWarnings.cs`; result-build handoff
+models live in `DiagnosticSessionResultBuilder.Models.cs`. Diagnostic health verdict
 composition, warning tolerance, and health warning text now live in
 `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`.
 Preview-scheduler analysis handoff values live in
@@ -3616,6 +3618,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.Flattening.cs`
 - `DiagnosticSessionResultBuilder.OverviewResult.cs`
 - `DiagnosticSessionResultBuilder.Analysis.cs`
+- `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackMetricResult.cs`

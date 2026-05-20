@@ -63,6 +63,8 @@ static partial class Program
     {
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
+        var flashbackWarningsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(analysisText, "AddFlashbackPlaybackAnalysisWarnings(playbackResultMetrics, warnings);");
         AssertContains(analysisText, "AddFlashbackExportAnalysisWarnings(");
@@ -75,10 +77,14 @@ static partial class Program
         AssertDoesNotContain(analysisText, "var toleratesSparseScrubSchedulerTransitions =");
         AssertDoesNotContain(analysisText, "var flashbackExportForceRotateFallbacksAtEnd =");
         AssertDoesNotContain(analysisText, "FlashbackExportForceRotateFallbacksAtEnd =");
-        AssertContains(analysisText, "private static void AddFlashbackPlaybackAnalysisWarnings(");
-        AssertContains(analysisText, "private static void AddFlashbackExportAnalysisWarnings(");
-        AssertContains(analysisText, "flashback playback seek forward-decode cap hit during session");
-        AssertContains(analysisText, "flashback export used force-rotate partial fallback");
+        AssertDoesNotContain(analysisText, "private static void AddFlashbackPlaybackAnalysisWarnings(");
+        AssertDoesNotContain(analysisText, "private static void AddFlashbackExportAnalysisWarnings(");
+        AssertContains(flashbackWarningsText, "private static void AddFlashbackPlaybackAnalysisWarnings(");
+        AssertContains(flashbackWarningsText, "private static void AddFlashbackExportAnalysisWarnings(");
+        AssertContains(flashbackWarningsText, "flashback playback seek forward-decode cap hit during session");
+        AssertContains(flashbackWarningsText, "flashback export used force-rotate partial fallback");
+        AssertContains(flashbackWarningsText, "playbackResultMetrics.SeekForwardDecodeCapHitsDelta <= 0");
+        AssertContains(flashbackWarningsText, "flashbackExportForceRotateFallbacksDelta <= 0");
     }
 
     private static Task DiagnosticSessionResultBuilder_DiagnosticHealthVerdictLivesInFocusedPartial()
