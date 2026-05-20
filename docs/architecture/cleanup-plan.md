@@ -159,6 +159,9 @@ owns final capture-format projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureTransport.cs` owns capture
 memory preference, requested/negotiated video subtype, and frame-ledger
 projection consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureTransport.cs`
+owns final capture transport projection-to-`AutomationSnapshot` field
+flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs` owns source
 capture cadence projection inputs consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs` owns preview

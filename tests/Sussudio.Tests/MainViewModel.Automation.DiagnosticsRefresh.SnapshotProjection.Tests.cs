@@ -185,8 +185,15 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var captureTransport = BuildCaptureTransportProjection(captureRuntime);");
         AssertContains(diagnostics.SnapshotProjectionCaptureTransportText, "private static CaptureTransportProjection BuildCaptureTransportProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnostics.SnapshotProjectionCaptureTransportText, "FrameLedgerRecentEvents = captureRuntime.FrameLedgerRecentEvents");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var captureTransportFlattening = BuildCaptureTransportFlattenedProjection(captureTransport);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "MemoryPreference = captureTransportFlattening.MemoryPreference,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "FrameLedgerRecentEvents = captureTransportFlattening.FrameLedgerRecentEvents,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureTransportText, "MemoryPreference = captureTransport.MemoryPreference,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureTransportText, "FrameLedgerRecentEvents = captureTransport.FrameLedgerRecentEvents");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "MemoryPreference = captureRuntime.MemoryPreference,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "FrameLedgerRecentEvents = captureRuntime.FrameLedgerRecentEvents,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "MemoryPreference = captureTransport.MemoryPreference,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "FrameLedgerRecentEvents = captureTransport.FrameLedgerRecentEvents,");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var captureCadence = BuildCaptureCadenceProjection(health);");
         AssertContains(diagnostics.SnapshotProjectionCaptureCadenceText, "private static CaptureCadenceProjection BuildCaptureCadenceProjection(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SnapshotProjectionCaptureCadenceText, "EstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames,");

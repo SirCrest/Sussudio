@@ -133,15 +133,25 @@ static partial class Program
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningCaptureTransportText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureTransport.cs")
+            .Replace("\r\n", "\n");
         var captureTransportProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureTransport.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var captureTransport = BuildCaptureTransportProjection(captureRuntime);");
-        AssertContains(snapshotFlatteningText, "MemoryPreference = captureTransport.MemoryPreference,");
-        AssertContains(snapshotFlatteningText, "VideoNegotiatedSubtype = captureTransport.VideoNegotiatedSubtype,");
-        AssertContains(snapshotFlatteningText, "FrameLedgerRecentEvents = captureTransport.FrameLedgerRecentEvents,");
+        AssertContains(snapshotFlatteningText, "var captureTransportFlattening = BuildCaptureTransportFlattenedProjection(captureTransport);");
+        AssertContains(snapshotFlatteningText, "MemoryPreference = captureTransportFlattening.MemoryPreference,");
+        AssertContains(snapshotFlatteningText, "VideoNegotiatedSubtype = captureTransportFlattening.VideoNegotiatedSubtype,");
+        AssertContains(snapshotFlatteningText, "FrameLedgerRecentEvents = captureTransportFlattening.FrameLedgerRecentEvents,");
+        AssertContains(snapshotFlatteningCaptureTransportText, "private static CaptureTransportFlattenedProjection BuildCaptureTransportFlattenedProjection(");
+        AssertContains(snapshotFlatteningCaptureTransportText, "MemoryPreference = captureTransport.MemoryPreference,");
+        AssertContains(snapshotFlatteningCaptureTransportText, "VideoNegotiatedSubtype = captureTransport.VideoNegotiatedSubtype,");
+        AssertContains(snapshotFlatteningCaptureTransportText, "FrameLedgerRecentEvents = captureTransport.FrameLedgerRecentEvents");
+        AssertContains(snapshotFlatteningCaptureTransportText, "private readonly record struct CaptureTransportFlattenedProjection");
         AssertDoesNotContain(snapshotFlatteningText, "MemoryPreference = captureRuntime.MemoryPreference,");
+        AssertDoesNotContain(snapshotFlatteningText, "MemoryPreference = captureTransport.MemoryPreference,");
         AssertDoesNotContain(snapshotFlatteningText, "FrameLedgerRecentEvents = captureRuntime.FrameLedgerRecentEvents,");
+        AssertDoesNotContain(snapshotFlatteningText, "FrameLedgerRecentEvents = captureTransport.FrameLedgerRecentEvents,");
 
         AssertContains(captureTransportProjectionText, "private static CaptureTransportProjection BuildCaptureTransportProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(captureTransportProjectionText, "MemoryPreference = captureRuntime.MemoryPreference,");
