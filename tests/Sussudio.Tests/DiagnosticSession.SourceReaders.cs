@@ -85,6 +85,7 @@ static partial class Program
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionOptions.cs",
             "tools/Common/DiagnosticSessionResult.cs",
+            "tools/Common/DiagnosticSessionResult.CaptureSource.cs",
             "tools/Common/DiagnosticSessionResult.Preview.cs",
             "tools/Common/DiagnosticSessionResult.FlashbackPlayback.cs",
             "tools/Common/DiagnosticSessionResult.FlashbackRecordingExport.cs",
