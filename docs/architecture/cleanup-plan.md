@@ -3719,9 +3719,11 @@ task-label, and started-action wiring while preview-cycle scenario selection
 stays in the `DiagnosticSessionScenarioCatalog` family and grouped
 preview-cycle policy stays in `DiagnosticSessionScenarioPlan.cs`.
 `.Flashback.cs`, `.Playback.cs`, and `.Recording.cs` own preview stop/restart
-flows for normal Flashback, playback, and recording-backed diagnostics. Normal
-Flashback and playback-preview-cycle export-while-preview-off verification live
-in `.FlashbackExport.cs` and `.PlaybackExport.cs` while startup only delegates
+command choreography for normal Flashback, playback, and recording-backed
+diagnostics. Playback-preview-cycle warmup, stopped-state, and restart
+frame-flow validation live in `.PlaybackValidation.cs`. Normal Flashback and
+playback-preview-cycle export-while-preview-off verification live in
+`.FlashbackExport.cs` and `.PlaybackExport.cs` while startup only delegates
 selected scenario registration.
 
 Diagnostic-session Flashback rejected-export scenarios now live in the
@@ -3895,6 +3897,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackExport.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
+- `DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackValidation.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackExport.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
