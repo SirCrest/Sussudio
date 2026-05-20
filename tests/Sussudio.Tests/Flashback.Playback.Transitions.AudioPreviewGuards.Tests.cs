@@ -150,6 +150,11 @@ static partial class Program
         AssertContains(audioMasterClockText, "private void RefreshAudioMasterClock()");
         AssertContains(audioMasterClockText, "private bool TryGetFreshAudioMasterClock(");
         AssertContains(audioMasterClockText, "private bool TryComputeAudioMasterDriftMs(long videoPtsTicks, out double driftMs)");
+        AssertContains(audioMasterClockText, "public double AvDriftMs");
+        AssertContains(audioMasterClockText, "var renderingPts = _audioPlayback?.RenderingPtsTicks ?? 0;");
+        AssertContains(audioMasterClockText, "return TimeSpan.FromTicks(renderingPts - videoPts).TotalMilliseconds;");
+        AssertDoesNotContain(metricsText, "public double AvDriftMs");
+        AssertDoesNotContain(metricsText, "RenderingPtsTicks");
         AssertDoesNotContain(audioMasterText, "private long _audioClockPtsTicks;");
         AssertDoesNotContain(audioMasterText, "private bool TryComputeAudioMasterDriftMs(long videoPtsTicks, out double driftMs)");
         AssertDoesNotContain(audioMasterText, "private long _playbackAudioMasterFallbacks;");

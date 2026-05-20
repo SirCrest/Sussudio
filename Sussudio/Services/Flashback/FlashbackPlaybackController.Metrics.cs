@@ -1,4 +1,3 @@
-using System;
 using System.Threading;
 
 namespace Sussudio.Services.Flashback;
@@ -25,18 +24,4 @@ internal sealed partial class FlashbackPlaybackController
     public double PlaybackTargetFps => _playbackTargetFps;
     public double PlaybackObservedFps => _playbackObservedFps;
     public double PlaybackAvgFrameMs => _playbackAvgFrameMs;
-    /// <summary>
-    /// Audio-video drift in milliseconds. Positive = audio ahead, negative = audio behind.
-    /// Uses the PTS of the chunk WASAPI is currently rendering (not just enqueued).
-    /// </summary>
-    public double AvDriftMs
-    {
-        get
-        {
-            var renderingPts = _audioPlayback?.RenderingPtsTicks ?? 0;
-            var videoPts = Interlocked.Read(ref _lastVideoPtsTicks);
-            if (renderingPts == 0 || videoPts == 0) return 0;
-            return TimeSpan.FromTicks(renderingPts - videoPts).TotalMilliseconds;
-        }
-    }
 }
