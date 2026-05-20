@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task DiagnosticSessionRunner_OwnsCompatibilitySurface()
+    internal static Task DiagnosticSessionRunner_OwnsCompatibilitySurface()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
@@ -25,7 +25,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionInitialSnapshot_OwnsBaselineCapture()
+    internal static Task DiagnosticSessionInitialSnapshot_OwnsBaselineCapture()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var contextText = ReadDiagnosticSessionRunContextSource();

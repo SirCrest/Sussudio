@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task DiagnosticSessionModels_AreSplitFromRunnerBehavior()
+    internal static Task DiagnosticSessionModels_AreSplitFromRunnerBehavior()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var modelText = ReadDiagnosticSessionModelsSource();

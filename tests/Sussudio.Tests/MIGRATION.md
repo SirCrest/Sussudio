@@ -161,6 +161,10 @@ add xUnit alongside, and port incrementally.
 - `XUnit.McpToolSurfaceContractsTests.cs` owns the former legacy MCP tool
   surface, command-routing, host/pipe, verification, Flashback tool, and
   diagnostic-session tool entry checks.
+- `XUnit.McpDiagnosticSessionInfrastructureContractsTests.cs` owns the former
+  legacy diagnostic-session infrastructure band for runner terminal artifacts,
+  model/runner split ownership, initial snapshot capture, and compatibility
+  wrapper ownership.
 - `XUnit.PresentationPreviewHarnessRegistrationTests.cs` owns the former legacy
   presentation-preview harness registration guard.
 - `XUnit.PresentationPreviewMainViewModelInitialContractsTests.cs` owns the

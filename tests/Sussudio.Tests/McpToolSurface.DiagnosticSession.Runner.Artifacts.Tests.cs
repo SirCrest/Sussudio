@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task DiagnosticSessionRunner_FinalSnapshotFailureWritesTerminalArtifacts()
+    internal static async Task DiagnosticSessionRunner_FinalSnapshotFailureWritesTerminalArtifacts()
     {
         var outputDirectory = Path.Combine(GetRepoRoot(), "temp", $"diagnostic-session-failure-test-{Guid.NewGuid():N}");
         var getSnapshotCount = 0;

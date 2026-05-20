@@ -6,18 +6,6 @@ static partial class Program
     private static async Task AddDiagnosticSessionChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Diagnostic session runner writes terminal artifacts on final snapshot failure",
-            DiagnosticSessionRunner_FinalSnapshotFailureWritesTerminalArtifacts);
-        await AddCheckAsync(results,
-            "Diagnostic session model ownership is split from runner behavior",
-            DiagnosticSessionModels_AreSplitFromRunnerBehavior);
-        await AddCheckAsync(results,
-            "Diagnostic session initial snapshot has a named owner",
-            DiagnosticSessionInitialSnapshot_OwnsBaselineCapture);
-        await AddCheckAsync(results,
-            "Diagnostic session runner has a compatibility wrapper owner",
-            DiagnosticSessionRunner_OwnsCompatibilitySurface);
-        await AddCheckAsync(results,
             "Diagnostic session result formatting has a named owner",
             DiagnosticSessionResultFormatter_OwnsFormattedSummaryText);
         await AddCheckAsync(results,
