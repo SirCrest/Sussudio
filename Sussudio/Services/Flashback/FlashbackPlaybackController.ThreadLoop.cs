@@ -97,11 +97,7 @@ internal sealed partial class FlashbackPlaybackController
                     switch (cmd.Kind)
                     {
                         case CommandKind.Stop:
-                            isPlaying = false;
-                            isScrubbing = false;
-                            pendingExactResumeTarget = null;
-                            RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, "thread_stop");
-                            Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
+                            HandleStopCommand(ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref pendingExactResumeTarget);
                             return;
 
                         case CommandKind.Seek:

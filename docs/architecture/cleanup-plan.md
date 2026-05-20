@@ -2619,6 +2619,11 @@ Playback-thread exit transactions now live in
 prebuffer release, timer-resolution release, command-channel completion/drain,
 thread/CTS ownership clearing, and deferred preview attach there instead of
 inside the command dispatch loop.
+Playback-thread stop command execution now lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadStopCommand.cs`.
+Keep stop-time playback/scrub state reset, exact-resume target clearing,
+live-restore handoff, and exit logging there instead of growing the command
+dispatch loop.
 Playback-thread seek command execution now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekCommands.cs`.
 Keep coalesced seek resolution, exact resume targets, playback resume handoff,

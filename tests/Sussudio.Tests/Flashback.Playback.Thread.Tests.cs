@@ -24,6 +24,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var threadExitText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadExit.cs")
             .Replace("\r\n", "\n");
+        var threadStopCommandText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadStopCommand.cs")
+            .Replace("\r\n", "\n");
         var threadLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs")
             .Replace("\r\n", "\n");
         var threadChannelText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadChannel.cs")
@@ -74,7 +76,11 @@ static partial class Program
         AssertDoesNotContain(threadLoopText, "SafeSuppressPreviewSubmission(\"begin_scrub\")");
         AssertDoesNotContain(threadLoopText, "Logger.Log(\"FLASHBACK_PLAYBACK_GO_LIVE\");");
         AssertContains(sourceText, "if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })\n            {\n                SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });\n            }");
-        AssertContains(sourceText, "case CommandKind.Stop:\n                            isPlaying = false;\n                            isScrubbing = false;\n                            pendingExactResumeTarget = null;\n                            RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, \"thread_stop\");");
+        AssertContains(threadLoopText, "case CommandKind.Stop:\n                            HandleStopCommand(ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref pendingExactResumeTarget);\n                            return;");
+        AssertContains(threadStopCommandText, "private void HandleStopCommand(");
+        AssertContains(threadStopCommandText, "isPlaying = false;\n        isScrubbing = false;\n        pendingExactResumeTarget = null;");
+        AssertContains(threadStopCommandText, "RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, \"thread_stop\");\n        Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT\");");
+        AssertDoesNotContain(threadLoopText, "isPlaying = false;\n                            isScrubbing = false;\n                            pendingExactResumeTarget = null;\n                            RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, \"thread_stop\");");
         AssertContains(sourceText, "private void RestoreLiveForPlaybackThreadExit(");
         AssertContains(sourceText, "Interlocked.Exchange(ref _lastVideoPtsTicks, 0);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        SetState(FlashbackPlaybackState.Live);");
         AssertDoesNotContain(sourceText, "_suppressAudioUntilPtsTicks");
