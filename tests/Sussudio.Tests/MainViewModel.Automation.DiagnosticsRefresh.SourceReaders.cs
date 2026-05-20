@@ -163,7 +163,12 @@ static partial class Program
     private static string ReadDiagnosticSessionScenarioCatalogSource()
     {
         return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs")
-            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs");
+            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs")
+            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Entries.Core.cs")
+            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Entries.FlashbackPlayback.cs")
+            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Entries.FlashbackExport.cs")
+            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Entries.FlashbackRecording.cs")
+            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Entries.Combined.cs");
     }
 
     private static string ReadDiagnosticSessionFlashbackExportsSource()

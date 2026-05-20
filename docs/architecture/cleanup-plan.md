@@ -3374,9 +3374,11 @@ shared tool invocation defaults and the ssctl diagnostic-session usage string,
 while `DiagnosticSessionScenarioCatalog.cs` owns scenario name constants,
 normalization, the MCP-compatible scenario description, the CLI help-list
 constant, setup requirement queries, and export verification artifact lookup.
-`DiagnosticSessionScenarioCatalog.Entries.cs` owns scenario ordering,
-requirement metadata, export verification filenames, and per-scenario plan
-assignment.
+`DiagnosticSessionScenarioCatalog.Entries.cs` owns scenario ordering by
+composing focused entry groups. Core, Flashback playback, Flashback export/
+lifecycle, Flashback recording/rejection, and combined scenario requirement
+metadata now live in the matching `DiagnosticSessionScenarioCatalog.Entries.*.cs`
+partials.
 `DiagnosticSessionRunner.cs` owns the
 public compatibility entry points; `DiagnosticSessionRunExecution.cs` owns the
 visible run phase sequence around context creation, initial snapshot, scenario
@@ -3681,13 +3683,15 @@ Diagnostic-session post-run snapshot fetches now live in
 timeline artifact input and final health snapshot refresh while the runner
 keeps the high-level post-cleanup phase order.
 
-Diagnostic-session scenario metadata now lives in
-`tools/Common/DiagnosticSessionScenarioCatalog.cs` and
-`tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs`. The root catalog
+Diagnostic-session scenario metadata now lives in the
+`tools/Common/DiagnosticSessionScenarioCatalog.*.cs` family. The root catalog
 owns scenario names, HelpList/Description text, normalization, requirement
-queries, and export-verification lookup. The entries file owns scenario
-ordering, setup requirement metadata, export verification filenames, and the
-plan assigned to each normalized scenario.
+queries, and export-verification lookup. `DiagnosticSessionScenarioCatalog.Entries.cs`
+owns scenario ordering by spreading focused entry groups; `.Entries.Core.cs`,
+`.Entries.FlashbackPlayback.cs`, `.Entries.FlashbackExport.cs`,
+`.Entries.FlashbackRecording.cs`, and `.Entries.Combined.cs` own the setup
+requirement metadata, export verification filenames, and plan assigned to each
+normalized scenario group.
 `tools/Common/DiagnosticSessionScenarioPlan.cs` owns the plan DTO plus grouped
 warning/validation policy switches, including the preview-cycle grouped
 predicate, so the runner does not grow direct scenario string comparisons.
@@ -4129,6 +4133,11 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionSampler.cs`
 - `DiagnosticSessionScenarioCatalog.cs`
 - `DiagnosticSessionScenarioCatalog.Entries.cs`
+- `DiagnosticSessionScenarioCatalog.Entries.Core.cs`
+- `DiagnosticSessionScenarioCatalog.Entries.FlashbackPlayback.cs`
+- `DiagnosticSessionScenarioCatalog.Entries.FlashbackExport.cs`
+- `DiagnosticSessionScenarioCatalog.Entries.FlashbackRecording.cs`
+- `DiagnosticSessionScenarioCatalog.Entries.Combined.cs`
 - `DiagnosticSessionScenarioPlan.cs`
 - `DiagnosticSessionScenarioSetup.cs`
 - `DiagnosticSessionScenarioStartup.cs`

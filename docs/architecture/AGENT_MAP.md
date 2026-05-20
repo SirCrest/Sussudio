@@ -3970,8 +3970,16 @@ Primary owners:
   constants, MCP-compatible scenario description text, the CLI help-list
   constant, normalization, requirement queries, and export-verification lookup.
   `tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs` owns scenario
-  ordering, setup requirement metadata, export verification filenames, and the
-  plan assigned to each normalized scenario.
+  ordering by composing focused entry groups. Core scenario metadata lives in
+  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.Core.cs`, Flashback
+  playback metadata in
+  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.FlashbackPlayback.cs`,
+  Flashback export/lifecycle metadata in
+  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.FlashbackExport.cs`,
+  Flashback recording/rejection metadata in
+  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.FlashbackRecording.cs`,
+  and combined-scenario metadata in
+  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.Combined.cs`.
 - `tools/Common/DiagnosticSessionResult.cs` owns diagnostic-session summary DTO
   fields: core metadata, artifact paths, terminal state, actions, and warnings.
   `DiagnosticSessionResult.Overview.cs` owns end-of-run overview fields.
@@ -4621,9 +4629,10 @@ Invariants:
   `pipe-access-denied` is permanent, while connect failed/timeout are retried.
 - Add new diagnostic-session scenario names in
   `tools/Common/DiagnosticSessionScenarioCatalog.cs`, then add requirements,
-  export verification metadata, and plan metadata in
-  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs` before wiring
-  scenario behavior into `DiagnosticSessionRunner`.
+  export verification metadata, and plan metadata in the focused
+  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.*.cs` group before
+  wiring scenario behavior into `DiagnosticSessionRunner`. Preserve the final
+  order in `tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs`.
 - Keep diagnostic-session grouped policy derivation in
   `tools/Common/DiagnosticSessionScenarioPlan.cs`; the runner should consume
   named properties instead of comparing normalized scenario strings directly.
