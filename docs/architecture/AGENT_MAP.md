@@ -3699,11 +3699,16 @@ Primary owners:
   selection, negotiated format, source geometry, detected cadence, HDR, and
   source-telemetry DTO projection values consumed by the final result
   initializer.
-- `tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs` owns preview
-  cadence, visual-cadence, and D3D frame-stats/slow-frame/CPU-timing DTO
-  projection values consumed by the final result initializer. It should not map
-  scheduler metrics directly, and D3D fields stay in their own projection
-  struct.
+- `tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs` owns
+  preview-cadence DTO projection values consumed by the final result
+  initializer.
+- `tools/Common/DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs`
+  owns visual-cadence DTO projection values consumed by the final result
+  initializer.
+- `tools/Common/DiagnosticSessionResultBuilder.PreviewD3DResult.cs` owns D3D
+  frame-stats, slow-frame, and CPU-timing DTO projection values consumed by the
+  final result initializer. It should not map scheduler metrics directly, and
+  D3D fields stay in their own projection struct.
 - `tools/Common/DiagnosticSessionResultBuilder.Models.cs` owns the builder
   request record and private analysis handoff record, including the single
   `PreviewScheduler` record property used by preview-scheduler result
