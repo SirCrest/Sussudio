@@ -373,7 +373,9 @@ backing fields.
 - xUnit cases:
   `dotnet test tests/Sussudio.Tests/Sussudio.Tests.csproj --no-restore`
 
-Both must stay green during the migration.
+Both must stay green during the migration. The legacy check catalog is
+currently empty, but the executable runner still provides the offline
+`dotnet exec` validation shim used by architecture cleanup slices.
 
 ## Migration order
 
@@ -412,8 +414,9 @@ every check has a `[Fact]`/`[Theory]` equivalent:
 - For HDR/P010 paths, prefer behavioural tests that drive the encoder against a
   small fixture buffer. Source-grep contract assertions stay only when the
   public API shape is the contract.
-- Don't touch the legacy `Program.cs` runner: keep both stacks green until the
-  port is complete.
+- Keep the legacy `Program.cs` runner available while the repo still requires
+  the offline `dotnet exec` validation shim; add new coverage to xUnit instead
+  of repopulating `HarnessCheckCatalog.cs`.
 
 ## Open work tracked separately
 

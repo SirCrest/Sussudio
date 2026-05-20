@@ -132,7 +132,8 @@ Do not reintroduce linked source for these files from `tools/Common`. Consumers
 should reference `Sussudio.Automation.Contracts`.
 `tools/Common` is the shared helper module for clients, formatters, diagnostic
 sessions, and probes; it should not own command IDs, catalog metadata, protocol
-constants, response-state field parsing, or pipe security policy.
+constants, pipe-client handoff DTOs, response-state field parsing, synthetic
+automation error envelopes, unknown-command policy, or pipe security policy.
 
 Fast checks:
 

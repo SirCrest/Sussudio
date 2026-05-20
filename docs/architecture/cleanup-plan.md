@@ -53,7 +53,9 @@ by startup recording capability checks.
 
 Automation contracts have been extracted into `Sussudio.Automation.Contracts/`.
 This removes the old linked-source arrangement where app and tools compiled
-protocol/catalog files from `tools/Common`.
+protocol/catalog files, pipe-client handoff DTOs, response parsing, synthetic
+error shaping, unknown-command policy, and pipe security policy from
+`tools/Common`.
 
 Changed ownership:
 
@@ -62,7 +64,11 @@ Changed ownership:
 - `AutomationCommandCatalog.Entries.cs`
 - `AutomationCommandCatalog.Manifest.cs`
 - `AutomationCommandCatalog.PathValidation.cs`
+- `AutomationPipeClientModels.cs`
 - `AutomationPipeProtocol.cs`
+- `AutomationResponseState.cs`
+- `AutomationSyntheticErrorResponse.cs`
+- `AutomationUnknownCommandHandling.cs`
 - `AutomationPipeSecurityPolicy.cs`
 
 Diagnostic session scenario names, CLI help text, MCP-compatible description
@@ -3961,8 +3967,10 @@ owner, fold it back into that owner and update the source-shape tests and
 2. Reduce custom regression harness size.
 
    `tests/Sussudio.Tests/Program.cs` should keep the legacy runner entry point,
-   but checks should keep migrating into focused xUnit files or focused
-   partial contract files while the dual-stack harness remains. MCP tool
+   and `tests/Sussudio.Tests/HarnessCheckCatalog.cs` is currently empty. Keep
+   the executable runner as the offline `dotnet exec` validation shim until the
+   repo deliberately retires that workflow; new checks should live in focused
+   xUnit files or focused partial contract files. MCP tool
    surface tests are now split into command-routing, diagnostic-session tool,
    diagnostic-session ownership, diagnostic-session result ownership,
    diagnostic-session builder result bands, diagnostic-session Flashback,
