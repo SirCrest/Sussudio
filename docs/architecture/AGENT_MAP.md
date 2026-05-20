@@ -2584,6 +2584,13 @@ Primary current owners:
   group for panel binding, shared-device handoff, frame upload, input resources,
   and device initialization checks after their removal from the legacy offline
   harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DRenderPipelineOwnershipTests.cs`
+  owns the former presentation-preview D3D render-pipeline source-ownership
+  group for render passes, shader rendering cache, shader sources, frame-latency
+  wait, render thread, present accounting, viewport helpers, and screenshot
+  encoding checks after their removal from the legacy offline D3D harness
+  catalog. `HarnessCheckCatalog.PresentationPreview.D3D.cs` remains as an empty
+  compatibility hook for the topic registration call.
 - `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral

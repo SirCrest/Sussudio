@@ -67,7 +67,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task D3D11PreviewRenderer_ScreenshotEncodingLivesWithScreenshotCapture()
+    internal static Task D3D11PreviewRenderer_ScreenshotEncodingLivesWithScreenshotCapture()
     {
         var captureText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs")
             .Replace("\r\n", "\n");

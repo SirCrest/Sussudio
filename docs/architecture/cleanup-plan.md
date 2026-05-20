@@ -988,6 +988,13 @@ execute through
 keeping panel binding, shared-device handoff, frame upload, input resources,
 and device initialization contracts in xUnit after their removal from the
 legacy harness catalog.
+Presentation-preview D3D render-pipeline source-ownership checks now execute
+through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DRenderPipelineOwnershipTests.cs`,
+keeping render passes, shader rendering cache, shader sources, frame-latency
+wait, render thread, present accounting, viewport helpers, and screenshot
+encoding contracts in xUnit after their removal from the legacy D3D harness
+catalog. The legacy D3D catalog hook remains as an empty compatibility method.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the
