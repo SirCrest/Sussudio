@@ -1,0 +1,71 @@
+static partial class Program
+{
+    private static void AssertMcpPerformanceTimelineRenderingContracts(McpPerformanceTimelineSources sources)
+    {
+        AssertContains(sources.CombinedSource, "PreviewD3DInputUploadCpuP99Ms");
+        AssertContains(sources.CombinedSource, "targetOnePercentLowFps");
+        AssertContains(sources.CombinedSource, "== 1% Low Target Summary");
+        AssertContains(sources.CombinedSource, "AppendOnePercentLowTargetSummary");
+        AssertContains(sources.CombinedSource, "AppendPressureSummary");
+        AssertContains(sources.CombinedSource, "misses={belowTarget}/{valid.Length}");
+        AssertContains(sources.CombinedSource, "Preview 5% Low:");
+        AssertContains(sources.CombinedSource, "Visual Cadence:");
+        AssertContains(sources.CombinedSource, "MJPEG Fingerprint:");
+        AssertContains(sources.CombinedSource, "Preview P99:");
+        AssertContains(sources.CombinedSource, "InP99 | RsP99 | PrP99 | TotP99");
+        AssertContains(sources.CombinedSource, "Flashback target:");
+        AssertContains(sources.CombinedSource, "lastSubmitFailure");
+        AssertContains(sources.CombinedSource, "Flashback Enqueue Rejects");
+        AssertContains(sources.CombinedSource, "JitD  | JitLat | JitDrop | JitUF | JitWhy");
+        AssertContains(sources.CombinedSource, "FbState | Fb1%  | FbP99 | FbDec | FbCmd | FbFail | FbStage");
+        AssertContains(sources.CombinedSource, "FormatFlashbackStageCell");
+        AssertContains(sources.CombinedSource, "Cln | ExStat");
+        AssertContains(sources.CombinedSource, "ExStat  | ExKind | Ex%");
+        AssertContains(sources.CombinedSource, "FormatJitterDepthCell");
+        AssertContains(sources.CombinedSource, "FormatExportFailureKind");
+        AssertContains(sources.CombinedSource, "Jitter Depth:");
+        AssertContains(sources.CombinedSource, "Jitter Latency:");
+        AssertContains(sources.CombinedSource, "Jitter Drops:");
+        AssertContains(sources.CombinedSource, "D3D Input P99:");
+        AssertContains(sources.CombinedSource, "D3D Render P99:");
+        AssertContains(sources.CombinedSource, "D3D Present P99:");
+        AssertContains(sources.CombinedSource, "D3D Total P99:");
+        AssertContains(sources.CombinedSource, "D3D P99 Bottleneck:");
+        AssertContains(sources.CombinedSource, "Preview Slow Stage:");
+        AssertContains(sources.CombinedSource, "FormatD3DP99Bottleneck");
+        AssertContains(sources.CombinedSource, "== Pressure Summary ==");
+        AssertContains(sources.CombinedSource, "Preview Pressure:");
+        AssertContains(sources.CombinedSource, "overBudgetSamples input=");
+        AssertContains(sources.CombinedSource, "dxgiMissedSamples=");
+        AssertContains(sources.CombinedSource, "jitterDropsDelta=");
+        AssertContains(sources.CombinedSource, "Flashback Pressure:");
+        AssertContains(sources.CombinedSource, "decodeOverBudget=");
+        AssertContains(sources.CombinedSource, "pendingCmdSamples=");
+        AssertContains(sources.CombinedSource, "System Pressure:");
+        AssertContains(sources.CombinedSource, "gcPauseSamples=");
+        AssertContains(sources.CombinedSource, "CountOverBudget");
+        AssertContains(sources.CombinedSource, "NonNegativeDelta");
+        AssertContains(sources.CombinedSource, "Flashback P99:");
+        AssertContains(sources.CombinedSource, "Flashback Decode:");
+        AssertContains(sources.CombinedSource, "phase={FormatOptional(last.FlashbackPlaybackMaxDecodePhase)}");
+        AssertContains(sources.CombinedSource, "send={last.FlashbackPlaybackMaxDecodeSendMs:F1}ms");
+        AssertContains(sources.CombinedSource, "audio={last.FlashbackPlaybackMaxDecodeAudioMs:F1}ms");
+        AssertContains(sources.CombinedSource, "Flashback Cmds:");
+        AssertContains(sources.CombinedSource, "maxLatencyCommand={FormatOptional(last.FlashbackPlaybackMaxCommandQueueLatencyCommand)}");
+        AssertContains(sources.CombinedSource, "Flashback Cmd Counters:");
+        AssertContains(sources.CombinedSource, "lastQueued={FormatOptional(last.FlashbackPlaybackLastCommandQueued)}");
+        AssertContains(sources.CombinedSource, "lastProcessed={FormatOptional(last.FlashbackPlaybackLastCommandProcessed)}");
+        AssertContains(sources.CombinedSource, "Flashback Failure:");
+        AssertContains(sources.CombinedSource, "Flashback Stages:");
+        AssertContains(sources.CombinedSource, "failureUtc latest={last.FlashbackPlaybackLastCommandFailureUtcUnixMs}");
+        AssertContains(sources.CombinedSource, "Cleanup State:");
+        AssertContains(sources.CombinedSource, "forceRotateRequested={last.FlashbackForceRotateRequested}");
+        AssertContains(sources.CombinedSource, "forceRotateDraining={last.FlashbackForceRotateDraining}");
+        AssertContains(sources.CombinedSource, "kind={FormatOptional(last.FlashbackExportFailureKind)}");
+        AssertContains(sources.CombinedSource, "Export Message:");
+        AssertContains(sources.CombinedSource, "Export Progress:");
+        AssertContains(sources.CombinedSource, "Export Range:");
+        AssertContains(sources.CombinedSource, "FormatExportOutPoint");
+        AssertContains(sources.CombinedSource, "Export Output:");
+    }
+}
