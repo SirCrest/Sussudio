@@ -113,14 +113,5 @@ static partial class Program
         await AddCheckAsync(results,
             "Preview fade-in reveal lives in controller",
             PreviewFadeInReveal_LivesInController);
-        await AddCheckAsync(results,
-            "Output path display lives in controller",
-            OutputPathDisplay_LivesInController);
-        await AddCheckAsync(results,
-            "Output path display text formatter preserves truncation policy",
-            OutputPathDisplayTextFormatter_PreservesTruncationPolicy);
-        await AddCheckAsync(results,
-            "Output path button actions live in controller",
-            OutputPathButtonActions_LiveInController);
     }
 }

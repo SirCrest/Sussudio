@@ -187,6 +187,9 @@ add xUnit alongside, and port incrementally.
 - `XUnit.PresentationPreviewCaptureOptionContractsTests.cs` owns the former
   legacy presentation-preview MainWindow capture device action, option
   presentation, affordance policy, option binding, and tooltip formatter checks.
+- `XUnit.PresentationPreviewOutputPathContractsTests.cs` owns the former legacy
+  presentation-preview MainWindow output path display, truncation formatter, and
+  button-action checks.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, and test-project shape guard checks.
 - `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy

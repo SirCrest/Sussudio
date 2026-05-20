@@ -3,7 +3,7 @@ using System.Reflection;
 
 static partial class Program
 {
-    private static Task OutputPathDisplay_LivesInController()
+    internal static Task OutputPathDisplay_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
@@ -49,7 +49,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task OutputPathDisplayTextFormatter_PreservesTruncationPolicy()
+    internal static Task OutputPathDisplayTextFormatter_PreservesTruncationPolicy()
     {
         var formatterType = RequireType("Sussudio.Controllers.OutputPathDisplayTextFormatter");
         var format = formatterType.GetMethod("Format", BindingFlags.Public | BindingFlags.Static)
@@ -89,7 +89,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task OutputPathButtonActions_LiveInController()
+    internal static Task OutputPathButtonActions_LiveInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.OutputPath.cs").Replace("\r\n", "\n");
