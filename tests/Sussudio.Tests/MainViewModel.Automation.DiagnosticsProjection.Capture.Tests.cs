@@ -178,14 +178,27 @@ static partial class Program
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningSourceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.cs")
+            .Replace("\r\n", "\n");
         var sourceTelemetryProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SourceTelemetry.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var sourceTelemetry = BuildSourceTelemetryProjection(viewModelSnapshot, captureRuntime);");
-        AssertContains(snapshotFlatteningText, "SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,");
-        AssertContains(snapshotFlatteningText, "SourceTelemetryDetails = sourceTelemetry.SourceTelemetryDetails,");
-        AssertContains(snapshotFlatteningText, "SourceTelemetryAgeSeconds = sourceTelemetry.SourceTelemetryAgeSeconds,");
-        AssertContains(snapshotFlatteningText, "SourceTargetSummaryText = sourceTelemetry.SourceTargetSummaryText,");
+        AssertContains(snapshotFlatteningText, "var sourceFlattening = BuildSourceFlattenedProjection(sourceSignal, sourceTelemetry);");
+        AssertContains(snapshotFlatteningText, "SourceTelemetryAvailability = sourceFlattening.SourceTelemetryAvailability,");
+        AssertContains(snapshotFlatteningText, "SourceTelemetryDetails = sourceFlattening.SourceTelemetryDetails,");
+        AssertContains(snapshotFlatteningText, "SourceTelemetryAgeSeconds = sourceFlattening.SourceTelemetryAgeSeconds,");
+        AssertContains(snapshotFlatteningText, "SourceTargetSummaryText = sourceFlattening.SourceTargetSummaryText,");
+        AssertContains(snapshotFlatteningSourceText, "private static SourceFlattenedProjection BuildSourceFlattenedProjection(");
+        AssertContains(snapshotFlatteningSourceText, "SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,");
+        AssertContains(snapshotFlatteningSourceText, "SourceTelemetryDetails = sourceTelemetry.SourceTelemetryDetails,");
+        AssertContains(snapshotFlatteningSourceText, "SourceTelemetryAgeSeconds = sourceTelemetry.SourceTelemetryAgeSeconds,");
+        AssertContains(snapshotFlatteningSourceText, "SourceTargetSummaryText = sourceTelemetry.SourceTargetSummaryText");
+        AssertContains(snapshotFlatteningSourceText, "private readonly record struct SourceFlattenedProjection");
+        AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,");
+        AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryDetails = sourceTelemetry.SourceTelemetryDetails,");
+        AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryAgeSeconds = sourceTelemetry.SourceTelemetryAgeSeconds,");
+        AssertDoesNotContain(snapshotFlatteningText, "SourceTargetSummaryText = sourceTelemetry.SourceTargetSummaryText,");
         AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryAvailability = !string.IsNullOrWhiteSpace(viewModelSnapshot.SourceTelemetryAvailability)");
         AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryAgeSeconds = TelemetryAgeHelper.ComputeAgeSeconds(");
         AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryDetails = captureRuntime.SourceTelemetryDetails,");
@@ -206,13 +219,23 @@ static partial class Program
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningSourceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.cs")
+            .Replace("\r\n", "\n");
         var sourceSignalProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var sourceSignal = BuildSourceSignalProjection(viewModelSnapshot, captureRuntime);");
-        AssertContains(snapshotFlatteningText, "DetectedSourceFrameRate = sourceSignal.DetectedFrameRate,");
-        AssertContains(snapshotFlatteningText, "SourceFrameRateOrigin = sourceSignal.FrameRateOrigin,");
-        AssertContains(snapshotFlatteningText, "SourceRawTimingHex = sourceSignal.RawTimingHex,");
+        AssertContains(snapshotFlatteningText, "var sourceFlattening = BuildSourceFlattenedProjection(sourceSignal, sourceTelemetry);");
+        AssertContains(snapshotFlatteningText, "DetectedSourceFrameRate = sourceFlattening.DetectedSourceFrameRate,");
+        AssertContains(snapshotFlatteningText, "SourceFrameRateOrigin = sourceFlattening.SourceFrameRateOrigin,");
+        AssertContains(snapshotFlatteningText, "SourceRawTimingHex = sourceFlattening.SourceRawTimingHex,");
+        AssertContains(snapshotFlatteningSourceText, "private static SourceFlattenedProjection BuildSourceFlattenedProjection(");
+        AssertContains(snapshotFlatteningSourceText, "DetectedSourceFrameRate = sourceSignal.DetectedFrameRate,");
+        AssertContains(snapshotFlatteningSourceText, "SourceFrameRateOrigin = sourceSignal.FrameRateOrigin,");
+        AssertContains(snapshotFlatteningSourceText, "SourceRawTimingHex = sourceSignal.RawTimingHex,");
+        AssertDoesNotContain(snapshotFlatteningText, "DetectedSourceFrameRate = sourceSignal.DetectedFrameRate,");
+        AssertDoesNotContain(snapshotFlatteningText, "SourceFrameRateOrigin = sourceSignal.FrameRateOrigin,");
+        AssertDoesNotContain(snapshotFlatteningText, "SourceRawTimingHex = sourceSignal.RawTimingHex,");
         AssertDoesNotContain(snapshotFlatteningText, "DetectedSourceFrameRate = viewModelSnapshot.DetectedSourceFrameRate ?? captureRuntime.DetectedSourceFrameRate,");
         AssertDoesNotContain(snapshotFlatteningText, "SourceRawTimingHex = captureRuntime.SourceRawTimingHex,");
 

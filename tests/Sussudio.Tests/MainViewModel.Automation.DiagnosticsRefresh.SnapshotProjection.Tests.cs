@@ -32,6 +32,13 @@ static partial class Program
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "AudioQueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var captureFormat = BuildCaptureFormatProjection(captureRuntime);");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var sourceTelemetry = BuildSourceTelemetryProjection(viewModelSnapshot, captureRuntime);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var sourceFlattening = BuildSourceFlattenedProjection(sourceSignal, sourceTelemetry);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "DetectedSourceFrameRate = sourceFlattening.DetectedSourceFrameRate,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "SourceTelemetryAvailability = sourceFlattening.SourceTelemetryAvailability,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningSourceText, "DetectedSourceFrameRate = sourceSignal.DetectedFrameRate,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningSourceText, "SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "DetectedSourceFrameRate = sourceSignal.DetectedFrameRate,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,");
         AssertDiagnosticsPreviewRuntimeProjectionOwnership(diagnostics);
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var previewD3D = BuildPreviewD3DProjection(");
         AssertContains(diagnostics.SnapshotProjectionPreviewD3DText, "private static PreviewD3DProjection BuildPreviewD3DProjection(");

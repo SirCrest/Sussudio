@@ -151,6 +151,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "AutomationSnapshotProjectionSet projections");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureFormatFlattenedProjection(captureFormat)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureFormatText, "private static CaptureFormatFlattenedProjection BuildCaptureFormatFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSourceFlattenedProjection(sourceSignal, sourceTelemetry)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningSourceText, "private static SourceFlattenedProjection BuildSourceFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildPreviewRuntimeFlattenedProjection(previewSummary)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningPreviewRuntimeText, "private static PreviewRuntimeFlattenedProjection BuildPreviewRuntimeFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildPreviewD3DFlattenedProjection(previewD3D)");
