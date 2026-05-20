@@ -83,6 +83,8 @@ static partial class Program
     private static string ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource()
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs",
+            "tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Registrations.cs",
+            "tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.LiveRestore.cs",
             "tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs",
             "tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs");
 

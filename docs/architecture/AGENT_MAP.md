@@ -4277,7 +4277,13 @@ Primary owners:
   owns post-stop preset verification, encoder-frame check, and original-preset
   restore.
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs` owns the
-  Flashback completed-segment playback scenario registration and choreography.
+  Flashback completed-segment playback boundary-crossing choreography.
+- `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Registrations.cs`
+  owns completed-segment playback scenario registration, priority, task label,
+  and started action string.
+- `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.LiveRestore.cs`
+  owns completed-segment playback go-live restore and final playback-state
+  warning policy.
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs`
   owns completed-segment playback snapshot, FPS, command-health, and boundary
   warning policy.

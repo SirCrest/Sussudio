@@ -8,30 +8,6 @@ namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionFlashbackSegmentPlaybackScenarios
 {
-    internal static void RegisterSelectedFlashbackSegmentPlaybackScenarioTask(
-        DiagnosticSessionScenarioPlan scenarioPlan,
-        DiagnosticSessionBackgroundTasks backgroundTasks,
-        List<string> actions,
-        List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
-        CancellationToken cancellationToken)
-    {
-        if (!scenarioPlan.RunFlashbackSegmentPlayback)
-        {
-            return;
-        }
-
-        backgroundTasks.AddScenario(
-            7,
-            "flashback-segment-playback-task",
-            RunFlashbackSegmentPlaybackAsync(
-                actions,
-                warnings,
-                sendCommandAsync,
-                cancellationToken));
-        actions.Add("flashback segment playback started");
-    }
-
     internal static async Task RunFlashbackSegmentPlaybackAsync(
         List<string> actions,
         List<string> warnings,
@@ -126,24 +102,12 @@ internal static partial class DiagnosticSessionFlashbackSegmentPlaybackScenarios
             baselineSnapshot,
             target);
 
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, null)
-            .ConfigureAwait(false);
-        actions.Add("flashback segment playback go-live requested");
-
-        var finalSnapshot = await WaitForFlashbackPlaybackStateAsync(
+        await ReturnFlashbackSegmentPlaybackLiveAsync(
+                actions,
+                warnings,
                 sendCommandAsync,
-                "Live",
-                TimeSpan.FromSeconds(3),
                 cancellationToken)
             .ConfigureAwait(false);
-        if (finalSnapshot?.ValueKind == JsonValueKind.Object)
-        {
-            var finalState = GetString(finalSnapshot.Value, "FlashbackPlaybackState") ?? "Unknown";
-            if (!string.Equals(finalState, "Live", StringComparison.OrdinalIgnoreCase))
-            {
-                warnings.Add($"flashback segment playback: playback ended in state {finalState}");
-            }
-        }
     }
 
 }

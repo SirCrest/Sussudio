@@ -210,6 +210,10 @@ static partial class Program
         var segmentPlaybackText = ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource();
         var segmentPlaybackRootText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs")
             .Replace("\r\n", "\n");
+        var segmentPlaybackRegistrationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Registrations.cs")
+            .Replace("\r\n", "\n");
+        var segmentPlaybackLiveRestoreText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.LiveRestore.cs")
+            .Replace("\r\n", "\n");
         var segmentPlaybackValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs")
             .Replace("\r\n", "\n");
 
@@ -218,19 +222,27 @@ static partial class Program
         AssertContains(segmentPlaybackRootText, "flashback segment playback live headroom established");
         AssertContains(segmentPlaybackRootText, "flashback segment playback started near boundary");
         AssertContains(segmentPlaybackRootText, "ValidateFlashbackSegmentPlaybackSnapshot(");
+        AssertContains(segmentPlaybackRootText, "ReturnFlashbackSegmentPlaybackLiveAsync(");
         AssertDoesNotContain(segmentPlaybackRootText, "frameCount >= 180");
         AssertDoesNotContain(segmentPlaybackRootText, "playback FPS below source-rate target after warm sample");
+        AssertDoesNotContain(segmentPlaybackRootText, "internal static void RegisterSelectedFlashbackSegmentPlaybackScenarioTask(");
+        AssertDoesNotContain(segmentPlaybackRootText, "\"go-live\"");
         AssertContains(segmentPlaybackValidationText, "private static void ValidateFlashbackSegmentPlaybackSnapshot(");
         AssertContains(segmentPlaybackValidationText, "frameCount >= 180");
         AssertContains(segmentPlaybackValidationText, "playback FPS below source-rate target after warm sample");
         AssertContains(segmentPlaybackValidationText, "flashback segment playback: command queue unhealthy");
+        AssertContains(segmentPlaybackLiveRestoreText, "private static async Task ReturnFlashbackSegmentPlaybackLiveAsync(");
+        AssertContains(segmentPlaybackLiveRestoreText, "\"go-live\"");
+        AssertContains(segmentPlaybackLiveRestoreText, "flashback segment playback go-live requested");
+        AssertContains(segmentPlaybackLiveRestoreText, "flashback segment playback: playback ended in state");
         AssertContains(segmentPlaybackText, "private static async Task<bool> CreateFlashbackCompletedSegmentViaRecordingAsync(");
         AssertContains(segmentPlaybackText, "recording-assisted rotation started");
         AssertContains(segmentPlaybackText, "private static async Task TryStopRecordingAsync(");
-        AssertContains(segmentPlaybackText, "internal static void RegisterSelectedFlashbackSegmentPlaybackScenarioTask(");
-        AssertContains(segmentPlaybackText, "scenarioPlan.RunFlashbackSegmentPlayback");
-        AssertContains(segmentPlaybackText, "7,\n            \"flashback-segment-playback-task\",");
-        AssertContains(segmentPlaybackText, "actions.Add(\"flashback segment playback started\")");
+        AssertContains(segmentPlaybackRegistrationText, "internal static void RegisterSelectedFlashbackSegmentPlaybackScenarioTask(");
+        AssertContains(segmentPlaybackRegistrationText, "scenarioPlan.RunFlashbackSegmentPlayback");
+        AssertContains(segmentPlaybackRegistrationText, "7,\n            \"flashback-segment-playback-task\",");
+        AssertContains(segmentPlaybackRegistrationText, "actions.Add(\"flashback segment playback started\")");
+        AssertDoesNotContain(segmentPlaybackRegistrationText, "ReturnFlashbackSegmentPlaybackLiveAsync(");
         AssertContains(startupText, "DiagnosticSessionFlashbackSegmentPlaybackScenarios.RegisterSelectedFlashbackSegmentPlaybackScenarioTask(");
         AssertDoesNotContain(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegmentPlaybackScenarios;");
         AssertDoesNotContain(startupText, "RunFlashbackSegmentPlaybackAsync(");
