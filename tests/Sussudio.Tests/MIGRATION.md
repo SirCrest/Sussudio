@@ -239,6 +239,9 @@ add xUnit alongside, and port incrementally.
 - `XUnit.PresentationPreviewCaptureFlashbackBufferContractsTests.cs` owns the
   former legacy presentation-preview capture Flashback buffer startup/recovery
   group: stale session cleanup and recovery-preserve behavior.
+- `XUnit.ProjectBuildContractsTests.cs` owns the former legacy project-file
+  build/publish policy execution check after its removal from the
+  presentation-preview capture catalog.
 - `XUnit.PresentationPreviewD3DPacingContractsTests.cs` owns the former legacy
   presentation-preview D3D pacing registration group: transition-drain,
   frame-capture cancellation, and shared-device reference lifecycle checks.

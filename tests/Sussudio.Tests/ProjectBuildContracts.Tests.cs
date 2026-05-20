@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task ProjectFile_PreservesEnglishOnlyPublishLocalePolicy()
+    internal static Task ProjectFile_PreservesEnglishOnlyPublishLocalePolicy()
     {
         var projectText = ReadRepoFile("Sussudio/Sussudio.csproj").Replace("\r\n", "\n");
         var buildTargetsText = ReadRepoFile("Sussudio/Sussudio.Build.targets").Replace("\r\n", "\n");

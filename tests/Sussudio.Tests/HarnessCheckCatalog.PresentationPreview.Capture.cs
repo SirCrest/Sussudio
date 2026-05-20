@@ -6,9 +6,6 @@ static partial class Program
     private static async Task AddPresentationPreviewCaptureChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Project file preserves main's English-only publish locale policy",
-            ProjectFile_PreservesEnglishOnlyPublishLocalePolicy);
-        await AddCheckAsync(results,
             "Show all capture options unlocks source-filtered frame rates",
             ShowAllCaptureOptions_UnlocksSourceFilteredFrameRates);
         await AddCheckAsync(results,

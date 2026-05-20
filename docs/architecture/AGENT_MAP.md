@@ -2279,7 +2279,9 @@ Primary current owners:
   while `FfmpegRuntimeLocator.Probes.cs` owns cached FFmpeg encoder/split-encode
   capability probes through bounded `ProcessSupervisor` calls.
 - `tests/Sussudio.Tests/ProjectBuildContracts.Tests.cs` owns project-file build
-  and publish policy contract checks.
+  and publish policy contract helpers. `tests/Sussudio.Tests/XUnit.ProjectBuildContractsTests.cs`
+  owns xUnit execution for those checks after their removal from the legacy
+  offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns recording
   service contract DTO checks such as GpuPipelineHandles,
   RecordingContextRequest, FinalizeResult, and RecordingStats.
