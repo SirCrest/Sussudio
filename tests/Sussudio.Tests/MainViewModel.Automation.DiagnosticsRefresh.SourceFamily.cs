@@ -41,6 +41,8 @@ static partial class Program
             FlashbackPlaybackPerformanceAlertsCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Cadence.cs"),
             EventsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvents.cs"),
             VerificationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Verification.cs"),
+            VerificationAutoText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Verification.Auto.cs"),
+            VerificationProfileText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Verification.Profile.cs"),
             LifecycleText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Lifecycle.cs"),
             HdrText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Hdr.cs"),
             SnapshotsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
@@ -176,6 +178,8 @@ static partial class Program
         public string FlashbackPlaybackPerformanceAlertsCadenceText { get; init; } = string.Empty;
         public string EventsText { get; init; } = string.Empty;
         public string VerificationText { get; init; } = string.Empty;
+        public string VerificationAutoText { get; init; } = string.Empty;
+        public string VerificationProfileText { get; init; } = string.Empty;
         public string LifecycleText { get; init; } = string.Empty;
         public string HdrText { get; init; } = string.Empty;
         public string SnapshotsText { get; init; } = string.Empty;
@@ -290,6 +294,8 @@ static partial class Program
                 FlashbackPlaybackPerformanceAlertsCadenceText,
                 EventsText,
                 VerificationText,
+                VerificationAutoText,
+                VerificationProfileText,
                 LifecycleText,
                 HdrText,
                 SnapshotsText,
