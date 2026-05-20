@@ -4,23 +4,23 @@ public static partial class PerformanceTimelineTools
 {
     private sealed partial class TimelineRow
     {
-        public string Timestamp { get; init; } = string.Empty;
-        public double CaptureFps { get; init; }
-        public double PreviewFps { get; init; }
-        public int VidQueue { get; init; }
-        public long VidDrops { get; init; }
-        public double CaptureAvgMs { get; init; }
-        public double CaptureP95Ms { get; init; }
-        public double CaptureP99Ms { get; init; }
-        public double CaptureMaxMs { get; init; }
-        public double CaptureOnePercentLowFps { get; init; }
-        public double CaptureFivePercentLowFps { get; init; }
-        public double PreviewAvgMs { get; init; }
-        public double PreviewP95Ms { get; init; }
-        public double PreviewP99Ms { get; init; }
-        public double PreviewMaxMs { get; init; }
-        public double PreviewOnePercentLowFps { get; init; }
-        public double PreviewFivePercentLowFps { get; init; }
-        public double PreviewSlowPct { get; init; }
+        public string Timestamp { get; set; } = string.Empty;
+        public double CaptureFps { get; set; }
+        public double PreviewFps { get; set; }
+        public int VidQueue { get; set; }
+        public long VidDrops { get; set; }
+        public double CaptureAvgMs { get; set; }
+        public double CaptureP95Ms { get; set; }
+        public double CaptureP99Ms { get; set; }
+        public double CaptureMaxMs { get; set; }
+        public double CaptureOnePercentLowFps { get; set; }
+        public double CaptureFivePercentLowFps { get; set; }
+        public double PreviewAvgMs { get; set; }
+        public double PreviewP95Ms { get; set; }
+        public double PreviewP99Ms { get; set; }
+        public double PreviewMaxMs { get; set; }
+        public double PreviewOnePercentLowFps { get; set; }
+        public double PreviewFivePercentLowFps { get; set; }
+        public double PreviewSlowPct { get; set; }
     }
 }

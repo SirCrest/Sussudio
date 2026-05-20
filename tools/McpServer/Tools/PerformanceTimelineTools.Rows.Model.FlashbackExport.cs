@@ -4,18 +4,18 @@ public static partial class PerformanceTimelineTools
 {
     private sealed partial class TimelineRow
     {
-        public bool FlashbackExportActive { get; init; }
-        public string FlashbackExportStatus { get; init; } = string.Empty;
-        public string FlashbackExportFailureKind { get; init; } = string.Empty;
-        public long FlashbackExportElapsedMs { get; init; }
-        public long FlashbackExportLastProgressAgeMs { get; init; }
-        public long FlashbackExportOutputBytes { get; init; }
-        public double FlashbackExportThroughputBytesPerSec { get; init; }
-        public int FlashbackExportSegmentsProcessed { get; init; }
-        public int FlashbackExportTotalSegments { get; init; }
-        public double FlashbackExportPercent { get; init; }
-        public long FlashbackExportInPointMs { get; init; }
-        public long FlashbackExportOutPointMs { get; init; }
-        public string FlashbackExportMessage { get; init; } = string.Empty;
+        public bool FlashbackExportActive { get; set; }
+        public string FlashbackExportStatus { get; set; } = string.Empty;
+        public string FlashbackExportFailureKind { get; set; } = string.Empty;
+        public long FlashbackExportElapsedMs { get; set; }
+        public long FlashbackExportLastProgressAgeMs { get; set; }
+        public long FlashbackExportOutputBytes { get; set; }
+        public double FlashbackExportThroughputBytesPerSec { get; set; }
+        public int FlashbackExportSegmentsProcessed { get; set; }
+        public int FlashbackExportTotalSegments { get; set; }
+        public double FlashbackExportPercent { get; set; }
+        public long FlashbackExportInPointMs { get; set; }
+        public long FlashbackExportOutPointMs { get; set; }
+        public string FlashbackExportMessage { get; set; } = string.Empty;
     }
 }

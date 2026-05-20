@@ -2926,9 +2926,14 @@ duplicates in scenario, result builder, formatter, or validation policy files.
 MCP performance timeline projection is split across the
 `tools/McpServer/Tools/PerformanceTimelineTools.*.cs` family. Keep the public
 tool entry point and command response handling in the root file, JSON-to-row
-projection in `PerformanceTimelineTools.Rows.cs`, the private row model in
-`PerformanceTimelineTools.Rows.Model*.cs` split by root cadence, preview/MJPEG/D3D,
-Flashback playback, Flashback export, and system fields,
+projection orchestration and root cadence fields in `PerformanceTimelineTools.Rows.cs`,
+preview/MJPEG/D3D row projection in `PerformanceTimelineTools.Rows.Preview.cs`,
+Flashback playback row projection in
+`PerformanceTimelineTools.Rows.FlashbackPlayback.cs`, Flashback export row
+projection in `PerformanceTimelineTools.Rows.FlashbackExport.cs`, system row
+projection in `PerformanceTimelineTools.Rows.System.cs`, the private row model
+in `PerformanceTimelineTools.Rows.Model*.cs` split by root cadence,
+preview/MJPEG/D3D, Flashback playback, Flashback export, and system fields,
 timeline table text rendering in `PerformanceTimelineTools.Rendering.cs`,
 first-vs-last trend text and target-summary orchestration in
 `PerformanceTimelineTools.Rendering.Trend.cs`, preview cadence, visual/MJPEG

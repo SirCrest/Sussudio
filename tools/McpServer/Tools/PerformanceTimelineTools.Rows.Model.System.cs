@@ -4,14 +4,14 @@ public static partial class PerformanceTimelineTools
 {
     private sealed partial class TimelineRow
     {
-        public long LatencyMs { get; init; }
-        public double WorkingMb { get; init; }
-        public double ManagedMb { get; init; }
-        public int Gen0 { get; init; }
-        public int Gen1 { get; init; }
-        public int Gen2 { get; init; }
-        public double GcPause { get; init; }
-        public int Workers { get; init; }
-        public int IoThreads { get; init; }
+        public long LatencyMs { get; set; }
+        public double WorkingMb { get; set; }
+        public double ManagedMb { get; set; }
+        public int Gen0 { get; set; }
+        public int Gen1 { get; set; }
+        public int Gen2 { get; set; }
+        public double GcPause { get; set; }
+        public int Workers { get; set; }
+        public int IoThreads { get; set; }
     }
 }

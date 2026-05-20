@@ -17,6 +17,10 @@ static partial class Program
     {
         var rootSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs");
         var rowsSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs");
+        var rowsPreviewSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Preview.cs");
+        var rowsFlashbackPlaybackSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.FlashbackPlayback.cs");
+        var rowsFlashbackExportSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.FlashbackExport.cs");
+        var rowsSystemSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.System.cs");
         var rowsModelSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs");
         var rowsPreviewModelSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.Preview.cs");
         var rowsFlashbackPlaybackModelSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.FlashbackPlayback.cs");
@@ -37,6 +41,10 @@ static partial class Program
         {
             RootSource = rootSource,
             RowsSource = rowsSource,
+            RowsPreviewSource = rowsPreviewSource,
+            RowsFlashbackPlaybackSource = rowsFlashbackPlaybackSource,
+            RowsFlashbackExportSource = rowsFlashbackExportSource,
+            RowsSystemSource = rowsSystemSource,
             RowsModelSource = rowsModelSource,
             RowsPreviewModelSource = rowsPreviewModelSource,
             RowsFlashbackPlaybackModelSource = rowsFlashbackPlaybackModelSource,
@@ -56,6 +64,10 @@ static partial class Program
                 "\n",
                 rootSource,
                 rowsSource,
+                rowsPreviewSource,
+                rowsFlashbackPlaybackSource,
+                rowsFlashbackExportSource,
+                rowsSystemSource,
                 rowsModelSource,
                 rowsPreviewModelSource,
                 rowsFlashbackPlaybackModelSource,
@@ -78,6 +90,10 @@ static partial class Program
     {
         public string RootSource { get; init; } = string.Empty;
         public string RowsSource { get; init; } = string.Empty;
+        public string RowsPreviewSource { get; init; } = string.Empty;
+        public string RowsFlashbackPlaybackSource { get; init; } = string.Empty;
+        public string RowsFlashbackExportSource { get; init; } = string.Empty;
+        public string RowsSystemSource { get; init; } = string.Empty;
         public string RowsModelSource { get; init; } = string.Empty;
         public string RowsPreviewModelSource { get; init; } = string.Empty;
         public string RowsFlashbackPlaybackModelSource { get; init; } = string.Empty;
