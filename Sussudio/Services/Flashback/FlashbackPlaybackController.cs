@@ -54,12 +54,6 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     private readonly string _playbackMmcssTask = Environment.GetEnvironmentVariable("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_TASK") ?? "Playback";
     private readonly int _playbackMmcssPriority = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_PRIORITY", 1, -2, 2);
 
-    // --- Deferred frame release for D3D11VA (C1 fix) ---
-    // The renderer's render thread hasn't copied the texture yet when we release.
-    // Keep the previous frame alive until the next frame is submitted.
-    private DecodedVideoFrame _previousHeldFrame;
-    private bool _hasPreviousHeldFrame;
-
     // --- Scrub state restoration (M16 fix) ---
     private bool _wasPlayingBeforeScrub;
 

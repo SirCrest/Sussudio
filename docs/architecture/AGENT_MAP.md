@@ -1120,7 +1120,7 @@ Entry points:
 - `FlashbackPlaybackController.AudioMasterPacing.cs` owns audio-master pacing,
   audio clock state, fallback accounting state, audio clock drift calculation,
   and wall-clock sleep/spin pacing.
-- `FlashbackPlaybackController.PreviewFrames.cs` owns decoded frame validation, preview submission, held-frame release, and live-restore after submit failures.
+- `FlashbackPlaybackController.PreviewFrames.cs` owns decoded frame validation, preview submission, held-frame backing state/release, and live-restore after submit failures.
 - `FlashbackPlaybackController.SeekDisplay.cs` owns seek/scrub keyframe display, file-PTS mapping for displayed seek frames, and seek-display failure accounting.
 - `FlashbackPlaybackController.PlaybackFrames.cs` owns playback-frame dequeue/decode selection, prebuffer cleanup, and A/V drift frame-skip catch-up policy.
 - `FlashbackPlaybackController.PlaybackLoop.cs` owns continuous playback frame progression, decoded-frame submission flow, decode-error live recovery, and near-live snap handling.

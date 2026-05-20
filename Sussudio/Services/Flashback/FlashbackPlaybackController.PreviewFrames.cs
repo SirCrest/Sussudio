@@ -11,6 +11,11 @@ internal sealed partial class FlashbackPlaybackController
 {
     // --- Preview frame submission and ownership ---
 
+    // Keep the previous D3D11VA frame alive until the renderer has had a later
+    // submit to copy from; CPU frames follow the same ownership path.
+    private DecodedVideoFrame _previousHeldFrame;
+    private bool _hasPreviousHeldFrame;
+
     private void ReleasePreviousHeldFrame()
     {
         if (_hasPreviousHeldFrame)

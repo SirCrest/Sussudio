@@ -5,8 +5,16 @@ static partial class Program
     private static Task FlashbackPlaybackController_SubmitFailuresReleaseDecodedFrames()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
+        var previewFramesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrames.cs")
+            .Replace("\r\n", "\n");
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)");
+        AssertContains(previewFramesText, "private DecodedVideoFrame _previousHeldFrame;");
+        AssertContains(previewFramesText, "private bool _hasPreviousHeldFrame;");
+        AssertDoesNotContain(rootText, "private DecodedVideoFrame _previousHeldFrame;");
+        AssertDoesNotContain(rootText, "private bool _hasPreviousHeldFrame;");
         AssertContains(sourceText, "if (!TryValidatePreviewFrame(frame, out var skipReason))");
         AssertContains(sourceText, "Interlocked.Increment(ref _playbackSubmitFailures);");
         AssertContains(sourceText, "SetLastSubmitFailure($\"{operation}:{skipReason}\");");
