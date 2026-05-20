@@ -36,6 +36,8 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.PlaybackFinalState.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs",
+            "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.Markers.cs",
+            "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.Models.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs");
 

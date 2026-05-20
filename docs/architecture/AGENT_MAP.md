@@ -4185,8 +4185,11 @@ Primary owners:
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs` owns
   selection-range export orchestration.
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs`
-  owns range buffer-readiness waits, near-live range projection, playback
-  seeking, and in/out marker mutation.
+  owns range buffer-readiness waits and near-live range projection.
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.Markers.cs`
+  owns playback seeking plus in/out marker mutation.
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.Models.cs`
+  owns the selection-range DTO shared by range setup and cleanup validation.
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs`
   owns range duration/status validation, and
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs`

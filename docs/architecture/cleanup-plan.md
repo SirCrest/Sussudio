@@ -3906,6 +3906,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Range.cs`
 - `DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs`
+- `DiagnosticSessionFlashbackExportScenarios.RangeSelection.Markers.cs`
+- `DiagnosticSessionFlashbackExportScenarios.RangeSelection.Models.cs`
 - `DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Registrations.Playback.cs`

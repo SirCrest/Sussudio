@@ -27,6 +27,12 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackFinalStateText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.PlaybackFinalState.cs")
             .Replace("\r\n", "\n");
+        var rangeSelectionText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs")
+            .Replace("\r\n", "\n");
+        var rangeSelectionMarkersText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.Markers.cs")
+            .Replace("\r\n", "\n");
+        var rangeSelectionModelsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.Models.cs")
+            .Replace("\r\n", "\n");
         var scenariosTextWithoutSpaces = scenariosText.Replace(" ", string.Empty);
 
         AssertContains(scenariosText, "internal static partial class DiagnosticSessionFlashbackExportScenarios");
@@ -65,10 +71,12 @@ static partial class Program
         AssertContains(playbackFinalStateText, "BuildPlaybackCommandHealth(finalSnapshot, baselineSnapshot)");
         AssertContains(playbackFinalStateText, "flashback export playback: pending commands remained after go-live");
         AssertContains(scenariosText, "internal static async Task RunFlashbackRangeExportAsync(");
-        AssertContains(scenariosText, "private static async Task<FlashbackSelectionRange?> PrepareFlashbackSelectionRangeAsync(");
-        AssertContains(scenariosText, "private static async Task MarkFlashbackSelectionPointAsync(");
-        AssertContains(scenariosText, "private readonly record struct FlashbackSelectionRange(");
-        AssertContains(scenariosText, "WaitForFlashbackStressBufferReadyAsync(");
+        AssertContains(rangeSelectionText, "private static async Task<FlashbackSelectionRange?> PrepareFlashbackSelectionRangeAsync(");
+        AssertContains(rangeSelectionText, "WaitForFlashbackStressBufferReadyAsync(");
+        AssertContains(rangeSelectionMarkersText, "private static async Task MarkFlashbackSelectionPointAsync(");
+        AssertContains(rangeSelectionMarkersText, "WaitForFlashbackPlaybackPositionAsync(");
+        AssertContains(rangeSelectionModelsText, "private readonly record struct FlashbackSelectionRange(");
+        AssertDoesNotContain(rangeSelectionText, "WaitForFlashbackPlaybackPositionAsync(");
         AssertContains(scenariosText, "\"clear-in-out-points\"");
         AssertContains(scenariosText, "\"set-in-point\"");
         AssertContains(scenariosText, "\"set-out-point\"");
