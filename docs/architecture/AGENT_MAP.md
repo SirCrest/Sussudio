@@ -398,12 +398,19 @@ Automation diagnostics ownership:
   `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.Commands.cs`
   owns playback command queue projection.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs`
-  owns D3D preview swap-chain, renderer state, submitted/rendered/dropped frame
-  flow, waitable frame-latency, and frame-statistics projection consumed by
-  `AutomationSnapshot`.
+  owns D3D preview swap-chain and renderer-state projection plus composition of
+  D3D leaf projections consumed by `AutomationSnapshot`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DCpuTiming.cs`
   owns D3D CPU upload/render/present/total-frame timing and pipeline latency
   projection consumed by `AutomationSnapshot`.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameFlow.cs`
+  owns submitted/rendered/dropped frame ownership and recent slow-frame
+  projection.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameLatencyWait.cs`
+  owns waitable frame-latency projection.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameStats.cs`
+  owns DXGI frame-statistics projection, including recent missed-refresh and
+  stats failure deltas.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs`
   owns preview frame counters, estimated pipeline latency, display-cadence,
   startup/readiness, GPU playback state, preview HDR state, renderer mode, and
