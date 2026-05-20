@@ -3,13 +3,13 @@ namespace Sussudio.Services.Automation;
 public sealed partial class AutomationDiagnosticsHub
 {
     private static AudioSignalFlattenedProjection BuildAudioSignalFlattenedProjection(
-        AudioAndIngestProjection audioAndIngest)
+        AudioSignalProjection signal)
         => new()
         {
-            Peak = audioAndIngest.AudioPeak,
-            Clipping = audioAndIngest.AudioClipping,
-            SignalPresent = audioAndIngest.AudioSignalPresent,
-            MutedSuspected = audioAndIngest.AudioMutedSuspected
+            Peak = signal.Peak,
+            Clipping = signal.Clipping,
+            SignalPresent = signal.SignalPresent,
+            MutedSuspected = signal.MutedSuspected
         };
 
     private readonly record struct AudioSignalFlattenedProjection

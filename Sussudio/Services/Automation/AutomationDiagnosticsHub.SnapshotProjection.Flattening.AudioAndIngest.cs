@@ -6,11 +6,11 @@ public sealed partial class AutomationDiagnosticsHub
         AudioAndIngestProjection audioAndIngest)
         => new()
         {
-            Signal = BuildAudioSignalFlattenedProjection(audioAndIngest),
-            Ingest = BuildCaptureIngestFlattenedProjection(audioAndIngest),
-            SourceReader = BuildSourceReaderFlattenedProjection(audioAndIngest),
-            WasapiCapture = BuildWasapiCaptureFlattenedProjection(audioAndIngest),
-            WasapiPlayback = BuildWasapiPlaybackFlattenedProjection(audioAndIngest)
+            Signal = BuildAudioSignalFlattenedProjection(audioAndIngest.Signal),
+            Ingest = BuildCaptureIngestFlattenedProjection(audioAndIngest.Ingest),
+            SourceReader = BuildSourceReaderFlattenedProjection(audioAndIngest.Ingest),
+            WasapiCapture = BuildWasapiCaptureFlattenedProjection(audioAndIngest.Wasapi),
+            WasapiPlayback = BuildWasapiPlaybackFlattenedProjection(audioAndIngest.Wasapi)
         };
 
     private readonly record struct AudioAndIngestFlattenedProjection

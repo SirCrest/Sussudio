@@ -117,10 +117,13 @@ threshold projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.SnapshotEvaluation.cs`
 owns final snapshot evaluation projection-to-`AutomationSnapshot` field
 flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Audio.cs` owns view-model audio
-signal projection, audio drop counter projection, derived real-time/file-writer
-drop totals, and composes ingest and WASAPI projection owners into the
-automation snapshot audio/ingest DTO fields.
+`AutomationDiagnosticsHub.SnapshotProjection.Audio.cs` owns audio/ingest
+projection routing and groups audio signal, capture-ingest, and WASAPI
+projection inputs consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Audio.Signal.cs` owns view-model
+audio peak/clipping and detected audio-signal projection inputs.
+`AutomationDiagnosticsHub.SnapshotProjection.AudioDrops.cs` owns audio drop
+counter projection and derived real-time/file-writer drop totals.
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.cs`
 owns final audio and ingest projection-to-`AutomationSnapshot` field
 flattening and routes grouped signal, ingest, source-reader, WASAPI capture,

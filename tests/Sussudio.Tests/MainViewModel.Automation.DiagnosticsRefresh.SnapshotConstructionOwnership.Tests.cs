@@ -120,6 +120,11 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildAvSyncFlattenedProjection(avSync)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningAvSyncText, "private static AvSyncFlattenedProjection BuildAvSyncFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildAudioAndIngestFlattenedProjection(audioAndIngest)");
+        AssertContains(diagnostics.SnapshotProjectionAudioText, "BuildAudioSignalProjection(viewModelSnapshot, audioSignal)");
+        AssertContains(diagnostics.SnapshotProjectionAudioText, "BuildCaptureIngestProjection(captureRuntime)");
+        AssertContains(diagnostics.SnapshotProjectionAudioText, "BuildWasapiAudioProjection(captureRuntime)");
+        AssertContains(diagnostics.SnapshotProjectionAudioSignalText, "private static AudioSignalProjection BuildAudioSignalProjection(");
+        AssertContains(diagnostics.SnapshotProjectionAudioDropsText, "private static AudioDropsProjection BuildAudioDropsProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningAudioAndIngestText, "private static AudioAndIngestFlattenedProjection BuildAudioAndIngestFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningAudioAndIngestSignalText, "private static AudioSignalFlattenedProjection BuildAudioSignalFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningAudioAndIngestCaptureIngestText, "private static CaptureIngestFlattenedProjection BuildCaptureIngestFlattenedProjection(");

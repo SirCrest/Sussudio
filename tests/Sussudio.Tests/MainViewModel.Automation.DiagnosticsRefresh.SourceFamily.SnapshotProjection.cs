@@ -58,6 +58,8 @@ static partial class Program
         public string SnapshotProjectionAvSyncText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningAvSyncText { get; init; } = string.Empty;
         public string SnapshotProjectionAudioText { get; init; } = string.Empty;
+        public string SnapshotProjectionAudioSignalText { get; init; } = string.Empty;
+        public string SnapshotProjectionAudioDropsText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningAudioAndIngestText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningAudioAndIngestSignalText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningAudioAndIngestCaptureIngestText { get; init; } = string.Empty;

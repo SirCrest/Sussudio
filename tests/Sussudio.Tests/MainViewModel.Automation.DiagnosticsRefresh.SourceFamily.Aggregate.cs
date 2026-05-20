@@ -112,6 +112,8 @@ static partial class Program
                 SnapshotProjectionAvSyncText,
                 SnapshotProjectionFlatteningAvSyncText,
                 SnapshotProjectionAudioText,
+                SnapshotProjectionAudioSignalText,
+                SnapshotProjectionAudioDropsText,
                 SnapshotProjectionFlatteningAudioAndIngestText,
                 SnapshotProjectionFlatteningAudioAndIngestSignalText,
                 SnapshotProjectionFlatteningAudioAndIngestCaptureIngestText,

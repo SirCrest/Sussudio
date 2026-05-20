@@ -3,20 +3,20 @@ namespace Sussudio.Services.Automation;
 public sealed partial class AutomationDiagnosticsHub
 {
     private static WasapiCaptureFlattenedProjection BuildWasapiCaptureFlattenedProjection(
-        AudioAndIngestProjection audioAndIngest)
+        WasapiAudioProjection wasapi)
         => new()
         {
-            CallbackCount = audioAndIngest.WasapiCaptureCallbackCount,
-            CallbackAvgIntervalMs = audioAndIngest.WasapiCaptureCallbackAvgIntervalMs,
-            CallbackMaxIntervalMs = audioAndIngest.WasapiCaptureCallbackMaxIntervalMs,
-            CallbackSevereGapCount = audioAndIngest.WasapiCaptureCallbackSevereGapCount,
-            AudioDiscontinuityCount = audioAndIngest.WasapiCaptureAudioDiscontinuityCount,
-            AudioTimestampErrorCount = audioAndIngest.WasapiCaptureAudioTimestampErrorCount,
-            AudioGlitchCount = audioAndIngest.WasapiCaptureAudioGlitchCount,
-            CallbackSilenceCount = audioAndIngest.WasapiCaptureCallbackSilenceCount,
-            LastCallbackTickMs = audioAndIngest.WasapiCaptureLastCallbackTickMs,
-            AudioLevelEventsFired = audioAndIngest.WasapiCaptureAudioLevelEventsFired,
-            AudioLevelLastFireTickMs = audioAndIngest.WasapiCaptureAudioLevelLastFireTickMs
+            CallbackCount = wasapi.CaptureCallbackCount,
+            CallbackAvgIntervalMs = wasapi.CaptureCallbackAvgIntervalMs,
+            CallbackMaxIntervalMs = wasapi.CaptureCallbackMaxIntervalMs,
+            CallbackSevereGapCount = wasapi.CaptureCallbackSevereGapCount,
+            AudioDiscontinuityCount = wasapi.CaptureAudioDiscontinuityCount,
+            AudioTimestampErrorCount = wasapi.CaptureAudioTimestampErrorCount,
+            AudioGlitchCount = wasapi.CaptureAudioGlitchCount,
+            CallbackSilenceCount = wasapi.CaptureCallbackSilenceCount,
+            LastCallbackTickMs = wasapi.CaptureLastCallbackTickMs,
+            AudioLevelEventsFired = wasapi.CaptureAudioLevelEventsFired,
+            AudioLevelLastFireTickMs = wasapi.CaptureAudioLevelLastFireTickMs
         };
 
     private readonly record struct WasapiCaptureFlattenedProjection

@@ -3,19 +3,19 @@ namespace Sussudio.Services.Automation;
 public sealed partial class AutomationDiagnosticsHub
 {
     private static WasapiPlaybackFlattenedProjection BuildWasapiPlaybackFlattenedProjection(
-        AudioAndIngestProjection audioAndIngest)
+        WasapiAudioProjection wasapi)
         => new()
         {
-            RenderCallbackCount = audioAndIngest.WasapiPlaybackRenderCallbackCount,
-            RenderSilenceCount = audioAndIngest.WasapiPlaybackRenderSilenceCount,
-            QueueDepth = audioAndIngest.WasapiPlaybackQueueDepth,
-            QueueDropCount = audioAndIngest.WasapiPlaybackQueueDropCount,
-            QueueDurationMs = audioAndIngest.WasapiPlaybackQueueDurationMs,
-            ActiveChunkDurationMs = audioAndIngest.WasapiPlaybackActiveChunkDurationMs,
-            EndpointQueuedDurationMs = audioAndIngest.WasapiPlaybackEndpointQueuedDurationMs,
-            BufferedDurationMs = audioAndIngest.WasapiPlaybackBufferedDurationMs,
-            StreamLatencyMs = audioAndIngest.WasapiPlaybackStreamLatencyMs,
-            LastRenderTickMs = audioAndIngest.WasapiPlaybackLastRenderTickMs
+            RenderCallbackCount = wasapi.PlaybackRenderCallbackCount,
+            RenderSilenceCount = wasapi.PlaybackRenderSilenceCount,
+            QueueDepth = wasapi.PlaybackQueueDepth,
+            QueueDropCount = wasapi.PlaybackQueueDropCount,
+            QueueDurationMs = wasapi.PlaybackQueueDurationMs,
+            ActiveChunkDurationMs = wasapi.PlaybackActiveChunkDurationMs,
+            EndpointQueuedDurationMs = wasapi.PlaybackEndpointQueuedDurationMs,
+            BufferedDurationMs = wasapi.PlaybackBufferedDurationMs,
+            StreamLatencyMs = wasapi.PlaybackStreamLatencyMs,
+            LastRenderTickMs = wasapi.PlaybackLastRenderTickMs
         };
 
     private readonly record struct WasapiPlaybackFlattenedProjection

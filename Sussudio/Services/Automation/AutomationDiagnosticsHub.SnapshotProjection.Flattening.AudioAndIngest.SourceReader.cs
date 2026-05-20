@@ -3,16 +3,16 @@ namespace Sussudio.Services.Automation;
 public sealed partial class AutomationDiagnosticsHub
 {
     private static SourceReaderFlattenedProjection BuildSourceReaderFlattenedProjection(
-        AudioAndIngestProjection audioAndIngest)
+        CaptureIngestProjection ingest)
         => new()
         {
-            FramesDelivered = audioAndIngest.MfSourceReaderFramesDelivered,
-            FramesDropped = audioAndIngest.MfSourceReaderFramesDropped,
-            NegotiatedFormat = audioAndIngest.MfSourceReaderNegotiatedFormat,
-            ReadOutstanding = audioAndIngest.SourceReaderReadOutstanding,
-            ReadOutstandingMs = audioAndIngest.SourceReaderReadOutstandingMs,
-            LastFrameTickMs = audioAndIngest.SourceReaderLastFrameTickMs,
-            FrameChannelDepth = audioAndIngest.SourceReaderFrameChannelDepth
+            FramesDelivered = ingest.MfSourceReaderFramesDelivered,
+            FramesDropped = ingest.MfSourceReaderFramesDropped,
+            NegotiatedFormat = ingest.MfSourceReaderNegotiatedFormat,
+            ReadOutstanding = ingest.SourceReaderReadOutstanding,
+            ReadOutstandingMs = ingest.SourceReaderReadOutstandingMs,
+            LastFrameTickMs = ingest.SourceReaderLastFrameTickMs,
+            FrameChannelDepth = ingest.SourceReaderFrameChannelDepth
         };
 
     private readonly record struct SourceReaderFlattenedProjection
