@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackExportFailureClassifier_MapsCommandFailures()
+    internal static Task FlashbackExportFailureClassifier_MapsCommandFailures()
     {
         var captureServiceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = captureServiceType.GetMethod(

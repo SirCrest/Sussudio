@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackExporter_OutputPathValidation_ReturnsFailure()
+    internal static Task FlashbackExporter_OutputPathValidation_ReturnsFailure()
     {
         var sourceText = ReadFlashbackExporterSource();
 
@@ -40,7 +40,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackExporter_RejectsOutputPathThatOverwritesSource()
+    internal static Task FlashbackExporter_RejectsOutputPathThatOverwritesSource()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
@@ -152,7 +152,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackExporter_RejectsBlockedTempOutputPathBeforeNativeExport()
+    internal static Task FlashbackExporter_RejectsBlockedTempOutputPathBeforeNativeExport()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");

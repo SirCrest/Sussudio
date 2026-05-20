@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackExporter_DisposeTimeoutDoesNotTearDownActiveNativeState()
+    internal static Task FlashbackExporter_DisposeTimeoutDoesNotTearDownActiveNativeState()
     {
         var sourceText = ReadFlashbackExporterSource();
 

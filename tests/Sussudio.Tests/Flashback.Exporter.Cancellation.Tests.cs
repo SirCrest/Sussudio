@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackExporter_ReturnsCancellationResult_WhenLockWaitCancelled()
+    internal static Task FlashbackExporter_ReturnsCancellationResult_WhenLockWaitCancelled()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
@@ -50,7 +50,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackExporter_CancellationWinsBeforeValidation()
+    internal static Task FlashbackExporter_CancellationWinsBeforeValidation()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");

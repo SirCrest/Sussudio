@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackExporter_OwnershipIsSplitAcrossFocusedPartials()
+    internal static Task FlashbackExporter_OwnershipIsSplitAcrossFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");

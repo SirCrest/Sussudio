@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackSuppressedExceptionsUseAppLogs()
+    internal static Task FlashbackSuppressedExceptionsUseAppLogs()
     {
         var decoderText = ReadFlashbackDecoderSource();
         var d3d11Text = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs").Replace("\r\n", "\n");

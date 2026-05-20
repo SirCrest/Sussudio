@@ -839,6 +839,11 @@ Flashback decoder checks now execute through
 frame-buffer, source-ownership, state/lifetime, timestamp, audio,
 frame-validation, and cancellation contracts in xUnit after their removal from
 the legacy harness catalog.
+Flashback exporter checks now execute through
+`tests/Sussudio.Tests/XUnit.FlashbackExporterContractsTests.cs`, keeping
+cleanup, request validation, failure classification, segment, cancellation,
+output path/finalization, and source-ownership contracts in xUnit after their
+removal from the legacy harness catalog.
 
 Projection ownership checks are split into snapshot/status, audio, capture and
 source, MJPEG, recording, system resources and A/V sync, preview, and Flashback

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation()
+    internal static Task FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation()
     {
         var sourceText = ReadFlashbackExporterSource();
         var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs")

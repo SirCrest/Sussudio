@@ -46,7 +46,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static async Task FlashbackExporter_ExportAsync_ReturnsFailure_WhenInputFileNotFound()
+    internal static async Task FlashbackExporter_ExportAsync_ReturnsFailure_WhenInputFileNotFound()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var requestType = RequireType("Sussudio.Models.FlashbackExportRequest");
@@ -76,7 +76,7 @@ static partial class Program
         AssertEqual(false, succeeded, "Export fails when input file not found");
     }
 
-    private static async Task FlashbackExporter_ExportAsync_ReturnsFailure_WhenOutputPathEmpty()
+    internal static async Task FlashbackExporter_ExportAsync_ReturnsFailure_WhenOutputPathEmpty()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var requestType = RequireType("Sussudio.Models.FlashbackExportRequest");
@@ -112,7 +112,7 @@ static partial class Program
         }
     }
 
-    private static async Task FlashbackExporter_ExportAsync_ReturnsFailure_WhenOutputPathIsDirectory()
+    internal static async Task FlashbackExporter_ExportAsync_ReturnsFailure_WhenOutputPathIsDirectory()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var requestType = RequireType("Sussudio.Models.FlashbackExportRequest");
@@ -152,7 +152,7 @@ static partial class Program
         }
     }
 
-    private static async Task FlashbackExporter_ExportSegmentsAsync_ReturnsFailure_WhenNoSegments()
+    internal static async Task FlashbackExporter_ExportSegmentsAsync_ReturnsFailure_WhenNoSegments()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
@@ -180,7 +180,7 @@ static partial class Program
         AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Export segments fails when no segments");
     }
 
-    private static async Task FlashbackExporter_RejectsNullRequests()
+    internal static async Task FlashbackExporter_RejectsNullRequests()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var requestType = RequireType("Sussudio.Models.FlashbackExportRequest");

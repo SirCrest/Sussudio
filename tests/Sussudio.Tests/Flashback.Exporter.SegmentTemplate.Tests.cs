@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackExporter_SegmentTemplateValidation_GuardsMissingVideoStream()
+    internal static Task FlashbackExporter_SegmentTemplateValidation_GuardsMissingVideoStream()
     {
         var sourceText = ReadFlashbackExporterSource();
         var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs")
@@ -47,7 +47,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackExporter_FailsWhenRequestedSegmentsAreSkipped()
+    internal static Task FlashbackExporter_FailsWhenRequestedSegmentsAreSkipped()
     {
         var segmentExportCore = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
             .Replace("\r\n", "\n");

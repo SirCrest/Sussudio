@@ -2467,8 +2467,8 @@ Primary current owners:
   legacy recording-model execution surface for LibAv sink loop/source-ownership
   checks, capture runtime failure/runtime-flag checks, and the large Flashback
   buffer manager behavior/source-ownership group.
-- Focused `tests/Sussudio.Tests/HarnessCheckCatalog.Flashback.*.cs` partials
-  own the remaining Flashback exporter registration
+- `tests/Sussudio.Tests/XUnit.FlashbackExporterContractsTests.cs` owns the
+  xUnit execution surface for the former legacy Flashback exporter registration
   group. `tests/Sussudio.Tests/XUnit.FlashbackDecoderContractsTests.cs`
   owns the xUnit execution surface for the former legacy Flashback decoder
   registration group. `tests/Sussudio.Tests/XUnit.FlashbackPlaybackContractsTests.cs`
@@ -2714,6 +2714,11 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.Exporter.OutputFinalization.Tests.cs` owns
   Flashback exporter final-output replacement, overwrite refusal/force
   behavior, and final validation cleanup tests.
+- `tests/Sussudio.Tests/XUnit.FlashbackExporterContractsTests.cs` owns the
+  xUnit execution surface for the former legacy Flashback exporter cleanup,
+  request validation, failure classification, segment, cancellation, output
+  path/finalization, and source-ownership checks after their removal from the
+  legacy harness catalog.
 - `tests/Sussudio.Tests/Flashback.Playback.State.Tests.cs` owns Flashback
   playback initial state, pre-initialize command no-ops, successful no-op
   failure clearing, and coalesced command state tests.

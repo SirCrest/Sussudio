@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackExporter_CleanupOrphanedTempFiles_HandlesNonexistentDirectory()
+    internal static Task FlashbackExporter_CleanupOrphanedTempFiles_HandlesNonexistentDirectory()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var cleanup = exporterType.GetMethod("CleanupOrphanedTempFiles", BindingFlags.Static | BindingFlags.NonPublic)
@@ -15,7 +15,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackExporter_CleanupOrphanedTempFiles_DeletesTempFiles()
+    internal static Task FlashbackExporter_CleanupOrphanedTempFiles_DeletesTempFiles()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var cleanup = exporterType.GetMethod("CleanupOrphanedTempFiles", BindingFlags.Static | BindingFlags.NonPublic)
@@ -62,7 +62,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackExporter_DoesNotScanUserOutputDirectoryForOrphans()
+    internal static Task FlashbackExporter_DoesNotScanUserOutputDirectoryForOrphans()
     {
         var sourceText = ReadFlashbackExporterSource();
 

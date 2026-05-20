@@ -91,6 +91,9 @@ add xUnit alongside, and port incrementally.
 - `XUnit.FlashbackDecoderContractsTests.cs` owns the former legacy Flashback
   decoder frame-buffer, source-ownership, state/lifetime, timestamp, audio,
   frame-validation, and cancellation checks.
+- `XUnit.FlashbackExporterContractsTests.cs` owns the former legacy Flashback
+  exporter cleanup, request validation, failure classification, segment,
+  cancellation, output path/finalization, and source-ownership checks.
 - `Flashback.Playback.Markers.Tests.cs` owns the former legacy Flashback
   playback in/out marker API, normalization, disposal, and marker clamp checks.
 - `StatsDockPresentation.Tests.cs`, `StatsPresentation.Ownership.Tests.cs`,

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackExporter_TimestampConversionsAreSaturating()
+    internal static Task FlashbackExporter_TimestampConversionsAreSaturating()
     {
         var sourceText = ReadFlashbackExporterSource();
         var packetTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs")

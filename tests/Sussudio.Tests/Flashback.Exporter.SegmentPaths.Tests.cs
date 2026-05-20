@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackExporter_RejectsEmptySegmentPaths()
+    internal static Task FlashbackExporter_RejectsEmptySegmentPaths()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
@@ -76,7 +76,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackExporter_RejectsDuplicateSegmentPaths()
+    internal static Task FlashbackExporter_RejectsDuplicateSegmentPaths()
     {
         var sourceText = ReadFlashbackExporterSource();
         AssertContains(sourceText, "var duplicateSegmentIndex = FindDuplicateSegmentPathIndex(segments);");
@@ -142,7 +142,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackExporter_ReturnsFailure_WhenSegmentFilesAreGone()
+    internal static Task FlashbackExporter_ReturnsFailure_WhenSegmentFilesAreGone()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");

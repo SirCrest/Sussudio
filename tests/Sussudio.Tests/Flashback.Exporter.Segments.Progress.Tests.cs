@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackExporter_ProgressCallbacksAreBestEffort()
+    internal static Task FlashbackExporter_ProgressCallbacksAreBestEffort()
     {
         var sourceText = ReadFlashbackExporterSource();
         var segmentPacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketReadLoop.cs")

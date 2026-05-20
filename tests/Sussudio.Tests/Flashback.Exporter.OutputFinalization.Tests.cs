@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackExporter_InvalidTempOutputDoesNotReplaceExistingExport()
+    internal static Task FlashbackExporter_InvalidTempOutputDoesNotReplaceExistingExport()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var finalizeTemp = exporterType.GetMethod("TryFinalizeTempOutputFile", BindingFlags.Static | BindingFlags.NonPublic)
@@ -41,7 +41,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackExporter_RefusesOverwriteWhenDestinationExistsAndForceFalse()
+    internal static Task FlashbackExporter_RefusesOverwriteWhenDestinationExistsAndForceFalse()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var finalizeTemp = exporterType.GetMethod("TryFinalizeTempOutputFile", BindingFlags.Static | BindingFlags.NonPublic)
@@ -79,7 +79,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackExporter_OverwritesWhenForceTrue()
+    internal static Task FlashbackExporter_OverwritesWhenForceTrue()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var finalizeTemp = exporterType.GetMethod("TryFinalizeTempOutputFile", BindingFlags.Static | BindingFlags.NonPublic)
@@ -113,7 +113,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackExporter_FinalValidationFailureDeletesMovedOutput()
+    internal static Task FlashbackExporter_FinalValidationFailureDeletesMovedOutput()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var finalizeCore = exporterType.GetMethod("TryFinalizeTempOutputFileCore", BindingFlags.Static | BindingFlags.NonPublic)

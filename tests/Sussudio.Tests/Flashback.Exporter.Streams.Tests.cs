@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackExporter_InputStreamCountsAreBounded()
+    internal static Task FlashbackExporter_InputStreamCountsAreBounded()
     {
         var sourceText = ReadFlashbackExporterSource();
         var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs")

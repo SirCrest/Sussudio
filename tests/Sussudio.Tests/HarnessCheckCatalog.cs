@@ -11,7 +11,6 @@ static partial class Program
         await AddAutomationDiagnosticsChecksAsync(results);
         await AddPresentationPreviewChecksAsync(results);
         await AddMcpDiagnosticsPipelineChecksAsync(results);
-        await AddFlashbackChecksAsync(results);
         return results;
     }
 
@@ -45,8 +44,4 @@ static partial class Program
         await AddDiagnosticSessionChecksAsync(results);
     }
 
-    private static async Task AddFlashbackChecksAsync(List<CheckResult> results)
-    {
-        await AddFlashbackExporterChecksAsync(results);
-    }
 }

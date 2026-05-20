@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackExporter_RejectsInvalidExportRanges()
+    internal static Task FlashbackExporter_RejectsInvalidExportRanges()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
@@ -77,7 +77,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackExportRejectedDiagnostics_PreserveAttemptedRange()
+    internal static Task FlashbackExportRejectedDiagnostics_PreserveAttemptedRange()
     {
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
             .Replace("\r\n", "\n")
@@ -105,7 +105,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackExporter_ReleasesBufferedSegmentPacketsOnFailures()
+    internal static Task FlashbackExporter_ReleasesBufferedSegmentPacketsOnFailures()
     {
         var sourceText = ReadFlashbackExporterSource();
         var singleFileText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFile.cs")
