@@ -433,6 +433,22 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureFormat.cs`
   owns final capture-format projection-to-`AutomationSnapshot` field
   flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureFormat.Requested.cs`
+  owns final requested capture format, quality, HDR toggle, and audio-toggle
+  field flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureFormat.HdrRequest.cs`
+  owns final HDR activation and auto-downgrade field flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureFormat.Actual.cs`
+  owns final actual capture dimensions and frame-rate field flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureFormat.Negotiated.cs`
+  owns final negotiated capture dimensions, frame-rate, pixel format, and media
+  subtype token field flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureFormat.ReaderObservation.cs`
+  owns final source-reader subtype and observed pixel/surface format field
+  flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureFormat.Encoder.cs`
+  owns final encoder format, codec, profile, and ten-bit confirmation field
+  flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureTransport.cs`
   owns capture memory preference, requested/negotiated video subtype, and
   frame-ledger projection consumed by `AutomationSnapshot`.
