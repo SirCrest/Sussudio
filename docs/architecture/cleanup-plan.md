@@ -982,6 +982,12 @@ through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DRuntimeCaptureOwnershipTests.cs`,
 keeping public frame submission and lifecycle contracts in xUnit after their
 removal from the legacy harness catalog.
+Presentation-preview D3D render setup/resource source-ownership checks now
+execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DRenderSetupOwnershipTests.cs`,
+keeping panel binding, shared-device handoff, frame upload, input resources,
+and device initialization contracts in xUnit after their removal from the
+legacy harness catalog.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task D3D11PreviewRenderer_PanelBindingLivesInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_PanelBindingLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
@@ -31,7 +31,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task D3D11PreviewRenderer_DeviceInitializationLivesInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_DeviceInitializationLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
@@ -77,7 +77,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task D3D11PreviewRenderer_SharedDeviceLivesInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_SharedDeviceLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
@@ -107,7 +107,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task D3D11PreviewRenderer_InputResourcesLiveInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_InputResourcesLiveInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
@@ -139,7 +139,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task D3D11PreviewRenderer_FrameUploadLivesInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_FrameUploadLivesInFocusedPartial()
     {
         var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
