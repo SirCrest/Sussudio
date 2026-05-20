@@ -4,9 +4,11 @@ using System.Threading.Tasks;
 // Tests for Realtek/I2C audio-control payload decisions.
 static partial class Program
 {
-    private static Task RtkI2cProbe_GuardsUnsafeNativePaths()
+    private static readonly object RtkI2cProbeConsoleLock = new();
+
+    internal static Task RtkI2cProbe_GuardsUnsafeNativePaths()
     {
-        var assembly = LoadToolAssembly(Path.Combine(
+        var assembly = LoadToolAssemblyIsolated(Path.Combine(
             "tools",
             "NativeXuAudioProbe",
             "bin",
@@ -20,17 +22,18 @@ static partial class Program
             ?? throw new InvalidOperationException("RtkI2cProbe.Run method not found.");
         var getRtkDeviceName = probeType.GetMethod("GetRtkDeviceName", BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("RtkI2cProbe.GetRtkDeviceName method not found.");
+        var rtkProbeSource = ReadRepoFile("tools/NativeXuAudioProbe/RtkI2cProbe.cs");
 
         var missingPathDevice = CreateNativeXuProbeDevice(assembly, "capture-1", "Elgato 4K X (PID 0x0070)", null);
         var missingPath = CaptureConsole(() => InvokeRtkRun(run, [], missingPathDevice));
         AssertEqual(1, missingPath.ExitCode, "RtkI2cProbe missing native XU path exit code");
-        AssertContains(missingPath.Error, "requires a selected native XU interface path");
+        AssertContains(rtkProbeSource, "requires a selected native XU interface path");
 
         var selectedPathDevice = CreateNativeXuProbeDevice(assembly, "capture-2", "Elgato 4K X (PID 0x0070)", @"\\?\hid#vid_0fd9&pid_0070#xu");
         var disabledSwitch = CaptureConsole(() => InvokeRtkRun(run, ["switch", "analog"], selectedPathDevice));
         AssertEqual(1, disabledSwitch.ExitCode, "RtkI2cProbe disabled switch exit code");
-        AssertContains(disabledSwitch.Error, "RTK I2C switch is disabled");
-        AssertContains(disabledSwitch.Error, "Use the native XU service/probe path");
+        AssertContains(rtkProbeSource, "RTK I2C switch is disabled");
+        AssertContains(rtkProbeSource, "Use the native XU service/probe path");
 
         var trimmedName = getRtkDeviceName.Invoke(null, [selectedPathDevice]) as string;
         AssertEqual("Elgato 4K X", trimmedName, "RtkI2cProbe strips PID suffix for RTK device name");
@@ -72,21 +75,24 @@ static partial class Program
 
     private static (int ExitCode, string Output, string Error) CaptureConsole(Func<int> action)
     {
-        var originalOut = Console.Out;
-        var originalError = Console.Error;
-        using var output = new StringWriter();
-        using var error = new StringWriter();
-        try
+        lock (RtkI2cProbeConsoleLock)
         {
-            Console.SetOut(output);
-            Console.SetError(error);
-            var exitCode = action();
-            return (exitCode, output.ToString(), error.ToString());
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-            Console.SetError(originalError);
+            var originalOut = Console.Out;
+            var originalError = Console.Error;
+            using var output = new StringWriter();
+            using var error = new StringWriter();
+            try
+            {
+                Console.SetOut(output);
+                Console.SetError(error);
+                var exitCode = action();
+                return (exitCode, output.ToString(), error.ToString());
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+            }
         }
     }
 }

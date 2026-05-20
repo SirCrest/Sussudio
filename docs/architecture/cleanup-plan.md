@@ -712,7 +712,12 @@ reliability-gates checks after their removal from the legacy offline harness
 catalog. `tests/Sussudio.Tests/XUnit.ToolProbeContractsTests.cs` owns the
 xUnit execution surface for the PresentMon parser, ssctl pipe transport, KS
 audio-node, and EGAVDS probe checks after their removal from the legacy
-offline harness catalog. Shared formatter tests now mirror the formatter partials: the root
+offline harness catalog. `tests/Sussudio.Tests/XUnit.NativeToolProbeContractsTests.cs`
+owns the RTK I2C unsafe-native-path guard check, and
+`tests/Sussudio.Tests/XUnit.ToolModelContractsTests.cs` owns the former legacy
+NVML snapshot/CaptureSessionSnapshot tool-model checks; the legacy
+`HarnessCheckCatalog.ToolContracts.cs` registration file has been retired.
+Shared formatter tests now mirror the formatter partials: the root
 snapshot-formatter test owns accessors, invalid-response handling, section
 ordering, core section formatting, and the Flashback opt-in gate; Flashback
 output, Preview D3D output, and source ownership live in focused

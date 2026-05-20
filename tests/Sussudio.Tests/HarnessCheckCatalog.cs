@@ -13,7 +13,6 @@ static partial class Program
         await AddMcpDiagnosticsPipelineChecksAsync(results);
         await AddRecordingModelChecksAsync(results);
         await AddFlashbackChecksAsync(results);
-        await AddToolContractChecksAsync(results);
         return results;
     }
 

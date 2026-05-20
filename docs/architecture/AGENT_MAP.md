@@ -2463,11 +2463,12 @@ Primary current owners:
 - Focused `tests/Sussudio.Tests/HarnessCheckCatalog.Flashback.*.cs` partials
   own Flashback model, playback, decoder, encoder sink, and exporter
   registration groups.
-- `tests/Sussudio.Tests/HarnessCheckCatalog.ToolContracts.cs` owns the remaining
-  RTK probe check registration in the legacy offline harness.
-  `tests/Sussudio.Tests/XUnit.ToolModelContractsTests.cs` owns the xUnit
+- `tests/Sussudio.Tests/XUnit.ToolModelContractsTests.cs` owns the xUnit
   execution surface for the former legacy NVML snapshot and
   CaptureSessionSnapshot default-state tool-contract checks.
+  `tests/Sussudio.Tests/XUnit.NativeToolProbeContractsTests.cs` owns the xUnit
+  execution surface for the former legacy RTK I2C probe unsafe-native-path
+  guard check.
 - `tests/Sussudio.FfmpegEncodeLab/Program.cs` owns standalone HDR encode-lab
   orchestration; `Program.Encoding.cs` owns FFmpeg argument and AV1 encoder
   selection policy; `Program.Support.cs` owns CLI parsing, tool-path resolution,
