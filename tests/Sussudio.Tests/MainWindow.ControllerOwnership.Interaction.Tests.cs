@@ -34,7 +34,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewAudioFadeState_LivesInController()
+    internal static Task PreviewAudioFadeState_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
@@ -110,7 +110,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewButtonPresentation_LivesInController()
+    internal static Task PreviewButtonPresentation_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var previewActionsText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");

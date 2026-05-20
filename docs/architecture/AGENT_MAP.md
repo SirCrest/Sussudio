@@ -2506,6 +2506,10 @@ Primary current owners:
   owns the former presentation-preview MainWindow recording button chrome,
   state presentation, lockout policy, and button-action checks after their
   removal from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewAudioControlContractsTests.cs`
+  owns the former presentation-preview MainWindow preview audio fade, audio
+  presentation, preview button presentation, and microphone control checks
+  after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral
