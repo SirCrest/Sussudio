@@ -9,11 +9,14 @@ static partial class Program
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs")
+            + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Preview.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Preview.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs");
+        var formattingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs");
+        var previewFormattingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Preview.cs");
         var trendSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs");
         var previewTrendSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Preview.cs");
         var flashbackTrendSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.cs");
@@ -24,6 +27,11 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs"), "private sealed class TimelineRow");
         AssertContains(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs"), "BuildPerformanceTimelineText");
         AssertDoesNotContain(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs"), "== Trend Summary");
+        AssertContains(formattingSource, "FormatOptional");
+        AssertDoesNotContain(formattingSource, "FormatD3DP99Bottleneck");
+        AssertDoesNotContain(formattingSource, "FormatJitterDepthCell");
+        AssertContains(previewFormattingSource, "private static string FormatJitterDepthCell(TimelineRow row)");
+        AssertContains(previewFormattingSource, "private static string FormatD3DP99Bottleneck(TimelineRow row)");
         AssertContains(trendSource, "AppendTrendSummary");
         AssertContains(trendSource, "== Trend Summary");
         AssertContains(trendSource, "AppendPreviewTrendSummary(builder, first, last);");

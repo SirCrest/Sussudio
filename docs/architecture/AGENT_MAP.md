@@ -3177,7 +3177,9 @@ Primary owners:
   `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.cs`
   owns Flashback playback, command, failure, cleanup, and export trend text.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs` owns compact
-  cell, byte, D3D bottleneck, cleanup, export, and optional-value formatting.
+  cell, byte, cleanup, export, and optional-value formatting.
+  `tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Preview.cs` owns
+  preview jitter-depth and D3D bottleneck formatting.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs` owns 1%-low
   target summaries, pressure summaries, counters, and budget predicates.
 - `tools/McpServer/Tools/FramePacingVerdictTools.cs` owns the public
