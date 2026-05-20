@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainViewModelAutomation_RoutesPreviewVolumePersistenceThroughSaveHook()
+    internal static Task MainViewModelAutomation_RoutesPreviewVolumePersistenceThroughSaveHook()
     {
         var vmType = RequireType("Sussudio.ViewModels.MainViewModel");
 

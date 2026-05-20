@@ -228,6 +228,10 @@ add xUnit alongside, and port incrementally.
   owns the former legacy presentation-preview MainViewModel dependency
   composition group: root dependency seam, UI dispatch, presentation, recording,
   capture/device, and runtime controller context ownership checks.
+- `XUnit.PresentationPreviewMainViewModelRuntimeContractsTests.cs` owns the
+  final former legacy presentation-preview MainViewModel runtime group:
+  automation preview/HDR/volume routing, audio monitoring, capture settings
+  projection, preview lifecycle ownership, and audio ramp trace telemetry.
 - `XUnit.PresentationPreviewD3DPacingContractsTests.cs` owns the former legacy
   presentation-preview D3D pacing registration group: transition-drain,
   frame-capture cancellation, and shared-device reference lifecycle checks.

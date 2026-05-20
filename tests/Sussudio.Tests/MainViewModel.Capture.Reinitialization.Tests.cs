@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainViewModelPreviewLifecycle_LivesInController()
+    internal static Task MainViewModelPreviewLifecycle_LivesInController()
     {
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");

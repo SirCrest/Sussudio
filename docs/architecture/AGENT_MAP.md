@@ -2574,6 +2574,11 @@ Primary current owners:
   group for root dependency seam, UI dispatch, presentation, recording,
   capture/device, and runtime controller context ownership checks after their
   removal from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelRuntimeContractsTests.cs`
+  owns the final former presentation-preview MainViewModel runtime group for
+  automation preview/HDR/volume routing, audio monitoring, capture settings
+  projection, preview lifecycle ownership, and audio ramp trace telemetry after
+  their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`
   owns the former presentation-preview D3D pacing group for transition-drain,
   frame-capture cancellation, and shared-device reference lifecycle checks after

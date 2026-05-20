@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainViewModelCaptureSettings_OwnsSettingsProjection()
+    internal static Task MainViewModelCaptureSettings_OwnsSettingsProjection()
     {
         var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
@@ -71,7 +71,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MainViewModelCaptureSettingsFrameRate_PreservesProjectionPrecedence()
+    internal static Task MainViewModelCaptureSettingsFrameRate_PreservesProjectionPrecedence()
     {
         var settings = InvokeCaptureSettingsProjection(
             selectedResolution: "1920x1080",

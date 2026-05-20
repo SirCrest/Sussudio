@@ -974,6 +974,13 @@ through
 keeping root dependency seam, UI dispatch, presentation, recording,
 capture/device, and runtime controller context ownership contracts in xUnit
 after their removal from the legacy harness catalog.
+Presentation-preview MainViewModel runtime checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelRuntimeContractsTests.cs`,
+keeping automation preview/HDR/volume routing, audio monitoring, capture
+settings projection, preview lifecycle ownership, and audio ramp trace telemetry
+contracts in xUnit after their removal from the legacy harness catalog.
+MainViewModel presentation-preview contract execution is now owned by the
+focused xUnit wrappers above, with no remaining legacy catalog hook.
 Presentation-preview D3D pacing checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`,
 keeping transition-drain, frame-capture cancellation, and shared-device

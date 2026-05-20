@@ -59,7 +59,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AudioRampTrace_ExposesControlAndRenderEnvelopeTelemetry()
+    internal static Task AudioRampTrace_ExposesControlAndRenderEnvelopeTelemetry()
     {
         var traceModelsText = ReadRepoFile("Sussudio/Models/Audio/AudioRampTraceModels.cs").Replace("\r\n", "\n");
         var audioMonitoringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs").Replace("\r\n", "\n");

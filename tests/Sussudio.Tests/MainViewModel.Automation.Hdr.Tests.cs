@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainViewModelAutomation_HdrEnablementLivesInCaptureModeTransactions()
+    internal static Task MainViewModelAutomation_HdrEnablementLivesInCaptureModeTransactions()
     {
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs")
             .Replace("\r\n", "\n");

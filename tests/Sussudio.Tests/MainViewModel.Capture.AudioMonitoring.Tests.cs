@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainViewModelCapture_RoutesAudioMonitoringThroughCoordinator()
+    internal static Task MainViewModelCapture_RoutesAudioMonitoringThroughCoordinator()
     {
         var coordinatorType = RequireType("Sussudio.Services.Capture.CaptureSessionCoordinator");
 
