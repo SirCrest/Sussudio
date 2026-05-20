@@ -598,8 +598,10 @@ video pipeline, diagnostics, and capture cadence text live in
 frame-budget, and tick-age display helpers live in
 `AutomationSnapshotFormatter.DisplayValues.cs`; the Flashback gate/header/order
 lives in `AutomationSnapshotFormatter.Flashback.cs` with encoder, buffer,
-cache, queue, failure, and export text. Flashback playback status, command,
-cadence, decode, frame, stage, and A/V drift text lives in
+cache, queue, and failure text. Flashback export progress, result, throughput,
+force-rotate fallback, range, output path, and message text lives in
+`AutomationSnapshotFormatter.Flashback.Export.cs`. Flashback playback status,
+command, cadence, decode, frame, stage, and A/V drift text lives in
 `AutomationSnapshotFormatter.Flashback.Playback.cs`. Capture cadence also owns
 its AV-sync and source-signal leaf sections because those sections are only
 emitted from the cadence tail. MJPEG timing, preview routing, D3D preview text,

@@ -4437,7 +4437,10 @@ Primary owners:
   byte, number, interval, frame-budget, and tick-age display helpers, while
   `tools/Common/AutomationSnapshotFormatter.Flashback.cs` owns the Flashback
   gate, header, subsection ordering, encoder, buffer, cache, queue, failure,
-  backpressure, GPU queue, and export text.
+  backpressure, and GPU queue text.
+  `tools/Common/AutomationSnapshotFormatter.Flashback.Export.cs` owns
+  Flashback export progress, result, throughput, force-rotate fallback, range,
+  output path, and message text.
   `tools/Common/AutomationSnapshotFormatter.Flashback.Playback.cs` owns
   Flashback playback status, command, cadence, decode, frame, stage, and A/V
   drift text. The

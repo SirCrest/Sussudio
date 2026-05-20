@@ -208,6 +208,7 @@ internal static class RuntimeContractSource
             "tools/Common/AutomationSnapshotFormatter.Values.cs",
             "tools/Common/AutomationSnapshotFormatter.DisplayValues.cs",
             "tools/Common/AutomationSnapshotFormatter.Flashback.cs",
+            "tools/Common/AutomationSnapshotFormatter.Flashback.Export.cs",
             "tools/Common/AutomationSnapshotFormatter.Flashback.Playback.cs",
             "tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs",
             "tools/Common/AutomationSnapshotFormatter.Preview.cs",

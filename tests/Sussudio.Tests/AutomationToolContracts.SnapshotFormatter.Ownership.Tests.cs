@@ -14,6 +14,7 @@ static partial class Program
         var sharedFormatterValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Values.cs");
         var sharedFormatterDisplayValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.DisplayValues.cs");
         var sharedFormatterFlashbackSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.cs");
+        var sharedFormatterFlashbackExportSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.Export.cs");
         var sharedFormatterFlashbackPlaybackSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.Playback.cs");
         var sharedFormatterMjpegTimingSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs");
         var sharedFormatterPreviewSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Preview.cs");
@@ -92,12 +93,13 @@ static partial class Program
         AssertContains(sharedFormatterFlashbackSource, "Encoder: {codec}");
         AssertContains(sharedFormatterFlashbackSource, "Flashback Queue Latency:");
         AssertContains(sharedFormatterFlashbackSource, "Flashback GPU Queue:");
-        AssertContains(sharedFormatterFlashbackSource, "private static void AppendFlashbackExportSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterFlashbackSource, "Export: active=");
-        AssertContains(sharedFormatterFlashbackSource, "FlashbackExportThroughputBytesPerSec");
-        AssertContains(sharedFormatterFlashbackSource, "forceRotateFallbacks=");
+        AssertDoesNotContain(sharedFormatterFlashbackSource, "Export: active=");
         AssertDoesNotContain(sharedFormatterFlashbackSource, "Playback Decode:");
         AssertDoesNotContain(sharedFormatterFlashbackSource, "A/V Drift:");
+        AssertContains(sharedFormatterFlashbackExportSource, "private static void AppendFlashbackExportSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterFlashbackExportSource, "Export: active=");
+        AssertContains(sharedFormatterFlashbackExportSource, "FlashbackExportThroughputBytesPerSec");
+        AssertContains(sharedFormatterFlashbackExportSource, "forceRotateFallbacks=");
         AssertContains(sharedFormatterFlashbackPlaybackSource, "private static void AppendFlashbackPlaybackStatusSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterFlashbackPlaybackSource, "private static void AppendFlashbackPlaybackMetricsSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterFlashbackPlaybackSource, "Playback Commands:");
