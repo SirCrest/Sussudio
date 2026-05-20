@@ -58,7 +58,12 @@ public sealed class PreviewPacingOwnershipTests
         var diagnosticsSnapshotProjectionFlatteningSnapshotEvaluationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.SnapshotEvaluation.cs");
         var diagnosticsSnapshotProjectionCaptureCadenceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs");
         var diagnosticsPreviewPacingText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.PreviewPacing.cs");
-        var diagnosticsCountersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs");
+        var diagnosticsRealtimePreviewCountersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.RealtimePreview.cs");
+        var diagnosticsMjpegCountersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.Mjpeg.cs");
+        var diagnosticsFlashbackRecordingCountersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.FlashbackRecording.cs");
+        var diagnosticsCountersText = diagnosticsRealtimePreviewCountersText
+            + "\n" + diagnosticsMjpegCountersText
+            + "\n" + diagnosticsFlashbackRecordingCountersText;
         var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             + "\n" + diagnosticsSnapshotsText
             + "\n" + diagnosticsSnapshotProjectionText
@@ -91,7 +96,9 @@ public sealed class PreviewPacingOwnershipTests
         Assert.Contains("RecentPreviewJitterScheduleLateCount = recentPreviewJitter.ScheduleLateCount", diagnosticsHubText);
         Assert.Contains("RecentD3DFrameLatencyWaitTimeoutCount = recentD3DFrameLatencyWaitTimeouts", diagnosticsHubText);
         Assert.Contains("UpdateD3DFrameLatencyWaitRecentCounters", diagnosticsHubText);
-        Assert.Contains("private long UpdateD3DFrameLatencyWaitRecentCounters(", diagnosticsCountersText);
+        Assert.Contains("private long UpdateD3DFrameLatencyWaitRecentCounters(", diagnosticsRealtimePreviewCountersText);
+        Assert.DoesNotContain("private long UpdateD3DFrameLatencyWaitRecentCounters(", diagnosticsMjpegCountersText);
+        Assert.DoesNotContain("private long UpdateD3DFrameLatencyWaitRecentCounters(", diagnosticsFlashbackRecordingCountersText);
         Assert.DoesNotContain("private long UpdateD3DFrameLatencyWaitRecentCounters(", ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs"));
         Assert.Contains("PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage", diagnosticsHubText);
         Assert.Contains("PreviewPacingSlowStageConfidence = previewPacingClassification.Confidence", diagnosticsHubText);

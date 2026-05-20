@@ -2,7 +2,7 @@ static partial class Program
 {
     private static void AssertDiagnosticsRefreshFlashbackPlaybackAndPreviewAlertCoverage(
         AutomationDiagnosticsHubSourceFamily diagnostics,
-        string countersText)
+        AutomationDiagnosticsHubCountersSourceFamily counters)
     {
         AssertContains(diagnostics.SourceFamilyText, "\"flashback-playback-command-stalled\"");
         AssertContains(diagnostics.SourceFamilyText, "private const int FlashbackPlaybackCommandStallThresholdMs = 1000;");
@@ -96,12 +96,14 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "health.FlashbackPlaybackSubmitFailures <= 0");
         AssertContains(diagnostics.SourceFamilyText, "UpdatePreviewJitterRecentCounters(health, nowTick)");
         AssertContains(diagnostics.SourceFamilyText, "UpdateD3DRendererRecentCounters(previewRuntime, nowTick)");
-        AssertContains(countersText, "private PreviewJitterRecentCounters UpdatePreviewJitterRecentCounters(");
-        AssertContains(countersText, "private long _lastPreviewJitterTotalDropped;");
-        AssertContains(countersText, "Interlocked.Exchange(ref _lastPreviewJitterTotalDropped, totalDropped)");
-        AssertContains(countersText, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
-        AssertContains(countersText, "private long _lastD3DFramesSubmitted;");
-        AssertContains(countersText, "Interlocked.Exchange(ref _lastD3DFramesSubmitted, submitted)");
+        AssertContains(counters.RealtimePreviewText, "private PreviewJitterRecentCounters UpdatePreviewJitterRecentCounters(");
+        AssertContains(counters.RealtimePreviewText, "private long _lastPreviewJitterTotalDropped;");
+        AssertContains(counters.RealtimePreviewText, "Interlocked.Exchange(ref _lastPreviewJitterTotalDropped, totalDropped)");
+        AssertContains(counters.RealtimePreviewText, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
+        AssertContains(counters.RealtimePreviewText, "private long _lastD3DFramesSubmitted;");
+        AssertContains(counters.RealtimePreviewText, "Interlocked.Exchange(ref _lastD3DFramesSubmitted, submitted)");
+        AssertDoesNotContain(counters.RealtimePreviewText, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
+        AssertDoesNotContain(counters.RealtimePreviewText, "private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(");
         AssertDoesNotContain(diagnostics.HubText, "private long _lastPreviewJitterTotalDropped;");
         AssertDoesNotContain(diagnostics.HubText, "private long _lastD3DFramesSubmitted;");
         AssertContains(diagnostics.SourceFamilyText, "recentSubmitted={recentRendererSubmitted} recentDropped={recentRenderer.Dropped}");
@@ -109,8 +111,8 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "clearedDrops={health.MjpegPreviewJitterClearedDropCount}");
         AssertContains(diagnostics.SourceFamilyText, "resumeReprimes={health.MjpegPreviewJitterResumeReprimeCount} recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows} lastDropReason={previewLastDropReason}");
         AssertContains(diagnostics.SourceFamilyText, "UpdateD3DFrameStatsRecentCounters(previewRuntime, nowTick)");
-        AssertContains(countersText, "private long UpdateD3DFrameLatencyWaitRecentCounters(");
-        AssertContains(countersText, "Interlocked.Exchange(ref _lastD3DFrameLatencyWaitTimeouts, timeouts)");
+        AssertContains(counters.RealtimePreviewText, "private long UpdateD3DFrameLatencyWaitRecentCounters(");
+        AssertContains(counters.RealtimePreviewText, "Interlocked.Exchange(ref _lastD3DFrameLatencyWaitTimeouts, timeouts)");
         AssertContains(diagnostics.SourceFamilyText, "recentMissed={recentD3DMissedRefreshes} recentFail={recentD3DStatsFailures}");
         AssertContains(diagnostics.SourceFamilyText, "\"capture-cadence-low-1pct\"");
         AssertContains(diagnostics.SourceFamilyText, "\"Capture cadence 1% low is below target:");
@@ -152,7 +154,10 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "repeatFramePercent <= 1.0");
         AssertContains(diagnostics.SourceFamilyText, "longestRepeatRun <= 1");
         AssertContains(diagnostics.SourceFamilyText, "\"Present/display 1% low is below target.\"");
-        AssertContains(countersText, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
+        AssertContains(counters.MjpegText, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
+        AssertContains(counters.MjpegText, "Interlocked.Exchange(ref _lastMjpegCompressedDropsQueueFull, compressedQueueDrops)");
+        AssertDoesNotContain(counters.MjpegText, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
+        AssertDoesNotContain(counters.MjpegText, "private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(");
         AssertContains(diagnostics.SourceFamilyText, "var recentMjpeg = UpdateMjpegRecentCounters(health, nowTick);");
         AssertContains(diagnostics.SourceFamilyText, "recentDropped={recentMjpeg.TotalDropped} recentFailures={recentMjpeg.Failures}");
         AssertContains(diagnostics.SourceFamilyText, "recentMjpeg.TotalDropped <= 0");
