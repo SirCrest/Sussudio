@@ -3365,14 +3365,17 @@ Diagnostic-session result text now lives in a focused partial family rooted at
 `Format(...)` flow plus the simple capture-mode, recording-verification,
 PresentMon, and process-performance summary rows. `.Overview.cs` owns the
 header/summary/evidence section, `.Flashback.cs` owns Flashback section ordering
-plus simple playback command, playback stage/seek-cap, recording, and export
-rows, `.FlashbackPlayback.Performance.cs` owns playback cadence/audio-master
-performance text, `.FlashbackPlayback.Decode.cs` owns playback decode text,
+plus simple playback command and playback stage/seek-cap rows,
+`.FlashbackRecording.cs` owns Flashback recording summary text,
+`.FlashbackExport.cs` owns Flashback export summary text, and
+`.FlashbackPlayback.Performance.cs` owns playback cadence/audio-master
+performance text. `.FlashbackPlayback.Decode.cs` owns playback decode text,
 `.Preview.cs` owns preview section ordering plus preview scheduler, D3D
 performance/slow-frame, D3D CPU timing, and visual cadence text. `.Artifacts.cs`
-owns artifact/action/warning sections, and `.Helpers.cs` owns
-small text helpers. The runner keeps `Format(...)` as a compatibility wrapper
-so existing ssctl and MCP callers do not need to know about the formatter owner.
+owns artifact/action/warning sections, and
+`DiagnosticSessionOptionalTextFormatter.cs` owns shared optional text helpers.
+The runner keeps `Format(...)` as a compatibility wrapper so existing ssctl
+and MCP callers do not need to know about the formatter owner.
 
 Diagnostic-session result construction now lives in
 `tools/Common/DiagnosticSessionResultBuilder.cs`. The root owns result phase
@@ -3937,6 +3940,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionResultFormatter.Overview.cs`
 - `DiagnosticSessionResultFormatter.Flashback.cs`
+- `DiagnosticSessionResultFormatter.FlashbackRecording.cs`
+- `DiagnosticSessionResultFormatter.FlashbackExport.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs`
 - `DiagnosticSessionResultFormatter.Preview.cs`

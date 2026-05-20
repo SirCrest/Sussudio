@@ -4274,8 +4274,12 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultFormatter.Overview.cs` owns the
   diagnostic-session header, summary, and evidence section.
 - `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs` owns Flashback
-  diagnostic-session text section ordering plus playback command,
-  playback stage/seek-cap, recording, and export lines.
+  diagnostic-session text section ordering plus playback command and playback
+  stage/seek-cap lines.
+  `DiagnosticSessionResultFormatter.FlashbackRecording.cs` owns Flashback
+  recording summary text. `DiagnosticSessionResultFormatter.FlashbackExport.cs`
+  owns Flashback export summary text, including force-rotate fallback and
+  throughput formatting.
   `DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs` owns
   playback cadence/audio-master performance lines,
   `DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs` owns playback

@@ -131,6 +131,8 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultFormatter.cs",
             "tools/Common/DiagnosticSessionResultFormatter.Overview.cs",
             "tools/Common/DiagnosticSessionResultFormatter.Flashback.cs",
+            "tools/Common/DiagnosticSessionResultFormatter.FlashbackRecording.cs",
+            "tools/Common/DiagnosticSessionResultFormatter.FlashbackExport.cs",
             "tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs",
             "tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs",
             "tools/Common/DiagnosticSessionResultFormatter.Preview.cs",

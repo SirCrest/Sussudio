@@ -11,6 +11,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackRootText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Flashback.cs")
             .Replace("\r\n", "\n");
+        var flashbackRecordingText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackRecording.cs")
+            .Replace("\r\n", "\n");
+        var flashbackExportText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackExport.cs")
+            .Replace("\r\n", "\n");
         var flashbackPlaybackPerformanceText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackDecodeText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs")
@@ -48,11 +52,18 @@ static partial class Program
         AssertContains(flashbackRootText, "\"Flashback Playback Commands: \"");
         AssertContains(flashbackRootText, "private static void AppendFlashbackPlaybackStages(");
         AssertContains(flashbackRootText, "\"Flashback Playback Stages: \"");
-        AssertContains(flashbackRootText, "private static void AppendFlashbackRecording(");
-        AssertContains(flashbackRootText, "\"Flashback Recording: \"");
-        AssertContains(flashbackRootText, "private static void AppendFlashbackExport(");
-        AssertContains(flashbackRootText, "\"Flashback Export: \"");
+        AssertDoesNotContain(flashbackRootText, "private static void AppendFlashbackRecording(");
+        AssertDoesNotContain(flashbackRootText, "\"Flashback Recording: \"");
+        AssertDoesNotContain(flashbackRootText, "private static void AppendFlashbackExport(");
+        AssertDoesNotContain(flashbackRootText, "\"Flashback Export: \"");
         AssertDoesNotContain(flashbackRootText, "\"Flashback Playback Perf: \"");
+        AssertContains(flashbackRecordingText, "private static void AppendFlashbackRecording(");
+        AssertContains(flashbackRecordingText, "\"Flashback Recording: \"");
+        AssertContains(flashbackRecordingText, "FlashbackRecordingVideoFramesSubmittedDelta");
+        AssertContains(flashbackExportText, "private static void AppendFlashbackExport(");
+        AssertContains(flashbackExportText, "\"Flashback Export: \"");
+        AssertContains(flashbackExportText, "FlashbackExportForceRotateFallbacksDelta");
+        AssertContains(flashbackExportText, "FormatBytes(result.FlashbackExportMaxOutputBytesObserved)");
         AssertContains(flashbackPlaybackPerformanceText, "private static void AppendFlashbackPlaybackPerformance(");
         AssertContains(flashbackPlaybackPerformanceText, "\"Flashback Playback Perf: \"");
         AssertContains(flashbackPlaybackPerformanceText, "FormatOptional(result.FlashbackPlaybackAudioMasterLastFallbackReasonAtEnd)");
