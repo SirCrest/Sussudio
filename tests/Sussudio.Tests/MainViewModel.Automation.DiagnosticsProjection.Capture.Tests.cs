@@ -71,20 +71,35 @@ static partial class Program
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningCaptureFormatText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureFormat.cs")
+            .Replace("\r\n", "\n");
         var captureFormatProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var captureFormat = BuildCaptureFormatProjection(captureRuntime);");
-        AssertContains(snapshotFlatteningText, "RequestedWidth = captureFormat.RequestedWidth,");
-        AssertContains(snapshotFlatteningText, "HdrActivationReason = captureFormat.HdrActivationReason,");
-        AssertContains(snapshotFlatteningText, "NegotiatedWidth = captureFormat.NegotiatedWidth,");
-        AssertContains(snapshotFlatteningText, "LatestObservedFramePixelFormat = captureFormat.LatestObservedFramePixelFormat,");
-        AssertContains(snapshotFlatteningText, "EncoderVideoCodec = captureFormat.EncoderVideoCodec,");
+        AssertContains(snapshotFlatteningText, "var captureFormatFlattening = BuildCaptureFormatFlattenedProjection(captureFormat);");
+        AssertContains(snapshotFlatteningText, "RequestedWidth = captureFormatFlattening.RequestedWidth,");
+        AssertContains(snapshotFlatteningText, "HdrActivationReason = captureFormatFlattening.HdrActivationReason,");
+        AssertContains(snapshotFlatteningText, "NegotiatedWidth = captureFormatFlattening.NegotiatedWidth,");
+        AssertContains(snapshotFlatteningText, "LatestObservedFramePixelFormat = captureFormatFlattening.LatestObservedFramePixelFormat,");
+        AssertContains(snapshotFlatteningText, "EncoderVideoCodec = captureFormatFlattening.EncoderVideoCodec,");
+        AssertContains(snapshotFlatteningCaptureFormatText, "private static CaptureFormatFlattenedProjection BuildCaptureFormatFlattenedProjection(");
+        AssertContains(snapshotFlatteningCaptureFormatText, "RequestedWidth = captureFormat.RequestedWidth,");
+        AssertContains(snapshotFlatteningCaptureFormatText, "HdrActivationReason = captureFormat.HdrActivationReason,");
+        AssertContains(snapshotFlatteningCaptureFormatText, "NegotiatedWidth = captureFormat.NegotiatedWidth,");
+        AssertContains(snapshotFlatteningCaptureFormatText, "LatestObservedFramePixelFormat = captureFormat.LatestObservedFramePixelFormat,");
+        AssertContains(snapshotFlatteningCaptureFormatText, "EncoderVideoCodec = captureFormat.EncoderVideoCodec,");
+        AssertContains(snapshotFlatteningCaptureFormatText, "private readonly record struct CaptureFormatFlattenedProjection");
         AssertDoesNotContain(snapshotFlatteningText, "RequestedWidth = captureRuntime.RequestedWidth,");
+        AssertDoesNotContain(snapshotFlatteningText, "RequestedWidth = captureFormat.RequestedWidth,");
         AssertDoesNotContain(snapshotFlatteningText, "HdrActivationReason = captureRuntime.HdrActivationReason,");
+        AssertDoesNotContain(snapshotFlatteningText, "HdrActivationReason = captureFormat.HdrActivationReason,");
         AssertDoesNotContain(snapshotFlatteningText, "NegotiatedWidth = captureRuntime.NegotiatedWidth ?? captureRuntime.ActualWidth,");
+        AssertDoesNotContain(snapshotFlatteningText, "NegotiatedWidth = captureFormat.NegotiatedWidth,");
         AssertDoesNotContain(snapshotFlatteningText, "LatestObservedFramePixelFormat = captureRuntime.LatestObservedFramePixelFormat,");
+        AssertDoesNotContain(snapshotFlatteningText, "LatestObservedFramePixelFormat = captureFormat.LatestObservedFramePixelFormat,");
         AssertDoesNotContain(snapshotFlatteningText, "EncoderVideoCodec = captureRuntime.EncoderVideoCodec,");
+        AssertDoesNotContain(snapshotFlatteningText, "EncoderVideoCodec = captureFormat.EncoderVideoCodec,");
 
         AssertContains(captureFormatProjectionText, "private static CaptureFormatProjection BuildCaptureFormatProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(captureFormatProjectionText, "private readonly record struct CaptureFormatProjection");

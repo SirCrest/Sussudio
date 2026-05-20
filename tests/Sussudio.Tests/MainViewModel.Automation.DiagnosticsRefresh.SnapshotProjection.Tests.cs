@@ -151,6 +151,13 @@ static partial class Program
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "HdrTruthVerdict = hdrTruthVerdict,");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatProjection BuildCaptureFormatProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "NegotiatedWidth = captureRuntime.NegotiatedWidth ?? captureRuntime.ActualWidth,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var captureFormatFlattening = BuildCaptureFormatFlattenedProjection(captureFormat);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "NegotiatedWidth = captureFormatFlattening.NegotiatedWidth,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureFormatText, "private static CaptureFormatFlattenedProjection BuildCaptureFormatFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureFormatText, "NegotiatedWidth = captureFormat.NegotiatedWidth,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureFormatText, "EncoderVideoCodec = captureFormat.EncoderVideoCodec,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "NegotiatedWidth = captureFormat.NegotiatedWidth,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "EncoderVideoCodec = captureFormat.EncoderVideoCodec,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "NegotiatedWidth = captureRuntime.NegotiatedWidth ?? captureRuntime.ActualWidth,");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var captureTransport = BuildCaptureTransportProjection(captureRuntime);");
         AssertContains(diagnostics.SnapshotProjectionCaptureTransportText, "private static CaptureTransportProjection BuildCaptureTransportProjection(CaptureRuntimeSnapshot captureRuntime)");

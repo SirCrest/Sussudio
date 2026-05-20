@@ -154,6 +154,8 @@ projection inputs consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns requested,
 actual, negotiated, observed, and encoder format projection inputs consumed by
 the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureFormat.cs`
+owns final capture-format projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureTransport.cs` owns capture
 memory preference, requested/negotiated video subtype, and frame-ledger
 projection consumed by the automation snapshot DTO.

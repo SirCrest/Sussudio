@@ -354,6 +354,9 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs`
   owns requested, actual, negotiated, observed, and encoder format projection
   inputs consumed by `AutomationSnapshot`.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureFormat.cs`
+  owns final capture-format projection-to-`AutomationSnapshot` field
+  flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureTransport.cs`
   owns capture memory preference, requested/negotiated video subtype, and
   frame-ledger projection consumed by `AutomationSnapshot`.
