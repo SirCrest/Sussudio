@@ -3610,7 +3610,10 @@ owner, fold it back into that owner and update the source-shape tests and
    are split into API/contracts, queue behavior, Flashback behavior,
    transition policy, ownership, and harness-helper owners. MainViewModel
    automation tests are split into surface, diagnostics refresh, diagnostics projection,
-   runtime-safety, and Flashback cleanup owners. MainViewModel capture tests
+   runtime-safety, and Flashback cleanup owners. The diagnostics-refresh
+   snapshot-projection test is now a compact integration wiring smoke; detailed
+   projection source-shape contracts live in the focused
+   `MainViewModel.Automation.DiagnosticsProjection.*.Tests.cs` files. MainViewModel capture tests
    are split into preview startup, Flashback export, Flashback routing,
    Flashback backend, and Flashback frame-rate/lifecycle owners. Continue with
    low-risk contract groups first. Snapshot-model contract tests are split by

@@ -1726,9 +1726,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionToolSurface.Tests.cs`
   owns `ssctl` and MCP diagnostic-session command-surface assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotProjection.Tests.cs`
-  owns diagnostics snapshot projection ownership assertions for
-  snapshot projection source text, snapshot status projection, and named
-  BuildProjection boundaries.
+  owns diagnostics-refresh snapshot projection integration wiring: the refresh
+  path must route through the named projection-set composition and flattened
+  projection handoff instead of reasserting every leaf projection contract.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`
   owns the diagnostics hub source-family reader used by refresh ownership
   assertions.
@@ -1746,7 +1746,7 @@ Primary current owners:
   owns diagnostics-loop polling contracts that keep options snapshots out of
   hot diagnostics refresh paths.
 - Keep new automation diagnostics projection ownership assertions in the focused
-  owner files:
+  owner files; do not rebuild the old mega refresh assertion there:
   `MainViewModel.Automation.DiagnosticsProjection.Snapshot.Tests.cs`,
   `.Audio.Tests.cs`, `.Capture.Tests.cs`, `.Mjpeg.Tests.cs`,
   `.Recording.Tests.cs`, `.System.Tests.cs`, `.Preview.Tests.cs`, and
