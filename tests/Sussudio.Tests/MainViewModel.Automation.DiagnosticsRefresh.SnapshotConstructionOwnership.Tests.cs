@@ -76,6 +76,14 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingIntegrityAudioText, "private static RecordingIntegrityAudioFlattenedProjection BuildRecordingIntegrityAudioFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingIntegrityAvSyncText, "private static RecordingIntegrityAvSyncFlattenedProjection BuildRecordingIntegrityAvSyncFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingPipelineFlattenedProjection(recordingPipeline)");
+        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "BuildRecordingPipelineEncoderProjection(health)");
+        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "BuildRecordingPipelineIngestProjection(health)");
+        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "BuildRecordingPipelineVideoQueueProjection(health)");
+        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "BuildRecordingPipelineHardwareQueuesProjection(health)");
+        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineEncoderText, "private static RecordingPipelineEncoderProjection BuildRecordingPipelineEncoderProjection(");
+        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineIngestText, "private static RecordingPipelineIngestProjection BuildRecordingPipelineIngestProjection(");
+        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineVideoQueueText, "private static RecordingPipelineVideoQueueProjection BuildRecordingPipelineVideoQueueProjection(");
+        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineHardwareQueuesText, "private static RecordingPipelineHardwareQueuesProjection BuildRecordingPipelineHardwareQueuesProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingPipelineText, "private static RecordingPipelineFlattenedProjection BuildRecordingPipelineFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingPipelineEncoderText, "private static RecordingPipelineEncoderFlattenedProjection BuildRecordingPipelineEncoderFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingPipelineIngestText, "private static RecordingPipelineIngestFlattenedProjection BuildRecordingPipelineIngestFlattenedProjection(");

@@ -647,8 +647,18 @@ Automation diagnostics ownership:
   and
   `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.AvSync.cs`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs`
-  owns encoder queue ages, conversion queue depths, and recording
-  video/GPU/CUDA health inputs consumed by `AutomationSnapshot`.
+  owns recording-pipeline projection routing and groups encoder, ingest,
+  video-queue, and GPU/CUDA health input modules consumed by
+  `AutomationSnapshot`.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.Encoder.cs`
+  owns encoder queue age/count/failure health input projection.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.Ingest.cs`
+  owns conversion, ffmpeg, and video ingest queue health input projection.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.VideoQueue.cs`
+  owns recording video queue latency, backpressure, and encoder-output health
+  input projection.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.HardwareQueues.cs`
+  owns recording GPU and CUDA queue health input projection.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingPipeline.cs`
   owns final recording-pipeline projection-to-`AutomationSnapshot` field
   flattening and routes the grouped encoder, ingest, video-queue, and GPU/CUDA

@@ -6,13 +6,13 @@ public sealed partial class AutomationDiagnosticsHub
         RecordingPipelineProjection recordingPipeline)
         => new()
         {
-            VideoFramesEnqueued = recordingPipeline.EncoderVideoFramesEnqueued,
-            VideoFramesEncoded = recordingPipeline.EncoderVideoFramesEncoded,
-            LastEnqueueAgeMs = recordingPipeline.EncoderLastEnqueueAgeMs,
-            LastWriteAgeMs = recordingPipeline.EncoderLastWriteAgeMs,
-            EncodingFailed = recordingPipeline.RecordingEncodingFailed,
-            EncodingFailureType = recordingPipeline.RecordingEncodingFailureType,
-            EncodingFailureMessage = recordingPipeline.RecordingEncodingFailureMessage
+            VideoFramesEnqueued = recordingPipeline.Encoder.VideoFramesEnqueued,
+            VideoFramesEncoded = recordingPipeline.Encoder.VideoFramesEncoded,
+            LastEnqueueAgeMs = recordingPipeline.Encoder.LastEnqueueAgeMs,
+            LastWriteAgeMs = recordingPipeline.Encoder.LastWriteAgeMs,
+            EncodingFailed = recordingPipeline.Encoder.EncodingFailed,
+            EncodingFailureType = recordingPipeline.Encoder.EncodingFailureType,
+            EncodingFailureMessage = recordingPipeline.Encoder.EncodingFailureMessage
         };
 
     private readonly record struct RecordingPipelineEncoderFlattenedProjection

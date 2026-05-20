@@ -6,16 +6,16 @@ public sealed partial class AutomationDiagnosticsHub
         RecordingPipelineProjection recordingPipeline)
         => new()
         {
-            GpuQueueDepth = recordingPipeline.RecordingGpuQueueDepth,
-            GpuQueueCapacity = recordingPipeline.RecordingGpuQueueCapacity,
-            GpuQueueMaxDepth = recordingPipeline.RecordingGpuQueueMaxDepth,
-            GpuFramesEnqueued = recordingPipeline.RecordingGpuFramesEnqueued,
-            GpuFramesDropped = recordingPipeline.RecordingGpuFramesDropped,
-            CudaQueueDepth = recordingPipeline.RecordingCudaQueueDepth,
-            CudaQueueCapacity = recordingPipeline.RecordingCudaQueueCapacity,
-            CudaQueueMaxDepth = recordingPipeline.RecordingCudaQueueMaxDepth,
-            CudaFramesEnqueued = recordingPipeline.RecordingCudaFramesEnqueued,
-            CudaFramesDropped = recordingPipeline.RecordingCudaFramesDropped
+            GpuQueueDepth = recordingPipeline.HardwareQueues.GpuQueueDepth,
+            GpuQueueCapacity = recordingPipeline.HardwareQueues.GpuQueueCapacity,
+            GpuQueueMaxDepth = recordingPipeline.HardwareQueues.GpuQueueMaxDepth,
+            GpuFramesEnqueued = recordingPipeline.HardwareQueues.GpuFramesEnqueued,
+            GpuFramesDropped = recordingPipeline.HardwareQueues.GpuFramesDropped,
+            CudaQueueDepth = recordingPipeline.HardwareQueues.CudaQueueDepth,
+            CudaQueueCapacity = recordingPipeline.HardwareQueues.CudaQueueCapacity,
+            CudaQueueMaxDepth = recordingPipeline.HardwareQueues.CudaQueueMaxDepth,
+            CudaFramesEnqueued = recordingPipeline.HardwareQueues.CudaFramesEnqueued,
+            CudaFramesDropped = recordingPipeline.HardwareQueues.CudaFramesDropped
         };
 
     private readonly record struct RecordingPipelineHardwareQueuesFlattenedProjection

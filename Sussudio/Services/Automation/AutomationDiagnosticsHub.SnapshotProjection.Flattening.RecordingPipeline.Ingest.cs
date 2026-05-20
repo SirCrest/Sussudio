@@ -6,17 +6,17 @@ public sealed partial class AutomationDiagnosticsHub
         RecordingPipelineProjection recordingPipeline)
         => new()
         {
-            ConversionQueueDepth = recordingPipeline.ConversionQueueDepth,
-            FfmpegVideoQueueDepth = recordingPipeline.FfmpegVideoQueueDepth,
-            FfmpegAudioQueueDepth = recordingPipeline.FfmpegAudioQueueDepth,
-            VideoFramesArrived = recordingPipeline.VideoFramesArrived,
-            VideoFramesQueued = recordingPipeline.VideoFramesQueued,
-            VideoFramesDropped = recordingPipeline.VideoFramesDropped,
-            VideoFramesDroppedBacklog = recordingPipeline.VideoFramesDroppedBacklog,
-            VideoFramesConverted = recordingPipeline.VideoFramesConverted,
-            VideoFramesEnqueued = recordingPipeline.VideoFramesEnqueued,
-            VideoDropsQueueSaturated = recordingPipeline.VideoDropsQueueSaturated,
-            VideoDropsBacklogEviction = recordingPipeline.VideoDropsBacklogEviction
+            ConversionQueueDepth = recordingPipeline.Ingest.ConversionQueueDepth,
+            FfmpegVideoQueueDepth = recordingPipeline.Ingest.FfmpegVideoQueueDepth,
+            FfmpegAudioQueueDepth = recordingPipeline.Ingest.FfmpegAudioQueueDepth,
+            VideoFramesArrived = recordingPipeline.Ingest.VideoFramesArrived,
+            VideoFramesQueued = recordingPipeline.Ingest.VideoFramesQueued,
+            VideoFramesDropped = recordingPipeline.Ingest.VideoFramesDropped,
+            VideoFramesDroppedBacklog = recordingPipeline.Ingest.VideoFramesDroppedBacklog,
+            VideoFramesConverted = recordingPipeline.Ingest.VideoFramesConverted,
+            VideoFramesEnqueued = recordingPipeline.Ingest.VideoFramesEnqueued,
+            VideoDropsQueueSaturated = recordingPipeline.Ingest.VideoDropsQueueSaturated,
+            VideoDropsBacklogEviction = recordingPipeline.Ingest.VideoDropsBacklogEviction
         };
 
     private readonly record struct RecordingPipelineIngestFlattenedProjection

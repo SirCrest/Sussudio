@@ -387,9 +387,18 @@ queue/backpressure, audio integrity, and A/V sync fields:
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.Backpressure.cs`,
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.Audio.cs`, and
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.AvSync.cs`.
-`AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs` owns encoder
-queue ages, conversion queue depths, and recording video/GPU/CUDA health inputs
-consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs` owns
+recording-pipeline projection routing and groups encoder, ingest, video-queue,
+and GPU/CUDA health input modules consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.Encoder.cs` owns
+encoder queue age/count/failure health input projection.
+`AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.Ingest.cs` owns
+conversion, ffmpeg, and video ingest queue health input projection.
+`AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.VideoQueue.cs`
+owns recording video queue latency, backpressure, and encoder-output health
+input projection.
+`AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.HardwareQueues.cs`
+owns recording GPU and CUDA queue health input projection.
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingPipeline.cs`
 owns final recording-pipeline projection-to-`AutomationSnapshot` field
 flattening and routes the grouped encoder, ingest, video-queue, and GPU/CUDA

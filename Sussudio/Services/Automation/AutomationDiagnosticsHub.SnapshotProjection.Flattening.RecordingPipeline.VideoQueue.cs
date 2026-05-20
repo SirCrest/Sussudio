@@ -6,24 +6,24 @@ public sealed partial class AutomationDiagnosticsHub
         RecordingPipelineProjection recordingPipeline)
         => new()
         {
-            Capacity = recordingPipeline.RecordingVideoQueueCapacity,
-            MaxDepth = recordingPipeline.RecordingVideoQueueMaxDepth,
-            FramesSubmittedToEncoder = recordingPipeline.RecordingVideoFramesSubmittedToEncoder,
-            EncoderPts = recordingPipeline.RecordingVideoEncoderPts,
-            EncoderPacketsWritten = recordingPipeline.RecordingVideoEncoderPacketsWritten,
-            EncoderDroppedFrames = recordingPipeline.RecordingVideoEncoderDroppedFrames,
-            SequenceGaps = recordingPipeline.RecordingVideoSequenceGaps,
-            OldestFrameAgeMs = recordingPipeline.RecordingVideoQueueOldestFrameAgeMs,
-            LastLatencyMs = recordingPipeline.RecordingVideoQueueLastLatencyMs,
-            LatencySampleCount = recordingPipeline.RecordingVideoQueueLatencySampleCount,
-            LatencyAvgMs = recordingPipeline.RecordingVideoQueueLatencyAvgMs,
-            LatencyP95Ms = recordingPipeline.RecordingVideoQueueLatencyP95Ms,
-            LatencyP99Ms = recordingPipeline.RecordingVideoQueueLatencyP99Ms,
-            LatencyMaxMs = recordingPipeline.RecordingVideoQueueLatencyMaxMs,
-            BackpressureWaitMs = recordingPipeline.RecordingVideoBackpressureWaitMs,
-            BackpressureEvents = recordingPipeline.RecordingVideoBackpressureEvents,
-            BackpressureLastWaitMs = recordingPipeline.RecordingVideoBackpressureLastWaitMs,
-            BackpressureMaxWaitMs = recordingPipeline.RecordingVideoBackpressureMaxWaitMs
+            Capacity = recordingPipeline.VideoQueue.Capacity,
+            MaxDepth = recordingPipeline.VideoQueue.MaxDepth,
+            FramesSubmittedToEncoder = recordingPipeline.VideoQueue.FramesSubmittedToEncoder,
+            EncoderPts = recordingPipeline.VideoQueue.EncoderPts,
+            EncoderPacketsWritten = recordingPipeline.VideoQueue.EncoderPacketsWritten,
+            EncoderDroppedFrames = recordingPipeline.VideoQueue.EncoderDroppedFrames,
+            SequenceGaps = recordingPipeline.VideoQueue.SequenceGaps,
+            OldestFrameAgeMs = recordingPipeline.VideoQueue.OldestFrameAgeMs,
+            LastLatencyMs = recordingPipeline.VideoQueue.LastLatencyMs,
+            LatencySampleCount = recordingPipeline.VideoQueue.LatencySampleCount,
+            LatencyAvgMs = recordingPipeline.VideoQueue.LatencyAvgMs,
+            LatencyP95Ms = recordingPipeline.VideoQueue.LatencyP95Ms,
+            LatencyP99Ms = recordingPipeline.VideoQueue.LatencyP99Ms,
+            LatencyMaxMs = recordingPipeline.VideoQueue.LatencyMaxMs,
+            BackpressureWaitMs = recordingPipeline.VideoQueue.BackpressureWaitMs,
+            BackpressureEvents = recordingPipeline.VideoQueue.BackpressureEvents,
+            BackpressureLastWaitMs = recordingPipeline.VideoQueue.BackpressureLastWaitMs,
+            BackpressureMaxWaitMs = recordingPipeline.VideoQueue.BackpressureMaxWaitMs
         };
 
     private readonly record struct RecordingPipelineVideoQueueFlattenedProjection
