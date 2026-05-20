@@ -3649,7 +3649,9 @@ owner, fold it back into that owner and update the source-shape tests and
    reinit transition controller, and pending Flashback-cycle wait owners.
    Preview startup ordering coverage is split between lifecycle-event
    ownership, device-discovery ordering, reveal priming, and stop audio-ramp
-   owners.
+   owners. MainViewModel automation recording-transition coverage is split
+   between shared transition-gate routing, failure propagation, emergency stop,
+   bitrate sampling, and recording-settings/Flashback-cycle owners.
 
 3. Continue converting MainWindow partial concerns into controllers.
 
