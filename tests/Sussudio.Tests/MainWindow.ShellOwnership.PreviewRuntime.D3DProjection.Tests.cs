@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task PreviewRuntimeD3DProjection_OwnsPolicyGroups()
+    internal static Task PreviewRuntimeD3DProjection_OwnsPolicyGroups()
     {
         var previewRuntimeD3DFrameCounterPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameCounterPolicy.cs").Replace("\r\n", "\n");
         var previewRuntimeD3DRendererStatePolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DRendererStatePolicy.cs").Replace("\r\n", "\n");

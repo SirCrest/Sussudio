@@ -2517,6 +2517,11 @@ Primary current owners:
   control-bar hover animation, shell elevation, preview transition, startup
   overlay, and fade-in reveal checks after their removal from the legacy
   offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewRuntimeShellContractsTests.cs`
+  owns the former presentation-preview MainWindow preview runtime shell/host
+  group for resize telemetry, renderer host state, snapshot mapping, D3D
+  projection ownership, surface/shadow ownership, and startup-plan fallback
+  checks after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewRecordingContractsTests.cs`
   owns the former presentation-preview MainWindow recording button chrome,
   state presentation, lockout policy, and button-action checks after their

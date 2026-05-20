@@ -912,6 +912,11 @@ Presentation-preview visual shell checks now execute through
 keeping control-bar hover animation, shell elevation, preview transition,
 startup overlay, and fade-in reveal contracts in xUnit after their removal from
 the legacy harness catalog.
+Presentation-preview preview runtime shell checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewRuntimeShellContractsTests.cs`,
+keeping resize telemetry, renderer host state, snapshot mapping, D3D projection
+ownership, surface/shadow ownership, and startup-plan fallback contracts in
+xUnit after their removal from the legacy harness catalog.
 Presentation-preview recording checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewRecordingContractsTests.cs`,
 keeping recording button chrome, state presentation, lockout policy, and

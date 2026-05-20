@@ -9,24 +9,6 @@ static partial class Program
             "MainWindow property changed routing delegates to focused controllers",
             MainWindowPropertyChangedRouting_DelegatesToFocusedControllers);
         await AddCheckAsync(results,
-            "Preview resize telemetry lives in controller",
-            PreviewResizeTelemetry_LivesInController);
-        await AddCheckAsync(results,
-            "Preview renderer runtime state lives in host controller",
-            PreviewRendererHostController_OwnsRuntimeState);
-        await AddCheckAsync(results,
-            "Preview runtime snapshot ownership lives in controller and mapper",
-            PreviewRuntimeSnapshotController_OwnsSnapshotMapping);
-        await AddCheckAsync(results,
-            "Preview runtime D3D projection ownership lives in policy groups",
-            PreviewRuntimeD3DProjection_OwnsPolicyGroups);
-        await AddCheckAsync(results,
-            "Preview surface presentation and shadow live in controllers",
-            PreviewSurfacePresentationAndShadow_LiveInControllers);
-        await AddCheckAsync(results,
-            "Preview renderer startup plan builder preserves fallback policy",
-            PreviewRendererStartupPlanBuilder_PreservesFallbackPolicy);
-        await AddCheckAsync(results,
             "Preview runtime snapshot controller preserves null-D3D policy",
             PreviewRuntimeSnapshotController_PreservesNullD3dProjectionPolicy);
         await AddCheckAsync(results,

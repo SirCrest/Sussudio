@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task PreviewResizeTelemetry_LivesInController()
+    internal static Task PreviewResizeTelemetry_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs").Replace("\r\n", "\n");
@@ -46,7 +46,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewRendererStartupPlanBuilder_PreservesFallbackPolicy()
+    internal static Task PreviewRendererStartupPlanBuilder_PreservesFallbackPolicy()
     {
         var builderType = RequireType("Sussudio.Controllers.PreviewRendererStartupPlanBuilder");
         var mediaFormatType = RequireType("Sussudio.Models.MediaFormat");

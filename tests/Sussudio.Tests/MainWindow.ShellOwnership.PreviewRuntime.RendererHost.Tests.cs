@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task PreviewRendererHostController_OwnsRuntimeState()
+    internal static Task PreviewRendererHostController_OwnsRuntimeState()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var mainWindowFamilyText = string.Join(

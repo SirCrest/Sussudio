@@ -184,6 +184,10 @@ add xUnit alongside, and port incrementally.
   legacy presentation-preview MainWindow visual shell group: control-bar hover,
   shell elevation, preview transition, startup overlay, and fade-in reveal
   checks.
+- `XUnit.PresentationPreviewRuntimeShellContractsTests.cs` owns the former
+  legacy presentation-preview MainWindow preview runtime shell/host group:
+  resize telemetry, renderer host state, snapshot mapping, D3D projection
+  ownership, surface/shadow ownership, and startup-plan fallback checks.
 - `XUnit.PresentationPreviewRecordingContractsTests.cs` owns the former legacy
   presentation-preview MainWindow recording button chrome, state presentation,
   lockout policy, and button-action checks.
