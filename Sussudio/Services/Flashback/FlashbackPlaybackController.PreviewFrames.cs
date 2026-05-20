@@ -10,32 +10,6 @@ internal sealed partial class FlashbackPlaybackController
 {
     // --- Preview frame submission ---
 
-    private void RestoreLiveAfterSeekDisplayFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)
-    {
-        CloseDecoderFileBestEffort(decoder, operation);
-        fileOpen = false;
-        _currentOpenFilePath = null;
-        _decoderHwAccel = "N/A";
-        ReleasePlaybackFrameForLive(operation);
-        RestoreLiveAudio();
-        SafeResumePreviewSubmission(operation);
-        SafeResumeRendering(operation);
-        SetState(FlashbackPlaybackState.Live);
-    }
-
-    private void RestoreLiveAfterPlaybackSubmitFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)
-    {
-        CloseDecoderFileBestEffort(decoder, operation);
-        fileOpen = false;
-        _currentOpenFilePath = null;
-        _decoderHwAccel = "N/A";
-        ReleasePlaybackFrameForLive(operation);
-        RestoreLiveAudio();
-        SafeResumePreviewSubmission(operation);
-        SafeResumeRendering(operation);
-        SetState(FlashbackPlaybackState.Live);
-    }
-
     private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)
     {
         var previewSink = Volatile.Read(ref _previewSink);

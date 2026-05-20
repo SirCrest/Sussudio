@@ -1134,11 +1134,13 @@ Entry points:
 - `FlashbackPlaybackController.AudioMasterFallbacks.cs` owns audio-master
   fallback accounting state, fallback classification, pending fallback
   suppression, and fallback reason/drift/clock-age telemetry updates.
-- `FlashbackPlaybackController.PreviewFrames.cs` owns decoded frame validation,
-  preview renderer submission, and live-restore after submit failures.
+- `FlashbackPlaybackController.PreviewFrames.cs` owns decoded frame validation
+  and preview renderer submission.
 - `FlashbackPlaybackController.PlaybackFrameOwnership.cs` owns held playback
   frame backing state, release-for-live reset policy, and best-effort decoded
   frame release warnings.
+- `FlashbackPlaybackController.PlaybackLiveRecovery.cs` owns seek-display and
+  playback-submit failure recovery back to live playback state.
 - `FlashbackPlaybackController.SeekDisplay.cs` owns seek/scrub keyframe display, file-PTS mapping for displayed seek frames, and seek-display failure accounting.
 - `FlashbackPlaybackController.PlaybackFrames.cs` owns playback-frame dequeue/decode selection, prebuffer cleanup, and A/V drift frame-skip catch-up policy.
 - `FlashbackPlaybackController.PlaybackLoop.cs` owns continuous playback frame progression, decoded-frame submission flow, decode-error live recovery, and near-live snap handling.
@@ -2617,8 +2619,8 @@ Primary current owners:
   playback frame-duration, decoded-PTS cadence telemetry, and metrics reset
   tests.
 - `tests/Sussudio.Tests/Flashback.Playback.Submission.Tests.cs` owns Flashback
-  playback decoded-frame submit-failure, preview frame submission, and held-frame
-  ownership tests.
+  playback decoded-frame submit-failure, preview frame submission, held-frame
+  ownership, and live-recovery ownership tests.
 - `tests/Sussudio.Tests/Flashback.Playback.Reopen.Tests.cs` owns Flashback
   playback fMP4 reopen, seek-display, and seek recovery tests.
 - `tests/Sussudio.Tests/Flashback.Decoder.Tests.cs` owns Flashback decoder

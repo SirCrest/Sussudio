@@ -9,6 +9,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackFrameOwnershipText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrameOwnership.cs")
             .Replace("\r\n", "\n");
+        var playbackLiveRecoveryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLiveRecovery.cs")
+            .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs")
             .Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
@@ -18,12 +20,23 @@ static partial class Program
         AssertContains(previewFramesText, "private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)");
         AssertContains(previewFramesText, "private static bool TryValidatePreviewFrame(DecodedVideoFrame frame, out string reason)");
         AssertContains(previewFramesText, "private static void SubmitFrame(");
+        AssertDoesNotContain(previewFramesText, "private void RestoreLiveAfterSeekDisplayFailure(");
+        AssertDoesNotContain(previewFramesText, "private void RestoreLiveAfterPlaybackSubmitFailure(");
         AssertContains(playbackFrameOwnershipText, "private DecodedVideoFrame _previousHeldFrame;");
         AssertContains(playbackFrameOwnershipText, "private bool _hasPreviousHeldFrame;");
         AssertContains(playbackFrameOwnershipText, "private void ReleasePreviousHeldFrame()");
         AssertContains(playbackFrameOwnershipText, "private void HoldSubmittedFrame(DecodedVideoFrame frame)");
         AssertContains(playbackFrameOwnershipText, "private void ReleasePlaybackFrameForLive(string operation)");
         AssertContains(playbackFrameOwnershipText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
+        AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterSeekDisplayFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
+        AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterPlaybackSubmitFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
+        AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterDecoderPlaybackFailure(");
+        AssertContains(playbackLiveRecoveryText, "CloseDecoderFileBestEffort(decoder, operation);");
+        AssertContains(playbackLiveRecoveryText, "ReleasePlaybackFrameForLive(operation);");
+        AssertContains(playbackLiveRecoveryText, "RestoreLiveAudio();");
+        AssertContains(playbackLiveRecoveryText, "SafeResumePreviewSubmission(operation);");
+        AssertContains(playbackLiveRecoveryText, "SafeResumeRendering(operation);");
+        AssertContains(playbackLiveRecoveryText, "SetState(FlashbackPlaybackState.Live);");
         AssertDoesNotContain(previewFramesText, "private DecodedVideoFrame _previousHeldFrame;");
         AssertDoesNotContain(previewFramesText, "private bool _hasPreviousHeldFrame;");
         AssertDoesNotContain(previewFramesText, "_previousHeldFrame = frame;");
