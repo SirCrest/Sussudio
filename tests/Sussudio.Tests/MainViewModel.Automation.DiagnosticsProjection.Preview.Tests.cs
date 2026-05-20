@@ -16,7 +16,7 @@ static partial class Program
         AssertContains(snapshotProjectionText, "var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);");
         AssertContains(snapshotFlatteningText, "var previewRuntimeFlattening = BuildPreviewRuntimeFlattenedProjection(previewSummary);");
         AssertContains(snapshotFlatteningText, "PreviewFramesArrived = previewRuntimeFlattening.FramesArrived,");
-        AssertContains(snapshotFlatteningText, "EstimatedPipelineLatencyMs = previewSummary.EstimatedPipelineLatencyMs,");
+        AssertContains(snapshotFlatteningText, "EstimatedPipelineLatencyMs = previewRuntimeFlattening.EstimatedPipelineLatencyMs,");
         AssertContains(snapshotFlatteningText, "PreviewCadenceOnePercentLowFps = previewRuntimeFlattening.CadenceOnePercentLowFps,");
         AssertContains(snapshotFlatteningText, "PreviewStartupStrategy = previewRuntimeFlattening.StartupStrategy,");
         AssertContains(snapshotFlatteningText, "PreviewRendererMode = previewRuntimeFlattening.RendererMode,");
@@ -25,6 +25,7 @@ static partial class Program
         AssertContains(snapshotFlatteningText, "PreviewAdapterColorMetadata = previewRuntimeFlattening.AdapterColorMetadata,");
         AssertContains(snapshotFlatteningPreviewRuntimeText, "private static PreviewRuntimeFlattenedProjection BuildPreviewRuntimeFlattenedProjection(");
         AssertContains(snapshotFlatteningPreviewRuntimeText, "FramesArrived = previewSummary.FramesArrived,");
+        AssertContains(snapshotFlatteningPreviewRuntimeText, "EstimatedPipelineLatencyMs = previewSummary.EstimatedPipelineLatencyMs,");
         AssertContains(snapshotFlatteningPreviewRuntimeText, "CadenceOnePercentLowFps = previewSummary.Cadence.OnePercentLowFps,");
         AssertContains(snapshotFlatteningPreviewRuntimeText, "StartupStrategy = previewSummary.Startup.Strategy,");
         AssertContains(snapshotFlatteningPreviewRuntimeText, "RendererMode = previewSummary.Startup.RendererMode,");
@@ -35,6 +36,7 @@ static partial class Program
         AssertDoesNotContain(snapshotFlatteningText, "PreviewFramesArrived = previewRuntime.FramesArrived,");
         AssertDoesNotContain(snapshotFlatteningText, "PreviewFramesArrived = previewSummary.FramesArrived,");
         AssertDoesNotContain(snapshotFlatteningText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs,");
+        AssertDoesNotContain(snapshotFlatteningText, "EstimatedPipelineLatencyMs = previewSummary.EstimatedPipelineLatencyMs,");
         AssertDoesNotContain(snapshotFlatteningText, "PreviewCadenceOnePercentLowFps = previewSummary.CadenceOnePercentLowFps,");
         AssertDoesNotContain(snapshotFlatteningText, "PreviewCadenceOnePercentLowFps = previewSummary.Cadence.OnePercentLowFps,");
         AssertDoesNotContain(snapshotFlatteningText, "PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,");

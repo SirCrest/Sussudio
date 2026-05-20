@@ -4,12 +4,13 @@ static partial class Program
     {
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var previewRuntimeFlattening = BuildPreviewRuntimeFlattenedProjection(previewSummary);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "EstimatedPipelineLatencyMs = previewSummary.EstimatedPipelineLatencyMs,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "EstimatedPipelineLatencyMs = previewRuntimeFlattening.EstimatedPipelineLatencyMs,");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "PreviewFramesArrived = previewRuntimeFlattening.FramesArrived,");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "PreviewCadenceOnePercentLowFps = previewRuntimeFlattening.CadenceOnePercentLowFps,");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "PreviewAdapterColorMetadata = previewRuntimeFlattening.AdapterColorMetadata,");
         AssertContains(diagnostics.SnapshotProjectionFlatteningPreviewRuntimeText, "private static PreviewRuntimeFlattenedProjection BuildPreviewRuntimeFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningPreviewRuntimeText, "FramesArrived = previewSummary.FramesArrived,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningPreviewRuntimeText, "EstimatedPipelineLatencyMs = previewSummary.EstimatedPipelineLatencyMs,");
         AssertContains(diagnostics.SnapshotProjectionFlatteningPreviewRuntimeText, "CadenceOnePercentLowFps = previewSummary.Cadence.OnePercentLowFps,");
         AssertContains(diagnostics.SnapshotProjectionFlatteningPreviewRuntimeText, "StartupStrategy = previewSummary.Startup.Strategy,");
         AssertContains(diagnostics.SnapshotProjectionFlatteningPreviewRuntimeText, "AdapterColorMetadata = previewSummary.AdapterColorMetadata");
@@ -35,6 +36,7 @@ static partial class Program
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "PreviewHdrInputDetected = previewHdrState.InputDetected,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "PreviewAdapterColorMetadata = captureRuntime.PreviewColorMetadata,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "PreviewFramesArrived = previewSummary.FramesArrived,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "EstimatedPipelineLatencyMs = previewSummary.EstimatedPipelineLatencyMs,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "PreviewCadenceOnePercentLowFps = previewSummary.Cadence.OnePercentLowFps,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "PreviewStartupStrategy = previewSummary.Startup.Strategy,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "PreviewAdapterColorMetadata = previewSummary.AdapterColorMetadata,");

@@ -11,6 +11,7 @@ public sealed partial class AutomationDiagnosticsHub
             FramesArrived = previewSummary.FramesArrived,
             FramesDisplayed = previewSummary.FramesDisplayed,
             FramesDropped = previewSummary.FramesDropped,
+            EstimatedPipelineLatencyMs = previewSummary.EstimatedPipelineLatencyMs,
             CadenceSampleCount = previewSummary.Cadence.SampleCount,
             CadenceObservedFps = previewSummary.Cadence.ObservedFps,
             CadenceExpectedIntervalMs = previewSummary.Cadence.ExpectedIntervalMs,
@@ -63,6 +64,7 @@ public sealed partial class AutomationDiagnosticsHub
         public long FramesArrived { get; init; }
         public long FramesDisplayed { get; init; }
         public long FramesDropped { get; init; }
+        public long EstimatedPipelineLatencyMs { get; init; }
         public int CadenceSampleCount { get; init; }
         public double CadenceObservedFps { get; init; }
         public double CadenceExpectedIntervalMs { get; init; }
