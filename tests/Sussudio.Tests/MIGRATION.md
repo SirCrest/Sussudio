@@ -213,6 +213,9 @@ add xUnit alongside, and port incrementally.
 - `XUnit.PresentationPreviewD3DPacingContractsTests.cs` owns the former legacy
   presentation-preview D3D pacing registration group: transition-drain,
   frame-capture cancellation, and shared-device reference lifecycle checks.
+- `XUnit.PresentationPreviewD3DGeometryContractsTests.cs` owns the former
+  legacy presentation-preview D3D geometry/screenshot registration group:
+  letterbox, black-edge, PNG CRC, and 16-bit PNG capture checks.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, and test-project shape guard checks.
 - `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy

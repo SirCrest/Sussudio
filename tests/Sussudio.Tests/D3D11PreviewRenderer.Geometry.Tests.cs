@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task D3D11PreviewRenderer_ComputeLetterboxRect_CalculatesCorrectly()
+    internal static Task D3D11PreviewRenderer_ComputeLetterboxRect_CalculatesCorrectly()
     {
         var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
         var method = rendererType.GetMethod("ComputeLetterboxRect",
@@ -43,7 +43,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task D3D11PreviewRenderer_BlackEdgeCounting_WorksCorrectly()
+    internal static Task D3D11PreviewRenderer_BlackEdgeCounting_WorksCorrectly()
     {
         // Extracted to PreviewScreenshotCapture; reflect on the new type.
         var captureType = RequireType("Sussudio.Services.Preview.PreviewScreenshotCapture");
@@ -78,7 +78,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task D3D11PreviewRenderer_InitPngCrc32Table_Generates256Entries()
+    internal static Task D3D11PreviewRenderer_InitPngCrc32Table_Generates256Entries()
     {
         // PNG chunk/CRC ownership lives in the preview PNG encoder.
         var encoderType = RequireType("Sussudio.Services.Preview.PreviewPng16Encoder");
@@ -99,7 +99,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task D3D11PreviewRenderer_PreviewPngCapture_Writes16BitRgbPng()
+    internal static Task D3D11PreviewRenderer_PreviewPngCapture_Writes16BitRgbPng()
     {
         var captureType = RequireType("Sussudio.Services.Preview.PreviewScreenshotCapture");
         var method = captureType.GetMethod(

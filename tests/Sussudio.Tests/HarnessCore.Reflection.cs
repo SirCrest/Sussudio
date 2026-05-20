@@ -86,8 +86,21 @@ static partial class Program
             }
             catch
             {
-                // Keep the original missing-type error below; unrelated
-                // platform references do not matter to this offline runner.
+                var assemblyDirectory = Path.GetDirectoryName(_assembly.Location);
+                var referencePath = assemblyDirectory == null
+                    ? null
+                    : Path.Combine(assemblyDirectory, reference.Name + ".dll");
+                if (referencePath == null || !File.Exists(referencePath))
+                {
+                    continue;
+                }
+
+                var referencedAssembly = Assembly.LoadFrom(referencePath);
+                type = referencedAssembly.GetType(typeName);
+                if (type != null)
+                {
+                    return type;
+                }
             }
         }
 

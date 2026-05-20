@@ -2554,6 +2554,10 @@ Primary current owners:
   owns the former presentation-preview D3D pacing group for transition-drain,
   frame-capture cancellation, and shared-device reference lifecycle checks after
   their removal from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DGeometryContractsTests.cs`
+  owns the former presentation-preview D3D geometry/screenshot group for
+  letterbox, black-edge, PNG CRC, and 16-bit PNG capture checks after their
+  removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral

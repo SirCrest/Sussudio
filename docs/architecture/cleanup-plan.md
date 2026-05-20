@@ -955,6 +955,10 @@ Presentation-preview D3D pacing checks now execute through
 keeping transition-drain, frame-capture cancellation, and shared-device
 reference lifecycle contracts in xUnit after their removal from the legacy
 harness catalog.
+Presentation-preview D3D geometry/screenshot checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DGeometryContractsTests.cs`,
+keeping letterbox, black-edge, PNG CRC, and 16-bit PNG capture contracts in
+xUnit after their removal from the legacy harness catalog.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the

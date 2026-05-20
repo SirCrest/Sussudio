@@ -6,12 +6,6 @@ static partial class Program
     private static async Task AddPresentationPreviewD3DChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "D3D preview letterbox rect calculates correctly",
-            D3D11PreviewRenderer_ComputeLetterboxRect_CalculatesCorrectly);
-        await AddCheckAsync(results,
-            "D3D preview black edge counting works correctly",
-            D3D11PreviewRenderer_BlackEdgeCounting_WorksCorrectly);
-        await AddCheckAsync(results,
             "D3D preview device lost exceptions classify correctly",
             D3D11PreviewRenderer_IsDeviceLostException_ClassifiesCorrectly);
         await AddCheckAsync(results,
@@ -20,12 +14,6 @@ static partial class Program
         await AddCheckAsync(results,
             "D3D preview present cadence ignores suppressed frames",
             D3D11PreviewRenderer_PresentCadenceSuppression_SkipsSamplesAndResetsBaseline);
-        await AddCheckAsync(results,
-            "D3D preview PNG CRC table generates 256 entries",
-            D3D11PreviewRenderer_InitPngCrc32Table_Generates256Entries);
-        await AddCheckAsync(results,
-            "D3D preview PNG capture writes 16-bit RGB PNG",
-            D3D11PreviewRenderer_PreviewPngCapture_Writes16BitRgbPng);
         await AddCheckAsync(results,
             "D3D preview diagnostics expose swap-chain and render timing contract",
             D3D11PreviewRenderer_DiagnosticsContract_ExposesSwapChainAndRenderTiming);
