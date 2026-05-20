@@ -33,16 +33,19 @@ static partial class Program
         AssertContains(builderText, "private static DiagnosticSessionResult CreateResult(");
         AssertContains(flatteningText, "private static DiagnosticSessionResult FlattenResultProjectionSet(");
         AssertContains(builderText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
-        AssertContains(builderText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
+        AssertContains(modelsText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
         AssertContains(previewSchedulerText, "private static DiagnosticSessionPreviewSchedulerAnalysis BuildPreviewSchedulerAnalysis(");
         AssertContains(previewSchedulerText, "private readonly record struct DiagnosticSessionPreviewSchedulerAnalysis(");
         AssertContains(modelsText, "internal sealed record DiagnosticSessionResultBuildRequest(");
+        AssertContains(modelsText, "DiagnosticSessionOverviewResultProjection Overview,");
+        AssertContains(modelsText, "DiagnosticSessionPreviewVisualCadenceResultProjection PreviewVisualCadence");
         AssertContains(builderText, "runState.SetStage(\"result-analysis\")");
         AssertContains(builderText, "return FlattenResultProjectionSet(");
         AssertContains(flatteningText, "return new DiagnosticSessionResult\n        {");
         AssertContains(builderText, "var resultProjections = BuildResultProjectionSet(request, runState, analysis);");
         AssertContains(analysisText, "var previewScheduler = BuildPreviewSchedulerAnalysis(initialSnapshot, lastSnapshot, samples);");
         AssertDoesNotContain(flatteningText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
+        AssertDoesNotContain(builderText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
         AssertDoesNotContain(builderText, "return new DiagnosticSessionResult\n        {");
     }
 

@@ -46,4 +46,15 @@ internal static partial class DiagnosticSessionResultBuilder
         bool DiagnosticHealthSucceeded,
         bool FlashbackWarningsSucceeded,
         double ProcessCpuMaxPercentObserved);
+
+    private readonly record struct DiagnosticSessionResultProjectionSet(
+        DiagnosticSessionOverviewResultProjection Overview,
+        DiagnosticSessionCaptureResultProjection Capture,
+        DiagnosticSessionFlashbackPlaybackResultProjection FlashbackPlayback,
+        DiagnosticSessionFlashbackRecordingResultProjection FlashbackRecording,
+        DiagnosticSessionFlashbackExportResultProjection FlashbackExport,
+        DiagnosticSessionPreviewResultProjection Preview,
+        DiagnosticSessionPreviewSchedulerResultProjection PreviewScheduler,
+        DiagnosticSessionPreviewD3DResultProjection PreviewD3D,
+        DiagnosticSessionPreviewVisualCadenceResultProjection PreviewVisualCadence);
 }

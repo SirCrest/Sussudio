@@ -3115,8 +3115,9 @@ Diagnostic
 metric gathering and validation handoff orchestration live in
 `DiagnosticSessionResultBuilder.Analysis.cs`, while Flashback playback/export
 analysis warning text and thresholds live in
-`DiagnosticSessionResultBuilder.FlashbackWarnings.cs`; result-build handoff
-models live in `DiagnosticSessionResultBuilder.Models.cs`. Diagnostic health verdict
+`DiagnosticSessionResultBuilder.FlashbackWarnings.cs`; result-build request,
+analysis, and projection-set handoff models live in
+`DiagnosticSessionResultBuilder.Models.cs`. Diagnostic health verdict
 composition, warning tolerance, and health warning text now live in
 `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`.
 Preview-scheduler analysis handoff values live in

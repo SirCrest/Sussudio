@@ -3713,9 +3713,9 @@ Primary owners:
   final result initializer. It should not map scheduler metrics directly, and
   D3D fields stay in their own projection struct.
 - `tools/Common/DiagnosticSessionResultBuilder.Models.cs` owns the builder
-  request record and private analysis handoff record, including the single
-  `PreviewScheduler` record property used by preview-scheduler result
-  projection.
+  request record, private analysis handoff record, and private projection-set
+  handoff record, including the single `PreviewScheduler` record property used
+  by preview-scheduler result projection.
 - `tools/Common/DiagnosticSessionResultArtifacts.cs` owns diagnostic-session
   result artifact path construction and pre-summary sample, frame-ledger, and
   timeline artifact writes.
