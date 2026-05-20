@@ -40,6 +40,39 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task PreviewRuntimeD3DProjectionBuilder_AppliesPolicyGroups()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
+        var build = projectionType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
+                    ?? throw new InvalidOperationException("PreviewRuntimeD3DProjection.Build not found.");
+
+        var input = Activator.CreateInstance(inputType)
+                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+        SetPropertyOrBackingField(input, "D3DRenderer", null);
+        SetPropertyOrBackingField(input, "PreviewSourceAttached", true);
+        SetPropertyOrBackingField(input, "IsPreviewing", true);
+        SetPropertyOrBackingField(input, "FramesArrived", 31L);
+        SetPropertyOrBackingField(input, "FramesDisplayed", 17L);
+        SetPropertyOrBackingField(input, "FramesDropped", 4L);
+        SetPropertyOrBackingField(input, "PreviewMinPresentationIntervalMs", 8.33d);
+
+        var projection = build.Invoke(null, new[] { input })
+                         ?? throw new InvalidOperationException("PreviewRuntimeD3DProjection.Build returned null.");
+        AssertEqual(false, GetBoolProperty(projection, "GpuActive"), "builder applies frame-counter GPU state");
+        AssertEqual(true, GetBoolProperty(projection, "RendererAttached"), "builder applies CPU fallback attachment");
+        AssertEqual(31L, GetLongProperty(projection, "FramesArrived"), "builder applies frame-counter arrived value");
+        AssertEqual("CpuSoftwareBitmap", GetStringProperty(projection, "RendererMode"), "builder applies renderer-state fallback");
+        AssertEqual(0, GetIntProperty(projection, "DisplayCadenceSampleCount"), "builder applies display cadence defaults");
+        AssertEqual(0d, GetDoubleProperty(projection, "D3DInputUploadCpuAvgMs"), "builder applies render CPU timing defaults");
+        AssertEqual(0d, GetDoubleProperty(projection, "EstimatedPipelineLatencyMs"), "builder applies pipeline latency defaults");
+        AssertEqual(false, GetBoolProperty(projection, "D3DFrameLatencyWaitEnabled"), "builder applies frame-latency wait defaults");
+        AssertEqual(-1L, GetLongProperty(projection, "D3DFrameStatsPresentCount"), "builder applies frame-stat sentinels");
+        AssertEqual(-1L, GetLongProperty(projection, "D3DLastSubmittedSourceSequenceNumber"), "builder applies frame-ownership sentinels");
+
+        return Task.CompletedTask;
+    }
+
     private static Task PreviewRuntimeD3DRendererStatePolicy_PreservesNullRendererDefaults()
     {
         var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DRendererStatePolicy");

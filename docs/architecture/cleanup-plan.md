@@ -812,7 +812,8 @@ present-count sentinels used by preview diagnostics.
 owns D3D frame-latency wait projection defaults, including null-renderer wait
 handle state, wait counters, last result, and wait timing metrics.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs` owns
-the renderer projection data contract root and frame-counter fields.
+the renderer projection data contract root, frame-counter fields, and
+frame-counter assignment from the evaluated policy record.
 `PreviewRuntimeD3DProjection.RendererState.cs`,
 `PreviewRuntimeD3DProjection.DisplayCadence.cs`,
 `PreviewRuntimeD3DProjection.RenderCpuTiming.cs`,
@@ -820,9 +821,12 @@ the renderer projection data contract root and frame-counter fields.
 `PreviewRuntimeD3DProjection.FrameOwnership.cs`,
 `PreviewRuntimeD3DProjection.FrameStatistics.cs`, and
 `PreviewRuntimeD3DProjection.FrameLatencyWait.cs` own the matching projection
-field groups beside their policy owners.
+field groups and assignment from their matching policy records. These
+projection properties keep public getters with private setters so callers see a
+read-only projection while each partial owns its assembly mapping.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.Builder.cs`
-owns remaining D3D diagnostic field composition.
+owns policy evaluation order and delegates projection assembly to those field
+owners.
 Close routing/finalization handling remains in the explicit window close
 lifecycle owners below.
 
