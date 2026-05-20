@@ -3733,9 +3733,11 @@ restart frame-flow validation live in `.FlashbackValidation.cs`;
 playback-preview-cycle warmup, stopped-state, and restart frame-flow validation
 live in `.PlaybackValidation.cs`. Normal Flashback and playback-preview-cycle
 export-while-preview-off verification live in `.FlashbackExport.cs` and
-`.PlaybackExport.cs`. Recording-backed readiness, preview-off counter, and
-restart frame-flow validation live in `.RecordingValidation.cs` while startup
-only delegates selected scenario registration.
+`.PlaybackExport.cs`. Recording-backed readiness and pre-stop encoder counter
+capture live in `.RecordingCounters.cs`, preview-off recording/backend/counter
+validation lives in `.RecordingValidation.cs`, and restart frame-flow validation
+lives in `.RecordingRestartValidation.cs` while startup only delegates selected
+scenario registration.
 
 Diagnostic-session Flashback rejected-export scenarios now live in the
 `tools/Common/DiagnosticSessionFlashbackRejectedExports*.cs` partial family.
@@ -3925,7 +3927,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackValidation.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackExport.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
+- `DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingCounters.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingValidation.cs`
+- `DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingRestartValidation.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackRejectedExports.Inactive.cs`
 - `DiagnosticSessionFlashbackRejectedExports.Recording.cs`

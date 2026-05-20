@@ -78,7 +78,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var recordingCycleText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs")
             .Replace("\r\n", "\n");
+        var recordingCountersText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingCounters.cs")
+            .Replace("\r\n", "\n");
         var recordingValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingValidation.cs")
+            .Replace("\r\n", "\n");
+        var recordingRestartValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingRestartValidation.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(cyclesText, "internal static partial class DiagnosticSessionFlashbackPreviewCycleScenarios");
@@ -128,13 +132,21 @@ static partial class Program
         AssertDoesNotContain(recordingCycleText, "WaitForFlashbackRecordingReadyAsync(");
         AssertDoesNotContain(recordingCycleText, "recording counters did not advance while preview was off");
         AssertDoesNotContain(recordingCycleText, "VideoFramesFlowing");
-        AssertContains(recordingValidationText, "private readonly record struct RecordingPreviewCycleCounters(");
-        AssertContains(recordingValidationText, "private static async Task<RecordingPreviewCycleCounters?> CaptureRecordingPreviewCycleCountersBeforeStopAsync(");
-        AssertContains(recordingValidationText, "WaitForFlashbackRecordingReadyAsync(");
+        AssertContains(recordingCountersText, "private readonly record struct RecordingPreviewCycleCounters(");
+        AssertContains(recordingCountersText, "private static async Task<RecordingPreviewCycleCounters?> CaptureRecordingPreviewCycleCountersBeforeStopAsync(");
+        AssertContains(recordingCountersText, "WaitForFlashbackRecordingReadyAsync(");
+        AssertDoesNotContain(recordingCountersText, "recording counters did not advance while preview was off");
+        AssertContains(recordingValidationText, "WaitForPreviewActiveAsync(");
         AssertContains(recordingValidationText, "private static async Task<bool> ValidateRecordingPreviewCycleStoppedAsync(");
         AssertContains(recordingValidationText, "flashback recording preview cycle: recording counters did not advance while preview was off");
-        AssertContains(recordingValidationText, "private static async Task ValidateRecordingPreviewCycleRestartedAsync(");
-        AssertContains(recordingValidationText, "VideoFramesFlowing");
+        AssertDoesNotContain(recordingValidationText, "private readonly record struct RecordingPreviewCycleCounters(");
+        AssertDoesNotContain(recordingValidationText, "private static async Task<RecordingPreviewCycleCounters?> CaptureRecordingPreviewCycleCountersBeforeStopAsync(");
+        AssertDoesNotContain(recordingValidationText, "private static async Task ValidateRecordingPreviewCycleRestartedAsync(");
+        AssertDoesNotContain(recordingValidationText, "VideoFramesFlowing");
+        AssertContains(recordingRestartValidationText, "private static async Task ValidateRecordingPreviewCycleRestartedAsync(");
+        AssertContains(recordingRestartValidationText, "VideoFramesFlowing");
+        AssertContains(recordingRestartValidationText, "flashback recording preview cycle: preview frames did not resume");
+        AssertDoesNotContain(recordingRestartValidationText, "recording counters did not advance while preview was off");
         AssertDoesNotContain(cyclesText, "internal static bool IsPreviewCycleScenario(");
         AssertContains(cyclesText, "internal static void RegisterSelectedFlashbackPreviewCycleScenarioTasks(");
         AssertContains(cyclesText, "13,\n                \"flashback-preview-cycle-task\",");

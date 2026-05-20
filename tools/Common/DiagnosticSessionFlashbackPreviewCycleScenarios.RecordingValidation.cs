@@ -7,31 +7,6 @@ namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionFlashbackPreviewCycleScenarios
 {
-    private readonly record struct RecordingPreviewCycleCounters(
-        long SubmittedBeforeStop,
-        long PacketsBeforeStop);
-
-    private static async Task<RecordingPreviewCycleCounters?> CaptureRecordingPreviewCycleCountersBeforeStopAsync(
-        List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
-        CancellationToken cancellationToken)
-    {
-        var recordingReadySnapshot = await WaitForFlashbackRecordingReadyAsync(
-                sendCommandAsync,
-                TimeSpan.FromSeconds(20),
-                cancellationToken)
-            .ConfigureAwait(false);
-        if (recordingReadySnapshot?.ValueKind != JsonValueKind.Object)
-        {
-            warnings.Add("flashback recording preview cycle: Flashback recording backend did not become ready");
-            return null;
-        }
-
-        return new RecordingPreviewCycleCounters(
-            SubmittedBeforeStop: GetNullableLong(recordingReadySnapshot.Value, "FlashbackVideoFramesSubmittedToEncoder") ?? 0,
-            PacketsBeforeStop: GetNullableLong(recordingReadySnapshot.Value, "FlashbackVideoEncoderPacketsWritten") ?? 0);
-    }
-
     private static async Task<bool> ValidateRecordingPreviewCycleStoppedAsync(
         RecordingPreviewCycleCounters countersBeforeStop,
         List<string> warnings,
@@ -82,45 +57,5 @@ internal static partial class DiagnosticSessionFlashbackPreviewCycleScenarios
         }
 
         return true;
-    }
-
-    private static async Task ValidateRecordingPreviewCycleRestartedAsync(
-        List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
-        CancellationToken cancellationToken)
-    {
-        var previewStartedSnapshot = await WaitForPreviewActiveAsync(
-                sendCommandAsync,
-                expectedActive: true,
-                timeout: TimeSpan.FromSeconds(15),
-                cancellationToken)
-            .ConfigureAwait(false);
-        if (previewStartedSnapshot?.ValueKind != JsonValueKind.Object)
-        {
-            warnings.Add("flashback recording preview cycle: preview did not report active after restart");
-            return;
-        }
-
-        if (!GetBool(previewStartedSnapshot.Value, "IsRecording") ||
-            !string.Equals(GetString(previewStartedSnapshot.Value, "RecordingBackend"), "Flashback", StringComparison.OrdinalIgnoreCase))
-        {
-            warnings.Add("flashback recording preview cycle: Flashback recording backend inactive after preview restart");
-        }
-
-        var framesFlowingResponse = await sendCommandAsync(
-                "WaitForCondition",
-                new Dictionary<string, object?>
-                {
-                    ["condition"] = "VideoFramesFlowing",
-                    ["timeoutMs"] = 15_000,
-                    ["pollMs"] = 250
-                },
-                17_000)
-            .ConfigureAwait(false);
-        if (!AutomationSnapshotFormatter.IsSuccess(framesFlowingResponse))
-        {
-            warnings.Add(
-                $"flashback recording preview cycle: preview frames did not resume - {AutomationSnapshotFormatter.Get(framesFlowingResponse, "Message", "not met")}");
-        }
     }
 }
