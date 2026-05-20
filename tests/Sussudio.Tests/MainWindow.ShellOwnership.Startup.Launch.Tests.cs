@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task LaunchEntranceAnimation_LivesInController()
+    internal static Task LaunchEntranceAnimation_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs").Replace("\r\n", "\n");
@@ -69,7 +69,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MainWindowStartupHosting_LivesInStartupPartial()
+    internal static Task MainWindowStartupHosting_LivesInStartupPartial()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs").Replace("\r\n", "\n");

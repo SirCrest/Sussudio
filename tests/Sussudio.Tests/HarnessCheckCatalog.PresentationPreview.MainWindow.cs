@@ -9,18 +9,6 @@ static partial class Program
             "MainWindow property changed routing delegates to focused controllers",
             MainWindowPropertyChangedRouting_DelegatesToFocusedControllers);
         await AddCheckAsync(results,
-            "Splash loading phrase catalog and animation ownership are split",
-            SplashLoadingPhrases_LiveInController);
-        await AddCheckAsync(results,
-            "Splash loading phrase pacing policy preserves interval bands",
-            SplashLoadingPhrasePacingPolicy_PreservesIntervalBands);
-        await AddCheckAsync(results,
-            "Launch entrance animation lives in controller",
-            LaunchEntranceAnimation_LivesInController);
-        await AddCheckAsync(results,
-            "MainWindow startup hosting lives in startup partial",
-            MainWindowStartupHosting_LivesInStartupPartial);
-        await AddCheckAsync(results,
             "Preview resize telemetry lives in controller",
             PreviewResizeTelemetry_LivesInController);
         await AddCheckAsync(results,

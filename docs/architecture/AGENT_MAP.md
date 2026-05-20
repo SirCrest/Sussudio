@@ -2494,6 +2494,11 @@ Primary current owners:
   owns the former presentation-preview MainWindow initial registration group for
   close cancellation and window screenshot helper ownership after its removal
   from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewLaunchStartupContractsTests.cs`
+  owns the former presentation-preview MainWindow launch/startup group for
+  splash loading phrase ownership, splash pacing policy, launch entrance
+  animation, and startup hosting checks after their removal from the legacy
+  offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewScreenshotContractsTests.cs`
   owns the former presentation-preview MainWindow preview screenshot workflow
   and plan-policy checks after their removal from the legacy offline harness

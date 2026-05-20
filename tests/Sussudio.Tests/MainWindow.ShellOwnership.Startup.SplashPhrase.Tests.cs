@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task SplashLoadingPhrases_LiveInController()
+    internal static Task SplashLoadingPhrases_LiveInController()
     {
         var launchEntranceSplashText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
@@ -62,7 +62,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task SplashLoadingPhrasePacingPolicy_PreservesIntervalBands()
+    internal static Task SplashLoadingPhrasePacingPolicy_PreservesIntervalBands()
     {
         var policyType = RequireType("Sussudio.Controllers.SplashLoadingPhrasePacingPolicy");
         var policy = Activator.CreateInstance(policyType, nonPublic: true)
