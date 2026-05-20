@@ -1639,7 +1639,18 @@ Primary current owners:
   MainWindow responsive shell layout controller-adapter and breakpoint/placement
   policy assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs`
-  owns capture selection binding/sync controller-adapter ownership assertions.
+  owns capture selection binding XAML-adapter and controller-shell ownership
+  assertions.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.PropertyRouter.Tests.cs`
+  owns capture selection `PropertyChanged` router ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.CollectionSync.Tests.cs`
+  owns capture selection collection sync, queued sync, and available-option
+  rebinding ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.SelectionOwners.Tests.cs`
+  owns capture device, audio input, capture mode, recording selection, and
+  selection-normalizer placement assertions.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.DeviceAudio.Tests.cs`
+  owns capture selection device-audio projection ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionNormalizer.Tests.cs`
   owns capture ComboBox selection normalizer fallback-policy assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.DeviceActions.Tests.cs`

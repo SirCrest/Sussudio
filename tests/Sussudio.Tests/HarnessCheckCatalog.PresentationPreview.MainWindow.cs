@@ -169,6 +169,18 @@ static partial class Program
             "Capture selection binding sync lives in controller",
             CaptureSelectionBindingSync_LivesInController);
         await AddCheckAsync(results,
+            "Capture selection property-change router lives in controller",
+            CaptureSelectionBindingPropertyRouter_LivesInController);
+        await AddCheckAsync(results,
+            "Capture selection collection sync lives in controller partial",
+            CaptureSelectionBindingCollectionSync_LivesInControllerPartial);
+        await AddCheckAsync(results,
+            "Capture selection owners live in focused partials",
+            CaptureSelectionBindingSelectionOwners_LiveInFocusedPartials);
+        await AddCheckAsync(results,
+            "Capture selection device-audio projection lives in focused partial",
+            CaptureSelectionBindingDeviceAudioProjection_LivesInFocusedPartial);
+        await AddCheckAsync(results,
             "Capture combo-box selection normalizer preserves fallback rules",
             CaptureComboBoxSelectionNormalizer_PreservesSelectionFallbacks);
         await AddCheckAsync(results,

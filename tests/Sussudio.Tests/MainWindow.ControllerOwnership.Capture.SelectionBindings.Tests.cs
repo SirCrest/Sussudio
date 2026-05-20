@@ -9,27 +9,6 @@ static partial class Program
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.CaptureSelectionBindings.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
-        var collectionSyncText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.CollectionSync.cs").Replace("\r\n", "\n");
-        var deviceAudioText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.DeviceAudio.cs").Replace("\r\n", "\n");
-        var propertyChangesText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.PropertyChanges.cs").Replace("\r\n", "\n");
-        var deviceSelectionText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.DeviceSelection.cs").Replace("\r\n", "\n");
-        var audioSelectionText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.AudioSelection.cs").Replace("\r\n", "\n");
-        var captureModeSelectionText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.CaptureModeSelection.cs").Replace("\r\n", "\n");
-        var recordingSelectionText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.RecordingSelection.cs").Replace("\r\n", "\n");
-        var selectionFamilyText = string.Join(
-            "\n",
-            deviceSelectionText,
-            audioSelectionText,
-            captureModeSelectionText,
-            recordingSelectionText);
-        var selectionControllerFamilyText = string.Join(
-            "\n",
-            controllerText,
-            collectionSyncText,
-            deviceAudioText,
-            propertyChangesText,
-            selectionFamilyText);
-        var selectionNormalizerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureComboBoxSelectionNormalizer.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private CaptureSelectionBindingController _captureSelectionBindingController = null!;");
         AssertContains(adapterText, "private void InitializeCaptureSelectionBindingController()");
@@ -52,166 +31,17 @@ static partial class Program
         AssertContains(adapterText, "private void UpdateDeviceApplyButtonState()");
         AssertContains(adapterText, "private bool TryHandleCaptureSelectionPropertyChanged(string? propertyName)");
         AssertContains(adapterText, "=> _captureSelectionBindingController.TryHandlePropertyChanged(propertyName);");
-        AssertContains(propertyChangesText, "public bool TryHandlePropertyChanged(string? propertyName)");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.SelectedDevice):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.SelectedResolution):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.SelectedFrameRate):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.IsAutoFrameRateSelected):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.AvailableResolutions):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.AvailableFrameRates):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.IsDeviceAudioControlSupported):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.SelectedDeviceAudioMode):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.AnalogAudioGainPercent):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.AvailableDeviceAudioModes):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.SelectedAudioInputDevice):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.SelectedMicrophoneDevice):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.SelectedRecordingFormat):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.SelectedQuality):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.AvailablePresets):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.SelectedPreset):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.AvailableSplitEncodeModes):");
-        AssertContains(propertyChangesText, "case nameof(MainViewModel.SelectedSplitEncodeMode):");
-        AssertOccursBefore(propertyChangesText, "case nameof(MainViewModel.SelectedDevice):", "case nameof(MainViewModel.SelectedResolution):");
-        AssertOccursBefore(propertyChangesText, "case nameof(MainViewModel.SelectedResolution):", "case nameof(MainViewModel.SelectedFrameRate):");
-        AssertOccursBefore(propertyChangesText, "case nameof(MainViewModel.IsAutoFrameRateSelected):", "case nameof(MainViewModel.AvailableResolutions):");
-        AssertOccursBefore(propertyChangesText, "case nameof(MainViewModel.AvailableResolutions):", "case nameof(MainViewModel.AvailableFrameRates):");
-        AssertOccursBefore(propertyChangesText, "case nameof(MainViewModel.AvailableFrameRates):", "case nameof(MainViewModel.IsDeviceAudioControlSupported):");
-        AssertOccursBefore(propertyChangesText, "case nameof(MainViewModel.AvailableDeviceAudioModes):", "case nameof(MainViewModel.SelectedAudioInputDevice):");
-        AssertOccursBefore(propertyChangesText, "case nameof(MainViewModel.SelectedAudioInputDevice):", "case nameof(MainViewModel.SelectedMicrophoneDevice):");
-        AssertOccursBefore(propertyChangesText, "case nameof(MainViewModel.SelectedMicrophoneDevice):", "case nameof(MainViewModel.SelectedRecordingFormat):");
-        AssertOccursBefore(propertyChangesText, "case nameof(MainViewModel.SelectedRecordingFormat):", "case nameof(MainViewModel.SelectedQuality):");
-        AssertOccursBefore(propertyChangesText, "case nameof(MainViewModel.SelectedQuality):", "case nameof(MainViewModel.AvailablePresets):");
-        AssertOccursBefore(propertyChangesText, "case nameof(MainViewModel.AvailablePresets):", "case nameof(MainViewModel.SelectedPreset):");
-        AssertOccursBefore(propertyChangesText, "case nameof(MainViewModel.SelectedPreset):", "case nameof(MainViewModel.AvailableSplitEncodeModes):");
-        AssertOccursBefore(propertyChangesText, "case nameof(MainViewModel.AvailableSplitEncodeModes):", "case nameof(MainViewModel.SelectedSplitEncodeMode):");
+
         AssertContains(mainWindowText, "InitializeCaptureSelectionBindingController();");
         AssertContains(bindingsText, "AttachCaptureSelectionBindings();");
         AssertContains(bindingsText, "AttachDeviceSelectionChangedBinding();");
         AssertContains(propertyChangedText, "if (TryHandleCaptureSelectionPropertyChanged(propertyName))");
+
         AssertContains(controllerText, "internal sealed partial class CaptureSelectionBindingController");
         AssertContains(controllerText, "private readonly CaptureSelectionBindingControllerContext _context;");
         AssertContains(controllerText, "public CaptureSelectionBindingController(CaptureSelectionBindingControllerContext context)");
         AssertContains(controllerText, "internal sealed class CaptureSelectionBindingControllerContext");
-        AssertContains(collectionSyncText, "internal sealed partial class CaptureSelectionBindingController");
-        AssertContains(collectionSyncText, "public void AttachCollectionBindings()");
-        AssertContains(collectionSyncText, "private readonly int[] _selectionSyncQueued = new int[9];");
-        AssertContains(collectionSyncText, "private static void AttachCollectionSync(INotifyCollectionChanged collection, Action queueSync)");
-        AssertContains(collectionSyncText, "private void QueueSelectionSync(int syncIndex, Action ensureMethod)");
-        AssertDoesNotContain(controllerText, "private readonly int[] _selectionSyncQueued = new int[9];");
-        AssertDoesNotContain(controllerText, "private static void AttachCollectionSync(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Capture", "CaptureSelectionBindingController.SelectionState.cs")),
-            "empty selection-state marker partial should stay removed");
-        AssertContains(deviceSelectionText, "internal sealed partial class CaptureSelectionBindingController");
-        AssertContains(audioSelectionText, "internal sealed partial class CaptureSelectionBindingController");
-        AssertContains(captureModeSelectionText, "internal sealed partial class CaptureSelectionBindingController");
-        AssertContains(recordingSelectionText, "internal sealed partial class CaptureSelectionBindingController");
-        AssertContains(collectionSyncText, "public void HandleAvailableResolutionsPropertyChanged()");
-        AssertContains(collectionSyncText, "_context.ResolutionComboBox.ItemsSource = _context.ViewModel.AvailableResolutions;");
-        AssertContains(collectionSyncText, "EnsureResolutionSelection();");
-        AssertContains(collectionSyncText, "public void HandleAvailableFrameRatesPropertyChanged()");
-        AssertContains(collectionSyncText, "_context.FrameRateComboBox.ItemsSource = _context.ViewModel.AvailableFrameRates;");
-        AssertContains(collectionSyncText, "EnsureFrameRateSelection();");
-        AssertContains(collectionSyncText, "public void HandleAvailablePresetsPropertyChanged()");
-        AssertContains(collectionSyncText, "_context.PresetComboBox.ItemsSource = _context.ViewModel.AvailablePresets;");
-        AssertContains(collectionSyncText, "EnsurePresetSelection();");
-        AssertContains(collectionSyncText, "public void HandleAvailableSplitEncodeModesPropertyChanged()");
-        AssertContains(collectionSyncText, "_context.SplitEncodeComboBox.ItemsSource = _context.ViewModel.AvailableSplitEncodeModes;");
-        AssertContains(collectionSyncText, "EnsureSplitEncodeModeSelection();");
-        AssertOccursBefore(collectionSyncText, "_context.ResolutionComboBox.ItemsSource = _context.ViewModel.AvailableResolutions;", "EnsureResolutionSelection();");
-        AssertOccursBefore(collectionSyncText, "_context.FrameRateComboBox.ItemsSource = _context.ViewModel.AvailableFrameRates;", "EnsureFrameRateSelection();");
-        AssertOccursBefore(collectionSyncText, "_context.PresetComboBox.ItemsSource = _context.ViewModel.AvailablePresets;", "EnsurePresetSelection();");
-        AssertOccursBefore(collectionSyncText, "_context.SplitEncodeComboBox.ItemsSource = _context.ViewModel.AvailableSplitEncodeModes;", "EnsureSplitEncodeModeSelection();");
-        AssertContains(collectionSyncText, "_context.DeviceComboBox.ItemsSource = _context.ViewModel.Devices;");
-        AssertContains(collectionSyncText, "AttachCollectionSync(_context.ViewModel.AvailableFrameRates, QueueFrameRateSelectionSync);");
-        AssertDoesNotContain(adapterText, "private void AttachRecordingStringSelectionBindings()");
-        AssertDoesNotContain(adapterText, "_captureSelectionBindingController.AttachRecordingStringSelectionBindings()");
-        AssertDoesNotContain(selectionControllerFamilyText, "public void AttachRecordingStringSelectionBindings()");
-        AssertDoesNotContain(selectionControllerFamilyText, "private static void AttachStringSelection(");
-        AssertDoesNotContain(selectionControllerFamilyText, "AttachStringSelection(_context.FormatComboBox");
-        AssertContains(deviceSelectionText, "public void EnsureDeviceSelection()");
-        AssertContains(deviceSelectionText, "public void AttachDeviceSelectionChangedBinding()");
-        AssertContains(deviceSelectionText, "_context.DeviceComboBox.SelectionChanged += (_, _) => UpdateDeviceApplyButtonState();");
-        AssertContains(deviceSelectionText, "public void HandleSelectedDevicePropertyChanged()");
-        AssertContains(audioSelectionText, "public void EnsureAudioInputSelection()");
-        AssertContains(audioSelectionText, "public void EnsureMicrophoneSelection()");
-        AssertContains(captureModeSelectionText, "public void EnsureResolutionSelection()");
-        AssertContains(captureModeSelectionText, "public void EnsureFrameRateSelection()");
-        AssertContains(recordingSelectionText, "public void EnsureFormatSelection()");
-        AssertContains(recordingSelectionText, "public void EnsureQualitySelection()");
-        AssertContains(recordingSelectionText, "public void EnsurePresetSelection()");
-        AssertContains(recordingSelectionText, "public void EnsureSplitEncodeModeSelection()");
-        AssertContains(deviceSelectionText, "CaptureComboBoxSelectionNormalizer.ResolveCaptureDeviceSelection(");
-        AssertContains(audioSelectionText, "CaptureComboBoxSelectionNormalizer.ResolveAudioInputDeviceSelection(");
-        AssertContains(captureModeSelectionText, "CaptureComboBoxSelectionNormalizer.ResolveResolutionSelection(");
-        AssertContains(captureModeSelectionText, "CaptureComboBoxSelectionNormalizer.ResolveFrameRateSelection(");
-        AssertContains(recordingSelectionText, "CaptureComboBoxSelectionNormalizer.ResolveStringSelection(items, vmValue);");
-        AssertContains(selectionNormalizerText, "internal static class CaptureComboBoxSelectionNormalizer");
-        AssertContains(selectionNormalizerText, "public static CaptureDevice? ResolveCaptureDeviceSelection(");
-        AssertContains(selectionNormalizerText, "public static AudioInputDevice? ResolveAudioInputDeviceSelection(");
-        AssertContains(selectionNormalizerText, "public static ResolutionOption? ResolveResolutionSelection(");
-        AssertContains(selectionNormalizerText, "public static FrameRateOption? ResolveFrameRateSelection(");
-        AssertContains(selectionNormalizerText, "public static string? ResolveStringSelection(");
-        AssertContains(selectionNormalizerText, "public static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
-        AssertContains(selectionNormalizerText, "public static bool IsAutoFrameRateOption(FrameRateOption option)");
-        AssertContains(deviceSelectionText, "DEVICE_SELECTION_SYNC");
-        AssertContains(deviceSelectionText, "EnsureDeviceSelection();");
-        AssertContains(deviceSelectionText, "UpdateDeviceApplyButtonState();");
-        AssertContains(deviceSelectionText, "public bool HasPendingDeviceSelection()");
-        AssertContains(deviceSelectionText, "public void UpdateDeviceApplyButtonState()");
-        AssertDoesNotContain(bindingsText, "DeviceComboBox.SelectionChanged +=");
-        AssertDoesNotContain(controllerText, "public bool HasPendingDeviceSelection()");
-        AssertDoesNotContain(controllerText, "public void UpdateDeviceApplyButtonState()");
-        AssertContains(propertyChangesText, "HandleSelectedDevicePropertyChanged();");
-        AssertContains(propertyChangesText, "EnsureResolutionSelection();");
-        AssertContains(propertyChangesText, "EnsureFrameRateSelection();");
-        AssertContains(propertyChangesText, "HandleAvailableResolutionsPropertyChanged();");
-        AssertContains(propertyChangesText, "HandleAvailableFrameRatesPropertyChanged();");
-        AssertContains(propertyChangesText, "ApplyDeviceAudioControlState();");
-        AssertContains(propertyChangesText, "EnsureAudioInputSelection();");
-        AssertContains(propertyChangesText, "EnsureMicrophoneSelection();");
-        AssertContains(propertyChangesText, "EnsureFormatSelection();");
-        AssertContains(propertyChangesText, "EnsureQualitySelection();");
-        AssertContains(propertyChangesText, "HandleAvailablePresetsPropertyChanged();");
-        AssertContains(propertyChangesText, "EnsurePresetSelection();");
-        AssertContains(propertyChangesText, "HandleAvailableSplitEncodeModesPropertyChanged();");
-        AssertContains(propertyChangesText, "EnsureSplitEncodeModeSelection();");
-        var selectedDevicePropertyChangedText = deviceSelectionText.Substring(
-            deviceSelectionText.IndexOf("public void HandleSelectedDevicePropertyChanged()", System.StringComparison.Ordinal));
-        AssertOccursBefore(selectedDevicePropertyChangedText, "DEVICE_SELECTION_SYNC", "EnsureDeviceSelection();");
-        AssertOccursBefore(selectedDevicePropertyChangedText, "EnsureDeviceSelection();", "UpdateDeviceApplyButtonState();");
-        AssertOccursBefore(deviceSelectionText, "public void EnsureDeviceSelection()", "public void HandleSelectedDevicePropertyChanged()");
-        AssertOccursBefore(audioSelectionText, "public void EnsureAudioInputSelection()", "public void EnsureMicrophoneSelection()");
-        AssertOccursBefore(captureModeSelectionText, "public void EnsureResolutionSelection()", "public void EnsureFrameRateSelection()");
-        AssertOccursBefore(recordingSelectionText, "public void EnsureFormatSelection()", "public void EnsureQualitySelection()");
-        AssertOccursBefore(recordingSelectionText, "public void EnsureQualitySelection()", "public void EnsurePresetSelection()");
-        AssertOccursBefore(recordingSelectionText, "public void EnsurePresetSelection()", "public void EnsureSplitEncodeModeSelection()");
-        AssertDoesNotContain(selectionFamilyText, "private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
-        AssertDoesNotContain(selectionFamilyText, "private static bool IsAutoFrameRateOption(FrameRateOption option)");
-        AssertDoesNotContain(selectionFamilyText, "private static void EnsureStringComboBoxSelection(");
-        AssertDoesNotContain(selectionFamilyText, "items.FirstOrDefault(item => string.Equals(item, vmValue, StringComparison.OrdinalIgnoreCase))");
-        AssertDoesNotContain(selectionFamilyText, "AvailableResolutions.FirstOrDefault(option =>");
-        AssertDoesNotContain(selectionFamilyText, "AvailableFrameRates.FirstOrDefault(option =>");
-        AssertContains(deviceAudioText, "public void ApplyDeviceAudioControlState()");
-        AssertContains(deviceAudioText, "public void EnsureDeviceAudioModeSelection()");
-        AssertContains(deviceSelectionText, "public bool HasPendingDeviceSelection()");
-        AssertContains(collectionSyncText, "private void QueueSelectionSync(int syncIndex, Action ensureMethod)");
-        AssertDoesNotContain(controllerText, "public void EnsureDeviceSelection()");
-        AssertDoesNotContain(controllerText, "public void HandleSelectedDevicePropertyChanged()");
-        AssertDoesNotContain(controllerText, "public void EnsureAudioInputSelection()");
-        AssertDoesNotContain(controllerText, "public void EnsureMicrophoneSelection()");
-        AssertDoesNotContain(controllerText, "public void EnsureResolutionSelection()");
-        AssertDoesNotContain(controllerText, "public void EnsureFrameRateSelection()");
-        AssertDoesNotContain(controllerText, "public void EnsureFormatSelection()");
-        AssertDoesNotContain(controllerText, "public void EnsureQualitySelection()");
-        AssertDoesNotContain(controllerText, "public void EnsurePresetSelection()");
-        AssertDoesNotContain(controllerText, "public void EnsureSplitEncodeModeSelection()");
-        AssertDoesNotContain(controllerText, "private static void EnsureStringComboBoxSelection(");
-        AssertDoesNotContain(controllerText, "private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
-        AssertDoesNotContain(controllerText, "private static bool IsAutoFrameRateOption(FrameRateOption option)");
-        AssertDoesNotContain(controllerText, "DEVICE_SELECTION_SYNC");
-        AssertDoesNotContain(controllerText, "public void ApplyDeviceAudioControlState()");
+
         AssertDoesNotContain(adapterText, "case nameof(MainViewModel.SelectedDevice):");
         AssertDoesNotContain(adapterText, "case nameof(MainViewModel.AvailableResolutions):");
         AssertDoesNotContain(adapterText, "case nameof(MainViewModel.AvailableFrameRates):");
@@ -220,9 +50,6 @@ static partial class Program
         AssertDoesNotContain(adapterText, "case nameof(MainViewModel.SelectedRecordingFormat):");
         AssertDoesNotContain(adapterText, "case nameof(MainViewModel.AvailableSplitEncodeModes):");
         AssertDoesNotContain(mainWindowText, "_selectionSyncQueued");
-        AssertDoesNotContain(bindingsText, "private void QueueSelectionSync(");
-        AssertDoesNotContain(bindingsText, "private static void AttachCollectionSync(");
-        AssertDoesNotContain(bindingsText, "private void EnsureDeviceSelection()");
         AssertDoesNotContain(propertyChangedText, "DEVICE_SELECTION_SYNC");
         AssertDoesNotContain(propertyChangedText, "DeviceComboBox.SelectedItem");
         AssertDoesNotContain(propertyChangedText, "ResolutionComboBox.ItemsSource = ViewModel.AvailableResolutions;");
@@ -230,17 +57,11 @@ static partial class Program
         AssertDoesNotContain(propertyChangedText, "PresetComboBox.ItemsSource = ViewModel.AvailablePresets;");
         AssertDoesNotContain(propertyChangedText, "SplitEncodeComboBox.ItemsSource = ViewModel.AvailableSplitEncodeModes;");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.SelectedDevice):");
-        AssertDoesNotContain(propertyChangedText, "HandleSelectedDevicePropertyChanged();");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.AvailableResolutions):");
-        AssertDoesNotContain(propertyChangedText, "HandleAvailableResolutionsPropertyChanged();");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.AvailableFrameRates):");
-        AssertDoesNotContain(propertyChangedText, "HandleAvailableFrameRatesPropertyChanged();");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.IsDeviceAudioControlSupported):");
-        AssertDoesNotContain(propertyChangedText, "ApplyDeviceAudioControlState();");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.SelectedRecordingFormat):");
-        AssertDoesNotContain(propertyChangedText, "EnsureFormatSelection();");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.AvailableSplitEncodeModes):");
-        AssertDoesNotContain(propertyChangedText, "HandleAvailableSplitEncodeModesPropertyChanged();");
 
         return Task.CompletedTask;
     }
