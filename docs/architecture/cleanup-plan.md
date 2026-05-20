@@ -3426,11 +3426,13 @@ value maps live in
 Audio-master fallback, buffering, and A/V-drift result values live in
 `DiagnosticSessionResultBuilder.FlashbackPlaybackAudioMasterResult.cs`, with
 the projection record shapes grouped in
-`DiagnosticSessionResultBuilder.FlashbackPlaybackProjectionModels.cs`. Flashback
-recording backend/growth/integrity and export status/progress DTO projection
-values stay grouped in `DiagnosticSessionResultBuilder.FlashbackResult.cs` so
-result construction can consume named Flashback projections while preserving
-the existing `summary.json` field shape.
+`DiagnosticSessionResultBuilder.FlashbackPlaybackProjectionModels.cs`.
+Flashback recording backend/growth/integrity DTO projection values live in
+`DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`, while export
+status/progress DTO projection values live in
+`DiagnosticSessionResultBuilder.FlashbackExportResult.cs`; result construction
+still consumes named Flashback projections while preserving the existing
+`summary.json` field shape.
 Export force-rotate fallback counters now travel with
 `FlashbackExportSessionMetrics` instead of loose analysis record fields.
 Capture selection, negotiated format, source geometry, detected cadence, HDR,
@@ -3912,7 +3914,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackMetricResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackAudioMasterResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackProjectionModels.cs`
-- `DiagnosticSessionResultBuilder.FlashbackResult.cs`
+- `DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`
+- `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`
 - `DiagnosticSessionResultBuilder.CaptureResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
 - `DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`

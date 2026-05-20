@@ -14,7 +14,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackPlaybackProjectionModelsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackProjectionModels.cs")
             .Replace("\r\n", "\n");
-        var flashbackResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackResult.cs")
+        var flashbackRecordingResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs")
+            .Replace("\r\n", "\n");
+        var flashbackExportResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackExportResult.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(builderText, "return FlattenResultProjectionSet(");
@@ -68,7 +70,8 @@ static partial class Program
         AssertDoesNotContain(flashbackPlaybackResultText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta: playbackResultMetrics.SeekForwardDecodeCapHitsDelta");
         AssertDoesNotContain(flashbackPlaybackMetricResultText, "FlashbackPlaybackAudioMasterFallbacksAtEnd: playbackResultMetrics.AudioMasterFallbacksAtEnd");
         AssertDoesNotContain(flashbackPlaybackMetricResultText, "FlashbackPlaybackMaxAbsAvDriftMsObserved: playbackSessionMetrics.MaxAbsAvDriftMsObserved");
-        AssertDoesNotContain(flashbackResultText, "private readonly record struct DiagnosticSessionFlashbackPlaybackCommandsResultProjection(");
+        AssertDoesNotContain(flashbackRecordingResultText, "private readonly record struct DiagnosticSessionFlashbackPlaybackCommandsResultProjection(");
+        AssertDoesNotContain(flashbackExportResultText, "private readonly record struct DiagnosticSessionFlashbackPlaybackCommandsResultProjection(");
         AssertContains(flatteningText, "FlashbackPlaybackPendingCommandsAtEnd = flashbackPlaybackCommandsResult.FlashbackPlaybackPendingCommandsAtEnd,");
         AssertContains(flatteningText, "FlashbackPlaybackDroppedFramesDelta = flashbackPlaybackCadenceResult.FlashbackPlaybackDroppedFramesDelta,");
         AssertContains(flatteningText, "FlashbackPlaybackMaxDecodePhaseAtEnd = flashbackPlaybackDecodeResult.FlashbackPlaybackMaxDecodePhaseAtEnd,");
@@ -86,20 +89,22 @@ static partial class Program
         AssertDoesNotContain(flatteningText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta = playbackResultMetrics");
         AssertContains(builderText, "FlashbackRecording: BuildFlashbackRecordingResultProjection(analysis)");
         AssertContains(flatteningText, "var flashbackRecordingResult = resultProjections.FlashbackRecording;");
-        AssertContains(flashbackResultText, "private readonly record struct DiagnosticSessionFlashbackRecordingResultProjection(");
-        AssertContains(flashbackResultText, "private static DiagnosticSessionFlashbackRecordingResultProjection BuildFlashbackRecordingResultProjection(");
-        AssertContains(flashbackResultText, "FlashbackRecordingBackendObserved: recordingMetrics.BackendObserved");
-        AssertContains(flashbackResultText, "FlashbackRecordingIntegrityQueueDroppedFramesDelta: recordingMetrics.IntegrityQueueDroppedFramesDelta");
+        AssertContains(flashbackRecordingResultText, "private readonly record struct DiagnosticSessionFlashbackRecordingResultProjection(");
+        AssertContains(flashbackRecordingResultText, "private static DiagnosticSessionFlashbackRecordingResultProjection BuildFlashbackRecordingResultProjection(");
+        AssertContains(flashbackRecordingResultText, "FlashbackRecordingBackendObserved: recordingMetrics.BackendObserved");
+        AssertContains(flashbackRecordingResultText, "FlashbackRecordingIntegrityQueueDroppedFramesDelta: recordingMetrics.IntegrityQueueDroppedFramesDelta");
+        AssertDoesNotContain(flashbackRecordingResultText, "private readonly record struct DiagnosticSessionFlashbackExportResultProjection(");
         AssertDoesNotContain(flatteningText, "FlashbackRecordingBackendObserved = recordingMetrics");
         AssertDoesNotContain(flatteningText, "FlashbackRecordingIntegrityQueueDroppedFramesDelta = recordingMetrics");
         AssertContains(builderText, "FlashbackExport: BuildFlashbackExportResultProjection(analysis)");
         AssertContains(flatteningText, "var flashbackExportResult = resultProjections.FlashbackExport;");
-        AssertContains(flashbackResultText, "private readonly record struct DiagnosticSessionFlashbackExportResultProjection(");
-        AssertContains(flashbackResultText, "private static DiagnosticSessionFlashbackExportResultProjection BuildFlashbackExportResultProjection(");
-        AssertContains(flashbackResultText, "FlashbackExportObserved: exportMetrics.Observed");
-        AssertContains(flashbackResultText, "FlashbackExportForceRotateFallbacksDelta: exportMetrics.ForceRotateFallbacksDelta");
-        AssertContains(flashbackResultText, "LastExportSuccessAtEnd: exportMetrics.LastSuccessAtEnd");
-        AssertContains(flashbackResultText, "FlashbackExportMaxThroughputBytesPerSecObserved: exportMetrics.MaxThroughputBytesPerSecObserved");
+        AssertContains(flashbackExportResultText, "private readonly record struct DiagnosticSessionFlashbackExportResultProjection(");
+        AssertContains(flashbackExportResultText, "private static DiagnosticSessionFlashbackExportResultProjection BuildFlashbackExportResultProjection(");
+        AssertContains(flashbackExportResultText, "FlashbackExportObserved: exportMetrics.Observed");
+        AssertContains(flashbackExportResultText, "FlashbackExportForceRotateFallbacksDelta: exportMetrics.ForceRotateFallbacksDelta");
+        AssertContains(flashbackExportResultText, "LastExportSuccessAtEnd: exportMetrics.LastSuccessAtEnd");
+        AssertContains(flashbackExportResultText, "FlashbackExportMaxThroughputBytesPerSecObserved: exportMetrics.MaxThroughputBytesPerSecObserved");
+        AssertDoesNotContain(flashbackExportResultText, "private readonly record struct DiagnosticSessionFlashbackRecordingResultProjection(");
         AssertDoesNotContain(flatteningText, "FlashbackExportObserved = exportMetrics");
         AssertDoesNotContain(flatteningText, "FlashbackExportForceRotateFallbacksAtEnd = flashbackExportForceRotateFallbacksAtEnd");
         AssertDoesNotContain(flatteningText, "LastExportSuccessAtEnd = exportMetrics");

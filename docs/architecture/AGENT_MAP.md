@@ -4002,9 +4002,12 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackProjectionModels.cs`
   owns the Flashback playback projection record shapes used by the playback
   result mapping and final result initializer.
-- `tools/Common/DiagnosticSessionResultBuilder.FlashbackResult.cs` owns
-  Flashback recording backend/growth/integrity and export status/progress
-  result DTO projections consumed by the final result initializer.
+- `tools/Common/DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`
+  owns Flashback recording backend/growth/integrity result DTO projections
+  consumed by the final result initializer.
+- `tools/Common/DiagnosticSessionResultBuilder.FlashbackExportResult.cs` owns
+  Flashback export status/progress result DTO projections consumed by the final
+  result initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.CaptureResult.cs` owns capture
   selection, negotiated format, source geometry, detected cadence, HDR, and
   source-telemetry DTO projection values consumed by the final result
