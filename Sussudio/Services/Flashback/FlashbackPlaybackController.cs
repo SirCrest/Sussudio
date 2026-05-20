@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using Sussudio.Models;
-using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Flashback;
 
@@ -29,13 +28,10 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     // --- A/V sync tracking (ffplay-style audio-master clock) ---
     private long _lastAudioPtsTicks;  // PTS of last audio chunk delivered to WASAPI
     private long _lastVideoPtsTicks;  // PTS of last video frame displayed
-    private readonly string _playbackMmcssTask = Environment.GetEnvironmentVariable("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_TASK") ?? "Playback";
-    private readonly int _playbackMmcssPriority = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_PRIORITY", 1, -2, 2);
 
     // --- Scrub state restoration (M16 fix) ---
     private bool _wasPlayingBeforeScrub;
 
-    private const int CommandQueueCapacity = 256;
     public FlashbackPlaybackController(FlashbackBufferManager bufferManager)
     {
         _bufferManager = bufferManager ?? throw new ArgumentNullException(nameof(bufferManager));

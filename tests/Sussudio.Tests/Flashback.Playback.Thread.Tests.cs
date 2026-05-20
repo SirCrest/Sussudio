@@ -72,6 +72,7 @@ static partial class Program
         AssertContains(sourceText, "private bool EnsurePlaybackThread(CommandKind commandKind)");
         AssertContains(threadLifecycleText, "private static readonly TimeSpan PlaybackThreadStopTimeout = TimeSpan.FromSeconds(3);");
         AssertContains(threadLifecycleText, "private static readonly TimeSpan PreviewDetachThreadStopTimeout = TimeSpan.FromSeconds(10);");
+        AssertContains(threadLifecycleText, "private const int CommandQueueCapacity = 256;");
         AssertContains(threadLifecycleText, "private readonly object _playbackThreadSync = new();");
         AssertContains(threadLifecycleText, "private Thread? _playbackThread;");
         AssertContains(threadLifecycleText, "private int _playbackThreadStarted;");
@@ -79,6 +80,7 @@ static partial class Program
         AssertContains(threadLifecycleText, "private Channel<PlaybackCommand> _commandChannel;");
         AssertDoesNotContain(rootText, "private static readonly TimeSpan PlaybackThreadStopTimeout = TimeSpan.FromSeconds(3);");
         AssertDoesNotContain(rootText, "private static readonly TimeSpan PreviewDetachThreadStopTimeout = TimeSpan.FromSeconds(10);");
+        AssertDoesNotContain(rootText, "private const int CommandQueueCapacity = 256;");
         AssertDoesNotContain(rootText, "private readonly object _playbackThreadSync = new();");
         AssertDoesNotContain(rootText, "private Thread? _playbackThread;");
         AssertDoesNotContain(rootText, "private int _playbackThreadStarted;");
@@ -93,7 +95,6 @@ static partial class Program
         AssertContains(sourceText, "Volatile.Write(ref _playbackThreadStarted, 0);\n        }\n\n        if (Interlocked.CompareExchange(ref _playbackThreadStarted, 1, 0) != 0)");
         AssertContains(sourceText, "ObjectDisposedException.ThrowIf(_disposedFlag != 0, this);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_UPDATE_SKIP reason=disposed");
-        AssertContains(sourceText, "private const int CommandQueueCapacity = 256;");
         AssertContains(sourceText, "public int CommandQueueCapacityCommands => CommandQueueCapacity;");
         AssertContains(commandTelemetryText, "private long _commandsEnqueued;");
         AssertContains(commandTelemetryText, "private long _commandsProcessed;");
@@ -133,6 +134,10 @@ static partial class Program
         AssertContains(sourceText, "private void PlaybackThreadEntry(CancellationTokenSource cts, Channel<PlaybackCommand> commandChannel)");
         AssertContains(sourceText, "SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_TASK");
         AssertContains(sourceText, "SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_PRIORITY");
+        AssertContains(threadLoopText, "private readonly string _playbackMmcssTask = Environment.GetEnvironmentVariable(\"SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_TASK\") ?? \"Playback\";");
+        AssertContains(threadLoopText, "private readonly int _playbackMmcssPriority = EnvironmentHelpers.GetIntFromEnv(\"SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_PRIORITY\", 1, -2, 2);");
+        AssertDoesNotContain(rootText, "private readonly string _playbackMmcssTask");
+        AssertDoesNotContain(rootText, "private readonly int _playbackMmcssPriority");
         AssertContains(sourceText, "using var mmcss = MmcssThreadRegistration.TryRegister(_playbackMmcssTask, _playbackMmcssPriority, message => Logger.Log(message));");
         AssertContains(sourceText, "var canRead = commandChannel.Reader.WaitToReadAsync(cts.Token).AsTask().GetAwaiter().GetResult();");
         AssertContains(sourceText, "if (!canRead)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT channel_closed\");\n                            isScrubbing = false;\n                            RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, \"channel_closed\");");

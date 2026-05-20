@@ -9,6 +9,7 @@ internal sealed partial class FlashbackPlaybackController
 {
     private static readonly TimeSpan PlaybackThreadStopTimeout = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan PreviewDetachThreadStopTimeout = TimeSpan.FromSeconds(10);
+    private const int CommandQueueCapacity = 256;
 
     private readonly object _playbackThreadSync = new();
     private Thread? _playbackThread;

@@ -16,6 +16,9 @@ internal sealed partial class FlashbackPlaybackController
 {
     // --- Playback thread ---
 
+    private readonly string _playbackMmcssTask = Environment.GetEnvironmentVariable("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_TASK") ?? "Playback";
+    private readonly int _playbackMmcssPriority = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_PRIORITY", 1, -2, 2);
+
     [DllImport("winmm.dll", ExactSpelling = true)]
     private static extern uint timeBeginPeriod(uint uMilliseconds);
 

@@ -1096,8 +1096,8 @@ Entry points:
   formatting, active-command timing, and queue command telemetry bookkeeping.
 - `FlashbackPlaybackController.ThreadLoop.cs` owns `PlaybackThreadEntry`,
   command dequeue, active-command telemetry, `Stop` handling, and dispatch to
-  playback-thread command handlers, plus timer-resolution P/Invoke for playback
-  pacing sleeps.
+  playback-thread command handlers, plus timer-resolution P/Invoke and MMCSS
+  policy for playback pacing sleeps.
 - `FlashbackPlaybackController.ThreadSeekCommands.cs` owns playback-thread seek
   command execution, including coalesced seek resolution, exact resume targets,
   playback resume handoff, and audio/preview suppression/resume ordering.
@@ -1112,7 +1112,7 @@ Entry points:
   go-live, and nudge command execution, including thread-local playback state,
   exact resume targets, and audio/preview suppression/resume ordering.
 - `FlashbackPlaybackController.ThreadLifecycle.cs` owns playback thread state,
-  CTS/channel lifetime, stop timeout policy, channel recreation/completion,
+  CTS/channel lifetime, stop timeout/capacity policy, channel recreation/completion,
   abandoned command draining, and join/cancel diagnostics.
 - `FlashbackPlaybackController.ThreadCleanup.cs` owns playback-thread live-restore cleanup and playback CTS disposal warnings.
 - `FlashbackPlaybackController.AudioRouting.cs` owns decoder audio callback wiring, playback chunk validation/return, live audio suppress/restore, preview submission suppression, and audio renderer pause/resume/flush helpers.

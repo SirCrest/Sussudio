@@ -2586,14 +2586,14 @@ bookkeeping live in
 Keep command status counters and last-failure/latency updates there instead of
 growing command channel mechanics.
 Playback thread state, CTS/channel lifetime, stop timeout policy,
-command-channel recreation, abandoned-command draining, and join/cancel
+command-channel capacity/recreation, abandoned-command draining, and join/cancel
 diagnostics now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs`.
 Keep queue write/coalescing/drop policy in the command queue partial.
 The playback worker loop now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs`; keep
-`PlaybackThreadEntry` command dispatch and timer-resolution P/Invoke there, and
-do not reintroduce an empty thread shell marker.
+`PlaybackThreadEntry` command dispatch, MMCSS policy, and timer-resolution
+P/Invoke there, and do not reintroduce an empty thread shell marker.
 Playback-thread seek command execution now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekCommands.cs`.
 Keep coalesced seek resolution, exact resume targets, playback resume handoff,
