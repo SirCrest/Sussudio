@@ -131,7 +131,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionMetrics_OwnsSessionMetricProjection()
+    internal static Task DiagnosticSessionMetrics_OwnsSessionMetricProjection()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();

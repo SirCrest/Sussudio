@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task DiagnosticSessionRunner_RetriesSyntheticPipeConnectFailures()
+    internal static async Task DiagnosticSessionRunner_RetriesSyntheticPipeConnectFailures()
     {
         var outputDirectory = Path.Combine(GetRepoRoot(), "temp", $"diagnostic-session-connect-retry-test-{Guid.NewGuid():N}");
         var getSnapshotAttempts = 0;

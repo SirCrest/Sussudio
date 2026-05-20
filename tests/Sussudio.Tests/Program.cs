@@ -59,19 +59,4 @@ static partial class Program
             "Sussudio.dll");
     }
 
-    private static async Task<CheckResult> RunCheckAsync(string name, Func<Task> check)
-    {
-        try
-        {
-            await check().ConfigureAwait(false);
-            return new CheckResult(name, true);
-        }
-        catch (Exception ex)
-        {
-            return new CheckResult(name, false, ex is TargetInvocationException { InnerException: { } inner }
-                ? $"{inner.GetType().Name}: {inner.Message}"
-                : ex.Message);
-        }
-    }
-
 }

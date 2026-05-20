@@ -3971,7 +3971,9 @@ owner, fold it back into that owner and update the source-shape tests and
    diagnostic-session runner, diagnostic-session infrastructure xUnit execution,
    diagnostic-session result-surface xUnit execution, diagnostic-session
    command/run-context xUnit execution, diagnostic-session scenario execution
-   xUnit execution, diagnostic-session Flashback xUnit execution, performance,
+   xUnit execution, diagnostic-session Flashback xUnit execution,
+   diagnostic-session core xUnit execution, diagnostic-session runner-behavior
+   xUnit execution, performance,
    window/preview, window/preview
    probes, and helper partial files. Flashback
    tests are also split by buffer, encoder, exporter, exporter cleanup,

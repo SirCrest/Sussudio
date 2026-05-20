@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task DiagnosticSessionRunner_VerifiesFlashbackExportPlaybackCommandFlow()
+    internal static async Task DiagnosticSessionRunner_VerifiesFlashbackExportPlaybackCommandFlow()
     {
         var outputDirectory = Path.Combine(GetRepoRoot(), "temp", $"diagnostic-session-export-playback-test-{Guid.NewGuid():N}");
         var requests = new List<(string Command, Dictionary<string, object?>? Payload)>();

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task DiagnosticSessionRunner_RejectsConcurrentInvocationOnSameOutputDirectory()
+    internal static async Task DiagnosticSessionRunner_RejectsConcurrentInvocationOnSameOutputDirectory()
     {
         var outputDirectory = Path.Combine(GetRepoRoot(), "temp", $"diagnostic-session-concurrent-lock-test-{Guid.NewGuid():N}");
         Directory.CreateDirectory(outputDirectory);

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task DiagnosticSessionRunner_UnknownInitialSnapshotFailsWithoutMutatingState()
+    internal static async Task DiagnosticSessionRunner_UnknownInitialSnapshotFailsWithoutMutatingState()
     {
         var outputDirectory = Path.Combine(GetRepoRoot(), "temp", $"diagnostic-session-unknown-initial-test-{Guid.NewGuid():N}");
         var commands = new List<string>();

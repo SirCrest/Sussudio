@@ -112,7 +112,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionSampler_OwnsSampleLoopOrdering()
+    internal static Task DiagnosticSessionSampler_OwnsSampleLoopOrdering()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var samplerText = ReadRepoFile("tools/Common/DiagnosticSessionSampler.cs")

@@ -181,6 +181,14 @@ add xUnit alongside, and port incrementally.
   legacy diagnostic-session Flashback band for scenario flow, export/helper,
   metric projection, wait, warning-policy, stress, and audio-master fallback
   classification ownership checks.
+- `XUnit.McpDiagnosticSessionCoreContractsTests.cs` owns the former legacy
+  diagnostic-session sampler, metric projection, and health tolerance checks.
+- `XUnit.McpDiagnosticSessionRunnerBehaviorContractsTests.cs` owns the former
+  legacy diagnostic-session runner behavior band for Flashback export playback,
+  warmup warning tolerance, sparse source-cadence tolerance, initial snapshot
+  failure, pipe retry, and concurrent-output lock checks.
+- `HarnessCheckCatalog.cs` keeps the legacy runner entry point, but the
+  diagnostic-session catalog has no remaining legacy registrations.
 - `XUnit.PresentationPreviewHarnessRegistrationTests.cs` owns the former legacy
   presentation-preview harness registration guard.
 - `XUnit.PresentationPreviewMainViewModelInitialContractsTests.cs` owns the

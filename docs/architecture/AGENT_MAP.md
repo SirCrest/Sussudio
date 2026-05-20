@@ -2824,6 +2824,14 @@ Primary current owners:
   owns xUnit execution for the former legacy diagnostic-session Flashback
   scenario, export/helper, metric, wait, validation, stress, and audio-master
   fallback catalog band.
+- `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionCoreContractsTests.cs`
+  owns xUnit execution for the former legacy diagnostic-session sampler,
+  metric projection, and health tolerance catalog band.
+- `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionRunnerBehaviorContractsTests.cs`
+  owns xUnit execution for the former legacy diagnostic-session runner behavior
+  catalog band.
+- `tests/Sussudio.Tests/HarnessCheckCatalog.cs` keeps the compatibility runner
+  entry point; diagnostic-session checks now execute through xUnit wrappers.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Helpers.cs`
   owns shared reflective runner setup for diagnostic-session runner behavior
   tests: loading `ssctl`, creating `DiagnosticSessionOptions`, invoking
