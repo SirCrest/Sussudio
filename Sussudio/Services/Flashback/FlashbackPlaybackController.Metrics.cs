@@ -34,10 +34,6 @@ internal sealed partial class FlashbackPlaybackController
     public double PlaybackTargetFps => _playbackTargetFps;
     public double PlaybackObservedFps => _playbackObservedFps;
     public double PlaybackAvgFrameMs => _playbackAvgFrameMs;
-    public long PlaybackPtsCadenceMismatchCount => Interlocked.Read(ref _playbackPtsCadenceMismatchCount);
-    public long LastPlaybackPtsCadenceMismatchUtcUnixMs => Interlocked.Read(ref _lastPlaybackPtsCadenceMismatchUtcUnixMs);
-    public double LastPlaybackPtsCadenceDeltaMs => _lastPlaybackPtsCadenceDeltaMs;
-    public double LastPlaybackPtsCadenceExpectedMs => _lastPlaybackPtsCadenceExpectedMs;
     public string PlaybackMaxDecodePhase => Volatile.Read(ref _playbackMaxDecodePhase);
     public double PlaybackMaxDecodeReceiveMs => _playbackMaxDecodeReceiveMs;
     public double PlaybackMaxDecodeFeedMs => _playbackMaxDecodeFeedMs;

@@ -11,6 +11,11 @@ internal sealed partial class FlashbackPlaybackController
     private double _lastPlaybackPtsCadenceDeltaMs;
     private double _lastPlaybackPtsCadenceExpectedMs;
 
+    public long PlaybackPtsCadenceMismatchCount => Interlocked.Read(ref _playbackPtsCadenceMismatchCount);
+    public long LastPlaybackPtsCadenceMismatchUtcUnixMs => Interlocked.Read(ref _lastPlaybackPtsCadenceMismatchUtcUnixMs);
+    public double LastPlaybackPtsCadenceDeltaMs => _lastPlaybackPtsCadenceDeltaMs;
+    public double LastPlaybackPtsCadenceExpectedMs => _lastPlaybackPtsCadenceExpectedMs;
+
     private void TrackDecodedPtsCadence(TimeSpan pts, TimeSpan expectedFrameDuration)
     {
         if (pts <= TimeSpan.Zero || expectedFrameDuration <= TimeSpan.Zero)

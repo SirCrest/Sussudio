@@ -8,6 +8,8 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
+        var metricsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs")
+            .Replace("\r\n", "\n");
         var playbackTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs")
             .Replace("\r\n", "\n");
         var playbackPtsCadenceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackPtsCadence.cs")
@@ -37,9 +39,15 @@ static partial class Program
         AssertContains(playbackPtsCadenceText, "private long _lastPlaybackPtsCadenceMismatchUtcUnixMs;");
         AssertContains(playbackPtsCadenceText, "private double _lastPlaybackPtsCadenceDeltaMs;");
         AssertContains(playbackPtsCadenceText, "private double _lastPlaybackPtsCadenceExpectedMs;");
+        AssertContains(playbackPtsCadenceText, "public long PlaybackPtsCadenceMismatchCount => Interlocked.Read(ref _playbackPtsCadenceMismatchCount);");
+        AssertContains(playbackPtsCadenceText, "public long LastPlaybackPtsCadenceMismatchUtcUnixMs => Interlocked.Read(ref _lastPlaybackPtsCadenceMismatchUtcUnixMs);");
+        AssertContains(playbackPtsCadenceText, "public double LastPlaybackPtsCadenceDeltaMs => _lastPlaybackPtsCadenceDeltaMs;");
+        AssertContains(playbackPtsCadenceText, "public double LastPlaybackPtsCadenceExpectedMs => _lastPlaybackPtsCadenceExpectedMs;");
         AssertContains(playbackPtsCadenceText, "FLASHBACK_PLAYBACK_PTS_CADENCE_MISMATCH");
         AssertDoesNotContain(playbackTimingText, "private void TrackDecodedPtsCadence(TimeSpan pts, TimeSpan expectedFrameDuration)");
         AssertDoesNotContain(playbackTimingText, "FLASHBACK_PLAYBACK_PTS_CADENCE_MISMATCH");
+        AssertDoesNotContain(metricsText, "public long PlaybackPtsCadenceMismatchCount =>");
+        AssertDoesNotContain(metricsText, "public double LastPlaybackPtsCadenceDeltaMs =>");
         AssertContains(sourceText, "public long PlaybackPtsCadenceMismatchCount => Interlocked.Read(ref _playbackPtsCadenceMismatchCount);");
         AssertContains(sourceText, "Interlocked.Exchange(ref _playbackPtsCadenceMismatchCount, 0);");
 
