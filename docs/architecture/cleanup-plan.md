@@ -225,6 +225,9 @@ owns audio-master delay/fallback projection,
 seek-cap/decode timing projection, and
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.Commands.cs`
 owns playback command queue projection.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackPlayback.cs`
+owns final Flashback playback, audio-master, decode, and command queue
+projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs` owns D3D preview
 swap-chain and renderer-state projection plus composition of D3D leaf
 projections consumed by the automation snapshot DTO.

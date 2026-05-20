@@ -133,6 +133,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
             .Replace("\r\n", "\n");
+        var flashbackPlaybackFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackPlayback.cs")
+            .Replace("\r\n", "\n");
         var flashbackPlaybackProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackAudioMasterProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.AudioMaster.cs")
@@ -143,13 +145,25 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var flashbackPlayback = BuildFlashbackPlaybackProjection(health);");
-        AssertContains(snapshotFlatteningText, "FlashbackPlaybackState = flashbackPlayback.State,");
-        AssertContains(snapshotFlatteningText, "FlashbackPlaybackTargetFps = flashbackPlayback.TargetFps,");
-        AssertContains(snapshotFlatteningText, "FlashbackPlaybackMaxDecodePhase = flashbackPlayback.Decode.MaxPhase,");
-        AssertContains(snapshotFlatteningText, "FlashbackPlaybackLastCommandFailure = flashbackPlayback.Commands.LastFailure,");
+        AssertContains(snapshotFlatteningText, "var flashbackPlaybackFlattening = BuildFlashbackPlaybackFlattenedProjection(flashbackPlayback);");
+        AssertContains(snapshotFlatteningText, "FlashbackPlaybackState = flashbackPlaybackFlattening.State,");
+        AssertContains(snapshotFlatteningText, "FlashbackPlaybackTargetFps = flashbackPlaybackFlattening.TargetFps,");
+        AssertContains(snapshotFlatteningText, "FlashbackPlaybackMaxDecodePhase = flashbackPlaybackFlattening.MaxDecodePhase,");
+        AssertContains(snapshotFlatteningText, "FlashbackPlaybackLastCommandFailure = flashbackPlaybackFlattening.LastCommandFailure,");
+        AssertContains(flashbackPlaybackFlatteningText, "private static FlashbackPlaybackFlattenedProjection BuildFlashbackPlaybackFlattenedProjection(");
+        AssertContains(flashbackPlaybackFlatteningText, "FlashbackPlaybackProjection flashbackPlayback");
+        AssertContains(flashbackPlaybackFlatteningText, "State = flashbackPlayback.State,");
+        AssertContains(flashbackPlaybackFlatteningText, "AudioMasterFallbacks = flashbackPlayback.AudioMaster.Fallbacks,");
+        AssertContains(flashbackPlaybackFlatteningText, "MaxDecodePhase = flashbackPlayback.Decode.MaxPhase,");
+        AssertContains(flashbackPlaybackFlatteningText, "LastCommandFailure = flashbackPlayback.Commands.LastFailure");
+        AssertContains(flashbackPlaybackFlatteningText, "private readonly record struct FlashbackPlaybackFlattenedProjection");
         AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackState = health.FlashbackPlaybackState,");
         AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackTargetFps = health.FlashbackPlaybackTargetFps,");
         AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackLastCommandFailure = health.FlashbackPlaybackLastCommandFailure,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackState = flashbackPlayback.State,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackTargetFps = flashbackPlayback.TargetFps,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackMaxDecodePhase = flashbackPlayback.Decode.MaxPhase,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackLastCommandFailure = flashbackPlayback.Commands.LastFailure,");
 
         AssertContains(flashbackPlaybackProjectionText, "private static FlashbackPlaybackProjection BuildFlashbackPlaybackProjection(CaptureHealthSnapshot health)");
         AssertContains(flashbackPlaybackProjectionText, "var audioMaster = BuildFlashbackPlaybackAudioMasterProjection(health);");

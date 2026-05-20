@@ -139,6 +139,17 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "private static FlashbackPlaybackCommandProjection BuildFlashbackPlaybackCommandProjection(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "LastFailure = health.FlashbackPlaybackLastCommandFailure");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "FlashbackPlaybackTargetFps = health.FlashbackPlaybackTargetFps,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var flashbackPlaybackFlattening = BuildFlashbackPlaybackFlattenedProjection(flashbackPlayback);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackPlaybackText, "State = flashbackPlayback.State,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackPlaybackText, "AudioMasterFallbacks = flashbackPlayback.AudioMaster.Fallbacks,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackPlaybackText, "MaxDecodePhase = flashbackPlayback.Decode.MaxPhase,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackPlaybackText, "LastCommandFailure = flashbackPlayback.Commands.LastFailure");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "FlashbackPlaybackState = flashbackPlaybackFlattening.State,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "FlashbackPlaybackMaxDecodePhase = flashbackPlaybackFlattening.MaxDecodePhase,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "FlashbackPlaybackLastCommandFailure = flashbackPlaybackFlattening.LastCommandFailure,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "FlashbackPlaybackState = flashbackPlayback.State,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "FlashbackPlaybackMaxDecodePhase = flashbackPlayback.Decode.MaxPhase,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "FlashbackPlaybackLastCommandFailure = flashbackPlayback.Commands.LastFailure,");
         AssertContains(diagnostics.SnapshotProjectionAudioText, "private static AudioAndIngestProjection BuildAudioAndIngestProjection(");
         AssertContains(diagnostics.SnapshotProjectionAudioText, "var audioSignalProjection = BuildAudioSignalProjection(viewModelSnapshot, audioSignal);");
         AssertContains(diagnostics.SnapshotProjectionAudioText, "var captureIngest = BuildCaptureIngestProjection(captureRuntime);");

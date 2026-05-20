@@ -177,6 +177,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackExportText, "private static FlashbackExportFlattenedProjection BuildFlashbackExportFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildFlashbackRecordingFlattenedProjection(flashbackRecording)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackRecordingText, "private static FlashbackRecordingFlattenedProjection BuildFlashbackRecordingFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildFlashbackPlaybackFlattenedProjection(flashbackPlayback)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackPlaybackText, "private static FlashbackPlaybackFlattenedProjection BuildFlashbackPlaybackFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingIntegrityFlattenedProjection(recordingIntegrity)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingIntegrityText, "private static RecordingIntegrityFlattenedProjection BuildRecordingIntegrityFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingOutputFlattenedProjection(recordingBackend, recordingOutput)");
