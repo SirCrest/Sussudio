@@ -1822,9 +1822,17 @@ Primary current owners:
   owns preview startup watchdog controller/adapter ownership, timeout, and
   failure-stop contract assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.SessionReinit.Tests.cs`
-  owns preview startup session/reinit controller ownership, session
-  orchestration, session-state, reinitialize-transition, and pending
-  Flashback-cycle wait assertions.
+  owns the source-shape ownership assertion that wires preview startup session
+  and reinit adapters to focused controllers.
+- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.SessionController.Tests.cs`
+  owns preview startup session controller attempt-state and orchestration
+  behavior assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.ReinitTransition.Tests.cs`
+  owns preview reinit transition controller presentation and animation-state
+  behavior assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.ReinitFlashbackCycle.Tests.cs`
+  owns ViewModel preview reinitialization waiting for pending Flashback encoder
+  settings cycles.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Signals.Tests.cs`
   owns preview startup signal controller/adapter ownership, readiness-signal
   controller, and startup/failure formatter assertions.

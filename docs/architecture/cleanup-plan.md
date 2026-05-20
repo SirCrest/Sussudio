@@ -3644,7 +3644,9 @@ owner, fold it back into that owner and update the source-shape tests and
    and disposal controller dependency-context assertions in a focused runtime
    owner instead of the root composition catch-all. Flashback buffer segment
    tests are split between validation, accounting, disposal/recovery, and
-   segment lookup/list projection coverage.
+   segment lookup/list projection coverage. Preview startup session/reinit
+   harness coverage is split between source ownership, session controller,
+   reinit transition controller, and pending Flashback-cycle wait owners.
 
 3. Continue converting MainWindow partial concerns into controllers.
 
