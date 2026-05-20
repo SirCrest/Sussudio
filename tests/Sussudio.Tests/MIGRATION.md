@@ -165,7 +165,8 @@ add xUnit alongside, and port incrementally.
   recording transition start/stop failure propagation.
 - `XUnit.PresentationPreviewMainWindowInitialContractsTests.cs` owns the former
   legacy presentation-preview MainWindow initial registration group: close
-  cancellation and window screenshot helper ownership checks.
+  cancellation, window screenshot helper ownership, and property changed
+  routing delegation checks.
 - `XUnit.PresentationPreviewWindowLifecycleContractsTests.cs` owns the former
   legacy presentation-preview MainWindow window lifecycle group: native
   bootstrap, close lifecycle split, close request/app closing, recording

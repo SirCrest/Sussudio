@@ -887,8 +887,9 @@ keeping recording transition start/stop failure propagation checks in xUnit
 after their removal from the legacy harness catalog.
 Presentation-preview MainWindow initial checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowInitialContractsTests.cs`,
-keeping close cancellation and window screenshot helper ownership checks in
-xUnit after their removal from the legacy harness catalog.
+keeping close cancellation, window screenshot helper ownership, and property
+changed routing delegation checks in xUnit after their removal from the legacy
+harness catalog.
 Presentation-preview window lifecycle checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewWindowLifecycleContractsTests.cs`,
 keeping native bootstrap, close lifecycle split, close request/app closing,

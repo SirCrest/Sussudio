@@ -25,4 +25,8 @@ public sealed class PresentationPreviewMainWindowInitialContractsTests
     [Fact]
     public Task WindowScreenshotImageEncodingLivesInFocusedHelper()
         => global::Program.WindowScreenshotImageEncoding_LivesInFocusedHelper();
+
+    [Fact]
+    public Task PropertyChangedRoutingDelegatesToFocusedControllers()
+        => global::Program.MainWindowPropertyChangedRouting_DelegatesToFocusedControllers();
 }

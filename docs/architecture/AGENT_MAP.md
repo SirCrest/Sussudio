@@ -2492,8 +2492,8 @@ Primary current owners:
   the legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowInitialContractsTests.cs`
   owns the former presentation-preview MainWindow initial registration group for
-  close cancellation and window screenshot helper ownership after its removal
-  from the legacy offline harness catalog.
+  close cancellation, window screenshot helper ownership, and property changed
+  routing delegation after its removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewWindowLifecycleContractsTests.cs`
   owns the former presentation-preview MainWindow window lifecycle group for
   native bootstrap, close lifecycle split, close request/app closing, recording
