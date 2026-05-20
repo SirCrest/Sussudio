@@ -4227,6 +4227,9 @@ owner, fold it back into that owner and update the source-shape tests and
    automation options UI-thread snapshot capture now lives in
    `MainViewModel.AutomationOptionsSnapshot.cs`; pure selected-control-state DTO
    construction lives in `AutomationOptionsSnapshotBuilder.cs`.
+   `tests/Sussudio.Tests/XUnit.AutomationDiagnosticsLoopContractsTests.cs`
+   owns xUnit execution for the diagnostics-loop polling check after its removal
+   from the legacy presentation-preview capture catalog.
    Flashback playback, scrub, nudge, marker, and automation action command routing
    now live in `MainViewModel.FlashbackPlaybackCommands.cs`; read-only
    Flashback playback snapshot access plus rejection status projection, buffer,

@@ -134,6 +134,9 @@ add xUnit alongside, and port incrementally.
   automation diagnostics snapshot-projection registration group: snapshot
   status/evaluation, audio, capture/settings, source/cadence, MJPEG, recording,
   process/A/V sync, preview, and Flashback projection ownership checks.
+- `XUnit.AutomationDiagnosticsLoopContractsTests.cs` owns the former legacy
+  diagnostics-loop polling contract that keeps automation options snapshots out
+  of hot diagnostics refresh paths.
 - `XUnit.ToolProbeContractsTests.cs` owns the former legacy PresentMon parser,
   ssctl pipe transport, KS audio-node, and EGAVDS probe contract checks.
 - `XUnit.AutomationSnapshotFormatterContractsTests.cs` owns the former legacy

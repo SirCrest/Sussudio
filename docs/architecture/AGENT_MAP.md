@@ -1907,6 +1907,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsLoop.Tests.cs`
   owns diagnostics-loop polling contracts that keep options snapshots out of
   hot diagnostics refresh paths.
+- `tests/Sussudio.Tests/XUnit.AutomationDiagnosticsLoopContractsTests.cs`
+  owns xUnit execution for the former legacy diagnostics-loop polling catalog
+  check.
 - Keep new automation diagnostics projection ownership assertions in the focused
   owner files; do not rebuild the old mega refresh assertion there:
   `MainViewModel.Automation.DiagnosticsProjection.Snapshot.Tests.cs`,

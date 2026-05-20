@@ -6,9 +6,6 @@ static partial class Program
     private static async Task AddPresentationPreviewCaptureChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Diagnostics loop does not rebuild automation options each poll",
-            DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll);
-        await AddCheckAsync(results,
             "Preview startup session and reinit ownership lives in focused controllers",
             PreviewStartupSessionReinitOwnership_LivesInFocusedControllers);
         await AddCheckAsync(results,

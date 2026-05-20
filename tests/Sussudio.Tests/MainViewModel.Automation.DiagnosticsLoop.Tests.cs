@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll()
+    internal static Task DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll()
     {
         var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
