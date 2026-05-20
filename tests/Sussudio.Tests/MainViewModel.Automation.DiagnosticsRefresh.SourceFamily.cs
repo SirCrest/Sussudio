@@ -79,6 +79,7 @@ static partial class Program
             SnapshotProjectionPreviewD3DCpuTimingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DCpuTiming.cs"),
             SnapshotProjectionPreviewRuntimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs"),
             SnapshotProjectionProcessResourcesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs"),
+            SnapshotProjectionFlatteningProcessResourcesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.ProcessResources.cs"),
             SnapshotProjectionRecordingIntegrityText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs"),
             SnapshotProjectionFlatteningRecordingIntegrityText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.cs"),
             SnapshotProjectionRecordingPipelineText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs"),
@@ -195,6 +196,7 @@ static partial class Program
         public string SnapshotProjectionPreviewD3DCpuTimingText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewRuntimeText { get; init; } = string.Empty;
         public string SnapshotProjectionProcessResourcesText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningProcessResourcesText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingIntegrityText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningRecordingIntegrityText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingPipelineText { get; init; } = string.Empty;
@@ -287,6 +289,7 @@ static partial class Program
                 SnapshotProjectionPreviewD3DPipelineLatencyText,
                 SnapshotProjectionPreviewRuntimeText,
                 SnapshotProjectionProcessResourcesText,
+                SnapshotProjectionFlatteningProcessResourcesText,
                 SnapshotProjectionRecordingIntegrityText,
                 SnapshotProjectionFlatteningRecordingIntegrityText,
                 SnapshotProjectionRecordingPipelineText,

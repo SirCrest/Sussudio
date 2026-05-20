@@ -242,6 +242,9 @@ owns final preview runtime projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs` owns process
 memory, CPU, GC, and thread-pool projection consumed by the automation snapshot
 DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.ProcessResources.cs`
+owns final process resource projection-to-`AutomationSnapshot` field
+flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.AvSync.cs` owns live A/V sync
 drift and encoder correction projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs` owns

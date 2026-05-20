@@ -314,8 +314,16 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionProcessResourcesText, "private static ProcessResourceProjection BuildProcessResourceProjection(ProcessResourceSnapshot processResources)");
         AssertContains(diagnostics.SnapshotProjectionProcessResourcesText, "MemoryWorkingSetMb = processResources.MemoryWorkingSetMb,");
         AssertContains(diagnostics.SnapshotProjectionProcessResourcesText, "ThreadPoolIoMax = processResources.ThreadPoolIoMax");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var processResourceFlattening = BuildProcessResourceFlattenedProjection(processResourceProjection);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningProcessResourcesText, "MemoryWorkingSetMb = processResourceProjection.MemoryWorkingSetMb,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningProcessResourcesText, "ProcessCpuPercent = processResourceProjection.ProcessCpuPercent,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningProcessResourcesText, "ThreadPoolIoMax = processResourceProjection.ThreadPoolIoMax");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "MemoryWorkingSetMb = processResourceFlattening.MemoryWorkingSetMb,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "ThreadPoolIoMax = processResourceFlattening.ThreadPoolIoMax,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "MemoryWorkingSetMb = processResources.MemoryWorkingSetMb,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "ThreadPoolIoMax = processResources.ThreadPoolIoMax,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "MemoryWorkingSetMb = processResourceProjection.MemoryWorkingSetMb,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "ThreadPoolIoMax = processResourceProjection.ThreadPoolIoMax,");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var avSync = BuildAvSyncProjection(captureRuntime);");
         AssertContains(diagnostics.SnapshotProjectionAvSyncText, "private static AvSyncProjection BuildAvSyncProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnostics.SnapshotProjectionAvSyncText, "CaptureDriftMs = captureRuntime.AvSyncCaptureDriftMs,");

@@ -179,6 +179,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingIntegrityText, "private static RecordingIntegrityFlattenedProjection BuildRecordingIntegrityFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingOutputFlattenedProjection(recordingBackend, recordingOutput)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingOutputText, "private static RecordingOutputFlattenedProjection BuildRecordingOutputFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildProcessResourceFlattenedProjection(processResourceProjection)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningProcessResourcesText, "private static ProcessResourceFlattenedProjection BuildProcessResourceFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "new AutomationSnapshot");
     }
 }
