@@ -2610,6 +2610,11 @@ thread shell marker. Playback-thread scheduling policy now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadScheduling.cs`;
 keep timer-resolution P/Invoke plus MMCSS task/priority env policy there so
 the worker loop remains focused on command flow.
+Playback-thread exit transactions now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadExit.cs`; keep
+prebuffer release, timer-resolution release, command-channel completion/drain,
+thread/CTS ownership clearing, and deferred preview attach there instead of
+inside the command dispatch loop.
 Playback-thread seek command execution now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekCommands.cs`.
 Keep coalesced seek resolution, exact resume targets, playback resume handoff,
@@ -2628,10 +2633,10 @@ Playback-thread play command execution now lives in
 Keep exact resume, file-open/reopen, audio prebuffer, and rendering resume
 ordering there. Pause/go-live/nudge command execution remains in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`.
-Playback thread exit cleanup now lives in
+Playback-thread live-restore cleanup now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCleanup.cs`.
 Keep repeated live-restore cleanup and playback CTS disposal warnings there
-instead of duplicating teardown blocks inside the worker loop.
+instead of duplicating state-reset blocks inside command handlers.
 Flashback playback audio routing now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs`.
 Keep live audio suppress/restore and playback-state audio/preview routing

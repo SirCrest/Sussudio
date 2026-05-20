@@ -22,6 +22,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var threadSchedulingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadScheduling.cs")
             .Replace("\r\n", "\n");
+        var threadExitText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadExit.cs")
+            .Replace("\r\n", "\n");
         var threadLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs")
             .Replace("\r\n", "\n");
         var threadChannelText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadChannel.cs")
@@ -170,7 +172,10 @@ static partial class Program
         AssertContains(sourceText, "if (_disposedFlag != 0)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT\");\n                            isScrubbing = false;\n                            RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, \"thread_disposed\");");
         AssertContains(sourceText, "catch (OperationCanceledException)\n        {\n            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_CANCELLED\");");
         AssertContains(sourceText, "catch (Exception ex)\n            {\n                Logger.Log($\"FLASHBACK_PLAYBACK_CANCEL_WARN type={ex.GetType().Name} msg='{ex.Message}'\");\n            }");
-        AssertContains(sourceText, "finally\n        {\n            ClearPrebufferedFrames(prebufferedFrames, \"thread_exit\");\n            timeEndPeriod(1);");
+        AssertContains(threadLoopText, "finally\n        {\n            CompletePlaybackThreadExit(prebufferedFrames, cts, commandChannel);\n        }");
+        AssertContains(threadExitText, "private void CompletePlaybackThreadExit(");
+        AssertContains(threadExitText, "ClearPrebufferedFrames(prebufferedFrames, \"thread_exit\");\n        timeEndPeriod(1);");
+        AssertDoesNotContain(threadLoopText, "ClearPrebufferedFrames(prebufferedFrames, \"thread_exit\");\n            timeEndPeriod(1);");
         AssertContains(sourceText, "var threadExited = true;");
         AssertContains(sourceText, "if (ReferenceEquals(Thread.CurrentThread, thread))\n                {\n                    Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_JOIN_SKIP reason=self\");\n                    SetLastCommandFailure(\"thread_join_skipped:self\");\n                    threadExited = false;\n                }");
         AssertContains(sourceText, "private static readonly TimeSpan PlaybackThreadStopTimeout = TimeSpan.FromSeconds(3);");
@@ -234,7 +239,7 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_DECODER_CLEANUP_COMPLETE was_open={wasOpen}");
         AssertContains(sourceText, "release_ms={releaseMs:0.###} close_ms={closeMs:0.###} dispose_ms={disposeMs:0.###} total_ms={totalMs:0.###}");
         AssertContains(sourceText, "fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";");
-        AssertContains(sourceText, "CompleteCommandChannelForThreadExit(commandChannel);\n            DrainAbandonedCommandsOnThreadExit(commandChannel);");
+        AssertContains(threadExitText, "CompleteCommandChannelForThreadExit(commandChannel);\n        DrainAbandonedCommandsOnThreadExit(commandChannel);");
         AssertContains(threadChannelText, "private static void CompleteCommandChannelForThreadExit(Channel<PlaybackCommand> commandChannel)");
         AssertContains(threadChannelText, "commandChannel.Writer.TryComplete();");
         AssertContains(threadChannelText, "FLASHBACK_PLAYBACK_CHANNEL_COMPLETE_WARN");
@@ -243,16 +248,18 @@ static partial class Program
         AssertContains(threadChannelText, "Interlocked.Exchange(ref _pendingCommands, 0);");
         AssertDoesNotContain(threadLifecycleText, "private static void CompleteCommandChannelForThreadExit(Channel<PlaybackCommand> commandChannel)");
         AssertDoesNotContain(threadLifecycleText, "private void DrainAbandonedCommandsOnThreadExit(Channel<PlaybackCommand> commandChannel)");
+        AssertDoesNotContain(threadLoopText, "CompleteCommandChannelForThreadExit(commandChannel);\n            DrainAbandonedCommandsOnThreadExit(commandChannel);");
         AssertContains(sourceText, "var ownsPlaybackThread = ReferenceEquals(Thread.CurrentThread, _playbackThread);");
+        AssertContains(threadExitText, "var ownsPlaybackThread = ReferenceEquals(Thread.CurrentThread, _playbackThread);");
         AssertContains(sourceText, "var ownsCts = ReferenceEquals(cts, _playCts);");
-        AssertContains(sourceText, "if (ownsPlaybackThread)\n            {\n                _playbackThread = null;\n            }");
+        AssertContains(threadExitText, "if (ownsPlaybackThread)\n        {\n            _playbackThread = null;\n        }");
         AssertContains(sourceText, "_playbackThread = null;");
         AssertContains(sourceText, "StopPlaybackThread(PlaybackThreadStopTimeout, \"dispose\");\n        _initialized = false;\n        Logger.Log(\"FLASHBACK_PLAYBACK_DISPOSED\");");
         AssertContains(sourceText, "if (_disposedFlag != 0 && command.Kind != CommandKind.Stop)\n        {\n            return RejectCommand(command.Kind, \"disposed\", \"disposed\", false);\n        }");
-        AssertContains(sourceText, "if (ownsCts)\n            {\n                _playCts = null;\n            }\n            DisposePlaybackCtsBestEffort(cts, \"thread_exit\");");
+        AssertContains(threadExitText, "if (ownsCts)\n        {\n            _playCts = null;\n        }\n        DisposePlaybackCtsBestEffort(cts, \"thread_exit\");");
         AssertContains(sourceText, "private static void DisposePlaybackCtsBestEffort(CancellationTokenSource? cts, string operation)");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_CTS_DISPOSE_WARN");
-        AssertContains(sourceText, "if (ownsPlaybackThread || ownsCts)\n            {\n                Volatile.Write(ref _playbackThreadStarted, 0);\n            }");
+        AssertContains(threadExitText, "if (ownsPlaybackThread || ownsCts)\n        {\n            Volatile.Write(ref _playbackThreadStarted, 0);\n        }");
         AssertContains(sourceText, "Interlocked.Increment(ref _commandsEnqueued);\n        UpdateMaxPendingCommands(pending);\n        MarkCommandQueued(command.Kind);\n        return true;");
 
         return Task.CompletedTask;

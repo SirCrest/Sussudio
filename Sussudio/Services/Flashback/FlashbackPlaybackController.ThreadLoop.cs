@@ -160,26 +160,7 @@ internal sealed partial class FlashbackPlaybackController
         }
         finally
         {
-            ClearPrebufferedFrames(prebufferedFrames, "thread_exit");
-            timeEndPeriod(1);
-            CompleteCommandChannelForThreadExit(commandChannel);
-            DrainAbandonedCommandsOnThreadExit(commandChannel);
-            var ownsPlaybackThread = ReferenceEquals(Thread.CurrentThread, _playbackThread);
-            var ownsCts = ReferenceEquals(cts, _playCts);
-            if (ownsPlaybackThread)
-            {
-                _playbackThread = null;
-            }
-            if (ownsCts)
-            {
-                _playCts = null;
-            }
-            DisposePlaybackCtsBestEffort(cts, "thread_exit");
-            if (ownsPlaybackThread || ownsCts)
-            {
-                Volatile.Write(ref _playbackThreadStarted, 0);
-            }
-            ApplyDeferredPreviewAttachAfterStopTimeout();
+            CompletePlaybackThreadExit(prebufferedFrames, cts, commandChannel);
         }
 
         Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
