@@ -57,6 +57,7 @@ static partial class Program
             SnapshotProjectionAvSyncText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.AvSync.cs"),
             SnapshotProjectionFlatteningAvSyncText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.AvSync.cs"),
             SnapshotProjectionAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Audio.cs"),
+            SnapshotProjectionFlatteningAudioAndIngestText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.cs"),
             SnapshotProjectionFlatteningAudioDropsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioDrops.cs"),
             SnapshotProjectionCaptureIngestText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureIngest.cs"),
             SnapshotProjectionWasapiAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.WasapiAudio.cs"),
@@ -177,6 +178,7 @@ static partial class Program
         public string SnapshotProjectionAvSyncText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningAvSyncText { get; init; } = string.Empty;
         public string SnapshotProjectionAudioText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningAudioAndIngestText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningAudioDropsText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureIngestText { get; init; } = string.Empty;
         public string SnapshotProjectionWasapiAudioText { get; init; } = string.Empty;
@@ -276,6 +278,7 @@ static partial class Program
                 SnapshotProjectionAvSyncText,
                 SnapshotProjectionFlatteningAvSyncText,
                 SnapshotProjectionAudioText,
+                SnapshotProjectionFlatteningAudioAndIngestText,
                 SnapshotProjectionFlatteningAudioDropsText,
                 SnapshotProjectionCaptureIngestText,
                 SnapshotProjectionWasapiAudioText,

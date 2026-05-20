@@ -134,11 +134,18 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionAudioText, "var wasapiAudio = BuildWasapiAudioProjection(captureRuntime);");
         AssertContains(diagnostics.SnapshotProjectionAudioText, "private static AudioSignalProjection BuildAudioSignalProjection(");
         AssertContains(diagnostics.SnapshotProjectionAudioText, "Peak = viewModelSnapshot.AudioPeak,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var audioAndIngestFlattening = BuildAudioAndIngestFlattenedProjection(audioAndIngest);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningAudioAndIngestText, "AudioPeak = audioAndIngest.AudioPeak,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningAudioAndIngestText, "WasapiPlaybackBufferedDurationMs = audioAndIngest.WasapiPlaybackBufferedDurationMs");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "AudioPeak = audioAndIngestFlattening.AudioPeak,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "WasapiPlaybackBufferedDurationMs = audioAndIngestFlattening.WasapiPlaybackBufferedDurationMs,");
         AssertContains(diagnostics.SnapshotProjectionCaptureIngestText, "private static CaptureIngestProjection BuildCaptureIngestProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnostics.SnapshotProjectionCaptureIngestText, "SourceReaderReadOutstanding = captureRuntime.SourceReaderReadOutstanding,");
         AssertContains(diagnostics.SnapshotProjectionWasapiAudioText, "private static WasapiAudioProjection BuildWasapiAudioProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnostics.SnapshotProjectionWasapiAudioText, "CaptureAudioLevelEventsFired = captureRuntime.WasapiCaptureAudioLevelEventsFired,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "AudioPeak = viewModelSnapshot.AudioPeak,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "AudioPeak = audioAndIngest.AudioPeak,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "WasapiPlaybackBufferedDurationMs = audioAndIngest.WasapiPlaybackBufferedDurationMs,");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var captureCommands = BuildCaptureCommandProjection(viewModelSnapshot);");
         AssertContains(diagnostics.SnapshotProjectionCaptureCommandsText, "private static CaptureCommandProjection BuildCaptureCommandProjection(ViewModelRuntimeSnapshot viewModelSnapshot)");
         AssertContains(diagnostics.SnapshotProjectionCaptureCommandsText, "CommandsEnqueued = viewModelSnapshot.CaptureCommandCommandsEnqueued,");
