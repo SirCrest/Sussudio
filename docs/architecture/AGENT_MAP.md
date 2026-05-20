@@ -4189,7 +4189,14 @@ Primary owners:
   owns post-cleanup playback command-health validation.
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
   owns the export scenario task registration handoff from diagnostic-session
-  startup.
+  startup. `tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.Playback.cs`
+  owns export-during-playback task priority, label, and started action.
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.Range.cs`
+  owns range and audio-switch range export task priorities, labels, payload
+  variants, and started actions.
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.Coordination.cs`
+  owns concurrent, disable-during-export, and rotated export task priorities,
+  labels, send-channel selection, and started actions.
 - `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs` owns
   Flashback playback disable/re-enable lifecycle diagnostic task registration
   and flow.

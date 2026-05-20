@@ -3690,8 +3690,12 @@ live in `DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation
 Export-during-playback pre/post/final playback snapshot validation lives in
 `DiagnosticSessionFlashbackExportScenarios.PlaybackValidation.cs`.
 `DiagnosticSessionFlashbackExportScenarios.Registrations.cs` owns export
-scenario task registration while diagnostic-session startup makes a single
-qualified call into that owner. Do not reintroduce an empty family root.
+scenario task registration orchestration while diagnostic-session startup makes
+a single qualified call into that owner. Export playback registration lives in
+`.Registrations.Playback.cs`, range/audio-switch registration lives in
+`.Registrations.Range.cs`, and concurrent/disable/rotated coordination
+registration lives in `.Registrations.Coordination.cs`. Do not reintroduce an
+empty family root.
 
 Diagnostic-session Flashback lifecycle checks now live in
 `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs`. They own the
@@ -3890,6 +3894,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs`
 - `DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
+- `DiagnosticSessionFlashbackExportScenarios.Registrations.Playback.cs`
+- `DiagnosticSessionFlashbackExportScenarios.Registrations.Range.cs`
+- `DiagnosticSessionFlashbackExportScenarios.Registrations.Coordination.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Rotated.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.cs`
 - `DiagnosticSessionFlashbackMetrics.Export.cs`
