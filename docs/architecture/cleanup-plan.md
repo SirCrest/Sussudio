@@ -563,9 +563,11 @@ The `tools/ssctl/Formatters.*.cs` partial family is only the projection facade
 for console output. Keep app snapshot orchestration and section ordering in `Formatters.Snapshot.cs`,
 state/capture-command, audio, recording, legacy performance, and Memory/GC text
 in `Formatters.Snapshot.CoreSections.cs`, capture settings and friendly/exact
-frame-rate text in `Formatters.Snapshot.CaptureSettings.cs`, runtime source,
-video-pipeline, capture cadence, embedded AV-sync drift, and preview
-renderer-mode routing/non-D3D fallback text in `Formatters.Snapshot.Runtime.cs`,
+frame-rate text in `Formatters.Snapshot.CaptureSettings.cs`, capture cadence,
+embedded AV-sync drift, and source-signal text in
+`Formatters.Snapshot.CaptureCadence.cs`, video-pipeline text in
+`Formatters.Snapshot.Runtime.cs`, preview renderer-mode routing/non-D3D
+fallback text in `Formatters.Snapshot.Preview.cs`,
 diagnostic health/frame-lane text in `Formatters.Snapshot.DiagnosticLanes.cs`,
 Flashback snapshot gating/order, encoder/buffer/queue, and failure text in
 `Formatters.Snapshot.Flashback.cs`, Flashback export progress, result,

@@ -3819,6 +3819,9 @@ Primary owners:
   Memory/GC embedded snapshot text.
 - `tools/ssctl/Formatters.Snapshot.CaptureSettings.cs` owns capture settings
   text and friendly/exact frame-rate summary formatting.
+- `tools/ssctl/Formatters.Snapshot.CaptureCadence.cs` owns capture cadence,
+  low-FPS, jitter/drop, MJPEG packet fingerprint, sampled visual cadence,
+  embedded AV-sync, and source-signal snapshot text.
 - `tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs` owns diagnostic health,
   summary, evidence, and frame-lane snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot
@@ -3831,15 +3834,16 @@ Primary owners:
   playback state, command-queue, cadence, decode, frame, stage, and A/V drift
   snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG timing snapshot text.
+- `tools/ssctl/Formatters.Snapshot.Preview.cs` owns preview renderer-mode
+  routing, GPU playback summary, non-D3D fallback frame/cadence text, and D3D
+  renderer delegation.
 - `tools/ssctl/Formatters.Snapshot.PreviewD3D.cs` owns D3D preview renderer
   snapshot text: routing/header order, CPU timing, pipeline-latency,
   frame-ownership, frame-latency wait, DXGI frame-stat text, and delegation to
   the shared slow-frame formatter.
-- `tools/ssctl/Formatters.Snapshot.Runtime.cs` owns runtime snapshot sections:
-  source telemetry, video ingest/recording queue/encoder/GPU-CUDA/freshness
-  text, capture cadence and visual-cadence text, embedded AV-sync drift text,
-  preview renderer-mode routing, GPU-media-source text, and non-D3D preview
-  fallback text.
+- `tools/ssctl/Formatters.Snapshot.Runtime.cs` owns runtime video-pipeline
+  snapshot text: video ingest, recording queue, encoder/GPU-CUDA, freshness,
+  and diagnostics lines.
 - `tools/ssctl/Formatters.Snapshot.ThreadHealth.cs` owns source-reader and
   WASAPI thread-health snapshot text.
 - `tools/ssctl/Formatters.Diagnostics.cs` owns recent diagnostic-event output.
