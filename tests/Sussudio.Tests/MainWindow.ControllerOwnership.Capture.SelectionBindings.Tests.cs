@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureSelectionBindingSync_LivesInController()
+    internal static Task CaptureSelectionBindingSync_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");

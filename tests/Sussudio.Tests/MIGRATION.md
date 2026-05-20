@@ -181,6 +181,9 @@ add xUnit alongside, and port incrementally.
 - `XUnit.PresentationPreviewResponsiveLayoutContractsTests.cs` owns the former
   legacy presentation-preview MainWindow responsive shell layout and breakpoint
   policy checks.
+- `XUnit.PresentationPreviewCaptureSelectionContractsTests.cs` owns the former
+  legacy presentation-preview MainWindow capture selection binding, routing,
+  collection sync, focused owner, device-audio projection, and normalizer checks.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, and test-project shape guard checks.
 - `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy

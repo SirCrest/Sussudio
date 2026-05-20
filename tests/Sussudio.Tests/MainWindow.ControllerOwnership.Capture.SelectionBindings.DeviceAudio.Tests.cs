@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureSelectionBindingDeviceAudioProjection_LivesInFocusedPartial()
+    internal static Task CaptureSelectionBindingDeviceAudioProjection_LivesInFocusedPartial()
     {
         var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
         var deviceAudioText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.DeviceAudio.cs").Replace("\r\n", "\n");

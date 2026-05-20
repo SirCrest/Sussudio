@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureComboBoxSelectionNormalizer_PreservesSelectionFallbacks()
+    internal static Task CaptureComboBoxSelectionNormalizer_PreservesSelectionFallbacks()
     {
         var normalizerType = RequireType("Sussudio.Controllers.CaptureComboBoxSelectionNormalizer");
         var captureDeviceType = RequireType("Sussudio.Models.CaptureDevice");

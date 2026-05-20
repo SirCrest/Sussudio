@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureSelectionBindingPropertyRouter_LivesInController()
+    internal static Task CaptureSelectionBindingPropertyRouter_LivesInController()
     {
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.CaptureSelectionBindings.cs").Replace("\r\n", "\n");

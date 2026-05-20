@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureSelectionBindingSelectionOwners_LiveInFocusedPartials()
+    internal static Task CaptureSelectionBindingSelectionOwners_LiveInFocusedPartials()
     {
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
