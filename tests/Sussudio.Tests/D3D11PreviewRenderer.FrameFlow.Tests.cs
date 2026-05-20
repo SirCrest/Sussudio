@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task D3D11PreviewRenderer_DropPendingFrames_DrainsQueueAndMarksGeneration()
+    internal static Task D3D11PreviewRenderer_DropPendingFrames_DrainsQueueAndMarksGeneration()
     {
         var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
         var pendingFrameType = rendererType.GetNestedType("PendingFrame", BindingFlags.NonPublic)
@@ -110,7 +110,7 @@ static partial class Program
         }
     }
 
-    private static Task D3D11PreviewRenderer_FrameCaptureCancellationClearsPendingRequest()
+    internal static Task D3D11PreviewRenderer_FrameCaptureCancellationClearsPendingRequest()
     {
         var rendererText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotRequests.cs")
             .Replace("\r\n", "\n")
@@ -140,7 +140,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task SharedD3DDeviceManager_DuplicatesReferencesUnderLifecycleLock()
+    internal static Task SharedD3DDeviceManager_DuplicatesReferencesUnderLifecycleLock()
     {
         var managerType = RequireType("Sussudio.Services.Preview.SharedD3DDeviceManager");
         AssertNotNull(

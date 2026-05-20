@@ -950,6 +950,11 @@ Presentation-preview output path checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewOutputPathContractsTests.cs`,
 keeping output path display, truncation formatter, and button-action contracts
 in xUnit after their removal from the legacy harness catalog.
+Presentation-preview D3D pacing checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`,
+keeping transition-drain, frame-capture cancellation, and shared-device
+reference lifecycle contracts in xUnit after their removal from the legacy
+harness catalog.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the

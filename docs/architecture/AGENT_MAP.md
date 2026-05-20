@@ -2550,6 +2550,10 @@ Primary current owners:
   owns the former presentation-preview MainWindow output path display,
   truncation formatter, and button-action checks after their removal from the
   legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`
+  owns the former presentation-preview D3D pacing group for transition-drain,
+  frame-capture cancellation, and shared-device reference lifecycle checks after
+  their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral
