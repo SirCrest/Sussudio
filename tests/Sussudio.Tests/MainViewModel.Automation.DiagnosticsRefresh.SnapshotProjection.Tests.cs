@@ -324,7 +324,14 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var recordingPipeline = BuildRecordingPipelineProjection(health);");
         AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingPipelineProjection BuildRecordingPipelineProjection(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "RecordingVideoQueueCapacity = health.RecordingVideoQueueCapacity,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var recordingPipelineFlattening = BuildRecordingPipelineFlattenedProjection(recordingPipeline);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingPipelineText, "RecordingVideoQueueCapacity = recordingPipeline.RecordingVideoQueueCapacity,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingPipelineText, "RecordingCudaFramesDropped = recordingPipeline.RecordingCudaFramesDropped");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "RecordingVideoQueueCapacity = recordingPipelineFlattening.RecordingVideoQueueCapacity,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "RecordingCudaFramesDropped = recordingPipelineFlattening.RecordingCudaFramesDropped,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "RecordingVideoQueueCapacity = health.RecordingVideoQueueCapacity,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "RecordingVideoQueueCapacity = recordingPipeline.RecordingVideoQueueCapacity,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "RecordingCudaFramesDropped = recordingPipeline.RecordingCudaFramesDropped,");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var recordingOutput = BuildRecordingOutputProjection(");
         AssertContains(diagnostics.SnapshotProjectionRecordingOutputText, "private static RecordingOutputProjection BuildRecordingOutputProjection(");
         AssertContains(diagnostics.SnapshotProjectionRecordingOutputText, "RecordingVideoBytes = recordingStats.VideoBytes,");

@@ -270,6 +270,9 @@ flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs` owns encoder
 queue ages, conversion queue depths, and recording video/GPU/CUDA health inputs
 consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingPipeline.cs`
+owns final recording-pipeline projection-to-`AutomationSnapshot` field
+flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingOutput.cs` owns recording
 backend/audio-path/mux-result projection, UI output text, accumulated recording
 bytes, file-growth state, last finalized output metadata, and last verification
