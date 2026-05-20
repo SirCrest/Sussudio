@@ -4176,8 +4176,12 @@ Primary owners:
   state checks, `tools/Common/DiagnosticSessionFlashbackExportScenarios.Rotated.cs`
   owns rotated export, `tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs`
   owns export-during-playback command choreography,
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.PlaybackValidation.cs`
-  owns export-during-playback pre/post/final playback snapshot validation, and
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.PlaybackPreExport.cs`
+  owns the pre-export Playing sample,
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.PlaybackPostExport.cs`
+  owns post-export playback continuity validation,
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.PlaybackFinalState.cs`
+  owns final go-live playback command-health validation, and
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs` owns
   selection-range export orchestration.
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs`
