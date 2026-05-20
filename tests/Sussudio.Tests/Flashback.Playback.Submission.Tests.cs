@@ -13,6 +13,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs")
             .Replace("\r\n", "\n");
+        var previewDetachLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewDetachLifecycle.cs")
+            .Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
@@ -54,10 +56,17 @@ static partial class Program
         AssertContains(lifecycleText, "private volatile WasapiAudioCapture? _audioCapture;");
         AssertContains(lifecycleText, "private volatile bool _initialized;");
         AssertContains(lifecycleText, "private volatile int _disposedFlag;");
-        AssertContains(lifecycleText, "private int _previewDetachStopTimeoutActive;");
-        AssertContains(lifecycleText, "private int _deferredPreviewAttachApplyRetryScheduled;");
-        AssertContains(lifecycleText, "private IPreviewFrameSink? _pendingPreviewSinkAfterDetachTimeout;");
-        AssertContains(lifecycleText, "private ILiveVideoSource? _pendingVideoCaptureAfterDetachTimeout;");
+        AssertContains(previewDetachLifecycleText, "private int _previewDetachStopTimeoutActive;");
+        AssertContains(previewDetachLifecycleText, "private int _deferredPreviewAttachApplyRetryScheduled;");
+        AssertContains(previewDetachLifecycleText, "private IPreviewFrameSink? _pendingPreviewSinkAfterDetachTimeout;");
+        AssertContains(previewDetachLifecycleText, "private ILiveVideoSource? _pendingVideoCaptureAfterDetachTimeout;");
+        AssertContains(previewDetachLifecycleText, "public void PrepareForPreviewDetach()");
+        AssertContains(previewDetachLifecycleText, "private void DetachPreviewComponentsAfterStopTimeout()");
+        AssertContains(previewDetachLifecycleText, "private bool TryDeferPreviewAttachAfterStopTimeoutUnsafe(");
+        AssertContains(previewDetachLifecycleText, "private void ApplyDeferredPreviewAttachAfterStopTimeout()");
+        AssertContains(previewDetachLifecycleText, "private void ScheduleDeferredPreviewAttachApplyRetry()");
+        AssertDoesNotContain(lifecycleText, "public void PrepareForPreviewDetach()");
+        AssertDoesNotContain(lifecycleText, "private void ApplyDeferredPreviewAttachAfterStopTimeout()");
         AssertDoesNotContain(rootText, "private IPreviewFrameSink? _previewSink;");
         AssertDoesNotContain(rootText, "private ILiveVideoSource? _videoCapture;");
         AssertDoesNotContain(rootText, "private volatile WasapiAudioPlayback? _audioPlayback;");

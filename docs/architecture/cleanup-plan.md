@@ -2628,8 +2628,11 @@ behavior in the audio prebuffer partial.
 Flashback playback component lifecycle now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs`. Keep
 initialization, audio/preview component reference updates, lifecycle/dispose
-state, preview-detach cleanup, deferred reattach state, and disposal there;
-keep decoder file handling and playback pacing in the controller core/thread
+state, and disposal there. Preview-detach cleanup, failed-stop detach timeout
+state, deferred preview reattach state, and deferred reattach retry scheduling
+now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewDetachLifecycle.cs`.
+Keep decoder file handling and playback pacing in the controller core/thread
 partials.
 
 Flashback playback decoded-frame submission now lives in
