@@ -46,6 +46,9 @@ static partial class Program
             "Preview renderer runtime state lives in host controller",
             PreviewRendererHostController_OwnsRuntimeState);
         await AddCheckAsync(results,
+            "Preview surface presentation and shadow live in controllers",
+            PreviewSurfacePresentationAndShadow_LiveInControllers);
+        await AddCheckAsync(results,
             "Preview renderer startup plan builder preserves fallback policy",
             PreviewRendererStartupPlanBuilder_PreservesFallbackPolicy);
         await AddCheckAsync(results,
