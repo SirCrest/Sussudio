@@ -196,6 +196,9 @@ field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs` owns active
 Flashback export progress, failure, force-rotate fallback, and last-result
 projection consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackExport.cs`
+owns final Flashback export projection-to-`AutomationSnapshot` field
+flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs` owns
 Flashback recording, buffer, backend, and encoder configuration projection,
 including the export verification, codec-downgrade fallback, temp-drive, and

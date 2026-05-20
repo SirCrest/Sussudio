@@ -84,7 +84,15 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlashbackExportText, "LastExportId = health.LastExportId,");
         AssertContains(diagnostics.SnapshotProjectionFlashbackExportText, "LastExportMessage = health.LastExportMessage");
         AssertContains(diagnostics.SnapshotProjectionFlashbackExportText, "private readonly record struct FlashbackExportLastResultProjection");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var flashbackExportFlattening = BuildFlashbackExportFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackExportText, "Active = flashbackExport.Active,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackExportText, "LastExportId = lastResult.LastExportId,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackExportText, "LastExportMessage = lastResult.LastExportMessage");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "FlashbackExportActive = flashbackExportFlattening.Active,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "LastExportId = flashbackExportFlattening.LastExportId,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "FlashbackExportActive = health.FlashbackExportActive,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "FlashbackExportActive = flashbackExport.Active,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "LastExportId = flashbackExportLastResult.LastExportId,");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var flashbackRecording = BuildFlashbackRecordingProjection(captureRuntime, health);");
         AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "private static FlashbackRecordingProjection BuildFlashbackRecordingProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "var startupCache = BuildFlashbackRecordingStartupCacheProjection(health);");

@@ -44,6 +44,9 @@ public sealed partial class AutomationDiagnosticsHub
         var hdrPipelineFlattening = BuildHdrPipelineFlattenedProjection(hdrPipeline);
         var flashbackExport = projections.FlashbackExport;
         var flashbackExportLastResult = projections.FlashbackExportLastResult;
+        var flashbackExportFlattening = BuildFlashbackExportFlattenedProjection(
+            flashbackExport,
+            flashbackExportLastResult);
         var flashbackRecording = projections.FlashbackRecording;
         var flashbackPlayback = projections.FlashbackPlayback;
 
@@ -796,33 +799,33 @@ public sealed partial class AutomationDiagnosticsHub
             FlashbackPlaybackLastCommandProcessedUtcUnixMs = flashbackPlayback.Commands.LastProcessedUtcUnixMs,
             FlashbackPlaybackLastCommandFailureUtcUnixMs = flashbackPlayback.Commands.LastFailureUtcUnixMs,
             FlashbackPlaybackLastCommandFailure = flashbackPlayback.Commands.LastFailure,
-            FlashbackExportActive = flashbackExport.Active,
-            FlashbackExportId = flashbackExport.Id,
-            FlashbackExportStatus = flashbackExport.Status,
-            FlashbackExportOutputPath = flashbackExport.OutputPath,
-            FlashbackExportStartedUtcUnixMs = flashbackExport.StartedUtcUnixMs,
-            FlashbackExportLastProgressUtcUnixMs = flashbackExport.LastProgressUtcUnixMs,
-            FlashbackExportCompletedUtcUnixMs = flashbackExport.CompletedUtcUnixMs,
-            FlashbackExportElapsedMs = flashbackExport.ElapsedMs,
-            FlashbackExportLastProgressAgeMs = flashbackExport.LastProgressAgeMs,
-            FlashbackExportOutputBytes = flashbackExport.OutputBytes,
-            FlashbackExportThroughputBytesPerSec = flashbackExport.ThroughputBytesPerSec,
-            FlashbackExportSegmentsProcessed = flashbackExport.SegmentsProcessed,
-            FlashbackExportTotalSegments = flashbackExport.TotalSegments,
-            FlashbackExportPercent = flashbackExport.Percent,
-            FlashbackExportInPointMs = flashbackExport.InPointMs,
-            FlashbackExportOutPointMs = flashbackExport.OutPointMs,
-            FlashbackExportMessage = flashbackExport.Message,
-            FlashbackExportFailureKind = flashbackExport.FailureKind,
-            FlashbackExportForceRotateFallbacks = flashbackExport.ForceRotateFallbacks,
-            FlashbackExportLastForceRotateFallbackUtcUnixMs = flashbackExport.LastForceRotateFallbackUtcUnixMs,
-            FlashbackExportLastForceRotateFallbackSegments = flashbackExport.LastForceRotateFallbackSegments,
-            FlashbackExportLastForceRotateFallbackInPointMs = flashbackExport.LastForceRotateFallbackInPointMs,
-            FlashbackExportLastForceRotateFallbackOutPointMs = flashbackExport.LastForceRotateFallbackOutPointMs,
-            LastExportId = flashbackExportLastResult.LastExportId,
-            LastExportPath = flashbackExportLastResult.LastExportPath,
-            LastExportSuccess = flashbackExportLastResult.LastExportSuccess,
-            LastExportMessage = flashbackExportLastResult.LastExportMessage
+            FlashbackExportActive = flashbackExportFlattening.Active,
+            FlashbackExportId = flashbackExportFlattening.Id,
+            FlashbackExportStatus = flashbackExportFlattening.Status,
+            FlashbackExportOutputPath = flashbackExportFlattening.OutputPath,
+            FlashbackExportStartedUtcUnixMs = flashbackExportFlattening.StartedUtcUnixMs,
+            FlashbackExportLastProgressUtcUnixMs = flashbackExportFlattening.LastProgressUtcUnixMs,
+            FlashbackExportCompletedUtcUnixMs = flashbackExportFlattening.CompletedUtcUnixMs,
+            FlashbackExportElapsedMs = flashbackExportFlattening.ElapsedMs,
+            FlashbackExportLastProgressAgeMs = flashbackExportFlattening.LastProgressAgeMs,
+            FlashbackExportOutputBytes = flashbackExportFlattening.OutputBytes,
+            FlashbackExportThroughputBytesPerSec = flashbackExportFlattening.ThroughputBytesPerSec,
+            FlashbackExportSegmentsProcessed = flashbackExportFlattening.SegmentsProcessed,
+            FlashbackExportTotalSegments = flashbackExportFlattening.TotalSegments,
+            FlashbackExportPercent = flashbackExportFlattening.Percent,
+            FlashbackExportInPointMs = flashbackExportFlattening.InPointMs,
+            FlashbackExportOutPointMs = flashbackExportFlattening.OutPointMs,
+            FlashbackExportMessage = flashbackExportFlattening.Message,
+            FlashbackExportFailureKind = flashbackExportFlattening.FailureKind,
+            FlashbackExportForceRotateFallbacks = flashbackExportFlattening.ForceRotateFallbacks,
+            FlashbackExportLastForceRotateFallbackUtcUnixMs = flashbackExportFlattening.LastForceRotateFallbackUtcUnixMs,
+            FlashbackExportLastForceRotateFallbackSegments = flashbackExportFlattening.LastForceRotateFallbackSegments,
+            FlashbackExportLastForceRotateFallbackInPointMs = flashbackExportFlattening.LastForceRotateFallbackInPointMs,
+            FlashbackExportLastForceRotateFallbackOutPointMs = flashbackExportFlattening.LastForceRotateFallbackOutPointMs,
+            LastExportId = flashbackExportFlattening.LastExportId,
+            LastExportPath = flashbackExportFlattening.LastExportPath,
+            LastExportSuccess = flashbackExportFlattening.LastExportSuccess,
+            LastExportMessage = flashbackExportFlattening.LastExportMessage
         };
     }
 }
