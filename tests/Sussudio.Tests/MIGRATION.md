@@ -177,6 +177,10 @@ add xUnit alongside, and port incrementally.
   former legacy diagnostic-session scenario execution band for scenario phase,
   completion phase, plan/setup, background tasks, PresentMon startup, cleanup,
   recording verification, and post-run snapshot ownership checks.
+- `XUnit.McpDiagnosticSessionFlashbackContractsTests.cs` owns the former
+  legacy diagnostic-session Flashback band for scenario flow, export/helper,
+  metric projection, wait, warning-policy, stress, and audio-master fallback
+  classification ownership checks.
 - `XUnit.PresentationPreviewHarnessRegistrationTests.cs` owns the former legacy
   presentation-preview harness registration guard.
 - `XUnit.PresentationPreviewMainViewModelInitialContractsTests.cs` owns the

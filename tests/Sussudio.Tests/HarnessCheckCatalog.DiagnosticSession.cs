@@ -6,53 +6,11 @@ static partial class Program
     private static async Task AddDiagnosticSessionChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Diagnostic session Flashback cycle scenarios have a named owner",
-            DiagnosticSessionFlashbackCycleScenarios_OwnCycleFlows);
-        await AddCheckAsync(results,
             "Diagnostic session sampler has a named owner",
             DiagnosticSessionSampler_OwnsSampleLoopOrdering);
         await AddCheckAsync(results,
             "Diagnostic session metrics have a named owner",
             DiagnosticSessionMetrics_OwnsSessionMetricProjection);
-        await AddCheckAsync(results,
-            "Diagnostic session Flashback metrics have a named owner",
-            DiagnosticSessionFlashbackMetrics_OwnsFlashbackSessionMetricProjection);
-        await AddCheckAsync(results,
-            "Diagnostic session Flashback export force-rotate counters ignore export relevance gate",
-            DiagnosticSessionFlashbackMetrics_ExportForceRotateCountersIgnoreRelevanceGate);
-        await AddCheckAsync(results,
-            "Diagnostic session Flashback preview cycle scenarios have a named owner",
-            DiagnosticSessionFlashbackPreviewCycleScenarios_OwnPreviewCycleFlows);
-        await AddCheckAsync(results,
-            "Diagnostic session Flashback rejected exports have a named owner",
-            DiagnosticSessionFlashbackRejectedExports_OwnRejectionFlows);
-        await AddCheckAsync(results,
-            "Diagnostic session Flashback recording settings scenarios have a named owner",
-            DiagnosticSessionFlashbackRecordingSettingsScenarios_OwnDeferredSettingsFlow);
-        await AddCheckAsync(results,
-            "Diagnostic session Flashback lifecycle scenarios have a named owner",
-            DiagnosticSessionFlashbackLifecycleScenarios_OwnLifecycleFlow);
-        await AddCheckAsync(results,
-            "Diagnostic session Flashback segment playback scenarios have a named owner",
-            DiagnosticSessionFlashbackSegmentPlaybackScenarios_OwnSegmentPlaybackFlow);
-        await AddCheckAsync(results,
-            "Diagnostic session Flashback export scenarios have a named owner",
-            DiagnosticSessionFlashbackExportScenarios_OwnExportFlows);
-        await AddCheckAsync(results,
-            "Diagnostic session Flashback export helpers have a named owner",
-            DiagnosticSessionFlashbackExports_OwnsExportHelpers);
-        await AddCheckAsync(results,
-            "Diagnostic session Flashback segment waits have a named owner",
-            DiagnosticSessionFlashbackSegments_OwnsSegmentWaitsAndParsing);
-        await AddCheckAsync(results,
-            "Diagnostic session Flashback stress scenario has a named owner",
-            DiagnosticSessionFlashbackStressScenario_OwnsStressFlow);
-        await AddCheckAsync(results,
-            "Diagnostic session Flashback snapshot waits have a named owner",
-            DiagnosticSessionFlashbackWaits_OwnsSnapshotPollingWaits);
-        await AddCheckAsync(results,
-            "Diagnostic session Flashback validation has a named owner",
-            DiagnosticSessionFlashbackValidation_OwnsFlashbackWarningPolicy);
         await AddCheckAsync(results,
             "Diagnostic session health policy has a named owner",
             DiagnosticSessionHealthPolicy_OwnsHealthTolerances);
@@ -74,8 +32,5 @@ static partial class Program
         await AddCheckAsync(results,
             "Diagnostic session runner rejects concurrent invocation on same output directory",
             DiagnosticSessionRunner_RejectsConcurrentInvocationOnSameOutputDirectory);
-        await AddCheckAsync(results,
-            "Diagnostic session Flashback stress scenario classifies audio-master fallbacks",
-            DiagnosticSessionFlashbackStressScenario_ClassifiesAudioMasterFallbacks);
     }
 }

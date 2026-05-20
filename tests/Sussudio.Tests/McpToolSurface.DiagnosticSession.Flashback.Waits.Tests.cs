@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task DiagnosticSessionFlashbackWaits_OwnsSnapshotPollingWaits()
+    internal static Task DiagnosticSessionFlashbackWaits_OwnsSnapshotPollingWaits()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var setupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioSetup.cs")

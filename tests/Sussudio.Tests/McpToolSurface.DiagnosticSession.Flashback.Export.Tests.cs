@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task DiagnosticSessionFlashbackExportScenarios_OwnExportFlows()
+    internal static Task DiagnosticSessionFlashbackExportScenarios_OwnExportFlows()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
@@ -57,7 +57,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionFlashbackExports_OwnsExportHelpers()
+    internal static Task DiagnosticSessionFlashbackExports_OwnsExportHelpers()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
@@ -88,7 +88,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionFlashbackSegments_OwnsSegmentWaitsAndParsing()
+    internal static Task DiagnosticSessionFlashbackSegments_OwnsSegmentWaitsAndParsing()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();

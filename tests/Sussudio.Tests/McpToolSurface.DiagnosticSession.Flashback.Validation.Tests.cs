@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task DiagnosticSessionFlashbackValidation_OwnsFlashbackWarningPolicy()
+    internal static Task DiagnosticSessionFlashbackValidation_OwnsFlashbackWarningPolicy()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
