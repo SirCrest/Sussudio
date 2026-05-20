@@ -117,16 +117,7 @@ internal sealed partial class FlashbackPlaybackController
         SetLastCommandFailure($"decode_error:{ex.GetType().Name}{FormatCommandDetail(position: pos)}");
         Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_SNAP_TO_LIVE type={ex.GetType().Name} error='{ex.Message}' pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
         Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_STACK {ex.StackTrace?.Replace("\r\n", " | ")}");
-        CloseDecoderFileBestEffort(decoder, "decode_error");
-        fileOpen = false;
-        _currentOpenFilePath = null;
-        _decoderHwAccel = "N/A";
-        Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
-        Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-        ReleasePlaybackFrameForLive("decode_error");
-        RestoreLiveAudio();
-        SafeResumePreviewSubmission("decode_error");
-        SetState(FlashbackPlaybackState.Live);
+        RestoreLiveAfterPlaybackDecodeError(decoder, ref fileOpen);
     }
 
     private bool CheckNearLiveEdge(
@@ -147,16 +138,7 @@ internal sealed partial class FlashbackPlaybackController
             Interlocked.Increment(ref _playbackNearLiveSnaps);
             var gapMs = gapFromLive.TotalMilliseconds;
             Logger.Log($"FLASHBACK_PLAYBACK_NEAR_LIVE_SNAP pos_ms={(long)bufferPosition.TotalMilliseconds} framePts_ms={(long)absoluteFramePts.TotalMilliseconds} latestPts_ms={(long)absoluteLatestPts.TotalMilliseconds} gapFromLive_ms={gapMs:F0} threshold_ms={(long)snapThreshold.TotalMilliseconds} frameCount={_playbackFrameCount}");
-            CloseDecoderFileBestEffort(decoder, "near_live");
-            fileOpen = false;
-            _currentOpenFilePath = null;
-            _decoderHwAccel = "N/A";
-            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
-            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-            ReleasePlaybackFrameForLive("near_live");
-            RestoreLiveAudio();
-            SafeResumePreviewSubmission("near_live");
-            SetState(FlashbackPlaybackState.Live);
+            RestoreLiveAfterNearLiveSnap(decoder, ref fileOpen);
             return true;
         }
         return false;

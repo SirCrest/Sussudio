@@ -10,6 +10,15 @@ internal sealed partial class FlashbackPlaybackController
     private void RestoreLiveAfterPlaybackSubmitFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)
         => RestoreLiveAfterDecoderPlaybackFailure(decoder, ref fileOpen, operation, resumeRendering: true);
 
+    private void RestoreLiveAfterPlaybackDecodeError(FlashbackDecoder decoder, ref bool fileOpen)
+        => RestoreLiveAfterDecoderPlaybackFailure(decoder, ref fileOpen, "decode_error", resumeRendering: false);
+
+    private void RestoreLiveAfterNearLiveSnap(FlashbackDecoder decoder, ref bool fileOpen)
+        => RestoreLiveAfterDecoderPlaybackFailure(decoder, ref fileOpen, "near_live", resumeRendering: false);
+
+    private void RestoreLiveAfterSoftwarePlaybackBudgetSnap(FlashbackDecoder decoder, ref bool fileOpen, string operation)
+        => RestoreLiveAfterDecoderPlaybackFailure(decoder, ref fileOpen, operation, resumeRendering: true);
+
     private void RestoreLiveAfterDecoderPlaybackFailure(
         FlashbackDecoder decoder,
         ref bool fileOpen,

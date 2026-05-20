@@ -30,6 +30,9 @@ static partial class Program
         AssertContains(playbackFrameOwnershipText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
         AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterSeekDisplayFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
         AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterPlaybackSubmitFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
+        AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterPlaybackDecodeError(FlashbackDecoder decoder, ref bool fileOpen)");
+        AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterNearLiveSnap(FlashbackDecoder decoder, ref bool fileOpen)");
+        AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterSoftwarePlaybackBudgetSnap(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
         AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterDecoderPlaybackFailure(");
         AssertContains(playbackLiveRecoveryText, "CloseDecoderFileBestEffort(decoder, operation);");
         AssertContains(playbackLiveRecoveryText, "ReleasePlaybackFrameForLive(operation);");
@@ -138,8 +141,8 @@ static partial class Program
         AssertContains(sourceText, "SetNoFileFailure(CommandKind.Play, PlaybackPosition);");
         AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"nudge_no_file\");");
         AssertContains(sourceText, "SetNoFileFailure(CommandKind.Nudge, nudgedPos);");
-        AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"near_live\");");
-        AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"decode_error\");");
+        AssertContains(sourceText, "RestoreLiveAfterNearLiveSnap(decoder, ref fileOpen);");
+        AssertContains(sourceText, "RestoreLiveAfterPlaybackDecodeError(decoder, ref fileOpen);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SUBMIT_FAIL");
         AssertContains(sourceText, "TrySubmitAndHoldFrame(nudgeFrame, \"nudge\")");
         AssertContains(sourceText, "TrySubmitAndHoldFrame(frame, \"seek\")");
@@ -157,7 +160,7 @@ static partial class Program
         AssertDoesNotContain(sourceText, "frame.Width, frame.Height, frame.IsHdr, arrivalTick: 0");
         AssertContains(sourceText, "if (!TrySubmitAndHoldFrame(videoFrame, \"playback\"))\n            {\n                Logger.Log($\"FLASHBACK_PLAYBACK_SUBMIT_STOP pos_ms={(long)PlaybackPosition.TotalMilliseconds}\");\n                RestoreLiveAfterPlaybackSubmitFailure(decoder, ref fileOpen, \"playback_submit_failed\");\n                return false;\n            }");
         AssertContains(sourceText, "private void RestoreLiveAfterPlaybackSubmitFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
-        AssertContains(sourceText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        SafeResumeRendering(operation);\n        SetState(FlashbackPlaybackState.Live);");
+        AssertContains(sourceText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        if (resumeRendering)\n        {\n            SafeResumeRendering(operation);\n        }\n\n        SetState(FlashbackPlaybackState.Live);");
         AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n        try\n        {\n            SubmitFrame(frame);");
         AssertContains(sourceText, "SubmitFrame(previewSink, frame, previewPresentId, countForPresentCadence);\n            HoldSubmittedFrame(frame);");
         AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n            SubmitFrame(videoFrame);");

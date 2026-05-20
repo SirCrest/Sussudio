@@ -1139,15 +1139,20 @@ Entry points:
 - `FlashbackPlaybackController.PlaybackFrameOwnership.cs` owns held playback
   frame backing state, release-for-live reset policy, and best-effort decoded
   frame release warnings.
-- `FlashbackPlaybackController.PlaybackLiveRecovery.cs` owns seek-display and
-  playback-submit failure recovery back to live playback state.
+- `FlashbackPlaybackController.PlaybackLiveRecovery.cs` owns seek-display,
+  playback-submit, decode-error, near-live, and software-decode-budget recovery
+  back to live playback state.
 - `FlashbackPlaybackController.SeekDisplay.cs` owns seek/scrub keyframe display, file-PTS mapping for displayed seek frames, and seek-display failure accounting.
 - `FlashbackPlaybackController.PlaybackFrames.cs` owns playback-frame dequeue/decode selection, prebuffer cleanup, and A/V drift frame-skip catch-up policy.
-- `FlashbackPlaybackController.PlaybackLoop.cs` owns continuous playback frame progression, decoded-frame submission flow, decode-error live recovery, and near-live snap handling.
+- `FlashbackPlaybackController.PlaybackLoop.cs` owns continuous playback frame
+  progression, decoded-frame submission flow, decode-error snap triggers, and
+  near-live snap detection.
 - `FlashbackPlaybackController.PlaybackSegmentEdges.cs` owns segment switch
   orchestration, write-head waits, and end-of-segment continuation policy; fMP4
   reopen mechanics stay in `FlashbackPlaybackController.DecoderSegmentReopen.cs`.
-- `FlashbackPlaybackController.PlaybackTiming.cs` owns frame-rate resolution, continuous-playback snap policy, software-decode budget snaps, pause-from-live target calculation, and decoded PTS/cadence tracking.
+- `FlashbackPlaybackController.PlaybackTiming.cs` owns frame-rate resolution,
+  continuous-playback snap threshold policy, software-decode budget detection,
+  pause-from-live target calculation, and decoded PTS/cadence tracking.
 - `FlashbackPlaybackController.Markers.cs` owns in/out marker state, marker API, marker normalization, and out-point pause checks.
 - `FlashbackPlaybackController.PositionMapping.cs` owns scrub/seek clamp policy, saturating timestamp math, active fMP4 segment detection, and playback path comparison.
 - `FlashbackPlaybackController.Metrics.cs` owns playback diagnostic counters and cadence/decode summary records.

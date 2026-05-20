@@ -118,15 +118,7 @@ internal sealed partial class FlashbackPlaybackController
         SetLastCommandFailure($"software_decode_over_budget:{operation}{FormatCommandDetail(position: pos)}");
         Logger.Log(
             $"FLASHBACK_PLAYBACK_SOFTWARE_DECODE_SNAP_TO_LIVE op={operation} width={decoder.VideoWidth} height={decoder.VideoHeight} fps={fps:F2} pixel_rate={pixelRate:F0} max_pixel_rate={MaxContinuousSoftwarePlaybackPixelRate:F0}");
-        CloseDecoderFileBestEffort(decoder, operation);
-        fileOpen = false;
-        _currentOpenFilePath = null;
-        _decoderHwAccel = "N/A";
-        ReleasePlaybackFrameForLive(operation);
-        RestoreLiveAudio();
-        SafeResumePreviewSubmission(operation);
-        SafeResumeRendering(operation);
-        SetState(FlashbackPlaybackState.Live);
+        RestoreLiveAfterSoftwarePlaybackBudgetSnap(decoder, ref fileOpen, operation);
     }
 
     private void UpdateDecoderHwAccel(FlashbackDecoder decoder)

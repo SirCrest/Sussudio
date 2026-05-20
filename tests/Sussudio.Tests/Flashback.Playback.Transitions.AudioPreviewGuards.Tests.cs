@@ -94,7 +94,7 @@ static partial class Program
         AssertContains(sourceText, "SafeResumePreviewSubmission(\"scrub_no_file\")");
         AssertContains(sourceText, "RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, \"go_live\")");
         AssertContains(sourceText, "SafeResumePreviewSubmission(operation);");
-        AssertContains(sourceText, "SafeResumePreviewSubmission(\"decode_error\")");
+        AssertContains(sourceText, "RestoreLiveAfterPlaybackDecodeError(decoder, ref fileOpen);");
         AssertContains(sourceText, "SafeFlushPlayback(\"restore_live_audio\")");
         AssertContains(sourceText, "SafeResumeRendering(\"play_no_file\")");
         AssertContains(sourceText, "SafeResumeRendering(\"nudge_no_file\")");
@@ -124,6 +124,7 @@ static partial class Program
         AssertContains(sourceText, "GpuDecodeEnabled &&\n               !decoder.IsD3D11HwAccelerated &&\n               pixelRate > MaxContinuousSoftwarePlaybackPixelRate");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SOFTWARE_DECODE_SNAP_TO_LIVE");
         AssertContains(sourceText, "SetLastCommandFailure($\"software_decode_over_budget:{operation}{FormatCommandDetail(position: pos)}\");");
+        AssertContains(sourceText, "RestoreLiveAfterSoftwarePlaybackBudgetSnap(decoder, ref fileOpen, operation);");
         AssertContains(sourceText, "TrySnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, \"play\")");
         AssertContains(sourceText, "SnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, \"playback_decode\");");
         AssertContains(sourceText, "private void UpdateDecoderHwAccel(FlashbackDecoder decoder)");

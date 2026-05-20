@@ -139,26 +139,30 @@ static partial class Program
     private static Task FlashbackPlaybackController_SnapLiveClearsOpenFileIdentity()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
+        var playbackLiveRecoveryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLiveRecovery.cs")
+            .Replace("\r\n", "\n");
 
         var nearLiveBlock = ExtractTextBetween(
             sourceText,
             "Logger.Log($\"FLASHBACK_PLAYBACK_NEAR_LIVE_SNAP",
-            "SetState(FlashbackPlaybackState.Live);");
-        AssertContains(nearLiveBlock, "CloseDecoderFileBestEffort(decoder, \"near_live\");");
-        AssertContains(nearLiveBlock, "fileOpen = false;\n            _currentOpenFilePath = null;\n            _decoderHwAccel = \"N/A\";");
-        AssertContains(nearLiveBlock, "ReleasePlaybackFrameForLive(\"near_live\");\n            RestoreLiveAudio();");
+            "return true;");
+        AssertContains(nearLiveBlock, "RestoreLiveAfterNearLiveSnap(decoder, ref fileOpen);");
 
         var decodeErrorBlock = ExtractTextBetween(
             sourceText,
             "Logger.Log($\"FLASHBACK_PLAYBACK_DECODE_ERROR_STACK",
-            "SetState(FlashbackPlaybackState.Live);");
+            "    private bool CheckNearLiveEdge(");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_DECODE_ERROR_SNAP_TO_LIVE type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(sourceText, "SetLastCommandFailure($\"decode_error:{ex.GetType().Name}{FormatCommandDetail(position: pos)}\");");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_FILE_OPEN_ERROR path='{filePath}' type={ex.GetType().Name} error='{ex.Message}'\");");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_SEEK_ERROR type={ex.GetType().Name} error='{ex.Message}'\");");
-        AssertContains(decodeErrorBlock, "CloseDecoderFileBestEffort(decoder, \"decode_error\");");
-        AssertContains(decodeErrorBlock, "fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";");
-        AssertContains(decodeErrorBlock, "ReleasePlaybackFrameForLive(\"decode_error\");\n        RestoreLiveAudio();");
+        AssertContains(decodeErrorBlock, "RestoreLiveAfterPlaybackDecodeError(decoder, ref fileOpen);");
+        AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterPlaybackDecodeError(FlashbackDecoder decoder, ref bool fileOpen)\n        => RestoreLiveAfterDecoderPlaybackFailure(decoder, ref fileOpen, \"decode_error\", resumeRendering: false);");
+        AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterNearLiveSnap(FlashbackDecoder decoder, ref bool fileOpen)\n        => RestoreLiveAfterDecoderPlaybackFailure(decoder, ref fileOpen, \"near_live\", resumeRendering: false);");
+        AssertContains(playbackLiveRecoveryText, "CloseDecoderFileBestEffort(decoder, operation);\n        fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";");
+        AssertContains(playbackLiveRecoveryText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();");
+        AssertContains(playbackLiveRecoveryText, "SafeResumePreviewSubmission(operation);");
+        AssertContains(playbackLiveRecoveryText, "SetState(FlashbackPlaybackState.Live);");
         AssertContains(sourceText, "private static void CloseDecoderFileBestEffort(FlashbackDecoder decoder, string operation)\n    {\n        try\n        {\n            if (decoder.IsOpen) decoder.CloseFile();\n        }\n        catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_PLAYBACK_DECODER_CLOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'\");\n        }\n    }");
         var ensureFileOpenBlock = ExtractTextBetween(
             sourceText,
