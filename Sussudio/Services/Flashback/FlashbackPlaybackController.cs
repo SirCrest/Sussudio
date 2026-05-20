@@ -23,7 +23,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     // See: FlashbackPlaybackController.PlaybackState.cs, .CommandQueue.cs, .CommandCoalescing.cs, .CommandTelemetry.cs, .DecoderFiles.cs,
     // .DecoderReopen.cs, .DecoderSegmentReopen.cs,
     // .ThreadLoop.cs, .ThreadLifecycle.cs, .ThreadCleanup.cs, .PlaybackLoop.cs,
-    // .PlaybackSegmentEdges.cs, .PlaybackTiming.cs,
+    // .PlaybackSegmentEdges.cs, .PlaybackTiming.cs, .PlaybackSoftwareBudget.cs,
     // .AudioMasterPacing.cs, .AudioMasterFallbacks.cs, .AudioCallback.cs, .AudioRouting.cs, .AudioPreviewGuards.cs, .AudioPrebuffer.cs,
     // .PreviewFrames.cs, .PlaybackFrameOwnership.cs, .PlaybackLiveRecovery.cs, .MetricsCollection.cs
 }

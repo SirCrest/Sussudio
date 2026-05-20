@@ -21,6 +21,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs")
             .Replace("\r\n", "\n");
+        var playbackSoftwareBudgetText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSoftwareBudget.cs")
+            .Replace("\r\n", "\n");
         var wasapiPlaybackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs")
             .Replace("\r\n", "\n");
         var wasapiPlaybackQueueText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.Queue.cs")
@@ -117,8 +119,13 @@ static partial class Program
         AssertContains(sourceText, "ReturnPlaybackAudioChunkBestEffort(chunk, \"playback_audio_before_gate\");");
         AssertContains(sourceText, "pb.EnqueuePooledSamples(chunk.Samples, chunk.ValidLength, chunk.Pts.Ticks);");
         AssertContains(sourceText, "private const double MaxContinuousSoftwarePlaybackPixelRate = 3840.0 * 2160.0 * 60.0;");
-        AssertContains(playbackTimingText, "private const double MaxContinuousSoftwarePlaybackPixelRate = 3840.0 * 2160.0 * 60.0;");
+        AssertContains(playbackSoftwareBudgetText, "private const double MaxContinuousSoftwarePlaybackPixelRate = 3840.0 * 2160.0 * 60.0;");
+        AssertDoesNotContain(playbackTimingText, "private const double MaxContinuousSoftwarePlaybackPixelRate = 3840.0 * 2160.0 * 60.0;");
         AssertDoesNotContain(rootText, "private const double MaxContinuousSoftwarePlaybackPixelRate = 3840.0 * 2160.0 * 60.0;");
+        AssertContains(playbackSoftwareBudgetText, "private bool TrySnapLiveForSoftwarePlaybackBudget(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
+        AssertContains(playbackSoftwareBudgetText, "private bool ShouldSnapLiveForSoftwarePlaybackBudget(");
+        AssertContains(playbackSoftwareBudgetText, "private void SnapLiveForSoftwarePlaybackBudget(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
+        AssertContains(playbackSoftwareBudgetText, "private void UpdateDecoderHwAccel(FlashbackDecoder decoder)");
         AssertContains(sourceText, "private bool TrySnapLiveForSoftwarePlaybackBudget(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
         AssertContains(sourceText, "private bool ShouldSnapLiveForSoftwarePlaybackBudget(");
         AssertContains(sourceText, "GpuDecodeEnabled &&\n               !decoder.IsD3D11HwAccelerated &&\n               pixelRate > MaxContinuousSoftwarePlaybackPixelRate");
