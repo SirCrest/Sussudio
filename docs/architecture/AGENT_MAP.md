@@ -583,10 +583,12 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.Encoder.cs`
   owns flattened encoder identity, bitrate, dimension, and frame-rate fields.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs`
-  owns Flashback playback state, frame cadence metrics, stage counters, and
-  routing to playback leaf projections consumed by `AutomationSnapshot`.
+  owns Flashback playback state/frame summary and routing to playback leaf
+  projections consumed by `AutomationSnapshot`.
   `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.AudioMaster.cs`
   owns audio-master delay/fallback projection,
+  `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.Timing.cs`
+  owns playback event, cadence, PTS-cadence, and A/V drift projection,
   `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.Decode.cs`
   owns seek-cap/decode timing projection, and
   `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.Commands.cs`

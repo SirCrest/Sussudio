@@ -94,6 +94,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingEncoderText, "private static FlashbackRecordingEncoderProjection BuildFlashbackRecordingEncoderProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackRecordingText, "private static FlashbackRecordingFlattenedProjection BuildFlashbackRecordingFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildFlashbackPlaybackFlattenedProjection(flashbackPlayback)");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "BuildFlashbackPlaybackTimingProjection(health)");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackTimingText, "private static FlashbackPlaybackTimingProjection BuildFlashbackPlaybackTimingProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackPlaybackText, "private static FlashbackPlaybackFlattenedProjection BuildFlashbackPlaybackFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingIntegrityFlattenedProjection(recordingIntegrity)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingIntegrityText, "private static RecordingIntegrityFlattenedProjection BuildRecordingIntegrityFlattenedProjection(");

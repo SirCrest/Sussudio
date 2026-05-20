@@ -28,11 +28,11 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "snapshot.FlashbackPlaybackPendingCommands > 0");
         AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackCommandQueueCapacity");
         AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackTargetFps = flashbackPlaybackFlattening.Timing.TargetFps");
-        AssertContains(diagnostics.SourceFamilyText, "TargetFps = flashbackPlayback.TargetFps");
+        AssertContains(diagnostics.SourceFamilyText, "TargetFps = timing.TargetFps");
         AssertContains(diagnostics.SourceFamilyText, "TargetFps = health.FlashbackPlaybackTargetFps");
         AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackTargetFps = snapshot.FlashbackPlaybackTargetFps");
         AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackPtsCadenceMismatchCount = flashbackPlaybackFlattening.Timing.PtsCadenceMismatchCount");
-        AssertContains(diagnostics.SourceFamilyText, "PtsCadenceMismatchCount = flashbackPlayback.PtsCadenceMismatchCount");
+        AssertContains(diagnostics.SourceFamilyText, "PtsCadenceMismatchCount = timing.PtsCadenceMismatchCount");
         AssertContains(diagnostics.SourceFamilyText, "PtsCadenceMismatchCount = health.FlashbackPlaybackPtsCadenceMismatchCount");
         AssertContains(diagnostics.SourceFamilyText, "ptsMismatch={snapshot.FlashbackPlaybackPtsCadenceMismatchCount}");
         AssertContains(diagnostics.SourceFamilyText, "private static double ResolveFlashbackPlaybackTargetFps(double flashbackPlaybackTargetFps, double fallbackFrameRate)");

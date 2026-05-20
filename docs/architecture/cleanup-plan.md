@@ -322,10 +322,12 @@ fields.
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.Encoder.cs`
 owns flattened encoder identity, bitrate, dimension, and frame-rate fields.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs` owns
-Flashback playback state, frame cadence metrics, stage counters, and routing to
-the playback leaf projections consumed by the automation snapshot DTO.
+Flashback playback state/frame summary and routing to the playback leaf
+projections consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.AudioMaster.cs`
 owns audio-master delay/fallback projection,
+`AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.Timing.cs` owns
+playback event, cadence, PTS-cadence, and A/V drift projection,
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.Decode.cs` owns
 seek-cap/decode timing projection, and
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.Commands.cs`

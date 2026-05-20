@@ -13,7 +13,7 @@ public sealed partial class AutomationDiagnosticsHub
             LateFrames = flashbackPlayback.LateFrames,
             DroppedFrames = flashbackPlayback.DroppedFrames,
             AudioMaster = BuildFlashbackPlaybackAudioMasterFlattenedProjection(flashbackPlayback.AudioMaster),
-            Timing = BuildFlashbackPlaybackTimingFlattenedProjection(flashbackPlayback),
+            Timing = BuildFlashbackPlaybackTimingFlattenedProjection(flashbackPlayback.Timing),
             Decode = BuildFlashbackPlaybackDecodeFlattenedProjection(flashbackPlayback.Decode),
             Commands = BuildFlashbackPlaybackCommandFlattenedProjection(flashbackPlayback.Commands)
         };
