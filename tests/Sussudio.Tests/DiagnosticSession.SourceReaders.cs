@@ -41,6 +41,12 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs");
 
+    private static string ReadDiagnosticSessionFlashbackLifecycleScenariosSource()
+        => ReadNormalizedSourceFiles(
+            "tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs",
+            "tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.Registrations.cs",
+            "tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.Validation.cs");
+
     private static string ReadDiagnosticSessionFlashbackMetricsSource()
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionFlashbackMetrics.Models.Recording.cs",

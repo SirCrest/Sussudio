@@ -111,7 +111,7 @@ static partial class Program
                 + "\n" + ReadDiagnosticSessionFlashbackCycleScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackExportsSource()
                 + "\n" + ReadDiagnosticSessionFlashbackExportScenariosSource()
-                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs")
+                + "\n" + ReadDiagnosticSessionFlashbackLifecycleScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackMetricsSource()
                 + "\n" + ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackRejectedExportsSource()

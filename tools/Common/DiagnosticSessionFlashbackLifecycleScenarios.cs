@@ -1,35 +1,10 @@
 using System.Text.Json;
-using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionFlashbackWaits;
 
 namespace Sussudio.Tools;
 
-internal static class DiagnosticSessionFlashbackLifecycleScenarios
+internal static partial class DiagnosticSessionFlashbackLifecycleScenarios
 {
-    internal static void RegisterSelectedFlashbackLifecycleScenarioTask(
-        DiagnosticSessionScenarioPlan scenarioPlan,
-        DiagnosticSessionBackgroundTasks backgroundTasks,
-        List<string> actions,
-        List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
-        CancellationToken cancellationToken)
-    {
-        if (!scenarioPlan.RunFlashbackLifecycle)
-        {
-            return;
-        }
-
-        backgroundTasks.AddScenario(
-            2,
-            "flashback-lifecycle-task",
-            RunFlashbackLifecycleAsync(
-                actions,
-                warnings,
-                sendCommandAsync,
-                cancellationToken));
-        actions.Add("flashback lifecycle started");
-    }
-
     internal static async Task RunFlashbackLifecycleAsync(
         List<string> actions,
         List<string> warnings,
@@ -73,30 +48,11 @@ internal static class DiagnosticSessionFlashbackLifecycleScenarios
             .ConfigureAwait(false);
         actions.Add("flashback lifecycle disabled during playback");
 
-        var disabledSnapshot = await WaitForFlashbackActiveAsync(
+        await ValidateFlashbackLifecycleDisabledAsync(
+                warnings,
                 sendCommandAsync,
-                expectedActive: false,
-                timeout: TimeSpan.FromSeconds(15),
                 cancellationToken)
             .ConfigureAwait(false);
-        if (disabledSnapshot?.ValueKind != JsonValueKind.Object)
-        {
-            warnings.Add("flashback lifecycle: Flashback did not report inactive after disable");
-        }
-        else
-        {
-            if (GetBool(disabledSnapshot.Value, "FlashbackPlaybackThreadAlive"))
-            {
-                warnings.Add("flashback lifecycle: playback worker still alive after disable");
-            }
-
-            if (GetInt(disabledSnapshot.Value, "FlashbackPlaybackPendingCommands") > 0)
-            {
-                warnings.Add(
-                    "flashback lifecycle: pending commands remained after disable " +
-                    $"pending={GetInt(disabledSnapshot.Value, "FlashbackPlaybackPendingCommands")}");
-            }
-        }
 
         await sendCommandAsync(
                 "SetFlashbackEnabled",
@@ -105,15 +61,10 @@ internal static class DiagnosticSessionFlashbackLifecycleScenarios
             .ConfigureAwait(false);
         actions.Add("flashback lifecycle re-enabled");
 
-        var enabledSnapshot = await WaitForFlashbackActiveAsync(
+        await ValidateFlashbackLifecycleReenabledAsync(
+                warnings,
                 sendCommandAsync,
-                expectedActive: true,
-                timeout: TimeSpan.FromSeconds(30),
                 cancellationToken)
             .ConfigureAwait(false);
-        if (enabledSnapshot?.ValueKind != JsonValueKind.Object)
-        {
-            warnings.Add("flashback lifecycle: Flashback did not report active after re-enable");
-        }
     }
 }
