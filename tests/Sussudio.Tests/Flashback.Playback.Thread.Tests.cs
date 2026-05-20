@@ -32,6 +32,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var commandTelemetryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandTelemetry.cs")
             .Replace("\r\n", "\n");
+        var commandMetricsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandMetrics.cs")
+            .Replace("\r\n", "\n");
         var commandFailuresText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandFailures.cs")
             .Replace("\r\n", "\n");
         var commandModelsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandModels.cs")
@@ -115,7 +117,13 @@ static partial class Program
         AssertContains(sourceText, "Volatile.Write(ref _playbackThreadStarted, 0);\n        }\n\n        if (Interlocked.CompareExchange(ref _playbackThreadStarted, 1, 0) != 0)");
         AssertContains(sourceText, "ObjectDisposedException.ThrowIf(_disposedFlag != 0, this);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_UPDATE_SKIP reason=disposed");
-        AssertContains(sourceText, "public int CommandQueueCapacityCommands => CommandQueueCapacity;");
+        AssertContains(commandMetricsText, "public int CommandQueueCapacityCommands => CommandQueueCapacity;");
+        AssertContains(commandMetricsText, "public long CommandsEnqueued => Interlocked.Read(ref _commandsEnqueued);");
+        AssertContains(commandMetricsText, "public long CommandsSkippedNotReady => Interlocked.Read(ref _commandsSkippedNotReady);");
+        AssertContains(commandMetricsText, "public string LastCommandFailure => Volatile.Read(ref _lastCommandFailure);");
+        AssertContains(commandMetricsText, "public bool PlaybackThreadAlive => _playbackThread is { IsAlive: true };");
+        AssertDoesNotContain(commandTelemetryText, "public int CommandQueueCapacityCommands => CommandQueueCapacity;");
+        AssertDoesNotContain(commandFailuresText, "public string LastCommandFailure => Volatile.Read(ref _lastCommandFailure);");
         AssertContains(commandTelemetryText, "private long _commandsEnqueued;");
         AssertContains(commandTelemetryText, "private long _commandsProcessed;");
         AssertContains(commandTelemetryText, "private long _commandsDropped;");

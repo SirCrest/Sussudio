@@ -2566,7 +2566,8 @@ math, active fMP4 segment detection, and playback path comparison.
 
 Flashback playback diagnostics now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs`. That
-partial owns public playback counters and the read-only A/V drift projection.
+partial owns public playback counters and the read-only A/V drift projection,
+excluding command/thread telemetry projection.
 Cadence summary DTO construction, percentile math, and low-FPS derivation live
 in `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackCadenceMetrics.cs`.
 Decode summary DTO construction and decode timing percentile projection live in
@@ -2596,6 +2597,9 @@ Do not grow the root controller with new coalescing slot fields.
 Command status counters, pending-command accounting, active-command timing, and
 queue telemetry bookkeeping live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.CommandTelemetry.cs`.
+Public read-only command counters, command queue latency/timestamps, last
+command failure projection, and playback-thread liveness now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.CommandMetrics.cs`.
 Command readiness guards, skipped-not-ready accounting, failure-detail
 formatting, last-command failure state, and no-op logging now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.CommandFailures.cs`.
