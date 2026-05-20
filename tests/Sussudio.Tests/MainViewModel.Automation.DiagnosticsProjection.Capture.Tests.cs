@@ -297,14 +297,23 @@ static partial class Program
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningCaptureCadenceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureCadence.cs")
+            .Replace("\r\n", "\n");
         var captureCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var captureCadence = BuildCaptureCadenceProjection(health);");
-        AssertContains(snapshotFlatteningText, "ExpectedCaptureFrameRate = captureCadence.ExpectedFrameRate,");
-        AssertContains(snapshotFlatteningText, "CaptureCadenceEstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames,");
+        AssertContains(snapshotFlatteningText, "var captureCadenceFlattening = BuildCaptureCadenceFlattenedProjection(captureCadence);");
+        AssertContains(snapshotFlatteningText, "ExpectedCaptureFrameRate = captureCadenceFlattening.ExpectedFrameRate,");
+        AssertContains(snapshotFlatteningText, "CaptureCadenceEstimatedDroppedFrames = captureCadenceFlattening.EstimatedDroppedFrames,");
+        AssertContains(snapshotFlatteningCaptureCadenceText, "private static CaptureCadenceFlattenedProjection BuildCaptureCadenceFlattenedProjection(");
+        AssertContains(snapshotFlatteningCaptureCadenceText, "ExpectedFrameRate = captureCadence.ExpectedFrameRate,");
+        AssertContains(snapshotFlatteningCaptureCadenceText, "EstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames");
+        AssertContains(snapshotFlatteningCaptureCadenceText, "private readonly record struct CaptureCadenceFlattenedProjection");
         AssertDoesNotContain(snapshotFlatteningText, "ExpectedCaptureFrameRate = health.ExpectedFrameRate,");
         AssertDoesNotContain(snapshotFlatteningText, "CaptureCadenceEstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames,");
+        AssertDoesNotContain(snapshotFlatteningText, "ExpectedCaptureFrameRate = captureCadence.ExpectedFrameRate,");
+        AssertDoesNotContain(snapshotFlatteningText, "CaptureCadenceEstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames,");
 
         AssertContains(captureCadenceProjectionText, "private static CaptureCadenceProjection BuildCaptureCadenceProjection(CaptureHealthSnapshot health)");
         AssertContains(captureCadenceProjectionText, "ExpectedFrameRate = health.ExpectedFrameRate,");
@@ -322,18 +331,27 @@ static partial class Program
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningVisualCadenceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.VisualCadence.cs")
+            .Replace("\r\n", "\n");
         var visualCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs")
             .Replace("\r\n", "\n");
         var captureCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var visualCadence = BuildVisualCadenceProjection(health);");
-        AssertContains(snapshotFlatteningText, "VisualCadenceMotionConfidence = visualCadence.MotionConfidence,");
-        AssertContains(snapshotFlatteningText, "VisualCenterCadenceRecentChangeIntervalsMs = visualCadence.CenterRecentChangeIntervalsMs,");
+        AssertContains(snapshotFlatteningText, "var visualCadenceFlattening = BuildVisualCadenceFlattenedProjection(visualCadence);");
+        AssertContains(snapshotFlatteningText, "VisualCadenceMotionConfidence = visualCadenceFlattening.MotionConfidence,");
+        AssertContains(snapshotFlatteningText, "VisualCenterCadenceRecentChangeIntervalsMs = visualCadenceFlattening.CenterRecentChangeIntervalsMs,");
+        AssertContains(snapshotFlatteningVisualCadenceText, "private static VisualCadenceFlattenedProjection BuildVisualCadenceFlattenedProjection(");
+        AssertContains(snapshotFlatteningVisualCadenceText, "MotionConfidence = visualCadence.MotionConfidence,");
+        AssertContains(snapshotFlatteningVisualCadenceText, "CenterRecentChangeIntervalsMs = visualCadence.CenterRecentChangeIntervalsMs");
+        AssertContains(snapshotFlatteningVisualCadenceText, "private readonly record struct VisualCadenceFlattenedProjection");
         AssertDoesNotContain(snapshotFlatteningText, "VisualCadenceMotionConfidence = captureCadence.VisualMotionConfidence,");
         AssertDoesNotContain(snapshotFlatteningText, "VisualCenterCadenceRecentChangeIntervalsMs = captureCadence.VisualCenterRecentChangeIntervalsMs,");
         AssertDoesNotContain(snapshotFlatteningText, "VisualCadenceMotionConfidence = health.VisualCadenceMotionConfidence,");
         AssertDoesNotContain(snapshotFlatteningText, "VisualCenterCadenceRecentChangeIntervalsMs = health.VisualCenterCadenceRecentChangeIntervalsMs,");
+        AssertDoesNotContain(snapshotFlatteningText, "VisualCadenceMotionConfidence = visualCadence.MotionConfidence,");
+        AssertDoesNotContain(snapshotFlatteningText, "VisualCenterCadenceRecentChangeIntervalsMs = visualCadence.CenterRecentChangeIntervalsMs,");
 
         AssertContains(visualCadenceProjectionText, "private static VisualCadenceProjection BuildVisualCadenceProjection(CaptureHealthSnapshot health)");
         AssertContains(visualCadenceProjectionText, "MotionConfidence = health.VisualCadenceMotionConfidence,");

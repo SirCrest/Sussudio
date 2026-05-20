@@ -53,6 +53,7 @@ public sealed class PreviewPacingOwnershipTests
         var diagnosticsSnapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs");
         var diagnosticsSnapshotProjectionCompositionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs");
         var diagnosticsSnapshotProjectionFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs");
+        var diagnosticsSnapshotProjectionFlatteningCaptureCadenceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureCadence.cs");
         var diagnosticsSnapshotProjectionSnapshotEvaluationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SnapshotEvaluation.cs");
         var diagnosticsSnapshotProjectionCaptureCadenceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs");
         var diagnosticsPreviewPacingText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.PreviewPacing.cs");
@@ -62,6 +63,7 @@ public sealed class PreviewPacingOwnershipTests
             + "\n" + diagnosticsSnapshotProjectionText
             + "\n" + diagnosticsSnapshotProjectionCompositionText
             + "\n" + diagnosticsSnapshotProjectionFlatteningText
+            + "\n" + diagnosticsSnapshotProjectionFlatteningCaptureCadenceText
             + "\n" + diagnosticsSnapshotProjectionSnapshotEvaluationText
             + "\n" + diagnosticsSnapshotProjectionCaptureCadenceText
             + "\n" + diagnosticsPreviewPacingText
@@ -79,7 +81,8 @@ public sealed class PreviewPacingOwnershipTests
         Assert.Contains("private static PreviewPacingClassification ClassifyPreviewPacing(", diagnosticsPreviewPacingText);
         Assert.Contains("PreviewPacingSlowStageClassifier.Classify", diagnosticsPreviewPacingText);
         Assert.Contains("PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps", diagnosticsHubText);
-        Assert.Contains("CaptureCadenceEstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames", diagnosticsHubText);
+        Assert.Contains("CaptureCadenceEstimatedDroppedFrames = captureCadenceFlattening.EstimatedDroppedFrames", diagnosticsHubText);
+        Assert.Contains("EstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames", diagnosticsHubText);
         Assert.Contains("EstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames", diagnosticsHubText);
         Assert.Contains("RecentD3DMissedRefreshes = recentD3DMissedRefreshes", diagnosticsHubText);
         Assert.Contains("RecentPreviewJitterScheduleLateCount = recentPreviewJitter.ScheduleLateCount", diagnosticsHubText);

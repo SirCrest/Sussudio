@@ -164,9 +164,15 @@ owns final capture transport projection-to-`AutomationSnapshot` field
 flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs` owns source
 capture cadence projection inputs consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureCadence.cs`
+owns final source capture cadence projection-to-`AutomationSnapshot` field
+flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs` owns preview
 visual cadence and center-crop visual cadence projection inputs consumed by the
 automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.VisualCadence.cs` owns
+final visual cadence and center-crop visual cadence projection-to-`AutomationSnapshot`
+field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs` owns CPU MJPEG totals,
 compressed queue, and failure projection inputs consumed by the automation
 snapshot DTO.

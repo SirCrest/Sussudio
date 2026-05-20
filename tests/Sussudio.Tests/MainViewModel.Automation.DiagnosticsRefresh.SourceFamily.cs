@@ -41,6 +41,8 @@ static partial class Program
             SnapshotProjectionFlatteningText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs"),
             SnapshotProjectionFlatteningCaptureFormatText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureFormat.cs"),
             SnapshotProjectionFlatteningCaptureTransportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureTransport.cs"),
+            SnapshotProjectionFlatteningCaptureCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureCadence.cs"),
+            SnapshotProjectionFlatteningVisualCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.VisualCadence.cs"),
             SnapshotProjectionFlatteningSourceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.cs"),
             SnapshotProjectionFlatteningSettingsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.Settings.cs"),
             SnapshotProjectionFlatteningHdrPipelineText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.HdrPipeline.cs"),
@@ -149,6 +151,8 @@ static partial class Program
         public string SnapshotProjectionFlatteningText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningCaptureFormatText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningCaptureTransportText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningCaptureCadenceText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningVisualCadenceText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSourceText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSettingsText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningHdrPipelineText { get; init; } = string.Empty;
@@ -236,6 +240,8 @@ static partial class Program
                 SnapshotProjectionFlatteningText,
                 SnapshotProjectionFlatteningCaptureFormatText,
                 SnapshotProjectionFlatteningCaptureTransportText,
+                SnapshotProjectionFlatteningCaptureCadenceText,
+                SnapshotProjectionFlatteningVisualCadenceText,
                 SnapshotProjectionFlatteningSourceText,
                 SnapshotProjectionFlatteningSettingsText,
                 SnapshotProjectionFlatteningHdrPipelineText,
