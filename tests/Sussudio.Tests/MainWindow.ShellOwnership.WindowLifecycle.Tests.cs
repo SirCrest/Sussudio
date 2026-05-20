@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainWindowCloseLifecycleAndShutdownCleanup_AreSplit()
+    internal static Task MainWindowCloseLifecycleAndShutdownCleanup_AreSplit()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");

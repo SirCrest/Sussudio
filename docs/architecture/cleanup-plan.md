@@ -889,6 +889,11 @@ Presentation-preview MainWindow initial checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowInitialContractsTests.cs`,
 keeping close cancellation and window screenshot helper ownership checks in
 xUnit after their removal from the legacy harness catalog.
+Presentation-preview window lifecycle checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewWindowLifecycleContractsTests.cs`,
+keeping native bootstrap, close lifecycle split, close request/app closing,
+recording finalization, and shutdown cleanup contracts in xUnit after their
+removal from the legacy harness catalog.
 Presentation-preview launch/startup checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewLaunchStartupContractsTests.cs`,
 keeping splash loading phrase ownership, splash pacing policy, launch entrance

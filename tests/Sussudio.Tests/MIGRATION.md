@@ -166,6 +166,10 @@ add xUnit alongside, and port incrementally.
 - `XUnit.PresentationPreviewMainWindowInitialContractsTests.cs` owns the former
   legacy presentation-preview MainWindow initial registration group: close
   cancellation and window screenshot helper ownership checks.
+- `XUnit.PresentationPreviewWindowLifecycleContractsTests.cs` owns the former
+  legacy presentation-preview MainWindow window lifecycle group: native
+  bootstrap, close lifecycle split, close request/app closing, recording
+  finalization, and shutdown cleanup checks.
 - `XUnit.PresentationPreviewLaunchStartupContractsTests.cs` owns the former
   legacy presentation-preview MainWindow launch/startup group: splash loading
   phrase ownership, splash pacing policy, launch entrance animation, and startup

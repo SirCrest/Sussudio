@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainWindowCloseLifecycleControllers_OwnCloseRequestAndAppClosing()
+    internal static Task MainWindowCloseLifecycleControllers_OwnCloseRequestAndAppClosing()
     {
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");

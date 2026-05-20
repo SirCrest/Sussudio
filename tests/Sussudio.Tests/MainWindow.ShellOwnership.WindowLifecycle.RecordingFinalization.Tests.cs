@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainWindowCloseRecordingFinalization_OwnsRecordingStopPolicy()
+    internal static Task MainWindowCloseRecordingFinalization_OwnsRecordingStopPolicy()
     {
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");

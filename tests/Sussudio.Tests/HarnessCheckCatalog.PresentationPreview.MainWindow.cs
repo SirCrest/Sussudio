@@ -71,20 +71,5 @@ static partial class Program
         await AddCheckAsync(results,
             "Preview runtime D3D frame-ownership policy preserves null renderer defaults",
             PreviewRuntimeD3DFrameOwnershipPolicy_PreservesNullRendererDefaults);
-        await AddCheckAsync(results,
-            "MainWindow native bootstrap lives in controller",
-            MainWindowNativeBootstrap_LivesInFocusedController);
-        await AddCheckAsync(results,
-            "MainWindow close lifecycle and shutdown cleanup are split",
-            MainWindowCloseLifecycleAndShutdownCleanup_AreSplit);
-        await AddCheckAsync(results,
-            "MainWindow close lifecycle controllers own close request and app closing",
-            MainWindowCloseLifecycleControllers_OwnCloseRequestAndAppClosing);
-        await AddCheckAsync(results,
-            "MainWindow close recording finalization owns recording stop policy",
-            MainWindowCloseRecordingFinalization_OwnsRecordingStopPolicy);
-        await AddCheckAsync(results,
-            "MainWindow shutdown cleanup owns post-close cleanup order",
-            MainWindowShutdownCleanup_OwnsPostCloseCleanupOrder);
     }
 }
