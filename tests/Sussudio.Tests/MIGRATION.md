@@ -220,6 +220,10 @@ add xUnit alongside, and port incrementally.
   former legacy presentation-preview MainViewModel output path and disk-space
   presentation group: retired output picker partial ownership, invalid-path
   fallback behavior, and focused free-space presentation helper ownership.
+- `XUnit.PresentationPreviewMainViewModelSourceTelemetryContractsTests.cs` owns
+  the former legacy presentation-preview MainViewModel source-telemetry
+  presentation group: source/target summary formatting, focused source
+  telemetry helper ownership, and live-signal pixel-format fallback order.
 - `XUnit.PresentationPreviewD3DPacingContractsTests.cs` owns the former legacy
   presentation-preview D3D pacing registration group: transition-drain,
   frame-capture cancellation, and shared-device reference lifecycle checks.

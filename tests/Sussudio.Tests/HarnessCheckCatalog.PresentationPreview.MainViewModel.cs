@@ -47,14 +47,5 @@ static partial class Program
         await AddCheckAsync(results,
             "Audio ramp trace exposes control and render-side envelope telemetry",
             AudioRampTrace_ExposesControlAndRenderEnvelopeTelemetry);
-        await AddCheckAsync(results,
-            "Source telemetry presentation builder preserves summary and target text",
-            SourceTelemetryPresentationBuilder_PreservesSummaryAndTargetText);
-        await AddCheckAsync(results,
-            "Source telemetry presentation builder lives in focused helper",
-            SourceTelemetryPresentationBuilder_LivesInFocusedHelper);
-        await AddCheckAsync(results,
-            "Live signal text projection preserves pixel format fallback order",
-            LiveSignalTextProjection_PreservesPixelFormatFallbackOrder);
     }
 }

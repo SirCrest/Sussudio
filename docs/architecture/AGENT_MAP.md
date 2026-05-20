@@ -2564,6 +2564,11 @@ Primary current owners:
   presentation group for retired output picker partial ownership, invalid-path
   fallback behavior, and focused free-space presentation helper ownership after
   their removal from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelSourceTelemetryContractsTests.cs`
+  owns the former presentation-preview MainViewModel source-telemetry
+  presentation group for source/target summary formatting, focused source
+  telemetry helper ownership, and live-signal pixel-format fallback order after
+  their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`
   owns the former presentation-preview D3D pacing group for transition-drain,
   frame-capture cancellation, and shared-device reference lifecycle checks after

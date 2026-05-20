@@ -962,6 +962,12 @@ Presentation-preview MainViewModel output path checks now execute through
 keeping retired output picker partial ownership, invalid-path fallback behavior,
 and focused free-space presentation helper ownership in xUnit after their
 removal from the legacy harness catalog.
+Presentation-preview MainViewModel source-telemetry presentation checks now
+execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelSourceTelemetryContractsTests.cs`,
+keeping source/target summary formatting, focused source telemetry helper
+ownership, and live-signal pixel-format fallback order contracts in xUnit after
+their removal from the legacy harness catalog.
 Presentation-preview D3D pacing checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`,
 keeping transition-drain, frame-capture cancellation, and shared-device

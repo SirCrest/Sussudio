@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task LiveSignalTextProjection_PreservesPixelFormatFallbackOrder()
+    internal static Task LiveSignalTextProjection_PreservesPixelFormatFallbackOrder()
     {
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs")
             .Replace("\r\n", "\n");

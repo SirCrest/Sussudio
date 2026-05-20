@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task SourceTelemetryPresentationBuilder_PreservesSummaryAndTargetText()
+    internal static Task SourceTelemetryPresentationBuilder_PreservesSummaryAndTargetText()
     {
         var builderType = RequireType("Sussudio.ViewModels.SourceTelemetryPresentationBuilder");
         var snapshotType = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
@@ -75,7 +75,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task SourceTelemetryPresentationBuilder_LivesInFocusedHelper()
+    internal static Task SourceTelemetryPresentationBuilder_LivesInFocusedHelper()
     {
         var telemetryText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs").Replace("\r\n", "\n");
         var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CapturePresentation.cs").Replace("\r\n", "\n");
