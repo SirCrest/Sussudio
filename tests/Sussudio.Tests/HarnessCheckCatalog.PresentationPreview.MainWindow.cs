@@ -115,6 +115,15 @@ static partial class Program
             "MainWindow close lifecycle and shutdown cleanup are split",
             MainWindowCloseLifecycleAndShutdownCleanup_AreSplit);
         await AddCheckAsync(results,
+            "MainWindow close lifecycle controllers own close request and app closing",
+            MainWindowCloseLifecycleControllers_OwnCloseRequestAndAppClosing);
+        await AddCheckAsync(results,
+            "MainWindow close recording finalization owns recording stop policy",
+            MainWindowCloseRecordingFinalization_OwnsRecordingStopPolicy);
+        await AddCheckAsync(results,
+            "MainWindow shutdown cleanup owns post-close cleanup order",
+            MainWindowShutdownCleanup_OwnsPostCloseCleanupOrder);
+        await AddCheckAsync(results,
             "Control bar hover animations live in controller",
             ControlBarHoverAnimations_LiveInController);
         await AddCheckAsync(results,
