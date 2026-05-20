@@ -3842,9 +3842,10 @@ Primary owners:
 - `tools/ssctl/Formatters.Snapshot.Flashback.Export.cs` owns Flashback export
   progress, result, throughput, force-rotate fallback, range, output path, and
   message snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Flashback.Playback.cs` owns Flashback
-  playback state, command-queue, cadence, decode, frame, stage, and A/V drift
-  snapshot text.
+- `tools/ssctl/Formatters.Snapshot.Flashback.Playback.Commands.cs` owns
+  Flashback playback state and command-queue snapshot text.
+- `tools/ssctl/Formatters.Snapshot.Flashback.Playback.Performance.cs` owns
+  Flashback playback cadence, decode, frame, stage, and A/V drift snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG decode, compressed
   queue, drop-reason, reorder, pipeline, and per-decoder timing snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Mjpeg.PreviewJitter.cs` owns MJPEG
@@ -4476,9 +4477,10 @@ Primary owners:
   `tools/Common/AutomationSnapshotFormatter.Flashback.Export.cs` owns
   Flashback export progress, result, throughput, force-rotate fallback, range,
   output path, and message text.
-  `tools/Common/AutomationSnapshotFormatter.Flashback.Playback.cs` owns
-  Flashback playback status, command, cadence, decode, frame, stage, and A/V
-  drift text.
+  `tools/Common/AutomationSnapshotFormatter.Flashback.Playback.Commands.cs`
+  owns Flashback playback status and command text.
+  `tools/Common/AutomationSnapshotFormatter.Flashback.Playback.Performance.cs`
+  owns Flashback playback cadence, decode, frame, stage, and A/V drift text.
   `tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs` owns MJPEG decode,
   compressed queue, drop-reason, reorder, pipeline, and per-decoder timing
   text. `tools/Common/AutomationSnapshotFormatter.MjpegTiming.PreviewJitter.cs`

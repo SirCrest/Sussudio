@@ -574,9 +574,10 @@ diagnostic health/frame-lane text in `Formatters.Snapshot.DiagnosticLanes.cs`,
 Flashback snapshot gating/order, encoder/buffer/queue, and failure text in
 `Formatters.Snapshot.Flashback.cs`, Flashback export progress, result,
 throughput, force-rotate fallback, range, output path, and message text in
-`Formatters.Snapshot.Flashback.Export.cs`, Flashback playback status, command,
-cadence, decode, frame, stage, and A/V drift text in
-`Formatters.Snapshot.Flashback.Playback.cs`, MJPEG timing text in
+`Formatters.Snapshot.Flashback.Export.cs`, Flashback playback status and
+command text in `Formatters.Snapshot.Flashback.Playback.Commands.cs`,
+Flashback playback cadence, decode, frame, stage, and A/V drift text in
+`Formatters.Snapshot.Flashback.Playback.Performance.cs`, MJPEG timing text in
 `Formatters.Snapshot.Mjpeg.cs`, MJPEG preview-jitter queue, latency, ownership,
 and underflow text in `Formatters.Snapshot.Mjpeg.PreviewJitter.cs`, D3D preview
 renderer routing/header text in `Formatters.Snapshot.PreviewD3D.cs`, D3D CPU
@@ -614,9 +615,11 @@ lives in `AutomationSnapshotFormatter.Flashback.cs`; Flashback encoder, buffer,
 temp-cache, queue latency, backpressure, failure, and GPU queue text lives in
 `AutomationSnapshotFormatter.Flashback.Encoding.cs`. Flashback export progress,
 result, throughput, force-rotate fallback, range, output path, and message text
-lives in `AutomationSnapshotFormatter.Flashback.Export.cs`. Flashback playback status,
-command, cadence, decode, frame, stage, and A/V drift text lives in
-`AutomationSnapshotFormatter.Flashback.Playback.cs`. Capture cadence owns the
+lives in `AutomationSnapshotFormatter.Flashback.Export.cs`. Flashback playback
+status and command text lives in
+`AutomationSnapshotFormatter.Flashback.Playback.Commands.cs`, while Flashback
+playback cadence, decode, frame, stage, and A/V drift text lives in
+`AutomationSnapshotFormatter.Flashback.Playback.Performance.cs`. Capture cadence owns the
 capture cadence, MJPEG packet fingerprint, and visual cadence rows, while
 `AutomationSnapshotFormatter.AvSync.cs` owns AV-sync text and
 `AutomationSnapshotFormatter.Source.cs` owns source-signal text emitted from

@@ -19,7 +19,8 @@ static partial class Program
         var ssctlSnapshotFlashbackSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.cs");
         var ssctlSnapshotFlashbackEncodingSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.Encoding.cs");
         var ssctlSnapshotFlashbackExportSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.Export.cs");
-        var ssctlSnapshotFlashbackPlaybackSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.Playback.cs");
+        var ssctlSnapshotFlashbackPlaybackCommandsSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.Playback.Commands.cs");
+        var ssctlSnapshotFlashbackPlaybackPerformanceSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.Playback.Performance.cs");
         var ssctlSnapshotMjpegSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Mjpeg.cs");
         var ssctlSnapshotMjpegPreviewJitterSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Mjpeg.PreviewJitter.cs");
         var ssctlSnapshotPreviewSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Preview.cs");
@@ -112,10 +113,14 @@ static partial class Program
         AssertContains(ssctlSnapshotFlashbackExportSource, "forceRotateFallbacks=");
         AssertDoesNotContain(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackPlaybackStatusSection(StringBuilder builder, JsonElement snapshot)");
         AssertDoesNotContain(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackPlaybackMetricsSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotFlashbackPlaybackSource, "private static void AppendSnapshotFlashbackPlaybackStatusSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotFlashbackPlaybackSource, "private static void AppendSnapshotFlashbackPlaybackMetricsSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotFlashbackPlaybackSource, "Playback Decode:");
-        AssertContains(ssctlSnapshotFlashbackPlaybackSource, "A/V Drift:");
+        AssertContains(ssctlSnapshotFlashbackPlaybackCommandsSource, "private static void AppendSnapshotFlashbackPlaybackStatusSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotFlashbackPlaybackCommandsSource, "Playback Commands:");
+        AssertDoesNotContain(ssctlSnapshotFlashbackPlaybackCommandsSource, "Playback Decode:");
+        AssertDoesNotContain(ssctlSnapshotFlashbackPlaybackCommandsSource, "A/V Drift:");
+        AssertContains(ssctlSnapshotFlashbackPlaybackPerformanceSource, "private static void AppendSnapshotFlashbackPlaybackMetricsSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotFlashbackPlaybackPerformanceSource, "Playback Decode:");
+        AssertContains(ssctlSnapshotFlashbackPlaybackPerformanceSource, "A/V Drift:");
+        AssertDoesNotContain(ssctlSnapshotFlashbackPlaybackPerformanceSource, "Playback Commands:");
         AssertDoesNotContain(ssctlSnapshotCoreSectionsSource, "private static void AppendSnapshotMemorySection(StringBuilder builder, JsonElement snapshot)");
         AssertDoesNotContain(ssctlSnapshotCoreSectionsSource, "ProcessCpuPercent");
         AssertContains(ssctlSnapshotProcessResourcesSource, "private static void AppendSnapshotMemorySection(StringBuilder builder, JsonElement snapshot)");
