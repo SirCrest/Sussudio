@@ -6,18 +6,6 @@ static partial class Program
     private static async Task AddPresentationPreviewCaptureChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Mode selection state lives in focused partial",
-            ModeSelectionState_LivesInFocusedPartial);
-        await AddCheckAsync(results,
-            "Capture format selection policy lives in focused helper",
-            CaptureFormatSelectionPolicy_LivesInFocusedHelper);
-        await AddCheckAsync(results,
-            "Capture format selection policy preserves behavior",
-            CaptureFormatSelectionPolicy_PreservesSelectionBehavior);
-        await AddCheckAsync(results,
-            "Recording settings selection policy lives in focused helper",
-            RecordingSettingsSelectionPolicy_LivesInFocusedHelper);
-        await AddCheckAsync(results,
             "Diagnostics loop does not rebuild automation options each poll",
             DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll);
         await AddCheckAsync(results,

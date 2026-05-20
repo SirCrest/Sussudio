@@ -1990,6 +1990,9 @@ Primary current owners:
   device-format probe retarget catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.RecordingFormat.Tests.cs`
   owns recording format selection policy ownership assertions.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureSelectionPolicyContractsTests.cs`
+  owns xUnit execution for the former legacy presentation-preview
+  mode-selection, capture-format, and recording-settings selection catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.RuntimeFlags.Tests.cs`
   owns runtime error-projection ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Helpers.cs` owns

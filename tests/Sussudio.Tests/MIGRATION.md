@@ -222,6 +222,10 @@ add xUnit alongside, and port incrementally.
   the former legacy presentation-preview late device-format probe retarget group:
   retarget policy ownership, decision behavior, and UI-side retarget application
   checks.
+- `XUnit.PresentationPreviewCaptureSelectionPolicyContractsTests.cs` owns the
+  former legacy presentation-preview capture selection-policy group:
+  mode-selection state, capture format selection, and recording settings
+  selection ownership/behavior checks.
 - `XUnit.PresentationPreviewCaptureOptionContractsTests.cs` owns the former
   legacy presentation-preview MainWindow capture device action, option
   presentation, affordance policy, option binding, and tooltip formatter checks.

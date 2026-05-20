@@ -4333,6 +4333,10 @@ owner, fold it back into that owner and update the source-shape tests and
     `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.*.cs` family so
     frame-rate, resolution, mode-selection, late-probe, recording-format, and
     runtime-flag assertions stay near their matching policy owners.
+    `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureSelectionPolicyContractsTests.cs`
+    owns xUnit execution for the mode-selection, capture-format, and
+    recording-settings selection checks after their removal from the legacy
+    presentation-preview capture catalog.
     Resolution option rebuild callers stay stable through the
     `MainViewModel.CaptureModeTransactions.cs` adapter. Resolution option
     rebuild ownership now lives in

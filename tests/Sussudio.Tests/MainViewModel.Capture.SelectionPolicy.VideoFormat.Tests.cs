@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureFormatSelectionPolicy_LivesInFocusedHelper()
+    internal static Task CaptureFormatSelectionPolicy_LivesInFocusedHelper()
     {
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
@@ -42,7 +42,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureFormatSelectionPolicy_PreservesSelectionBehavior()
+    internal static Task CaptureFormatSelectionPolicy_PreservesSelectionBehavior()
     {
         var mediaFormatType = RequireType("Sussudio.Models.MediaFormat");
         var frameRateType = RequireType("Sussudio.Models.FrameRateOption");
