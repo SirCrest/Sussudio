@@ -201,6 +201,7 @@ internal static class RuntimeContractSource
         {
             "tools/Common/AutomationSnapshotFormatter.cs",
             "tools/Common/AutomationSnapshotFormatter.CoreSections.cs",
+            "tools/Common/AutomationSnapshotFormatter.Recording.cs",
             "tools/Common/AutomationSnapshotFormatter.CaptureSettings.cs",
             "tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs",
             "tools/Common/AutomationSnapshotFormatter.Diagnostics.cs",
@@ -223,6 +224,7 @@ internal static class RuntimeContractSource
         {
             "tools/ssctl/Formatters.Snapshot.cs",
             "tools/ssctl/Formatters.Snapshot.CoreSections.cs",
+            "tools/ssctl/Formatters.Snapshot.Recording.cs",
             "tools/ssctl/Formatters.Snapshot.CaptureSettings.cs",
             "tools/ssctl/Formatters.Snapshot.CaptureCadence.cs",
             "tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs",

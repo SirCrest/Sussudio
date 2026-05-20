@@ -3815,8 +3815,10 @@ Primary owners:
 - `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration and
   section ordering only.
 - `tools/ssctl/Formatters.Snapshot.CoreSections.cs` owns the Sussudio state,
-  capture-command summary, audio, recording/output, legacy performance, and
-  Memory/GC embedded snapshot text.
+  capture-command summary, audio, legacy performance, and Memory/GC embedded
+  snapshot text.
+- `tools/ssctl/Formatters.Snapshot.Recording.cs` owns recording output,
+  backend, integrity, audio-integrity, and last-finalize snapshot text.
 - `tools/ssctl/Formatters.Snapshot.CaptureSettings.cs` owns capture settings
   text and friendly/exact frame-rate summary formatting.
 - `tools/ssctl/Formatters.Snapshot.CaptureCadence.cs` owns capture cadence,
@@ -4428,8 +4430,9 @@ Primary owners:
   section to a focused partial.
   `tools/Common/AutomationSnapshotFormatter.CoreSections.cs` owns the state,
   capture-command queue, selected-device, initialized/preview/recording, audio,
-  recording summary, legacy performance, process CPU, memory, GC, and
-  thread-pool text.
+  legacy performance, process CPU, memory, GC, and thread-pool text.
+  `tools/Common/AutomationSnapshotFormatter.Recording.cs` owns recording
+  output, backend, integrity, audio-integrity, and last-finalize text.
   `tools/Common/AutomationSnapshotFormatter.CaptureSettings.cs` owns capture
   option, recording format, HDR, pipeline, and compact UI setting text.
   `tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs` owns video reader,

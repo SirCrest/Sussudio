@@ -561,8 +561,10 @@ helpers stay with their owning command partials.
 
 The `tools/ssctl/Formatters.*.cs` partial family is only the projection facade
 for console output. Keep app snapshot orchestration and section ordering in `Formatters.Snapshot.cs`,
-state/capture-command, audio, recording, legacy performance, and Memory/GC text
-in `Formatters.Snapshot.CoreSections.cs`, capture settings and friendly/exact
+state/capture-command, audio, legacy performance, and Memory/GC text
+in `Formatters.Snapshot.CoreSections.cs`, recording output, backend, integrity,
+audio-integrity, and last-finalize text in `Formatters.Snapshot.Recording.cs`,
+capture settings and friendly/exact
 frame-rate text in `Formatters.Snapshot.CaptureSettings.cs`, capture cadence,
 embedded AV-sync drift, and source-signal text in
 `Formatters.Snapshot.CaptureCadence.cs`, video-pipeline text in
@@ -591,9 +593,10 @@ projection in `Formatters.Timeline.Rows.cs`, the private row model in
 `Formatters.Common.cs`.
 
 `tools/Common/AutomationSnapshotFormatter.cs` is now the shared automation
-snapshot formatter facade for top-level text flow. State/audio/recording/
-performance/memory core sections live in
-`AutomationSnapshotFormatter.CoreSections.cs`; capture settings,
+snapshot formatter facade for top-level text flow. State/audio/performance/
+memory core sections live in `AutomationSnapshotFormatter.CoreSections.cs`;
+recording output, backend, integrity, audio-integrity, and last-finalize text
+lives in `AutomationSnapshotFormatter.Recording.cs`; capture settings,
 video pipeline, diagnostics, and capture cadence text live in
 `AutomationSnapshotFormatter.CaptureSettings.cs`,
 `AutomationSnapshotFormatter.VideoPipeline.cs`,

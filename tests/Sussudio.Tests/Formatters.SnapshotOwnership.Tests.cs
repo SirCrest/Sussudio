@@ -8,6 +8,7 @@ static partial class Program
         var ssctlFormatterSource = global::Sussudio.Tests.RuntimeContractSource.ReadSsctlSnapshotFormatterSource();
         var ssctlSnapshotRootSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.cs");
         var ssctlSnapshotCoreSectionsSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.CoreSections.cs");
+        var ssctlSnapshotRecordingSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Recording.cs");
         var ssctlSnapshotCaptureSettingsSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.CaptureSettings.cs");
         var ssctlSnapshotCaptureCadenceSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.CaptureCadence.cs");
         var ssctlSnapshotDiagnosticLanesSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs");
@@ -59,8 +60,11 @@ static partial class Program
         AssertContains(ssctlSnapshotCoreSectionsSource, "builder.AppendLine(\"== Audio ==\");");
         AssertContains(ssctlSnapshotRuntimeSource, "private static void AppendSnapshotVideoPipelineSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotRuntimeSource, "builder.AppendLine(\"== Video Pipeline ==\");");
-        AssertContains(ssctlSnapshotCoreSectionsSource, "private static void AppendSnapshotRecordingSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotCoreSectionsSource, "builder.AppendLine(\"== Recording ==\");");
+        AssertDoesNotContain(ssctlSnapshotCoreSectionsSource, "private static void AppendSnapshotRecordingSection(StringBuilder builder, JsonElement snapshot)");
+        AssertDoesNotContain(ssctlSnapshotCoreSectionsSource, "RecordingIntegrityStatus");
+        AssertContains(ssctlSnapshotRecordingSource, "private static void AppendSnapshotRecordingSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotRecordingSource, "builder.AppendLine(\"== Recording ==\");");
+        AssertContains(ssctlSnapshotRecordingSource, "RecordingIntegrityStatus");
         AssertContains(ssctlSnapshotDiagnosticLanesSource, "private static void AppendSnapshotDiagnosticLanesSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotDiagnosticLanesSource, "builder.AppendLine(\"== Diagnostics ==\");");
         AssertContains(ssctlSnapshotCoreSectionsSource, "private static void AppendSnapshotPerformanceSection(StringBuilder builder, JsonElement snapshot)");

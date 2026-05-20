@@ -7,6 +7,7 @@ static partial class Program
         var sharedFormatterSource = global::Sussudio.Tests.RuntimeContractSource.ReadAutomationSnapshotFormatterSource();
         var sharedFormatterRootSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
         var sharedFormatterCoreSectionsSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.CoreSections.cs");
+        var sharedFormatterRecordingSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Recording.cs");
         var sharedFormatterCaptureSettingsSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.CaptureSettings.cs");
         var sharedFormatterVideoPipelineSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs");
         var sharedFormatterDiagnosticsSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Diagnostics.cs");
@@ -56,9 +57,11 @@ static partial class Program
         AssertContains(sharedFormatterVideoPipelineSource, "builder.AppendLine(\"== Video Pipeline ==\");");
         AssertContains(sharedFormatterVideoPipelineSource, "RecordingVideoQueueLatencyP99Ms");
         AssertContains(sharedFormatterVideoPipelineSource, "AppendThreadHealthSection(builder, snapshot);");
-        AssertContains(sharedFormatterCoreSectionsSource, "private static void AppendRecordingSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterCoreSectionsSource, "builder.AppendLine(\"== Recording ==\");");
-        AssertContains(sharedFormatterCoreSectionsSource, "RecordingIntegrityStatus");
+        AssertDoesNotContain(sharedFormatterCoreSectionsSource, "private static void AppendRecordingSection(StringBuilder builder, JsonElement snapshot)");
+        AssertDoesNotContain(sharedFormatterCoreSectionsSource, "RecordingIntegrityStatus");
+        AssertContains(sharedFormatterRecordingSource, "private static void AppendRecordingSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterRecordingSource, "builder.AppendLine(\"== Recording ==\");");
+        AssertContains(sharedFormatterRecordingSource, "RecordingIntegrityStatus");
         AssertContains(sharedFormatterDiagnosticsSource, "private static void AppendDiagnosticsSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterDiagnosticsSource, "builder.AppendLine(\"== Diagnostics ==\");");
         AssertContains(sharedFormatterDiagnosticsSource, "DiagnosticEvidence");
