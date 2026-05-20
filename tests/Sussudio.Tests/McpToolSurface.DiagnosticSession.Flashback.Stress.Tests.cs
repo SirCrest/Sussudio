@@ -18,6 +18,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var scrubText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.Scrub.cs")
             .Replace("\r\n", "\n");
+        var scrubUpdatesText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.ScrubUpdates.cs")
+            .Replace("\r\n", "\n");
         var scrubDrainText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.ScrubDrain.cs")
             .Replace("\r\n", "\n");
 
@@ -53,8 +55,13 @@ static partial class Program
         AssertContains(stressText, "internal static async Task RunFlashbackScrubStressAsync(");
         AssertContains(scrubText, "WaitForFlashbackStressBufferReadyAsync(");
         AssertContains(scrubText, "new Dictionary<string, object?> { [\"action\"] = \"begin-scrub\", [\"positionMs\"] = 500 }");
-        AssertContains(scrubText, "new Dictionary<string, object?> { [\"action\"] = \"update-scrub\", [\"positionMs\"] = positions[i] }");
-        AssertContains(scrubText, "new Dictionary<string, object?> { [\"action\"] = \"end-scrub\", [\"positionMs\"] = positions[^1] }");
+        AssertContains(scrubText, "RunFlashbackScrubStressUpdateBurstAsync(");
+        AssertDoesNotContain(scrubText, "new Dictionary<string, object?> { [\"action\"] = \"update-scrub\", [\"positionMs\"] = positions[i] }");
+        AssertContains(scrubText, "new Dictionary<string, object?> { [\"action\"] = \"end-scrub\", [\"positionMs\"] = finalScrubPositionMs }");
+        AssertContains(scrubUpdatesText, "private static async Task<int> RunFlashbackScrubStressUpdateBurstAsync(");
+        AssertContains(scrubUpdatesText, "new Dictionary<string, object?> { [\"action\"] = \"update-scrub\", [\"positionMs\"] = positions[i] }");
+        AssertContains(scrubUpdatesText, "return positions[^1];");
+        AssertContains(scrubUpdatesText, "flashback scrub stress: {failedUpdates} update-scrub command(s) failed");
         AssertContains(scrubText, "ValidateFlashbackScrubStressDrainAsync(");
         AssertDoesNotContain(scrubText, "\"flashback scrub stress: playback did not settle live with an empty queue within 10s \"");
         AssertContains(scrubDrainText, "private static async Task ValidateFlashbackScrubStressDrainAsync(");

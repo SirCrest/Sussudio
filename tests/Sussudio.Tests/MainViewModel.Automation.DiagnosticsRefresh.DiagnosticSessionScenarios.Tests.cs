@@ -107,8 +107,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "foreach (var positionMs in new[] { 750, 1_250, 2_000, 3_250, 1_500 })");
         AssertContains(diagnosticSessionText, "actions.Add(\"flashback scrub burst requested\");");
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"begin-scrub\", [\"positionMs\"] = 500 }");
+        AssertContains(diagnosticSessionText, "private static async Task<int> RunFlashbackScrubStressUpdateBurstAsync(");
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"update-scrub\", [\"positionMs\"] = positions[i] }");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"end-scrub\", [\"positionMs\"] = positions[^1] }");
+        AssertContains(diagnosticSessionText, "return positions[^1];");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"end-scrub\", [\"positionMs\"] = finalScrubPositionMs }");
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"seconds\"] = 1, [\"outputPath\"] = exportPath }");
         AssertContains(diagnosticSessionText, "internal static Dictionary<string, object?> CreateFlashbackExportVerifyPayload(string filePath)");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback command queue did not drain within 10s \"");

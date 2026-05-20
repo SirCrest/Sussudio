@@ -4324,7 +4324,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrain.cs` owns
   post-go-live playback command drain, latency, and final-state checks.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.Scrub.cs` owns the
-  scrub-stress command burst.
+  scrub-stress command choreography.
+- `tools/Common/DiagnosticSessionFlashbackStressScenario.ScrubUpdates.cs` owns
+  concurrent scrub update-burst dispatch and failed-update warning policy.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.ScrubDrain.cs` owns
   scrub-stress post-go-live drain, command-health, latency, and final-state
   checks.

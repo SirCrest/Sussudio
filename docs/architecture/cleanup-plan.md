@@ -3808,8 +3808,9 @@ stress thresholds and stress/scrub-stress task registration, `.Stress.cs` owns t
 `.WarmPlayback.cs` owns warmed-playback frame/FPS/1% low checks and delegates
 audio-master delta capture to `.WarmPlaybackAudio.cs`. `.CommandDrain.cs` owns
 post-go-live playback command drain checks, `.Scrub.cs` owns scrub-stress
-command bursts, `.ScrubDrain.cs` owns scrub-stress post-go-live drain and
-command-health checks, and `.AudioMaster.cs` owns warmed-playback audio-master
+command choreography, `.ScrubUpdates.cs` owns concurrent scrub update-burst
+dispatch and failed-update warning policy, `.ScrubDrain.cs` owns scrub-stress
+post-go-live drain and command-health checks, and `.AudioMaster.cs` owns warmed-playback audio-master
 fallback classification while the runner only starts the scenario tasks.
 
 Diagnostic-session Flashback validation now lives in concrete
@@ -3970,6 +3971,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackStressScenario.WarmPlaybackAudio.cs`
 - `DiagnosticSessionFlashbackStressScenario.CommandDrain.cs`
 - `DiagnosticSessionFlashbackStressScenario.Scrub.cs`
+- `DiagnosticSessionFlashbackStressScenario.ScrubUpdates.cs`
 - `DiagnosticSessionFlashbackStressScenario.ScrubDrain.cs`
 - `DiagnosticSessionFlashbackStressScenario.AudioMaster.cs`
 - `DiagnosticSessionFlashbackWaits.cs`
