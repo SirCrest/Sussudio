@@ -33,6 +33,9 @@ static partial class Program
             DiagnosticEvaluationLanesFlashbackPlaybackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.Playback.cs"),
             AlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Alerts.cs"),
             SignalAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SignalAlerts.cs"),
+            SignalAlertsPreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SignalAlerts.Preview.cs"),
+            SignalAlertsCaptureText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SignalAlerts.Capture.cs"),
+            SignalAlertsAudioRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SignalAlerts.AudioRecording.cs"),
             FlashbackRecordingAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs"),
             FlashbackPlaybackAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackAlerts.cs"),
             FlashbackPlaybackPerformanceAlertsCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Cadence.cs"),
@@ -165,6 +168,9 @@ static partial class Program
         public string DiagnosticEvaluationLanesFlashbackPlaybackText { get; init; } = string.Empty;
         public string AlertsText { get; init; } = string.Empty;
         public string SignalAlertsText { get; init; } = string.Empty;
+        public string SignalAlertsPreviewText { get; init; } = string.Empty;
+        public string SignalAlertsCaptureText { get; init; } = string.Empty;
+        public string SignalAlertsAudioRecordingText { get; init; } = string.Empty;
         public string FlashbackRecordingAlertsText { get; init; } = string.Empty;
         public string FlashbackPlaybackAlertsText { get; init; } = string.Empty;
         public string FlashbackPlaybackPerformanceAlertsCadenceText { get; init; } = string.Empty;
@@ -276,6 +282,9 @@ static partial class Program
                 DiagnosticEvaluationLanesFlashbackPlaybackText,
                 AlertsText,
                 SignalAlertsText,
+                SignalAlertsPreviewText,
+                SignalAlertsCaptureText,
+                SignalAlertsAudioRecordingText,
                 FlashbackRecordingAlertsText,
                 FlashbackPlaybackAlertsText,
                 FlashbackPlaybackPerformanceAlertsCadenceText,
