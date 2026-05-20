@@ -96,7 +96,8 @@ static partial class Program
             "tools/Common/DiagnosticSessionResult.FlashbackPlayback.Decode.cs",
             "tools/Common/DiagnosticSessionResult.FlashbackPlayback.AudioMaster.cs",
             "tools/Common/DiagnosticSessionResult.FlashbackPlayback.Stage.cs",
-            "tools/Common/DiagnosticSessionResult.FlashbackRecordingExport.cs",
+            "tools/Common/DiagnosticSessionResult.FlashbackRecording.cs",
+            "tools/Common/DiagnosticSessionResult.FlashbackExport.cs",
             "tools/Common/DiagnosticSessionSample.cs");
 
     private static string ReadDiagnosticSessionResultBuilderSource()

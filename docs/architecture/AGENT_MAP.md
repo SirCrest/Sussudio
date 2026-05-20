@@ -3950,8 +3950,9 @@ Primary owners:
   fields, `DiagnosticSessionResult.FlashbackPlayback.AudioMaster.cs` owns
   audio-master fallback/drift fields, and
   `DiagnosticSessionResult.FlashbackPlayback.Stage.cs` owns stage/seek fields.
-  `DiagnosticSessionResult.FlashbackRecordingExport.cs` owns Flashback
-  recording/export summary fields.
+  `DiagnosticSessionResult.FlashbackRecording.cs` owns Flashback recording
+  summary fields, and `DiagnosticSessionResult.FlashbackExport.cs` owns
+  Flashback export summary fields.
 - `tools/Common/DiagnosticSessionSample.cs` owns sampled snapshot DTOs.
 - `tools/Common/DiagnosticSessionResultBuilder.cs` owns diagnostic-session
   result phase orchestration, artifact-write handoff, summary-write handoff,

@@ -3319,7 +3319,8 @@ Diagnostic session DTOs live in feature-oriented model files:
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.Decode.cs`,
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.AudioMaster.cs`,
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.Stage.cs`,
-`tools/Common/DiagnosticSessionResult.FlashbackRecordingExport.cs`,
+`tools/Common/DiagnosticSessionResult.FlashbackRecording.cs`,
+`tools/Common/DiagnosticSessionResult.FlashbackExport.cs`,
 `tools/Common/DiagnosticSessionSample.cs`. `DiagnosticSessionOptions.cs` also owns
 shared tool invocation defaults and the ssctl diagnostic-session usage string,
 while `DiagnosticSessionScenarioCatalog.cs` owns scenario name constants,
@@ -3894,7 +3895,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResult.FlashbackPlayback.Decode.cs`
 - `DiagnosticSessionResult.FlashbackPlayback.AudioMaster.cs`
 - `DiagnosticSessionResult.FlashbackPlayback.Stage.cs`
-- `DiagnosticSessionResult.FlashbackRecordingExport.cs`
+- `DiagnosticSessionResult.FlashbackRecording.cs`
+- `DiagnosticSessionResult.FlashbackExport.cs`
 - `DiagnosticSessionSample.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionCommandChannel.cs`
