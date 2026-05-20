@@ -902,6 +902,11 @@ Presentation-preview shell chrome checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewShellChromeContractsTests.cs`,
 keeping settings shelf, window title, live signal, and status-strip contracts
 in xUnit after their removal from the legacy harness catalog.
+Presentation-preview visual shell checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewVisualShellContractsTests.cs`,
+keeping control-bar hover animation, shell elevation, preview transition,
+startup overlay, and fade-in reveal contracts in xUnit after their removal from
+the legacy harness catalog.
 Presentation-preview recording checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewRecordingContractsTests.cs`,
 keeping recording button chrome, state presentation, lockout policy, and

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task ControlBarHoverAnimations_LiveInController()
+    internal static Task ControlBarHoverAnimations_LiveInController()
     {
         var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
@@ -27,7 +27,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ShellElevationSetup_LivesInController()
+    internal static Task ShellElevationSetup_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs").Replace("\r\n", "\n");
@@ -55,7 +55,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewTransitionAnimations_LiveInController()
+    internal static Task PreviewTransitionAnimations_LiveInController()
     {
         var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
@@ -106,7 +106,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewStartupOverlay_LivesInController()
+    internal static Task PreviewStartupOverlay_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
@@ -135,7 +135,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewFadeInReveal_LivesInController()
+    internal static Task PreviewFadeInReveal_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");

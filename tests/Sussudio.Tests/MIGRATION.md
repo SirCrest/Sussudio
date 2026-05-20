@@ -176,6 +176,10 @@ add xUnit alongside, and port incrementally.
 - `XUnit.PresentationPreviewShellChromeContractsTests.cs` owns the former
   legacy presentation-preview MainWindow shell chrome, window title, live
   signal, and status-strip checks.
+- `XUnit.PresentationPreviewVisualShellContractsTests.cs` owns the former
+  legacy presentation-preview MainWindow visual shell group: control-bar hover,
+  shell elevation, preview transition, startup overlay, and fade-in reveal
+  checks.
 - `XUnit.PresentationPreviewRecordingContractsTests.cs` owns the former legacy
   presentation-preview MainWindow recording button chrome, state presentation,
   lockout policy, and button-action checks.

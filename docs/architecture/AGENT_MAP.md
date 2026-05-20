@@ -2507,6 +2507,11 @@ Primary current owners:
   owns the former presentation-preview MainWindow shell chrome, window title,
   live signal, and status-strip checks after their removal from the legacy
   offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewVisualShellContractsTests.cs`
+  owns the former presentation-preview MainWindow visual shell group for
+  control-bar hover animation, shell elevation, preview transition, startup
+  overlay, and fade-in reveal checks after their removal from the legacy
+  offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewRecordingContractsTests.cs`
   owns the former presentation-preview MainWindow recording button chrome,
   state presentation, lockout policy, and button-action checks after their

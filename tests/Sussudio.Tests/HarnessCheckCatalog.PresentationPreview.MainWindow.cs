@@ -86,20 +86,5 @@ static partial class Program
         await AddCheckAsync(results,
             "MainWindow shutdown cleanup owns post-close cleanup order",
             MainWindowShutdownCleanup_OwnsPostCloseCleanupOrder);
-        await AddCheckAsync(results,
-            "Control bar hover animations live in controller",
-            ControlBarHoverAnimations_LiveInController);
-        await AddCheckAsync(results,
-            "Shell elevation setup lives in controller",
-            ShellElevationSetup_LivesInController);
-        await AddCheckAsync(results,
-            "Preview transition animations live in controller",
-            PreviewTransitionAnimations_LiveInController);
-        await AddCheckAsync(results,
-            "Preview startup overlay lives in controller",
-            PreviewStartupOverlay_LivesInController);
-        await AddCheckAsync(results,
-            "Preview fade-in reveal lives in controller",
-            PreviewFadeInReveal_LivesInController);
     }
 }
