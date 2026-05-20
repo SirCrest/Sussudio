@@ -91,6 +91,8 @@ add xUnit alongside, and port incrementally.
 - `XUnit.SsctlCommandHandlerContractsTests.cs` owns the former legacy ssctl
   command-handler routing, source ownership, and catalog-backed help contract
   checks.
+- `XUnit.SsctlFormatterContractsTests.cs` owns the former legacy ssctl
+  formatter snapshot, source ownership, and timeline output contract checks.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, and test-project shape guard checks.
 - `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy

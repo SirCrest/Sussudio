@@ -722,7 +722,10 @@ owning their xUnit execution surface after removal from the legacy offline
 harness catalog. ssctl formatter output smoke checks stay in
 `Formatters.Tests.cs`, while `Formatters.SnapshotOwnership.Tests.cs` owns ssctl
 formatter source ownership assertions through the shared `RuntimeContractSource`
-formatter source-family readers.
+formatter source-family readers, `Formatters.Timeline.Tests.cs` owns timeline
+output contracts, and `tests/Sussudio.Tests/XUnit.SsctlFormatterContractsTests.cs`
+owns their xUnit execution surface after removal from the legacy offline
+harness catalog.
 ssctl command-handler routing coverage now lives in focused
 `CommandHandlers.Routing.Control/Flashback/Workflow.Tests.cs` owners for device,
 capture controls, recordings, Flashback, window, manifest, observability,

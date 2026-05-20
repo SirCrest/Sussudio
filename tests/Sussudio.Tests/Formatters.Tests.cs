@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 // Tests for command-line snapshot and diagnostics formatting.
 static partial class Program
 {
-    private static Task SsctlFormatters_EmitCoreSnapshotSections()
+    internal static Task SsctlFormatters_EmitCoreSnapshotSections()
     {
         var assemblyPath = Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll");
-        var ssctlAssembly = LoadToolAssembly(assemblyPath);
+        var ssctlAssembly = LoadToolAssemblyIsolated(assemblyPath);
         var formatterType = ssctlAssembly.GetType("Sussudio.Tools.Ssctl.Formatters")
             ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.Formatters type not found.");
         var formatSnapshot = formatterType.GetMethod("FormatSnapshot", BindingFlags.Public | BindingFlags.Static)

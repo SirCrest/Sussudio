@@ -2363,6 +2363,9 @@ Primary current owners:
   owns ssctl formatter source ownership assertions, while
   `tests/Sussudio.Tests/Formatters.Timeline.Tests.cs` owns timeline table and
   summary output checks.
+  `tests/Sussudio.Tests/XUnit.SsctlFormatterContractsTests.cs` owns the xUnit
+  execution surface for those ssctl formatter checks after their removal from
+  the legacy offline harness catalog.
 - `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` owns
   `RuntimeContractSource`, including shared tool source-family readers used by
   legacy harness and xUnit contract tests.

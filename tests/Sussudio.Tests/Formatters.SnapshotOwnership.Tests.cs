@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task SsctlFormatters_SnapshotSourceOwnership_IsSplit()
+    internal static Task SsctlFormatters_SnapshotSourceOwnership_IsSplit()
     {
         var ssctlFormatterCommonSource = ReadRepoFile("tools/ssctl/Formatters.Common.cs");
         var ssctlFormatterSource = global::Sussudio.Tests.RuntimeContractSource.ReadSsctlSnapshotFormatterSource();
