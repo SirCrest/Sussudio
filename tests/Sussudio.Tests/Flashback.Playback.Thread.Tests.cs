@@ -18,8 +18,18 @@ static partial class Program
             .Replace("\r\n", "\n");
         var threadCommandsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
             .Replace("\r\n", "\n");
+        var commandModelsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandModels.cs")
+            .Replace("\r\n", "\n");
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(threadLoopText, "private void PlaybackThreadEntry(CancellationTokenSource cts, Channel<PlaybackCommand> commandChannel)");
+        AssertContains(commandModelsText, "private enum CommandKind");
+        AssertContains(commandModelsText, "private readonly struct PlaybackCommand");
+        AssertContains(commandModelsText, "public SeekIntentSlot? SeekSlot { get; init; }");
+        AssertContains(commandModelsText, "public ScrubUpdateIntentSlot? ScrubUpdateSlot { get; init; }");
+        AssertDoesNotContain(rootText, "private enum CommandKind");
+        AssertDoesNotContain(rootText, "private readonly struct PlaybackCommand");
         AssertContains(threadLoopText, "[DllImport(\"winmm.dll\", ExactSpelling = true)]");
         AssertContains(threadLoopText, "private static extern uint timeBeginPeriod(uint uMilliseconds);");
         AssertContains(threadLoopText, "private static extern uint timeEndPeriod(uint uMilliseconds);");

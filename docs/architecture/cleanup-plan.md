@@ -2572,7 +2572,10 @@ Flashback playback public command entry points now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Commands.cs`. Keep
 scrub, seek, play/pause, go-live, and nudge request gating there; keep raw
 queue writes/drop policy in the queue partial and playback-thread execution in
-the thread partials. Seek/scrub coalescing slot state, queued-position
+the thread partials. Playback-thread command identity and payload shape live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.CommandModels.cs`;
+keep new command fields there so queue, coalescing, telemetry, and thread
+owners share one private payload contract. Seek/scrub coalescing slot state, queued-position
 resolution, and control-yield peek policy now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.CommandCoalescing.cs`.
 Do not grow the root controller with new coalescing slot fields.

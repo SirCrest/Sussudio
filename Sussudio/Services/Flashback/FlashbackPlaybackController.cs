@@ -30,31 +30,6 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     private const int PlaybackAudioPrebufferRetryDelayMs = 20;
     private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;
 
-    // --- Command types marshalled to the playback thread ---
-    private enum CommandKind
-    {
-        Seek,
-        BeginScrub,
-        UpdateScrub,
-        EndScrub,
-        Play,
-        Pause,
-        GoLive,
-        Nudge,
-        Stop
-    }
-
-    private readonly struct PlaybackCommand
-    {
-        public CommandKind Kind { get; init; }
-        public TimeSpan Position { get; init; }
-        public TimeSpan Delta { get; init; }
-        public bool HasPositionOverride { get; init; }
-        public SeekIntentSlot? SeekSlot { get; init; }
-        public ScrubUpdateIntentSlot? ScrubUpdateSlot { get; init; }
-        public long QueuedTimestamp { get; init; }
-    }
-
     // --- Dependencies ---
     private readonly FlashbackBufferManager _bufferManager;
     private IPreviewFrameSink? _previewSink;
