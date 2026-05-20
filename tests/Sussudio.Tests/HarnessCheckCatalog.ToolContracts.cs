@@ -26,21 +26,6 @@ static partial class Program
             "Architecture agent map references existing files",
             ArchitectureAgentMap_FileReferencesResolve);
         await AddCheckAsync(results,
-            "Architecture source-shape ReadRepoFile paths resolve",
-            ArchitectureDocs_ReadRepoFileLiteralPathsResolve);
-        await AddCheckAsync(results,
-            "Architecture cleanup plan references existing repo files",
-            ArchitectureCleanupPlan_FileReferencesResolve);
-        await AddCheckAsync(results,
-            "Architecture cleanup plan covers architecture-doc test family",
-            ArchitectureCleanupPlan_CoversArchitectureDocsTestFamily);
-        await AddCheckAsync(results,
-            "Architecture cleanup plan defines small-file hygiene",
-            ArchitectureCleanupPlan_DefinesSmallFileHygiene);
-        await AddCheckAsync(results,
-            "Test migration plan references resolve and names validation commands",
-            TestMigrationPlan_FileReferencesResolveAndNamesValidationCommands);
-        await AddCheckAsync(results,
             "Architecture agent map test-owner paths use resolving code spans",
             ArchitectureAgentMap_TestOwnerPathsUseCodeSpansAndResolve);
         await AddCheckAsync(results,
@@ -52,9 +37,6 @@ static partial class Program
         await AddCheckAsync(results,
             "Test project avoids empty partial marker shells",
             TestProject_DoesNotKeepEmptyPartialMarkerShells);
-        await AddCheckAsync(results,
-            "Test migration plan covers xUnit test inventory",
-            TestMigrationPlan_CoversXUnitInventory);
         await AddCheckAsync(results,
             "Architecture agent map covers automation consumer checklist",
             ArchitectureAgentMap_CoversAutomationConsumerChecklist);

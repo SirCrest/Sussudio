@@ -2330,7 +2330,11 @@ Primary current owners:
   duplicate tools/Common owner, and empty test marker-shell checks.
   `tests/Sussudio.Tests/ArchitectureDocs.ReferenceIntegrity.Tests.cs` owns
   literal `ReadRepoFile` source-shape path drift, cleanup-plan file/folder
-  reference drift, and xUnit migration inventory checks.
+  reference drift, and the shared implementation for xUnit migration inventory
+  checks.
+  `tests/Sussudio.Tests/XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns
+  the xUnit execution surface for those pure architecture-doc reference checks
+  after their removal from the legacy offline harness catalog.
   `tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs` owns
   shared Markdown code-span path-token extraction and resolution helpers.
   `tests/Sussudio.Tests/ArchitectureDocs.OwnershipFileEnumerators.cs` owns

@@ -81,6 +81,8 @@ add xUnit alongside, and port incrementally.
   snapshot construction and health/renderer metric projection checks.
 - `XUnit.ToolFormatterContractsTests.cs` owns focused tool formatter contract
   checks.
+- `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy
+  architecture-doc reference drift and migration-inventory guard checks.
 - Additional focused `[Fact]`/`[Theory]` files such as
   `AutomationContracts.ProtocolXunit.Tests.cs`,
   `AutomationToolContracts.ProtocolXunit.Tests.cs`,

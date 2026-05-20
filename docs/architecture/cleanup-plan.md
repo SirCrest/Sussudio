@@ -735,8 +735,11 @@ shared tool automation path coverage, duplicate tools/Common owner checks, and
 empty test marker-shell checks.
 `tests/Sussudio.Tests/ArchitectureDocs.ReferenceIntegrity.Tests.cs` owns
 literal `ReadRepoFile` source-shape path resolution, cleanup-plan file/folder
-reference drift checks, architecture-doc test-family coverage, and the xUnit
-migration inventory guard.
+reference drift checks, architecture-doc test-family coverage, and the shared
+implementations for the xUnit migration inventory guard.
+`tests/Sussudio.Tests/XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns
+the xUnit execution surface for those pure architecture-doc reference checks
+after their removal from the legacy offline harness catalog.
 `tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs` owns shared
 Markdown code-span path-token extraction and resolution helpers.
 `tests/Sussudio.Tests/ArchitectureDocs.OwnershipFileEnumerators.cs` owns

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task ArchitectureDocs_ReadRepoFileLiteralPathsResolve()
+    internal static Task ArchitectureDocs_ReadRepoFileLiteralPathsResolve()
     {
         var repoRoot = GetRepoRoot();
         var testRoot = Path.Combine(repoRoot, "tests", "Sussudio.Tests");
@@ -39,7 +39,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ArchitectureCleanupPlan_FileReferencesResolve()
+    internal static Task ArchitectureCleanupPlan_FileReferencesResolve()
     {
         var repoRoot = GetRepoRoot();
         var cleanupPlanPath = Path.Combine(repoRoot, "docs", "architecture", "cleanup-plan.md");
@@ -73,7 +73,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ArchitectureCleanupPlan_CoversArchitectureDocsTestFamily()
+    internal static Task ArchitectureCleanupPlan_CoversArchitectureDocsTestFamily()
     {
         var repoRoot = GetRepoRoot();
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
@@ -91,7 +91,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ArchitectureCleanupPlan_DefinesSmallFileHygiene()
+    internal static Task ArchitectureCleanupPlan_DefinesSmallFileHygiene()
     {
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
 
@@ -103,7 +103,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task TestMigrationPlan_FileReferencesResolveAndNamesValidationCommands()
+    internal static Task TestMigrationPlan_FileReferencesResolveAndNamesValidationCommands()
     {
         var repoRoot = GetRepoRoot();
         var migrationPath = Path.Combine(repoRoot, "tests", "Sussudio.Tests", "MIGRATION.md");
@@ -148,7 +148,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task TestMigrationPlan_CoversXUnitInventory()
+    internal static Task TestMigrationPlan_CoversXUnitInventory()
     {
         var repoRoot = GetRepoRoot();
         var migrationText = ReadRepoFile("tests/Sussudio.Tests/MIGRATION.md");
