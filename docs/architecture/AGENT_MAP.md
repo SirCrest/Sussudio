@@ -504,8 +504,17 @@ Automation diagnostics ownership:
   `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.Commands.cs`
   owns playback command queue projection.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackPlayback.cs`
-  owns final Flashback playback, audio-master, decode, and command queue
-  projection-to-`AutomationSnapshot` field flattening.
+  owns final Flashback playback projection-to-`AutomationSnapshot` field
+  flattening plus root playback-state fields.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackPlayback.AudioMaster.cs`
+  owns flattened Flashback playback audio-master fallback fields.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackPlayback.Timing.cs`
+  owns flattened Flashback playback event, cadence, PTS-cadence, and A/V drift
+  fields.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackPlayback.Decode.cs`
+  owns flattened Flashback playback decode-cap and decode-timing fields.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackPlayback.Commands.cs`
+  owns flattened Flashback playback command queue fields.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs`
   owns D3D preview swap-chain and renderer-state projection plus composition of
   D3D leaf projections consumed by `AutomationSnapshot`.

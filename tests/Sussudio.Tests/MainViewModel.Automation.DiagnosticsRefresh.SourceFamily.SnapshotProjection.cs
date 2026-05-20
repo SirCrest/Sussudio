@@ -24,6 +24,10 @@ static partial class Program
         public string SnapshotProjectionFlatteningFlashbackExportText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningFlashbackRecordingText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningFlashbackPlaybackText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningFlashbackPlaybackAudioMasterText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningFlashbackPlaybackTimingText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningFlashbackPlaybackDecodeText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningFlashbackPlaybackCommandsText { get; init; } = string.Empty;
         public string SnapshotProjectionSnapshotStatusText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSnapshotStatusText { get; init; } = string.Empty;
         public string SnapshotProjectionSnapshotEvaluationText { get; init; } = string.Empty;
