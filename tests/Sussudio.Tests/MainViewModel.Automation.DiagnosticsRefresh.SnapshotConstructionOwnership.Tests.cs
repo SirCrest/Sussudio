@@ -65,6 +65,16 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackPlaybackText, "private static FlashbackPlaybackFlattenedProjection BuildFlashbackPlaybackFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingIntegrityFlattenedProjection(recordingIntegrity)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingIntegrityText, "private static RecordingIntegrityFlattenedProjection BuildRecordingIntegrityFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionRecordingIntegritySummaryText, "private static RecordingIntegritySummaryProjection BuildRecordingIntegritySummaryProjection(");
+        AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityVideoText, "private static RecordingIntegrityVideoProjection BuildRecordingIntegrityVideoProjection(");
+        AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityBackpressureText, "private static RecordingIntegrityBackpressureProjection BuildRecordingIntegrityBackpressureProjection(");
+        AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityAudioText, "private static RecordingIntegrityAudioProjection BuildRecordingIntegrityAudioProjection(");
+        AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityAvSyncText, "private static RecordingIntegrityAvSyncProjection BuildRecordingIntegrityAvSyncProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingIntegritySummaryText, "private static RecordingIntegritySummaryFlattenedProjection BuildRecordingIntegritySummaryFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingIntegrityVideoText, "private static RecordingIntegrityVideoFlattenedProjection BuildRecordingIntegrityVideoFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingIntegrityBackpressureText, "private static RecordingIntegrityBackpressureFlattenedProjection BuildRecordingIntegrityBackpressureFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingIntegrityAudioText, "private static RecordingIntegrityAudioFlattenedProjection BuildRecordingIntegrityAudioFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingIntegrityAvSyncText, "private static RecordingIntegrityAvSyncFlattenedProjection BuildRecordingIntegrityAvSyncFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingPipelineFlattenedProjection(recordingPipeline)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingPipelineText, "private static RecordingPipelineFlattenedProjection BuildRecordingPipelineFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingPipelineEncoderText, "private static RecordingPipelineEncoderFlattenedProjection BuildRecordingPipelineEncoderFlattenedProjection(");

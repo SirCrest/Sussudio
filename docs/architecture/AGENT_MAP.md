@@ -627,10 +627,25 @@ Automation diagnostics ownership:
   owns final process resource projection-to-`AutomationSnapshot` field
   flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs`
-  owns recording-integrity projection inputs consumed by `AutomationSnapshot`.
+  owns recording-integrity projection routing consumed by `AutomationSnapshot`.
+  Its focused owners split status/reason, video-frame counters,
+  queue/backpressure, audio integrity, and A/V sync projection inputs:
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Summary.cs`,
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Video.cs`,
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Backpressure.cs`,
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Audio.cs`,
+  and
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.AvSync.cs`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.cs`
-  owns final recording-integrity projection-to-`AutomationSnapshot` field
-  flattening.
+  owns final recording-integrity projection-to-`AutomationSnapshot` routing.
+  Its focused flattening owners mirror status/reason, video-frame counters,
+  queue/backpressure, audio integrity, and A/V sync fields:
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.Summary.cs`,
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.Video.cs`,
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.Backpressure.cs`,
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.Audio.cs`,
+  and
+  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.AvSync.cs`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs`
   owns encoder queue ages, conversion queue depths, and recording
   video/GPU/CUDA health inputs consumed by `AutomationSnapshot`.

@@ -95,7 +95,17 @@ static partial class Program
         public string SnapshotProjectionProcessResourcesText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningProcessResourcesText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingIntegrityText { get; init; } = string.Empty;
+        public string SnapshotProjectionRecordingIntegritySummaryText { get; init; } = string.Empty;
+        public string SnapshotProjectionRecordingIntegrityVideoText { get; init; } = string.Empty;
+        public string SnapshotProjectionRecordingIntegrityBackpressureText { get; init; } = string.Empty;
+        public string SnapshotProjectionRecordingIntegrityAudioText { get; init; } = string.Empty;
+        public string SnapshotProjectionRecordingIntegrityAvSyncText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningRecordingIntegrityText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningRecordingIntegritySummaryText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningRecordingIntegrityVideoText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningRecordingIntegrityBackpressureText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningRecordingIntegrityAudioText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningRecordingIntegrityAvSyncText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingPipelineText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningRecordingPipelineText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningRecordingPipelineEncoderText { get; init; } = string.Empty;
