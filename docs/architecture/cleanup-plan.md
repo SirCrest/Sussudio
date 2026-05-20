@@ -615,9 +615,11 @@ cache, queue, and failure text. Flashback export progress, result, throughput,
 force-rotate fallback, range, output path, and message text lives in
 `AutomationSnapshotFormatter.Flashback.Export.cs`. Flashback playback status,
 command, cadence, decode, frame, stage, and A/V drift text lives in
-`AutomationSnapshotFormatter.Flashback.Playback.cs`. Capture cadence also owns
-its AV-sync and source-signal leaf sections because those sections are only
-emitted from the cadence tail. MJPEG timing lives in
+`AutomationSnapshotFormatter.Flashback.Playback.cs`. Capture cadence owns the
+capture cadence, MJPEG packet fingerprint, and visual cadence rows, while
+`AutomationSnapshotFormatter.AvSync.cs` owns AV-sync text and
+`AutomationSnapshotFormatter.Source.cs` owns source-signal text emitted from
+the cadence tail. MJPEG timing lives in
 `AutomationSnapshotFormatter.MjpegTiming.cs`; MJPEG preview-jitter queue,
 latency, ownership, and underflow text lives in
 `AutomationSnapshotFormatter.MjpegTiming.PreviewJitter.cs`. Preview routing,

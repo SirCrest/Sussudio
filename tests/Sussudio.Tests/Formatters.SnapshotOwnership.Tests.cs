@@ -13,6 +13,8 @@ static partial class Program
         var ssctlSnapshotProcessResourcesSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.ProcessResources.cs");
         var ssctlSnapshotCaptureSettingsSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.CaptureSettings.cs");
         var ssctlSnapshotCaptureCadenceSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.CaptureCadence.cs");
+        var ssctlSnapshotAvSyncSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.AvSync.cs");
+        var ssctlSnapshotSourceSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Source.cs");
         var ssctlSnapshotDiagnosticLanesSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs");
         var ssctlSnapshotFlashbackSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.cs");
         var ssctlSnapshotFlashbackExportSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.Export.cs");
@@ -81,11 +83,13 @@ static partial class Program
         AssertDoesNotContain(ssctlSnapshotRuntimeSource, "private static void AppendSnapshotSourceSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotCaptureCadenceSource, "private static void AppendSnapshotCaptureCadenceSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotCaptureCadenceSource, "builder.AppendLine(\"== Capture Cadence ==\");");
-        AssertContains(ssctlSnapshotCaptureCadenceSource, "private static void AppendSnapshotAvSyncSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotCaptureCadenceSource, "var avSyncDrift = AutomationSnapshotFormatter.Get(snapshot, \"AvSyncCaptureDriftMs\", string.Empty);");
-        AssertContains(ssctlSnapshotCaptureCadenceSource, "builder.AppendLine(\"== AV Sync ==\");");
-        AssertContains(ssctlSnapshotCaptureCadenceSource, "private static void AppendSnapshotSourceSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotCaptureCadenceSource, "builder.AppendLine(\"== Source ==\");");
+        AssertDoesNotContain(ssctlSnapshotCaptureCadenceSource, "private static void AppendSnapshotAvSyncSection(StringBuilder builder, JsonElement snapshot)");
+        AssertDoesNotContain(ssctlSnapshotCaptureCadenceSource, "private static void AppendSnapshotSourceSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotAvSyncSource, "private static void AppendSnapshotAvSyncSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotAvSyncSource, "var avSyncDrift = AutomationSnapshotFormatter.Get(snapshot, \"AvSyncCaptureDriftMs\", string.Empty);");
+        AssertContains(ssctlSnapshotAvSyncSource, "builder.AppendLine(\"== AV Sync ==\");");
+        AssertContains(ssctlSnapshotSourceSource, "private static void AppendSnapshotSourceSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotSourceSource, "builder.AppendLine(\"== Source ==\");");
         AssertContains(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotFlashbackSource, "var flashbackActive = AutomationSnapshotFormatter.Get(snapshot, \"FlashbackActive\", \"false\");");
         AssertContains(ssctlSnapshotFlashbackSource, "AppendSnapshotFlashbackEncodingSection(builder, snapshot);");
@@ -155,7 +159,7 @@ static partial class Program
         AssertContains(ssctlSnapshotThreadHealthSource, "private static void AppendSnapshotThreadHealthSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotThreadHealthSource, "builder.AppendLine(\"== Thread Health ==\");");
         AssertContains(ssctlSnapshotThreadHealthSource, "WasapiPlaybackQueueDropCount");
-        AssertContains(ssctlSnapshotCaptureCadenceSource, "var sourceFrameRate = AutomationSnapshotFormatter.Get(snapshot, \"DetectedSourceFrameRate\", string.Empty);");
+        AssertContains(ssctlSnapshotSourceSource, "var sourceFrameRate = AutomationSnapshotFormatter.Get(snapshot, \"DetectedSourceFrameRate\", string.Empty);");
         AssertContains(ReadRepoFile("tools/ssctl/Formatters.Diagnostics.cs"), "public static string FormatDiagnostics");
         AssertContains(ReadRepoFile("tools/ssctl/Formatters.Options.cs"), "public static string FormatOptions");
         var ssctlTimelineRootSource = ReadRepoFile("tools/ssctl/Formatters.Timeline.cs");

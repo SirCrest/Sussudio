@@ -14,6 +14,8 @@ static partial class Program
         var sharedFormatterVideoPipelineSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs");
         var sharedFormatterDiagnosticsSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Diagnostics.cs");
         var sharedFormatterCaptureCadenceSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs");
+        var sharedFormatterAvSyncSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.AvSync.cs");
+        var sharedFormatterSourceSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Source.cs");
         var sharedFormatterValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Values.cs");
         var sharedFormatterDisplayValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.DisplayValues.cs");
         var sharedFormatterFlashbackSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.cs");
@@ -130,8 +132,12 @@ static partial class Program
         AssertContains(sharedFormatterMjpegPreviewJitterSource, "private static void AppendMjpegPreviewJitterSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterMjpegPreviewJitterSource, "Preview Jitter Latency:");
         AssertContains(sharedFormatterMjpegPreviewJitterSource, "Preview Jitter Underflow:");
-        AssertContains(sharedFormatterCaptureCadenceSource, "private static void AppendAvSyncSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterCaptureCadenceSource, "var avSyncDrift = Get(snapshot, \"AvSyncCaptureDriftMs\", string.Empty);");
+        AssertContains(sharedFormatterCaptureCadenceSource, "AppendAvSyncSection(builder, snapshot);");
+        AssertContains(sharedFormatterCaptureCadenceSource, "AppendSourceSection(builder, snapshot);");
+        AssertDoesNotContain(sharedFormatterCaptureCadenceSource, "private static void AppendAvSyncSection(StringBuilder builder, JsonElement snapshot)");
+        AssertDoesNotContain(sharedFormatterCaptureCadenceSource, "private static void AppendSourceSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterAvSyncSource, "private static void AppendAvSyncSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterAvSyncSource, "var avSyncDrift = Get(snapshot, \"AvSyncCaptureDriftMs\", string.Empty);");
         AssertContains(sharedFormatterPreviewSource, "private static void AppendPreviewSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterPreviewSource, "AppendPreviewD3DSection(builder, snapshot);");
         AssertDoesNotContain(sharedFormatterPreviewSource, "AppendPreviewSlowFrameDiagnostics(builder, snapshot);");
@@ -168,8 +174,8 @@ static partial class Program
         AssertContains(sharedFormatterPreviewD3DSlowFramesSource, "internal static void AppendPreviewSlowFrameDiagnostics(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterPreviewD3DSlowFramesSource, "private static string FormatDiagnosticMs(JsonElement element, string propertyName)");
         AssertContains(sharedFormatterPreviewD3DSlowFramesSource, "D3D Slow Frames:");
-        AssertContains(sharedFormatterCaptureCadenceSource, "private static void AppendSourceSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterCaptureCadenceSource, "var sourceFrameRate = Get(snapshot, \"DetectedSourceFrameRate\", string.Empty);");
+        AssertContains(sharedFormatterSourceSource, "private static void AppendSourceSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterSourceSource, "var sourceFrameRate = Get(snapshot, \"DetectedSourceFrameRate\", string.Empty);");
         AssertContains(sharedFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
         AssertContains(sharedFormatterSource, "CaptureCommandMaxQueueLatencyMs");
         AssertContains(sharedFormatterSource, "CaptureCommandCommandsCoalesced");

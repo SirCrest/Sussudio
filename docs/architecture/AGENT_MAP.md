@@ -3826,8 +3826,12 @@ Primary owners:
 - `tools/ssctl/Formatters.Snapshot.CaptureSettings.cs` owns capture settings
   text and friendly/exact frame-rate summary formatting.
 - `tools/ssctl/Formatters.Snapshot.CaptureCadence.cs` owns capture cadence,
-  low-FPS, jitter/drop, MJPEG packet fingerprint, sampled visual cadence,
-  embedded AV-sync, and source-signal snapshot text.
+  low-FPS, jitter/drop, MJPEG packet fingerprint, and sampled visual cadence
+  snapshot text.
+- `tools/ssctl/Formatters.Snapshot.AvSync.cs` owns AV-sync drift and encoder
+  correction snapshot text.
+- `tools/ssctl/Formatters.Snapshot.Source.cs` owns source dimensions, source
+  frame-rate summary, HDR, and source telemetry snapshot text.
 - `tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs` owns diagnostic health,
   summary, evidence, and frame-lane snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot
@@ -4453,8 +4457,11 @@ Primary owners:
   health, summary, evidence, and frame-lane text.
   `tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs` owns capture
   cadence, low-FPS, jitter/drop, MJPEG packet fingerprint, sampled visual
-  cadence, AV-sync text, source-signal text, and routing to MJPEG/preview
-  sections.
+  cadence, and routing to MJPEG/AV-sync/preview/source sections.
+  `tools/Common/AutomationSnapshotFormatter.AvSync.cs` owns AV-sync drift and
+  encoder correction text.
+  `tools/Common/AutomationSnapshotFormatter.Source.cs` owns source dimensions,
+  source frame-rate summary, HDR, and source telemetry text.
   `tools/Common/AutomationSnapshotFormatter.Values.cs` owns tolerant JSON
   accessors and typed JSON coercion.
   `tools/Common/AutomationSnapshotFormatter.DisplayValues.cs` owns shared
