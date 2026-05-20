@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task PreviewStartupSessionController_PreservesAttemptStateContracts()
+    internal static Task PreviewStartupSessionController_PreservesAttemptStateContracts()
     {
         var controllerType = RequireType("Sussudio.Controllers.PreviewStartupSessionController");
         var contextType = RequireType("Sussudio.Controllers.PreviewStartupSessionControllerContext");

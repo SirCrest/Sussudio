@@ -98,7 +98,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static async Task PreviewStartupWatchdogController_PreservesTimeoutContracts()
+    internal static async Task PreviewStartupWatchdogController_PreservesTimeoutContracts()
     {
         var controllerType = RequireType("Sussudio.Controllers.PreviewStartupWatchdogController");
         var context = CreatePreviewStartupWatchdogContext(
@@ -149,7 +149,7 @@ static partial class Program
         AssertEqual(null, ignoredRecorder.FailureReason, "ignored timeout does not mark failed");
     }
 
-    private static Task PreviewStartupWatchdogController_GatesFailureStopScheduling()
+    internal static Task PreviewStartupWatchdogController_GatesFailureStopScheduling()
     {
         var controllerType = RequireType("Sussudio.Controllers.PreviewStartupWatchdogController");
         var scheduledOperations = new List<(Func<Task> Operation, string Name)>();

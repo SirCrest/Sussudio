@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task PreviewReinitTransitionController_PreservesTransitionStateContracts()
+    internal static Task PreviewReinitTransitionController_PreservesTransitionStateContracts()
     {
         var controllerType = RequireType("Sussudio.Controllers.PreviewReinitTransitionController");
         var presentationType = RequireType("Sussudio.Controllers.PreviewReinitCompletionPresentation");

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task PreviewReinitialization_WaitsForPendingFlashbackCycle()
+    internal static Task PreviewReinitialization_WaitsForPendingFlashbackCycle()
     {
         var viewModelFiles = ReadMainViewModelCodeFiles();
         var viewModelSharedStateText = viewModelFiles["MainViewModel.State.cs"];

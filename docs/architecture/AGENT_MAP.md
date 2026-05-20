@@ -2024,6 +2024,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupOwnershipContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview preview-startup
   source-shape ownership catalog group.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupBehaviorContractsTests.cs`
+  owns xUnit execution for the former legacy presentation-preview preview-startup
+  controller behavior catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.DeviceDiscoveryOrdering.Tests.cs`
   owns startup ordering assertions that device discovery begins before
   recording-capability probe completion.

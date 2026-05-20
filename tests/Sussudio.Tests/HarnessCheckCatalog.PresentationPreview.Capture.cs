@@ -6,21 +6,6 @@ static partial class Program
     private static async Task AddPresentationPreviewCaptureChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Preview startup watchdog controller preserves timeout contracts",
-            PreviewStartupWatchdogController_PreservesTimeoutContracts);
-        await AddCheckAsync(results,
-            "Preview startup watchdog controller gates failure-stop scheduling",
-            PreviewStartupWatchdogController_GatesFailureStopScheduling);
-        await AddCheckAsync(results,
-            "Preview startup session controller preserves attempt state contracts",
-            PreviewStartupSessionController_PreservesAttemptStateContracts);
-        await AddCheckAsync(results,
-            "Preview reinit transition controller preserves transition state contracts",
-            PreviewReinitTransitionController_PreservesTransitionStateContracts);
-        await AddCheckAsync(results,
-            "Preview reinitialization waits for pending Flashback cycles",
-            PreviewReinitialization_WaitsForPendingFlashbackCycle);
-        await AddCheckAsync(results,
             "Preview startup signal formatter preserves string contracts",
             PreviewStartupSignalFormatter_PreservesSignalStrings);
         await AddCheckAsync(results,

@@ -254,6 +254,10 @@ add xUnit alongside, and port incrementally.
 - `XUnit.PresentationPreviewStartupOwnershipContractsTests.cs` owns the former
   legacy presentation-preview preview-startup ownership group: session/reinit,
   watchdog, signal, and lifecycle-event controller/adapters.
+- `XUnit.PresentationPreviewStartupBehaviorContractsTests.cs` owns the former
+  legacy presentation-preview preview-startup behavior group: watchdog timeout
+  and failure-stop gating, session attempt-state orchestration, reinit
+  transition state, and pending Flashback-cycle wait checks.
 - `XUnit.PresentationPreviewCaptureRuntimeGuardContractsTests.cs` owns the
   former legacy presentation-preview capture runtime guardrail group: recording
   stop failure propagation, preview stop overload/API compatibility, and
