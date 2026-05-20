@@ -187,6 +187,9 @@ inputs consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.MjpegPacketHash.cs` owns MJPEG
 packet duplicate-run / unique-frame projection inputs consumed by the automation
 snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPacketHash.cs`
+owns final MJPEG packet duplicate-run / unique-frame projection-to-`AutomationSnapshot`
+field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs` owns active
 Flashback export progress, failure, force-rotate fallback, and last-result
 projection consumed by the automation snapshot DTO.

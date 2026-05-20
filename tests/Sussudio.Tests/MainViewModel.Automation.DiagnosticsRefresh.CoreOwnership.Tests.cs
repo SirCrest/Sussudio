@@ -159,6 +159,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningVisualCadenceText, "private static VisualCadenceFlattenedProjection BuildVisualCadenceFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegTimingFlattenedProjection(mjpeg.Timing)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegTimingText, "private static MjpegTimingFlattenedProjection BuildMjpegTimingFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegPacketHashFlattenedProjection(mjpeg.PacketHash)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegPacketHashText, "private static MjpegPacketHashFlattenedProjection BuildMjpegPacketHashFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSourceFlattenedProjection(sourceSignal, sourceTelemetry)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningSourceText, "private static SourceFlattenedProjection BuildSourceFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSettingsFlattenedProjection(userSettings, recordingSettings)");
