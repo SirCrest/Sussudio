@@ -3616,8 +3616,11 @@ owner, fold it back into that owner and update the source-shape tests and
    runtime-safety, and Flashback cleanup owners. The diagnostics-refresh
    snapshot-projection test is now a compact integration wiring smoke; detailed
    projection source-shape contracts live in the focused
-   `MainViewModel.Automation.DiagnosticsProjection.*.Tests.cs` files. MainViewModel capture tests
-   are split into preview startup, Flashback export, Flashback routing,
+   `MainViewModel.Automation.DiagnosticsProjection.*.Tests.cs` files, with
+   capture diagnostics projection ownership split across command/settings,
+   format/transport/HDR, source/cadence, MJPEG, recording, system, preview, and
+   Flashback owners. MainViewModel capture tests are split into preview startup,
+   Flashback export, Flashback routing,
    Flashback backend, and Flashback frame-rate/lifecycle owners. Continue with
    low-risk contract groups first. Snapshot-model contract tests are split by
    CaptureDiagnostics, CaptureHealth, and source-signal telemetry model owner.

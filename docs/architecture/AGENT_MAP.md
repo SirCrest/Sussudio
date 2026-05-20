@@ -1754,7 +1754,9 @@ Primary current owners:
 - Keep new automation diagnostics projection ownership assertions in the focused
   owner files; do not rebuild the old mega refresh assertion there:
   `MainViewModel.Automation.DiagnosticsProjection.Snapshot.Tests.cs`,
-  `.Audio.Tests.cs`, `.Capture.Tests.cs`, `.Mjpeg.Tests.cs`,
+  `.Audio.Tests.cs`, `.Capture.Tests.cs`,
+  `.CaptureFormatTransport.Tests.cs`, `.SourceCadence.Tests.cs`,
+  `.Mjpeg.Tests.cs`,
   `.Recording.Tests.cs`, `.System.Tests.cs`, `.Preview.Tests.cs`, and
   `.Flashback.Tests.cs`.
 - `tests/Sussudio.Tests/MainViewModel.Automation.FlashbackCleanup.Tests.cs`
