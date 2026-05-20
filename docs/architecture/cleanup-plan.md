@@ -2665,8 +2665,11 @@ partials.
 
 Flashback playback decoded-frame submission now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrames.cs`.
-Keep frame validation and preview renderer submission there. Held playback
-frame backing state, release-for-live reset policy, and best-effort decoded
+Keep preview-sink selection, submission telemetry, renderer calls, and held-frame
+handoff there. Decoded-frame validity checks, GPU/CPU frame skip reasons, and
+NV12/P010 byte-size policy now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrameValidation.cs`.
+Held playback frame backing state, release-for-live reset policy, and best-effort decoded
 frame release warnings now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrameOwnership.cs`;
 seek-display and playback-submit failure recovery plus decode-error, near-live,
