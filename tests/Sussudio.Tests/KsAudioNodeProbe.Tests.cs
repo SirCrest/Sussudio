@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task KsAudioNodeProbe_SourceOwnership_IsSplit()
+    internal static Task KsAudioNodeProbe_SourceOwnership_IsSplit()
     {
         var programText = ReadRepoFile("tools/KsAudioNodeProbe/Program.cs");
         var scanWorkflowsText = ReadRepoFile("tools/KsAudioNodeProbe/Program.ScanWorkflows.cs");
@@ -46,7 +46,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task EgavdsAudioProbe_SourceOwnership_IsSplit()
+    internal static Task EgavdsAudioProbe_SourceOwnership_IsSplit()
     {
         var programText = ReadRepoFile("tools/EgavdsAudioProbe/Program.cs");
         var nativeInteropText = ReadRepoFile("tools/EgavdsAudioProbe/Program.NativeInterop.cs");

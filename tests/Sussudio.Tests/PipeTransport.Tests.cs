@@ -4,10 +4,10 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task SsctlPipeTransport_ExposesAdvancedAutomationCommandIds()
+    internal static async Task SsctlPipeTransport_ExposesAdvancedAutomationCommandIds()
     {
         var assemblyPath = Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll");
-        var ssctlAssembly = LoadToolAssembly(assemblyPath);
+        var ssctlAssembly = LoadToolAssemblyIsolated(assemblyPath);
 
         // Verify PipeTransport exposes expected command routing
         var transportType = ssctlAssembly.GetType("Sussudio.Tools.Ssctl.PipeTransport")

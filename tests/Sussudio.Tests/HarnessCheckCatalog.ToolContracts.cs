@@ -80,12 +80,6 @@ static partial class Program
             "ssctl help uses catalog CLI help for automation commands",
             SsctlHelp_UsesCatalogCliHelpForAutomationCommands);
         await AddCheckAsync(results,
-            "PresentMon parser selects dominant non-artifact swap chain",
-            PresentMonParser_SelectsDominantNonArtifactSwapChain);
-        await AddCheckAsync(results,
-            "PresentMon probe source ownership is split",
-            PresentMonProbe_SourceOwnership_IsSplit);
-        await AddCheckAsync(results,
             "ssctl Formatters emit core snapshot sections",
             SsctlFormatters_EmitCoreSnapshotSections);
         await AddCheckAsync(results,
@@ -95,16 +89,7 @@ static partial class Program
             "ssctl Formatters timeline output preserves table and summary",
             SsctlFormatters_TimelineOutputPreservesTableAndSummary);
         await AddCheckAsync(results,
-            "ssctl PipeTransport exposes advanced automation command ids",
-            SsctlPipeTransport_ExposesAdvancedAutomationCommandIds);
-        await AddCheckAsync(results,
             "RTK I2C probe guards unsafe native paths",
             RtkI2cProbe_GuardsUnsafeNativePaths);
-        await AddCheckAsync(results,
-            "KS audio node probe source ownership is split",
-            KsAudioNodeProbe_SourceOwnership_IsSplit);
-        await AddCheckAsync(results,
-            "EGAVDS audio probe source ownership is split",
-            EgavdsAudioProbe_SourceOwnership_IsSplit);
     }
 }

@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task PresentMonParser_SelectsDominantNonArtifactSwapChain()
+    internal static Task PresentMonParser_SelectsDominantNonArtifactSwapChain()
     {
-        var toolAssembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var toolAssembly = LoadToolAssemblyIsolated(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
         var probeType = toolAssembly.GetType("Sussudio.Tools.PresentMonProbe")
             ?? throw new InvalidOperationException("Sussudio.Tools.PresentMonProbe type not found.");
         var parseCsv = probeType.GetMethod(

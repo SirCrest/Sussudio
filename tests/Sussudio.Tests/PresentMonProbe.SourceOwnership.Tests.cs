@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task PresentMonProbe_SourceOwnership_IsSplit()
+    internal static Task PresentMonProbe_SourceOwnership_IsSplit()
     {
         static string ReadPresentMonProbeFile(string fileName)
             => ReadRepoFile($"tools/Common/PresentMon/{fileName}").Replace("\r\n", "\n");

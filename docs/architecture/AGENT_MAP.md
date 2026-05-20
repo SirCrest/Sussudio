@@ -2375,6 +2375,10 @@ Primary current owners:
   versions, and app-present correlation.
 - `tests/Sussudio.Tests/PresentMonProbe.SourceOwnership.Tests.cs` owns
   PresentMonProbe split-family source ownership assertions.
+- `tests/Sussudio.Tests/XUnit.ToolProbeContractsTests.cs` owns the xUnit
+  execution surface for PresentMon parser/source-ownership, ssctl pipe
+  transport, KS audio-node, and EGAVDS probe checks after their removal from
+  the legacy offline harness catalog.
 - `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` owns shared tool
   assembly loading, isolated load contexts, freshness checks, and tool build
   command mapping used by the legacy harness and xUnit slices.

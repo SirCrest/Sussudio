@@ -705,8 +705,11 @@ owns pipe-failure contracts, tool delegation, script freshness, and response-sta
 parsing, using `RuntimeContractSource.ReadAutomationPipeClientSource()` for the
 shared AutomationPipeClient source family. Automation tool contract coverage is
 otherwise split into catalog/manifest/path-policy contracts, reliability-gates
-script checks, shared/ssctl snapshot formatter contracts, and PresentMon parser
-contracts. Shared formatter tests now mirror the formatter partials: the root
+script checks, shared/ssctl snapshot formatter contracts, and tool-probe
+contracts. `tests/Sussudio.Tests/XUnit.ToolProbeContractsTests.cs` owns the
+xUnit execution surface for the PresentMon parser, ssctl pipe transport, KS
+audio-node, and EGAVDS probe checks after their removal from the legacy
+offline harness catalog. Shared formatter tests now mirror the formatter partials: the root
 snapshot-formatter test owns accessors, invalid-response handling, section
 ordering, core section formatting, and the Flashback opt-in gate; Flashback
 output, Preview D3D output, and source ownership live in focused
