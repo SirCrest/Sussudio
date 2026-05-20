@@ -4135,8 +4135,14 @@ Primary owners:
   validation after diagnostic sessions stop recording, preview, Flashback, or
   playback state.
 - `tools/Common/DiagnosticSessionFlashbackCycleScenarios.Restart.cs` owns the
-  restart-cycle command flow, including playback priming, restart validation,
-  export verification, and restart-cycle warning/action strings.
+  restart-cycle command choreography, including playback priming, restart, buffer
+  refill, and delegation to focused validation/export owners.
+- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.RestartValidation.cs`
+  owns restart-cycle post-restart active-state, playback-worker, and
+  pending-command warning policy.
+- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.RestartExport.cs`
+  owns restart-cycle export request, strict verification payload, timeout, and
+  export warning/action strings.
 - `tools/Common/DiagnosticSessionFlashbackCycleScenarios.Encoder.cs` owns the
   encoder-cycle command choreography, including preset cycling, buffer
   readiness, and delegation to focused validation/export/restore owners.

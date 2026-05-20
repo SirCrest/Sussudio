@@ -3651,8 +3651,11 @@ cleanup.
 
 Diagnostic-session Flashback cycle scenarios now live in named partial owners.
 `DiagnosticSessionFlashbackCycleScenarios.Restart.cs` owns the restart-cycle
-command flow, playback priming, restart validation, export verification, and
-restart-cycle warning/action strings. `DiagnosticSessionFlashbackCycleScenarios.Encoder.cs`
+command choreography, playback priming, restart, buffer refill, and delegation
+to focused validation/export owners. Restart-cycle post-restart active-state,
+playback-worker, and pending-command warning policy live in `.RestartValidation.cs`,
+while restart-cycle export request and verification live in `.RestartExport.cs`.
+`DiagnosticSessionFlashbackCycleScenarios.Encoder.cs`
 owns preset cycling and buffer-readiness command choreography. Encoder-cycle
 post-cycle snapshot warnings live in `.EncoderValidation.cs`, export request and
 verification live in `.EncoderExport.cs`, and original-preset restore plus
@@ -3899,6 +3902,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRecordingChecks.cs`
 - `DiagnosticSessionRecordingVerification.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.Restart.cs`
+- `DiagnosticSessionFlashbackCycleScenarios.RestartValidation.cs`
+- `DiagnosticSessionFlashbackCycleScenarios.RestartExport.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.Encoder.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.EncoderValidation.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.EncoderExport.cs`

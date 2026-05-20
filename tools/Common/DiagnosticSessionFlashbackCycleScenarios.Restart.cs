@@ -1,6 +1,5 @@
 using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
-using static Sussudio.Tools.DiagnosticSessionFlashbackExports;
 using static Sussudio.Tools.DiagnosticSessionFlashbackWaits;
 
 namespace Sussudio.Tools;
@@ -40,28 +39,13 @@ internal static partial class DiagnosticSessionFlashbackCycleScenarios
             return;
         }
 
-        var activeSnapshot = await WaitForFlashbackActiveAsync(
-                sendCommandAsync,
-                expectedActive: true,
-                timeout: TimeSpan.FromSeconds(30),
-                cancellationToken)
-            .ConfigureAwait(false);
-        if (activeSnapshot?.ValueKind != JsonValueKind.Object)
+        if (!await ValidateFlashbackRestartCycleActiveStateAsync(
+                    warnings,
+                    sendCommandAsync,
+                    cancellationToken)
+                .ConfigureAwait(false))
         {
-            warnings.Add("flashback restart cycle: Flashback did not report active after restart");
             return;
-        }
-
-        if (GetBool(activeSnapshot.Value, "FlashbackPlaybackThreadAlive"))
-        {
-            warnings.Add("flashback restart cycle: playback worker still alive after restart");
-        }
-
-        if (GetInt(activeSnapshot.Value, "FlashbackPlaybackPendingCommands") > 0)
-        {
-            warnings.Add(
-                "flashback restart cycle: pending playback commands remained after restart " +
-                $"pending={GetInt(activeSnapshot.Value, "FlashbackPlaybackPendingCommands")}");
         }
 
         if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
@@ -70,31 +54,11 @@ internal static partial class DiagnosticSessionFlashbackCycleScenarios
             return;
         }
 
-        var exportPath = Path.Combine(outputDirectory, "flashback-restart-cycle-export.mp4");
-        var exportResponse = await sendCommandAsync(
-                "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
-                60_000)
+        await VerifyFlashbackRestartCycleExportAsync(
+                outputDirectory,
+                actions,
+                warnings,
+                sendCommandAsync)
             .ConfigureAwait(false);
-        actions.Add("flashback restart cycle export requested");
-        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
-        {
-            warnings.Add($"flashback restart cycle: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
-            return;
-        }
-
-        var verifyResponse = await sendCommandAsync(
-                "VerifyFile",
-                CreateFlashbackExportVerifyPayload(exportPath),
-                60_000)
-            .ConfigureAwait(false);
-        if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
-        {
-            warnings.Add(
-                $"flashback restart cycle export verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
-            return;
-        }
-
-        actions.Add("flashback restart cycle export verified");
     }
 }
