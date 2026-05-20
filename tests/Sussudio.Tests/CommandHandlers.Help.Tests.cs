@@ -15,8 +15,10 @@ static partial class Program
         var helpWriterSectionsText = ReadRepoFile("tools/ssctl/SsctlHelpWriter.Sections.cs")
             .Replace("\r\n", "\n");
         var helpWriterText = string.Join("\n", helpWriterRootText, helpWriterSectionsText);
-        var catalogEntriesText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.Entries.cs")
-            .Replace("\r\n", "\n");
+        var catalogEntriesText = string.Join(
+            "\n",
+            ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.Entries.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.Entries.Flashback.cs").Replace("\r\n", "\n"));
         var flashbackHandlersText = string.Join(
             "\n",
             ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs").Replace("\r\n", "\n"),

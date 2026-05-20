@@ -8,8 +8,7 @@ static partial class Program
         var catalogType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandCatalog");
         var catalogText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
             .Replace("\r\n", "\n");
-        var catalogEntriesText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.Entries.cs")
-            .Replace("\r\n", "\n");
+        var catalogEntriesText = ReadAutomationCommandCatalogEntriesSource();
         var manifestText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.Manifest.cs")
             .Replace("\r\n", "\n");
         var pathValidationText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.PathValidation.cs")
@@ -41,6 +40,9 @@ static partial class Program
 
         AssertContains(catalogText, "public static partial class AutomationCommandCatalog");
         AssertContains(catalogEntriesText, "private static IReadOnlyList<AutomationCommandMetadata> BuildEntries()");
+        AssertContains(catalogEntriesText, "RegisterCaptureEntries(entries);");
+        AssertContains(catalogEntriesText, "private static void RegisterCaptureEntries(");
+        AssertContains(catalogEntriesText, "private static void RegisterFlashbackEntries(");
         AssertContains(catalogEntriesText, "Set(entries, AutomationCommandKind.SetRecordingEnabled");
         AssertContains(catalogEntriesText, "Set(entries, AutomationCommandKind.FlashbackExport");
         AssertDoesNotContain(catalogText, "private static IReadOnlyList<AutomationCommandMetadata> BuildEntries()");
@@ -140,6 +142,19 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static string ReadAutomationCommandCatalogEntriesSource()
+        => string.Join(
+            "\n",
+            new[]
+            {
+                "AutomationCommandCatalog.Entries.cs",
+                "AutomationCommandCatalog.Entries.Core.cs",
+                "AutomationCommandCatalog.Entries.Capture.cs",
+                "AutomationCommandCatalog.Entries.Ui.cs",
+                "AutomationCommandCatalog.Entries.Flashback.cs",
+                "AutomationCommandCatalog.Entries.Verification.cs"
+            }.Select(file => ReadRepoFile($"Sussudio.Automation.Contracts/{file}").Replace("\r\n", "\n")));
 
     private static void AssertOptionalPayloadField(
         object[] entries,
