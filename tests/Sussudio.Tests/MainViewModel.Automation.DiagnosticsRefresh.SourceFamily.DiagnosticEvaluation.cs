@@ -1,0 +1,29 @@
+static partial class Program
+{
+    private sealed partial class AutomationDiagnosticsHubSourceFamily
+    {
+        public string DiagnosticEvaluationText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationFlashbackText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationFlashbackStorageText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationFlashbackRecordingText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationFlashbackRecordingConditionsText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationFlashbackExportText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationFlashbackPlaybackText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationRealtimeText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationRealtimeStateText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationRealtimeRecordingText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationRealtimeSourceText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationRealtimeMjpegText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationRealtimePreviewText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationRealtimePreviewSchedulerText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationRealtimePreviewPresentText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesRealtimeSourceText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesRealtimeMjpegText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesRealtimePreviewText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesRealtimeRecordingText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesFlashbackRecordingText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesFlashbackExportText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesFlashbackPlaybackText { get; init; } = string.Empty;
+    }
+}

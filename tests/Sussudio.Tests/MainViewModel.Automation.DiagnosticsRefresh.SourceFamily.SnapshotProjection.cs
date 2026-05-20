@@ -1,0 +1,69 @@
+static partial class Program
+{
+    private sealed partial class AutomationDiagnosticsHubSourceFamily
+    {
+        public string SnapshotProjectionText { get; init; } = string.Empty;
+        public string SnapshotProjectionCompositionText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningCaptureFormatText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningCaptureTransportText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningCaptureCadenceText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningVisualCadenceText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningMjpegText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningMjpegTimingText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningMjpegPreviewJitterText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningMjpegPacketHashText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningSourceText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningSettingsText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningHdrPipelineText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningPreviewRuntimeText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningPreviewD3DText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningFlashbackExportText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningFlashbackRecordingText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningFlashbackPlaybackText { get; init; } = string.Empty;
+        public string SnapshotProjectionSnapshotStatusText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningSnapshotStatusText { get; init; } = string.Empty;
+        public string SnapshotProjectionSnapshotEvaluationText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningSnapshotEvaluationText { get; init; } = string.Empty;
+        public string SnapshotProjectionAvSyncText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningAvSyncText { get; init; } = string.Empty;
+        public string SnapshotProjectionAudioText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningAudioAndIngestText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningAudioDropsText { get; init; } = string.Empty;
+        public string SnapshotProjectionCaptureIngestText { get; init; } = string.Empty;
+        public string SnapshotProjectionWasapiAudioText { get; init; } = string.Empty;
+        public string SnapshotProjectionCaptureCommandsText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningCaptureCommandsText { get; init; } = string.Empty;
+        public string SnapshotProjectionCaptureFormatText { get; init; } = string.Empty;
+        public string SnapshotProjectionCaptureTransportText { get; init; } = string.Empty;
+        public string SnapshotProjectionCaptureCadenceText { get; init; } = string.Empty;
+        public string SnapshotProjectionVisualCadenceText { get; init; } = string.Empty;
+        public string SnapshotProjectionMjpegText { get; init; } = string.Empty;
+        public string SnapshotProjectionMjpegTimingText { get; init; } = string.Empty;
+        public string SnapshotProjectionMjpegPreviewJitterText { get; init; } = string.Empty;
+        public string SnapshotProjectionMjpegPacketHashText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlashbackExportText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlashbackPlaybackText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlashbackRecordingText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlashbackRecordingQueuesText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewD3DText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewD3DFrameFlowText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewD3DFrameLatencyWaitText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewD3DFrameStatsText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewD3DPipelineLatencyText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewD3DCpuTimingText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewRuntimeText { get; init; } = string.Empty;
+        public string SnapshotProjectionProcessResourcesText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningProcessResourcesText { get; init; } = string.Empty;
+        public string SnapshotProjectionRecordingIntegrityText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningRecordingIntegrityText { get; init; } = string.Empty;
+        public string SnapshotProjectionRecordingPipelineText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningRecordingPipelineText { get; init; } = string.Empty;
+        public string SnapshotProjectionRecordingOutputText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningRecordingOutputText { get; init; } = string.Empty;
+        public string SnapshotProjectionSourceSignalText { get; init; } = string.Empty;
+        public string SnapshotProjectionSourceTelemetryText { get; init; } = string.Empty;
+        public string SnapshotProjectionUserSettingsText { get; init; } = string.Empty;
+        public string SnapshotProjectionHdrPipelineText { get; init; } = string.Empty;
+    }
+}

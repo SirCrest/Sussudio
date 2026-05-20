@@ -643,6 +643,12 @@ coordinator-queue, and dispatcher-readiness owners, audio command guards,
 preview lifecycle routing, UI settings, capture-mode/device routing, and
 Flashback cleanup ownership partials. Keep new automation tests in the closest
 owner file instead of regrowing the root catch-all.
+The diagnostics-refresh source-family helper keeps the reader/root runtime
+fields in
+`tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`;
+grouped diagnostic evaluation, alert, snapshot-projection, and aggregate text
+helpers live in focused SourceFamily partials so source-shape assertions do
+not regrow one catch-all helper.
 
 `tests/Sussudio.Tests/MainViewModel.Capture.TestHelpers.cs` owns shared
 capture-facing MainViewModel source-inspection helpers. Capture regression
