@@ -2095,10 +2095,12 @@ Automation snapshot contracts now live in named model files under
 user settings, HDR, audio/ingest, recording, capture format, source telemetry,
 preview, MJPEG/cadence, system health, and Flashback. Other snapshot contracts
 remain in `CaptureRuntimeSnapshot.cs`, `PreviewRuntimeSnapshot.cs`,
-`PerformanceTimelineEntry.cs`, `FlashbackSegmentInfo.cs`, and
-`ViewModelRuntimeSnapshot.cs`. Do not recreate a broad
-`AutomationRuntimeSnapshots.cs` catch-all; add new DTO fields to the partial
-that matches the snapshot surface they own.
+`PerformanceTimelineEntry*.cs`, `FlashbackSegmentInfo.cs`, and
+`ViewModelRuntimeSnapshot.cs`. The performance timeline DTO is split by
+diagnostics surface: root capture/preview cadence, preview/MJPEG/D3D,
+Flashback playback, Flashback export, and process/system health. Do not
+recreate a broad `AutomationRuntimeSnapshots.cs` catch-all; add new DTO fields
+to the partial that matches the snapshot surface they own.
 
 Native XU AT-command transport and payload parsing now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs`. Keep raw

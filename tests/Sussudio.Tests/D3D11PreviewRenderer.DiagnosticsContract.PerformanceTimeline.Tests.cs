@@ -5,6 +5,28 @@ static partial class Program
 {
     private static Task D3D11PreviewRenderer_DiagnosticsContract_PerformanceTimelineExposesExpectedProperties()
     {
+        var rootModelText = ReadRepoFile("Sussudio/Models/Automation/PerformanceTimelineEntry.cs");
+        var previewModelText = ReadRepoFile("Sussudio/Models/Automation/PerformanceTimelineEntry.Preview.cs");
+        var flashbackPlaybackModelText = ReadRepoFile("Sussudio/Models/Automation/PerformanceTimelineEntry.FlashbackPlayback.cs");
+        var flashbackExportModelText = ReadRepoFile("Sussudio/Models/Automation/PerformanceTimelineEntry.FlashbackExport.cs");
+        var systemModelText = ReadRepoFile("Sussudio/Models/Automation/PerformanceTimelineEntry.System.cs");
+
+        AssertContains(rootModelText, "public sealed partial class PerformanceTimelineEntry");
+        AssertContains(previewModelText, "public sealed partial class PerformanceTimelineEntry");
+        AssertContains(flashbackPlaybackModelText, "public sealed partial class PerformanceTimelineEntry");
+        AssertContains(flashbackExportModelText, "public sealed partial class PerformanceTimelineEntry");
+        AssertContains(systemModelText, "public sealed partial class PerformanceTimelineEntry");
+        AssertContains(rootModelText, "public double PreviewCadenceSlowFramePercent { get; init; }");
+        AssertContains(previewModelText, "public string PreviewPacingSlowStageEvidence { get; init; } = string.Empty;");
+        AssertContains(flashbackPlaybackModelText, "public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;");
+        AssertContains(flashbackExportModelText, "public double FlashbackExportThroughputBytesPerSec { get; init; }");
+        AssertContains(systemModelText, "public double ProcessCpuPercent { get; init; }");
+        AssertDoesNotContain(rootModelText, "FlashbackPlayback");
+        AssertDoesNotContain(rootModelText, "MjpegPreviewJitter");
+        AssertDoesNotContain(previewModelText, "FlashbackPlayback");
+        AssertDoesNotContain(flashbackPlaybackModelText, "FlashbackExportActive");
+        AssertDoesNotContain(flashbackExportModelText, "ProcessCpuPercent");
+
         var performanceTimelineEntryType = RequireType("Sussudio.Models.PerformanceTimelineEntry");
         foreach (var prop in new[]
                  {
