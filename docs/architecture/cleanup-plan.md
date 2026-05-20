@@ -93,9 +93,14 @@ owns performance-timeline ring reads and append mechanics.
 `AutomationDiagnosticsHub.SnapshotProjection.SnapshotStatus.cs` owns timestamp,
 view-model lifecycle/audio flags, verification-in-progress, session state, and
 status-text projection consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.SnapshotStatus.cs`
+owns final snapshot status projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.SnapshotEvaluation.cs` owns
 performance score, diagnostic lane, preview pacing classifier, and performance
 threshold projection consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.SnapshotEvaluation.cs`
+owns final snapshot evaluation projection-to-`AutomationSnapshot` field
+flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Audio.cs` owns view-model audio
 signal projection, audio drop counter projection, derived real-time/file-writer
 drop totals, and composes ingest and WASAPI projection owners into the

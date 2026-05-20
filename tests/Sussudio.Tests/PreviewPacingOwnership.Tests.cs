@@ -55,6 +55,7 @@ public sealed class PreviewPacingOwnershipTests
         var diagnosticsSnapshotProjectionFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs");
         var diagnosticsSnapshotProjectionFlatteningCaptureCadenceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureCadence.cs");
         var diagnosticsSnapshotProjectionSnapshotEvaluationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SnapshotEvaluation.cs");
+        var diagnosticsSnapshotProjectionFlatteningSnapshotEvaluationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.SnapshotEvaluation.cs");
         var diagnosticsSnapshotProjectionCaptureCadenceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs");
         var diagnosticsPreviewPacingText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.PreviewPacing.cs");
         var diagnosticsCountersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs");
@@ -65,6 +66,7 @@ public sealed class PreviewPacingOwnershipTests
             + "\n" + diagnosticsSnapshotProjectionFlatteningText
             + "\n" + diagnosticsSnapshotProjectionFlatteningCaptureCadenceText
             + "\n" + diagnosticsSnapshotProjectionSnapshotEvaluationText
+            + "\n" + diagnosticsSnapshotProjectionFlatteningSnapshotEvaluationText
             + "\n" + diagnosticsSnapshotProjectionCaptureCadenceText
             + "\n" + diagnosticsPreviewPacingText
             + "\n" + diagnosticsCountersText
@@ -76,7 +78,8 @@ public sealed class PreviewPacingOwnershipTests
         Assert.Contains("public string PreviewPacingSlowStageEvidence { get; init; }", contractsText);
         Assert.Contains("var previewPacingClassification = ClassifyPreviewPacing(", diagnosticsSnapshotsText);
         Assert.DoesNotContain("new PreviewPacingClassificationInput", diagnosticsSnapshotsText);
-        Assert.Contains("PreviewPacingLikelySlowStage = snapshotEvaluation.PreviewPacingLikelySlowStage", diagnosticsSnapshotProjectionFlatteningText);
+        Assert.Contains("PreviewPacingLikelySlowStage = snapshotEvaluationFlattening.PreviewPacingLikelySlowStage", diagnosticsSnapshotProjectionFlatteningText);
+        Assert.Contains("PreviewPacingLikelySlowStage = snapshotEvaluation.PreviewPacingLikelySlowStage", diagnosticsSnapshotProjectionFlatteningSnapshotEvaluationText);
         Assert.Contains("PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage", diagnosticsSnapshotProjectionSnapshotEvaluationText);
         Assert.Contains("private static PreviewPacingClassification ClassifyPreviewPacing(", diagnosticsPreviewPacingText);
         Assert.Contains("PreviewPacingSlowStageClassifier.Classify", diagnosticsPreviewPacingText);

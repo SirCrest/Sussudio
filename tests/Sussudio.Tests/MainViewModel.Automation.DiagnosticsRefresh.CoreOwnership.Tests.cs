@@ -149,6 +149,10 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "private readonly record struct AutomationSnapshotProjectionSet(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "private static AutomationSnapshot BuildAutomationSnapshotFromProjections(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "AutomationSnapshotProjectionSet projections");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSnapshotStatusFlattenedProjection(snapshotStatus)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningSnapshotStatusText, "private static SnapshotStatusFlattenedProjection BuildSnapshotStatusFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSnapshotEvaluationFlattenedProjection(snapshotEvaluation)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningSnapshotEvaluationText, "private static SnapshotEvaluationFlattenedProjection BuildSnapshotEvaluationFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureFormatFlattenedProjection(captureFormat)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureFormatText, "private static CaptureFormatFlattenedProjection BuildCaptureFormatFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureTransportFlattenedProjection(captureTransport)");

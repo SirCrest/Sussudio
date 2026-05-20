@@ -55,7 +55,9 @@ static partial class Program
             SnapshotProjectionFlatteningFlashbackRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.cs"),
             SnapshotProjectionFlatteningFlashbackPlaybackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackPlayback.cs"),
             SnapshotProjectionSnapshotStatusText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.SnapshotStatus.cs"),
+            SnapshotProjectionFlatteningSnapshotStatusText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.SnapshotStatus.cs"),
             SnapshotProjectionSnapshotEvaluationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.SnapshotEvaluation.cs"),
+            SnapshotProjectionFlatteningSnapshotEvaluationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.SnapshotEvaluation.cs"),
             SnapshotProjectionAvSyncText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.AvSync.cs"),
             SnapshotProjectionFlatteningAvSyncText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.AvSync.cs"),
             SnapshotProjectionAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Audio.cs"),
@@ -179,7 +181,9 @@ static partial class Program
         public string SnapshotProjectionFlatteningFlashbackRecordingText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningFlashbackPlaybackText { get; init; } = string.Empty;
         public string SnapshotProjectionSnapshotStatusText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningSnapshotStatusText { get; init; } = string.Empty;
         public string SnapshotProjectionSnapshotEvaluationText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningSnapshotEvaluationText { get; init; } = string.Empty;
         public string SnapshotProjectionAvSyncText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningAvSyncText { get; init; } = string.Empty;
         public string SnapshotProjectionAudioText { get; init; } = string.Empty;
@@ -282,7 +286,9 @@ static partial class Program
                 SnapshotProjectionFlatteningFlashbackRecordingText,
                 SnapshotProjectionFlatteningFlashbackPlaybackText,
                 SnapshotProjectionSnapshotStatusText,
+                SnapshotProjectionFlatteningSnapshotStatusText,
                 SnapshotProjectionSnapshotEvaluationText,
+                SnapshotProjectionFlatteningSnapshotEvaluationText,
                 SnapshotProjectionAvSyncText,
                 SnapshotProjectionFlatteningAvSyncText,
                 SnapshotProjectionAudioText,

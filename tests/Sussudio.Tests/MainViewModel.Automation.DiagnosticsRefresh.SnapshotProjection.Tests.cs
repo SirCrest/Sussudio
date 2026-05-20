@@ -6,10 +6,17 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionSnapshotStatusText, "private SnapshotStatusProjection BuildSnapshotStatusProjection(");
         AssertContains(diagnostics.SnapshotProjectionSnapshotStatusText, "VerificationInProgress = Volatile.Read(ref _verificationInProgress) != 0,");
         AssertContains(diagnostics.SnapshotProjectionSnapshotStatusText, "SessionState = captureRuntime.SessionState,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var snapshotStatusFlattening = BuildSnapshotStatusFlattenedProjection(snapshotStatus);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningSnapshotStatusText, "TimestampUtc = snapshotStatus.TimestampUtc,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningSnapshotStatusText, "StatusText = snapshotStatus.StatusText");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "TimestampUtc = snapshotStatusFlattening.TimestampUtc,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "StatusText = snapshotStatusFlattening.StatusText,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "TimestampUtc = DateTimeOffset.UtcNow,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "VerificationInProgress = Volatile.Read(ref _verificationInProgress) != 0,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "SessionState = captureRuntime.SessionState,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "StatusText = viewModelSnapshot.StatusText,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "TimestampUtc = snapshotStatus.TimestampUtc,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "StatusText = snapshotStatus.StatusText,");
     }
 
     private static void AssertDiagnosticsRefreshSnapshotProjectionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
@@ -20,9 +27,17 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionSnapshotEvaluationText, "DiagnosticHealthStatus = diagnostic.HealthStatus,");
         AssertContains(diagnostics.SnapshotProjectionSnapshotEvaluationText, "PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage,");
         AssertContains(diagnostics.SnapshotProjectionSnapshotEvaluationText, "PerformanceThresholdCaptureDropPercent = _perfectionCaptureDropPercentThreshold,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var snapshotEvaluationFlattening = BuildSnapshotEvaluationFlattenedProjection(snapshotEvaluation);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningSnapshotEvaluationText, "PerformanceScore = snapshotEvaluation.PerformanceScore,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningSnapshotEvaluationText, "PreviewPacingLikelySlowStage = snapshotEvaluation.PreviewPacingLikelySlowStage,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningSnapshotEvaluationText, "PerformanceThresholdCaptureDropPercent = snapshotEvaluation.PerformanceThresholdCaptureDropPercent,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "PerformanceScore = snapshotEvaluationFlattening.PerformanceScore,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "PerformanceThresholdCaptureDropPercent = snapshotEvaluationFlattening.PerformanceThresholdCaptureDropPercent,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "PerformanceScore = performance.Score,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "PerformanceThresholdCaptureDropPercent = _perfectionCaptureDropPercentThreshold,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "PerformanceScore = snapshotEvaluation.PerformanceScore,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "PerformanceThresholdCaptureDropPercent = snapshotEvaluation.PerformanceThresholdCaptureDropPercent,");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var audioDrops = BuildAudioDropsProjection(health);");
         AssertContains(diagnostics.SnapshotProjectionAudioText, "private static AudioDropsProjection BuildAudioDropsProjection(CaptureHealthSnapshot health)");
