@@ -2667,9 +2667,13 @@ Flashback playback timing and cadence now live in
 Keep frame-rate resolution, pause-from-live target calculation,
 continuous-playback snap policy, software-decode budget snaps, and decoded
 PTS/cadence tracking there.
-Audio-master pacing, audio clock state, fallback accounting state,
-clock-drift calculation, and wall-clock sleep/spin pacing now live in
+Audio-master pacing, audio clock state, clock-drift calculation, and wall-clock
+sleep/spin pacing now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs`.
+Audio-master fallback accounting state, fallback classification, pending
+fallback suppression, and fallback reason/drift/clock-age telemetry updates now
+live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterFallbacks.cs`.
 Decoder close best-effort handling now lives with decoder file ownership, and
 decode-error snap-to-live recovery lives with the continuous playback loop, so
 the root controller can remain a construction shell. Public playback state,
