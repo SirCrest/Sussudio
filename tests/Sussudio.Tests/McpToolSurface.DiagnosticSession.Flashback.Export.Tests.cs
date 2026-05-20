@@ -7,6 +7,10 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var scenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
+        var disableDuringExportText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs")
+            .Replace("\r\n", "\n");
+        var disableDuringExportValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation.cs")
+            .Replace("\r\n", "\n");
         var playbackText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs")
             .Replace("\r\n", "\n");
         var playbackValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.PlaybackValidation.cs")
@@ -20,6 +24,16 @@ static partial class Program
         AssertContains(scenariosText, "internal static async Task RunFlashbackDisableDuringExportAsync(");
         AssertContains(scenariosText, "\"flashback-disable-during-export.mp4\"");
         AssertContains(scenariosText, "SendCommandWithConnectRetryAsync(");
+        AssertContains(disableDuringExportText, "ValidateFlashbackDisableDuringExportFileAsync(");
+        AssertContains(disableDuringExportText, "ValidateFlashbackDisabledAfterExportAsync(");
+        AssertContains(disableDuringExportText, "ValidateFlashbackReenabledAfterDisableDuringExportAsync(");
+        AssertDoesNotContain(disableDuringExportText, "CreateFlashbackExportVerifyPayload(exportPath)");
+        AssertDoesNotContain(disableDuringExportText, "playback worker still alive after disable");
+        AssertContains(disableDuringExportValidationText, "private static async Task ValidateFlashbackDisableDuringExportFileAsync(");
+        AssertContains(disableDuringExportValidationText, "CreateFlashbackExportVerifyPayload(exportPath)");
+        AssertContains(disableDuringExportValidationText, "private static async Task ValidateFlashbackDisabledAfterExportAsync(");
+        AssertContains(disableDuringExportValidationText, "flashback disable during export: pending playback commands remained after disable");
+        AssertContains(disableDuringExportValidationText, "private static async Task ValidateFlashbackReenabledAfterDisableDuringExportAsync(");
         AssertContains(scenariosText, "internal static async Task RunFlashbackRotatedExportAsync(");
         AssertContains(scenariosText, "TryParseFlashbackExportSegmentCount(exportMessage)");
         AssertContains(scenariosText, "internal static async Task RunFlashbackExportPlaybackAsync(");

@@ -21,6 +21,7 @@ static partial class Program
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Concurrent.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs",
+            "tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Rotated.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs",

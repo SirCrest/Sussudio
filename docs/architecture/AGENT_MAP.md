@@ -4162,7 +4162,10 @@ Primary owners:
 - Flashback export diagnostic scenario flows live in focused files:
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`
   owns concurrent export, `tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
-  owns disable-during-export, `tools/Common/DiagnosticSessionFlashbackExportScenarios.Rotated.cs`
+  owns disable-during-export command coordination,
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation.cs`
+  owns disable-during-export file verification and post-disable/re-enable
+  state checks, `tools/Common/DiagnosticSessionFlashbackExportScenarios.Rotated.cs`
   owns rotated export, `tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs`
   owns export-during-playback command choreography,
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.PlaybackValidation.cs`

@@ -1,10 +1,7 @@
 using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionFlashbackExports;
-using static Sussudio.Tools.DiagnosticSessionFlashbackSegments;
 using static Sussudio.Tools.DiagnosticSessionFlashbackWaits;
-using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
-using static Sussudio.Tools.DiagnosticSessionMetrics;
 using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;
 
 namespace Sussudio.Tools;
@@ -59,46 +56,14 @@ internal static partial class DiagnosticSessionFlashbackExportScenarios
 
         if (AutomationSnapshotFormatter.IsSuccess(exportResponse))
         {
-            var verifyResponse = await sendCommandAsync(
-                    "VerifyFile",
-                    CreateFlashbackExportVerifyPayload(exportPath),
-                    60_000)
+            await ValidateFlashbackDisableDuringExportFileAsync(exportPath, warnings, sendCommandAsync)
                 .ConfigureAwait(false);
-            if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
-            {
-                warnings.Add(
-                    $"flashback disable during export verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
-            }
         }
 
         if (disableResponse.HasValue && AutomationSnapshotFormatter.IsSuccess(disableResponse.Value))
         {
-            var inactiveSnapshot = await WaitForFlashbackActiveAsync(
-                    sendCommandAsync,
-                    expectedActive: false,
-                    timeout: TimeSpan.FromSeconds(20),
-                    cancellationToken)
+            await ValidateFlashbackDisabledAfterExportAsync(warnings, actions, sendCommandAsync, cancellationToken)
                 .ConfigureAwait(false);
-            if (inactiveSnapshot?.ValueKind != JsonValueKind.Object)
-            {
-                warnings.Add("flashback disable during export: Flashback did not report inactive after disable");
-            }
-            else
-            {
-                if (GetBool(inactiveSnapshot.Value, "FlashbackPlaybackThreadAlive"))
-                {
-                    warnings.Add("flashback disable during export: playback worker still alive after disable");
-                }
-
-                if (GetInt(inactiveSnapshot.Value, "FlashbackPlaybackPendingCommands") > 0)
-                {
-                    warnings.Add(
-                        "flashback disable during export: pending playback commands remained after disable " +
-                        $"pending={GetInt(inactiveSnapshot.Value, "FlashbackPlaybackPendingCommands")}");
-                }
-
-                actions.Add("flashback disable during export verified");
-            }
         }
 
         var enableResponse = await SendCommandWithConnectRetryAsync(
@@ -120,15 +85,7 @@ internal static partial class DiagnosticSessionFlashbackExportScenarios
             return;
         }
 
-        var activeSnapshot = await WaitForFlashbackActiveAsync(
-                sendCommandAsync,
-                expectedActive: true,
-                timeout: TimeSpan.FromSeconds(30),
-                cancellationToken)
+        await ValidateFlashbackReenabledAfterDisableDuringExportAsync(warnings, sendCommandAsync, cancellationToken)
             .ConfigureAwait(false);
-        if (activeSnapshot?.ValueKind != JsonValueKind.Object)
-        {
-            warnings.Add("flashback disable during export: Flashback did not report active after re-enable");
-        }
     }
 }
