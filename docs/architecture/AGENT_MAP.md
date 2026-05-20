@@ -2042,6 +2042,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.StopAudioRampOrdering.Tests.cs`
   owns preview stop ordering assertions that audio ramps down before preview
   teardown.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupOrderingContractsTests.cs`
+  owns xUnit execution for the former legacy presentation-preview preview
+  startup ordering catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
   Flashback export backend-lease, export-operation lock, ViewModel export
   routing, and export CTS lifecycle assertions.

@@ -4029,7 +4029,10 @@ owner, fold it back into that owner and update the source-shape tests and
    after their removal from the legacy presentation-preview capture catalog.
    Preview startup ordering coverage is split between lifecycle-event
    ownership, device-discovery ordering, reveal priming, and stop audio-ramp
-   owners. MainViewModel automation recording-transition coverage is split
+   owners. `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupOrderingContractsTests.cs`
+   owns xUnit execution for the former legacy presentation-preview capture
+   catalog's final ordering checks, and the legacy catalog hook is removed.
+   MainViewModel automation recording-transition coverage is split
    between shared transition-gate routing, failure propagation, emergency stop,
    bitrate sampling, and recording-settings/Flashback-cycle owners.
    Diagnostics refresh core ownership is split behind a small orchestrator into

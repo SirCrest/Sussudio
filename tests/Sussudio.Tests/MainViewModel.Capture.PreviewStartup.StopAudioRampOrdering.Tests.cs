@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task PreviewStop_RampsAudioDownBeforePreviewTeardown()
+    internal static Task PreviewStop_RampsAudioDownBeforePreviewTeardown()
     {
         var previewAudioFadeControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewAudioFadeController.cs")
             .Replace("\r\n", "\n");

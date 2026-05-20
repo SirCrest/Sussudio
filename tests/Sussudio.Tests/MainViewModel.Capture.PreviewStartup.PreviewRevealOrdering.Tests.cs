@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task PreviewStartup_PrimesUiAndAudioBeforePreviewReveal()
+    internal static Task PreviewStartup_PrimesUiAndAudioBeforePreviewReveal()
     {
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs")
             .Replace("\r\n", "\n");
