@@ -25,6 +25,7 @@ public sealed partial class AutomationDiagnosticsHub
         var processResourceProjection = projections.ProcessResourceProjection;
         var processResourceFlattening = BuildProcessResourceFlattenedProjection(processResourceProjection);
         var avSync = projections.AvSync;
+        var avSyncFlattening = BuildAvSyncFlattenedProjection(avSync);
         var captureTransport = projections.CaptureTransport;
         var captureTransportFlattening = BuildCaptureTransportFlattenedProjection(captureTransport);
         var captureFormatFlattening = BuildCaptureFormatFlattenedProjection(captureFormat);
@@ -690,10 +691,10 @@ public sealed partial class AutomationDiagnosticsHub
             ThreadPoolWorkerMax = processResourceFlattening.ThreadPoolWorkerMax,
             ThreadPoolIoAvailable = processResourceFlattening.ThreadPoolIoAvailable,
             ThreadPoolIoMax = processResourceFlattening.ThreadPoolIoMax,
-            AvSyncCaptureDriftMs = avSync.CaptureDriftMs,
-            AvSyncCaptureDriftRateMsPerSec = avSync.CaptureDriftRateMsPerSec,
-            AvSyncEncoderDriftMs = avSync.EncoderDriftMs,
-            AvSyncEncoderCorrectionSamples = avSync.EncoderCorrectionSamples,
+            AvSyncCaptureDriftMs = avSyncFlattening.CaptureDriftMs,
+            AvSyncCaptureDriftRateMsPerSec = avSyncFlattening.CaptureDriftRateMsPerSec,
+            AvSyncEncoderDriftMs = avSyncFlattening.EncoderDriftMs,
+            AvSyncEncoderCorrectionSamples = avSyncFlattening.EncoderCorrectionSamples,
             FlashbackActive = flashbackRecording.Active,
             FlashbackBufferedDurationMs = flashbackRecording.BufferedDurationMs,
             FlashbackDiskBytes = flashbackRecording.DiskBytes,

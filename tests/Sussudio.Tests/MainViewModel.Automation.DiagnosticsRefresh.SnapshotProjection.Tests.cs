@@ -328,7 +328,14 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionAvSyncText, "private static AvSyncProjection BuildAvSyncProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnostics.SnapshotProjectionAvSyncText, "CaptureDriftMs = captureRuntime.AvSyncCaptureDriftMs,");
         AssertContains(diagnostics.SnapshotProjectionAvSyncText, "EncoderCorrectionSamples = captureRuntime.AvSyncEncoderCorrectionSamples");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var avSyncFlattening = BuildAvSyncFlattenedProjection(avSync);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningAvSyncText, "CaptureDriftMs = avSync.CaptureDriftMs,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningAvSyncText, "EncoderCorrectionSamples = avSync.EncoderCorrectionSamples");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "AvSyncCaptureDriftMs = avSyncFlattening.CaptureDriftMs,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "AvSyncEncoderCorrectionSamples = avSyncFlattening.EncoderCorrectionSamples,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "AvSyncCaptureDriftMs = captureRuntime.AvSyncCaptureDriftMs,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "AvSyncEncoderCorrectionSamples = captureRuntime.AvSyncEncoderCorrectionSamples,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "AvSyncCaptureDriftMs = avSync.CaptureDriftMs,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "AvSyncEncoderCorrectionSamples = avSync.EncoderCorrectionSamples,");
     }
 }
