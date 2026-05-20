@@ -578,10 +578,12 @@ throughput, force-rotate fallback, range, output path, and message text in
 cadence, decode, frame, stage, and A/V drift text in
 `Formatters.Snapshot.Flashback.Playback.cs`, MJPEG timing text in
 `Formatters.Snapshot.Mjpeg.cs`, MJPEG preview-jitter queue, latency, ownership,
-and underflow text in `Formatters.Snapshot.Mjpeg.PreviewJitter.cs`, D3D preview renderer text in
-`Formatters.Snapshot.PreviewD3D.cs` including routing/header order, CPU timing,
-pipeline latency, frame ownership, frame-latency wait, DXGI frame-stat text, and
-delegation to the shared slow-frame formatter, thread-health text in
+and underflow text in `Formatters.Snapshot.Mjpeg.PreviewJitter.cs`, D3D preview
+renderer routing/header text in `Formatters.Snapshot.PreviewD3D.cs`, D3D CPU
+timing, pipeline latency, and frame-latency wait text in
+`Formatters.Snapshot.PreviewD3D.Timing.cs`, D3D frame ownership and DXGI
+frame-stat text in `Formatters.Snapshot.PreviewD3D.FrameFlow.cs`, delegation to
+the shared slow-frame formatter in the D3D root, thread-health text in
 `Formatters.Snapshot.ThreadHealth.cs`, diagnostic-event text in
 `Formatters.Diagnostics.cs`, capture option/device text in `Formatters.Options.cs`,
 performance timeline orchestration in `Formatters.Timeline.cs`, timeline row
@@ -620,9 +622,11 @@ emitted from the cadence tail. MJPEG timing lives in
 latency, ownership, and underflow text lives in
 `AutomationSnapshotFormatter.MjpegTiming.PreviewJitter.cs`. Preview routing,
 D3D preview text, and thread-health live in the remaining focused formatter partials. The
-`AutomationSnapshotFormatter.PreviewD3D.cs` owner keeps D3D header/routing,
-CPU timing, frame-flow, frame-latency wait, and DXGI frame stats together while
-preserving output order. Slow-frame diagnostics stay in
+`AutomationSnapshotFormatter.PreviewD3D.cs` owner keeps D3D header/routing and
+output order; `AutomationSnapshotFormatter.PreviewD3D.Timing.cs` owns D3D CPU
+timing, pipeline latency, and frame-latency wait text; and
+`AutomationSnapshotFormatter.PreviewD3D.FrameFlow.cs` owns D3D frame ownership
+and DXGI frame-stat text. Slow-frame diagnostics stay in
 `AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs` because `ssctl` reuses
 that formatter directly. Tests that reason about formatter source use the
 shared `RuntimeContractSource` snapshot formatter source-family readers so
