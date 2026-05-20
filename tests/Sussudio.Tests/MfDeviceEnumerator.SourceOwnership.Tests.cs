@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MfDeviceEnumerator_SourceOwnershipLivesInFocusedPartials()
+    internal static Task MfDeviceEnumerator_SourceOwnershipLivesInFocusedPartials()
     {
         var rootText = ReadMfDeviceEnumeratorFile("MfDeviceEnumerator.cs");
         var videoDevicesText = ReadMfDeviceEnumeratorFile("MfDeviceEnumerator.VideoDevices.cs");

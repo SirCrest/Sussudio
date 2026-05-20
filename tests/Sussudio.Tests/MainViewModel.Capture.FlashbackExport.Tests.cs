@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 static partial class Program
 {
-    private static Task CaptureService_FlashbackExportsReleaseBackendLeaseBeforeNativeExport()
+    internal static Task CaptureService_FlashbackExportsReleaseBackendLeaseBeforeNativeExport()
     {
         var exportOperationsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
             .Replace("\r\n", "\n");
@@ -153,7 +153,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MainViewModelFlashbackExport_RoutesThroughCoordinatorAndOwnsCtsLifecycle()
+    internal static Task MainViewModelFlashbackExport_RoutesThroughCoordinatorAndOwnsCtsLifecycle()
     {
         var viewModelFiles = ReadMainViewModelCodeFiles();
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];

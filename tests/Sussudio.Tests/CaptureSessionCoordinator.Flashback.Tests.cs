@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureSessionCoordinator_CoalescesFlashbackEncoderCycles()
+    internal static Task CaptureSessionCoordinator_CoalescesFlashbackEncoderCycles()
     {
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var cycleMethod = ExtractTextBetween(
@@ -26,7 +26,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureSessionCoordinator_DisposalAccounting_ClassifiesCanceledQueuedCommands()
+    internal static Task CaptureSessionCoordinator_DisposalAccounting_ClassifiesCanceledQueuedCommands()
     {
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var failPending = ExtractTextBetween(
@@ -47,7 +47,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureSessionCoordinator_FlashbackMutationsPropagateRequestCancellation()
+    internal static Task CaptureSessionCoordinator_FlashbackMutationsPropagateRequestCancellation()
     {
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var restartNoSettings = ExtractTextBetween(
@@ -72,7 +72,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureSessionCoordinator_CommittedStopsDoNotPropagateRequestCancellation()
+    internal static Task CaptureSessionCoordinator_CommittedStopsDoNotPropagateRequestCancellation()
     {
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var stopVideo = ExtractTextBetween(
@@ -101,7 +101,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureSessionCoordinator_LogsInactiveFlashbackCommandRejections()
+    internal static Task CaptureSessionCoordinator_LogsInactiveFlashbackCommandRejections()
     {
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
 

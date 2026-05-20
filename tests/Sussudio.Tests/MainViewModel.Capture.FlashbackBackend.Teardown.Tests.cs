@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 static partial class Program
 {
-    private static Task CaptureService_DeviceSwitchTeardown_StopsVideoBeforeFlashbackDisposal()
+    internal static Task CaptureService_DeviceSwitchTeardown_StopsVideoBeforeFlashbackDisposal()
     {
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewDisposal.cs")
             .Replace("\r\n", "\n");

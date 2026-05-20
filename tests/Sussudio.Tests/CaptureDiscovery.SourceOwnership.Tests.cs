@@ -3,7 +3,7 @@ using System.Reflection;
 
 static partial class Program
 {
-    private static Task CaptureDiscoverySourceOwnership_LivesInFocusedPartials()
+    internal static Task CaptureDiscoverySourceOwnership_LivesInFocusedPartials()
     {
         var deviceRootText = ReadRepoFile("Sussudio/Services/Capture/DeviceService.cs").Replace("\r\n", "\n");
         var deviceScoringText = ReadRepoFile("Sussudio/Services/Capture/DeviceService.Scoring.cs").Replace("\r\n", "\n");

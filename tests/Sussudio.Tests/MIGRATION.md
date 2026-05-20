@@ -126,6 +126,10 @@ add xUnit alongside, and port incrementally.
   automation dispatcher registration group: payload parsing, catalog metadata,
   readiness classification, authorization, manifest, command coverage, and
   focused dispatcher command-owner checks.
+- `XUnit.AutomationCaptureFlashbackRoutingContractsTests.cs` owns the former
+  legacy automation capture/Flashback routing registration group: Flashback
+  routing, capture transition policy, capture session coordinator contracts,
+  service namespace ownership, and diagnostics snapshot refresh serialization.
 - `XUnit.ToolProbeContractsTests.cs` owns the former legacy PresentMon parser,
   ssctl pipe transport, KS audio-node, and EGAVDS probe contract checks.
 - `XUnit.AutomationSnapshotFormatterContractsTests.cs` owns the former legacy

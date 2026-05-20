@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 static partial class Program
 {
-    private static Task CaptureService_FlashbackLifecycleLogs_UseOutcomeNames()
+    internal static Task CaptureService_FlashbackLifecycleLogs_UseOutcomeNames()
     {
         var flashbackTexts = Directory
             .GetFiles(Path.Combine(GetRepoRoot(), "Sussudio", "Services"), "*.cs", SearchOption.AllDirectories)

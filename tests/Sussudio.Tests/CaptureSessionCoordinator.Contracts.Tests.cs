@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureSessionCoordinator_ModelsLiveInFocusedFile()
+    internal static Task CaptureSessionCoordinator_ModelsLiveInFocusedFile()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
@@ -25,7 +25,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureSessionCoordinator_FlashbackFacadeLivesInFocusedPartial()
+    internal static Task CaptureSessionCoordinator_FlashbackFacadeLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureSessionCoordinator_CommandFacadeLivesInFocusedPartial()
+    internal static Task CaptureSessionCoordinator_CommandFacadeLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
@@ -33,7 +33,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureSessionCoordinator_QueueWorkerLivesInFocusedPartial()
+    internal static Task CaptureSessionCoordinator_QueueWorkerLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
@@ -59,7 +59,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureSessionCoordinator_SnapshotProjectionLivesInFocusedPartial()
+    internal static Task CaptureSessionCoordinator_SnapshotProjectionLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
@@ -79,7 +79,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureSessionCoordinator_DisposalLivesInFocusedPartial()
+    internal static Task CaptureSessionCoordinator_DisposalLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");

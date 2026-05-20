@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureSessionTransitionPolicy_DefinesCoreLifecycleRules()
+    internal static Task CaptureSessionTransitionPolicy_DefinesCoreLifecycleRules()
     {
         var policyType = RequireType("Sussudio.Models.CaptureSessionTransitionPolicy");
         var stateType = RequireType("Sussudio.Models.CaptureSessionState");
@@ -79,7 +79,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureSessionTransitionPolicy_ResolvesSteadyStateFromRuntimeFlags()
+    internal static Task CaptureSessionTransitionPolicy_ResolvesSteadyStateFromRuntimeFlags()
     {
         var policyType = RequireType("Sussudio.Models.CaptureSessionTransitionPolicy");
         var method = policyType.GetMethod(
@@ -114,7 +114,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureService_RunTransition_UsesTransitionPolicy()
+    internal static Task CaptureService_RunTransition_UsesTransitionPolicy()
     {
         var serviceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Coordination.cs");
 
@@ -128,7 +128,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureService_InPlaceMutationsUseCurrentStateTransition()
+    internal static Task CaptureService_InPlaceMutationsUseCurrentStateTransition()
     {
         var currentStateTransitionOwners = new[]
         {

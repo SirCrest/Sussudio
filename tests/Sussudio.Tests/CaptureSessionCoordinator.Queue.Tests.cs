@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureSessionCoordinator_CancellationAndWorkerTokensStayBounded()
+    internal static Task CaptureSessionCoordinator_CancellationAndWorkerTokensStayBounded()
     {
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
 
@@ -25,7 +25,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static async Task CaptureSessionCoordinator_CanceledQueuedCommandUpdatesAccounting()
+    internal static async Task CaptureSessionCoordinator_CanceledQueuedCommandUpdatesAccounting()
     {
         var harness = CreateCaptureSessionCoordinatorHarness();
         try
@@ -87,7 +87,7 @@ static partial class Program
         }
     }
 
-    private static async Task CaptureSessionCoordinator_CoalescesQueuedLatestOnlyAndAccountsSkip()
+    internal static async Task CaptureSessionCoordinator_CoalescesQueuedLatestOnlyAndAccountsSkip()
     {
         var harness = CreateCaptureSessionCoordinatorHarness();
         try
@@ -153,7 +153,7 @@ static partial class Program
         }
     }
 
-    private static async Task CaptureSessionCoordinator_DisposeDrainsQueuedCommandBeforeCancellation()
+    internal static async Task CaptureSessionCoordinator_DisposeDrainsQueuedCommandBeforeCancellation()
     {
         var harness = CreateCaptureSessionCoordinatorHarness();
         try

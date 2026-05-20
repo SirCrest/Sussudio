@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 // Tests that prevent app service code from drifting into stale namespaces.
 static partial class Program
 {
-    private static Task AutomationContracts_SourceOwnership_IsModelAligned()
+    internal static Task AutomationContracts_SourceOwnership_IsModelAligned()
     {
         var repoRoot = GetRepoRoot();
         var automationContractsProject = Path.Combine(repoRoot, "Sussudio.Automation.Contracts", "Sussudio.Automation.Contracts.csproj");

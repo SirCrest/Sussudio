@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureSessionCoordinator_HasExpectedPublicMethods()
+    internal static Task CaptureSessionCoordinator_HasExpectedPublicMethods()
     {
         var coordinatorType = RequireType("Sussudio.Services.Capture.CaptureSessionCoordinator");
 
@@ -54,7 +54,7 @@ static partial class Program
 
     // ── CaptureSessionCoordinator: CaptureCommand shape ──
 
-    private static Task CaptureSessionCoordinator_CaptureCommandKind_HasExpectedValues()
+    internal static Task CaptureSessionCoordinator_CaptureCommandKind_HasExpectedValues()
     {
         var commandKindType = RequireType("Sussudio.Services.Capture.CaptureCommandKind");
 
@@ -82,7 +82,7 @@ static partial class Program
 
     // ── CaptureSessionCoordinator: CaptureSessionSnapshot ──
 
-    private static Task CaptureSessionCoordinator_CaptureSessionSnapshot_HasFullContract()
+    internal static Task CaptureSessionCoordinator_CaptureSessionSnapshot_HasFullContract()
     {
         var snapshotType = RequireType("Sussudio.Services.Capture.CaptureSessionSnapshot");
 

@@ -2421,8 +2421,8 @@ Primary current owners:
   contracts for AtomicMax, TelemetryAgeHelper, EnvironmentHelpers, and
   RingBufferHelpers.
 - Focused `tests/Sussudio.Tests/HarnessCheckCatalog.AutomationDiagnostics.*.cs`
-  partials own the remaining automation-diagnostics capture/Flashback routing
-  and snapshot projection registration groups.
+  partials own the remaining automation-diagnostics snapshot projection
+  registration group.
 - `tests/Sussudio.Tests/XUnit.AutomationAppSurfaceContractsTests.cs` owns the
   former automation-diagnostics app-surface registration group for App exception
   policy, converter/display formatting, LoggingJsonContext, MainWindow
@@ -2440,6 +2440,12 @@ Primary current owners:
   parsing, catalog metadata, readiness classification, authorization, manifest,
   command coverage, and focused dispatcher command-owner checks after their
   removal from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.AutomationCaptureFlashbackRoutingContractsTests.cs`
+  owns the former automation-diagnostics capture/Flashback routing registration
+  group for Flashback routing, capture transition policy, capture session
+  coordinator contracts, service namespace/source ownership, and diagnostics
+  snapshot refresh serialization after their removal from the legacy offline
+  harness catalog.
 - `tests/Sussudio.Tests/ServiceNamespace.Tests.cs` owns the harness-visible
   service namespace/source ownership orchestrator.
 - `tests/Sussudio.Tests/ServiceNamespace.FolderRules.Tests.cs` owns service

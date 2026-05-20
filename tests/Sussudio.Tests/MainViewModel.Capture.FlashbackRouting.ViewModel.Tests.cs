@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 static partial class Program
 {
-    private static Task MainViewModelCapture_RoutesFlashbackMutationsThroughCoordinator()
+    internal static Task MainViewModelCapture_RoutesFlashbackMutationsThroughCoordinator()
     {
         var coordinatorType = RequireType("Sussudio.Services.Capture.CaptureSessionCoordinator");
         foreach (var methodName in new[]

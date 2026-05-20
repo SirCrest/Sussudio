@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses()
+    internal static Task DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses()
     {
         var diagnostics = ReadAutomationDiagnosticsHubSourceFamily();
         var countersText = ReadAutomationDiagnosticsHubCountersSource();

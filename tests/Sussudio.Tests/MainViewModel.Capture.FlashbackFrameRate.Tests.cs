@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 static partial class Program
 {
-    private static Task CaptureService_FlashbackFrameRateParts_PreserveOnlyDeliveredCadenceRational()
+    internal static Task CaptureService_FlashbackFrameRateParts_PreserveOnlyDeliveredCadenceRational()
     {
         var captureServiceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = captureServiceType.GetMethod(
@@ -62,7 +62,7 @@ static partial class Program
         AssertNearlyEqual(expectedFrameRate, Convert.ToDouble(effectiveFrameRate), 0.000001, $"{fieldName} effective frame rate");
     }
 
-    private static Task CaptureService_FlashbackEnableDisable_PreservesPreviewState()
+    internal static Task CaptureService_FlashbackEnableDisable_PreservesPreviewState()
     {
         var captureServiceText = ReadCaptureServiceRecordingFinalizationSource()
             .Replace("\r\n", "\n")
