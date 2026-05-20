@@ -73,26 +73,8 @@ static partial class Program
             "MCP frame pacing verdict ownership is split",
             McpFramePacingVerdictTool_SourceOwnershipIsSplit);
         await AddCheckAsync(results,
-            "MCP wait tool uses catalog response timeout",
-            McpWaitTools_UsesCatalogResponseTimeoutForConditionWaits);
-        await AddCheckAsync(results,
-            "MCP wait tool routes condition waits",
-            McpWaitTools_RouteConditionWaits);
-        await AddCheckAsync(results,
-            "MCP window screenshot tool formats screenshot responses",
-            McpWindowScreenshotTool_FormatsScreenshotResponses);
-        await AddCheckAsync(results,
-            "MCP preview frame capture tool formats frame reports",
-            McpPreviewFrameCaptureTool_FormatsCaptureResponses);
-        await AddCheckAsync(results,
-            "MCP window tool routes window actions",
-            McpWindowTools_RouteWindowActions);
-        await AddCheckAsync(results,
             "MCP preview color probe tool formats probe responses",
             McpPreviewColorProbeTool_FormatsProbeResponses);
-        await AddCheckAsync(results,
-            "MCP preview tool routes preview toggle",
-            McpPreviewTools_RoutePreviewToggle);
         await AddCheckAsync(results,
             "MCP video source probe tool formats probe responses",
             McpVideoSourceProbeTool_FormatsProbeResponses);

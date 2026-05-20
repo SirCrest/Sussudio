@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task McpWaitTools_UsesCatalogResponseTimeoutForConditionWaits()
+    internal static Task McpWaitTools_UsesCatalogResponseTimeoutForConditionWaits()
     {
         var waitToolsSource = ReadRepoFile("tools/McpServer/Tools/WaitTools.cs");
         AssertContains(waitToolsSource, "AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.WaitForCondition)");
@@ -30,7 +30,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static async Task McpWaitTools_RouteConditionWaits()
+    internal static async Task McpWaitTools_RouteConditionWaits()
     {
         var pipeName = NewMcpToolPipeName("wait");
         var pipeClient = CreateMcpPipeClient(pipeName);

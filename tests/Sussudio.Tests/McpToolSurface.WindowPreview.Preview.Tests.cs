@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpPreviewTools_RoutePreviewToggle()
+    internal static async Task McpPreviewTools_RoutePreviewToggle()
     {
         var pipeName = NewMcpToolPipeName("preview");
         var pipeClient = CreateMcpPipeClient(pipeName);

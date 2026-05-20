@@ -2603,7 +2603,9 @@ Primary current owners:
   `PerformanceTimelineEntry` projection contracts.
 - `tests/Sussudio.Tests/McpToolSurface.WindowPreview.*.Tests.cs` owns MCP
   wait, window action, preview toggle, Flashback toggle, screenshot, and probe
-  tests.
+  tests. `tests/Sussudio.Tests/XUnit.McpWindowPreviewToolContractsTests.cs`
+  owns the xUnit execution surface for the wait/window/screenshot/preview-frame/
+  preview-toggle checks after their removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Probes.Tests.cs` owns MCP
   preview color probe and video source probe formatting tests.
 - `tests/Sussudio.Tests/McpToolSurface.Helpers.Process.cs`,

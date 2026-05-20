@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpWindowTools_RouteWindowActions()
+    internal static async Task McpWindowTools_RouteWindowActions()
     {
         var pipeName = NewMcpToolPipeName("window");
         var pipeClient = CreateMcpPipeClient(pipeName);

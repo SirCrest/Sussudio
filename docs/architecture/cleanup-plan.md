@@ -623,6 +623,11 @@ Flashback export/playback command flow, unknown-initial-snapshot mutation
 safety, synthetic pipe-connect retry, and concurrent-output-directory lockout.
 Infrastructure ownership files now split runner/initial-snapshot, pipe
 retry/command channel, run context, and scenario/completion phase assertions.
+Window/preview MCP tool checks for condition wait, window actions, screenshots,
+preview-frame capture, and preview toggles now execute through
+`tests/Sussudio.Tests/XUnit.McpWindowPreviewToolContractsTests.cs`; probe
+formatting stays in the legacy harness catalog until that remaining
+window-preview probe group moves as a separate slice.
 
 `tests/Sussudio.Tests/Flashback.Tests.cs` is now only the shared helper shell.
 Flashback regression coverage is split into buffer, encoder-sink, exporter

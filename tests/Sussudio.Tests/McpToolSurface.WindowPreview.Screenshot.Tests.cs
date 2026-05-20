@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpWindowScreenshotTool_FormatsScreenshotResponses()
+    internal static async Task McpWindowScreenshotTool_FormatsScreenshotResponses()
     {
         var screenshotTools = RequireMcpType("McpServer.Tools.WindowScreenshotTools");
 

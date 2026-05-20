@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpPreviewFrameCaptureTool_FormatsCaptureResponses()
+    internal static async Task McpPreviewFrameCaptureTool_FormatsCaptureResponses()
     {
         var previewFrameCaptureTool = RequireMcpType("McpServer.Tools.PreviewFrameCaptureTools");
         var defaultOutputPath = Path.Combine(Environment.CurrentDirectory, "temp", "preview_capture.bmp");
