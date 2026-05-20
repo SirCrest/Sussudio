@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpVerificationTools_FormatVerificationResponses()
+    internal static async Task McpVerificationTools_FormatVerificationResponses()
     {
         var verificationTools = RequireMcpType("McpServer.Tools.VerificationTools");
 

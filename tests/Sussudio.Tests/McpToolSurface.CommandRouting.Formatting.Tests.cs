@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpToolCommandFormatter_BatchesPendingCommands()
+    internal static async Task McpToolCommandFormatter_BatchesPendingCommands()
     {
         var pipeName = NewMcpToolPipeName("formatter");
         var pipeClient = CreateMcpPipeClient(pipeName);

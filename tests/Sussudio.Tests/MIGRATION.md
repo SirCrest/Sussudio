@@ -104,6 +104,9 @@ add xUnit alongside, and port incrementally.
   preview-toggle/probe checks.
 - `XUnit.McpPerformanceToolContractsTests.cs` owns the former legacy MCP
   PresentMon correlation, performance timeline, and frame-pacing verdict checks.
+- `XUnit.McpToolSurfaceContractsTests.cs` owns the former legacy MCP tool
+  surface, command-routing, host/pipe, verification, Flashback tool, and
+  diagnostic-session tool entry checks.
 - `XUnit.PresentationPreviewHarnessRegistrationTests.cs` owns the former legacy
   presentation-preview harness registration guard.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy

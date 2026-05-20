@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpUiSettingsTools_RouteUiCommands()
+    internal static async Task McpUiSettingsTools_RouteUiCommands()
     {
         var pipeName = NewMcpToolPipeName("ui");
         var pipeClient = CreateMcpPipeClient(pipeName);

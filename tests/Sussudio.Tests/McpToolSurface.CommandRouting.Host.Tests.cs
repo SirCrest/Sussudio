@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpHostToolSchema_UsesPipeClientAsService()
+    internal static async Task McpHostToolSchema_UsesPipeClientAsService()
     {
         var assemblyPath = Path.Combine("tools", "McpServer", "bin", "Debug", "net8.0", "McpServer.dll");
         LoadToolAssemblyIsolated(assemblyPath);
@@ -63,7 +63,7 @@ static partial class Program
         }
     }
 
-    private static async Task McpPipeClient_HonorsSussudioAutomationPipeEnvironment()
+    internal static async Task McpPipeClient_HonorsSussudioAutomationPipeEnvironment()
     {
         var pipeName = NewMcpToolPipeName("env");
         var previousPipeName = Environment.GetEnvironmentVariable("SUSSUDIO_AUTOMATION_PIPE");
@@ -95,7 +95,7 @@ static partial class Program
         }
     }
 
-    private static async Task McpHostToolInvocation_ReturnsPipeFailureInsteadOfClosingTransport()
+    internal static async Task McpHostToolInvocation_ReturnsPipeFailureInsteadOfClosingTransport()
     {
         var assemblyPath = Path.Combine("tools", "McpServer", "bin", "Debug", "net8.0", "McpServer.dll");
         LoadToolAssemblyIsolated(assemblyPath);

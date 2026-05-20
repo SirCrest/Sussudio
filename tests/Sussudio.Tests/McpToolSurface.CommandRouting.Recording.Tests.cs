@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpRecordingTools_RouteRecordingToggle()
+    internal static async Task McpRecordingTools_RouteRecordingToggle()
     {
         var pipeName = NewMcpToolPipeName("recording");
         var pipeClient = CreateMcpPipeClient(pipeName);

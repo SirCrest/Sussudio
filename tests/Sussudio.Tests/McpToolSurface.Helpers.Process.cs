@@ -17,7 +17,10 @@ static partial class Program
             RedirectStandardError = true,
             CreateNoWindow = true
         };
-        startInfo.ArgumentList.Add(Path.GetFullPath(assemblyPath));
+        var resolvedAssemblyPath = Path.IsPathRooted(assemblyPath)
+            ? assemblyPath
+            : Path.Combine(GetRepoRoot(), assemblyPath);
+        startInfo.ArgumentList.Add(Path.GetFullPath(resolvedAssemblyPath));
         if (!string.IsNullOrWhiteSpace(pipeName))
         {
             startInfo.Environment["SUSSUDIO_AUTOMATION_PIPE"] = pipeName;

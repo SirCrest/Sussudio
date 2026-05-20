@@ -631,6 +631,11 @@ MCP performance/probe checks for PresentMon correlation, performance timeline
 formatting/contracts, and frame-pacing verdict policy now execute through
 `tests/Sussudio.Tests/XUnit.McpPerformanceToolContractsTests.cs` after their
 removal from the legacy harness catalog.
+General MCP tool-surface checks for command routing, host/pipe behavior,
+verification formatting, Flashback tool routing, and diagnostic-session tool
+entries now execute through
+`tests/Sussudio.Tests/XUnit.McpToolSurfaceContractsTests.cs` after their removal
+from the legacy harness catalog.
 
 `tests/Sussudio.Tests/Flashback.Tests.cs` is now only the shared helper shell.
 Flashback regression coverage is split into buffer, encoder-sink, exporter

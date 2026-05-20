@@ -2543,6 +2543,10 @@ Primary current owners:
   owns MCP `run_diagnostic_session` success artifact contract tests.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Failures.Tests.cs`
   owns MCP `run_diagnostic_session` failure artifact contract tests.
+  `tests/Sussudio.Tests/XUnit.McpToolSurfaceContractsTests.cs` owns the xUnit
+  execution surface for the general MCP tool-surface, command-routing,
+  host/pipe, verification, Flashback tool, and diagnostic-session tool entry
+  contracts after their removal from the legacy harness catalog.
 - Diagnostic-session helper ownership checks live in focused lifecycle files:
   planning/setup checks in
   `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Planning.Tests.cs`,

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpFlashbackTools_RouteEnableToggle()
+    internal static async Task McpFlashbackTools_RouteEnableToggle()
     {
         var pipeName = NewMcpToolPipeName("flashback-enabled");
         var pipeClient = CreateMcpPipeClient(pipeName);

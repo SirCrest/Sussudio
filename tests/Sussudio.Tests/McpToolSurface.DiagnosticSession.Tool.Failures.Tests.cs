@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpDiagnosticSessionTool_SurfacesDiagnosticFailureAsToolError()
+    internal static async Task McpDiagnosticSessionTool_SurfacesDiagnosticFailureAsToolError()
     {
         var diagnosticSessionTools = RequireMcpType("McpServer.Tools.DiagnosticSessionTools");
         var pipeName = NewMcpToolPipeName("diag-session-failure");

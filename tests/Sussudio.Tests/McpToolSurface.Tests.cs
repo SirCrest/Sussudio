@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 static partial class Program
 {
 
-    private static Task McpToolSurface_KeepsCaptureOptionsSeparateFromRawState()
+    internal static Task McpToolSurface_KeepsCaptureOptionsSeparateFromRawState()
     {
         var captureSettingsToolsText = ReadRepoFile("tools/McpServer/Tools/CaptureSettingsTools.cs");
         var appStateToolText = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
@@ -42,7 +42,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task McpToolSurface_FixedAutomationRoutesUseAutomationCommandKinds()
+    internal static Task McpToolSurface_FixedAutomationRoutesUseAutomationCommandKinds()
     {
         var formatterText = ReadRepoFile("tools/McpServer/Tools/ToolCommandFormatter.cs");
         var appStateToolText = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");

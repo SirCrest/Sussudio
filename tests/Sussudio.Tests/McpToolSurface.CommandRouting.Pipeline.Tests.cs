@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpPipelineSettingsTools_RoutePipelineAndAudioCommands()
+    internal static async Task McpPipelineSettingsTools_RoutePipelineAndAudioCommands()
     {
         var pipeName = NewMcpToolPipeName("pipeline");
         var pipeClient = CreateMcpPipeClient(pipeName);

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpDeviceTools_RouteRefreshSelectionsAndCustomAudio()
+    internal static async Task McpDeviceTools_RouteRefreshSelectionsAndCustomAudio()
     {
         var pipeName = NewMcpToolPipeName("device");
         var pipeClient = CreateMcpPipeClient(pipeName);

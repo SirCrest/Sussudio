@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpCaptureSettingsTools_RouteProvidedSettings()
+    internal static async Task McpCaptureSettingsTools_RouteProvidedSettings()
     {
         var pipeName = NewMcpToolPipeName("capture");
         var pipeClient = CreateMcpPipeClient(pipeName);
