@@ -2376,6 +2376,12 @@ Primary current owners:
   randomized splash phrase interval/mode selection.
   `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs` owns
   DispatcherTimer lifecycle and two-line text animation.
+- `Sussudio/Controllers/Launch/LaunchStartupController.cs` owns loaded-time
+  startup ordering: native shell reveal scheduling, initial ViewModel settings
+  load, preview audio fade priming before device refresh, no-preview fallback
+  presentation, automation host start, and splash/entrance trigger.
+  `MainWindow.ShellChrome.cs` is the XAML-facing Loaded adapter and context
+  wiring owner.
 - `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs` owns launch
   entrance context and initial hidden/scaled shell state.
   `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs` owns the

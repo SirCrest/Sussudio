@@ -155,6 +155,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs")
             .Replace("\r\n", "\n");
+        var launchStartupText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchStartupController.cs")
+            .Replace("\r\n", "\n");
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml")
             .Replace("\r\n", "\n");
 
@@ -229,8 +231,10 @@ static partial class Program
         AssertContains(togglePreviewAsync, "if (!viewModel.IsPreviewing)\n        {\n            _context.RevealPreviewUnavailablePlaceholder();\n        }");
 
         var mainWindowLoaded = ExtractMemberCode(startupText, "MainWindow_Loaded");
-        AssertOccursBefore(mainWindowLoaded, "PrimePreviewAudioFadeIn();", "await ViewModel.RefreshDevicesAsync();");
-        AssertContains(mainWindowLoaded, "RevealPreviewUnavailablePlaceholder();");
+        AssertContains(mainWindowLoaded, "=> _launchStartupController.HandleLoaded(nameof(MainWindow_Loaded));");
+        var launchLoaded = ExtractMemberCode(launchStartupText, "HandleLoaded");
+        AssertOccursBefore(launchLoaded, "_context.PrimePreviewAudioFadeIn();", "await _context.RefreshDevicesAsync();");
+        AssertContains(launchLoaded, "_context.RevealPreviewUnavailablePlaceholder();");
 
         AssertDoesNotContain(xamlText, "No preview available");
 

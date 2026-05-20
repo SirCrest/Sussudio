@@ -14,6 +14,7 @@ public sealed partial class MainWindow
     private ControlBarAnimationController _controlBarAnimationController = null!;
     private readonly NativeWindowBootstrapController _nativeWindowBootstrapController = new();
     private LaunchEntranceAnimationController _launchEntranceAnimationController = null!;
+    private LaunchStartupController _launchStartupController = null!;
     private SettingsShelfController _settingsShelfController = null!;
     private ShellElevationController _shellElevationController = null!;
     private SplashLoadingPhraseController _splashLoadingPhraseController = null!;
@@ -76,6 +77,26 @@ public sealed partial class MainWindow
         });
     }
 
+    private void InitializeLaunchStartupController()
+    {
+        _launchStartupController = new LaunchStartupController(new LaunchStartupControllerContext
+        {
+            MainContent = (FrameworkElement)Content,
+            LoadedHandler = MainWindow_Loaded,
+            ScheduleNativeShellRevealAfterFirstFrame = ScheduleNativeShellRevealAfterFirstFrame,
+            RunUiEventHandlerAsync = RunUiEventHandlerAsync,
+            InitializeViewModelAsync = ViewModel.InitializeAsync,
+            PrimePreviewAudioFadeIn = PrimePreviewAudioFadeIn,
+            RefreshDevicesAsync = () => ViewModel.RefreshDevicesAsync(),
+            IsPreviewing = () => ViewModel.IsPreviewing,
+            IsPreviewFirstVisualConfirmed = () => IsPreviewFirstVisualConfirmed,
+            RevealPreviewUnavailablePlaceholder = RevealPreviewUnavailablePlaceholder,
+            StartAutomationHost = _automationHostLifecycleController.Start,
+            PlaySplashAndEntrance = PlaySplashAndEntrance,
+            Log = message => Logger.Log(message),
+        });
+    }
+
     private void InitializeShellElevationController()
     {
         _shellElevationController = new ShellElevationController(new ShellElevationControllerContext
@@ -106,35 +127,7 @@ public sealed partial class MainWindow
     }
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
-    {
-        ((FrameworkElement)this.Content).Loaded -= MainWindow_Loaded;
-
-        ScheduleNativeShellRevealAfterFirstFrame();
-
-        // Start device init immediately; it runs behind the splash.
-        _ = RunUiEventHandlerAsync(async () =>
-        {
-            Logger.Log("=== MainWindow_Loaded - Starting device enumeration ===");
-            try
-            {
-                await ViewModel.InitializeAsync();
-                // LoadSettings just pushed saved volume to CaptureService; re-prime it
-                // so WASAPI playback starts silent and fades in only after live frames render.
-                PrimePreviewAudioFadeIn();
-                await ViewModel.RefreshDevicesAsync();
-                if (!ViewModel.IsPreviewing && !IsPreviewFirstVisualConfirmed)
-                {
-                    RevealPreviewUnavailablePlaceholder();
-                }
-            }
-            finally
-            {
-                _automationHostLifecycleController.Start();
-            }
-        }, nameof(MainWindow_Loaded));
-
-        PlaySplashAndEntrance();
-    }
+        => _launchStartupController.HandleLoaded(nameof(MainWindow_Loaded));
 
     private void SetupButtonHoverAnimations()
         => _controlBarAnimationController.AttachHoverAnimations();

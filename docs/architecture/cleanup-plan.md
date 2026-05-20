@@ -726,14 +726,16 @@ diagnostic-session runner command-channel delegates intentionally remain
 string-based.
 
 First-load startup, initial ViewModel/device refresh, automation startup timing,
-native shell bootstrap, and the launch entrance trigger now live in
-`Sussudio/MainWindow.ShellChrome.cs`.
+and the launch entrance trigger now live in
+`Sussudio/Controllers/Launch/LaunchStartupController.cs`.
+`Sussudio/MainWindow.ShellChrome.cs` keeps the XAML-facing Loaded adapter and
+native shell bootstrap wiring.
 Automation host composition, once-only
 startup, ready/disabled logging, and pipe-before-hub shutdown disposal now live
 in `Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs`.
-`Sussudio/MainWindow.ShellChrome.cs` starts that controller directly after
-initial device refresh, and `Sussudio/MainWindow.ShutdownCleanup.cs` passes its
-async dispose delegate into the shutdown controller. Window close
+`Sussudio/Controllers/Launch/LaunchStartupController.cs` starts that
+controller after initial device refresh, and `Sussudio/MainWindow.ShutdownCleanup.cs`
+passes its async dispose delegate into the shutdown controller. Window close
 completion lives in `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`;
 recording-aware close finalization now lives in
 `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs`.
@@ -2524,6 +2526,13 @@ DispatcherTimer lifecycle and the two-line splash text animation.
 Its MainWindow wiring is folded into `MainWindow.ShellChrome.cs` because launch
 entrance owns the only phrase start/stop choreography and now shares the shell
 launch adapter.
+
+Loaded-time startup ordering now lives in
+`Sussudio/Controllers/Launch/LaunchStartupController.cs`: native shell reveal
+scheduling, initial ViewModel settings load, preview audio fade priming before
+device refresh, no-preview placeholder fallback, automation host start in the
+finally path, and splash/entrance trigger. `MainWindow.ShellChrome.cs` preserves
+the XAML event handler and context wiring.
 
 Launch entrance ownership is split by phase:
 `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs` owns context and

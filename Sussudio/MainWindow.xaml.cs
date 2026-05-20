@@ -142,6 +142,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void InitializeLaunchAndStatusControllers()
     {
         InitializeLaunchEntranceAnimationController();
+        InitializeLaunchStartupController();
         InitializeLiveSignalInfoController();
         InitializeStatusStripPresentationController();
     }

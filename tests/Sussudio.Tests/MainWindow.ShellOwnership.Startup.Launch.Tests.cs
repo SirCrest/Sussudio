@@ -74,16 +74,39 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs").Replace("\r\n", "\n");
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs").Replace("\r\n", "\n");
+        var launchStartupControllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchStartupController.cs").Replace("\r\n", "\n");
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
+        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
+        AssertContains(startupText, "private LaunchStartupController _launchStartupController = null!;");
+        AssertContains(startupText, "private void InitializeLaunchStartupController()");
+        AssertContains(startupText, "new LaunchStartupControllerContext");
+        AssertContains(startupText, "MainContent = (FrameworkElement)Content,");
+        AssertContains(startupText, "LoadedHandler = MainWindow_Loaded,");
+        AssertContains(startupText, "ScheduleNativeShellRevealAfterFirstFrame = ScheduleNativeShellRevealAfterFirstFrame,");
+        AssertContains(startupText, "RunUiEventHandlerAsync = RunUiEventHandlerAsync,");
+        AssertContains(startupText, "InitializeViewModelAsync = ViewModel.InitializeAsync,");
+        AssertContains(startupText, "PrimePreviewAudioFadeIn = PrimePreviewAudioFadeIn,");
+        AssertContains(startupText, "RefreshDevicesAsync = () => ViewModel.RefreshDevicesAsync(),");
+        AssertContains(startupText, "StartAutomationHost = _automationHostLifecycleController.Start,");
+        AssertContains(startupText, "PlaySplashAndEntrance = PlaySplashAndEntrance,");
         AssertContains(startupText, "private void MainWindow_Loaded(object sender, RoutedEventArgs e)");
-        AssertContains(startupText, "ScheduleNativeShellRevealAfterFirstFrame();");
-        AssertContains(startupText, "await ViewModel.InitializeAsync();");
-        AssertContains(startupText, "PrimePreviewAudioFadeIn();");
-        AssertContains(startupText, "await ViewModel.RefreshDevicesAsync();");
-        AssertContains(startupText, "RevealPreviewUnavailablePlaceholder();");
-        AssertContains(startupText, "_automationHostLifecycleController.Start();");
-        AssertContains(startupText, "PlaySplashAndEntrance();");
+        AssertContains(startupText, "=> _launchStartupController.HandleLoaded(nameof(MainWindow_Loaded));");
+        AssertContains(launchStartupControllerText, "internal sealed class LaunchStartupControllerContext");
+        AssertContains(launchStartupControllerText, "internal sealed class LaunchStartupController");
+        AssertContains(launchStartupControllerText, "public void HandleLoaded(string operationName)");
+        AssertContains(launchStartupControllerText, "_context.MainContent.Loaded -= _context.LoadedHandler;");
+        AssertContains(launchStartupControllerText, "_context.ScheduleNativeShellRevealAfterFirstFrame();");
+        AssertContains(launchStartupControllerText, "_ = _context.RunUiEventHandlerAsync(async () =>");
+        AssertContains(launchStartupControllerText, "await _context.InitializeViewModelAsync();");
+        AssertContains(launchStartupControllerText, "_context.PrimePreviewAudioFadeIn();");
+        AssertContains(launchStartupControllerText, "await _context.RefreshDevicesAsync();");
+        AssertContains(launchStartupControllerText, "_context.RevealPreviewUnavailablePlaceholder();");
+        AssertContains(launchStartupControllerText, "_context.StartAutomationHost();");
+        AssertContains(launchStartupControllerText, "_context.PlaySplashAndEntrance();");
+        AssertContains(agentMapText, "Sussudio/Controllers/Launch/LaunchStartupController.cs");
+        AssertContains(cleanupPlanText, "Sussudio/Controllers/Launch/LaunchStartupController.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Startup.cs")),
@@ -105,6 +128,7 @@ static partial class Program
         AssertContains(mainWindowText, "private void InitializePreviewControllers()");
         AssertContains(mainWindowText, "private void InitializeRecordingControllers()");
         AssertContains(mainWindowText, "private void InitializeLaunchAndStatusControllers()");
+        AssertContains(mainWindowText, "InitializeLaunchStartupController();");
         AssertContains(mainWindowText, "private void InitializePreviewActionControllers()");
         AssertContains(mainWindowText, "private void InitializeAudioControllers()");
         AssertContains(mainWindowText, "private void InitializeCaptureControllers()");
@@ -124,11 +148,14 @@ static partial class Program
         AssertOccursBefore(mainWindowText, "private void InitializeFlashbackControllers()", "private void InitializeShellPresentationControllers()");
         AssertOccursBefore(mainWindowText, "private void InitializeShellPresentationControllers()", "private void InitializePreviewControllers()");
         AssertOccursBefore(mainWindowText, "private void InitializePreviewControllers()", "private void InitializeRecordingControllers()");
-        AssertOccursBefore(startupText, "await ViewModel.InitializeAsync();", "_automationHostLifecycleController.Start();");
-        AssertOccursBefore(startupText, "ScheduleNativeShellRevealAfterFirstFrame();", "_ = RunUiEventHandlerAsync(async () =>");
-        AssertOccursBefore(startupText, "ScheduleNativeShellRevealAfterFirstFrame();", "await ViewModel.InitializeAsync();");
-        AssertOccursBefore(startupText, "ScheduleNativeShellRevealAfterFirstFrame();", "PlaySplashAndEntrance();");
+        AssertOccursBefore(launchStartupControllerText, "await _context.InitializeViewModelAsync();", "_context.StartAutomationHost();");
+        AssertOccursBefore(launchStartupControllerText, "_context.ScheduleNativeShellRevealAfterFirstFrame();", "_ = _context.RunUiEventHandlerAsync(async () =>");
+        AssertOccursBefore(launchStartupControllerText, "_context.ScheduleNativeShellRevealAfterFirstFrame();", "await _context.InitializeViewModelAsync();");
+        AssertOccursBefore(launchStartupControllerText, "_context.ScheduleNativeShellRevealAfterFirstFrame();", "_context.PlaySplashAndEntrance();");
         AssertContains(mainWindowText, "mainContent.Loaded += MainWindow_Loaded;");
+        AssertDoesNotContain(startupText, "await ViewModel.InitializeAsync();");
+        AssertDoesNotContain(startupText, "await ViewModel.RefreshDevicesAsync();");
+        AssertDoesNotContain(startupText, "_automationHostLifecycleController.Start();");
         AssertDoesNotContain(mainWindowText, "private int _automationServicesStarted;");
         AssertDoesNotContain(startupText, "private int _automationServicesStarted;");
         AssertDoesNotContain(startupText, "Interlocked.Exchange(ref _automationServicesStarted");
