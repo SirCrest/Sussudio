@@ -4015,6 +4015,9 @@ owner, fold it back into that owner and update the source-shape tests and
    segment lookup/list projection coverage. Preview startup session/reinit
    harness coverage is split between source ownership, session controller,
    reinit transition controller, and pending Flashback-cycle wait owners.
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupOwnershipContractsTests.cs`
+   owns xUnit execution for the preview-startup source-shape ownership checks
+   after their removal from the legacy presentation-preview capture catalog.
    Preview startup ordering coverage is split between lifecycle-event
    ownership, device-discovery ordering, reveal priming, and stop audio-ramp
    owners. MainViewModel automation recording-transition coverage is split

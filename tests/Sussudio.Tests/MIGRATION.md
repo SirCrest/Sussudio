@@ -251,6 +251,9 @@ add xUnit alongside, and port incrementally.
   final former legacy presentation-preview MainViewModel runtime group:
   automation preview/HDR/volume routing, audio monitoring, capture settings
   projection, preview lifecycle ownership, and audio ramp trace telemetry.
+- `XUnit.PresentationPreviewStartupOwnershipContractsTests.cs` owns the former
+  legacy presentation-preview preview-startup ownership group: session/reinit,
+  watchdog, signal, and lifecycle-event controller/adapters.
 - `XUnit.PresentationPreviewCaptureRuntimeGuardContractsTests.cs` owns the
   former legacy presentation-preview capture runtime guardrail group: recording
   stop failure propagation, preview stop overload/API compatibility, and

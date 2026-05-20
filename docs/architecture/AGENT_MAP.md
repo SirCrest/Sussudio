@@ -2021,6 +2021,9 @@ Primary current owners:
   controller, and startup/failure formatter assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.StartupStopOrdering.Tests.cs`
   owns preview lifecycle-event and fade-in source-shape ownership assertions.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupOwnershipContractsTests.cs`
+  owns xUnit execution for the former legacy presentation-preview preview-startup
+  source-shape ownership catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.DeviceDiscoveryOrdering.Tests.cs`
   owns startup ordering assertions that device discovery begins before
   recording-capability probe completion.

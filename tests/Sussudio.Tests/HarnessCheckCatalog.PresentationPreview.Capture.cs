@@ -6,18 +6,6 @@ static partial class Program
     private static async Task AddPresentationPreviewCaptureChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Preview startup session and reinit ownership lives in focused controllers",
-            PreviewStartupSessionReinitOwnership_LivesInFocusedControllers);
-        await AddCheckAsync(results,
-            "Preview startup watchdog ownership lives in focused controller",
-            PreviewStartupWatchdogOwnership_LivesInFocusedController);
-        await AddCheckAsync(results,
-            "Preview startup signal ownership lives in focused controllers",
-            PreviewStartupSignalsOwnership_LivesInFocusedControllers);
-        await AddCheckAsync(results,
-            "Preview startup lifecycle event ownership lives in focused controller",
-            PreviewStartupLifecycleEventOwnership_LivesInFocusedController);
-        await AddCheckAsync(results,
             "Preview startup watchdog controller preserves timeout contracts",
             PreviewStartupWatchdogController_PreservesTimeoutContracts);
         await AddCheckAsync(results,

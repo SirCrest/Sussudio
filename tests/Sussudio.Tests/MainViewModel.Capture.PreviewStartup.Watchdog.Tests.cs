@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 static partial class Program
 {
-    private static Task PreviewStartupWatchdogOwnership_LivesInFocusedController()
+    internal static Task PreviewStartupWatchdogOwnership_LivesInFocusedController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
