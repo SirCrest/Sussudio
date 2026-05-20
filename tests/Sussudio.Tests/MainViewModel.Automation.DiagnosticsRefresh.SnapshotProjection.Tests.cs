@@ -163,7 +163,14 @@ static partial class Program
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "HdrRuntimeState = !string.IsNullOrWhiteSpace(viewModelSnapshot.HdrRuntimeState)");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "TelemetryAlignmentReason = captureRuntime.TelemetryAlignmentReason,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "var hdrTruth = BuildHdrTruthProjection(hdrTruthVerdict);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "HdrTruthVerdict = hdrPipeline.TruthVerdict,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var hdrPipelineFlattening = BuildHdrPipelineFlattenedProjection(hdrPipeline);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "HdrTruthVerdict = hdrPipelineFlattening.TruthVerdict,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "TelemetryAlignmentReason = hdrPipelineFlattening.TelemetryAlignmentReason,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningHdrPipelineText, "HdrRuntimeState = hdrPipeline.HdrRuntimeState,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningHdrPipelineText, "TelemetryAlignmentReason = hdrPipeline.TelemetryAlignmentReason,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningHdrPipelineText, "TruthVerdict = hdrPipeline.TruthVerdict");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "HdrTruthVerdict = hdrPipeline.TruthVerdict,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "TelemetryAlignmentReason = hdrPipeline.TelemetryAlignmentReason,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "HdrTruthVerdict = hdrTruthVerdict,");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatProjection BuildCaptureFormatProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "NegotiatedWidth = captureRuntime.NegotiatedWidth ?? captureRuntime.ActualWidth,");
