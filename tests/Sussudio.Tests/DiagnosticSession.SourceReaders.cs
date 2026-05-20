@@ -121,6 +121,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackStressScenario.StressExport.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlayback.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlaybackAudio.cs",
+            "tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrainWait.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrain.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.Scrub.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.ScrubUpdates.cs",

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
@@ -14,28 +13,13 @@ internal static partial class DiagnosticSessionFlashbackStressScenario
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken)
     {
-        var drained = false;
-        JsonElement lastSnapshot = default;
-        var waitStarted = Stopwatch.GetTimestamp();
-        while (Stopwatch.GetElapsedTime(waitStarted) < TimeSpan.FromSeconds(10))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
-            if (TryGetSnapshot(snapshotResponse, out lastSnapshot) &&
-                GetInt(lastSnapshot, "FlashbackPlaybackPendingCommands") == 0 &&
-                string.Equals(
-                    GetString(lastSnapshot, "FlashbackPlaybackState"),
-                    "Live",
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                drained = true;
-                break;
-            }
+        var drainResult = await WaitForFlashbackStressPlaybackCommandDrainAsync(
+                sendCommandAsync,
+                cancellationToken)
+            .ConfigureAwait(false);
+        var lastSnapshot = drainResult.Snapshot;
 
-            await Task.Delay(250, cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!drained)
+        if (!drainResult.Drained)
         {
             warnings.Add(
                 "flashback stress: playback command queue did not drain within 10s " +

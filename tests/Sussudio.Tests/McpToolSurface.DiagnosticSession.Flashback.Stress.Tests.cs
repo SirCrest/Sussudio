@@ -18,6 +18,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var commandDrainText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrain.cs")
             .Replace("\r\n", "\n");
+        var commandDrainWaitText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrainWait.cs")
+            .Replace("\r\n", "\n");
         var scrubText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.Scrub.cs")
             .Replace("\r\n", "\n");
         var scrubUpdatesText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.ScrubUpdates.cs")
@@ -59,7 +61,13 @@ static partial class Program
         AssertContains(commandDrainText, "private static async Task ValidateFlashbackStressCommandDrainAsync(");
         AssertContains(commandDrainText, "BuildPlaybackCommandHealth(lastSnapshot, baselineSnapshot)");
         AssertContains(commandDrainText, "\"flashback stress: playback command queue did not drain within 10s \"");
+        AssertContains(commandDrainText, "WaitForFlashbackStressPlaybackCommandDrainAsync(");
+        AssertDoesNotContain(commandDrainText, "Stopwatch.GetTimestamp()");
         AssertDoesNotContain(commandDrainText, "WaitForFlashbackPlaybackWarmSampleAsync(");
+        AssertContains(commandDrainWaitText, "private readonly record struct FlashbackStressPlaybackDrainResult(");
+        AssertContains(commandDrainWaitText, "private static async Task<FlashbackStressPlaybackDrainResult> WaitForFlashbackStressPlaybackCommandDrainAsync(");
+        AssertContains(commandDrainWaitText, "GetInt(lastSnapshot, \"FlashbackPlaybackPendingCommands\") == 0");
+        AssertContains(commandDrainWaitText, "GetString(lastSnapshot, \"FlashbackPlaybackState\")");
         AssertContains(stressText, "internal static async Task RunFlashbackScrubStressAsync(");
         AssertContains(scrubText, "WaitForFlashbackStressBufferReadyAsync(");
         AssertContains(scrubText, "new Dictionary<string, object?> { [\"action\"] = \"begin-scrub\", [\"positionMs\"] = 500 }");
@@ -74,6 +82,8 @@ static partial class Program
         AssertDoesNotContain(scrubText, "\"flashback scrub stress: playback did not settle live with an empty queue within 10s \"");
         AssertContains(scrubDrainText, "private static async Task ValidateFlashbackScrubStressDrainAsync(");
         AssertContains(scrubDrainText, "\"flashback scrub stress: playback did not settle live with an empty queue within 10s \"");
+        AssertContains(scrubDrainText, "WaitForFlashbackStressPlaybackCommandDrainAsync(");
+        AssertDoesNotContain(scrubDrainText, "Stopwatch.GetTimestamp()");
         AssertContains(scrubDrainText, "BuildPlaybackCommandHealth(lastSnapshot, baselineSnapshot)");
         AssertContains(scrubDrainText, "FlashbackScrubStressMaxPlaybackPendingCommands");
         AssertContains(stressText, "CreateFlashbackExportVerifyPayload(exportPath)");

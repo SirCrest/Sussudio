@@ -4341,15 +4341,18 @@ Primary owners:
   capture to the focused warm-playback audio owner.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlaybackAudio.cs`
   owns warmed-playback audio-master fallback baseline and delta capture.
+- `tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrainWait.cs`
+  owns shared stress playback command-drain polling for live/empty-queue
+  settlement.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrain.cs` owns
-  post-go-live playback command drain, latency, and final-state checks.
+  post-go-live playback command-health, latency, and final-state warning policy.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.Scrub.cs` owns the
   scrub-stress command choreography.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.ScrubUpdates.cs` owns
   concurrent scrub update-burst dispatch and failed-update warning policy.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.ScrubDrain.cs` owns
-  scrub-stress post-go-live drain, command-health, latency, and final-state
-  checks.
+  scrub-stress post-go-live command-health, latency, and final-state warning
+  policy.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.AudioMaster.cs` owns
   warmed-playback audio-master fallback classification.
 - `tools/Common/DiagnosticSessionFlashbackWaits.cs` owns read-only snapshot
