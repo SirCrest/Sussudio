@@ -3,14 +3,14 @@ namespace Sussudio.Services.Automation;
 public sealed partial class AutomationDiagnosticsHub
 {
     private static PreviewRuntimeGpuPlaybackFlattenedProjection BuildPreviewRuntimeGpuPlaybackFlattenedProjection(
-        PreviewRuntimeProjection previewSummary)
+        PreviewRuntimeGpuPlaybackProjection gpuPlayback)
         => new()
         {
-            PlaybackState = previewSummary.GpuPlaybackState,
-            NaturalVideoWidth = previewSummary.GpuNaturalVideoWidth,
-            NaturalVideoHeight = previewSummary.GpuNaturalVideoHeight,
-            PositionMs = previewSummary.GpuPositionMs,
-            PositionEventCount = previewSummary.GpuPositionEventCount
+            PlaybackState = gpuPlayback.PlaybackState,
+            NaturalVideoWidth = gpuPlayback.NaturalVideoWidth,
+            NaturalVideoHeight = gpuPlayback.NaturalVideoHeight,
+            PositionMs = gpuPlayback.PositionMs,
+            PositionEventCount = gpuPlayback.PositionEventCount
         };
 
     private readonly record struct PreviewRuntimeGpuPlaybackFlattenedProjection

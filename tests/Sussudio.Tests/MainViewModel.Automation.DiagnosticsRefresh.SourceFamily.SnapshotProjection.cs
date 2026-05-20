@@ -98,6 +98,12 @@ static partial class Program
         public string SnapshotProjectionPreviewD3DPipelineLatencyText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewD3DCpuTimingText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewRuntimeText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewRuntimeFrameText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewRuntimeCadenceText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewRuntimeSurfaceText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewRuntimeStartupText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewRuntimeGpuPlaybackText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewRuntimeColorText { get; init; } = string.Empty;
         public string SnapshotProjectionProcessResourcesText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningProcessResourcesText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingIntegrityText { get; init; } = string.Empty;

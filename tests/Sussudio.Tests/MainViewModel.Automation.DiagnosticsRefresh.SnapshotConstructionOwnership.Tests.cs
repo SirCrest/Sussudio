@@ -60,6 +60,18 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildHdrPipelineFlattenedProjection(hdrPipeline)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningHdrPipelineText, "private static HdrPipelineFlattenedProjection BuildHdrPipelineFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildPreviewRuntimeFlattenedProjection(previewSummary)");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "BuildPreviewRuntimeFrameProjection(previewRuntime)");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "BuildPreviewRuntimeCadenceProjection(previewRuntime)");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "BuildPreviewRuntimeSurfaceProjection(previewRuntime)");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "BuildPreviewRuntimeStartupProjection(previewRuntime)");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "BuildPreviewRuntimeGpuPlaybackProjection(previewRuntime)");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "BuildPreviewRuntimeColorProjection(previewHdrState, captureRuntime)");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeFrameText, "private static PreviewRuntimeFrameProjection BuildPreviewRuntimeFrameProjection(");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeCadenceText, "private static PreviewRuntimeCadenceProjection BuildPreviewRuntimeCadenceProjection(");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeSurfaceText, "private static PreviewRuntimeSurfaceProjection BuildPreviewRuntimeSurfaceProjection(");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeStartupText, "private static PreviewRuntimeStartupProjection BuildPreviewRuntimeStartupProjection(");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeGpuPlaybackText, "private static PreviewRuntimeGpuPlaybackProjection BuildPreviewRuntimeGpuPlaybackProjection(");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeColorText, "private static PreviewRuntimeColorProjection BuildPreviewRuntimeColorProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningPreviewRuntimeText, "private static PreviewRuntimeFlattenedProjection BuildPreviewRuntimeFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningPreviewRuntimeFrameText, "private static PreviewRuntimeFrameFlattenedProjection BuildPreviewRuntimeFrameFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningPreviewRuntimeCadenceText, "private static PreviewRuntimeCadenceFlattenedProjection BuildPreviewRuntimeCadenceFlattenedProjection(");

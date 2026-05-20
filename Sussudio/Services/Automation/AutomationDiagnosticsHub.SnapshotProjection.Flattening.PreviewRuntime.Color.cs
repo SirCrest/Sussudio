@@ -3,13 +3,13 @@ namespace Sussudio.Services.Automation;
 public sealed partial class AutomationDiagnosticsHub
 {
     private static PreviewRuntimeColorFlattenedProjection BuildPreviewRuntimeColorFlattenedProjection(
-        PreviewRuntimeProjection previewSummary)
+        PreviewRuntimeColorProjection color)
         => new()
         {
-            HdrInputDetected = previewSummary.HdrInputDetected,
-            ToneMapMode = previewSummary.ToneMapMode,
-            ColorContext = previewSummary.ColorContext,
-            AdapterColorMetadata = previewSummary.AdapterColorMetadata
+            HdrInputDetected = color.HdrInputDetected,
+            ToneMapMode = color.ToneMapMode,
+            ColorContext = color.ColorContext,
+            AdapterColorMetadata = color.AdapterColorMetadata
         };
 
     private readonly record struct PreviewRuntimeColorFlattenedProjection

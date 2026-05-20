@@ -3,13 +3,13 @@ namespace Sussudio.Services.Automation;
 public sealed partial class AutomationDiagnosticsHub
 {
     private static PreviewRuntimeFrameFlattenedProjection BuildPreviewRuntimeFrameFlattenedProjection(
-        PreviewRuntimeProjection previewSummary)
+        PreviewRuntimeFrameProjection frame)
         => new()
         {
-            FramesArrived = previewSummary.FramesArrived,
-            FramesDisplayed = previewSummary.FramesDisplayed,
-            FramesDropped = previewSummary.FramesDropped,
-            EstimatedPipelineLatencyMs = previewSummary.EstimatedPipelineLatencyMs
+            FramesArrived = frame.FramesArrived,
+            FramesDisplayed = frame.FramesDisplayed,
+            FramesDropped = frame.FramesDropped,
+            EstimatedPipelineLatencyMs = frame.EstimatedPipelineLatencyMs
         };
 
     private readonly record struct PreviewRuntimeFrameFlattenedProjection

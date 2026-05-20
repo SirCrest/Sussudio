@@ -6,12 +6,12 @@ public sealed partial class AutomationDiagnosticsHub
         PreviewRuntimeProjection previewSummary)
         => new()
         {
-            Frame = BuildPreviewRuntimeFrameFlattenedProjection(previewSummary),
+            Frame = BuildPreviewRuntimeFrameFlattenedProjection(previewSummary.Frame),
             Cadence = BuildPreviewRuntimeCadenceFlattenedProjection(previewSummary.Cadence),
-            Surface = BuildPreviewRuntimeSurfaceFlattenedProjection(previewSummary),
+            Surface = BuildPreviewRuntimeSurfaceFlattenedProjection(previewSummary.Surface),
             Startup = BuildPreviewRuntimeStartupFlattenedProjection(previewSummary.Startup),
-            GpuPlayback = BuildPreviewRuntimeGpuPlaybackFlattenedProjection(previewSummary),
-            Color = BuildPreviewRuntimeColorFlattenedProjection(previewSummary)
+            GpuPlayback = BuildPreviewRuntimeGpuPlaybackFlattenedProjection(previewSummary.GpuPlayback),
+            Color = BuildPreviewRuntimeColorFlattenedProjection(previewSummary.Color)
         };
 
     private readonly record struct PreviewRuntimeFlattenedProjection
