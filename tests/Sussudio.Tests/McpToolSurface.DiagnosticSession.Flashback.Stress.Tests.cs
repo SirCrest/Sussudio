@@ -12,6 +12,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var warmPlaybackText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlayback.cs")
             .Replace("\r\n", "\n");
+        var warmPlaybackAudioText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlaybackAudio.cs")
+            .Replace("\r\n", "\n");
         var commandDrainText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrain.cs")
             .Replace("\r\n", "\n");
         var scrubText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.Scrub.cs")
@@ -32,7 +34,17 @@ static partial class Program
         AssertContains(warmPlaybackText, "private static async Task ValidateFlashbackStressWarmPlaybackAsync(");
         AssertContains(warmPlaybackText, "WaitForFlashbackPlaybackWarmSampleAsync(");
         AssertContains(warmPlaybackText, "\"flashback playback warmed frames=");
+        AssertContains(warmPlaybackText, "CaptureFlashbackStressWarmPlaybackAudioBaseline(");
+        AssertContains(warmPlaybackText, "CaptureFlashbackStressWarmPlaybackAudioDeltas(");
         AssertContains(warmPlaybackText, "ClassifyFlashbackStressAudioMasterFallbackWarning(");
+        AssertDoesNotContain(warmPlaybackText, "FlashbackPlaybackAudioMasterUnavailableFallbacks");
+        AssertContains(warmPlaybackAudioText, "private readonly record struct FlashbackStressWarmPlaybackAudioBaseline(");
+        AssertContains(warmPlaybackAudioText, "private readonly record struct FlashbackStressWarmPlaybackAudioDeltas(");
+        AssertContains(warmPlaybackAudioText, "private static FlashbackStressWarmPlaybackAudioBaseline CaptureFlashbackStressWarmPlaybackAudioBaseline(");
+        AssertContains(warmPlaybackAudioText, "private static FlashbackStressWarmPlaybackAudioDeltas CaptureFlashbackStressWarmPlaybackAudioDeltas(");
+        AssertContains(warmPlaybackAudioText, "FlashbackPlaybackAudioMasterUnavailableFallbacks");
+        AssertContains(warmPlaybackAudioText, "FlashbackPlaybackAudioMasterLastFallbackReason");
+        AssertDoesNotContain(warmPlaybackAudioText, "WaitForFlashbackPlaybackWarmSampleAsync(");
         AssertDoesNotContain(warmPlaybackText, "\"flashback stress: playback command queue did not drain within 10s \"");
         AssertContains(commandDrainText, "private static async Task ValidateFlashbackStressCommandDrainAsync(");
         AssertContains(commandDrainText, "BuildPlaybackCommandHealth(lastSnapshot, baselineSnapshot)");

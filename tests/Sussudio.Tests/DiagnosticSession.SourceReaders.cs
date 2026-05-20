@@ -93,6 +93,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackStressScenario.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.Stress.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlayback.cs",
+            "tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlaybackAudio.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrain.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.Scrub.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.ScrubDrain.cs",

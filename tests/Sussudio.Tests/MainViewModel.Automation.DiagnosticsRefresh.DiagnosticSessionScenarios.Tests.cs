@@ -124,9 +124,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var warmBaselineSnapshot = playbackBaselineSnapshot?.ValueKind == JsonValueKind.Object");
         AssertContains(diagnosticSessionText, "WaitForFlashbackPlaybackWarmSampleAsync(");
         AssertContains(diagnosticSessionText, "flashback playback warmed frames=");
-        AssertContains(diagnosticSessionText, "audioFallbackDelta={warmedAudioFallbackDelta}");
-        AssertContains(diagnosticSessionText, "staleDelta={warmedAudioStaleDelta}");
-        AssertContains(diagnosticSessionText, "driftOutlierDelta={warmedAudioDriftOutlierDelta}");
+        AssertContains(diagnosticSessionText, "CaptureFlashbackStressWarmPlaybackAudioDeltas(");
+        AssertContains(diagnosticSessionText, "audioFallbackDelta={warmedAudioFallbacks.TotalDelta}");
+        AssertContains(diagnosticSessionText, "staleDelta={warmedAudioFallbacks.StaleDelta}");
+        AssertContains(diagnosticSessionText, "driftOutlierDelta={warmedAudioFallbacks.DriftOutlierDelta}");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback did not warm for");
         AssertContains(diagnosticSessionText, "\"flashback stress: audio-master harmful fallbacks increased during warmed playback \"");
         AssertContains(diagnosticSessionText, "\"flashback stress: audio-master unavailable fallbacks exceeded startup allowance \"");
