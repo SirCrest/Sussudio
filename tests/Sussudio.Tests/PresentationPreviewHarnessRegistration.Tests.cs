@@ -43,6 +43,8 @@ static partial class Program
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.WindowLifecycle.RecordingFinalization.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.WindowLifecycle.ShutdownCleanup.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.WindowLifecycle.Tests.cs",
+        "tests/Sussudio.Tests/PreviewRuntimeSnapshotController.D3DPolicies.FrameFlow.Tests.cs",
+        "tests/Sussudio.Tests/PreviewRuntimeSnapshotController.D3DPolicies.RendererTiming.Tests.cs",
         "tests/Sussudio.Tests/PreviewRuntimeSnapshotController.D3DPolicies.Tests.cs",
         "tests/Sussudio.Tests/PreviewRuntimeSnapshotController.Health.Tests.cs",
         "tests/Sussudio.Tests/PreviewRuntimeSnapshotController.Integration.Tests.cs",

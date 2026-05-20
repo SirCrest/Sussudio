@@ -1610,8 +1610,14 @@ Primary current owners:
   owns MainWindow preview surface presentation and shadow controller ownership
   assertions.
 - `tests/Sussudio.Tests/PreviewRuntimeSnapshotController.D3DPolicies.Tests.cs`
-  owns preview runtime snapshot D3D null-renderer and CPU fallback policy
-  regression checks.
+  owns preview runtime snapshot D3D frame-counter CPU fallback and projection
+  composition regression checks.
+- `tests/Sussudio.Tests/PreviewRuntimeSnapshotController.D3DPolicies.RendererTiming.Tests.cs`
+  owns preview runtime snapshot D3D renderer-state, display-cadence,
+  render-CPU-timing, and pipeline-latency null-renderer regression checks.
+- `tests/Sussudio.Tests/PreviewRuntimeSnapshotController.D3DPolicies.FrameFlow.Tests.cs`
+  owns preview runtime snapshot D3D frame-statistics, frame-latency-wait, and
+  frame-ownership null-renderer regression checks.
 - `tests/Sussudio.Tests/PreviewRuntimeSnapshotController.Integration.Tests.cs`
   owns preview runtime snapshot controller Build integration regression checks.
 - `tests/Sussudio.Tests/PreviewRuntimeSnapshotController.Health.Tests.cs` owns
