@@ -88,7 +88,11 @@ static partial class Program
             "tools/Common/DiagnosticSessionResult.Overview.cs",
             "tools/Common/DiagnosticSessionResult.CaptureSource.cs",
             "tools/Common/DiagnosticSessionResult.Preview.cs",
-            "tools/Common/DiagnosticSessionResult.FlashbackPlayback.cs",
+            "tools/Common/DiagnosticSessionResult.FlashbackPlayback.Commands.cs",
+            "tools/Common/DiagnosticSessionResult.FlashbackPlayback.Cadence.cs",
+            "tools/Common/DiagnosticSessionResult.FlashbackPlayback.Decode.cs",
+            "tools/Common/DiagnosticSessionResult.FlashbackPlayback.AudioMaster.cs",
+            "tools/Common/DiagnosticSessionResult.FlashbackPlayback.Stage.cs",
             "tools/Common/DiagnosticSessionResult.FlashbackRecordingExport.cs",
             "tools/Common/DiagnosticSessionSample.cs");
 

@@ -3311,7 +3311,11 @@ Diagnostic session DTOs live in feature-oriented model files:
 `tools/Common/DiagnosticSessionResult.Overview.cs`,
 `tools/Common/DiagnosticSessionResult.CaptureSource.cs`,
 `tools/Common/DiagnosticSessionResult.Preview.cs`,
-`tools/Common/DiagnosticSessionResult.FlashbackPlayback.cs`,
+`tools/Common/DiagnosticSessionResult.FlashbackPlayback.Commands.cs`,
+`tools/Common/DiagnosticSessionResult.FlashbackPlayback.Cadence.cs`,
+`tools/Common/DiagnosticSessionResult.FlashbackPlayback.Decode.cs`,
+`tools/Common/DiagnosticSessionResult.FlashbackPlayback.AudioMaster.cs`,
+`tools/Common/DiagnosticSessionResult.FlashbackPlayback.Stage.cs`,
 `tools/Common/DiagnosticSessionResult.FlashbackRecordingExport.cs`,
 `tools/Common/DiagnosticSessionSample.cs`. `DiagnosticSessionOptions.cs` also owns
 shared tool invocation defaults and the ssctl diagnostic-session usage string,
@@ -3346,9 +3350,11 @@ completion, and interrupted drain handoff.
 request mapping consumed by the completion phase.
 The public options/result/sample contracts are separated from runner behavior. The result
 DTO root owns core session metadata, terminal state, artifacts, actions, and
-warnings; the result partials own capture/source, Flashback playback,
-Flashback recording, Flashback export, preview, process, recording
-verification, and PresentMon fields.
+warnings; the result partials own capture/source, Flashback playback command
+queue, Flashback playback cadence, Flashback playback decode, Flashback
+playback audio-master, Flashback playback stage/seek, Flashback recording,
+Flashback export, preview, process, recording verification, and PresentMon
+fields.
 
 Diagnostic-session result text now lives in a focused partial family rooted at
 `tools/Common/DiagnosticSessionResultFormatter.cs`. The root owns the public
@@ -3877,7 +3883,11 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResult.Overview.cs`
 - `DiagnosticSessionResult.CaptureSource.cs`
 - `DiagnosticSessionResult.Preview.cs`
-- `DiagnosticSessionResult.FlashbackPlayback.cs`
+- `DiagnosticSessionResult.FlashbackPlayback.Commands.cs`
+- `DiagnosticSessionResult.FlashbackPlayback.Cadence.cs`
+- `DiagnosticSessionResult.FlashbackPlayback.Decode.cs`
+- `DiagnosticSessionResult.FlashbackPlayback.AudioMaster.cs`
+- `DiagnosticSessionResult.FlashbackPlayback.Stage.cs`
 - `DiagnosticSessionResult.FlashbackRecordingExport.cs`
 - `DiagnosticSessionSample.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
