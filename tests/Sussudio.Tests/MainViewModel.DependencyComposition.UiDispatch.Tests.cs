@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainViewModelUiDispatchController_UsesDependencyCompositionContext()
+    internal static Task MainViewModelUiDispatchController_UsesDependencyCompositionContext()
     {
         var controllerGraphUiDispatchText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.UiDispatch.cs").Replace("\r\n", "\n");
         var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs").Replace("\r\n", "\n");

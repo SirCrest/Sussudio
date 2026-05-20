@@ -224,6 +224,10 @@ add xUnit alongside, and port incrementally.
   the former legacy presentation-preview MainViewModel source-telemetry
   presentation group: source/target summary formatting, focused source
   telemetry helper ownership, and live-signal pixel-format fallback order.
+- `XUnit.PresentationPreviewMainViewModelDependencyCompositionContractsTests.cs`
+  owns the former legacy presentation-preview MainViewModel dependency
+  composition group: root dependency seam, UI dispatch, presentation, recording,
+  capture/device, and runtime controller context ownership checks.
 - `XUnit.PresentationPreviewD3DPacingContractsTests.cs` owns the former legacy
   presentation-preview D3D pacing registration group: transition-drain,
   frame-capture cancellation, and shared-device reference lifecycle checks.

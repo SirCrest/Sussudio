@@ -968,6 +968,12 @@ execute through
 keeping source/target summary formatting, focused source telemetry helper
 ownership, and live-signal pixel-format fallback order contracts in xUnit after
 their removal from the legacy harness catalog.
+Presentation-preview MainViewModel dependency-composition checks now execute
+through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelDependencyCompositionContractsTests.cs`,
+keeping root dependency seam, UI dispatch, presentation, recording,
+capture/device, and runtime controller context ownership contracts in xUnit
+after their removal from the legacy harness catalog.
 Presentation-preview D3D pacing checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`,
 keeping transition-drain, frame-capture cancellation, and shared-device

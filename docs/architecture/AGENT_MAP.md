@@ -2569,6 +2569,11 @@ Primary current owners:
   presentation group for source/target summary formatting, focused source
   telemetry helper ownership, and live-signal pixel-format fallback order after
   their removal from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelDependencyCompositionContractsTests.cs`
+  owns the former presentation-preview MainViewModel dependency-composition
+  group for root dependency seam, UI dispatch, presentation, recording,
+  capture/device, and runtime controller context ownership checks after their
+  removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`
   owns the former presentation-preview D3D pacing group for transition-drain,
   frame-capture cancellation, and shared-device reference lifecycle checks after
