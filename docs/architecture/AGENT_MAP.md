@@ -3969,8 +3969,12 @@ Primary owners:
   diagnostic-session outcome policy plus overview DTO projection for process
   CPU, recording verification, and PresentMon fields.
 - `tools/Common/DiagnosticSessionResultBuilder.Analysis.cs` owns
-  diagnostic-session metric preparation and named validation handoffs before
-  summary construction.
+  diagnostic-session metric preparation, analysis warning emission, and the
+  handoff into the named analysis-validation owner before summary construction.
+- `tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs` owns
+  diagnostic-session validation handoff order for Flashback playback, cleanup
+  lifecycle restore, preview scheduler analysis, diagnostic health, and
+  tolerated Flashback scenario warning classification.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs` owns
   Flashback playback/export analysis warning text and threshold guards emitted
   during result construction.

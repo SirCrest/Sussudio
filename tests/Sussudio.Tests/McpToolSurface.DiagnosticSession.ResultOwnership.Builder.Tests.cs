@@ -23,6 +23,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
+        var analysisValidationText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs")
+            .Replace("\r\n", "\n");
         var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs")
             .Replace("\r\n", "\n");
         var modelsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Models.cs")
@@ -44,9 +46,20 @@ static partial class Program
         AssertContains(flatteningText, "return new DiagnosticSessionResult\n        {");
         AssertContains(builderText, "var resultProjections = BuildResultProjectionSet(request, runState, analysis);");
         AssertContains(analysisText, "var previewScheduler = BuildPreviewSchedulerAnalysis(initialSnapshot, lastSnapshot, samples);");
+        AssertContains(analysisText, "var validationOutcome = ValidateAnalysis(");
+        AssertContains(analysisValidationText, "private readonly record struct DiagnosticSessionAnalysisValidationOutcome(");
+        AssertContains(analysisValidationText, "private static DiagnosticSessionAnalysisValidationOutcome ValidateAnalysis(");
+        AssertContains(analysisValidationText, "ValidateFlashbackPlaybackSession(");
+        AssertContains(analysisValidationText, "ValidateCleanupLifecycleRestored(");
+        AssertContains(analysisValidationText, "ValidateFlashbackPreviewSchedulerAnalysis(");
+        AssertContains(analysisValidationText, "AnalyzeDiagnosticHealth(");
+        AssertContains(analysisValidationText, "IsToleratedFlashbackScenarioWarning(");
         AssertDoesNotContain(flatteningText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
         AssertDoesNotContain(builderText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
         AssertDoesNotContain(builderText, "return new DiagnosticSessionResult\n        {");
+        AssertDoesNotContain(analysisText, "ValidateCleanupLifecycleRestored(");
+        AssertDoesNotContain(analysisText, "ValidateFlashbackPlaybackSession(");
+        AssertDoesNotContain(analysisText, "IsToleratedFlashbackScenarioWarning(");
     }
 
     private static void AssertDiagnosticSessionResultBuilderPreviewSchedulerOwnership()

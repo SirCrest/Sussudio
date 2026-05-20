@@ -1,8 +1,5 @@
 using static Sussudio.Tools.AutomationSnapshotFormatter;
-using static Sussudio.Tools.DiagnosticSessionCleanupPolicy;
 using static Sussudio.Tools.DiagnosticSessionFlashbackMetrics;
-using static Sussudio.Tools.DiagnosticSessionFlashbackValidation;
-using static Sussudio.Tools.DiagnosticSessionHealthTolerances;
 using static Sussudio.Tools.DiagnosticSessionMetrics;
 
 namespace Sussudio.Tools;
@@ -42,59 +39,24 @@ internal static partial class DiagnosticSessionResultBuilder
         var previewCadenceMetrics = BuildPreviewCadenceSessionMetrics(samples, lastSnapshot);
         var previewD3DMetrics = BuildPreviewD3DMetrics(initialSnapshot, lastSnapshot, samples);
         var visualCadenceMetrics = BuildVisualCadenceSessionMetrics(samples, lastSnapshot);
-        if (request.ScenarioPlan.RunFlashbackPlayback)
-        {
-            ValidateFlashbackPlaybackSession(
-                playbackSessionMetrics.Observed ? playbackResultMetrics.EndSnapshot : lastSnapshot,
-                playbackSessionMetrics,
-                visualCadenceMetrics,
-                request.DurationSeconds,
-                warnings);
-        }
-
         var sourceReaderFramesDroppedDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MfSourceReaderFramesDropped");
         var videoIngestErrorsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "VideoIngestErrorCount");
         var previewScheduler = BuildPreviewSchedulerAnalysis(initialSnapshot, lastSnapshot, samples);
-        var isFlashbackScenario = request.ScenarioPlan.UsesFlashbackScenarioWarningPolicy;
-        ValidateCleanupLifecycleRestored(
-            request.Options.LeaveRunning,
-            request.StartedPreview,
-            request.EnabledFlashback,
-            request.StartedFlashbackPlayback,
+        var validationOutcome = ValidateAnalysis(
+            request,
             initialSnapshot,
-            healthSnapshot,
-            warnings);
-        var toleratesSourceSignalHealthWarning = request.ScenarioPlan.ToleratesSourceSignalHealthWarning;
-        ValidateFlashbackPreviewSchedulerAnalysis(
-            request.ScenarioPlan,
             lastSnapshot,
-            request.DurationSeconds,
-            previewScheduler,
-            previewCadenceMetrics,
-            visualCadenceMetrics,
-            previewD3DMetrics,
-            warnings);
-
-        var toleratesFlashbackForceRotateDrainWarning = request.ScenarioPlan.ToleratesFlashbackForceRotateDrainWarning;
-        var diagnosticHealthSucceeded = AnalyzeDiagnosticHealth(
-            samples,
+            healthSnapshot,
             diagnosticHealthSnapshot,
-            request.ScenarioPlan,
+            playbackSessionMetrics,
+            playbackResultMetrics,
             sourceCadenceMetrics,
-            sourceReaderFramesDroppedDelta,
-            videoIngestErrorsDelta,
-            request.DurationSeconds,
-            previewScheduler,
+            previewCadenceMetrics,
+            previewD3DMetrics,
             visualCadenceMetrics,
-            GetDouble(lastSnapshot, "ExpectedCaptureFrameRate"),
-            warnings);
-
-        var flashbackWarningsSucceeded = !isFlashbackScenario ||
-                                         warnings.All(warning => IsToleratedFlashbackScenarioWarning(
-                                             warning,
-                                             toleratesSourceSignalHealthWarning,
-                                             toleratesFlashbackForceRotateDrainWarning,
-                                             request.ScenarioPlan.IsPreviewCycleScenario));
+            previewScheduler,
+            sourceReaderFramesDroppedDelta,
+            videoIngestErrorsDelta);
 
         var processCpuMaxPercentObserved = samples
             .Select(sample => GetDouble(sample.Snapshot, "ProcessCpuPercent"))
@@ -116,8 +78,8 @@ internal static partial class DiagnosticSessionResultBuilder
             previewD3DMetrics,
             visualCadenceMetrics,
             previewScheduler,
-            diagnosticHealthSucceeded,
-            flashbackWarningsSucceeded,
+            validationOutcome.DiagnosticHealthSucceeded,
+            validationOutcome.FlashbackWarningsSucceeded,
             processCpuMaxPercentObserved);
     }
 

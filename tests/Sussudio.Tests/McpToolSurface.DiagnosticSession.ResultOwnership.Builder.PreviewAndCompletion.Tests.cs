@@ -63,12 +63,14 @@ static partial class Program
     {
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
+        var analysisValidationText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs")
+            .Replace("\r\n", "\n");
         var flashbackWarningsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(analysisText, "AddFlashbackPlaybackAnalysisWarnings(playbackResultMetrics, warnings);");
         AssertContains(analysisText, "AddFlashbackExportAnalysisWarnings(");
-        AssertContains(analysisText, "ValidateFlashbackPreviewSchedulerAnalysis(");
+        AssertContains(analysisValidationText, "ValidateFlashbackPreviewSchedulerAnalysis(");
         AssertContains(analysisText, "exportMetrics.ForceRotateFallbacksAtEnd,");
         AssertContains(analysisText, "exportMetrics.ForceRotateFallbacksDelta,");
         AssertContains(analysisText, "exportMetrics.LastForceRotateFallbackSegmentsAtEnd,");
@@ -91,10 +93,13 @@ static partial class Program
     {
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
+        var analysisValidationText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs")
+            .Replace("\r\n", "\n");
         var healthText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(analysisText, "var diagnosticHealthSucceeded = AnalyzeDiagnosticHealth(");
+        AssertContains(analysisText, "var validationOutcome = ValidateAnalysis(");
+        AssertContains(analysisValidationText, "var diagnosticHealthSucceeded = AnalyzeDiagnosticHealth(");
         AssertContains(healthText, "private static bool AnalyzeDiagnosticHealth(");
         AssertContains(healthText, "BuildSessionDiagnosticHealthObservation(");
         AssertContains(healthText, "IsSparseSourceCaptureCadenceWarningRun(");
@@ -103,6 +108,7 @@ static partial class Program
         AssertContains(healthText, "diagnostic health degraded during session");
         AssertContains(healthText, "diagnostic health {toleratedReason}:");
         AssertContains(healthText, "flashback force-rotate drain warning tolerated for flashback scenario");
+        AssertDoesNotContain(analysisText, "AnalyzeDiagnosticHealth(");
         AssertDoesNotContain(analysisText, "BuildSessionDiagnosticHealthObservation(");
         AssertDoesNotContain(analysisText, "diagnostic health degraded during session");
         AssertDoesNotContain(analysisText, "diagnostic health {toleratedReason}:");

@@ -3389,9 +3389,10 @@ assembly from overview, capture, Flashback, preview, D3D, and visual-cadence
 projection owners. Overview
 outcome policy plus process CPU, recording verification, and PresentMon DTO
 projection values live in `DiagnosticSessionResultBuilder.OverviewResult.cs`.
-Diagnostic
-metric gathering and validation handoff orchestration live in
-`DiagnosticSessionResultBuilder.Analysis.cs`, while Flashback playback/export
+Diagnostic metric gathering and analysis warning emission live in
+`DiagnosticSessionResultBuilder.Analysis.cs`, while named validation handoff
+order and tolerated Flashback scenario warning classification live in
+`DiagnosticSessionResultBuilder.AnalysisValidation.cs`. Flashback playback/export
 analysis warning text and thresholds live in
 `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`; result-build request,
 analysis, and projection-set handoff models live in
@@ -3914,6 +3915,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.Flattening.cs`
 - `DiagnosticSessionResultBuilder.OverviewResult.cs`
 - `DiagnosticSessionResultBuilder.Analysis.cs`
+- `DiagnosticSessionResultBuilder.AnalysisValidation.cs`
 - `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
