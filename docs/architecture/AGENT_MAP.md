@@ -574,6 +574,19 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs`
   owns encoder queue ages, conversion queue depths, and recording
   video/GPU/CUDA health inputs consumed by `AutomationSnapshot`.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingPipeline.cs`
+  owns final recording-pipeline projection-to-`AutomationSnapshot` field
+  flattening and routes the grouped encoder, ingest, video-queue, and GPU/CUDA
+  queue flattening modules.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingPipeline.Encoder.cs`
+  owns final encoder age/count/failure field flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingPipeline.Ingest.cs`
+  owns final conversion, ffmpeg, and video ingest queue field flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingPipeline.VideoQueue.cs`
+  owns final recording video queue latency, backpressure, and encoder-output
+  field flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingPipeline.HardwareQueues.cs`
+  owns final recording GPU and CUDA queue field flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingOutput.cs`
   owns recording backend/audio-path/mux-result projection, recording UI output
   text, accumulated recording bytes, file-growth state, last finalized output

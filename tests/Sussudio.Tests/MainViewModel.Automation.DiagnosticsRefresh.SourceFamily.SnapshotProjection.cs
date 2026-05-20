@@ -71,6 +71,10 @@ static partial class Program
         public string SnapshotProjectionFlatteningRecordingIntegrityText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingPipelineText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningRecordingPipelineText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningRecordingPipelineEncoderText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningRecordingPipelineIngestText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningRecordingPipelineVideoQueueText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningRecordingPipelineHardwareQueuesText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingOutputText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningRecordingOutputText { get; init; } = string.Empty;
         public string SnapshotProjectionSourceSignalText { get; init; } = string.Empty;
