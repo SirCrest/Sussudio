@@ -2,7 +2,7 @@ using System.Reflection;
 
 static partial class Program
 {
-    private static Task PreviewRuntimeSnapshotController_PreservesNullD3dProjectionPolicy()
+    internal static Task PreviewRuntimeSnapshotController_PreservesNullD3dProjectionPolicy()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
         var controllerType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotController");

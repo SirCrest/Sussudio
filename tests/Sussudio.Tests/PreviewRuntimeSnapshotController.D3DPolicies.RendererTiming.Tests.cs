@@ -2,7 +2,7 @@ using System.Reflection;
 
 static partial class Program
 {
-    private static Task PreviewRuntimeD3DRendererStatePolicy_PreservesNullRendererDefaults()
+    internal static Task PreviewRuntimeD3DRendererStatePolicy_PreservesNullRendererDefaults()
     {
         var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DRendererStatePolicy");
         var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
@@ -37,7 +37,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewRuntimeD3DDisplayCadencePolicy_PreservesNullRendererDefaults()
+    internal static Task PreviewRuntimeD3DDisplayCadencePolicy_PreservesNullRendererDefaults()
     {
         var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DDisplayCadencePolicy");
         var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
@@ -65,7 +65,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewRuntimeD3DRenderCpuTimingPolicy_PreservesNullRendererDefaults()
+    internal static Task PreviewRuntimeD3DRenderCpuTimingPolicy_PreservesNullRendererDefaults()
     {
         var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DRenderCpuTimingPolicy");
         var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
@@ -94,7 +94,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewRuntimeD3DPipelineLatencyPolicy_PreservesNullRendererDefaults()
+    internal static Task PreviewRuntimeD3DPipelineLatencyPolicy_PreservesNullRendererDefaults()
     {
         var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DPipelineLatencyPolicy");
         var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)

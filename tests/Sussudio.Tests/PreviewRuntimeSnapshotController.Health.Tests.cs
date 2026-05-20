@@ -2,7 +2,7 @@ using System.Reflection;
 
 static partial class Program
 {
-    private static Task PreviewRuntimeSnapshotHealthPolicy_PreservesSuspicionRules()
+    internal static Task PreviewRuntimeSnapshotHealthPolicy_PreservesSuspicionRules()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealthInput");
         var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealthPolicy");
@@ -66,7 +66,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewRuntimeSnapshotHealthInputFactory_ProjectsControllerInputs()
+    internal static Task PreviewRuntimeSnapshotHealthInputFactory_ProjectsControllerInputs()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
         var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");

@@ -2,7 +2,7 @@ using System.Reflection;
 
 static partial class Program
 {
-    private static Task PreviewRuntimeD3DFrameCounterPolicy_PreservesCpuFallbackCounters()
+    internal static Task PreviewRuntimeD3DFrameCounterPolicy_PreservesCpuFallbackCounters()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
         var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DFrameCounterPolicy");
@@ -40,7 +40,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewRuntimeD3DProjectionBuilder_AppliesPolicyGroups()
+    internal static Task PreviewRuntimeD3DProjectionBuilder_AppliesPolicyGroups()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
         var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");

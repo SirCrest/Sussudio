@@ -917,6 +917,10 @@ Presentation-preview preview runtime shell checks now execute through
 keeping resize telemetry, renderer host state, snapshot mapping, D3D projection
 ownership, surface/shadow ownership, and startup-plan fallback contracts in
 xUnit after their removal from the legacy harness catalog.
+Presentation-preview preview runtime policy checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewRuntimePolicyContractsTests.cs`,
+keeping snapshot health/projection policies and D3D projection policy defaults
+in xUnit after their removal from the legacy harness catalog.
 Presentation-preview recording checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewRecordingContractsTests.cs`,
 keeping recording button chrome, state presentation, lockout policy, and

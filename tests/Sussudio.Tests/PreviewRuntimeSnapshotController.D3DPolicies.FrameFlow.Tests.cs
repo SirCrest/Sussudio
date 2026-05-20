@@ -2,7 +2,7 @@ using System.Reflection;
 
 static partial class Program
 {
-    private static Task PreviewRuntimeD3DFrameStatisticsPolicy_PreservesNullRendererDefaults()
+    internal static Task PreviewRuntimeD3DFrameStatisticsPolicy_PreservesNullRendererDefaults()
     {
         var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DFrameStatisticsPolicy");
         var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
@@ -26,7 +26,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewRuntimeD3DFrameLatencyWaitPolicy_PreservesNullRendererDefaults()
+    internal static Task PreviewRuntimeD3DFrameLatencyWaitPolicy_PreservesNullRendererDefaults()
     {
         var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DFrameLatencyWaitPolicy");
         var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
@@ -51,7 +51,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewRuntimeD3DFrameOwnershipPolicy_PreservesNullRendererDefaults()
+    internal static Task PreviewRuntimeD3DFrameOwnershipPolicy_PreservesNullRendererDefaults()
     {
         var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DFrameOwnershipPolicy");
         var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)

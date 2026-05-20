@@ -2,7 +2,7 @@ using System.Reflection;
 
 static partial class Program
 {
-    private static Task PreviewRuntimeSnapshotSurfaceProjectionPolicy_PreservesVisibilityAndHealthFields()
+    internal static Task PreviewRuntimeSnapshotSurfaceProjectionPolicy_PreservesVisibilityAndHealthFields()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
         var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
@@ -46,7 +46,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewRuntimeSnapshotStartupProjectionPolicy_PreservesSampledStartupFields()
+    internal static Task PreviewRuntimeSnapshotStartupProjectionPolicy_PreservesSampledStartupFields()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
         var healthType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth");
@@ -96,7 +96,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy_PreservesRendererAndEventFields()
+    internal static Task PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy_PreservesRendererAndEventFields()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
         var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
