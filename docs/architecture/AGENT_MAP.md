@@ -3849,8 +3849,12 @@ Primary owners:
   Flashback playback state and command-queue snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.Playback.Performance.cs` owns
   Flashback playback cadence, decode, frame, stage, and A/V drift snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG decode, compressed
-  queue, drop-reason, reorder, pipeline, and per-decoder timing snapshot text.
+- `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG timing snapshot
+  activation, header, and output order.
+- `tools/ssctl/Formatters.Snapshot.Mjpeg.Decode.cs` owns MJPEG decode, interop
+  copy, callback, and per-decoder timing snapshot text.
+- `tools/ssctl/Formatters.Snapshot.Mjpeg.Pipeline.cs` owns MJPEG compressed
+  queue, drop-reason, reorder, and pipeline timing snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Mjpeg.PreviewJitter.cs` owns MJPEG
   preview-jitter queue, input/output/latency, ownership, and underflow snapshot
   text.
@@ -4493,9 +4497,13 @@ Primary owners:
   owns Flashback playback status and command text.
   `tools/Common/AutomationSnapshotFormatter.Flashback.Playback.Performance.cs`
   owns Flashback playback cadence, decode, frame, stage, and A/V drift text.
-  `tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs` owns MJPEG decode,
-  compressed queue, drop-reason, reorder, pipeline, and per-decoder timing
-  text. `tools/Common/AutomationSnapshotFormatter.MjpegTiming.PreviewJitter.cs`
+  `tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs` owns MJPEG timing
+  activation, header, and output order.
+  `tools/Common/AutomationSnapshotFormatter.MjpegTiming.Decode.cs` owns MJPEG
+  decode, interop copy, callback, and per-decoder timing text.
+  `tools/Common/AutomationSnapshotFormatter.MjpegTiming.Pipeline.cs` owns MJPEG
+  compressed queue, drop-reason, reorder, and pipeline timing text.
+  `tools/Common/AutomationSnapshotFormatter.MjpegTiming.PreviewJitter.cs`
   owns MJPEG preview-jitter queue, input/output/latency, ownership, and
   underflow text. The
   `tools/Common/AutomationSnapshotFormatter.Preview.cs`,

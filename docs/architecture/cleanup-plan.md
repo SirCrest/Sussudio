@@ -581,9 +581,13 @@ throughput, force-rotate fallback, range, output path, and message text in
 `Formatters.Snapshot.Flashback.Export.cs`, Flashback playback status and
 command text in `Formatters.Snapshot.Flashback.Playback.Commands.cs`,
 Flashback playback cadence, decode, frame, stage, and A/V drift text in
-`Formatters.Snapshot.Flashback.Playback.Performance.cs`, MJPEG timing text in
-`Formatters.Snapshot.Mjpeg.cs`, MJPEG preview-jitter queue, latency, ownership,
-and underflow text in `Formatters.Snapshot.Mjpeg.PreviewJitter.cs`, D3D preview
+`Formatters.Snapshot.Flashback.Playback.Performance.cs`, MJPEG
+activation/header/order in `Formatters.Snapshot.Mjpeg.cs`,
+decode/copy/callback/per-decoder timing text in
+`Formatters.Snapshot.Mjpeg.Decode.cs`, compressed-queue, drop-reason, reorder,
+and pipeline timing text in `Formatters.Snapshot.Mjpeg.Pipeline.cs`, MJPEG
+preview-jitter queue, latency, ownership, and underflow text in
+`Formatters.Snapshot.Mjpeg.PreviewJitter.cs`, D3D preview
 renderer routing/header text in `Formatters.Snapshot.PreviewD3D.cs`, D3D CPU
 timing, pipeline latency, and frame-latency wait text in
 `Formatters.Snapshot.PreviewD3D.Timing.cs`, D3D frame ownership and DXGI
@@ -633,9 +637,12 @@ playback cadence, decode, frame, stage, and A/V drift text lives in
 capture cadence, MJPEG packet fingerprint, and visual cadence rows, while
 `AutomationSnapshotFormatter.AvSync.cs` owns AV-sync text and
 `AutomationSnapshotFormatter.Source.cs` owns source-signal text emitted from
-the cadence tail. MJPEG timing lives in
-`AutomationSnapshotFormatter.MjpegTiming.cs`; MJPEG preview-jitter queue,
-latency, ownership, and underflow text lives in
+the cadence tail. MJPEG activation/header/order lives in
+`AutomationSnapshotFormatter.MjpegTiming.cs`; decode/copy/callback/per-decoder
+timing text lives in `AutomationSnapshotFormatter.MjpegTiming.Decode.cs`;
+compressed queue, drop-reason, reorder, and pipeline timing text lives in
+`AutomationSnapshotFormatter.MjpegTiming.Pipeline.cs`; MJPEG preview-jitter
+queue, latency, ownership, and underflow text lives in
 `AutomationSnapshotFormatter.MjpegTiming.PreviewJitter.cs`. Preview routing,
 D3D preview text, and thread-health live in the remaining focused formatter partials. The
 `AutomationSnapshotFormatter.PreviewD3D.cs` owner keeps D3D header/routing and
