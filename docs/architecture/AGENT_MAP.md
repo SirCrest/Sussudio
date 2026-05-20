@@ -4187,9 +4187,14 @@ Primary owners:
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`, and
   `tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs` own read-only
   recording, playback session orchestration, playback snapshot observation,
-  result-copy, and export metric projections. Playback observation includes
-  active/relevant snapshot gating, 1% low window capture, frame/decode maxima,
-  and audio-master maxima.
+  result-copy, and export metric projections. Playback observation root owns
+  active/relevant snapshot gating and dispatches to focused observation helpers:
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.OnePercentLow.cs`
+  owns 1% low window capture,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.FrameDecode.cs`
+  owns frame/decode maxima, and
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs`
+  owns audio-master maxima.
   Export metrics include force-rotate fallback total, delta, and last fallback
   segment count; keep those counters derived outside export-observed relevance gating.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`

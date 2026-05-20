@@ -3693,11 +3693,13 @@ playback queue assertions while startup only delegates to the lifecycle owner.
 
 Diagnostic-session Flashback metric projection now lives in a focused partial
 family of named owners. DTOs, recording metrics, playback session aggregation,
-playback result copying, and export metrics each have named owner files. Export
-metrics also own force-rotate fallback total, delta, and last fallback segment
-count, derived outside export-observed relevance gating. These helpers remain
-snapshot-only projections and must not send automation commands. Do not
-reintroduce an empty family root.
+playback result copying, and export metrics each have named owner files.
+Playback observation keeps active/relevant snapshot gating in the root while
+1% low capture, frame/decode maxima, and audio-master maxima live in focused
+observation partials. Export metrics also own force-rotate fallback total,
+delta, and last fallback segment count, derived outside export-observed
+relevance gating. These helpers remain snapshot-only projections and must not
+send automation commands. Do not reintroduce an empty family root.
 
 MCP fixed command routes should use `AutomationCommandKind` overloads when the
 command is part of the shared catalog. Keep this as an ownership rule, not a
@@ -3856,6 +3858,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.Export.cs`
 - `DiagnosticSessionFlashbackMetrics.Models.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackObservation.OnePercentLow.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackObservation.FrameDecode.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
 - `DiagnosticSessionFlashbackMetrics.Recording.cs`
