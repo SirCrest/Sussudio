@@ -551,13 +551,23 @@ Automation diagnostics ownership:
   owns final Flashback export projection-to-`AutomationSnapshot` field
   flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs`
-  owns Flashback recording, buffer, backend, encoder configuration, export
-  verification, codec-downgrade fallback, temp-drive, and startup cache
-  projection consumed by
+  owns Flashback recording failure, cleanup, force-rotate, and focused
+  projection routing consumed by `AutomationSnapshot`.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.StartupCache.cs`
+  owns Flashback temp-drive and startup-cache policy projection consumed by
   `AutomationSnapshot`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecordingQueues.cs`
   owns Flashback video, GPU, and audio queue/backpressure projection consumed
   by `AutomationSnapshot`.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.Runtime.cs`
+  owns Flashback active recording output/runtime projection consumed by
+  `AutomationSnapshot`.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.Backend.cs`
+  owns Flashback backend settings drift, export-verification, and codec
+  downgrade projection consumed by `AutomationSnapshot`.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.Encoder.cs`
+  owns Flashback encoder identity, bitrate, dimension, and frame-rate
+  projection consumed by `AutomationSnapshot`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.cs`
   owns final Flashback recording projection-to-`AutomationSnapshot` field
   flattening plus failure, cleanup, and force-rotate fields.

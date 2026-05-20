@@ -70,7 +70,15 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackRecordingProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs")
             .Replace("\r\n", "\n");
+        var flashbackRecordingStartupCacheProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.StartupCache.cs")
+            .Replace("\r\n", "\n");
         var flashbackRecordingQueuesProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecordingQueues.cs")
+            .Replace("\r\n", "\n");
+        var flashbackRecordingRuntimeProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.Runtime.cs")
+            .Replace("\r\n", "\n");
+        var flashbackRecordingBackendProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.Backend.cs")
+            .Replace("\r\n", "\n");
+        var flashbackRecordingEncoderProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.Encoder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var flashbackRecording = BuildFlashbackRecordingProjection(captureRuntime, health);");
@@ -89,9 +97,9 @@ static partial class Program
         AssertContains(flashbackRecordingFlatteningText, "EncodingFailed = flashbackRecording.EncodingFailed,");
         AssertContains(flashbackRecordingFlatteningText, "StartupCache = BuildFlashbackRecordingStartupCacheFlattenedProjection(flashbackRecording.StartupCache),");
         AssertContains(flashbackRecordingFlatteningText, "Queues = BuildFlashbackRecordingQueuesFlattenedProjection(flashbackRecording.Queues),");
-        AssertContains(flashbackRecordingFlatteningText, "Runtime = BuildFlashbackRecordingRuntimeFlattenedProjection(flashbackRecording),");
-        AssertContains(flashbackRecordingFlatteningText, "Backend = BuildFlashbackRecordingBackendFlattenedProjection(flashbackRecording),");
-        AssertContains(flashbackRecordingFlatteningText, "Encoder = BuildFlashbackRecordingEncoderFlattenedProjection(flashbackRecording)");
+        AssertContains(flashbackRecordingFlatteningText, "Runtime = BuildFlashbackRecordingRuntimeFlattenedProjection(flashbackRecording.Runtime),");
+        AssertContains(flashbackRecordingFlatteningText, "Backend = BuildFlashbackRecordingBackendFlattenedProjection(flashbackRecording.Backend),");
+        AssertContains(flashbackRecordingFlatteningText, "Encoder = BuildFlashbackRecordingEncoderFlattenedProjection(flashbackRecording.Encoder)");
         AssertContains(flashbackRecordingFlatteningText, "private readonly record struct FlashbackRecordingFlattenedProjection");
         AssertContains(flashbackRecordingFlatteningText, "public FlashbackRecordingStartupCacheFlattenedProjection StartupCache { get; init; }");
         AssertContains(flashbackRecordingFlatteningText, "public FlashbackRecordingQueuesFlattenedProjection Queues { get; init; }");
@@ -107,17 +115,20 @@ static partial class Program
         AssertContains(flashbackRecordingFlatteningQueuesText, "AudioQueueCapacity = queues.AudioQueueCapacity");
         AssertContains(flashbackRecordingFlatteningQueuesText, "private readonly record struct FlashbackRecordingQueuesFlattenedProjection");
         AssertContains(flashbackRecordingFlatteningRuntimeText, "private static FlashbackRecordingRuntimeFlattenedProjection BuildFlashbackRecordingRuntimeFlattenedProjection(");
-        AssertContains(flashbackRecordingFlatteningRuntimeText, "Active = flashbackRecording.Active,");
-        AssertContains(flashbackRecordingFlatteningRuntimeText, "GpuEncoding = flashbackRecording.GpuEncoding");
+        AssertContains(flashbackRecordingFlatteningRuntimeText, "FlashbackRecordingRuntimeProjection runtime");
+        AssertContains(flashbackRecordingFlatteningRuntimeText, "Active = runtime.Active,");
+        AssertContains(flashbackRecordingFlatteningRuntimeText, "GpuEncoding = runtime.GpuEncoding");
         AssertContains(flashbackRecordingFlatteningRuntimeText, "private readonly record struct FlashbackRecordingRuntimeFlattenedProjection");
         AssertContains(flashbackRecordingFlatteningBackendText, "private static FlashbackRecordingBackendFlattenedProjection BuildFlashbackRecordingBackendFlattenedProjection(");
-        AssertContains(flashbackRecordingFlatteningBackendText, "SettingsStale = flashbackRecording.BackendSettingsStale,");
-        AssertContains(flashbackRecordingFlatteningBackendText, "ExportVerificationFormat = flashbackRecording.ExportVerificationFormat,");
-        AssertContains(flashbackRecordingFlatteningBackendText, "CodecDowngradeReason = flashbackRecording.CodecDowngradeReason");
+        AssertContains(flashbackRecordingFlatteningBackendText, "FlashbackRecordingBackendProjection backend");
+        AssertContains(flashbackRecordingFlatteningBackendText, "SettingsStale = backend.SettingsStale,");
+        AssertContains(flashbackRecordingFlatteningBackendText, "ExportVerificationFormat = backend.ExportVerificationFormat,");
+        AssertContains(flashbackRecordingFlatteningBackendText, "CodecDowngradeReason = backend.CodecDowngradeReason");
         AssertContains(flashbackRecordingFlatteningBackendText, "private readonly record struct FlashbackRecordingBackendFlattenedProjection");
         AssertContains(flashbackRecordingFlatteningEncoderText, "private static FlashbackRecordingEncoderFlattenedProjection BuildFlashbackRecordingEncoderFlattenedProjection(");
-        AssertContains(flashbackRecordingFlatteningEncoderText, "CodecName = flashbackRecording.EncoderCodecName,");
-        AssertContains(flashbackRecordingFlatteningEncoderText, "FrameRateDenominator = flashbackRecording.EncoderFrameRateDenominator");
+        AssertContains(flashbackRecordingFlatteningEncoderText, "FlashbackRecordingEncoderProjection encoder");
+        AssertContains(flashbackRecordingFlatteningEncoderText, "CodecName = encoder.CodecName,");
+        AssertContains(flashbackRecordingFlatteningEncoderText, "FrameRateDenominator = encoder.FrameRateDenominator");
         AssertContains(flashbackRecordingFlatteningEncoderText, "private readonly record struct FlashbackRecordingEncoderFlattenedProjection");
         AssertDoesNotContain(snapshotFlatteningText, "FlashbackEncodingFailed = health.FlashbackEncodingFailed,");
         AssertDoesNotContain(snapshotFlatteningText, "FlashbackVideoQueueCapacity = health.FlashbackVideoQueueCapacity,");
@@ -140,26 +151,53 @@ static partial class Program
         AssertContains(flashbackRecordingProjectionText, "private static FlashbackRecordingProjection BuildFlashbackRecordingProjection(");
         AssertContains(flashbackRecordingProjectionText, "CaptureRuntimeSnapshot captureRuntime,");
         AssertContains(flashbackRecordingProjectionText, "var startupCache = BuildFlashbackRecordingStartupCacheProjection(health);");
-        AssertContains(flashbackRecordingProjectionText, "StartupCache = startupCache,");
         AssertContains(flashbackRecordingProjectionText, "var queues = BuildFlashbackRecordingQueuesProjection(health);");
+        AssertContains(flashbackRecordingProjectionText, "var runtime = BuildFlashbackRecordingRuntimeProjection(health);");
+        AssertContains(flashbackRecordingProjectionText, "var backend = BuildFlashbackRecordingBackendProjection(captureRuntime, health);");
+        AssertContains(flashbackRecordingProjectionText, "var encoder = BuildFlashbackRecordingEncoderProjection(health);");
+        AssertContains(flashbackRecordingProjectionText, "StartupCache = startupCache,");
         AssertContains(flashbackRecordingProjectionText, "Queues = queues,");
+        AssertContains(flashbackRecordingProjectionText, "Runtime = runtime,");
+        AssertContains(flashbackRecordingProjectionText, "Backend = backend,");
+        AssertContains(flashbackRecordingProjectionText, "Encoder = encoder");
         AssertContains(flashbackRecordingProjectionText, "EncodingFailed = health.FlashbackEncodingFailed,");
-        AssertContains(flashbackRecordingProjectionText, "ExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
-        AssertContains(flashbackRecordingProjectionText, "CodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason,");
         AssertContains(flashbackRecordingProjectionText, "private readonly record struct FlashbackRecordingProjection");
+        AssertContains(flashbackRecordingProjectionText, "public FlashbackRecordingRuntimeProjection Runtime { get; init; }");
+        AssertContains(flashbackRecordingProjectionText, "public FlashbackRecordingBackendProjection Backend { get; init; }");
+        AssertContains(flashbackRecordingProjectionText, "public FlashbackRecordingEncoderProjection Encoder { get; init; }");
+        AssertDoesNotContain(flashbackRecordingProjectionText, "Active = health.FlashbackActive,");
+        AssertDoesNotContain(flashbackRecordingProjectionText, "ExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
+        AssertDoesNotContain(flashbackRecordingProjectionText, "CodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason,");
+        AssertDoesNotContain(flashbackRecordingProjectionText, "EncoderCodecName = health.EncoderCodecName,");
         AssertDoesNotContain(flashbackRecordingProjectionText, "StartupCacheOverBudget = health.FlashbackStartupCacheOverBudget,");
         AssertDoesNotContain(flashbackRecordingProjectionText, "VideoQueueCapacity = health.FlashbackVideoQueueCapacity,");
         AssertDoesNotContain(flashbackRecordingProjectionText, "GpuQueueLastRejectReason = health.FlashbackGpuQueueLastRejectReason,");
         AssertDoesNotContain(flashbackRecordingProjectionText, "AudioQueueCapacity = health.FlashbackAudioQueueCapacity");
-        AssertContains(flashbackRecordingProjectionText, "private static FlashbackRecordingStartupCacheProjection BuildFlashbackRecordingStartupCacheProjection(");
-        AssertContains(flashbackRecordingProjectionText, "TempDriveFreeBytes = health.FlashbackTempDriveFreeBytes,");
-        AssertContains(flashbackRecordingProjectionText, "OverBudget = health.FlashbackStartupCacheOverBudget");
-        AssertContains(flashbackRecordingProjectionText, "private readonly record struct FlashbackRecordingStartupCacheProjection");
+        AssertDoesNotContain(flashbackRecordingProjectionText, "private static FlashbackRecordingStartupCacheProjection BuildFlashbackRecordingStartupCacheProjection(");
+        AssertDoesNotContain(flashbackRecordingProjectionText, "private static FlashbackRecordingRuntimeProjection BuildFlashbackRecordingRuntimeProjection(");
+        AssertDoesNotContain(flashbackRecordingProjectionText, "private static FlashbackRecordingBackendProjection BuildFlashbackRecordingBackendProjection(");
+        AssertDoesNotContain(flashbackRecordingProjectionText, "private static FlashbackRecordingEncoderProjection BuildFlashbackRecordingEncoderProjection(");
+        AssertContains(flashbackRecordingStartupCacheProjectionText, "private static FlashbackRecordingStartupCacheProjection BuildFlashbackRecordingStartupCacheProjection(");
+        AssertContains(flashbackRecordingStartupCacheProjectionText, "TempDriveFreeBytes = health.FlashbackTempDriveFreeBytes,");
+        AssertContains(flashbackRecordingStartupCacheProjectionText, "OverBudget = health.FlashbackStartupCacheOverBudget");
+        AssertContains(flashbackRecordingStartupCacheProjectionText, "private readonly record struct FlashbackRecordingStartupCacheProjection");
         AssertContains(flashbackRecordingQueuesProjectionText, "private static FlashbackRecordingQueuesProjection BuildFlashbackRecordingQueuesProjection(");
         AssertContains(flashbackRecordingQueuesProjectionText, "VideoQueueCapacity = health.FlashbackVideoQueueCapacity,");
         AssertContains(flashbackRecordingQueuesProjectionText, "GpuQueueLastRejectReason = health.FlashbackGpuQueueLastRejectReason,");
         AssertContains(flashbackRecordingQueuesProjectionText, "AudioQueueCapacity = health.FlashbackAudioQueueCapacity");
         AssertContains(flashbackRecordingQueuesProjectionText, "private readonly record struct FlashbackRecordingQueuesProjection");
+        AssertContains(flashbackRecordingRuntimeProjectionText, "private static FlashbackRecordingRuntimeProjection BuildFlashbackRecordingRuntimeProjection(");
+        AssertContains(flashbackRecordingRuntimeProjectionText, "Active = health.FlashbackActive,");
+        AssertContains(flashbackRecordingRuntimeProjectionText, "GpuEncoding = health.FlashbackGpuEncoding");
+        AssertContains(flashbackRecordingRuntimeProjectionText, "private readonly record struct FlashbackRecordingRuntimeProjection");
+        AssertContains(flashbackRecordingBackendProjectionText, "private static FlashbackRecordingBackendProjection BuildFlashbackRecordingBackendProjection(");
+        AssertContains(flashbackRecordingBackendProjectionText, "ExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
+        AssertContains(flashbackRecordingBackendProjectionText, "CodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason");
+        AssertContains(flashbackRecordingBackendProjectionText, "private readonly record struct FlashbackRecordingBackendProjection");
+        AssertContains(flashbackRecordingEncoderProjectionText, "private static FlashbackRecordingEncoderProjection BuildFlashbackRecordingEncoderProjection(");
+        AssertContains(flashbackRecordingEncoderProjectionText, "CodecName = health.EncoderCodecName,");
+        AssertContains(flashbackRecordingEncoderProjectionText, "FrameRateDenominator = health.EncoderFrameRateDenominator");
+        AssertContains(flashbackRecordingEncoderProjectionText, "private readonly record struct FlashbackRecordingEncoderProjection");
 
         return Task.CompletedTask;
     }

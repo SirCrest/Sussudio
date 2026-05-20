@@ -16,9 +16,9 @@ public sealed partial class AutomationDiagnosticsHub
             ForceRotateDraining = flashbackRecording.ForceRotateDraining,
             StartupCache = BuildFlashbackRecordingStartupCacheFlattenedProjection(flashbackRecording.StartupCache),
             Queues = BuildFlashbackRecordingQueuesFlattenedProjection(flashbackRecording.Queues),
-            Runtime = BuildFlashbackRecordingRuntimeFlattenedProjection(flashbackRecording),
-            Backend = BuildFlashbackRecordingBackendFlattenedProjection(flashbackRecording),
-            Encoder = BuildFlashbackRecordingEncoderFlattenedProjection(flashbackRecording)
+            Runtime = BuildFlashbackRecordingRuntimeFlattenedProjection(flashbackRecording.Runtime),
+            Backend = BuildFlashbackRecordingBackendFlattenedProjection(flashbackRecording.Backend),
+            Encoder = BuildFlashbackRecordingEncoderFlattenedProjection(flashbackRecording.Encoder)
         };
 
     private readonly record struct FlashbackRecordingFlattenedProjection

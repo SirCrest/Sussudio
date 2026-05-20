@@ -3,18 +3,18 @@ namespace Sussudio.Services.Automation;
 public sealed partial class AutomationDiagnosticsHub
 {
     private static FlashbackRecordingRuntimeFlattenedProjection BuildFlashbackRecordingRuntimeFlattenedProjection(
-        FlashbackRecordingProjection flashbackRecording)
+        FlashbackRecordingRuntimeProjection runtime)
         => new()
         {
-            Active = flashbackRecording.Active,
-            BufferedDurationMs = flashbackRecording.BufferedDurationMs,
-            DiskBytes = flashbackRecording.DiskBytes,
-            TotalBytesWritten = flashbackRecording.TotalBytesWritten,
-            OutputBytes = flashbackRecording.OutputBytes,
-            FilePath = flashbackRecording.FilePath,
-            EncodedFrames = flashbackRecording.EncodedFrames,
-            DroppedFrames = flashbackRecording.DroppedFrames,
-            GpuEncoding = flashbackRecording.GpuEncoding
+            Active = runtime.Active,
+            BufferedDurationMs = runtime.BufferedDurationMs,
+            DiskBytes = runtime.DiskBytes,
+            TotalBytesWritten = runtime.TotalBytesWritten,
+            OutputBytes = runtime.OutputBytes,
+            FilePath = runtime.FilePath,
+            EncodedFrames = runtime.EncodedFrames,
+            DroppedFrames = runtime.DroppedFrames,
+            GpuEncoding = runtime.GpuEncoding
         };
 
     private readonly record struct FlashbackRecordingRuntimeFlattenedProjection

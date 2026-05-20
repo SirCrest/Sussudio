@@ -84,6 +84,14 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildFlashbackExportFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackExportText, "private static FlashbackExportFlattenedProjection BuildFlashbackExportFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildFlashbackRecordingFlattenedProjection(flashbackRecording)");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "BuildFlashbackRecordingStartupCacheProjection(health)");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "BuildFlashbackRecordingRuntimeProjection(health)");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "BuildFlashbackRecordingBackendProjection(captureRuntime, health)");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "BuildFlashbackRecordingEncoderProjection(health)");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingStartupCacheText, "private static FlashbackRecordingStartupCacheProjection BuildFlashbackRecordingStartupCacheProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingRuntimeText, "private static FlashbackRecordingRuntimeProjection BuildFlashbackRecordingRuntimeProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingBackendText, "private static FlashbackRecordingBackendProjection BuildFlashbackRecordingBackendProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingEncoderText, "private static FlashbackRecordingEncoderProjection BuildFlashbackRecordingEncoderProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackRecordingText, "private static FlashbackRecordingFlattenedProjection BuildFlashbackRecordingFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildFlashbackPlaybackFlattenedProjection(flashbackPlayback)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackPlaybackText, "private static FlashbackPlaybackFlattenedProjection BuildFlashbackPlaybackFlattenedProjection(");

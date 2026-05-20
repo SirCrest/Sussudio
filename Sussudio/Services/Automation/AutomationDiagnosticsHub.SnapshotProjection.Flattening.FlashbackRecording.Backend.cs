@@ -3,17 +3,17 @@ namespace Sussudio.Services.Automation;
 public sealed partial class AutomationDiagnosticsHub
 {
     private static FlashbackRecordingBackendFlattenedProjection BuildFlashbackRecordingBackendFlattenedProjection(
-        FlashbackRecordingProjection flashbackRecording)
+        FlashbackRecordingBackendProjection backend)
         => new()
         {
-            SettingsStale = flashbackRecording.BackendSettingsStale,
-            SettingsStaleReason = flashbackRecording.BackendSettingsStaleReason,
-            ActiveFormat = flashbackRecording.BackendActiveFormat,
-            RequestedFormat = flashbackRecording.BackendRequestedFormat,
-            ActivePreset = flashbackRecording.BackendActivePreset,
-            RequestedPreset = flashbackRecording.BackendRequestedPreset,
-            ExportVerificationFormat = flashbackRecording.ExportVerificationFormat,
-            CodecDowngradeReason = flashbackRecording.CodecDowngradeReason,
+            SettingsStale = backend.SettingsStale,
+            SettingsStaleReason = backend.SettingsStaleReason,
+            ActiveFormat = backend.ActiveFormat,
+            RequestedFormat = backend.RequestedFormat,
+            ActivePreset = backend.ActivePreset,
+            RequestedPreset = backend.RequestedPreset,
+            ExportVerificationFormat = backend.ExportVerificationFormat,
+            CodecDowngradeReason = backend.CodecDowngradeReason,
         };
 
     private readonly record struct FlashbackRecordingBackendFlattenedProjection
