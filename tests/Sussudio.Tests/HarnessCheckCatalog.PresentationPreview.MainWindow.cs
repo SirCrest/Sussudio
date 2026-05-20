@@ -114,12 +114,6 @@ static partial class Program
             "Preview fade-in reveal lives in controller",
             PreviewFadeInReveal_LivesInController);
         await AddCheckAsync(results,
-            "Responsive shell layout lives in controller",
-            ResponsiveShellLayout_LivesInController);
-        await AddCheckAsync(results,
-            "Responsive shell layout policy preserves breakpoints and placements",
-            ResponsiveShellLayoutPolicy_PreservesBreakpointsAndPlacements);
-        await AddCheckAsync(results,
             "Capture selection binding sync lives in controller",
             CaptureSelectionBindingSync_LivesInController);
         await AddCheckAsync(results,

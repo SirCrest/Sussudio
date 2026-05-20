@@ -907,6 +907,10 @@ Presentation-preview audio/control checks now execute through
 keeping preview audio fade, audio presentation, preview button presentation,
 and microphone control contracts in xUnit after their removal from the legacy
 harness catalog.
+Presentation-preview responsive layout checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewResponsiveLayoutContractsTests.cs`,
+keeping responsive shell layout and breakpoint policy contracts in xUnit after
+their removal from the legacy harness catalog.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the

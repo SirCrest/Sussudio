@@ -178,6 +178,9 @@ add xUnit alongside, and port incrementally.
 - `XUnit.PresentationPreviewAudioControlContractsTests.cs` owns the former
   legacy presentation-preview MainWindow preview audio fade, audio presentation,
   preview button presentation, and microphone control checks.
+- `XUnit.PresentationPreviewResponsiveLayoutContractsTests.cs` owns the former
+  legacy presentation-preview MainWindow responsive shell layout and breakpoint
+  policy checks.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, and test-project shape guard checks.
 - `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy

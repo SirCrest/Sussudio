@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task ResponsiveShellLayout_LivesInController()
+    internal static Task ResponsiveShellLayout_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
@@ -72,7 +72,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ResponsiveShellLayoutPolicy_PreservesBreakpointsAndPlacements()
+    internal static Task ResponsiveShellLayoutPolicy_PreservesBreakpointsAndPlacements()
     {
         var policyType = RequireType("Sussudio.Controllers.ResponsiveShellLayoutPolicy");
         var shouldShowLabels = policyType.GetMethod(
