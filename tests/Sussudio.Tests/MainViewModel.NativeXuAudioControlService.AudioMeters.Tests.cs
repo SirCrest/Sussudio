@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task NativeXuAudioControlService_ProfilesLiveInFocusedPartial()
+    internal static Task NativeXuAudioControlService_ProfilesLiveInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Audio/NativeXuAudioControlService.cs")
             .Replace("\r\n", "\n");
@@ -35,7 +35,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task NativeXuAudioControlService_TransportLivesInFocusedPartial()
+    internal static Task NativeXuAudioControlService_TransportLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Audio/NativeXuAudioControlService.cs")
             .Replace("\r\n", "\n");
@@ -78,7 +78,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MainViewModelAudioMeters_OwnCallbackMeterState()
+    internal static Task MainViewModelAudioMeters_OwnCallbackMeterState()
     {
         var baseText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");

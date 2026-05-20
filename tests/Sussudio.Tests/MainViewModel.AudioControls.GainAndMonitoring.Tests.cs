@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainViewModelAudioControls_MapsAnalogGainCurveAndClamps()
+    internal static Task MainViewModelAudioControls_MapsAnalogGainCurveAndClamps()
     {
         var mapperType = RequireType("Sussudio.ViewModels.DeviceAudioGainMapper");
         var mapPercent = mapperType.GetMethod("PercentToGainByte", BindingFlags.Static | BindingFlags.NonPublic)
@@ -45,7 +45,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MainViewModelAudioMonitoring_PreservesVolumePersistenceAndRampedRouting()
+    internal static Task MainViewModelAudioMonitoring_PreservesVolumePersistenceAndRampedRouting()
     {
         var viewModelType = RequireType("Sussudio.ViewModels.MainViewModel");
         AssertNotNull(viewModelType.GetProperty("SuppressVolumeSave", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SuppressVolumeSave");

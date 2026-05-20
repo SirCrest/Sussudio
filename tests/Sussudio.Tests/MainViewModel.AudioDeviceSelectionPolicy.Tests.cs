@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AudioDeviceSelectionPolicy_LivesInFocusedHelper()
+    internal static Task AudioDeviceSelectionPolicy_LivesInFocusedHelper()
     {
         var adapterText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioDeviceDiscovery.cs").Replace("\r\n", "\n");
         var policyText = ReadRepoFile("Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs").Replace("\r\n", "\n");
@@ -29,7 +29,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AudioDeviceSelectionPolicy_StartupFiltersCaptureCardAndUsesSavedFallbacks()
+    internal static Task AudioDeviceSelectionPolicy_StartupFiltersCaptureCardAndUsesSavedFallbacks()
     {
         var audioDevices = CreateAudioDeviceSelectionPolicyList(
             "Sussudio.Models.AudioInputDevice",
@@ -63,7 +63,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AudioDeviceSelectionPolicy_StartupPreservesPreviousSelections()
+    internal static Task AudioDeviceSelectionPolicy_StartupPreservesPreviousSelections()
     {
         var audioDevices = CreateAudioDeviceSelectionPolicyList(
             "Sussudio.Models.AudioInputDevice",
@@ -92,7 +92,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AudioDeviceSelectionPolicy_RefreshPreservesPreviousAudioAndSavedMicrophoneFallback()
+    internal static Task AudioDeviceSelectionPolicy_RefreshPreservesPreviousAudioAndSavedMicrophoneFallback()
     {
         var audioDevices = CreateAudioDeviceSelectionPolicyList(
             "Sussudio.Models.AudioInputDevice",
@@ -120,7 +120,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AudioDeviceSelectionPolicy_EmptyListsReturnNullSelections()
+    internal static Task AudioDeviceSelectionPolicy_EmptyListsReturnNullSelections()
     {
         var audioDevices = CreateAudioDeviceSelectionPolicyList("Sussudio.Models.AudioInputDevice");
         var videoDevices = CreateAudioDeviceSelectionPolicyList("Sussudio.Models.CaptureDevice");

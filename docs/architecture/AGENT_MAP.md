@@ -1932,6 +1932,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.NativeXuAudioControlService.AudioMeters.Tests.cs`
   owns native XU audio-control service profile, payload workflow, raw transport
   ownership, and audio meter callback-state assertions.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelAudioControlsContractsTests.cs`
+  owns the xUnit execution surface for MainViewModel audio-control source and
+  behavior contracts after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Tests.cs` owns the
   MainViewModel dependency-composition seam assertions for root construction,
   controller graph creation, state partial ownership, and default dependency
@@ -2534,6 +2537,12 @@ Primary current owners:
   owns the former presentation-preview MainWindow preview audio fade, audio
   presentation, preview button presentation, and microphone control checks
   after their removal from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelAudioControlsContractsTests.cs`
+  owns the former presentation-preview MainViewModel audio-control group for
+  analog gain mapping, preview audio monitoring volume persistence, microphone
+  and device guards, device-audio request lifetime, audio-device selection
+  policy, native XU audio-control profiles/transport, and audio meter callback
+  ownership checks after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewResponsiveLayoutContractsTests.cs`
   owns the former presentation-preview MainWindow responsive shell layout and
   breakpoint policy checks after their removal from the legacy offline harness

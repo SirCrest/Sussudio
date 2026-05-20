@@ -36,42 +36,6 @@ static partial class Program
             "MainViewModel preview lifecycle lives in controller",
             MainViewModelPreviewLifecycle_LivesInController);
         await AddCheckAsync(results,
-            "MainViewModel audio controls map analog gain curve and clamp endpoints",
-            MainViewModelAudioControls_MapsAnalogGainCurveAndClamps);
-        await AddCheckAsync(results,
-            "MainViewModel audio monitoring preserves volume persistence and ramped routing",
-            MainViewModelAudioMonitoring_PreservesVolumePersistenceAndRampedRouting);
-        await AddCheckAsync(results,
-            "MainViewModel audio controls preserve microphone and device guards",
-            MainViewModelAudioControls_PreserveMicrophoneVolumeAndDeviceGuards);
-        await AddCheckAsync(results,
-            "MainViewModel device-audio request controller owns request lifetime",
-            MainViewModelDeviceAudioRequestController_OwnsDeviceAudioRequestLifetime);
-        await AddCheckAsync(results,
-            "MainViewModel audio-device selection policy lives in focused helper",
-            AudioDeviceSelectionPolicy_LivesInFocusedHelper);
-        await AddCheckAsync(results,
-            "MainViewModel audio-device startup policy filters capture audio and uses saved fallbacks",
-            AudioDeviceSelectionPolicy_StartupFiltersCaptureCardAndUsesSavedFallbacks);
-        await AddCheckAsync(results,
-            "MainViewModel audio-device startup policy preserves previous selections",
-            AudioDeviceSelectionPolicy_StartupPreservesPreviousSelections);
-        await AddCheckAsync(results,
-            "MainViewModel audio-device refresh policy preserves selections",
-            AudioDeviceSelectionPolicy_RefreshPreservesPreviousAudioAndSavedMicrophoneFallback);
-        await AddCheckAsync(results,
-            "MainViewModel audio-device selection policy handles empty lists",
-            AudioDeviceSelectionPolicy_EmptyListsReturnNullSelections);
-        await AddCheckAsync(results,
-            "Native XU audio control profiles live in focused partial",
-            NativeXuAudioControlService_ProfilesLiveInFocusedPartial);
-        await AddCheckAsync(results,
-            "Native XU audio control transport lives in focused partial",
-            NativeXuAudioControlService_TransportLivesInFocusedPartial);
-        await AddCheckAsync(results,
-            "MainViewModel audio meters own callback meter state",
-            MainViewModelAudioMeters_OwnCallbackMeterState);
-        await AddCheckAsync(results,
             "MainViewModel uses dependency composition seam",
             MainViewModel_UsesDependencyCompositionSeam);
         await AddCheckAsync(results,

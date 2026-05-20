@@ -932,6 +932,13 @@ Presentation-preview audio/control checks now execute through
 keeping preview audio fade, audio presentation, preview button presentation,
 and microphone control contracts in xUnit after their removal from the legacy
 harness catalog.
+Presentation-preview MainViewModel audio-control checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelAudioControlsContractsTests.cs`,
+keeping analog gain mapping, preview audio monitoring volume persistence,
+microphone and device guards, device-audio request lifetime, audio-device
+selection policy, native XU audio-control profiles/transport, and audio meter
+callback ownership contracts in xUnit after their removal from the legacy
+harness catalog.
 Presentation-preview responsive layout checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewResponsiveLayoutContractsTests.cs`,
 keeping responsive shell layout and breakpoint policy contracts in xUnit after

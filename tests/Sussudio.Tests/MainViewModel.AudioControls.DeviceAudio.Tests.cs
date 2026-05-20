@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainViewModelAudioControls_PreserveMicrophoneVolumeAndDeviceGuards()
+    internal static Task MainViewModelAudioControls_PreserveMicrophoneVolumeAndDeviceGuards()
     {
         var viewModelType = RequireType("Sussudio.ViewModels.MainViewModel");
         AssertNotNull(viewModelType.GetMethod("SaveMicrophoneVolume", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SaveMicrophoneVolume");
@@ -123,7 +123,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MainViewModelDeviceAudioRequestController_OwnsDeviceAudioRequestLifetime()
+    internal static Task MainViewModelDeviceAudioRequestController_OwnsDeviceAudioRequestLifetime()
     {
         var deviceAudioRequestControllerCode = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs")
             .Replace("\r\n", "\n");
