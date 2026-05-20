@@ -7,14 +7,29 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var previewFramesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrames.cs")
             .Replace("\r\n", "\n");
+        var playbackFrameOwnershipText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrameOwnership.cs")
+            .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs")
             .Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)");
-        AssertContains(previewFramesText, "private DecodedVideoFrame _previousHeldFrame;");
-        AssertContains(previewFramesText, "private bool _hasPreviousHeldFrame;");
+        AssertContains(previewFramesText, "private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)");
+        AssertContains(previewFramesText, "private static bool TryValidatePreviewFrame(DecodedVideoFrame frame, out string reason)");
+        AssertContains(previewFramesText, "private static void SubmitFrame(");
+        AssertContains(playbackFrameOwnershipText, "private DecodedVideoFrame _previousHeldFrame;");
+        AssertContains(playbackFrameOwnershipText, "private bool _hasPreviousHeldFrame;");
+        AssertContains(playbackFrameOwnershipText, "private void ReleasePreviousHeldFrame()");
+        AssertContains(playbackFrameOwnershipText, "private void HoldSubmittedFrame(DecodedVideoFrame frame)");
+        AssertContains(playbackFrameOwnershipText, "private void ReleasePlaybackFrameForLive(string operation)");
+        AssertContains(playbackFrameOwnershipText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
+        AssertDoesNotContain(previewFramesText, "private DecodedVideoFrame _previousHeldFrame;");
+        AssertDoesNotContain(previewFramesText, "private bool _hasPreviousHeldFrame;");
+        AssertDoesNotContain(previewFramesText, "_previousHeldFrame = frame;");
+        AssertDoesNotContain(previewFramesText, "_hasPreviousHeldFrame = true;");
+        AssertDoesNotContain(previewFramesText, "private void ReleasePlaybackFrameForLive(string operation)");
+        AssertDoesNotContain(previewFramesText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
         AssertDoesNotContain(rootText, "private DecodedVideoFrame _previousHeldFrame;");
         AssertDoesNotContain(rootText, "private bool _hasPreviousHeldFrame;");
         AssertContains(lifecycleText, "private IPreviewFrameSink? _previewSink;");
@@ -131,7 +146,7 @@ static partial class Program
         AssertContains(sourceText, "private void RestoreLiveAfterPlaybackSubmitFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
         AssertContains(sourceText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        SafeResumeRendering(operation);\n        SetState(FlashbackPlaybackState.Live);");
         AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n        try\n        {\n            SubmitFrame(frame);");
-        AssertContains(sourceText, "SubmitFrame(previewSink, frame, previewPresentId, countForPresentCadence);\n            ReleasePreviousHeldFrame();");
+        AssertContains(sourceText, "SubmitFrame(previewSink, frame, previewPresentId, countForPresentCadence);\n            HoldSubmittedFrame(frame);");
         AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n            SubmitFrame(videoFrame);");
 
         return Task.CompletedTask;

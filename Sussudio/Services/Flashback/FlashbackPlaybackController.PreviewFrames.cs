@@ -3,41 +3,12 @@ using System.Diagnostics;
 using System.Threading;
 using Sussudio.Models;
 using Sussudio.Services.Preview;
-using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Flashback;
 
 internal sealed partial class FlashbackPlaybackController
 {
-    // --- Preview frame submission and ownership ---
-
-    // Keep the previous D3D11VA frame alive until the renderer has had a later
-    // submit to copy from; CPU frames follow the same ownership path.
-    private DecodedVideoFrame _previousHeldFrame;
-    private bool _hasPreviousHeldFrame;
-
-    private void ReleasePreviousHeldFrame()
-    {
-        if (_hasPreviousHeldFrame)
-        {
-            ReleaseHeldFrameBestEffort(_previousHeldFrame, "previous_frame");
-            _previousHeldFrame = default;
-            _hasPreviousHeldFrame = false;
-        }
-    }
-
-    private void ReleasePlaybackFrameForLive(string operation)
-    {
-        Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
-        Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-
-        if (_hasPreviousHeldFrame)
-        {
-            Logger.Log($"FLASHBACK_PLAYBACK_RELEASE_HELD_FOR_LIVE op={operation}");
-        }
-
-        ReleasePreviousHeldFrame();
-    }
+    // --- Preview frame submission ---
 
     private void RestoreLiveAfterSeekDisplayFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)
     {
@@ -91,9 +62,7 @@ internal sealed partial class FlashbackPlaybackController
             var previewPresentId = Interlocked.Increment(ref _playbackPreviewPresentId);
             var countForPresentCadence = string.Equals(operation, "playback", StringComparison.Ordinal);
             SubmitFrame(previewSink, frame, previewPresentId, countForPresentCadence);
-            ReleasePreviousHeldFrame();
-            _previousHeldFrame = frame;
-            _hasPreviousHeldFrame = true;
+            HoldSubmittedFrame(frame);
             ClearLastSubmitFailure();
             return true;
         }
@@ -180,18 +149,6 @@ internal sealed partial class FlashbackPlaybackController
 
         bytes = (int)calculated;
         return true;
-    }
-
-    private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)
-    {
-        try
-        {
-            FlashbackDecoder.ReleaseHeldFrame(frame);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_PLAYBACK_RELEASE_HELD_FRAME_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
-        }
     }
 
     /// <summary>
