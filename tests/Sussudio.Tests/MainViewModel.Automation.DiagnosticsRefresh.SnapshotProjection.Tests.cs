@@ -285,6 +285,10 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionMjpegTimingText, "PerDecoder = health.MjpegPerDecoder is { Length: > 0 } perDecoder");
         AssertContains(diagnostics.SnapshotProjectionMjpegText, "var previewJitter = BuildMjpegPreviewJitterProjection(health);");
         AssertContains(diagnostics.SnapshotProjectionMjpegText, "var packetHash = BuildMjpegPacketHashProjection(health);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var mjpegFlattening = BuildMjpegFlattenedProjection(mjpeg);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegText, "TotalDecoded = mjpeg.TotalDecoded,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "MjpegTotalDecoded = mjpegFlattening.TotalDecoded,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "MjpegTotalDecoded = mjpeg.TotalDecoded,");
         AssertContains(diagnostics.SnapshotProjectionMjpegText, "PreviewJitter = previewJitter,");
         AssertContains(diagnostics.SnapshotProjectionMjpegPreviewJitterText, "private static MjpegPreviewJitterProjection BuildMjpegPreviewJitterProjection(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SnapshotProjectionMjpegPreviewJitterText, "LastDropReason = health.MjpegPreviewJitterLastDropReason,");
