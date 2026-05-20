@@ -2324,10 +2324,14 @@ Primary current owners:
 - `tests/Sussudio.Tests/AutomationToolContracts.Reliability.Tests.cs` owns the
   reliability-gates script contract test.
 - `tests/Sussudio.Tests/ArchitectureDocs.AgentMapOwnershipPaths.Tests.cs` owns
-  consolidated AGENT_MAP reference drift, test-owner code-span, README
-  automation consumer, UI/presentation ownership, CaptureService ownership,
-  Flashback preview startup wording, shared tool automation exact-path,
-  duplicate tools/Common owner, and empty test marker-shell checks.
+  shared implementations for consolidated AGENT_MAP reference drift,
+  test-owner code-span, README automation consumer, UI/presentation ownership,
+  CaptureService ownership, Flashback preview startup wording, shared tool
+  automation exact-path, duplicate tools/Common owner, and empty test
+  marker-shell checks.
+  `tests/Sussudio.Tests/XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns
+  the xUnit execution surface for those AGENT_MAP ownership checks after their
+  removal from the legacy offline harness catalog.
   `tests/Sussudio.Tests/ArchitectureDocs.ReferenceIntegrity.Tests.cs` owns
   literal `ReadRepoFile` source-shape path drift, cleanup-plan file/folder
   reference drift, and the shared implementation for xUnit migration inventory

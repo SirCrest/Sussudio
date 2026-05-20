@@ -23,33 +23,6 @@ static partial class Program
             "Reliability gates run tools and offline regression harness",
             ReliabilityGates_RunToolsAndOfflineHarness);
         await AddCheckAsync(results,
-            "Architecture agent map references existing files",
-            ArchitectureAgentMap_FileReferencesResolve);
-        await AddCheckAsync(results,
-            "Architecture agent map test-owner paths use resolving code spans",
-            ArchitectureAgentMap_TestOwnerPathsUseCodeSpansAndResolve);
-        await AddCheckAsync(results,
-            "Architecture agent map covers architecture-doc test family",
-            ArchitectureAgentMap_CoversArchitectureDocsTestFamily);
-        await AddCheckAsync(results,
-            "Architecture agent map has unique tools/Common ownership entries",
-            ArchitectureAgentMap_ToolsCommonOwnershipEntriesAreUnique);
-        await AddCheckAsync(results,
-            "Test project avoids empty partial marker shells",
-            TestProject_DoesNotKeepEmptyPartialMarkerShells);
-        await AddCheckAsync(results,
-            "Architecture agent map covers automation consumer checklist",
-            ArchitectureAgentMap_CoversAutomationConsumerChecklist);
-        await AddCheckAsync(results,
-            "Architecture agent map covers UI presentation ownership files",
-            ArchitectureAgentMap_CoversUiPresentationOwnershipFiles);
-        await AddCheckAsync(results,
-            "Architecture agent map covers CaptureService ownership files",
-            ArchitectureAgentMap_CoversCaptureRuntimeOwnershipFiles);
-        await AddCheckAsync(results,
-            "Architecture agent map covers tool automation partial families with exact paths",
-            ArchitectureAgentMap_CoversToolAutomationPartialFamiliesWithExactPaths);
-        await AddCheckAsync(results,
             "Automation manifest covers catalog metadata",
             AutomationManifest_CoversCatalogMetadata);
         await AddCheckAsync(results,

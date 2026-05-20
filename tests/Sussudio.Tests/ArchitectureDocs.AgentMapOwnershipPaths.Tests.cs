@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task ArchitectureAgentMap_TestOwnerPathsUseCodeSpansAndResolve()
+    internal static Task ArchitectureAgentMap_TestOwnerPathsUseCodeSpansAndResolve()
     {
         var repoRoot = GetRepoRoot();
         var agentMapPath = Path.Combine(repoRoot, "docs", "architecture", "AGENT_MAP.md");
@@ -39,7 +39,7 @@ static partial class Program
         return ArchitectureAgentMap_FileReferencesResolve();
     }
 
-    private static Task ArchitectureAgentMap_FileReferencesResolve()
+    internal static Task ArchitectureAgentMap_FileReferencesResolve()
     {
         var repoRoot = GetRepoRoot();
         var agentMapPath = Path.Combine(repoRoot, "docs", "architecture", "AGENT_MAP.md");
@@ -73,7 +73,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ArchitectureAgentMap_CoversArchitectureDocsTestFamily()
+    internal static Task ArchitectureAgentMap_CoversArchitectureDocsTestFamily()
     {
         var repoRoot = GetRepoRoot();
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
@@ -91,7 +91,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ArchitectureAgentMap_CoversAutomationConsumerChecklist()
+    internal static Task ArchitectureAgentMap_CoversAutomationConsumerChecklist()
     {
         var readmeText = ReadRepoFile("README.md")
             .Replace("\r\n", "\n");
@@ -122,7 +122,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ArchitectureAgentMap_CoversUiPresentationOwnershipFiles()
+    internal static Task ArchitectureAgentMap_CoversUiPresentationOwnershipFiles()
     {
         var repoRoot = GetRepoRoot();
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
@@ -140,7 +140,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ArchitectureAgentMap_CoversCaptureRuntimeOwnershipFiles()
+    internal static Task ArchitectureAgentMap_CoversCaptureRuntimeOwnershipFiles()
     {
         var repoRoot = GetRepoRoot();
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
@@ -158,7 +158,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ArchitectureAgentMap_MapsFlashbackPreviewStartupToResourceOwner()
+    internal static Task ArchitectureAgentMap_MapsFlashbackPreviewStartupToResourceOwner()
     {
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var previewBackendEntry = ExtractTextBetween(
@@ -178,7 +178,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ArchitectureAgentMap_CoversToolAutomationPartialFamiliesWithExactPaths()
+    internal static Task ArchitectureAgentMap_CoversToolAutomationPartialFamiliesWithExactPaths()
     {
         var repoRoot = GetRepoRoot();
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
@@ -196,7 +196,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ArchitectureAgentMap_ToolsCommonOwnershipEntriesAreUnique()
+    internal static Task ArchitectureAgentMap_ToolsCommonOwnershipEntriesAreUnique()
     {
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var ownerBulletRegex = new Regex(
@@ -235,7 +235,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task TestProject_DoesNotKeepEmptyPartialMarkerShells()
+    internal static Task TestProject_DoesNotKeepEmptyPartialMarkerShells()
     {
         var repoRoot = GetRepoRoot();
         var testRoot = Path.Combine(repoRoot, "tests", "Sussudio.Tests");
