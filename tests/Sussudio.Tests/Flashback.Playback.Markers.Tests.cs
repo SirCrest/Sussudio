@@ -198,6 +198,7 @@ public class FlashbackPlaybackMarkersTests
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCleanup.cs"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioCallback.cs"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioPreviewGuards.cs"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioPrebuffer.cs")
         };
 

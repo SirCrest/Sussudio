@@ -11,6 +11,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioRoutingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs")
             .Replace("\r\n", "\n");
+        var audioPreviewGuardsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioPreviewGuards.cs")
+            .Replace("\r\n", "\n");
         var audioPrebufferText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioPrebuffer.cs")
             .Replace("\r\n", "\n");
         var audioMasterText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs")
@@ -32,6 +34,18 @@ static partial class Program
         AssertContains(sourceText, "private void SafeResumeRendering(string operation)");
         AssertContains(sourceText, "private void SafeResumePlaybackRendering(string operation)");
         AssertContains(sourceText, "private void SafeFlushPlayback(string operation)");
+        AssertContains(audioPreviewGuardsText, "private void SafeSuppressPreviewSubmission(string operation)");
+        AssertContains(audioPreviewGuardsText, "private void SafeResumePreviewSubmission(string operation)");
+        AssertContains(audioPreviewGuardsText, "private void SafePauseRendering(string operation)");
+        AssertContains(audioPreviewGuardsText, "private void SafeResumeRendering(string operation)");
+        AssertContains(audioPreviewGuardsText, "private void SafeResumePlaybackRendering(string operation)");
+        AssertContains(audioPreviewGuardsText, "private void SafeFlushPlayback(string operation)");
+        AssertDoesNotContain(audioRoutingText, "private void SafeSuppressPreviewSubmission(string operation)");
+        AssertDoesNotContain(audioRoutingText, "private void SafeResumePreviewSubmission(string operation)");
+        AssertDoesNotContain(audioRoutingText, "private void SafePauseRendering(string operation)");
+        AssertDoesNotContain(audioRoutingText, "private void SafeResumeRendering(string operation)");
+        AssertDoesNotContain(audioRoutingText, "private void SafeResumePlaybackRendering(string operation)");
+        AssertDoesNotContain(audioRoutingText, "private void SafeFlushPlayback(string operation)");
         AssertContains(sourceText, "private const double PlaybackAudioPrebufferTargetMs = 180.0;");
         AssertContains(sourceText, "private const double PlaybackAudioPrebufferDiscardThresholdMs = 250.0;");
         AssertContains(sourceText, "private const int PlaybackAudioPrebufferTimeoutMs = 1000;");
