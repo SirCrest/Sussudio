@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackDecoder_DiscardedAudioFramesAreUnreffed()
+    internal static Task FlashbackDecoder_DiscardedAudioFramesAreUnreffed()
     {
         var sourceText = ReadFlashbackDecoderSource();
 
@@ -18,7 +18,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_MjpegPlaybackUsesSingleThreadLowLatencyDecode()
+    internal static Task FlashbackDecoder_MjpegPlaybackUsesSingleThreadLowLatencyDecode()
     {
         var sourceText = ReadFlashbackDecoderSource();
 
@@ -31,7 +31,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_PtsConversionRejectsInvalidTimestamps()
+    internal static Task FlashbackDecoder_PtsConversionRejectsInvalidTimestamps()
     {
         var sourceText = ReadFlashbackDecoderSource();
 
@@ -70,7 +70,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_InputStreamsAndFrameSizesAreBounded()
+    internal static Task FlashbackDecoder_InputStreamsAndFrameSizesAreBounded()
     {
         var sourceText = ReadFlashbackDecoderSource();
 
@@ -98,7 +98,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_AudioOutputBuffersAreBounded()
+    internal static Task FlashbackDecoder_AudioOutputBuffersAreBounded()
     {
         var sourceText = ReadFlashbackDecoderSource();
 
@@ -122,7 +122,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_AudioSetupLivesInAudioOutputPartial()
+    internal static Task FlashbackDecoder_AudioSetupLivesInAudioOutputPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
@@ -139,7 +139,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_SoftwareFramePlanesAreValidated()
+    internal static Task FlashbackDecoder_SoftwareFramePlanesAreValidated()
     {
         var sourceText = ReadFlashbackDecoderSource();
 
@@ -167,7 +167,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_D3D11FramesAreValidated()
+    internal static Task FlashbackDecoder_D3D11FramesAreValidated()
     {
         var sourceText = ReadFlashbackDecoderSource();
 
@@ -181,7 +181,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_HeldFrameCleanupIsBestEffort()
+    internal static Task FlashbackDecoder_HeldFrameCleanupIsBestEffort()
     {
         var sourceText = ReadFlashbackDecoderSource();
 
@@ -198,7 +198,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_DecodeLoopsObserveCancellation()
+    internal static Task FlashbackDecoder_DecodeLoopsObserveCancellation()
     {
         var sourceText = ReadFlashbackDecoderSource();
         var decodeLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.DecodeLoop.cs")
@@ -226,7 +226,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_RejectsInitializeAfterDispose()
+    internal static Task FlashbackDecoder_RejectsInitializeAfterDispose()
     {
         var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
         using var decoder = (IDisposable)Activator.CreateInstance(decoderType)!;
@@ -259,7 +259,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_ClearsAudioCallbackOnDispose()
+    internal static Task FlashbackDecoder_ClearsAudioCallbackOnDispose()
     {
         var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
         using var decoder = (IDisposable)Activator.CreateInstance(decoderType)!;

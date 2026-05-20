@@ -2468,8 +2468,10 @@ Primary current owners:
   checks, capture runtime failure/runtime-flag checks, and the large Flashback
   buffer manager behavior/source-ownership group.
 - Focused `tests/Sussudio.Tests/HarnessCheckCatalog.Flashback.*.cs` partials
-  own the remaining Flashback decoder and exporter registration
-  groups. `tests/Sussudio.Tests/XUnit.FlashbackPlaybackContractsTests.cs`
+  own the remaining Flashback exporter registration
+  group. `tests/Sussudio.Tests/XUnit.FlashbackDecoderContractsTests.cs`
+  owns the xUnit execution surface for the former legacy Flashback decoder
+  registration group. `tests/Sussudio.Tests/XUnit.FlashbackPlaybackContractsTests.cs`
   owns the xUnit execution surface for the former legacy Flashback playback
   registration groups. `tests/Sussudio.Tests/XUnit.FlashbackEncoderSinkContractsTests.cs`
   owns the xUnit execution surface for the former legacy Flashback encoder sink
@@ -2748,6 +2750,10 @@ Primary current owners:
   and metric-reset checks after their removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/Flashback.Decoder.Tests.cs` owns Flashback decoder
   audio, timestamp, stream-bound, validation, lifetime, and callback tests.
+- `tests/Sussudio.Tests/XUnit.FlashbackDecoderContractsTests.cs` owns the
+  xUnit execution surface for the former legacy Flashback decoder frame-buffer,
+  source-ownership, state/lifetime, timestamp, audio, frame-validation, and
+  cancellation checks after their removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/Flashback.Support.Tests.cs` owns cross-cutting Flashback
   support/logging contract tests.
 - `Sussudio/Controllers/Flashback/FlashbackTimelineController.cs` owns Flashback

@@ -5,7 +5,7 @@ static partial class Program
 {
     // ── FlashbackDecoder: CalculateFrameBufferSize ──
 
-    private static Task FlashbackDecoder_CalculateFrameBufferSize_Nv12()
+    internal static Task FlashbackDecoder_CalculateFrameBufferSize_Nv12()
     {
         var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
         var method = decoderType.GetMethod("CalculateFrameBufferSize",
@@ -25,7 +25,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_CalculateFrameBufferSize_P010()
+    internal static Task FlashbackDecoder_CalculateFrameBufferSize_P010()
     {
         var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
         var method = decoderType.GetMethod("CalculateFrameBufferSize",
@@ -48,7 +48,7 @@ static partial class Program
 
     // ── FlashbackDecoder: state guard properties ──
 
-    private static Task FlashbackDecoder_ValidationHelpersLiveInFocusedPartial()
+    internal static Task FlashbackDecoder_ValidationHelpersLiveInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
@@ -82,7 +82,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_LifetimeCleanupLivesInFocusedPartial()
+    internal static Task FlashbackDecoder_LifetimeCleanupLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
@@ -99,7 +99,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_DiagnosticsAndGuardsLiveInFocusedPartials()
+    internal static Task FlashbackDecoder_DiagnosticsAndGuardsLiveInFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
@@ -124,7 +124,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_OutputTypesLiveInFocusedFile()
+    internal static Task FlashbackDecoder_OutputTypesLiveInFocusedFile()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
@@ -139,7 +139,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_VideoSetupLivesInFocusedPartial()
+    internal static Task FlashbackDecoder_VideoSetupLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
@@ -154,7 +154,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_SeekingLivesInFocusedPartial()
+    internal static Task FlashbackDecoder_SeekingLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
@@ -171,7 +171,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_DecodeLoopLivesInFocusedPartial()
+    internal static Task FlashbackDecoder_DecodeLoopLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
@@ -194,7 +194,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized()
+    internal static Task FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized()
     {
         var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
         var decoder = Activator.CreateInstance(decoderType)!;
@@ -209,7 +209,7 @@ static partial class Program
 
     // ── FlashbackDecoder: Dispose is safe when not initialized ──
 
-    private static Task FlashbackDecoder_DisposeBeforeInitialize_DoesNotThrow()
+    internal static Task FlashbackDecoder_DisposeBeforeInitialize_DoesNotThrow()
     {
         var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
         var decoder = Activator.CreateInstance(decoderType)!;
