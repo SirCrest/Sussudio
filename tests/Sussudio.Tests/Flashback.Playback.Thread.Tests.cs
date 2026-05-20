@@ -18,6 +18,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var threadCommandsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
             .Replace("\r\n", "\n");
+        var threadLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs")
+            .Replace("\r\n", "\n");
         var commandModelsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandModels.cs")
             .Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
@@ -66,7 +68,20 @@ static partial class Program
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)\n        {\n            MarkCommandNoOp(CommandKind.Nudge, \"live_thread_not_running\", delta: delta);\n            return false;\n        }");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_CMD_NOOP kind={kind} reason={reason}{FormatCommandDetail(position, delta)}");
         AssertContains(sourceText, "private bool EnsurePlaybackThread(CommandKind commandKind)");
-        AssertContains(sourceText, "private readonly object _playbackThreadSync = new();");
+        AssertContains(threadLifecycleText, "private static readonly TimeSpan PlaybackThreadStopTimeout = TimeSpan.FromSeconds(3);");
+        AssertContains(threadLifecycleText, "private static readonly TimeSpan PreviewDetachThreadStopTimeout = TimeSpan.FromSeconds(10);");
+        AssertContains(threadLifecycleText, "private readonly object _playbackThreadSync = new();");
+        AssertContains(threadLifecycleText, "private Thread? _playbackThread;");
+        AssertContains(threadLifecycleText, "private int _playbackThreadStarted;");
+        AssertContains(threadLifecycleText, "private CancellationTokenSource? _playCts;");
+        AssertContains(threadLifecycleText, "private Channel<PlaybackCommand> _commandChannel;");
+        AssertDoesNotContain(rootText, "private static readonly TimeSpan PlaybackThreadStopTimeout = TimeSpan.FromSeconds(3);");
+        AssertDoesNotContain(rootText, "private static readonly TimeSpan PreviewDetachThreadStopTimeout = TimeSpan.FromSeconds(10);");
+        AssertDoesNotContain(rootText, "private readonly object _playbackThreadSync = new();");
+        AssertDoesNotContain(rootText, "private Thread? _playbackThread;");
+        AssertDoesNotContain(rootText, "private int _playbackThreadStarted;");
+        AssertDoesNotContain(rootText, "private CancellationTokenSource? _playCts;");
+        AssertDoesNotContain(rootText, "private Channel<PlaybackCommand> _commandChannel;");
         AssertContains(sourceText, "lock (_playbackThreadSync)");
         AssertContains(sourceText, "if (_disposedFlag != 0) return RejectCommand(commandKind, \"disposed\", \"disposed\", false);");
         AssertContains(sourceText, "if (Volatile.Read(ref _playbackThreadStarted) != 0)\n        {\n            if (_playbackThread is { IsAlive: true })");

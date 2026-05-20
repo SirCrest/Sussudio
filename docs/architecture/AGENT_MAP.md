@@ -1109,7 +1109,9 @@ Entry points:
 - `FlashbackPlaybackController.ThreadCommands.cs` owns playback-thread pause,
   go-live, and nudge command execution, including thread-local playback state,
   exact resume targets, and audio/preview suppression/resume ordering.
-- `FlashbackPlaybackController.ThreadLifecycle.cs` owns playback thread start/stop, channel recreation/completion, abandoned command draining, and join/cancel diagnostics.
+- `FlashbackPlaybackController.ThreadLifecycle.cs` owns playback thread state,
+  CTS/channel lifetime, stop timeout policy, channel recreation/completion,
+  abandoned command draining, and join/cancel diagnostics.
 - `FlashbackPlaybackController.ThreadCleanup.cs` owns playback-thread live-restore cleanup and playback CTS disposal warnings.
 - `FlashbackPlaybackController.AudioRouting.cs` owns decoder audio callback wiring, playback chunk validation/return, live audio suppress/restore, preview submission suppression, and audio renderer pause/resume/flush helpers.
 - `FlashbackPlaybackController.AudioPrebuffer.cs` owns playback startup/seek audio prebuffering and decoder rewind after decode-ahead audio priming.

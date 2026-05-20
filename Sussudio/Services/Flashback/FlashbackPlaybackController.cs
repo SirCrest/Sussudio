@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
@@ -22,8 +21,6 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
 {
     private static readonly TimeSpan ActiveFmp4ReopenNearLiveGuard = TimeSpan.FromMilliseconds(250);
     private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);
-    private static readonly TimeSpan PlaybackThreadStopTimeout = TimeSpan.FromSeconds(3);
-    private static readonly TimeSpan PreviewDetachThreadStopTimeout = TimeSpan.FromSeconds(10);
     private const double PlaybackAudioPrebufferTargetMs = 180.0;
     private const double PlaybackAudioPrebufferDiscardThresholdMs = 250.0;
     private const int PlaybackAudioPrebufferTimeoutMs = 1000;
@@ -136,7 +133,6 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     // --- Scrub state restoration (M16 fix) ---
     private bool _wasPlayingBeforeScrub;
 
-    // --- Playback thread ---
     private const int CommandQueueCapacity = 256;
     private const double FallbackPlaybackFrameRate = 60.0;
     private const double MaxPlaybackFrameRate = 1000.0;
@@ -144,11 +140,6 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     private static readonly TimeSpan ContinuousPlaybackNearLiveSnapMinimum = TimeSpan.FromMilliseconds(100);
     private static readonly TimeSpan RecoveryNearLiveSnapThreshold = TimeSpan.FromMilliseconds(2000);
     private const double MaxContinuousSoftwarePlaybackPixelRate = 3840.0 * 2160.0 * 60.0;
-    private readonly object _playbackThreadSync = new();
-    private Thread? _playbackThread;
-    private int _playbackThreadStarted;
-    private CancellationTokenSource? _playCts;
-    private Channel<PlaybackCommand> _commandChannel;
 
     public FlashbackPlaybackController(FlashbackBufferManager bufferManager)
     {
