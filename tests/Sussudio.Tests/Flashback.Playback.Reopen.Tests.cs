@@ -21,6 +21,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var decoderSegmentReopenText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderSegmentReopen.cs")
             .Replace("\r\n", "\n");
+        var metricsCollectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.MetricsCollection.cs")
+            .Replace("\r\n", "\n");
+        var seekCapTelemetryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.SeekCapTelemetry.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private bool TryReopenCurrentFileAndSeek(");
         AssertContains(decoderSegmentReopenText, "private bool TryReopenCurrentFmp4BeforeSegmentSwitch(");
@@ -68,8 +72,13 @@ static partial class Program
         AssertContains(sourceText, "private bool TrySeekWithActiveFmp4Reopen(");
         AssertContains(sourceText, "if (SeekToWithCapTelemetry(decoder, seekTarget, reason, cancellationToken))\n        {\n            return true;\n        }");
         AssertContains(sourceText, "private bool SeekToWithCapTelemetry(");
-        AssertContains(sourceText, "FLASHBACK_PLAYBACK_SEEK_FORWARD_DECODE_CAP");
-        AssertContains(sourceText, "Interlocked.Increment(ref _playbackSeekForwardDecodeCapHits)");
+        AssertContains(seekCapTelemetryText, "private long _playbackSeekForwardDecodeCapHits;");
+        AssertContains(seekCapTelemetryText, "private int _lastPlaybackSeekHitForwardDecodeCap;");
+        AssertContains(seekCapTelemetryText, "private bool SeekToWithCapTelemetry(");
+        AssertContains(seekCapTelemetryText, "FLASHBACK_PLAYBACK_SEEK_FORWARD_DECODE_CAP");
+        AssertContains(seekCapTelemetryText, "Interlocked.Increment(ref _playbackSeekForwardDecodeCapHits)");
+        AssertDoesNotContain(metricsCollectionText, "private bool SeekToWithCapTelemetry(");
+        AssertDoesNotContain(metricsCollectionText, "FLASHBACK_PLAYBACK_SEEK_FORWARD_DECODE_CAP");
         AssertContains(sourceText, "if (ShouldSkipActiveFmp4ReopenNearLive(seekTarget, reason))\n            {\n                SetReopenFailure(reason, \"near_live\", seekTarget);\n                return false;\n            }\n\n            return TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, reason, cancellationToken);");
         AssertContains(sourceText, "if (TrySeekAdjacentSegmentStart(decoder, ref fileOpen, seekTarget, reason, out _, cancellationToken))\n        {\n            return true;\n        }\n\n        SetReopenFailure(reason, \"seek_failed\", seekTarget);");
         AssertContains(sourceText, "if (SeekToWithCapTelemetry(decoder, seekTarget, reason, cancellationToken))\n            {\n                return true;\n            }\n\n            SetReopenFailure(reason, \"seek_failed\", seekTarget);");

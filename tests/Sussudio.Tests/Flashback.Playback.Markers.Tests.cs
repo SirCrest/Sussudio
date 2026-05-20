@@ -186,6 +186,7 @@ public class FlashbackPlaybackMarkersTests
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackDecodeMetrics.cs"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.MetricsCollection.cs"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.MetricReset.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.SeekCapTelemetry.cs"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackDecodeMetricsCollection.cs"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrames.cs"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrameValidation.cs"),

@@ -29,8 +29,6 @@ internal sealed partial class FlashbackPlaybackController
     private double _playbackTargetFps;
     private double _playbackObservedFps;
     private double _playbackAvgFrameMs;
-    private long _playbackSeekForwardDecodeCapHits;
-    private int _lastPlaybackSeekHitForwardDecodeCap;
     private readonly Stopwatch _playbackFpsClock = new();
     private const int PlaybackCadenceSampleCapacity = 240;
     private readonly object _playbackCadenceLock = new();
@@ -40,26 +38,6 @@ internal sealed partial class FlashbackPlaybackController
     private long _playbackSlowFrameCount;
 
     // --- Playback metric collection ---
-
-    private bool SeekToWithCapTelemetry(
-        FlashbackDecoder decoder,
-        TimeSpan seekTarget,
-        string reason,
-        CancellationToken cancellationToken)
-    {
-        Volatile.Write(ref _lastPlaybackSeekHitForwardDecodeCap, 0);
-        var succeeded = decoder.SeekTo(seekTarget, cancellationToken);
-        if (decoder.LastSeekHitForwardDecodeCap)
-        {
-            Volatile.Write(ref _lastPlaybackSeekHitForwardDecodeCap, 1);
-            Interlocked.Increment(ref _playbackSeekForwardDecodeCapHits);
-            Logger.Log(
-                $"FLASHBACK_PLAYBACK_SEEK_FORWARD_DECODE_CAP reason={reason} " +
-                $"target_ms={(long)seekTarget.TotalMilliseconds} success={succeeded}");
-        }
-
-        return succeeded;
-    }
 
     private void TrackPlaybackCadence(double intervalMs, double expectedFrameMs)
     {

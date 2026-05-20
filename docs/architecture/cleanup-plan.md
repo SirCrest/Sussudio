@@ -2572,10 +2572,13 @@ Cadence summary DTO construction, percentile math, and low-FPS derivation live
 in `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackCadenceMetrics.cs`.
 Decode summary DTO construction and decode timing percentile projection live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackDecodeMetrics.cs`.
-Private playback metric counters, cadence sample rings, and seek-cap telemetry now live in
+Private playback metric counters and cadence sample rings now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.MetricsCollection.cs`.
 Playback metric reset behavior now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.MetricReset.cs`.
+Seek-cap telemetry state, decoder seek forwarding, and forward-decode-cap hit
+logging now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.SeekCapTelemetry.cs`.
 Playback decode duration rings, max decode phase timing state, decode timing
 wrappers, and dominant decode phase resolution now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackDecodeMetricsCollection.cs`.
