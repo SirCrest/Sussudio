@@ -2817,6 +2817,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionCommandRunContextContractsTests.cs`
   owns xUnit execution for the former legacy diagnostic-session command-channel
   and run-context ownership catalog band.
+- `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionScenarioExecutionContractsTests.cs`
+  owns xUnit execution for the former legacy diagnostic-session general scenario
+  execution and post-run ownership catalog band.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Helpers.cs`
   owns shared reflective runner setup for diagnostic-session runner behavior
   tests: loading `ssctl`, creating `DiagnosticSessionOptions`, invoking

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task DiagnosticSessionRunExecutionScenario_OwnsScenarioPhase()
+    internal static Task DiagnosticSessionRunExecutionScenario_OwnsScenarioPhase()
     {
         var executionText = ReadDiagnosticSessionRunExecutionRootSource();
         var contextText = ReadDiagnosticSessionRunContextSource();
@@ -89,7 +89,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionRunExecutionCompletion_OwnsPostCleanupEvidenceAndResult()
+    internal static Task DiagnosticSessionRunExecutionCompletion_OwnsPostCleanupEvidenceAndResult()
     {
         var executionText = ReadDiagnosticSessionRunExecutionRootSource();
         var contextText = ReadDiagnosticSessionRunContextSource();

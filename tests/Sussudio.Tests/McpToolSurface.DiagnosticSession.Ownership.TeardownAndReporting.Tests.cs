@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task DiagnosticSessionCleanupPolicy_OwnsRestoreWarnings()
+    internal static Task DiagnosticSessionCleanupPolicy_OwnsRestoreWarnings()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
@@ -64,7 +64,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionRecordingChecks_OwnPostRunRecordingVerification()
+    internal static Task DiagnosticSessionRecordingChecks_OwnPostRunRecordingVerification()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var recordingChecksText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
@@ -103,7 +103,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionPostRunSnapshots_OwnTimelineAndFinalSnapshot()
+    internal static Task DiagnosticSessionPostRunSnapshots_OwnTimelineAndFinalSnapshot()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var postRunText = ReadRepoFile("tools/Common/DiagnosticSessionPostRunSnapshots.cs")

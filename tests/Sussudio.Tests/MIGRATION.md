@@ -173,6 +173,10 @@ add xUnit alongside, and port incrementally.
   former legacy diagnostic-session command/run-context band for pipe retry,
   command sending, JSON artifacts, run state, live-state breadcrumbs, run
   context, run bootstrap, and output lock ownership checks.
+- `XUnit.McpDiagnosticSessionScenarioExecutionContractsTests.cs` owns the
+  former legacy diagnostic-session scenario execution band for scenario phase,
+  completion phase, plan/setup, background tasks, PresentMon startup, cleanup,
+  recording verification, and post-run snapshot ownership checks.
 - `XUnit.PresentationPreviewHarnessRegistrationTests.cs` owns the former legacy
   presentation-preview harness registration guard.
 - `XUnit.PresentationPreviewMainViewModelInitialContractsTests.cs` owns the

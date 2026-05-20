@@ -6,33 +6,6 @@ static partial class Program
     private static async Task AddDiagnosticSessionChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Diagnostic session scenario phase has a named owner",
-            DiagnosticSessionRunExecutionScenario_OwnsScenarioPhase);
-        await AddCheckAsync(results,
-            "Diagnostic session completion phase has a named owner",
-            DiagnosticSessionRunExecutionCompletion_OwnsPostCleanupEvidenceAndResult);
-        await AddCheckAsync(results,
-            "Diagnostic session scenario plan has a named owner",
-            DiagnosticSessionScenarioPlan_OwnsScenarioFlags);
-        await AddCheckAsync(results,
-            "Diagnostic session scenario setup has a named owner",
-            DiagnosticSessionScenarioSetup_OwnsInitialMutations);
-        await AddCheckAsync(results,
-            "Diagnostic session background tasks have a named owner",
-            DiagnosticSessionBackgroundTasks_OwnTaskDraining);
-        await AddCheckAsync(results,
-            "Diagnostic session PresentMon startup has a named owner",
-            DiagnosticSessionPresentMonStartup_OwnsPresentMonLaunch);
-        await AddCheckAsync(results,
-            "Diagnostic session cleanup policy has a named owner",
-            DiagnosticSessionCleanupPolicy_OwnsRestoreWarnings);
-        await AddCheckAsync(results,
-            "Diagnostic session recording checks have a named owner",
-            DiagnosticSessionRecordingChecks_OwnPostRunRecordingVerification);
-        await AddCheckAsync(results,
-            "Diagnostic session post-run snapshots have a named owner",
-            DiagnosticSessionPostRunSnapshots_OwnTimelineAndFinalSnapshot);
-        await AddCheckAsync(results,
             "Diagnostic session Flashback cycle scenarios have a named owner",
             DiagnosticSessionFlashbackCycleScenarios_OwnCycleFlows);
         await AddCheckAsync(results,

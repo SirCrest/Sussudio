@@ -36,7 +36,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionScenarioPlan_OwnsScenarioFlags()
+    internal static Task DiagnosticSessionScenarioPlan_OwnsScenarioFlags()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var bootstrapText = ReadRepoFile("tools/Common/DiagnosticSessionRunBootstrap.cs")
@@ -84,7 +84,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionScenarioSetup_OwnsInitialMutations()
+    internal static Task DiagnosticSessionScenarioSetup_OwnsInitialMutations()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var setupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioSetup.cs")

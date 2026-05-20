@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task DiagnosticSessionBackgroundTasks_OwnTaskDraining()
+    internal static Task DiagnosticSessionBackgroundTasks_OwnTaskDraining()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
@@ -87,7 +87,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionPresentMonStartup_OwnsPresentMonLaunch()
+    internal static Task DiagnosticSessionPresentMonStartup_OwnsPresentMonLaunch()
     {
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var presentMonStartupText = ReadRepoFile("tools/Common/DiagnosticSessionPresentMonStartup.cs")
