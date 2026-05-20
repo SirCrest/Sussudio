@@ -94,16 +94,19 @@ public class FlashbackPlaybackMarkersTests
     public void FlashbackPlaybackController_InOutPointSettersNormalizeMarkers()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
+        var markersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Markers.cs");
+        var markersStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.MarkersState.cs");
 
-        AssertContains(sourceText, "private long _inPointFilePtsTicks = long.MinValue;");
-        AssertContains(sourceText, "private long _outPointFilePtsTicks = long.MinValue;");
-        AssertContains(sourceText, "Interlocked.Exchange(ref _inPointTicks, normalized?.Ticks ?? long.MinValue);\n            Interlocked.Exchange(ref _inPointFilePtsTicks, normalized.HasValue ? SaturatingAdd(normalized.Value, _bufferManager.ValidStartPts).Ticks : long.MinValue);");
-        AssertContains(sourceText, "Interlocked.Exchange(ref _outPointTicks, normalized?.Ticks ?? long.MinValue);\n            Interlocked.Exchange(ref _outPointFilePtsTicks, normalized.HasValue ? SaturatingAdd(normalized.Value, _bufferManager.ValidStartPts).Ticks : long.MinValue);");
-        AssertContains(sourceText, "public TimeSpan? InPointFilePts");
-        AssertContains(sourceText, "public TimeSpan? OutPointFilePts");
-        AssertContains(sourceText, "public void RestoreInOutPoints(\n        TimeSpan? inPoint,\n        TimeSpan? outPoint,\n        TimeSpan? inPointFilePts,\n        TimeSpan? outPointFilePts)");
-        AssertContains(sourceText, "Interlocked.Exchange(ref _inPointFilePtsTicks, inPointFilePts.Value.Ticks);");
-        AssertContains(sourceText, "Interlocked.Exchange(ref _outPointFilePtsTicks, outPointFilePts.Value.Ticks);");
+        AssertContains(markersStateText, "private long _inPointFilePtsTicks = long.MinValue;");
+        AssertContains(markersStateText, "private long _outPointFilePtsTicks = long.MinValue;");
+        AssertContains(markersStateText, "Interlocked.Exchange(ref _inPointTicks, normalized?.Ticks ?? long.MinValue);\n            Interlocked.Exchange(ref _inPointFilePtsTicks, normalized.HasValue ? SaturatingAdd(normalized.Value, _bufferManager.ValidStartPts).Ticks : long.MinValue);");
+        AssertContains(markersStateText, "Interlocked.Exchange(ref _outPointTicks, normalized?.Ticks ?? long.MinValue);\n            Interlocked.Exchange(ref _outPointFilePtsTicks, normalized.HasValue ? SaturatingAdd(normalized.Value, _bufferManager.ValidStartPts).Ticks : long.MinValue);");
+        AssertContains(markersStateText, "public TimeSpan? InPointFilePts");
+        AssertContains(markersStateText, "public TimeSpan? OutPointFilePts");
+        AssertContains(markersStateText, "public void RestoreInOutPoints(\n        TimeSpan? inPoint,\n        TimeSpan? outPoint,\n        TimeSpan? inPointFilePts,\n        TimeSpan? outPointFilePts)");
+        AssertContains(markersStateText, "Interlocked.Exchange(ref _inPointFilePtsTicks, inPointFilePts.Value.Ticks);");
+        AssertContains(markersStateText, "Interlocked.Exchange(ref _outPointFilePtsTicks, outPointFilePts.Value.Ticks);");
+        AssertDoesNotContain(markersText, "public void RestoreInOutPoints(");
         AssertContains(sourceText, "private TimeSpan NormalizeMarkerPosition(TimeSpan position)\n    {\n        if (position <= TimeSpan.Zero)\n        {\n            return TimeSpan.Zero;\n        }\n\n        var bufferDuration = _bufferManager.BufferedDuration;\n        return position > bufferDuration ? bufferDuration : position;\n    }");
     }
 
@@ -174,6 +177,7 @@ public class FlashbackPlaybackMarkersTests
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderSegmentReopen.cs"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewDetachLifecycle.cs"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.MarkersState.cs"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Markers.cs"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PositionMapping.cs"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs"),
@@ -222,4 +226,7 @@ public class FlashbackPlaybackMarkersTests
 
     private static void AssertContains(string actual, string expectedSubstring)
         => Assert.Contains(expectedSubstring, actual, StringComparison.Ordinal);
+
+    private static void AssertDoesNotContain(string actual, string unexpectedSubstring)
+        => Assert.DoesNotContain(unexpectedSubstring, actual, StringComparison.Ordinal);
 }
