@@ -236,6 +236,9 @@ add xUnit alongside, and port incrementally.
   former legacy presentation-preview capture runtime guardrail group: recording
   stop failure propagation, preview stop overload/API compatibility, and
   emergency recording stop threading.
+- `XUnit.PresentationPreviewCaptureFlashbackBufferContractsTests.cs` owns the
+  former legacy presentation-preview capture Flashback buffer startup/recovery
+  group: stale session cleanup and recovery-preserve behavior.
 - `XUnit.PresentationPreviewD3DPacingContractsTests.cs` owns the former legacy
   presentation-preview D3D pacing registration group: transition-drain,
   frame-capture cancellation, and shared-device reference lifecycle checks.

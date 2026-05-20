@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackBufferManager_CleansStaleSessionDirectories()
+    internal static Task FlashbackBufferManager_CleansStaleSessionDirectories()
     {
         var bufferText = ReadFlashbackBufferManagerSource();
         var cleanupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs")

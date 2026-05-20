@@ -2584,6 +2584,10 @@ Primary current owners:
   recording stop failure propagation, preview stop overload/API compatibility,
   and emergency recording stop threading after their removal from the legacy
   offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureFlashbackBufferContractsTests.cs`
+  owns the former presentation-preview capture Flashback buffer startup/recovery
+  group for stale session cleanup and recovery-preserve behavior after their
+  removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`
   owns the former presentation-preview D3D pacing group for transition-drain,
   frame-capture cancellation, and shared-device reference lifecycle checks after

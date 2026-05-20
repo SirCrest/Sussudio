@@ -6,12 +6,6 @@ static partial class Program
     private static async Task AddPresentationPreviewCaptureChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Flashback buffer manager cleans stale session directories",
-            FlashbackBufferManager_CleansStaleSessionDirectories);
-        await AddCheckAsync(results,
-            "Flashback buffer manager preserves marked recovery sessions",
-            FlashbackBufferManager_PreservesMarkedRecoverySessions);
-        await AddCheckAsync(results,
             "Project file preserves main's English-only publish locale policy",
             ProjectFile_PreservesEnglishOnlyPublishLocalePolicy);
         await AddCheckAsync(results,

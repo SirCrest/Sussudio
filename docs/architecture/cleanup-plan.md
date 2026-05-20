@@ -986,6 +986,10 @@ Presentation-preview capture runtime guardrail checks now execute through
 keeping recording stop failure propagation, preview stop overload/API
 compatibility, and emergency recording stop threading contracts in xUnit after
 their removal from the legacy harness catalog.
+Presentation-preview capture Flashback buffer checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureFlashbackBufferContractsTests.cs`,
+keeping stale session cleanup and recovery-preserve contracts in xUnit after
+their removal from the legacy harness catalog.
 Presentation-preview D3D pacing checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`,
 keeping transition-drain, frame-capture cancellation, and shared-device

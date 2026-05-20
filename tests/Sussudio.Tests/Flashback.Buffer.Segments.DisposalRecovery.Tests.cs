@@ -82,7 +82,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_PreservesMarkedRecoverySessions()
+    internal static Task FlashbackBufferManager_PreservesMarkedRecoverySessions()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_recovery_preserve_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
