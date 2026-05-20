@@ -3652,6 +3652,8 @@ owner, fold it back into that owner and update the source-shape tests and
    owners. MainViewModel automation recording-transition coverage is split
    between shared transition-gate routing, failure propagation, emergency stop,
    bitrate sampling, and recording-settings/Flashback-cycle owners.
+   Diagnostics refresh core ownership is split behind a small orchestrator into
+   evaluation, runtime/HDR, and snapshot-projection owners.
 
 3. Continue converting MainWindow partial concerns into controllers.
 

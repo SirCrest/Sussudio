@@ -1,0 +1,66 @@
+static partial class Program
+{
+    private static void AssertDiagnosticsRefreshSnapshotConstructionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
+    {
+        AssertContains(diagnostics.SnapshotProjectionText, "private AutomationSnapshot BuildAutomationSnapshot(");
+        AssertContains(diagnostics.SnapshotProjectionText, "var projections = BuildAutomationSnapshotProjectionSet(");
+        AssertContains(diagnostics.SnapshotProjectionText, "return BuildAutomationSnapshotFromProjections(projections);");
+        AssertContains(diagnostics.SnapshotProjectionCompositionText, "private AutomationSnapshotProjectionSet BuildAutomationSnapshotProjectionSet(");
+        AssertContains(diagnostics.SnapshotProjectionCompositionText, "private readonly record struct AutomationSnapshotProjectionSet(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "private static AutomationSnapshot BuildAutomationSnapshotFromProjections(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "AutomationSnapshotProjectionSet projections");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSnapshotStatusFlattenedProjection(snapshotStatus)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningSnapshotStatusText, "private static SnapshotStatusFlattenedProjection BuildSnapshotStatusFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSnapshotEvaluationFlattenedProjection(snapshotEvaluation)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningSnapshotEvaluationText, "private static SnapshotEvaluationFlattenedProjection BuildSnapshotEvaluationFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureFormatFlattenedProjection(captureFormat)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureFormatText, "private static CaptureFormatFlattenedProjection BuildCaptureFormatFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureTransportFlattenedProjection(captureTransport)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureTransportText, "private static CaptureTransportFlattenedProjection BuildCaptureTransportFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureCadenceFlattenedProjection(captureCadence)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureCadenceText, "private static CaptureCadenceFlattenedProjection BuildCaptureCadenceFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildVisualCadenceFlattenedProjection(visualCadence)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningVisualCadenceText, "private static VisualCadenceFlattenedProjection BuildVisualCadenceFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegFlattenedProjection(mjpeg)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegText, "private static MjpegFlattenedProjection BuildMjpegFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegTimingFlattenedProjection(mjpeg.Timing)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegTimingText, "private static MjpegTimingFlattenedProjection BuildMjpegTimingFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegPreviewJitterFlattenedProjection(mjpeg.PreviewJitter)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegPreviewJitterText, "private static MjpegPreviewJitterFlattenedProjection BuildMjpegPreviewJitterFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegPacketHashFlattenedProjection(mjpeg.PacketHash)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegPacketHashText, "private static MjpegPacketHashFlattenedProjection BuildMjpegPacketHashFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSourceFlattenedProjection(sourceSignal, sourceTelemetry)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningSourceText, "private static SourceFlattenedProjection BuildSourceFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSettingsFlattenedProjection(userSettings, recordingSettings)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningSettingsText, "private static SettingsFlattenedProjection BuildSettingsFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildHdrPipelineFlattenedProjection(hdrPipeline)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningHdrPipelineText, "private static HdrPipelineFlattenedProjection BuildHdrPipelineFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildPreviewRuntimeFlattenedProjection(previewSummary)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningPreviewRuntimeText, "private static PreviewRuntimeFlattenedProjection BuildPreviewRuntimeFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildPreviewD3DFlattenedProjection(previewD3D)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningPreviewD3DText, "private static PreviewD3DFlattenedProjection BuildPreviewD3DFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildFlashbackExportFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackExportText, "private static FlashbackExportFlattenedProjection BuildFlashbackExportFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildFlashbackRecordingFlattenedProjection(flashbackRecording)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackRecordingText, "private static FlashbackRecordingFlattenedProjection BuildFlashbackRecordingFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildFlashbackPlaybackFlattenedProjection(flashbackPlayback)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackPlaybackText, "private static FlashbackPlaybackFlattenedProjection BuildFlashbackPlaybackFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingIntegrityFlattenedProjection(recordingIntegrity)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingIntegrityText, "private static RecordingIntegrityFlattenedProjection BuildRecordingIntegrityFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingPipelineFlattenedProjection(recordingPipeline)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingPipelineText, "private static RecordingPipelineFlattenedProjection BuildRecordingPipelineFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingOutputFlattenedProjection(recordingBackend, recordingOutput)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingOutputText, "private static RecordingOutputFlattenedProjection BuildRecordingOutputFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildProcessResourceFlattenedProjection(processResourceProjection)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningProcessResourcesText, "private static ProcessResourceFlattenedProjection BuildProcessResourceFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildAvSyncFlattenedProjection(avSync)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningAvSyncText, "private static AvSyncFlattenedProjection BuildAvSyncFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildAudioAndIngestFlattenedProjection(audioAndIngest)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningAudioAndIngestText, "private static AudioAndIngestFlattenedProjection BuildAudioAndIngestFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildAudioDropsFlattenedProjection(audioDrops)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningAudioDropsText, "private static AudioDropsFlattenedProjection BuildAudioDropsFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureCommandFlattenedProjection(captureCommands)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureCommandsText, "private static CaptureCommandFlattenedProjection BuildCaptureCommandFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "new AutomationSnapshot");
+    }
+}

@@ -1717,9 +1717,16 @@ Primary current owners:
   owns capture-service and dispatcher Flashback export operation ownership
   assertions used by diagnostics refresh.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.CoreOwnership.Tests.cs`
-  owns diagnostics refresh core ownership assertions for evaluation policy,
-  diagnostic evaluation lanes, verification, preview pacing, lifecycle, HDR,
-  and the initial snapshot/BuildAutomationSnapshot shape.
+  owns the diagnostics refresh core ownership orchestrator.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.EvaluationOwnership.Tests.cs`
+  owns diagnostics refresh evaluation-policy, diagnostic evaluation, realtime
+  and Flashback diagnostic lane ownership assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.RuntimeOwnership.Tests.cs`
+  owns diagnostics refresh verification, snapshot query-port, preview pacing,
+  lifecycle, and HDR ownership assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotConstructionOwnership.Tests.cs`
+  owns initial snapshot, BuildAutomationSnapshot composition, and snapshot
+  flattening ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceReaderOwnership.Tests.cs`
   owns source-reader partial ownership assertions used by diagnostics refresh.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionCore.Tests.cs`
