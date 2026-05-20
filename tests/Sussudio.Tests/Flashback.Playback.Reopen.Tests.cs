@@ -11,6 +11,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var decoderFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs")
             .Replace("\r\n", "\n");
+        var decoderCleanupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderCleanup.cs")
+            .Replace("\r\n", "\n");
         var decoderReopenText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs")
             .Replace("\r\n", "\n");
         var decoderAdjacentSegmentSeekText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderAdjacentSegmentSeek.cs")
@@ -72,6 +74,10 @@ static partial class Program
         AssertContains(sourceText, "updateCurrentOpenPath: false,\n                closeOnlyWhenOpen: false);");
         AssertContains(decoderFilesText, "private void MarkDecoderPlaybackFileClosed(ref bool fileOpen)");
         AssertContains(decoderFilesText, "_decoderHwAccel = \"N/A\";\n        fileOpen = false;\n        _currentOpenFilePath = null;");
+        AssertContains(decoderCleanupText, "private static void CloseDecoderFileBestEffort(FlashbackDecoder decoder, string operation)");
+        AssertContains(decoderCleanupText, "private void CleanupDecoder(ref FlashbackDecoder? decoder, ref bool fileOpen)");
+        AssertDoesNotContain(decoderFilesText, "private void CleanupDecoder(ref FlashbackDecoder? decoder, ref bool fileOpen)");
+        AssertDoesNotContain(decoderFilesText, "FLASHBACK_PLAYBACK_DECODER_CLEANUP_COMPLETE");
         AssertDoesNotContain(decoderReopenText, "private void ReopenDecoderPlaybackFile(");
         AssertDoesNotContain(decoderReopenText, "private void MarkDecoderPlaybackFileClosed(ref bool fileOpen)");
         AssertDoesNotContain(decoderSegmentReopenText, "private void ReopenDecoderPlaybackFile(");
