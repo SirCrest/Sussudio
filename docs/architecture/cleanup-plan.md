@@ -2579,12 +2579,13 @@ owners share one private payload contract. Seek/scrub coalescing slot state, que
 resolution, and control-yield peek policy now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.CommandCoalescing.cs`.
 Do not grow the root controller with new coalescing slot fields.
-Command readiness, status counters, pending-command accounting,
-failure-detail formatting, active-command timing, and queue telemetry
-bookkeeping live in
+Command status counters, pending-command accounting, active-command timing, and
+queue telemetry bookkeeping live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.CommandTelemetry.cs`.
-Keep command status counters and last-failure/latency updates there instead of
-growing command channel mechanics.
+Command readiness guards, skipped-not-ready accounting, failure-detail
+formatting, last-command failure state, and no-op logging now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.CommandFailures.cs`.
+Keep command failure updates there instead of growing command channel mechanics.
 Playback thread state, CTS/channel lifetime, stop timeout policy,
 command-channel capacity/recreation, abandoned-command draining, and join/cancel
 diagnostics now live in

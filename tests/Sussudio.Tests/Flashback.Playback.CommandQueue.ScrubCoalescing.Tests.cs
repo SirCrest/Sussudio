@@ -12,6 +12,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var coalescingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandCoalescing.cs")
             .Replace("\r\n", "\n");
+        var commandFailuresText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandFailures.cs")
+            .Replace("\r\n", "\n");
 
         var seekBlock = ExtractTextBetween(
             sourceText,
@@ -135,17 +137,23 @@ static partial class Program
         AssertContains(endScrubBlock, "var endScrubTarget = SaturatingAdd(endScrubPosition, frozenValidStart);");
         AssertDoesNotContain(endScrubBlock, "var endScrubTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);");
         AssertContains(sourceText, "private bool RejectCommand(\n        CommandKind kind,\n        string failure,\n        string reason,\n        bool returnValue,\n        TimeSpan? position = null)");
+        AssertContains(commandFailuresText, "private bool RejectCommand(\n        CommandKind kind,\n        string failure,\n        string reason,\n        bool returnValue,\n        TimeSpan? position = null)");
         AssertContains(sourceText, "SetLastCommandFailure($\"{failure}:{kind}{detail}\");");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}{detail}\");");
         AssertContains(sourceText, "private void SetNoFileFailure(CommandKind kind, TimeSpan position)");
+        AssertContains(commandFailuresText, "private void SetNoFileFailure(CommandKind kind, TimeSpan position)");
         AssertContains(sourceText, "SetLastCommandFailure($\"no_file:{kind}{FormatCommandDetail(position: position)}\");");
         AssertContains(sourceText, "private static string FormatCommandDetail(PlaybackCommand command)");
+        AssertContains(commandFailuresText, "private static string FormatCommandDetail(PlaybackCommand command)");
         AssertContains(sourceText, "return $\" pos_ms={position.Value.TotalMilliseconds.ToString(\"0.###\", CultureInfo.InvariantCulture)}\";");
         AssertContains(sourceText, "return $\" delta_ms={delta.Value.TotalMilliseconds.ToString(\"0.###\", CultureInfo.InvariantCulture)}\";");
         AssertContains(sourceText, "private void SetLastCommandFailure(string failure)\n    {\n        Volatile.Write(ref _lastCommandFailure, failure);\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());\n    }");
+        AssertContains(commandFailuresText, "private void SetLastCommandFailure(string failure)");
         AssertContains(sourceText, "private void MarkCommandQueued(CommandKind kind)");
         AssertContains(sourceText, "private void MarkCommandNoOp(CommandKind kind, string reason, TimeSpan? position = null, TimeSpan? delta = null)");
+        AssertContains(commandFailuresText, "private void MarkCommandNoOp(CommandKind kind, string reason, TimeSpan? position = null, TimeSpan? delta = null)");
         AssertContains(sourceText, "private void ClearLastCommandFailure()\n    {\n        Volatile.Write(ref _lastCommandFailure, string.Empty);\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, 0);\n    }");
+        AssertContains(commandFailuresText, "private void ClearLastCommandFailure()");
         AssertContains(sourceText, "private void TrackCoalescedScrubUpdate()");
         AssertContains(sourceText, "Interlocked.Increment(ref _scrubUpdatesCoalesced);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SCRUB_COALESCED");
