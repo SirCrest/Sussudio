@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 using Xunit;
 
@@ -66,6 +67,43 @@ public sealed class AutomationToolContractsProtocolXunitTests
         {
             Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout(acceptedName));
         }
+    }
+
+    [Fact]
+    public void AutomationClient_StaysAlignedWithAdvancedMcpCommandMap()
+    {
+        var protocolText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationPipeProtocol.cs");
+        var scriptText = RuntimeContractSource.ReadRepoFile("tools/send-automation-command.ps1");
+
+        foreach (var (kind, ordinal) in new[]
+        {
+            (AutomationCommandKind.GetCaptureOptions, 29),
+            (AutomationCommandKind.SetPreset, 30),
+            (AutomationCommandKind.SetSplitEncodeMode, 31),
+            (AutomationCommandKind.SetMjpegDecoderCount, 32),
+            (AutomationCommandKind.SetShowAllCaptureOptions, 33),
+            (AutomationCommandKind.SetPreviewVolume, 34),
+            (AutomationCommandKind.SetStatsVisible, 35)
+        })
+        {
+            Assert.Equal(ordinal, (int)kind);
+            Assert.Equal(ordinal, AutomationPipeProtocol.ResolveCommand(kind.ToString()));
+        }
+
+        Assert.Contains("Enum.GetValues<AutomationCommandKind>()", protocolText);
+
+        Assert.Contains("AutomationClient\\AutomationClient.csproj", scriptText);
+        Assert.Contains("Get-AutomationClientInputWriteTimeUtc", scriptText);
+        Assert.Contains("Test-AutomationClientBuildFresh", scriptText);
+        Assert.Contains("AutomationClient build failed with exit code $LASTEXITCODE.", scriptText);
+        Assert.Contains("AutomationClient build output is stale after rebuild", scriptText);
+        Assert.Contains("$_.FullName -notmatch \"\\\\(bin|obj)\\\\\"", scriptText);
+        Assert.Contains("\"--command\", $Command", scriptText);
+        Assert.Contains("$payloadBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($PayloadJson))", scriptText);
+        Assert.Contains("\"--payload-base64\", $payloadBase64", scriptText);
+        Assert.Contains("[int]$ResponseTimeoutMs = 0", scriptText);
+        Assert.Contains("\"--response-timeout-ms\", $ResponseTimeoutMs", scriptText);
+        Assert.DoesNotContain("function Resolve-AutomationCommand", scriptText);
     }
 
     [Fact]

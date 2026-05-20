@@ -138,9 +138,6 @@ static partial class Program
             "Shared formatter renders recording integrity",
             SharedFormatter_RendersRecordingIntegrity);
         await AddCheckAsync(results,
-            "Automation command maps stay aligned for advanced MCP controls",
-            AutomationCommandMaps_StayAligned_ForAdvancedMcpControls);
-        await AddCheckAsync(results,
             "Dedicated LibAv verification script uses flashback-off strict workflow",
             DedicatedLibAvVerificationScript_UsesFlashbackOffAndStrictVerification);
     }
