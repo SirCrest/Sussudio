@@ -28,4 +28,12 @@ public sealed class McpWindowPreviewToolContractsTests
     [Fact]
     public Task PreviewToolsRoutePreviewToggle()
         => global::Program.McpPreviewTools_RoutePreviewToggle();
+
+    [Fact]
+    public Task PreviewColorProbeToolFormatsProbeResponses()
+        => global::Program.McpPreviewColorProbeTool_FormatsProbeResponses();
+
+    [Fact]
+    public Task VideoSourceProbeToolFormatsProbeResponses()
+        => global::Program.McpVideoSourceProbeTool_FormatsProbeResponses();
 }

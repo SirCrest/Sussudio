@@ -72,11 +72,5 @@ static partial class Program
         await AddCheckAsync(results,
             "MCP frame pacing verdict ownership is split",
             McpFramePacingVerdictTool_SourceOwnershipIsSplit);
-        await AddCheckAsync(results,
-            "MCP preview color probe tool formats probe responses",
-            McpPreviewColorProbeTool_FormatsProbeResponses);
-        await AddCheckAsync(results,
-            "MCP video source probe tool formats probe responses",
-            McpVideoSourceProbeTool_FormatsProbeResponses);
     }
 }

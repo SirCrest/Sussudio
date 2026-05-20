@@ -2605,9 +2605,8 @@ Primary current owners:
   wait, window action, preview toggle, Flashback toggle, screenshot, and probe
   tests. `tests/Sussudio.Tests/XUnit.McpWindowPreviewToolContractsTests.cs`
   owns the xUnit execution surface for the wait/window/screenshot/preview-frame/
-  preview-toggle checks after their removal from the legacy harness catalog.
-- `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Probes.Tests.cs` owns MCP
-  preview color probe and video source probe formatting tests.
+  preview-toggle/probe checks after their removal from the legacy harness
+  catalog.
 - `tests/Sussudio.Tests/McpToolSurface.Helpers.Process.cs`,
   `McpToolSurface.Helpers.Reflection.cs`,
   `McpToolSurface.Helpers.PipeCapture.cs`, and

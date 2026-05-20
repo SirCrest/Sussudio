@@ -101,7 +101,7 @@ add xUnit alongside, and port incrementally.
   unsafe-native-path guard check.
 - `XUnit.McpWindowPreviewToolContractsTests.cs` owns the former legacy MCP
   window/preview wait, screenshot, frame-capture, window-action, and
-  preview-toggle checks.
+  preview-toggle/probe checks.
 - `XUnit.PresentationPreviewHarnessRegistrationTests.cs` owns the former legacy
   presentation-preview harness registration guard.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy

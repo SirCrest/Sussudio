@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpPreviewColorProbeTool_FormatsProbeResponses()
+    internal static async Task McpPreviewColorProbeTool_FormatsProbeResponses()
     {
         var previewColorProbeTool = RequireMcpType("McpServer.Tools.PreviewColorProbeTools");
 
@@ -86,7 +86,7 @@ static partial class Program
         AssertContains(activeText, "MF_MT_SUBTYPE = P010");
     }
 
-    private static async Task McpVideoSourceProbeTool_FormatsProbeResponses()
+    internal static async Task McpVideoSourceProbeTool_FormatsProbeResponses()
     {
         var videoSourceProbeTool = RequireMcpType("McpServer.Tools.VideoSourceProbeTools");
 
