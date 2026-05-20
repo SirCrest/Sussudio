@@ -218,6 +218,10 @@ add xUnit alongside, and port incrementally.
   former legacy presentation-preview resolution-selection group: option rebuild
   ownership, HDR source retarget, SDR auto bucket, and source-bounded automatic
   selection checks.
+- `XUnit.PresentationPreviewDeviceFormatProbeRetargetContractsTests.cs` owns
+  the former legacy presentation-preview late device-format probe retarget group:
+  retarget policy ownership, decision behavior, and UI-side retarget application
+  checks.
 - `XUnit.PresentationPreviewCaptureOptionContractsTests.cs` owns the former
   legacy presentation-preview MainWindow capture device action, option
   presentation, affordance policy, option binding, and tooltip formatter checks.

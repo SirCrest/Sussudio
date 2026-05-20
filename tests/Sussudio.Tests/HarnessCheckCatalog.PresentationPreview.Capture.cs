@@ -6,15 +6,6 @@ static partial class Program
     private static async Task AddPresentationPreviewCaptureChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Device format probe retarget policy lives in focused helper",
-            DeviceFormatProbeRetargetPolicy_LivesInFocusedHelper);
-        await AddCheckAsync(results,
-            "Device format probe retarget policy preserves retarget decision behavior",
-            DeviceFormatProbeRetargetPolicy_PreservesRetargetDecisionBehavior);
-        await AddCheckAsync(results,
-            "Device format probe retarget application lives in focused partial",
-            DeviceFormatProbeRetargetApplication_LivesInFocusedPartial);
-        await AddCheckAsync(results,
             "Mode selection state lives in focused partial",
             ModeSelectionState_LivesInFocusedPartial);
         await AddCheckAsync(results,

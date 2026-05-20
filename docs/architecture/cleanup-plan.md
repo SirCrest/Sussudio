@@ -4324,6 +4324,10 @@ owner, fold it back into that owner and update the source-shape tests and
     `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.Context.cs`, while
     pure late-probe retarget decisions live in
     `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`.
+    `tests/Sussudio.Tests/XUnit.PresentationPreviewDeviceFormatProbeRetargetContractsTests.cs`
+    owns xUnit execution for the late device-format probe retarget ownership,
+    behavior, and application checks after their removal from the legacy
+    presentation-preview capture catalog.
     The presentation-preview ownership tests for this capture selection policy
     area are split across the
     `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.*.cs` family so

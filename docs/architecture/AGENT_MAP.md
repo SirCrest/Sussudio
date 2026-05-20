@@ -1985,6 +1985,9 @@ Primary current owners:
   assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.DeviceFormatProbeRetarget.Tests.cs`
   owns late device-format probe retarget policy behavior assertions.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewDeviceFormatProbeRetargetContractsTests.cs`
+  owns xUnit execution for the former legacy presentation-preview late
+  device-format probe retarget catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.RecordingFormat.Tests.cs`
   owns recording format selection policy ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.RuntimeFlags.Tests.cs`
