@@ -15,6 +15,7 @@ static partial class Program
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Preview.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.cs")
+            + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.Export.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Summaries.Pressure.cs");
         var formattingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs");
@@ -23,6 +24,7 @@ static partial class Program
         var trendSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs");
         var previewTrendSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Preview.cs");
         var flashbackTrendSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.cs");
+        var flashbackExportTrendSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.Export.cs");
         var summariesSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs");
         var pressureSummariesSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Summaries.Pressure.cs");
         AssertDoesNotContain(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs"), "private sealed class TimelineRow");
@@ -55,7 +57,10 @@ static partial class Program
         AssertContains(previewTrendSource, "Jitter Drops:");
         AssertContains(flashbackTrendSource, "private static void AppendFlashbackTrendSummary(StringBuilder builder, TimelineRow first, TimelineRow last)");
         AssertContains(flashbackTrendSource, "Flashback Cmd Counters:");
-        AssertContains(flashbackTrendSource, "Export Output:");
+        AssertContains(flashbackTrendSource, "AppendFlashbackExportTrendSummary(builder, first, last);");
+        AssertDoesNotContain(flashbackTrendSource, "Export Output:");
+        AssertContains(flashbackExportTrendSource, "private static void AppendFlashbackExportTrendSummary(StringBuilder builder, TimelineRow first, TimelineRow last)");
+        AssertContains(flashbackExportTrendSource, "Export Output:");
         AssertContains(summariesSource, "AppendOnePercentLowTargetSummary");
         AssertDoesNotContain(summariesSource, "== Pressure Summary ==");
         AssertContains(pressureSummariesSource, "private static void AppendPressureSummary(");
