@@ -12,7 +12,6 @@ static partial class Program
         var familyPrefixes = new[]
         {
             "AutomationPipeClient",
-            "AutomationResponseState",
             "AutomationSnapshotFormatter",
             "DiagnosticSessionFlashbackExportScenarios",
             "DiagnosticSessionFlashbackMetrics",

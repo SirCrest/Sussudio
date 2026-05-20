@@ -3753,12 +3753,12 @@ typed `AutomationCommandKind` command-id routing plus `not_ready` retry policy,
 `AutomationCommandTransport.cs` owns command-specific timeout selection for
 string and typed commands, shared response-element validation, synthetic error
 shaping, and explicit ssctl/MCP unknown-command policy mode,
-`AutomationPipeClient.ResponseState.cs` owns tolerant response-state parsing,
-`AutomationPipeClient.Models.cs` owns command result and exception types,
+`AutomationPipeClient.ResponseState.cs` owns tolerant response-state parsing
+handoff to `Sussudio.Automation.Contracts/AutomationResponseState.cs`,
+`AutomationPipeClient.Models.cs` owns command result and exception types, and
 `AutomationSyntheticErrorResponse.cs` owns shared structured error-envelope
-creation and common transport/protocol exception mapping for the shared command transport, and
-`AutomationResponseState.cs` owns the tolerant success/status/retry
-response-state reader shared by the pipe client and tool surfaces.
+creation and common transport/protocol exception mapping for the shared command
+transport.
 
 PresentMon model ownership and result formatting are split from the probe runner.
 `tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon options, result,
@@ -3799,7 +3799,6 @@ Remaining `tools/Common` ownership:
 - `AutomationPipeClient/AutomationPipeClient.ResponseState.cs`
 - `AutomationPipeClient/AutomationPipeClient.Models.cs`
 - `AutomationPipeClient/AutomationSyntheticErrorResponse.cs`
-- `AutomationPipeClient/AutomationResponseState.cs`
 - `DiagnosticSessionBackgroundTasks.cs`
 - `DiagnosticSessionBackgroundTasks.FaultDrain.cs`
 - `DiagnosticSessionCleanupActions.cs`

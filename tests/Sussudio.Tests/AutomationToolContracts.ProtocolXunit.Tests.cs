@@ -201,6 +201,8 @@ public sealed class AutomationToolContractsProtocolXunitTests
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var diagnosticSessionPipeRetryText = RuntimeContractSource.ReadRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var automationResponseStateText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationResponseState.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
 
         Assert.Contains("internal static partial class AutomationPipeClient", sharedClientText);
         Assert.Contains("internal static async Task<string> SendRequestAsync(", sharedClientText);
@@ -209,8 +211,9 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("=> SendCommandWithResultAsync(\n            pipeName,\n            (int)kind,", sharedClientText);
         Assert.Contains("internal static bool TryReadResponseState(", sharedClientText);
         Assert.Contains("AutomationResponseState.TryRead(", sharedClientText);
-        Assert.Contains("internal static class AutomationResponseState", sharedClientText);
-        Assert.Contains("internal static bool TryRead(", sharedClientText);
+        Assert.DoesNotContain("internal static class AutomationResponseState", sharedClientText);
+        Assert.Contains("public static class AutomationResponseState", automationResponseStateText);
+        Assert.Contains("public static bool TryRead(", automationResponseStateText);
         Assert.Contains("internal readonly record struct AutomationPipeCommandResult(", sharedClientText);
         Assert.Contains("ConnectWithClassifiedErrorsAsync(", pipeClientTransportText);
         Assert.Contains("await writer.WriteLineAsync(requestJson)", pipeClientTransportText);
@@ -327,8 +330,31 @@ public sealed class AutomationToolContractsProtocolXunitTests
     private static Type RequireSharedToolType(string typeName)
     {
         var assembly = ToolFormatterTestAssembly.Load(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
-        return assembly.GetType(typeName)
-               ?? throw new InvalidOperationException($"{typeName} was not found in the shared tool assembly.");
+        var type = assembly.GetType(typeName);
+        if (type != null)
+        {
+            return type;
+        }
+
+        var assemblyDirectory = Path.GetDirectoryName(assembly.Location)
+                                ?? throw new InvalidOperationException("Shared tool assembly directory was not found.");
+        foreach (var reference in assembly.GetReferencedAssemblies())
+        {
+            var referencePath = Path.Combine(assemblyDirectory, $"{reference.Name}.dll");
+            if (!File.Exists(referencePath))
+            {
+                continue;
+            }
+
+            var referenceAssembly = Assembly.LoadFrom(referencePath);
+            type = referenceAssembly.GetType(typeName);
+            if (type != null)
+            {
+                return type;
+            }
+        }
+
+        throw new InvalidOperationException($"{typeName} was not found in the shared tool assembly or its references.");
     }
 
     private static MethodInfo RequireNonPublicStaticMethod(Type type, string name)

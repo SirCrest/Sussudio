@@ -112,6 +112,8 @@ Entry points:
   validation for path-bearing automation commands.
 - `AutomationPipeProtocol.cs` owns pipe names, auth env var, manifest revision,
   command resolution, and request envelope shape.
+- `AutomationResponseState.cs` owns tolerant parsing for automation response
+  `Success`, `Status`, and `RetryAfterMs` fields.
 - `AutomationPipeSecurityPolicy.cs` owns the fallback-security predicate shared
   by app and tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.CommandKinds.Tests.cs` owns the
@@ -123,7 +125,7 @@ Do not reintroduce linked source for these files from `tools/Common`. Consumers
 should reference `Sussudio.Automation.Contracts`.
 `tools/Common` is the shared helper module for clients, formatters, diagnostic
 sessions, and probes; it should not own command IDs, catalog metadata, protocol
-constants, or pipe security policy.
+constants, response-state field parsing, or pipe security policy.
 
 Fast checks:
 
@@ -3713,9 +3715,6 @@ Primary owners:
   MCP owner bullets, and `McpToolSurface.*` source guards are the source of
   truth. String command names remain only for catalog/manifest-backed dynamic
   batches and diagnostic-session command callbacks.
-- `tools/Common/AutomationPipeClient/AutomationResponseState.cs` owns the
-  tolerant success/status/retry response-state reader shared by the pipe client
-  and tool surfaces.
 - `tools/AutomationClient/Program.cs` owns the low-level pipe client entry
   flow, cancellation handling, shared-protocol command resolution, timeout
   selection, response printing, and the local options DTO for scripts and ad

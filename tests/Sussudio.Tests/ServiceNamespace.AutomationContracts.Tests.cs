@@ -17,6 +17,7 @@ static partial class Program
             "AutomationCommandCatalog.Manifest.cs",
             "AutomationCommandCatalog.PathValidation.cs",
             "AutomationPipeProtocol.cs",
+            "AutomationResponseState.cs",
             "AutomationPipeSecurityPolicy.cs"
         })
         {
@@ -30,6 +31,10 @@ static partial class Program
                 false,
                 File.Exists(Path.Combine(repoRoot, "tools", "Common", contractFile)),
                 $"tools/Common must not own {contractFile}");
+            AssertEqual(
+                false,
+                File.Exists(Path.Combine(repoRoot, "tools", "Common", "AutomationPipeClient", contractFile)),
+                $"tools/Common/AutomationPipeClient must not own {contractFile}");
             AssertEqual(
                 false,
                 File.Exists(Path.Combine(repoRoot, "Sussudio", "Models", "Automation", contractFile)),
@@ -46,13 +51,17 @@ static partial class Program
             0,
             CountCompileInclude(appIncludes, @"..\tools\Common\AutomationCommandCatalog.cs"),
             "app project must not link AutomationCommandCatalog from tools/Common");
-        AssertEqual(
-            0,
-            CountCompileInclude(appIncludes, @"..\tools\Common\AutomationPipeProtocol.cs"),
-            "app project must not link AutomationPipeProtocol from tools/Common");
-        AssertEqual(
-            0,
-            CountCompileInclude(appIncludes, @"..\tools\Common\AutomationPipeSecurityPolicy.cs"),
+            AssertEqual(
+                0,
+                CountCompileInclude(appIncludes, @"..\tools\Common\AutomationPipeProtocol.cs"),
+                "app project must not link AutomationPipeProtocol from tools/Common");
+            AssertEqual(
+                0,
+                CountCompileInclude(appIncludes, @"..\tools\Common\AutomationResponseState.cs"),
+                "app project must not link AutomationResponseState from tools/Common");
+            AssertEqual(
+                0,
+                CountCompileInclude(appIncludes, @"..\tools\Common\AutomationPipeSecurityPolicy.cs"),
             "app project must not link AutomationPipeSecurityPolicy from tools/Common");
         AssertEqual(
             1,
@@ -84,6 +93,10 @@ static partial class Program
                 0,
                 CountCompileInclude(includes, @"..\Common\AutomationPipeProtocol.cs"),
                 $"{Path.GetFileName(toolProject)} must not link AutomationPipeProtocol from tools/Common");
+            AssertEqual(
+                0,
+                CountCompileInclude(includes, @"..\Common\AutomationResponseState.cs"),
+                $"{Path.GetFileName(toolProject)} must not link AutomationResponseState from tools/Common");
             AssertEqual(
                 0,
                 CountCompileInclude(includes, @"..\Common\AutomationPipeSecurityPolicy.cs"),

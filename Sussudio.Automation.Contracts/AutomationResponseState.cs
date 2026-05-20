@@ -3,10 +3,10 @@ using System.Text.Json;
 
 namespace Sussudio.Tools;
 
-// Minimal success/status/retry reader shared by command-line clients.
-internal static class AutomationResponseState
+// Tolerant success/status/retry reader for automation response envelopes.
+public static class AutomationResponseState
 {
-    internal static bool TryRead(
+    public static bool TryRead(
         JsonElement response,
         out bool success,
         out string? status,
