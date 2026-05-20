@@ -1209,7 +1209,16 @@ Primary current owners:
   owns D3D frame-latency wait projection defaults, including null-renderer wait
   handle state, wait counters, last result, and wait timing metrics.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs`
-  owns the renderer projection data contract. `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.Builder.cs`
+  owns the renderer projection data contract root and frame-counter fields.
+  `PreviewRuntimeD3DProjection.RendererState.cs`,
+  `PreviewRuntimeD3DProjection.DisplayCadence.cs`,
+  `PreviewRuntimeD3DProjection.RenderCpuTiming.cs`,
+  `PreviewRuntimeD3DProjection.PipelineLatency.cs`,
+  `PreviewRuntimeD3DProjection.FrameOwnership.cs`,
+  `PreviewRuntimeD3DProjection.FrameStatistics.cs`, and
+  `PreviewRuntimeD3DProjection.FrameLatencyWait.cs` own the matching projection
+  field groups beside their policy owners.
+  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.Builder.cs`
   owns remaining D3D diagnostic field composition.
   Window close routing/finalization ownership is detailed in the window close
   section below:
