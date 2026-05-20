@@ -87,6 +87,12 @@ static partial class Program
             .Replace("\r\n", "\n");
         var snapshotFlatteningPreviewD3DText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningPreviewD3DCpuTimingText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.CpuTiming.cs")
+            .Replace("\r\n", "\n");
+        var snapshotFlatteningPreviewD3DLatencyAndStatsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.LatencyAndStats.cs")
+            .Replace("\r\n", "\n");
+        var snapshotFlatteningPreviewD3DFrameFlowText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.FrameFlow.cs")
+            .Replace("\r\n", "\n");
         var previewD3DProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs")
             .Replace("\r\n", "\n");
         var previewD3DFrameFlowProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameFlow.cs")
@@ -103,19 +109,46 @@ static partial class Program
         AssertContains(snapshotProjectionText, "var previewD3D = BuildPreviewD3DProjection(\n            previewRuntime,\n            recentD3DMissedRefreshes,\n            recentD3DStatsFailures);");
         AssertContains(snapshotFlatteningText, "var previewD3DFlattening = BuildPreviewD3DFlattenedProjection(previewD3D);");
         AssertContains(snapshotFlatteningText, "PreviewD3DPresentSyncInterval = previewD3DFlattening.PresentSyncInterval,");
-        AssertContains(snapshotFlatteningText, "PreviewD3DInputUploadCpuP99Ms = previewD3DFlattening.InputUploadCpuP99Ms,");
-        AssertContains(snapshotFlatteningText, "PreviewD3DPipelineLatencyMaxMs = previewD3DFlattening.PipelineLatencyMaxMs,");
-        AssertContains(snapshotFlatteningText, "PreviewD3DFrameLatencyWaitTimeoutCount = previewD3DFlattening.FrameLatencyWaitTimeoutCount,");
-        AssertContains(snapshotFlatteningText, "PreviewD3DFrameStatsRecentMissedRefreshCount = previewD3DFlattening.FrameStatsRecentMissedRefreshCount,");
-        AssertContains(snapshotFlatteningText, "PreviewD3DRecentSlowFrames = previewD3DFlattening.RecentSlowFrames,");
-        AssertContains(snapshotFlatteningText, "PreviewD3DLastRenderedPipelineLatencyMs = previewD3DFlattening.LastRenderedPipelineLatencyMs,");
+        AssertContains(snapshotFlatteningText, "PreviewD3DInputUploadCpuP99Ms = previewD3DFlattening.CpuTiming.InputUploadCpuP99Ms,");
+        AssertContains(snapshotFlatteningText, "PreviewD3DPipelineLatencyMaxMs = previewD3DFlattening.LatencyAndStats.PipelineLatencyMaxMs,");
+        AssertContains(snapshotFlatteningText, "PreviewD3DFrameLatencyWaitTimeoutCount = previewD3DFlattening.LatencyAndStats.FrameLatencyWaitTimeoutCount,");
+        AssertContains(snapshotFlatteningText, "PreviewD3DFrameStatsRecentMissedRefreshCount = previewD3DFlattening.LatencyAndStats.FrameStatsRecentMissedRefreshCount,");
+        AssertContains(snapshotFlatteningText, "PreviewD3DRecentSlowFrames = previewD3DFlattening.FrameFlow.RecentSlowFrames,");
+        AssertContains(snapshotFlatteningText, "PreviewD3DLastRenderedPipelineLatencyMs = previewD3DFlattening.FrameFlow.LastRenderedPipelineLatencyMs,");
         AssertContains(snapshotFlatteningPreviewD3DText, "private static PreviewD3DFlattenedProjection BuildPreviewD3DFlattenedProjection(");
-        AssertContains(snapshotFlatteningPreviewD3DText, "InputUploadCpuP99Ms = previewD3D.CpuTiming.InputUploadP99Ms,");
-        AssertContains(snapshotFlatteningPreviewD3DText, "PipelineLatencyMaxMs = previewD3D.PipelineLatency.MaxMs,");
-        AssertContains(snapshotFlatteningPreviewD3DText, "FrameLatencyWaitTimeoutCount = previewD3D.FrameLatencyWait.TimeoutCount,");
-        AssertContains(snapshotFlatteningPreviewD3DText, "FrameStatsRecentMissedRefreshCount = previewD3D.FrameStats.RecentMissedRefreshCount,");
-        AssertContains(snapshotFlatteningPreviewD3DText, "RecentSlowFrames = previewD3D.FrameFlow.RecentSlowFrames");
+        AssertContains(snapshotFlatteningPreviewD3DText, "CpuTiming = BuildPreviewD3DCpuTimingFlattenedProjection(previewD3D.CpuTiming),");
+        AssertContains(snapshotFlatteningPreviewD3DText, "LatencyAndStats = BuildPreviewD3DLatencyAndStatsFlattenedProjection(");
+        AssertContains(snapshotFlatteningPreviewD3DText, "FrameFlow = BuildPreviewD3DFrameFlowFlattenedProjection(previewD3D.FrameFlow)");
         AssertContains(snapshotFlatteningPreviewD3DText, "private readonly record struct PreviewD3DFlattenedProjection");
+        AssertContains(snapshotFlatteningPreviewD3DText, "public PreviewD3DCpuTimingFlattenedProjection CpuTiming { get; init; }");
+        AssertContains(snapshotFlatteningPreviewD3DText, "public PreviewD3DLatencyAndStatsFlattenedProjection LatencyAndStats { get; init; }");
+        AssertContains(snapshotFlatteningPreviewD3DText, "public PreviewD3DFrameFlowFlattenedProjection FrameFlow { get; init; }");
+        AssertContains(snapshotFlatteningPreviewD3DCpuTimingText, "private static PreviewD3DCpuTimingFlattenedProjection BuildPreviewD3DCpuTimingFlattenedProjection(");
+        AssertContains(snapshotFlatteningPreviewD3DCpuTimingText, "InputUploadCpuP99Ms = cpuTiming.InputUploadP99Ms,");
+        AssertContains(snapshotFlatteningPreviewD3DCpuTimingText, "private readonly record struct PreviewD3DCpuTimingFlattenedProjection");
+        AssertContains(snapshotFlatteningPreviewD3DCpuTimingText, "public double InputUploadCpuP99Ms { get; init; }");
+        AssertContains(snapshotFlatteningPreviewD3DCpuTimingText, "public double RenderSubmitCpuP99Ms { get; init; }");
+        AssertContains(snapshotFlatteningPreviewD3DCpuTimingText, "public double PresentCallP99Ms { get; init; }");
+        AssertContains(snapshotFlatteningPreviewD3DCpuTimingText, "public double TotalFrameCpuP99Ms { get; init; }");
+        AssertContains(snapshotFlatteningPreviewD3DLatencyAndStatsText, "private static PreviewD3DLatencyAndStatsFlattenedProjection BuildPreviewD3DLatencyAndStatsFlattenedProjection(");
+        AssertContains(snapshotFlatteningPreviewD3DLatencyAndStatsText, "PipelineLatencyMaxMs = pipelineLatency.MaxMs,");
+        AssertContains(snapshotFlatteningPreviewD3DLatencyAndStatsText, "FrameLatencyWaitTimeoutCount = frameLatencyWait.TimeoutCount,");
+        AssertContains(snapshotFlatteningPreviewD3DLatencyAndStatsText, "FrameStatsRecentMissedRefreshCount = frameStats.RecentMissedRefreshCount,");
+        AssertContains(snapshotFlatteningPreviewD3DLatencyAndStatsText, "private readonly record struct PreviewD3DLatencyAndStatsFlattenedProjection");
+        AssertContains(snapshotFlatteningPreviewD3DLatencyAndStatsText, "public double PipelineLatencyP99Ms { get; init; }");
+        AssertContains(snapshotFlatteningPreviewD3DLatencyAndStatsText, "public long FrameLatencyWaitTimeoutCount { get; init; }");
+        AssertContains(snapshotFlatteningPreviewD3DLatencyAndStatsText, "public long FrameStatsRecentMissedRefreshCount { get; init; }");
+        AssertContains(snapshotFlatteningPreviewD3DFrameFlowText, "private static PreviewD3DFrameFlowFlattenedProjection BuildPreviewD3DFrameFlowFlattenedProjection(");
+        AssertContains(snapshotFlatteningPreviewD3DFrameFlowText, "LastRenderedPipelineLatencyMs = frameFlow.LastRenderedPipelineLatencyMs,");
+        AssertContains(snapshotFlatteningPreviewD3DFrameFlowText, "RecentSlowFrames = frameFlow.RecentSlowFrames");
+        AssertContains(snapshotFlatteningPreviewD3DFrameFlowText, "private readonly record struct PreviewD3DFrameFlowFlattenedProjection");
+        AssertContains(snapshotFlatteningPreviewD3DFrameFlowText, "public long LastSubmittedPreviewPresentId { get; init; }");
+        AssertContains(snapshotFlatteningPreviewD3DFrameFlowText, "public double LastRenderedPipelineLatencyMs { get; init; }");
+        AssertContains(snapshotFlatteningPreviewD3DFrameFlowText, "public string LastDropReason { get; init; }");
+        AssertContains(snapshotFlatteningPreviewD3DFrameFlowText, "public PreviewSlowFrameDiagnostic[] RecentSlowFrames { get; init; }");
+        AssertDoesNotContain(snapshotFlatteningPreviewD3DText, "public double InputUploadCpuP99Ms { get; init; }");
+        AssertDoesNotContain(snapshotFlatteningPreviewD3DText, "public double PipelineLatencyP99Ms { get; init; }");
+        AssertDoesNotContain(snapshotFlatteningPreviewD3DText, "public long LastSubmittedPreviewPresentId { get; init; }");
         AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DPresentSyncInterval = previewRuntime.D3DPresentSyncInterval,");
         AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DInputUploadCpuP99Ms = previewRuntime.D3DInputUploadCpuP99Ms,");
         AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DInputUploadCpuP99Ms = previewD3D.InputUploadCpuP99Ms,");
