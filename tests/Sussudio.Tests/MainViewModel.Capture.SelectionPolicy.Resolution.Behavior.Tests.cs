@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureResolutionSelectionPolicy_PreservesHdrSourceRetargetBehavior()
+    internal static Task CaptureResolutionSelectionPolicy_PreservesHdrSourceRetargetBehavior()
     {
         var mediaFormatType = RequireType("Sussudio.Models.MediaFormat");
         var resolutionType = RequireType("Sussudio.Models.ResolutionOption");
@@ -70,7 +70,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureResolutionSelectionPolicy_PreservesSdrAutoBucketPreference()
+    internal static Task CaptureResolutionSelectionPolicy_PreservesSdrAutoBucketPreference()
     {
         var mediaFormatType = RequireType("Sussudio.Models.MediaFormat");
         var resolutionType = RequireType("Sussudio.Models.ResolutionOption");
@@ -115,7 +115,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutoCaptureSelectionPolicy_PreservesSourceBoundedSelection()
+    internal static Task AutoCaptureSelectionPolicy_PreservesSourceBoundedSelection()
     {
         var mediaFormatType = RequireType("Sussudio.Models.MediaFormat");
         var resolutionType = RequireType("Sussudio.Models.ResolutionOption");

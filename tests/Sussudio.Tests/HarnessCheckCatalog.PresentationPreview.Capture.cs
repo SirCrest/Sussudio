@@ -6,18 +6,6 @@ static partial class Program
     private static async Task AddPresentationPreviewCaptureChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Resolution selection policy lives in focused partial",
-            ResolutionSelectionPolicy_LivesInFocusedPartial);
-        await AddCheckAsync(results,
-            "Capture resolution selection policy preserves HDR source retarget behavior",
-            CaptureResolutionSelectionPolicy_PreservesHdrSourceRetargetBehavior);
-        await AddCheckAsync(results,
-            "Capture resolution selection policy preserves SDR auto bucket preference",
-            CaptureResolutionSelectionPolicy_PreservesSdrAutoBucketPreference);
-        await AddCheckAsync(results,
-            "Auto capture selection policy preserves source-bounded selection",
-            AutoCaptureSelectionPolicy_PreservesSourceBoundedSelection);
-        await AddCheckAsync(results,
             "Device format probe retarget policy lives in focused helper",
             DeviceFormatProbeRetargetPolicy_LivesInFocusedHelper);
         await AddCheckAsync(results,

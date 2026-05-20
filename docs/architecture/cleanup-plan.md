@@ -4343,6 +4343,9 @@ owner, fold it back into that owner and update the source-shape tests and
     live in `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs`; auto-resolution
     display text used by status and telemetry presentation lives in
     `MainViewModel.CapturePresentation.cs`.
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewResolutionSelectionContractsTests.cs`
+   owns xUnit execution for the resolution-selection ownership and behavior
+   checks after their removal from the legacy presentation-preview capture catalog.
    Pure resolution selection policy now lives in the
    `Sussudio/ViewModels/CaptureResolutionSelectionPolicy*.cs` family:
    `CaptureResolutionSelectionPolicy.cs` owns the facade,

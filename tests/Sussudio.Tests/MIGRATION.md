@@ -214,6 +214,10 @@ add xUnit alongside, and port incrementally.
   former legacy presentation-preview frame-rate selection group:
   `ShowAllCaptureOptions`, source-filter, auto-selection, and timing-policy
   behavior/ownership checks.
+- `XUnit.PresentationPreviewResolutionSelectionContractsTests.cs` owns the
+  former legacy presentation-preview resolution-selection group: option rebuild
+  ownership, HDR source retarget, SDR auto bucket, and source-bounded automatic
+  selection checks.
 - `XUnit.PresentationPreviewCaptureOptionContractsTests.cs` owns the former
   legacy presentation-preview MainWindow capture device action, option
   presentation, affordance policy, option binding, and tooltip formatter checks.

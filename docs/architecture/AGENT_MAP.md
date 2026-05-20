@@ -1977,6 +1977,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Behavior.Tests.cs`
   owns resolution-selection policy behavior assertions, including HDR and SDR
   source retarget behavior.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewResolutionSelectionContractsTests.cs`
+  owns xUnit execution for the former legacy presentation-preview
+  resolution-selection catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.ModeSelection.Tests.cs`
   owns mode-selection reset and resolved automatic frame-rate application
   assertions.
