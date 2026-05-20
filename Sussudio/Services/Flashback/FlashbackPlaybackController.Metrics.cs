@@ -8,15 +8,6 @@ internal sealed partial class FlashbackPlaybackController
     public long PlaybackFrameCount => Interlocked.Read(ref _playbackFrameCount);
     public long PlaybackLateFrames => Interlocked.Read(ref _playbackLateFrames);
     public long PlaybackDroppedFrames => Interlocked.Read(ref _playbackDroppedFrames);
-    public long PlaybackAudioMasterDelayDoubles => Interlocked.Read(ref _playbackAudioMasterDelayDoubles);
-    public long PlaybackAudioMasterDelayShrinks => Interlocked.Read(ref _playbackAudioMasterDelayShrinks);
-    public long PlaybackAudioMasterFallbacks => Interlocked.Read(ref _playbackAudioMasterFallbacks);
-    public long PlaybackAudioMasterUnavailableFallbacks => Interlocked.Read(ref _playbackAudioMasterUnavailableFallbacks);
-    public long PlaybackAudioMasterStaleFallbacks => Interlocked.Read(ref _playbackAudioMasterStaleFallbacks);
-    public long PlaybackAudioMasterDriftOutlierFallbacks => Interlocked.Read(ref _playbackAudioMasterDriftOutlierFallbacks);
-    public string PlaybackAudioMasterLastFallbackReason => Volatile.Read(ref _playbackAudioMasterLastFallbackReason);
-    public double PlaybackAudioMasterLastFallbackDriftMs => _playbackAudioMasterLastFallbackDriftMs;
-    public double PlaybackAudioMasterLastFallbackClockAgeMs => _playbackAudioMasterLastFallbackClockAgeMs;
     public long PlaybackSegmentSwitches => Interlocked.Read(ref _playbackSegmentSwitches);
     public long PlaybackFmp4Reopens => Interlocked.Read(ref _playbackFmp4Reopens);
     public long PlaybackReopenAudioNullWindowCount => Interlocked.Read(ref _playbackReopenAudioNullWindowCount);

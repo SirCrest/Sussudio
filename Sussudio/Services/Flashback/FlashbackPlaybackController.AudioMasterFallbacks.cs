@@ -16,6 +16,14 @@ internal sealed partial class FlashbackPlaybackController
     private double _pendingAudioMasterFallbackDriftMs;
     private long _pendingAudioMasterFallbackClockAgeTicks;
 
+    public long PlaybackAudioMasterFallbacks => Interlocked.Read(ref _playbackAudioMasterFallbacks);
+    public long PlaybackAudioMasterUnavailableFallbacks => Interlocked.Read(ref _playbackAudioMasterUnavailableFallbacks);
+    public long PlaybackAudioMasterStaleFallbacks => Interlocked.Read(ref _playbackAudioMasterStaleFallbacks);
+    public long PlaybackAudioMasterDriftOutlierFallbacks => Interlocked.Read(ref _playbackAudioMasterDriftOutlierFallbacks);
+    public string PlaybackAudioMasterLastFallbackReason => Volatile.Read(ref _playbackAudioMasterLastFallbackReason);
+    public double PlaybackAudioMasterLastFallbackDriftMs => _playbackAudioMasterLastFallbackDriftMs;
+    public double PlaybackAudioMasterLastFallbackClockAgeMs => _playbackAudioMasterLastFallbackClockAgeMs;
+
     private void RecordAudioMasterFallback(string reason, double driftMs, long clockAgeTicks)
     {
         if (!IsTransientAudioMasterFallbackCandidate(reason))

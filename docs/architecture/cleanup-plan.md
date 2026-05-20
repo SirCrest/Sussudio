@@ -2567,8 +2567,8 @@ math, active fMP4 segment detection, and playback path comparison.
 Flashback playback diagnostics now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs`. That
 partial owns public playback counters and the read-only A/V drift projection,
-excluding command/thread, decoded-PTS cadence, max decode timing, and seek-cap
-telemetry projection.
+excluding command/thread, audio-master, decoded-PTS cadence, max decode timing,
+and seek-cap telemetry projection.
 Cadence summary DTO construction, percentile math, and low-FPS derivation live
 in `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackCadenceMetrics.cs`.
 Decode summary DTO construction and decode timing percentile projection live in
@@ -2746,11 +2746,12 @@ the live-state recovery implementation remains in
 Audio-master clock sample state, stale-clock detection, and clock-drift
 projection now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterClock.cs`;
-audio-master pacing correction policy and wall-clock sleep/spin pacing now live
-in `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs`.
+audio-master pacing correction policy, delay-adjustment counters, and wall-clock
+sleep/spin pacing now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs`.
 Audio-master fallback accounting state, fallback classification, pending
-fallback suppression, and fallback reason/drift/clock-age telemetry updates now
-live in
+fallback suppression, and read-only fallback reason/drift/clock-age telemetry
+projection and updates now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterFallbacks.cs`.
 Decoder close best-effort handling now lives with decoder file ownership, and
 decode-error snap-to-live recovery lives with the continuous playback loop, so

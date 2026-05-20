@@ -9,6 +9,9 @@ internal sealed partial class FlashbackPlaybackController
     private long _playbackAudioMasterDelayDoubles;
     private long _playbackAudioMasterDelayShrinks;
 
+    public long PlaybackAudioMasterDelayDoubles => Interlocked.Read(ref _playbackAudioMasterDelayDoubles);
+    public long PlaybackAudioMasterDelayShrinks => Interlocked.Read(ref _playbackAudioMasterDelayShrinks);
+
     // --- Audio-master playback pacing ---
 
     /// <summary>
