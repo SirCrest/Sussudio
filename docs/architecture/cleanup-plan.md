@@ -2578,9 +2578,11 @@ queue writes/drop policy in the queue partial and playback-thread execution in
 the thread partials. Playback-thread command identity and payload shape live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.CommandModels.cs`;
 keep new command fields there so queue, coalescing, telemetry, and thread
-owners share one private payload contract. Seek/scrub coalescing slot state and queued-position
-resolution now live in
+owners share one private payload contract. Seek/scrub coalesced command admission now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.CommandCoalescing.cs`.
+Seek/scrub coalescing slot state, queued-position resolution, and queued-slot
+barriers now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.CommandCoalescingSlots.cs`.
 Playback-thread control-yield peek policy now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.CommandControlYieldPolicy.cs`.
 Do not grow the root controller with new coalescing slot fields.
