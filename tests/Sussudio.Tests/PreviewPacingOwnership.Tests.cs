@@ -14,7 +14,11 @@ public sealed class PreviewPacingOwnershipTests
             .Replace("\r\n", "\n");
         var d3dPolicyText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.D3D.cs")
             .Replace("\r\n", "\n");
-        var lanePolicyText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.Lanes.cs")
+        var sourceVisualLanePolicyText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.Lanes.SourceVisual.cs")
+            .Replace("\r\n", "\n");
+        var decodeJitterLanePolicyText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.Lanes.DecodeJitter.cs")
+            .Replace("\r\n", "\n");
+        var renderLanePolicyText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.Lanes.Render.cs")
             .Replace("\r\n", "\n");
         var modelText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingClassificationModels.cs")
             .Replace("\r\n", "\n");
@@ -31,18 +35,26 @@ public sealed class PreviewPacingOwnershipTests
         Assert.Contains("TryClassifyPreviewJitterScheduler(input, targetFrameMs", classifierText);
         Assert.Contains("TryClassifyRenderSubmit(input, out var renderSubmitClassification)", classifierText);
         Assert.DoesNotContain("private static bool IsSourceCaptureSuspect(", classifierText);
-        Assert.Contains("private static bool TryClassifySourceCapture(", lanePolicyText);
-        Assert.Contains("private static bool TryClassifyVisualDuplicateOrLowMotion(", lanePolicyText);
-        Assert.Contains("private static bool TryClassifyMjpegDecode(", lanePolicyText);
-        Assert.Contains("private static bool TryClassifyPreviewJitterScheduler(", lanePolicyText);
-        Assert.Contains("private static bool TryClassifyCompositorMiss(", lanePolicyText);
-        Assert.Contains("private static bool TryClassifyRenderSubmit(", lanePolicyText);
-        Assert.Contains("private static bool IsSourceCaptureSuspect(", lanePolicyText);
+        Assert.Contains("private static bool TryClassifySourceCapture(", sourceVisualLanePolicyText);
+        Assert.Contains("private static bool TryClassifyVisualDuplicateOrLowMotion(", sourceVisualLanePolicyText);
+        Assert.Contains("private static bool IsSourceCaptureSuspect(", sourceVisualLanePolicyText);
+        Assert.Contains("private static bool IsVisualDuplicateOrLowMotionSuspect(", sourceVisualLanePolicyText);
+        Assert.DoesNotContain("TryClassifyMjpegDecode(", sourceVisualLanePolicyText);
+        Assert.Contains("private static bool TryClassifyMjpegDecode(", decodeJitterLanePolicyText);
+        Assert.Contains("private static bool TryClassifyPreviewJitterScheduler(", decodeJitterLanePolicyText);
+        Assert.Contains("private static bool IsMjpegDecodeSuspect(", decodeJitterLanePolicyText);
+        Assert.Contains("private static bool IsPreviewJitterSuspect(", decodeJitterLanePolicyText);
+        Assert.DoesNotContain("TryClassifyRenderSubmit(", decodeJitterLanePolicyText);
+        Assert.Contains("private static bool TryClassifyCompositorMiss(", renderLanePolicyText);
+        Assert.Contains("private static bool TryClassifyRenderSubmit(", renderLanePolicyText);
+        Assert.Contains("private static double CalculatePercent(", renderLanePolicyText);
         Assert.Contains("private static string ResolveDominantD3DStage(", d3dPolicyText);
         Assert.Contains("private static bool IsDominant(", d3dPolicyText);
         Assert.Contains("private static double Positive(double value)", d3dPolicyText);
         Assert.Contains("PreviewPacingSlowStageClassifier.D3D.cs", agentMapText);
-        Assert.Contains("PreviewPacingSlowStageClassifier.Lanes.cs", agentMapText);
+        Assert.Contains("PreviewPacingSlowStageClassifier.Lanes.SourceVisual.cs", agentMapText);
+        Assert.Contains("PreviewPacingSlowStageClassifier.Lanes.DecodeJitter.cs", agentMapText);
+        Assert.Contains("PreviewPacingSlowStageClassifier.Lanes.Render.cs", agentMapText);
     }
 
     [Fact]
