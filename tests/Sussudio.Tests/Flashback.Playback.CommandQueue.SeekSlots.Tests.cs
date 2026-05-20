@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackPlaybackController_SeekSlots_PreserveControlCommandBarriers()
+    internal static Task FlashbackPlaybackController_SeekSlots_PreserveControlCommandBarriers()
     {
         var controllerType = RequireType("Sussudio.Services.Flashback.FlashbackPlaybackController");
         var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");

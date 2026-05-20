@@ -47,8 +47,6 @@ static partial class Program
 
     private static async Task AddFlashbackChecksAsync(List<CheckResult> results)
     {
-        await AddFlashbackPlaybackStartupChecksAsync(results);
-        await AddFlashbackPlaybackTimelineChecksAsync(results);
         await AddFlashbackDecoderChecksAsync(results);
         await AddFlashbackExporterChecksAsync(results);
     }

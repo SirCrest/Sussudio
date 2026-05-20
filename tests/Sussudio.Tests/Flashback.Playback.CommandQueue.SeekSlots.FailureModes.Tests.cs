@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackPlaybackController_SeekSlots_PreserveSlotStateAfterRejectedBarriers()
+    internal static Task FlashbackPlaybackController_SeekSlots_PreserveSlotStateAfterRejectedBarriers()
     {
         var controllerType = RequireType("Sussudio.Services.Flashback.FlashbackPlaybackController");
         var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");

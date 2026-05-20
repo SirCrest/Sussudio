@@ -5,7 +5,7 @@ static partial class Program
     private static string ReadFlashbackPlaybackControllerPlaybackSource()
         => ReadFlashbackPlaybackControllerSource();
 
-    private static Task FlashbackPlaybackController_PlaybackThreadExit_RearmsWorkerStart()
+    internal static Task FlashbackPlaybackController_PlaybackThreadExit_RearmsWorkerStart()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var threadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs")

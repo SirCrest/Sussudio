@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackPlaybackController_InitialState_IsLive()
+    internal static Task FlashbackPlaybackController_InitialState_IsLive()
     {
         var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
         var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
@@ -29,7 +29,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_CommandsNoOpBeforeInitialize()
+    internal static Task FlashbackPlaybackController_CommandsNoOpBeforeInitialize()
     {
         var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
         var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
@@ -58,7 +58,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_SuccessfulNoOps_ClearStaleCommandFailure()
+    internal static Task FlashbackPlaybackController_SuccessfulNoOps_ClearStaleCommandFailure()
     {
         var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
         var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
@@ -98,7 +98,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_CoalescedCommands_ClearStaleCommandFailure()
+    internal static Task FlashbackPlaybackController_CoalescedCommands_ClearStaleCommandFailure()
     {
         var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
         var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;

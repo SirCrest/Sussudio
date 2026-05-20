@@ -829,6 +829,11 @@ Flashback encoder sink checks now execute through
 frame-rate, codec, counter, queue, force-rotate, packet-drain, startup, and
 source-ownership contracts in xUnit after their removal from the legacy harness
 catalog.
+Flashback playback checks now execute through
+`tests/Sussudio.Tests/XUnit.FlashbackPlaybackContractsTests.cs`, keeping
+startup, command-queue, source-shape, cadence, submission, reopen,
+transition-guard, and metric-reset contracts in xUnit after their removal from
+the legacy harness catalog.
 
 Projection ownership checks are split into snapshot/status, audio, capture and
 source, MJPEG, recording, system resources and A/V sync, preview, and Flashback

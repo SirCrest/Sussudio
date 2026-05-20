@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackPlaybackController_SubmitFailuresReleaseDecodedFrames()
+    internal static Task FlashbackPlaybackController_SubmitFailuresReleaseDecodedFrames()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var previewFramesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrames.cs")

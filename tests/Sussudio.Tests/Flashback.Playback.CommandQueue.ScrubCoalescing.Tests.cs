@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackPlaybackController_ScrubCoalescing_DoesNotRequeueControlCommands()
+    internal static Task FlashbackPlaybackController_ScrubCoalescing_DoesNotRequeueControlCommands()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackPlaybackController_FrameDuration_GuardsInvalidDecoderFps()
+    internal static Task FlashbackPlaybackController_FrameDuration_GuardsInvalidDecoderFps()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
@@ -54,7 +54,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_PtsCadenceTelemetry_TracksMismatches()
+    internal static Task FlashbackPlaybackController_PtsCadenceTelemetry_TracksMismatches()
     {
         var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
         var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
@@ -114,7 +114,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_ResetClearsDecodeMetrics()
+    internal static Task FlashbackPlaybackController_ResetClearsDecodeMetrics()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")

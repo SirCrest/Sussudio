@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackPlaybackController_Fmp4ReopenRetriesAreGuarded()
+    internal static Task FlashbackPlaybackController_Fmp4ReopenRetriesAreGuarded()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")

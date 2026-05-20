@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackPlaybackController_CommandQueue_AcceptsNewestControlWhenFull()
+    internal static Task FlashbackPlaybackController_CommandQueue_AcceptsNewestControlWhenFull()
     {
         var controllerType = RequireType("Sussudio.Services.Flashback.FlashbackPlaybackController");
         var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");

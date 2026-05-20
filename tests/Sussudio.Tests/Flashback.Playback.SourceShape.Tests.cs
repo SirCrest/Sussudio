@@ -36,7 +36,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_ClampsCommandPositionsBeforeFileLookup()
+    internal static Task FlashbackPlaybackController_ClampsCommandPositionsBeforeFileLookup()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         // All three scrub-related command paths must clamp via the eviction-aware
@@ -58,7 +58,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_TimestampArithmeticIsSaturating()
+    internal static Task FlashbackPlaybackController_TimestampArithmeticIsSaturating()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
@@ -82,7 +82,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_EndOfSegmentOpenFailuresSnapLive()
+    internal static Task FlashbackPlaybackController_EndOfSegmentOpenFailuresSnapLive()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var segmentSwitchText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentSwitch.cs")
@@ -110,7 +110,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_NormalPlaybackUsesTightNearLiveSnap()
+    internal static Task FlashbackPlaybackController_NormalPlaybackUsesTightNearLiveSnap()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
@@ -142,7 +142,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_SnapLiveClearsOpenFileIdentity()
+    internal static Task FlashbackPlaybackController_SnapLiveClearsOpenFileIdentity()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var playbackLiveRecoveryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLiveRecovery.cs")
@@ -186,7 +186,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_PauseFromLive_DisplaysBufferedFrameBeforePaused()
+    internal static Task FlashbackPlaybackController_PauseFromLive_DisplaysBufferedFrameBeforePaused()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var publicPauseBlock = ExtractTextBetween(
@@ -223,7 +223,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_NudgeCreatesDecoderWhenPaused()
+    internal static Task FlashbackPlaybackController_NudgeCreatesDecoderWhenPaused()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 

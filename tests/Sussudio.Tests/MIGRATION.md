@@ -85,6 +85,9 @@ add xUnit alongside, and port incrementally.
 - `XUnit.FlashbackEncoderSinkContractsTests.cs` owns the former legacy
   Flashback encoder sink frame-rate, codec, counter, queue, force-rotate,
   packet-drain, startup, and source-ownership checks.
+- `XUnit.FlashbackPlaybackContractsTests.cs` owns the former legacy Flashback
+  playback startup, command-queue, source-shape, cadence, submission, reopen,
+  transition-guard, and metric-reset checks.
 - `Flashback.Playback.Markers.Tests.cs` owns the former legacy Flashback
   playback in/out marker API, normalization, disposal, and marker clamp checks.
 - `StatsDockPresentation.Tests.cs`, `StatsPresentation.Ownership.Tests.cs`,
