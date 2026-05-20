@@ -5,6 +5,7 @@ static partial class Program
     internal static Task MainWindowPropertyChangedRouting_DelegatesToFocusedControllers()
     {
         var rootText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var previewText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
         var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
@@ -20,6 +21,7 @@ static partial class Program
         var shellText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs").Replace("\r\n", "\n");
         var statsOverlayCompositionControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
         var settingsShelfControllerText = ReadRepoFile("Sussudio/Controllers/Shell/SettingsShelfController.cs").Replace("\r\n", "\n");
+        var shellPropertyChangedControllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellPropertyChangedController.cs").Replace("\r\n", "\n");
         var liveSignalText = ReadRepoFile("Sussudio/MainWindow.LiveSignalInfo.cs").Replace("\r\n", "\n");
         var liveSignalControllerText = ReadRepoFile("Sussudio/Controllers/Shell/LiveSignalInfoController.cs").Replace("\r\n", "\n");
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
@@ -118,11 +120,19 @@ static partial class Program
         AssertContains(audioText, "private bool TryHandleAudioPropertyChanged(string propertyName)");
         AssertContains(audioText, "=> _audioControlPresentationController.TryHandlePropertyChanged(propertyName);");
         AssertDoesNotContain(audioText, "case nameof(MainViewModel.IsAudioPreviewActive):");
+        AssertContains(shellText, "private ShellPropertyChangedController _shellPropertyChangedController = null!;");
+        AssertContains(shellText, "private void InitializeShellPropertyChangedController()");
+        AssertContains(mainWindowText, "InitializeShellPropertyChangedController();");
         AssertContains(shellText, "private bool TryHandleShellPropertyChanged(string propertyName)");
-        AssertContains(shellText, "_statsOverlayCompositionController.TryHandlePropertyChanged(propertyName, ViewModel.IsStatsVisible)");
-        AssertContains(shellText, "_settingsShelfController.TryHandlePropertyChanged(propertyName, ViewModel.IsSettingsVisible)");
+        AssertContains(shellText, "=> _shellPropertyChangedController.TryHandlePropertyChanged(propertyName);");
+        AssertDoesNotContain(shellText, "_statsOverlayCompositionController.TryHandlePropertyChanged(propertyName, ViewModel.IsStatsVisible)");
+        AssertDoesNotContain(shellText, "_settingsShelfController.TryHandlePropertyChanged(propertyName, ViewModel.IsSettingsVisible)");
         AssertDoesNotContain(shellText, "case nameof(MainViewModel.IsStatsVisible):");
         AssertDoesNotContain(shellText, "case nameof(MainViewModel.IsSettingsVisible):");
+        AssertContains(shellPropertyChangedControllerText, "internal sealed class ShellPropertyChangedController");
+        AssertContains(shellPropertyChangedControllerText, "public bool TryHandlePropertyChanged(string propertyName)");
+        AssertContains(shellPropertyChangedControllerText, "_context.StatsOverlayComposition.TryHandlePropertyChanged(propertyName, _context.IsStatsVisible())");
+        AssertContains(shellPropertyChangedControllerText, "_context.SettingsShelf.TryHandlePropertyChanged(propertyName, _context.IsSettingsVisible())");
         AssertContains(statsOverlayCompositionControllerText, "case nameof(MainViewModel.IsStatsVisible):");
         AssertContains(settingsShelfControllerText, "case nameof(MainViewModel.IsSettingsVisible):");
         AssertDoesNotContain(shellText, "StatsToggle.IsChecked = ViewModel.IsStatsVisible;");

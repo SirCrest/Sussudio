@@ -3252,11 +3252,11 @@ chrome.
 
 Capture-option property-name routing still lives in the focused
 `Sussudio/MainWindow.CaptureOptionBindings.cs` adapter. Output-path routing
-lives in `OutputPathController`, shell visibility routing lives in
-`StatsOverlayCompositionController` and `SettingsShelfController`, and live
-source-signal routing lives in `LiveSignalInfoController`. Keep the root
-dispatcher limited to route order, and add new property-name cases to the
-nearest focused owner.
+lives in `OutputPathController`, shell visibility route order lives in
+`ShellPropertyChangedController` over `StatsOverlayCompositionController` and
+`SettingsShelfController`, and live source-signal routing lives in
+`LiveSignalInfoController`. Keep the root dispatcher limited to route order,
+and add new property-name cases to the nearest focused owner.
 
 Flashback-specific ViewModel property adapter dispatch now lives in
 `Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs`:

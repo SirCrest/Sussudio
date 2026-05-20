@@ -3188,9 +3188,11 @@ Primary current owners:
   property-change routing; the property-name router lives in
   `CaptureOptionBindingController`.
 - `Sussudio/MainWindow.ShellChrome.cs` is the XAML-facing shell chrome adapter.
-  Stats visibility property-change routing lives in
-  `StatsOverlayCompositionController`, while settings visibility property-change
-  routing lives in `SettingsShelfController`.
+  `Sussudio/Controllers/Shell/ShellPropertyChangedController.cs` owns the shell
+  property-change route order across `StatsOverlayCompositionController` and
+  `SettingsShelfController`; stats visibility behavior still lives in the stats
+  composition controller, while settings visibility behavior still lives in the
+  settings shelf controller.
 - `Sussudio/MainWindow.LiveSignalInfo.cs` is the XAML-facing live signal
   adapter. `LiveSignalInfoController` owns live source-signal property-change
   routing and pill presentation.

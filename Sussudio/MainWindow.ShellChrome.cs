@@ -17,6 +17,7 @@ public sealed partial class MainWindow
     private LaunchStartupController _launchStartupController = null!;
     private SettingsShelfController _settingsShelfController = null!;
     private ShellElevationController _shellElevationController = null!;
+    private ShellPropertyChangedController _shellPropertyChangedController = null!;
     private SplashLoadingPhraseController _splashLoadingPhraseController = null!;
     private IntPtr _hwnd;
 
@@ -107,6 +108,17 @@ public sealed partial class MainWindow
         });
     }
 
+    private void InitializeShellPropertyChangedController()
+    {
+        _shellPropertyChangedController = new ShellPropertyChangedController(new ShellPropertyChangedControllerContext
+        {
+            StatsOverlayComposition = _statsOverlayCompositionController,
+            SettingsShelf = _settingsShelfController,
+            IsStatsVisible = () => ViewModel.IsStatsVisible,
+            IsSettingsVisible = () => ViewModel.IsSettingsVisible,
+        });
+    }
+
     private void InitializeSettingsShelfController()
     {
         _settingsShelfController = new SettingsShelfController(new SettingsShelfControllerContext
@@ -166,17 +178,5 @@ public sealed partial class MainWindow
         => _splashLoadingPhraseController.Stop();
 
     private bool TryHandleShellPropertyChanged(string propertyName)
-    {
-        if (_statsOverlayCompositionController.TryHandlePropertyChanged(propertyName, ViewModel.IsStatsVisible))
-        {
-            return true;
-        }
-
-        if (_settingsShelfController.TryHandlePropertyChanged(propertyName, ViewModel.IsSettingsVisible))
-        {
-            return true;
-        }
-
-        return false;
-    }
+        => _shellPropertyChangedController.TryHandlePropertyChanged(propertyName);
 }
