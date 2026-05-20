@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task AutomationCommandDispatcher_CatalogReadyIndependentCommands_BypassDeviceReadiness()
+    internal static async Task AutomationCommandDispatcher_CatalogReadyIndependentCommands_BypassDeviceReadiness()
     {
         var catalogType = RequireType("Sussudio.Tools.AutomationCommandCatalog");
         var readyIndependentCommands = GetCatalogEntries(catalogType)

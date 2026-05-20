@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationCommandDispatcher_AudioControlCommands_LiveInFocusedPartial()
+    internal static Task AutomationCommandDispatcher_AudioControlCommands_LiveInFocusedPartial()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
@@ -37,7 +37,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_CaptureControlCommands_LiveInFocusedPartial()
+    internal static Task AutomationCommandDispatcher_CaptureControlCommands_LiveInFocusedPartial()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
@@ -71,7 +71,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_UiSettingsCommands_OwnUiSettingsApplication()
+    internal static Task AutomationCommandDispatcher_UiSettingsCommands_OwnUiSettingsApplication()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
@@ -102,7 +102,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_DeviceCommands_LiveInFocusedPartial()
+    internal static Task AutomationCommandDispatcher_DeviceCommands_LiveInFocusedPartial()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");

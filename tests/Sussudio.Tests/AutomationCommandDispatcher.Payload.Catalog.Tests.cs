@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationCommandDispatcher_WindowAction_DefaultsMissingActionToRestore()
+    internal static Task AutomationCommandDispatcher_WindowAction_DefaultsMissingActionToRestore()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var method = dispatcherType.GetMethod("ParseWindowAction",
@@ -23,7 +23,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_WaitForCondition_DefaultsMissingConditionToPreviewFrames()
+    internal static Task AutomationCommandDispatcher_WaitForCondition_DefaultsMissingConditionToPreviewFrames()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var method = dispatcherType.GetMethod("ParseWaitCondition",
@@ -41,7 +41,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_OneFieldHandlers_MatchCatalogPayloadFields()
+    internal static Task AutomationCommandDispatcher_OneFieldHandlers_MatchCatalogPayloadFields()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var handlers = GetHandlerEntries(dispatcherType, "TrivialDeviceSelectionHandlers")
@@ -98,7 +98,7 @@ static partial class Program
         }
     }
 
-    private static Task AutomationCommandDispatcher_GetAudioRampTrace_MetadataMatchesDispatcherPayload()
+    internal static Task AutomationCommandDispatcher_GetAudioRampTrace_MetadataMatchesDispatcherPayload()
     {
         var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");

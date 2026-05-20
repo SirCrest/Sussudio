@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationCommandDispatcher_RequiresReadyDevices_ClassifiesCommands()
+    internal static Task AutomationCommandDispatcher_RequiresReadyDevices_ClassifiesCommands()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var method = dispatcherType.GetMethod("RequiresReadyDevices",
@@ -44,7 +44,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion()
+    internal static Task AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion()
     {
         var sourceText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.WindowCommands.cs")
             .Replace("\r\n", "\n");
@@ -65,7 +65,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_PreviewRendererHealthy_RequiresFirstVisual()
+    internal static Task AutomationCommandDispatcher_PreviewRendererHealthy_RequiresFirstVisual()
     {
         var sourceText = ReadAutomationCommandDispatcherFamilyText();
         var conditionBlock = ExtractTextBetween(

@@ -122,6 +122,10 @@ add xUnit alongside, and port incrementally.
   settings, audio/device/capture/recording routes, async Flashback/probe
   surface, runtime snapshot ownership, scrub/toggle behavior, timeline
   geometry, and Flashback presentation controller ownership checks.
+- `XUnit.AutomationDispatcherContractsTests.cs` owns the former legacy
+  automation dispatcher registration group: payload parsing, catalog metadata,
+  readiness classification, authorization, manifest, command coverage, and
+  focused dispatcher command-owner checks.
 - `XUnit.ToolProbeContractsTests.cs` owns the former legacy PresentMon parser,
   ssctl pipe transport, KS audio-node, and EGAVDS probe contract checks.
 - `XUnit.AutomationSnapshotFormatterContractsTests.cs` owns the former legacy

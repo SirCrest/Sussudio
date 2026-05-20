@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationCommandDispatcher_WaitAndAssertCommands_LiveWithSupportOwners()
+    internal static Task AutomationCommandDispatcher_WaitAndAssertCommands_LiveWithSupportOwners()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
@@ -40,7 +40,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_IntrospectionCommands_LiveInFocusedPartial()
+    internal static Task AutomationCommandDispatcher_IntrospectionCommands_LiveInFocusedPartial()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
@@ -65,7 +65,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_WindowCommands_LiveInFocusedPartial()
+    internal static Task AutomationCommandDispatcher_WindowCommands_LiveInFocusedPartial()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
@@ -106,7 +106,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_VerificationCommands_LiveInFocusedPartial()
+    internal static Task AutomationCommandDispatcher_VerificationCommands_LiveInFocusedPartial()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
@@ -131,7 +131,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_VisualCaptureCommands_LiveInFocusedPartial()
+    internal static Task AutomationCommandDispatcher_VisualCaptureCommands_LiveInFocusedPartial()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");

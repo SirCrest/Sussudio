@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationCommandDispatcher_GetString_ExtractsFromJsonPayload()
+    internal static Task AutomationCommandDispatcher_GetString_ExtractsFromJsonPayload()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var method = dispatcherType.GetMethod("GetString",
@@ -25,7 +25,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_GetBool_ExtractsFromJsonPayload()
+    internal static Task AutomationCommandDispatcher_GetBool_ExtractsFromJsonPayload()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var method = dispatcherType.GetMethod("GetBool",
@@ -45,7 +45,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_GetInt_ExtractsFromJsonPayload()
+    internal static Task AutomationCommandDispatcher_GetInt_ExtractsFromJsonPayload()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var method = dispatcherType.GetMethod("GetInt",
@@ -62,7 +62,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_GetDouble_ExtractsFromJsonPayload()
+    internal static Task AutomationCommandDispatcher_GetDouble_ExtractsFromJsonPayload()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var method = dispatcherType.GetMethod("GetDouble",
@@ -76,7 +76,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_GetDouble_RejectsNonFiniteValues()
+    internal static Task AutomationCommandDispatcher_GetDouble_RejectsNonFiniteValues()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var method = dispatcherType.GetMethod("GetDouble",
@@ -93,7 +93,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_RequireString_ThrowsOnMissing()
+    internal static Task AutomationCommandDispatcher_RequireString_ThrowsOnMissing()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var method = dispatcherType.GetMethod("RequireString",

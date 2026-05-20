@@ -18,7 +18,6 @@ static partial class Program
 
     private static async Task AddAutomationDiagnosticsChecksAsync(List<CheckResult> results)
     {
-        await AddAutomationDiagnosticsDispatcherChecksAsync(results);
         await AddAutomationDiagnosticsCaptureAndFlashbackRoutingChecksAsync(results);
         await AddAutomationDiagnosticsSnapshotProjectionChecksAsync(results);
     }

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics()
+    internal static async Task AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics()
     {
         var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
         var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
@@ -63,7 +63,7 @@ static partial class Program
         AssertEqual(snapshot, GetPublicProperty(response, "Snapshot"), "flashback failure response reuses diagnostic snapshot");
     }
 
-    private static Task AutomationCommandDispatcher_FlashbackCommands_LiveInFocusedPartial()
+    internal static Task AutomationCommandDispatcher_FlashbackCommands_LiveInFocusedPartial()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");

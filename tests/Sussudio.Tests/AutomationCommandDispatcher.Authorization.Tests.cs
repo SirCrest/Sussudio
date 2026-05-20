@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task AutomationCommandDispatcher_AuthorizesConfiguredTokens()
+    internal static async Task AutomationCommandDispatcher_AuthorizesConfiguredTokens()
     {
         var noTokenDispatcher = CreateAutomationCommandDispatcher(authToken: null);
         var noTokenResponse = await ExecuteAutomationCommandAsync(

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationCommandDispatcher_AllCommandKinds_AreHandled()
+    internal static Task AutomationCommandDispatcher_AllCommandKinds_AreHandled()
     {
         // Every AutomationCommandKind value must be explicitly handled: either
         // as the pre-switch Authenticate check, as a handler-table key, as an
