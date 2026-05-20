@@ -12,6 +12,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var coalescingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandCoalescing.cs")
             .Replace("\r\n", "\n");
+        var controlYieldPolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandControlYieldPolicy.cs")
+            .Replace("\r\n", "\n");
         var commandFailuresText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandFailures.cs")
             .Replace("\r\n", "\n");
 
@@ -119,12 +121,15 @@ static partial class Program
         AssertContains(updateScrubBlock, "FLASHBACK_PLAYBACK_SCRUB_UPDATE_NO_FILE");
         AssertContains(updateScrubBlock, "SafeResumePreviewSubmission(\"scrub_update_no_file\")");
         AssertContains(updateScrubBlock, "SetState(FlashbackPlaybackState.Live)");
-        AssertContains(sourceText, "private static bool ShouldYieldScrubUpdateToQueuedControl(Channel<PlaybackCommand> commandChannel)");
+        AssertContains(controlYieldPolicyText, "private static bool ShouldYieldScrubUpdateToQueuedControl(Channel<PlaybackCommand> commandChannel)");
         AssertContains(sourceText, "return next.Kind is CommandKind.EndScrub or CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;");
-        AssertContains(sourceText, "private static bool ShouldYieldSeekToQueuedPlay(Channel<PlaybackCommand> commandChannel)");
+        AssertContains(controlYieldPolicyText, "private static bool ShouldYieldSeekToQueuedPlay(Channel<PlaybackCommand> commandChannel)");
         AssertContains(sourceText, "return next.Kind is CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;");
-        AssertContains(sourceText, "private static bool ShouldYieldPauseFromLiveToQueuedSeekOrPlay(Channel<PlaybackCommand> commandChannel)");
+        AssertContains(controlYieldPolicyText, "private static bool ShouldYieldPauseFromLiveToQueuedSeekOrPlay(Channel<PlaybackCommand> commandChannel)");
         AssertContains(sourceText, "return next.Kind is CommandKind.Seek or CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;");
+        AssertDoesNotContain(coalescingText, "private static bool ShouldYieldScrubUpdateToQueuedControl(Channel<PlaybackCommand> commandChannel)");
+        AssertDoesNotContain(coalescingText, "private static bool ShouldYieldSeekToQueuedPlay(Channel<PlaybackCommand> commandChannel)");
+        AssertDoesNotContain(coalescingText, "private static bool ShouldYieldPauseFromLiveToQueuedSeekOrPlay(Channel<PlaybackCommand> commandChannel)");
         AssertContains(drainAbandonedCommands, "ClearQueuedCommandSlotsBarrier();");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)\n        {\n            MarkCommandNoOp(CommandKind.EndScrub, \"live_thread_not_running\", position);\n            return false;\n        }");
         var endScrubBlock = ExtractTextBetween(
