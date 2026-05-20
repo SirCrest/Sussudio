@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 // Tests for recording integrity counter summaries and mismatch reporting.
 static partial class Program
 {
-    private static Task RecordingIntegritySummary_FlagsAudioDiscontinuityAndDrift()
+    internal static Task RecordingIntegritySummary_FlagsAudioDiscontinuityAndDrift()
     {
         var summary = InvokeBuildRecordingIntegritySummary(
             audioDiscontinuities: 2,
@@ -25,7 +25,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task RecordingIntegritySummary_ToleratesSingleActiveInFlightFrame()
+    internal static Task RecordingIntegritySummary_ToleratesSingleActiveInFlightFrame()
     {
         var summary = InvokeBuildRecordingIntegritySummary(
             audioDiscontinuities: 0,
@@ -76,7 +76,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureService_RecordingIntegrityLivesInFocusedPartials()
+    internal static Task CaptureService_RecordingIntegrityLivesInFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs");
         var modelsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Models.cs");

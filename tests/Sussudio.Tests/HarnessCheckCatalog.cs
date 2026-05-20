@@ -7,7 +7,6 @@ static partial class Program
     private static async Task<List<CheckResult>> RunAllChecksAsync()
     {
         var results = new List<CheckResult>();
-        await AddCoreRuntimeChecksAsync(results);
         await AddAutomationDiagnosticsChecksAsync(results);
         await AddPresentationPreviewChecksAsync(results);
         await AddMcpDiagnosticsPipelineChecksAsync(results);

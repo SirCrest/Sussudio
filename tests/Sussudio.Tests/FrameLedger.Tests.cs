@@ -3,7 +3,7 @@ using System.Reflection;
 // Tests for the bounded frame-ledger flight recorder.
 static partial class Program
 {
-    private static Task FrameLedger_RetainsBoundedRecentEvents()
+    internal static Task FrameLedger_RetainsBoundedRecentEvents()
     {
         var ledgerType = RequireType("Sussudio.Services.Capture.FrameLedger");
         var identityType = RequireType("Sussudio.Models.FrameIdentity");
@@ -78,7 +78,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FrameLedger_SnapshotContractExposesRecentEvents()
+    internal static Task FrameLedger_SnapshotContractExposesRecentEvents()
     {
         var captureSnapshotType = RequireType("Sussudio.Models.CaptureRuntimeSnapshot");
         var automationSnapshotType = RequireType("Sussudio.Models.AutomationSnapshot");

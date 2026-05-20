@@ -2406,11 +2406,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/HarnessCheckCatalog.cs` owns ordered offline harness
   topic sequencing, shared catalog registration helpers, and the pass-through
   routing for automation diagnostics, presentation preview, MCP diagnostics,
-  and Flashback catalog groups. Keep `Program.cs` as the runner, not the
+  and remaining legacy catalog groups. Keep `Program.cs` as the runner, not the
   assertion registry.
-- `tests/Sussudio.Tests/HarnessCheckCatalog.CoreRuntime.cs` owns runtime,
-  telemetry, capture-service snapshot, recording-integrity, and basic app
-  contract check registration.
+- `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns the former
+  core-runtime registration group for runtime telemetry, capture-service
+  snapshot, recording-integrity, NativeXu, frame-ledger, and basic app contract
+  checks after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.CoreRuntimeRecordingContractsTests.cs` owns the
   former core-runtime recording registration group for recording verifier,
   LibAv encoder, Flashback integrity, recording-facing shared formatter, and

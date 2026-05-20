@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task Diagnostics_HdrTruthVerdict_TreatsHdrSourceSdrRequestAsExpected()
+    internal static Task Diagnostics_HdrTruthVerdict_TreatsHdrSourceSdrRequestAsExpected()
     {
         var diagnosticsType = RequireType("Sussudio.Services.Automation.AutomationDiagnosticsHub");
         var runtimeType = RequireType("Sussudio.Models.CaptureRuntimeSnapshot");

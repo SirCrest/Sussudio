@@ -849,6 +849,11 @@ Core runtime recording checks now execute through
 recording verifier, LibAv encoder, Flashback integrity, shared formatter, and
 dedicated LibAv verification script contracts in xUnit after their removal from
 the legacy harness catalog.
+Core runtime checks now execute through
+`tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs`, keeping runtime
+telemetry, capture-service snapshot, NativeXu, frame-ledger, recording-integrity,
+and basic app contract checks in xUnit after their removal from the legacy
+harness catalog.
 
 Projection ownership checks are split into snapshot/status, audio, capture and
 source, MJPEG, recording, system resources and A/V sync, preview, and Flashback

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task KsExtensionUnitNative_SourceOwnership_IsSplitByNativeBoundary()
+    internal static Task KsExtensionUnitNative_SourceOwnership_IsSplitByNativeBoundary()
     {
         var rootText = ReadKsExtensionUnitNativeFile("KsExtensionUnitNative.cs");
         var interfacesText = ReadKsExtensionUnitNativeFile("KsExtensionUnitNative.Interfaces.cs");

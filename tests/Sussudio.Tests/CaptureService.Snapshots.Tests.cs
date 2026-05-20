@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureService_SnapshotHelperPolicy_LivesInFocusedPartials()
+    internal static Task CaptureService_SnapshotHelperPolicy_LivesInFocusedPartials()
     {
         var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
             .Replace("\r\n", "\n");
@@ -72,7 +72,7 @@ static partial class Program
 
     // ── CaptureService.Snapshots: ResolveEncoderCodecName ──
 
-    private static Task CaptureService_ResolveEncoderCodecName_MapsFormats()
+    internal static Task CaptureService_ResolveEncoderCodecName_MapsFormats()
     {
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ResolveEncoderCodecName",
@@ -102,7 +102,7 @@ static partial class Program
 
     // ── CaptureService.Snapshots: ResolveEncoderOutputPixelFormat ──
 
-    private static Task CaptureService_ResolveEncoderOutputPixelFormat_DistinguishesHdr()
+    internal static Task CaptureService_ResolveEncoderOutputPixelFormat_DistinguishesHdr()
     {
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ResolveEncoderOutputPixelFormat",
@@ -132,7 +132,7 @@ static partial class Program
 
     // ── CaptureService.Snapshots: ResolveHdrWarmupState ──
 
-    private static Task CaptureService_ResolveHdrWarmupState_ReturnsCorrectStates()
+    internal static Task CaptureService_ResolveHdrWarmupState_ReturnsCorrectStates()
     {
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ResolveHdrWarmupState",

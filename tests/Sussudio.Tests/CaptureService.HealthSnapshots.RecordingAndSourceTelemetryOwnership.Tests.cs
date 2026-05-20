@@ -84,7 +84,7 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
 static partial class Program
 {
 
-    private static async Task CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails()
+    internal static async Task CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();

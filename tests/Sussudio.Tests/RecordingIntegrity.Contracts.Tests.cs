@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task RecordingIntegritySummary_DefaultsAreExplicit()
+    internal static Task RecordingIntegritySummary_DefaultsAreExplicit()
     {
         var summaryType = RequireType("Sussudio.Models.RecordingIntegritySummary");
         var notStarted = summaryType.GetProperty("NotStarted", BindingFlags.Public | BindingFlags.Static)?.GetValue(null)
@@ -24,7 +24,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task RecordingIntegritySnapshotContract_ExposesAutomationFields()
+    internal static Task RecordingIntegritySnapshotContract_ExposesAutomationFields()
     {
         foreach (var typeName in new[]
         {
@@ -71,7 +71,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task RecordingIntegrityAutomationProjection_LivesInFocusedPartial()
+    internal static Task RecordingIntegrityAutomationProjection_LivesInFocusedPartial()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureService_RuntimeIngestAudioProjection_LivesInFocusedPartial()
+    internal static Task CaptureService_RuntimeIngestAudioProjection_LivesInFocusedPartial()
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
@@ -30,7 +30,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureService_RuntimeSnapshotAssembler_LivesInFocusedPartial()
+    internal static Task CaptureService_RuntimeSnapshotAssembler_LivesInFocusedPartial()
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
@@ -82,7 +82,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureService_RuntimeReaderTransportProjection_LivesInFocusedPartial()
+    internal static Task CaptureService_RuntimeReaderTransportProjection_LivesInFocusedPartial()
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
@@ -120,7 +120,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureService_RuntimeHdrPipelineProjection_LivesInFocusedPartial()
+    internal static Task CaptureService_RuntimeHdrPipelineProjection_LivesInFocusedPartial()
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
@@ -154,7 +154,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureService_RuntimeSourceTelemetryProjection_LivesInFocusedPartial()
+    internal static Task CaptureService_RuntimeSourceTelemetryProjection_LivesInFocusedPartial()
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
@@ -182,7 +182,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureService_RuntimeRecordingIntegrityProjection_LivesInFocusedPartial()
+    internal static Task CaptureService_RuntimeRecordingIntegrityProjection_LivesInFocusedPartial()
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");

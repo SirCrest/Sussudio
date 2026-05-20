@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task NativeXuAtCommandProvider_RollingPollLivesInFocusedPartial()
+    internal static Task NativeXuAtCommandProvider_RollingPollLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs")
             .Replace("\r\n", "\n");
@@ -75,7 +75,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task NativeXuAtCommandProvider_AudioCommandsLiveInFocusedPartial()
+    internal static Task NativeXuAtCommandProvider_AudioCommandsLiveInFocusedPartial()
     {
         var deviceCommandsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommands.cs")
             .Replace("\r\n", "\n");
@@ -138,7 +138,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task NativeXuAtCommandProvider_PayloadDecodingLivesInFocusedPartial()
+    internal static Task NativeXuAtCommandProvider_PayloadDecodingLivesInFocusedPartial()
     {
         var atProtocolText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs")
             .Replace("\r\n", "\n");
@@ -165,7 +165,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task NativeXuAtCommandProvider_TelemetryDetailsLiveInFocusedPartials()
+    internal static Task NativeXuAtCommandProvider_TelemetryDetailsLiveInFocusedPartials()
     {
         var buildText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.Build.cs")
             .Replace("\r\n", "\n");
@@ -199,7 +199,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static async Task NativeXuTelemetry_AcceptsKnown4kXProductRevisions()
+    internal static async Task NativeXuTelemetry_AcceptsKnown4kXProductRevisions()
     {
         var provider = CreateInstance("Sussudio.Services.Telemetry.NativeXuAtCommandProvider");
 

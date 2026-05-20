@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task GetHealthSnapshot_UsesCachedMjpegTimingMetricsWhenCaptureIsGone()
+    internal static async Task GetHealthSnapshot_UsesCachedMjpegTimingMetricsWhenCaptureIsGone()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
@@ -90,7 +90,7 @@ static partial class Program
         await DisposeAsync(captureService).ConfigureAwait(false);
     }
 
-    private static async Task GetDiagnosticsSnapshot_PropagatesMjpegTimingMetrics()
+    internal static async Task GetDiagnosticsSnapshot_PropagatesMjpegTimingMetrics()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();

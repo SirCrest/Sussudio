@@ -6,7 +6,7 @@ static partial class Program
 {
     // CaptureService.Snapshots: observed and source telemetry helpers.
 
-    private static Task CaptureService_ObservedPixelTelemetry_LivesInFocusedPartial()
+    internal static Task CaptureService_ObservedPixelTelemetry_LivesInFocusedPartial()
     {
         var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Telemetry.cs")
             .Replace("\r\n", "\n");
@@ -27,7 +27,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureService_NormalizeObservedPixelFormat_NormalizesCorrectly()
+    internal static Task CaptureService_NormalizeObservedPixelFormat_NormalizesCorrectly()
     {
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("NormalizeObservedPixelFormat",
@@ -58,7 +58,7 @@ static partial class Program
 
     // ── CaptureService.Snapshots: ResolveSourceTelemetryBackend ──
 
-    private static Task CaptureService_ResolveSourceTelemetryBackend_MapsOrigins()
+    internal static Task CaptureService_ResolveSourceTelemetryBackend_MapsOrigins()
     {
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ResolveSourceTelemetryBackend",
@@ -91,7 +91,7 @@ static partial class Program
 
     // ── CaptureService.Snapshots: ResolveEncoderVideoProfile ──
 
-    private static Task CaptureService_ResolveEncoderVideoProfile_MapsFormatsAndHdr()
+    internal static Task CaptureService_ResolveEncoderVideoProfile_MapsFormatsAndHdr()
     {
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ResolveEncoderVideoProfile",
@@ -128,7 +128,7 @@ static partial class Program
 
     // ── CaptureService.Snapshots: ComputeTickAge ──
 
-    private static Task CaptureService_ComputeTickAge_ReturnsCorrectValues()
+    internal static Task CaptureService_ComputeTickAge_ReturnsCorrectValues()
     {
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ComputeTickAge",
@@ -149,7 +149,7 @@ static partial class Program
 
     // ── CaptureService.Snapshots: ResolveTelemetryAlignment ──
 
-    private static Task CaptureService_ResolveTelemetryAlignment_DetectsMismatches()
+    internal static Task CaptureService_ResolveTelemetryAlignment_DetectsMismatches()
     {
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ResolveTelemetryAlignment",
@@ -221,7 +221,7 @@ static partial class Program
 
     // ── CaptureService.Snapshots: ResolveSourceTelemetryCircuitState ──
 
-    private static Task CaptureService_ResolveSourceTelemetryCircuitState_ReturnsCorrectState()
+    internal static Task CaptureService_ResolveSourceTelemetryCircuitState_ReturnsCorrectState()
     {
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ResolveSourceTelemetryCircuitState",

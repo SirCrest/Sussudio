@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task GetRuntimeSnapshot_UsesObservedTelemetryStateInsteadOfInferredCounts()
+    internal static async Task GetRuntimeSnapshot_UsesObservedTelemetryStateInsteadOfInferredCounts()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
@@ -28,7 +28,7 @@ static partial class Program
         await DisposeAsync(captureService).ConfigureAwait(false);
     }
 
-    private static async Task GetRuntimeSnapshot_PreservesReaderSourceSubtype_WhenObservedFramesAreDecoded()
+    internal static async Task GetRuntimeSnapshot_PreservesReaderSourceSubtype_WhenObservedFramesAreDecoded()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
@@ -46,7 +46,7 @@ static partial class Program
         await DisposeAsync(captureService).ConfigureAwait(false);
     }
 
-    private static async Task GetRuntimeSnapshot_TelemetryAlignment_Mismatch_WhenSourceModeDiffersFromRequest()
+    internal static async Task GetRuntimeSnapshot_TelemetryAlignment_Mismatch_WhenSourceModeDiffersFromRequest()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
@@ -74,7 +74,7 @@ static partial class Program
         await DisposeAsync(captureService).ConfigureAwait(false);
     }
 
-    private static async Task GetRuntimeSnapshot_TelemetryAlignment_Unavailable_WhenTelemetryUnavailable()
+    internal static async Task GetRuntimeSnapshot_TelemetryAlignment_Unavailable_WhenTelemetryUnavailable()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
@@ -104,7 +104,7 @@ static partial class Program
         await DisposeAsync(captureService).ConfigureAwait(false);
     }
 
-    private static async Task GetRuntimeSnapshot_PipelineParity_Ready_WhenHdrRequestedAndIdle()
+    internal static async Task GetRuntimeSnapshot_PipelineParity_Ready_WhenHdrRequestedAndIdle()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
@@ -121,7 +121,7 @@ static partial class Program
         await DisposeAsync(captureService).ConfigureAwait(false);
     }
 
-    private static async Task GetRuntimeSnapshot_PipelineParity_Violation_WhenHdrRequestedButIngressIsSdr()
+    internal static async Task GetRuntimeSnapshot_PipelineParity_Violation_WhenHdrRequestedButIngressIsSdr()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
@@ -143,7 +143,7 @@ static partial class Program
         await DisposeAsync(captureService).ConfigureAwait(false);
     }
 
-    private static async Task GetRuntimeSnapshot_ThreadHealthProbes_DefaultToZeroWhenInactive()
+    internal static async Task GetRuntimeSnapshot_ThreadHealthProbes_DefaultToZeroWhenInactive()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();

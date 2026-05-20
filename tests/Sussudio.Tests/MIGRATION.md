@@ -75,6 +75,9 @@ add xUnit alongside, and port incrementally.
   runtime recording subgroup: recording verifier, LibAv encoder, Flashback
   recording integrity, shared formatter, and dedicated LibAv verification
   script checks.
+- `XUnit.CoreRuntimeContractsTests.cs` owns the former legacy core runtime
+  subgroup: runtime telemetry, capture-service snapshot, NativeXu, frame ledger,
+  recording-integrity, and basic app contract checks.
 - `RecordingArtifactManager.Tests.cs` owns the former legacy temp artifact
   finalization and rollback behavior checks for recording output cleanup.
 - `MjpegPipeline.Timing.Tests.cs` owns the former legacy CPU MJPEG timing
