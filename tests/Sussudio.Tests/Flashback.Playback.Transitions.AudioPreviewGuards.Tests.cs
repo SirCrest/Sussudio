@@ -7,6 +7,10 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
+        var audioCallbackText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioCallback.cs")
+            .Replace("\r\n", "\n");
+        var audioRoutingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs")
+            .Replace("\r\n", "\n");
         var audioPrebufferText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioPrebuffer.cs")
             .Replace("\r\n", "\n");
         var audioMasterText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs")
@@ -85,6 +89,12 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_DROP reason={invalidReason}");
         AssertContains(sourceText, "ReturnPlaybackAudioChunkBestEffort(chunk, $\"playback_audio_{invalidReason}\");");
         AssertContains(sourceText, "private static bool TryValidatePlaybackAudioChunk(DecodedAudioChunk chunk, out string reason)");
+        AssertContains(audioCallbackText, "private void RestoreAudioCallback(FlashbackDecoder decoder, long audioStartGateTicks = 0)");
+        AssertContains(audioCallbackText, "private static bool TryValidatePlaybackAudioChunk(DecodedAudioChunk chunk, out string reason)");
+        AssertContains(audioCallbackText, "private static void ReturnPlaybackAudioChunkBestEffort(DecodedAudioChunk chunk, string operation)");
+        AssertDoesNotContain(audioRoutingText, "private void RestoreAudioCallback(FlashbackDecoder decoder, long audioStartGateTicks = 0)");
+        AssertDoesNotContain(audioRoutingText, "private static bool TryValidatePlaybackAudioChunk(DecodedAudioChunk chunk, out string reason)");
+        AssertDoesNotContain(audioRoutingText, "private static void ReturnPlaybackAudioChunkBestEffort(DecodedAudioChunk chunk, string operation)");
         AssertContains(sourceText, "reason = \"length_exceeds_buffer\";");
         AssertContains(sourceText, "reason = \"unaligned_length\";");
         AssertContains(sourceText, "private static void ReturnPlaybackAudioChunkBestEffort(DecodedAudioChunk chunk, string operation)");

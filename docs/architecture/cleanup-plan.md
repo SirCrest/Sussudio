@@ -2614,10 +2614,13 @@ Keep repeated live-restore cleanup and playback CTS disposal warnings there
 instead of duplicating teardown blocks inside the worker loop.
 Flashback playback audio routing now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs`.
-Keep decoder audio callbacks, playback chunk validation/return, live audio
-suppress/restore, preview submission suppression, and audio renderer pause/
-resume/flush helpers there; keep decode-ahead prebuffer target/timeout/frame-
-budget policy and rewind behavior in the audio prebuffer partial.
+Keep live audio suppress/restore, playback-state audio/preview routing, preview
+submission suppression/resume, and audio renderer pause/resume/flush helpers
+there. Decoder audio callback wiring, playback chunk validation/return,
+playback PTS gate handling, and pooled audio-buffer return warnings now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.AudioCallback.cs`;
+keep decode-ahead prebuffer target/timeout/frame-budget policy and rewind
+behavior in the audio prebuffer partial.
 
 Flashback playback component lifecycle now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs`. Keep

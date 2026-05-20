@@ -1120,7 +1120,12 @@ Entry points:
   CTS/channel lifetime, stop timeout/capacity policy, channel recreation/completion,
   abandoned command draining, and join/cancel diagnostics.
 - `FlashbackPlaybackController.ThreadCleanup.cs` owns playback-thread live-restore cleanup and playback CTS disposal warnings.
-- `FlashbackPlaybackController.AudioRouting.cs` owns decoder audio callback wiring, playback chunk validation/return, live audio suppress/restore, preview submission suppression, and audio renderer pause/resume/flush helpers.
+- `FlashbackPlaybackController.AudioCallback.cs` owns decoder audio callback
+  wiring, playback chunk validation/return, playback PTS gate handling, and
+  pooled audio-buffer return warnings.
+- `FlashbackPlaybackController.AudioRouting.cs` owns live audio
+  suppress/restore, playback-state audio/preview routing, preview submission
+  suppression/resume, and audio renderer pause/resume/flush helpers.
 - `FlashbackPlaybackController.AudioPrebuffer.cs` owns playback startup/seek audio prebuffering, target/timeout/frame-budget policy, and decoder rewind after decode-ahead audio priming.
 - `FlashbackPlaybackController.AudioMasterPacing.cs` owns audio-master pacing,
   audio clock state, audio clock drift calculation, and wall-clock sleep/spin
