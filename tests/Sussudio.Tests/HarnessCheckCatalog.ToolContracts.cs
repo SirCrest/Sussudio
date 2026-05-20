@@ -17,21 +17,6 @@ static partial class Program
 
         // --- Tool CommandMap & Formatter Alignment ---
         await AddCheckAsync(results,
-            "Automation command catalog covers command metadata and policy",
-            AutomationCommandCatalog_CoversCommandsAndPolicyMetadata);
-        await AddCheckAsync(results,
-            "Reliability gates run tools and offline regression harness",
-            ReliabilityGates_RunToolsAndOfflineHarness);
-        await AddCheckAsync(results,
-            "Automation manifest covers catalog metadata",
-            AutomationManifest_CoversCatalogMetadata);
-        await AddCheckAsync(results,
-            "Automation path-bearing commands have validation coverage",
-            AutomationCommandCatalog_PathBearingCommandsHaveValidationCoverage);
-        await AddCheckAsync(results,
-            "Automation manifest serialization is stable",
-            AutomationManifest_SerializationIsStable);
-        await AddCheckAsync(results,
             "Automation snapshot formatter formats core sections and typed accessors",
             AutomationSnapshotFormatter_FormatsCoreSectionsAndTypedAccessors);
         await AddCheckAsync(results,

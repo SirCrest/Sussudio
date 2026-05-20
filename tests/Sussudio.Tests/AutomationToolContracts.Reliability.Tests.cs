@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task ReliabilityGates_RunToolsAndOfflineHarness()
+    internal static Task ReliabilityGates_RunToolsAndOfflineHarness()
     {
         var scriptText = ReadRepoFile("tools/reliability-gates.ps1")
             .Replace("\r\n", "\n");

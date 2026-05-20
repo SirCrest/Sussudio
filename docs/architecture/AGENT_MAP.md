@@ -2316,13 +2316,18 @@ Primary current owners:
   owns pipe-connect failure, tool delegation, script freshness, and response-state
   contract tests. Both use `RuntimeContractSource.ReadAutomationPipeClientSource()`
   for the shared AutomationPipeClient source family.
-- `tests/Sussudio.Tests/AutomationToolContracts.Catalog.Tests.cs` owns
-  automation command catalog and command policy metadata contract tests.
-- `tests/Sussudio.Tests/AutomationToolContracts.Manifest.Tests.cs` owns
-  automation manifest projection, path policy validation, and manifest
-  serialization contract tests.
+- `tests/Sussudio.Tests/AutomationToolContracts.Catalog.Tests.cs` owns shared
+  implementations for automation command catalog and command policy metadata
+  contract tests.
+- `tests/Sussudio.Tests/AutomationToolContracts.Manifest.Tests.cs` owns shared
+  implementations for automation manifest projection, path policy validation,
+  and manifest serialization contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Reliability.Tests.cs` owns the
-  reliability-gates script contract test.
+  shared implementation for the reliability-gates script contract test.
+- `tests/Sussudio.Tests/XUnit.AutomationCatalogContractsTests.cs` owns the
+  xUnit execution surface for catalog, manifest, path-policy, and
+  reliability-gates checks after their removal from the legacy offline harness
+  catalog.
 - `tests/Sussudio.Tests/ArchitectureDocs.AgentMapOwnershipPaths.Tests.cs` owns
   shared implementations for consolidated AGENT_MAP reference drift,
   test-owner code-span, README automation consumer, UI/presentation ownership,

@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationCommandCatalog_CoversCommandsAndPolicyMetadata()
+    internal static Task AutomationCommandCatalog_CoversCommandsAndPolicyMetadata()
     {
-        var catalogType = RequireType("Sussudio.Tools.AutomationCommandCatalog");
+        var catalogType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandCatalog");
         var catalogText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
             .Replace("\r\n", "\n");
         var catalogEntriesText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.Entries.cs")
@@ -14,8 +14,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var pathValidationText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.PathValidation.cs")
             .Replace("\r\n", "\n");
-        var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
-        var pathPolicyType = RequireType("Sussudio.Tools.AutomationCommandPathPolicy");
+        var enumType = RequireAutomationContractType("Sussudio.Models.AutomationCommandKind");
+        var pathPolicyType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandPathPolicy");
         var entriesProperty = catalogType.GetProperty("Entries", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("AutomationCommandCatalog.Entries not found.");
         var entries = ((System.Collections.IEnumerable)entriesProperty.GetValue(null)!)

@@ -10,6 +10,13 @@ static partial class Program
                ?? throw new InvalidOperationException($"{typeName} was not found in the shared tool assembly.");
     }
 
+    private static Type RequireAutomationContractType(string typeName)
+    {
+        var assembly = typeof(Sussudio.Tools.AutomationCommandCatalog).Assembly;
+        return assembly.GetType(typeName)
+               ?? throw new InvalidOperationException($"{typeName} was not found in the automation contracts assembly.");
+    }
+
     private static T GetConstant<T>(Type type, string name)
     {
         var field = type.GetField(name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)

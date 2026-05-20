@@ -81,6 +81,8 @@ add xUnit alongside, and port incrementally.
   snapshot construction and health/renderer metric projection checks.
 - `XUnit.ToolFormatterContractsTests.cs` owns focused tool formatter contract
   checks.
+- `XUnit.AutomationCatalogContractsTests.cs` owns the former legacy automation
+  catalog, manifest, path-policy, and reliability-gates contract checks.
 - `XUnit.ToolProbeContractsTests.cs` owns the former legacy PresentMon parser,
   ssctl pipe transport, KS audio-node, and EGAVDS probe contract checks.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy

@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationManifest_CoversCatalogMetadata()
+    internal static Task AutomationManifest_CoversCatalogMetadata()
     {
-        var catalogType = RequireType("Sussudio.Tools.AutomationCommandCatalog");
+        var catalogType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandCatalog");
         var entries = GetCatalogEntries(catalogType);
         var createManifest = RequireNonPublicStaticMethod(catalogType, "CreateManifest");
         var manifest = createManifest.Invoke(null, Array.Empty<object>())
@@ -44,10 +44,10 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandCatalog_PathBearingCommandsHaveValidationCoverage()
+    internal static Task AutomationCommandCatalog_PathBearingCommandsHaveValidationCoverage()
     {
-        var catalogType = RequireType("Sussudio.Tools.AutomationCommandCatalog");
-        var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
+        var catalogType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandCatalog");
+        var enumType = RequireAutomationContractType("Sussudio.Models.AutomationCommandKind");
         var entries = GetCatalogEntries(catalogType);
         var validatePath = RequireNonPublicStaticMethod(catalogType, "ValidatePath");
         var expectedPathFields = new Dictionary<string, (string Policy, string FieldName, bool Required)>
@@ -99,10 +99,10 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationManifest_SerializationIsStable()
+    internal static Task AutomationManifest_SerializationIsStable()
     {
         const string ExpectedManifestSha256 = "74C757E49376DF5D1E9A3F3EDE18FF1FD2DCBC7B50842B320A3AAD4A5FB5D599";
-        var catalogType = RequireType("Sussudio.Tools.AutomationCommandCatalog");
+        var catalogType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandCatalog");
         var createManifestJson = RequireNonPublicStaticMethod(catalogType, "CreateManifestJson");
         var first = (string)createManifestJson.Invoke(null, Array.Empty<object>())!;
         var second = (string)createManifestJson.Invoke(null, Array.Empty<object>())!;
