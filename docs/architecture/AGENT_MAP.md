@@ -407,7 +407,23 @@ Automation diagnostics ownership:
   projection owners into the automation snapshot audio/ingest DTO fields.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.cs`
   owns final audio and ingest projection-to-`AutomationSnapshot` field
+  flattening and routes grouped signal, ingest, source-reader, WASAPI capture,
+  and WASAPI playback flattening modules.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.Signal.cs`
+  owns final audio peak, clipping, signal-present, and muted-suspected field
   flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.CaptureIngest.cs`
+  owns final audio/video reader active state and ingest counter field
+  flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.SourceReader.cs`
+  owns final source-reader delivery, drop, outstanding-read, and channel-depth
+  field flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.WasapiCapture.cs`
+  owns final WASAPI capture callback, gap, glitch, timestamp, silence, and
+  audio-level event field flattening.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.WasapiPlayback.cs`
+  owns final WASAPI playback render, queue, buffered-duration,
+  endpoint-duration, stream-latency, and last-render field flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioDrops.cs`
   owns final audio-drop projection-to-`AutomationSnapshot` field flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureIngest.cs`

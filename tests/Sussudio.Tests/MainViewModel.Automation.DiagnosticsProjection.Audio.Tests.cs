@@ -19,12 +19,12 @@ static partial class Program
 
         AssertContains(snapshotProjectionText, "var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);");
         AssertContains(snapshotFlatteningText, "var audioAndIngestFlattening = BuildAudioAndIngestFlattenedProjection(audioAndIngest);");
-        AssertContains(snapshotFlatteningText, "AudioPeak = audioAndIngestFlattening.AudioPeak,");
-        AssertContains(snapshotFlatteningText, "AudioSignalPresent = audioAndIngestFlattening.AudioSignalPresent,");
-        AssertContains(snapshotFlatteningText, "AudioFramesWrittenToSink = audioAndIngestFlattening.AudioFramesWrittenToSink,");
-        AssertContains(snapshotFlatteningText, "SourceReaderReadOutstanding = audioAndIngestFlattening.SourceReaderReadOutstanding,");
-        AssertContains(snapshotFlatteningText, "WasapiCaptureAudioLevelEventsFired = audioAndIngestFlattening.WasapiCaptureAudioLevelEventsFired,");
-        AssertContains(snapshotFlatteningText, "WasapiPlaybackBufferedDurationMs = audioAndIngestFlattening.WasapiPlaybackBufferedDurationMs,");
+        AssertContains(snapshotFlatteningText, "AudioPeak = audioAndIngestFlattening.Signal.Peak,");
+        AssertContains(snapshotFlatteningText, "AudioSignalPresent = audioAndIngestFlattening.Signal.SignalPresent,");
+        AssertContains(snapshotFlatteningText, "AudioFramesWrittenToSink = audioAndIngestFlattening.Ingest.AudioFramesWrittenToSink,");
+        AssertContains(snapshotFlatteningText, "SourceReaderReadOutstanding = audioAndIngestFlattening.SourceReader.ReadOutstanding,");
+        AssertContains(snapshotFlatteningText, "WasapiCaptureAudioLevelEventsFired = audioAndIngestFlattening.WasapiCapture.AudioLevelEventsFired,");
+        AssertContains(snapshotFlatteningText, "WasapiPlaybackBufferedDurationMs = audioAndIngestFlattening.WasapiPlayback.BufferedDurationMs,");
         AssertDoesNotContain(snapshotFlatteningText, "AudioPeak = viewModelSnapshot.AudioPeak,");
         AssertDoesNotContain(snapshotFlatteningText, "AudioPeak = audioAndIngest.AudioPeak,");
         AssertDoesNotContain(snapshotFlatteningText, "AudioSignalPresent = audioSignal.SignalPresent,");
@@ -39,10 +39,34 @@ static partial class Program
         AssertDoesNotContain(snapshotFlatteningText, "WasapiPlaybackBufferedDurationMs = audioAndIngest.WasapiPlaybackBufferedDurationMs,");
 
         AssertContains(audioFlatteningText, "private static AudioAndIngestFlattenedProjection BuildAudioAndIngestFlattenedProjection(");
-        AssertContains(audioFlatteningText, "AudioPeak = audioAndIngest.AudioPeak,");
-        AssertContains(audioFlatteningText, "SourceReaderReadOutstanding = audioAndIngest.SourceReaderReadOutstanding,");
-        AssertContains(audioFlatteningText, "WasapiPlaybackBufferedDurationMs = audioAndIngest.WasapiPlaybackBufferedDurationMs");
+        AssertContains(audioFlatteningText, "Signal = BuildAudioSignalFlattenedProjection(audioAndIngest),");
+        AssertContains(audioFlatteningText, "Ingest = BuildCaptureIngestFlattenedProjection(audioAndIngest),");
+        AssertContains(audioFlatteningText, "SourceReader = BuildSourceReaderFlattenedProjection(audioAndIngest),");
+        AssertContains(audioFlatteningText, "WasapiCapture = BuildWasapiCaptureFlattenedProjection(audioAndIngest),");
+        AssertContains(audioFlatteningText, "WasapiPlayback = BuildWasapiPlaybackFlattenedProjection(audioAndIngest)");
         AssertContains(audioFlatteningText, "private readonly record struct AudioAndIngestFlattenedProjection");
+
+        var audioSignalFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.Signal.cs")
+            .Replace("\r\n", "\n");
+        var captureIngestFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.CaptureIngest.cs")
+            .Replace("\r\n", "\n");
+        var sourceReaderFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.SourceReader.cs")
+            .Replace("\r\n", "\n");
+        var wasapiCaptureFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.WasapiCapture.cs")
+            .Replace("\r\n", "\n");
+        var wasapiPlaybackFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.WasapiPlayback.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(audioSignalFlatteningText, "private static AudioSignalFlattenedProjection BuildAudioSignalFlattenedProjection(");
+        AssertContains(audioSignalFlatteningText, "Peak = audioAndIngest.AudioPeak,");
+        AssertContains(captureIngestFlatteningText, "private static CaptureIngestFlattenedProjection BuildCaptureIngestFlattenedProjection(");
+        AssertContains(captureIngestFlatteningText, "AudioFramesWrittenToSink = audioAndIngest.AudioFramesWrittenToSink,");
+        AssertContains(sourceReaderFlatteningText, "private static SourceReaderFlattenedProjection BuildSourceReaderFlattenedProjection(");
+        AssertContains(sourceReaderFlatteningText, "ReadOutstanding = audioAndIngest.SourceReaderReadOutstanding,");
+        AssertContains(wasapiCaptureFlatteningText, "private static WasapiCaptureFlattenedProjection BuildWasapiCaptureFlattenedProjection(");
+        AssertContains(wasapiCaptureFlatteningText, "AudioLevelEventsFired = audioAndIngest.WasapiCaptureAudioLevelEventsFired,");
+        AssertContains(wasapiPlaybackFlatteningText, "private static WasapiPlaybackFlattenedProjection BuildWasapiPlaybackFlattenedProjection(");
+        AssertContains(wasapiPlaybackFlatteningText, "BufferedDurationMs = audioAndIngest.WasapiPlaybackBufferedDurationMs,");
 
         AssertContains(audioProjectionText, "private static AudioAndIngestProjection BuildAudioAndIngestProjection(");
         AssertContains(audioProjectionText, "var audioSignalProjection = BuildAudioSignalProjection(viewModelSnapshot, audioSignal);");

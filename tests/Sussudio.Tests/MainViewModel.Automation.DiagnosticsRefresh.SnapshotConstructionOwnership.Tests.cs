@@ -73,6 +73,11 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningAvSyncText, "private static AvSyncFlattenedProjection BuildAvSyncFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildAudioAndIngestFlattenedProjection(audioAndIngest)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningAudioAndIngestText, "private static AudioAndIngestFlattenedProjection BuildAudioAndIngestFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningAudioAndIngestSignalText, "private static AudioSignalFlattenedProjection BuildAudioSignalFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningAudioAndIngestCaptureIngestText, "private static CaptureIngestFlattenedProjection BuildCaptureIngestFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningAudioAndIngestSourceReaderText, "private static SourceReaderFlattenedProjection BuildSourceReaderFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningAudioAndIngestWasapiCaptureText, "private static WasapiCaptureFlattenedProjection BuildWasapiCaptureFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningAudioAndIngestWasapiPlaybackText, "private static WasapiPlaybackFlattenedProjection BuildWasapiPlaybackFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildAudioDropsFlattenedProjection(audioDrops)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningAudioDropsText, "private static AudioDropsFlattenedProjection BuildAudioDropsFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureCommandFlattenedProjection(captureCommands)");
