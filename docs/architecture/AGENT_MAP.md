@@ -1614,6 +1614,13 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.NativeXuAudioControlService.AudioMeters.Tests.cs`
   owns native XU audio-control service profile, payload workflow, raw transport
   ownership, and audio meter callback-state assertions.
+- `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Tests.cs` owns the
+  MainViewModel dependency-composition seam assertions for root construction,
+  controller graph creation, presentation/capture/audio controller contexts,
+  state partial ownership, and default dependency factory wiring.
+- `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Runtime.Tests.cs`
+  owns the MainViewModel source-telemetry, runtime lifecycle, runtime event
+  ingress, subscription, and disposal controller dependency-context assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.OutputPath.Tests.cs` owns
   assertions that output folder picker ownership stays out of `MainViewModel`.
 - `tests/Sussudio.Tests/MainViewModel.Capture.TestHelpers.cs` owns shared

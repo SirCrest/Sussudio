@@ -18,14 +18,12 @@ static partial class Program
         var controllerGraphDeviceAudioText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.DeviceAudio.cs").Replace("\r\n", "\n");
         var controllerGraphDeviceFormatProbeText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.DeviceFormatProbe.cs").Replace("\r\n", "\n");
         var controllerGraphDeviceText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Device.cs").Replace("\r\n", "\n");
-        var controllerGraphSourceTelemetryText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.SourceTelemetry.cs").Replace("\r\n", "\n");
         var controllerGraphPresentationText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Presentation.cs").Replace("\r\n", "\n");
         var controllerGraphRecordingCapabilityText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RecordingCapability.cs").Replace("\r\n", "\n");
         var controllerGraphRecordingText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Recording.cs").Replace("\r\n", "\n");
         var controllerGraphRecordingSettingsAutomationText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RecordingSettingsAutomation.cs").Replace("\r\n", "\n");
         var controllerGraphRuntimeText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Runtime.cs").Replace("\r\n", "\n");
         var controllerGraphRuntimeDisposalText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RuntimeDisposal.cs").Replace("\r\n", "\n");
-        var controllerGraphRuntimeEventIngressText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RuntimeEventIngress.cs").Replace("\r\n", "\n");
         var controllerGraphUiDispatchText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.UiDispatch.cs").Replace("\r\n", "\n");
         var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs").Replace("\r\n", "\n");
         var uiDispatchControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.Context.cs").Replace("\r\n", "\n");
@@ -33,13 +31,6 @@ static partial class Program
         var deviceFormatProbeControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.Context.cs").Replace("\r\n", "\n");
         var deviceFormatProbeRetargetApplierText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs").Replace("\r\n", "\n");
         var deviceFormatProbeRetargetApplierContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.Context.cs").Replace("\r\n", "\n");
-        var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs").Replace("\r\n", "\n");
-        var runtimeLifecycleControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.Context.cs").Replace("\r\n", "\n");
-        var runtimeEventIngressControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs").Replace("\r\n", "\n");
-        var runtimeEventIngressContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Context.cs").Replace("\r\n", "\n");
-        var runtimeEventIngressSubscriptionsText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Subscriptions.cs").Replace("\r\n", "\n");
-        var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs").Replace("\r\n", "\n");
-        var disposalControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.Context.cs").Replace("\r\n", "\n");
         var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs").Replace("\r\n", "\n");
         var recordingTransitionControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Context.cs").Replace("\r\n", "\n");
         var recordingTransitionControllerOperationsText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs").Replace("\r\n", "\n");
@@ -62,7 +53,6 @@ static partial class Program
         var captureModeOptionFrameRateRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.FrameRate.cs").Replace("\r\n", "\n");
         var captureModeOptionResolutionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.Resolution.cs").Replace("\r\n", "\n");
         var captureModeOptionRebuildControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.Context.cs").Replace("\r\n", "\n");
-        var disposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs").Replace("\r\n", "\n");
         var dependenciesText = ReadRepoFile("Sussudio/ViewModels/MainViewModelDependencies.cs").Replace("\r\n", "\n");
 
         AssertContains(rootText, "public MainViewModel()\n        : this(MainViewModelDependencies.CreateDefault())");
@@ -393,100 +383,6 @@ static partial class Program
         AssertContains(controllerGraphDeviceFormatProbeText, "private static MainViewModelDeviceFormatProbeController CreateDeviceFormatProbeController(MainViewModel viewModel)");
         AssertContains(controllerGraphDeviceFormatProbeText, "new MainViewModelDeviceFormatProbeControllerContext");
         AssertContains(controllerGraphDeviceFormatProbeText, "new MainViewModelDeviceFormatProbeRetargetApplierContext");
-        var sourceTelemetryControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs")
-            .Replace("\r\n", "\n");
-        var sourceTelemetryControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.Context.cs")
-            .Replace("\r\n", "\n");
-        AssertContains(sourceTelemetryControllerText, "private sealed class MainViewModelSourceTelemetryController");
-        AssertContains(sourceTelemetryControllerContextText, "private sealed class MainViewModelSourceTelemetryControllerContext");
-        AssertContains(sourceTelemetryControllerText, "private readonly MainViewModelSourceTelemetryControllerContext _context;");
-        AssertDoesNotContain(sourceTelemetryControllerText, "private readonly MainViewModel _viewModel;");
-        AssertDoesNotContain(sourceTelemetryControllerText, "_viewModel.");
-        AssertContains(controllerGraphSourceTelemetryText, "private static MainViewModelSourceTelemetryController CreateSourceTelemetryController(MainViewModel viewModel)");
-        AssertContains(controllerGraphSourceTelemetryText, "new MainViewModelSourceTelemetryControllerContext");
-        AssertContains(sourceTelemetryControllerContextText, "public required Func<SourceSignalTelemetrySnapshot> GetLatestSourceTelemetry { get; init; }");
-        AssertContains(sourceTelemetryControllerContextText, "public required Action RebuildResolutionOptions { get; init; }");
-        AssertContains(controllerGraphSourceTelemetryText, "SetLatestSourceTelemetry = snapshot => viewModel._latestSourceTelemetry = snapshot,");
-        AssertContains(controllerGraphSourceTelemetryText, "RebuildResolutionOptions = viewModel.RebuildResolutionOptions,");
-        AssertContains(controllerGraphSourceTelemetryText, "UpdateTargetSummary = viewModel.UpdateTargetSummary,");
-        AssertContains(sourceTelemetryControllerText, "public void OnSourceTelemetryUpdated(object? sender, SourceSignalTelemetrySnapshot snapshot)");
-        AssertContains(sourceTelemetryControllerText, "public void ApplySourceTelemetrySnapshot(SourceSignalTelemetrySnapshot snapshot, bool allowAutoRetarget)");
-        AssertContains(sourceTelemetryControllerText, "public void RefreshSourceTelemetrySummaryAge()");
-
-        AssertContains(runtimeLifecycleControllerText, "private sealed class MainViewModelRuntimeLifecycleController");
-        AssertContains(runtimeLifecycleControllerText, "private readonly MainViewModelRuntimeEventIngressController _eventIngressController;");
-        AssertContains(runtimeLifecycleControllerContextText, "private sealed class MainViewModelRuntimeLifecycleControllerContext");
-        AssertContains(runtimeLifecycleControllerText, "private readonly MainViewModelRuntimeLifecycleControllerContext _context;");
-        AssertDoesNotContain(runtimeLifecycleControllerText, "private readonly MainViewModel _viewModel;");
-        AssertDoesNotContain(runtimeLifecycleControllerText, "_viewModel.");
-        AssertContains(runtimeLifecycleControllerText, "_eventIngressController = _context.CreateEventIngressController();");
-        AssertContains(runtimeLifecycleControllerText, "public void Start()");
-        AssertContains(runtimeLifecycleControllerText, "=> _eventIngressController.Attach();");
-        AssertContains(runtimeLifecycleControllerText, "_eventIngressController.Detach();");
-        AssertContains(runtimeLifecycleControllerText, "public void InitializePresentation()");
-        AssertContains(runtimeLifecycleControllerText, "var latestSourceTelemetry = _context.GetLatestSourceTelemetrySnapshot();");
-        AssertContains(runtimeLifecycleControllerText, "_context.SetLatestSourceTelemetrySnapshot(latestSourceTelemetry);");
-        AssertContains(runtimeLifecycleControllerText, "_context.ApplySourceTelemetrySnapshot(latestSourceTelemetry, false);");
-        AssertContains(runtimeLifecycleControllerText, "_context.UpdateHdrRuntimeStatusFromCapture();");
-        AssertContains(runtimeLifecycleControllerText, "_context.UpdateLiveCaptureInfo();");
-        AssertContains(runtimeLifecycleControllerText, "SetupTimer();");
-        AssertContains(runtimeLifecycleControllerText, "_context.UpdateDiskSpace();");
-        AssertContains(runtimeEventIngressControllerText, "private sealed partial class MainViewModelRuntimeEventIngressController");
-        AssertContains(runtimeEventIngressSubscriptionsText, "private sealed partial class MainViewModelRuntimeEventIngressController");
-        AssertContains(runtimeEventIngressContextText, "private sealed class MainViewModelRuntimeEventIngressControllerContext");
-        AssertContains(runtimeEventIngressControllerText, "private readonly MainViewModelRuntimeEventIngressControllerContext _context;");
-        AssertDoesNotContain(runtimeEventIngressControllerText, "private readonly MainViewModel _viewModel;");
-        AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.");
-        AssertContains(runtimeEventIngressControllerText, "_context.ReinitializeDeviceAsync(\"audio device invalidated\")");
-        AssertContains(runtimeEventIngressControllerText, "_context.ReinitializeDeviceAsync(\"system resume\")");
-        AssertContains(controllerGraphRuntimeEventIngressText, "private static MainViewModelRuntimeEventIngressController CreateRuntimeEventIngressController(");
-        AssertContains(controllerGraphRuntimeEventIngressText, "new MainViewModelRuntimeEventIngressControllerContext");
-        AssertContains(runtimeEventIngressContextText, "public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }");
-        AssertContains(runtimeEventIngressContextText, "public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }");
-        AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"audio device invalidated\")");
-        AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"system resume\")");
-        AssertEqual(
-            true,
-            runtimeEventIngressControllerText.Split('\n').Length >= 100,
-            "runtime event ingress controller is a substantial ownership file");
-        AssertContains(runtimeEventIngressSubscriptionsText, "public void Attach()");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachFormatProbeCompleted(_context.OnDeviceFormatProbeCompleted);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachCaptureStatusChanged(OnCaptureStatusChanged);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachCaptureErrorOccurred(OnCaptureError);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachCapturePreCleanupRequested(OnCapturePreCleanupRequested);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachFrameCaptured(OnFrameCaptured);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachAudioLevelUpdated(_context.OnAudioLevelUpdated);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachSourceTelemetryUpdated(_context.OnSourceTelemetryUpdated);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachAudioDevicesChanged(_context.OnAudioDevicesChanged);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "public void Detach()");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.DetachFormatProbeCompleted(_context.OnDeviceFormatProbeCompleted);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.DetachCaptureStatusChanged(OnCaptureStatusChanged);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.DetachAudioLevelUpdated(_context.OnAudioLevelUpdated);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;");
-        AssertContains(disposalText, "private void CancelActiveFlashbackExportForDispose()");
-        AssertContains(disposalText, "=> _disposalController.Dispose();");
-        AssertContains(disposalText, "=> await _disposalController.DisposeAsync().ConfigureAwait(false);");
-        AssertContains(disposalControllerText, "private sealed class MainViewModelDisposalController");
-        AssertContains(disposalControllerContextText, "private sealed class MainViewModelDisposalControllerContext");
-        AssertContains(disposalControllerText, "private readonly MainViewModelDisposalControllerContext _context;");
-        AssertDoesNotContain(disposalControllerText, "private readonly MainViewModel _viewModel;");
-        AssertDoesNotContain(disposalControllerText, "_viewModel.");
-        AssertEqual(
-            true,
-            disposalControllerText.Split('\n').Length >= 100,
-            "view-model disposal controller is a substantial ownership file");
-        AssertContains(disposalControllerText, "private const int DefaultDisposeTimeoutMs = 30000;");
-        AssertContains(disposalControllerText, "private async Task DisposeCoreAsync()");
-        AssertContains(disposalControllerText, "_context.CancelActiveFlashbackExport();");
-        AssertContains(disposalControllerText, "_context.CancelPendingAudioControlWork();");
-        AssertContains(disposalControllerText, "_context.StopRuntimeForDispose();");
-        AssertContains(disposalControllerText, "SUSSUDIO_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS");
-        AssertContains(disposalControllerText, "SUSSUDIO_VIEWMODEL_DISPOSE_TIMEOUT_MS");
-        AssertDoesNotContain(disposalText, "_captureService.StatusChanged -= OnCaptureStatusChanged;");
-        AssertDoesNotContain(disposalText, "SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;");
-
         AssertContains(dependenciesText, "internal sealed class MainViewModelDependencies");
         AssertContains(dependenciesText, "public static MainViewModelDependencies CreateDefault()");
         AssertContains(dependenciesText, "var captureService = new CaptureService();");
