@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task D3D11PreviewRenderer_IsDeviceLostException_ClassifiesCorrectly()
+    internal static Task D3D11PreviewRenderer_IsDeviceLostException_ClassifiesCorrectly()
     {
         var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
         var method = rendererType.GetMethod("IsDeviceLostException",
@@ -30,7 +30,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task D3D11PreviewRenderer_DeviceLostRecoveryLivesInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_DeviceLostRecoveryLivesInFocusedPartial()
     {
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");

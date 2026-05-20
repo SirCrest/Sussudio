@@ -963,6 +963,10 @@ Presentation-preview D3D present-cadence checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DCadenceContractsTests.cs`,
 keeping cadence DTO shape and suppression-baseline behavior contracts in xUnit
 after their removal from the legacy harness catalog.
+Presentation-preview D3D device-lost checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DDeviceLostContractsTests.cs`,
+keeping device-lost classification and recovery ownership contracts in xUnit
+after their removal from the legacy harness catalog.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the

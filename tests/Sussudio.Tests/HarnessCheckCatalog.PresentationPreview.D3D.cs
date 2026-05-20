@@ -6,9 +6,6 @@ static partial class Program
     private static async Task AddPresentationPreviewD3DChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "D3D preview device lost exceptions classify correctly",
-            D3D11PreviewRenderer_IsDeviceLostException_ClassifiesCorrectly);
-        await AddCheckAsync(results,
             "D3D preview diagnostics expose swap-chain and render timing contract",
             D3D11PreviewRenderer_DiagnosticsContract_ExposesSwapChainAndRenderTiming);
         await AddCheckAsync(results,
@@ -83,9 +80,6 @@ static partial class Program
         await AddCheckAsync(results,
             "D3D preview screenshot encoding lives in focused partial",
             D3D11PreviewRenderer_ScreenshotEncodingLivesWithScreenshotCapture);
-        await AddCheckAsync(results,
-            "D3D preview device-lost recovery lives in focused partial",
-            D3D11PreviewRenderer_DeviceLostRecoveryLivesInFocusedPartial);
     }
 
 }

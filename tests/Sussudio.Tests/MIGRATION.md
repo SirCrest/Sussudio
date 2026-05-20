@@ -219,6 +219,9 @@ add xUnit alongside, and port incrementally.
 - `XUnit.PresentationPreviewD3DCadenceContractsTests.cs` owns the former legacy
   presentation-preview D3D present-cadence registration group: cadence DTO
   shape and suppression-baseline behavior checks.
+- `XUnit.PresentationPreviewD3DDeviceLostContractsTests.cs` owns the former
+  legacy presentation-preview D3D device-lost registration group:
+  device-lost classification and recovery ownership checks.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, and test-project shape guard checks.
 - `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy
