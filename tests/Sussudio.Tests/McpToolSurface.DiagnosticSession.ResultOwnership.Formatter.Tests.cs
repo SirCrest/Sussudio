@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task DiagnosticSessionResultFormatter_OwnsFormattedSummaryText()
+    internal static Task DiagnosticSessionResultFormatter_OwnsFormattedSummaryText()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();

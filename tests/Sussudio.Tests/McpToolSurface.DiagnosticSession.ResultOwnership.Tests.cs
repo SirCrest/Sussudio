@@ -44,7 +44,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionOptionalTextFormatter_OwnsSharedFormattingHelpers()
+    internal static Task DiagnosticSessionOptionalTextFormatter_OwnsSharedFormattingHelpers()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
@@ -90,7 +90,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionResultBuilder_OwnsSummaryWriteFailures()
+    internal static Task DiagnosticSessionResultBuilder_OwnsSummaryWriteFailures()
     {
         var builderText = ReadDiagnosticSessionResultBuilderSource();
 
@@ -109,7 +109,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionResultArtifacts_OwnPreSummaryWrites()
+    internal static Task DiagnosticSessionResultArtifacts_OwnPreSummaryWrites()
     {
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var artifactsText = ReadRepoFile("tools/Common/DiagnosticSessionResultArtifacts.cs")

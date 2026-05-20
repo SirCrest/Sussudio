@@ -87,7 +87,7 @@ static partial class Program
         AssertContains(flashbackWarningsText, "flashbackExportForceRotateFallbacksDelta <= 0");
     }
 
-    private static Task DiagnosticSessionResultBuilder_DiagnosticHealthVerdictLivesInFocusedPartial()
+    internal static Task DiagnosticSessionResultBuilder_DiagnosticHealthVerdictLivesInFocusedPartial()
     {
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");

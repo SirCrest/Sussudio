@@ -6,24 +6,6 @@ static partial class Program
     private static async Task AddDiagnosticSessionChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Diagnostic session result formatting has a named owner",
-            DiagnosticSessionResultFormatter_OwnsFormattedSummaryText);
-        await AddCheckAsync(results,
-            "Diagnostic session result construction has a named owner",
-            DiagnosticSessionResultBuilder_OwnsSummaryConstruction);
-        await AddCheckAsync(results,
-            "Diagnostic session result health verdict has a named owner",
-            DiagnosticSessionResultBuilder_DiagnosticHealthVerdictLivesInFocusedPartial);
-        await AddCheckAsync(results,
-            "Diagnostic session summary write failures have a named owner",
-            DiagnosticSessionResultBuilder_OwnsSummaryWriteFailures);
-        await AddCheckAsync(results,
-            "Diagnostic session result artifacts have a named owner",
-            DiagnosticSessionResultArtifacts_OwnPreSummaryWrites);
-        await AddCheckAsync(results,
-            "Diagnostic session optional text formatter has a named owner",
-            DiagnosticSessionOptionalTextFormatter_OwnsSharedFormattingHelpers);
-        await AddCheckAsync(results,
             "Diagnostic session pipe retry policy has a named owner",
             DiagnosticSessionPipeRetryPolicy_OwnsConnectRetryClassification);
         await AddCheckAsync(results,

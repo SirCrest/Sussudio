@@ -3969,7 +3969,8 @@ owner, fold it back into that owner and update the source-shape tests and
    diagnostic-session ownership, diagnostic-session result ownership,
    diagnostic-session builder result bands, diagnostic-session Flashback,
    diagnostic-session runner, diagnostic-session infrastructure xUnit execution,
-   performance, window/preview, window/preview
+   diagnostic-session result-surface xUnit execution, performance,
+   window/preview, window/preview
    probes, and helper partial files. Flashback
    tests are also split by buffer, encoder, exporter, exporter cleanup,
    playback, decoder, and support owners. Capture

@@ -165,6 +165,10 @@ add xUnit alongside, and port incrementally.
   legacy diagnostic-session infrastructure band for runner terminal artifacts,
   model/runner split ownership, initial snapshot capture, and compatibility
   wrapper ownership.
+- `XUnit.McpDiagnosticSessionResultSurfaceContractsTests.cs` owns the former
+  legacy diagnostic-session result-surface band for formatter, builder,
+  diagnostic-health verdict, summary-write failure, result artifact, and
+  optional text formatting ownership checks.
 - `XUnit.PresentationPreviewHarnessRegistrationTests.cs` owns the former legacy
   presentation-preview harness registration guard.
 - `XUnit.PresentationPreviewMainViewModelInitialContractsTests.cs` owns the
