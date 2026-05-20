@@ -1,6 +1,5 @@
 using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
-using static Sussudio.Tools.DiagnosticSessionFlashbackExports;
 using static Sussudio.Tools.DiagnosticSessionFlashbackWaits;
 using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 
@@ -80,23 +79,11 @@ internal static partial class DiagnosticSessionFlashbackStressScenario
             .ConfigureAwait(false);
         actions.Add("flashback go-live requested");
 
-        var exportPath = Path.Combine(outputDirectory, "flashback-stress-export.mp4");
-        var exportResponse = await sendCommandAsync(
-                "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
-                60_000)
+        await VerifyFlashbackStressExportAsync(
+                outputDirectory,
+                actions,
+                sendCommandAsync)
             .ConfigureAwait(false);
-        actions.Add("flashback stress export requested");
-
-        if (AutomationSnapshotFormatter.IsSuccess(exportResponse))
-        {
-            await sendCommandAsync(
-                    "VerifyFile",
-                    CreateFlashbackExportVerifyPayload(exportPath),
-                    60_000)
-                .ConfigureAwait(false);
-            actions.Add("flashback stress export verified");
-        }
 
         await ValidateFlashbackStressCommandDrainAsync(
                 baselineSnapshot,

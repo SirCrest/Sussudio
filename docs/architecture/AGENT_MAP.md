@@ -4320,7 +4320,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns Flashback
   stress thresholds and stress/scrub-stress task registration.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.Stress.cs` owns the
-  main Flashback stress command sequence and export verify.
+  main Flashback stress command sequence.
+- `tools/Common/DiagnosticSessionFlashbackStressScenario.StressExport.cs` owns
+  Flashback stress export request and verification.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlayback.cs` owns
   warmed-playback frame/FPS/1% low checks and delegates audio-master delta
   capture to the focused warm-playback audio owner.

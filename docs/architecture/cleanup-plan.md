@@ -3806,7 +3806,9 @@ the root unless a broader construction pattern replaces it deliberately.
 
 Diagnostic-session Flashback stress orchestration now lives in a focused
 partial family. `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns
-stress thresholds and stress/scrub-stress task registration, `.Stress.cs` owns the main stress command sequence,
+stress thresholds and stress/scrub-stress task registration, `.Stress.cs` owns
+the main stress command sequence, `.StressExport.cs` owns stress export request
+and verification,
 `.WarmPlayback.cs` owns warmed-playback frame/FPS/1% low checks and delegates
 audio-master delta capture to `.WarmPlaybackAudio.cs`. `.CommandDrain.cs` owns
 post-go-live playback command drain checks, `.Scrub.cs` owns scrub-stress
@@ -3971,6 +3973,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackSegments.Parsing.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`
 - `DiagnosticSessionFlashbackStressScenario.Stress.cs`
+- `DiagnosticSessionFlashbackStressScenario.StressExport.cs`
 - `DiagnosticSessionFlashbackStressScenario.WarmPlayback.cs`
 - `DiagnosticSessionFlashbackStressScenario.WarmPlaybackAudio.cs`
 - `DiagnosticSessionFlashbackStressScenario.CommandDrain.cs`

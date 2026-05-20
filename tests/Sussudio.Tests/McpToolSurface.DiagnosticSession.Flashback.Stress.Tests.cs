@@ -10,6 +10,8 @@ static partial class Program
         var stressText = ReadDiagnosticSessionFlashbackStressScenarioSource();
         var stressRootText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.Stress.cs")
             .Replace("\r\n", "\n");
+        var stressExportText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.StressExport.cs")
+            .Replace("\r\n", "\n");
         var warmPlaybackText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlayback.cs")
             .Replace("\r\n", "\n");
         var warmPlaybackAudioText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlaybackAudio.cs")
@@ -31,8 +33,14 @@ static partial class Program
         AssertContains(stressText, "internal const int FlashbackScrubStressMaxPlaybackPendingCommands = 20;");
         AssertContains(stressText, "internal static async Task RunFlashbackStressAsync(");
         AssertContains(stressRootText, "ValidateFlashbackStressWarmPlaybackAsync(");
+        AssertContains(stressRootText, "VerifyFlashbackStressExportAsync(");
         AssertContains(stressRootText, "ValidateFlashbackStressCommandDrainAsync(");
         AssertDoesNotContain(stressRootText, "ClassifyFlashbackStressAudioMasterFallbackWarning(");
+        AssertDoesNotContain(stressRootText, "CreateFlashbackExportVerifyPayload(exportPath)");
+        AssertContains(stressExportText, "private static async Task VerifyFlashbackStressExportAsync(");
+        AssertContains(stressExportText, "\"flashback-stress-export.mp4\"");
+        AssertContains(stressExportText, "CreateFlashbackExportVerifyPayload(exportPath)");
+        AssertContains(stressExportText, "flashback stress export verified");
         AssertContains(warmPlaybackText, "private static async Task ValidateFlashbackStressWarmPlaybackAsync(");
         AssertContains(warmPlaybackText, "WaitForFlashbackPlaybackWarmSampleAsync(");
         AssertContains(warmPlaybackText, "\"flashback playback warmed frames=");

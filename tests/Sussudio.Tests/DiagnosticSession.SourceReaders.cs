@@ -112,6 +112,7 @@ static partial class Program
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionFlashbackStressScenario.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.Stress.cs",
+            "tools/Common/DiagnosticSessionFlashbackStressScenario.StressExport.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlayback.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlaybackAudio.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrain.cs",
