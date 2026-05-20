@@ -3738,10 +3738,14 @@ failure-kind and last-result assertions, and `.Recording.cs` owns
 active-Flashback-recording failure-kind and backend-stability assertions.
 
 Diagnostic-session Flashback recording-settings deferral now lives in named
-partial owners. Deferred preset state and active recording mutation/rejection
-checks live in
-`DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`, and
-post-stop preset verification, encoder-frame check, and original-preset restore
+partial owners. `DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs`
+owns deferred preset state. During-recording command choreography lives in
+`DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`,
+restart/disable rejection-message policy lives in
+`DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingRejections.cs`,
+and active recording backend/file/counter stability checks live in
+`DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingValidation.cs`.
+Post-stop preset verification, encoder-frame check, and original-preset restore
 live in `DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`. Do
 not reintroduce an empty family root.
 
@@ -3913,7 +3917,10 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackRejectedExports.Inactive.cs`
 - `DiagnosticSessionFlashbackRejectedExports.Recording.cs`
+- `DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`
+- `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingRejections.cs`
+- `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingValidation.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs`

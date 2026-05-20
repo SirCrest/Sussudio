@@ -4244,9 +4244,16 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackRejectedExports.Recording.cs` owns
   active-Flashback-recording rejected-export failure-kind and backend-stability
   assertions.
+- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs`
+  owns deferred recording-settings preset state.
 - `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`
-  owns deferred preset state plus preset mutation and restart/disable rejection
-  checks while Flashback is recording.
+  owns deferred recording-settings command choreography while Flashback is
+  recording.
+- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingRejections.cs`
+  owns active-recording restart/disable rejection-message policy.
+- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingValidation.cs`
+  owns active-recording post-mutation backend, file-path, and counter
+  stability checks.
 - `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`
   owns post-stop preset verification, encoder-frame check, and original-preset
   restore.

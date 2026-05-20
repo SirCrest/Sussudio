@@ -216,21 +216,43 @@ static partial class Program
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var recordingChecksText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
             .Replace("\r\n", "\n");
+        var modelsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs")
+            .Replace("\r\n", "\n");
         var duringRecordingText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs")
+            .Replace("\r\n", "\n");
+        var rejectionText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingRejections.cs")
+            .Replace("\r\n", "\n");
+        var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingValidation.cs")
             .Replace("\r\n", "\n");
         var postStopText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(duringRecordingText, "internal readonly record struct FlashbackRecordingSettingsDeferredPresetState(");
+        AssertContains(modelsText, "internal readonly record struct FlashbackRecordingSettingsDeferredPresetState(");
         AssertContains(duringRecordingText, "internal static partial class DiagnosticSessionFlashbackRecordingSettingsScenarios");
         AssertContains(duringRecordingText, "internal static async Task<FlashbackRecordingSettingsDeferredPresetState> RunFlashbackRecordingSettingsDeferredAsync(");
         AssertContains(duringRecordingText, "flashback recording settings deferred preset changed to");
-        AssertContains(duringRecordingText, "RestartFlashback unexpectedly succeeded during recording");
-        AssertContains(duringRecordingText, "SetFlashbackEnabled(false) unexpectedly succeeded during recording");
+        AssertContains(duringRecordingText, "VerifyFlashbackRestartRejectedDuringRecordingAsync(");
+        AssertContains(duringRecordingText, "VerifyFlashbackDisableRejectedDuringRecordingAsync(");
+        AssertContains(duringRecordingText, "VerifyFlashbackRecordingSettingsDeferredStillRecordingAsync(");
+        AssertContains(rejectionText, "private static async Task VerifyFlashbackRestartRejectedDuringRecordingAsync(");
+        AssertContains(rejectionText, "private static async Task VerifyFlashbackDisableRejectedDuringRecordingAsync(");
+        AssertContains(rejectionText, "private static async Task VerifyFlashbackRecordingSettingsCommandRejectedDuringRecordingAsync(");
+        AssertContains(rejectionText, "RestartFlashback unexpectedly succeeded during recording");
+        AssertContains(rejectionText, "SetFlashbackEnabled(false) unexpectedly succeeded during recording");
+        AssertContains(validationText, "private static async Task VerifyFlashbackRecordingSettingsDeferredStillRecordingAsync(");
+        AssertContains(validationText, "Flashback recording backend did not remain active after mutations");
+        AssertContains(validationText, "recording counters did not advance after mutation attempts");
         AssertContains(postStopText, "internal static partial class DiagnosticSessionFlashbackRecordingSettingsScenarios");
         AssertContains(postStopText, "internal static async Task VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(");
         AssertContains(postStopText, "flashback recording settings deferred post-stop buffer verified");
         AssertContains(postStopText, "flashback recording settings deferred preset restored to");
+        AssertDoesNotContain(duringRecordingText, "internal readonly record struct FlashbackRecordingSettingsDeferredPresetState(");
+        AssertDoesNotContain(duringRecordingText, "private static async Task VerifyFlashbackRecordingSettingsCommandRejectedDuringRecordingAsync(");
+        AssertDoesNotContain(duringRecordingText, "RestartFlashback unexpectedly succeeded during recording");
+        AssertDoesNotContain(duringRecordingText, "SetFlashbackEnabled(false) unexpectedly succeeded during recording");
+        AssertDoesNotContain(duringRecordingText, "private static async Task VerifyFlashbackRecordingSettingsDeferredStillRecordingAsync(");
+        AssertDoesNotContain(rejectionText, "recording counters did not advance after mutation attempts");
+        AssertDoesNotContain(validationText, "RestartFlashback unexpectedly succeeded during recording");
         AssertDoesNotContain(postStopText, "internal readonly record struct FlashbackRecordingSettingsDeferredPresetState(");
         AssertContains(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackRecordingSettingsScenarios;");
         AssertContains(startupText, "RunFlashbackRecordingSettingsDeferredAsync(");
