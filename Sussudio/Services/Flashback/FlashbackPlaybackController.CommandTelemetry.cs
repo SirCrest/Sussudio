@@ -8,6 +8,24 @@ namespace Sussudio.Services.Flashback;
 
 internal sealed partial class FlashbackPlaybackController
 {
+    private long _commandsEnqueued;
+    private long _commandsProcessed;
+    private long _commandsDropped;
+    private long _commandsSkippedNotReady;
+    private int _pendingCommands;
+    private int _maxPendingCommands;
+    private long _lastCommandQueueLatencyMs;
+    private long _maxCommandQueueLatencyMs;
+    private string _maxCommandQueueLatencyCommand = "None";
+    private long _lastCommandQueuedUtcUnixMs;
+    private long _lastCommandProcessedUtcUnixMs;
+    private long _lastCommandFailureUtcUnixMs;
+    private string _lastCommandQueued = "None";
+    private string _lastCommandProcessed = "None";
+    private string _lastCommandFailure = string.Empty;
+    private int _activeCommandKind = -1;
+    private long _activeCommandStartedTimestamp;
+
     // --- Command readiness guards ---
 
     private bool IsReady => _initialized && _disposedFlag == 0;

@@ -1091,7 +1091,9 @@ Entry points:
 - `FlashbackPlaybackController.Commands.cs` owns public playback command entry points for scrub, seek, play/pause, go-live, and nudge.
 - `FlashbackPlaybackController.CommandQueue.cs` owns command queue writes and queue drop policy.
 - `FlashbackPlaybackController.CommandCoalescing.cs` owns seek/scrub coalescing slot state, queued-command resolution, and control-yield peek policy.
-- `FlashbackPlaybackController.CommandTelemetry.cs` owns command readiness guards, failure-detail formatting, and queue command telemetry bookkeeping.
+- `FlashbackPlaybackController.CommandTelemetry.cs` owns command readiness
+  guards, status counters, pending-command accounting, failure-detail
+  formatting, active-command timing, and queue command telemetry bookkeeping.
 - `FlashbackPlaybackController.ThreadLoop.cs` owns `PlaybackThreadEntry`,
   command dequeue, active-command telemetry, `Stop` handling, and dispatch to
   playback-thread command handlers, plus timer-resolution P/Invoke for playback

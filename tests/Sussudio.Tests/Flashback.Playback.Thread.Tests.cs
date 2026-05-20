@@ -20,6 +20,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var threadLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs")
             .Replace("\r\n", "\n");
+        var commandTelemetryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandTelemetry.cs")
+            .Replace("\r\n", "\n");
         var commandModelsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandModels.cs")
             .Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
@@ -93,6 +95,21 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_UPDATE_SKIP reason=disposed");
         AssertContains(sourceText, "private const int CommandQueueCapacity = 256;");
         AssertContains(sourceText, "public int CommandQueueCapacityCommands => CommandQueueCapacity;");
+        AssertContains(commandTelemetryText, "private long _commandsEnqueued;");
+        AssertContains(commandTelemetryText, "private long _commandsProcessed;");
+        AssertContains(commandTelemetryText, "private long _commandsDropped;");
+        AssertContains(commandTelemetryText, "private long _commandsSkippedNotReady;");
+        AssertContains(commandTelemetryText, "private int _pendingCommands;");
+        AssertContains(commandTelemetryText, "private int _maxPendingCommands;");
+        AssertContains(commandTelemetryText, "private long _lastCommandQueueLatencyMs;");
+        AssertContains(commandTelemetryText, "private long _maxCommandQueueLatencyMs;");
+        AssertContains(commandTelemetryText, "private string _lastCommandFailure = string.Empty;");
+        AssertContains(commandTelemetryText, "private int _activeCommandKind = -1;");
+        AssertContains(commandTelemetryText, "private long _activeCommandStartedTimestamp;");
+        AssertDoesNotContain(rootText, "private long _commandsEnqueued;");
+        AssertDoesNotContain(rootText, "private int _pendingCommands;");
+        AssertDoesNotContain(rootText, "private string _lastCommandFailure = string.Empty;");
+        AssertDoesNotContain(rootText, "private int _activeCommandKind = -1;");
         AssertContains(sourceText, "private Channel<PlaybackCommand> _commandChannel;");
         AssertContains(sourceText, "_commandChannel = CreateCommandChannel();");
         AssertContains(sourceText, "_commandChannel = CreateCommandChannel();");

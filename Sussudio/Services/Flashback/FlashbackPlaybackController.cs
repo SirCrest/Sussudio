@@ -107,23 +107,6 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     private string _playbackMaxDecodePhase = string.Empty;
     private long _playbackMaxDecodeUtcUnixMs;
     private long _playbackMaxDecodePositionMs;
-    private long _commandsEnqueued;
-    private long _commandsProcessed;
-    private long _commandsDropped;
-    private long _commandsSkippedNotReady;
-    private int _pendingCommands;
-    private int _maxPendingCommands;
-    private long _lastCommandQueueLatencyMs;
-    private long _maxCommandQueueLatencyMs;
-    private string _maxCommandQueueLatencyCommand = "None";
-    private long _lastCommandQueuedUtcUnixMs;
-    private long _lastCommandProcessedUtcUnixMs;
-    private long _lastCommandFailureUtcUnixMs;
-    private string _lastCommandQueued = "None";
-    private string _lastCommandProcessed = "None";
-    private string _lastCommandFailure = string.Empty;
-    private int _activeCommandKind = -1;
-    private long _activeCommandStartedTimestamp;
     // --- Deferred frame release for D3D11VA (C1 fix) ---
     // The renderer's render thread hasn't copied the texture yet when we release.
     // Keep the previous frame alive until the next frame is submitted.
