@@ -112,6 +112,11 @@ add xUnit alongside, and port incrementally.
   checks.
 - `XUnit.AutomationCatalogContractsTests.cs` owns the former legacy automation
   catalog, manifest, path-policy, and reliability-gates contract checks.
+- `XUnit.AutomationAppSurfaceContractsTests.cs` owns the former legacy
+  automation app-surface registration group: App exception policy, converter
+  and display formatting, LoggingJsonContext, MainWindow automation IDs,
+  full-screen/window dispatch adapters, pipe/auth, and Stream Deck auth-envelope
+  checks.
 - `XUnit.ToolProbeContractsTests.cs` owns the former legacy PresentMon parser,
   ssctl pipe transport, KS audio-node, and EGAVDS probe contract checks.
 - `XUnit.AutomationSnapshotFormatterContractsTests.cs` owns the former legacy

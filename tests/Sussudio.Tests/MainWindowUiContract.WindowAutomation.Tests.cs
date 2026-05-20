@@ -1,6 +1,6 @@
 static partial class Program
 {
-    private static Task MainWindowFullScreenAutomation_AwaitsTransitionTask()
+    internal static Task MainWindowFullScreenAutomation_AwaitsTransitionTask()
     {
         var fullScreenSource = ReadRepoFile("Sussudio/MainWindow.FullScreen.cs")
             .Replace("\r\n", "\n");
@@ -50,7 +50,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MainWindowWindowAutomationCommands_LiveInController()
+    internal static Task MainWindowWindowAutomationCommands_LiveInController()
     {
         var mainWindowSource = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");

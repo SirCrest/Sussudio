@@ -1,6 +1,6 @@
 static partial class Program
 {
-    private static Task MainWindowUiDispatching_LivesInDispatchingPartial()
+    internal static Task MainWindowUiDispatching_LivesInDispatchingPartial()
     {
         var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Dispatching.cs")
             .Replace("\r\n", "\n");

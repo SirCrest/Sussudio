@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 // Tests for diagnostic snapshot JSON source-generation compatibility.
 static partial class Program
 {
-    private static Task LoggingJsonContext_SerializesStructuredSnapshotPayloads()
+    internal static Task LoggingJsonContext_SerializesStructuredSnapshotPayloads()
     {
         var contextText = ReadRepoFile("Sussudio/LoggingJsonContext.cs");
         AssertContains(contextText, "[JsonSourceGenerationOptions(WriteIndented = false)]");

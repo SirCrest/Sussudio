@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 // Tests for named-pipe automation server framing plus app-surface auth wiring.
 static partial class Program
 {
-    private static Task NamedPipeAutomationServer_RequestTimeoutsUseBoundedDispatchCancellation()
+    internal static Task NamedPipeAutomationServer_RequestTimeoutsUseBoundedDispatchCancellation()
     {
         var pipeServerText = (
             ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.cs")
@@ -25,7 +25,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MainWindowAutomation_WiresPipeAuthFallbackPolicy()
+    internal static Task MainWindowAutomation_WiresPipeAuthFallbackPolicy()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
@@ -63,7 +63,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task StreamDeckPluginScope_DocumentsAutomationAuthEnvelope()
+    internal static Task StreamDeckPluginScope_DocumentsAutomationAuthEnvelope()
     {
         var docs = ReadRepoFile("docs/stream-deck-plugin-scope.md")
             .Replace("\r\n", "\n");

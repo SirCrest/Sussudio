@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 // Tests for named-pipe automation server Windows security fallback behavior.
 static partial class Program
 {
-    private static Task NamedPipeAutomationServer_GatesDefaultSecurityFallbackOnAuthToken()
+    internal static Task NamedPipeAutomationServer_GatesDefaultSecurityFallbackOnAuthToken()
     {
         AssertPipeSecurityPolicyMatrix();
 

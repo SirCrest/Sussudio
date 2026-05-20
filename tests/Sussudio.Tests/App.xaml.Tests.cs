@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task App_Xaml_WiresUnhandledExceptionPolicy()
+    internal static Task App_Xaml_WiresUnhandledExceptionPolicy()
     {
         var appType = RequireType("Sussudio.App");
         var appRootSource = ReadRepoFile("Sussudio/App.xaml.cs")

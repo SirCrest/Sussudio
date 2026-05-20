@@ -854,6 +854,11 @@ Core runtime checks now execute through
 telemetry, capture-service snapshot, NativeXu, frame-ledger, recording-integrity,
 and basic app contract checks in xUnit after their removal from the legacy
 harness catalog.
+Automation app-surface checks now execute through
+`tests/Sussudio.Tests/XUnit.AutomationAppSurfaceContractsTests.cs`, keeping App
+exception policy, converter/display formatting, LoggingJsonContext, MainWindow
+automation surface, pipe/auth, and Stream Deck auth-envelope checks in xUnit
+after their removal from the legacy harness catalog.
 
 Projection ownership checks are split into snapshot/status, audio, capture and
 source, MJPEG, recording, system resources and A/V sync, preview, and Flashback

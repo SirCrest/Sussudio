@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 static partial class Program
 {
-    private static Task MainWindowAutomationIds_CoverAgentCriticalSurface()
+    internal static Task MainWindowAutomationIds_CoverAgentCriticalSurface()
     {
         var xaml = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
         var requiredIds = new[]

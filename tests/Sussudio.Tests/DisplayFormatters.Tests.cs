@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 // Tests for compact UI/source-signal display labels.
 static partial class Program
 {
-    private static Task DisplayFormatters_FormatSourceHdr_MapsKnownAndUnknownStates()
+    internal static Task DisplayFormatters_FormatSourceHdr_MapsKnownAndUnknownStates()
     {
         var formatterType = RequireType("Sussudio.DisplayFormatters");
         var formatSourceHdr = formatterType.GetMethod(

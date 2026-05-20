@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 // Tests for XAML value converters used by hand-bound WinUI controls.
 static partial class Program
 {
-    private static Task BoolConverters_PreserveInversionAndVisibilityMappings()
+    internal static Task BoolConverters_PreserveInversionAndVisibilityMappings()
     {
         var inverseBoolType = RequireType("Sussudio.Converters.InverseBoolConverter");
         var boolToVisType = RequireType("Sussudio.Converters.BoolToVisibilityConverter");

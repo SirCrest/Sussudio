@@ -81,7 +81,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task UiAutomationCommands_AreNotBlockedOnDeviceReadiness()
+    internal static Task UiAutomationCommands_AreNotBlockedOnDeviceReadiness()
     {
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
 
