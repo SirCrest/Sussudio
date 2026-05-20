@@ -6,23 +6,8 @@ static partial class Program
     private static async Task AddPresentationPreviewD3DChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "D3D preview configuration lives in focused partial",
-            D3D11PreviewRenderer_ConfigurationLivesInFocusedPartial);
-        await AddCheckAsync(results,
-            "D3D preview native interop lives in focused partial",
-            D3D11PreviewRenderer_NativeInteropLivesInFocusedPartial);
-        await AddCheckAsync(results,
-            "D3D preview frame types live in focused partial",
-            D3D11PreviewRenderer_FrameTypesLiveInFocusedPartial);
-        await AddCheckAsync(results,
             "D3D preview frame submission lives in focused partial",
             D3D11PreviewRenderer_SubmissionLivesInFocusedPartial);
-        await AddCheckAsync(results,
-            "D3D preview frame ownership lives in focused partial",
-            D3D11PreviewRenderer_FrameOwnershipLivesInFocusedPartial);
-        await AddCheckAsync(results,
-            "D3D preview DXGI frame statistics live in focused partial",
-            D3D11PreviewRenderer_DxgiFrameStatisticsLiveInFocusedPartial);
         await AddCheckAsync(results,
             "D3D preview panel binding lives in focused partial",
             D3D11PreviewRenderer_PanelBindingLivesInFocusedPartial);
@@ -41,12 +26,6 @@ static partial class Program
         await AddCheckAsync(results,
             "D3D preview shader sources live in focused file",
             D3D11PreviewRenderer_ShaderSourcesLiveInFocusedFile);
-        await AddCheckAsync(results,
-            "D3D preview slow-frame diagnostics live in focused partial",
-            D3D11PreviewRenderer_SlowFrameDiagnosticsLiveInFocusedPartial);
-        await AddCheckAsync(results,
-            "D3D preview metric tracking lives in focused partial",
-            D3D11PreviewRenderer_MetricTrackingLivesInFocusedPartial);
         await AddCheckAsync(results,
             "D3D preview frame-latency wait lives in focused partial",
             D3D11PreviewRenderer_FrameLatencyLivesInFocusedPartial);

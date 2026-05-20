@@ -971,6 +971,12 @@ Presentation-preview D3D diagnostics checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DDiagnosticsContractsTests.cs`,
 keeping swap-chain/render timing, snapshot-model, and performance-timeline
 contracts in xUnit after their removal from the legacy harness catalog.
+Presentation-preview D3D contracts/metrics source-ownership checks now execute
+through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DContractsAndMetricsOwnershipTests.cs`,
+keeping configuration, native interop, frame types, frame ownership, DXGI frame
+statistics, slow-frame diagnostics, and metric tracking contracts in xUnit after
+their removal from the legacy harness catalog.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the
