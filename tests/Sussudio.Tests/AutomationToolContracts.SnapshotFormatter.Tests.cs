@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationSnapshotFormatter_FormatsCoreSectionsAndTypedAccessors()
+    internal static Task AutomationSnapshotFormatter_FormatsCoreSectionsAndTypedAccessors()
     {
         var formatterType = RequireSharedToolType("Sussudio.Tools.AutomationSnapshotFormatter");
         var isSuccess = RequireNonPublicStaticMethod(formatterType, "IsSuccess");

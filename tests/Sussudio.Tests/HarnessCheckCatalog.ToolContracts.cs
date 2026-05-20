@@ -17,18 +17,6 @@ static partial class Program
 
         // --- Tool CommandMap & Formatter Alignment ---
         await AddCheckAsync(results,
-            "Automation snapshot formatter formats core sections and typed accessors",
-            AutomationSnapshotFormatter_FormatsCoreSectionsAndTypedAccessors);
-        await AddCheckAsync(results,
-            "Automation snapshot formatter renders Flashback sections when included",
-            AutomationSnapshotFormatter_RendersFlashbackSections_WhenIncluded);
-        await AddCheckAsync(results,
-            "Automation snapshot formatter renders Preview D3D sections",
-            AutomationSnapshotFormatter_RendersPreviewD3DSections);
-        await AddCheckAsync(results,
-            "Automation snapshot formatter source ownership is split",
-            AutomationSnapshotFormatter_SourceOwnership_IsSplit);
-        await AddCheckAsync(results,
             "ssctl CommandHandlers route device commands",
             SsctlCommandHandlers_RouteDeviceCommands);
         await AddCheckAsync(results,

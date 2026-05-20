@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationSnapshotFormatter_RendersFlashbackSections_WhenIncluded()
+    internal static Task AutomationSnapshotFormatter_RendersFlashbackSections_WhenIncluded()
     {
         var formatterType = RequireSharedToolType("Sussudio.Tools.AutomationSnapshotFormatter");
         var formatSnapshot = RequireNonPublicStaticMethod(formatterType, "FormatSnapshot");

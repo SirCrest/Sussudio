@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationSnapshotFormatter_RendersPreviewD3DSections()
+    internal static Task AutomationSnapshotFormatter_RendersPreviewD3DSections()
     {
         var formatterType = RequireSharedToolType("Sussudio.Tools.AutomationSnapshotFormatter");
         var formatSnapshot = RequireNonPublicStaticMethod(formatterType, "FormatSnapshot");

@@ -7,54 +7,61 @@ static partial class Program
     private static readonly Dictionary<string, Assembly> ToolAssemblyCache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Dictionary<string, Assembly> IsolatedToolAssemblyCache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Dictionary<string, AssemblyLoadContext> IsolatedToolAssemblyContexts = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly object ToolAssemblyCacheLock = new();
 
     private static Assembly LoadToolAssembly(string relativeAssemblyPath)
     {
         var fullPath = Path.GetFullPath(Path.Combine(GetRepoRoot(), relativeAssemblyPath));
-        if (ToolAssemblyCache.TryGetValue(fullPath, out var cached))
+        lock (ToolAssemblyCacheLock)
         {
-            return cached;
-        }
+            if (ToolAssemblyCache.TryGetValue(fullPath, out var cached))
+            {
+                return cached;
+            }
 
-        RequireFreshToolAssembly(relativeAssemblyPath, fullPath);
-        var assemblyDirectory = Path.GetDirectoryName(fullPath)
-                                ?? throw new InvalidOperationException($"Tool assembly directory not found for '{fullPath}'.");
+            RequireFreshToolAssembly(relativeAssemblyPath, fullPath);
+            var assemblyDirectory = Path.GetDirectoryName(fullPath)
+                                    ?? throw new InvalidOperationException($"Tool assembly directory not found for '{fullPath}'.");
 
-        Assembly? ResolveToolAssemblyDependency(AssemblyLoadContext context, AssemblyName assemblyName)
-        {
-            var dependencyPath = Path.Combine(assemblyDirectory, $"{assemblyName.Name}.dll");
-            return File.Exists(dependencyPath)
-                ? context.LoadFromAssemblyPath(dependencyPath)
-                : null;
-        }
+            Assembly? ResolveToolAssemblyDependency(AssemblyLoadContext context, AssemblyName assemblyName)
+            {
+                var dependencyPath = Path.Combine(assemblyDirectory, $"{assemblyName.Name}.dll");
+                return File.Exists(dependencyPath)
+                    ? context.LoadFromAssemblyPath(dependencyPath)
+                    : null;
+            }
 
-        AssemblyLoadContext.Default.Resolving += ResolveToolAssemblyDependency;
-        try
-        {
-            var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(fullPath);
-            ToolAssemblyCache[fullPath] = assembly;
-            return assembly;
-        }
-        finally
-        {
-            AssemblyLoadContext.Default.Resolving -= ResolveToolAssemblyDependency;
+            AssemblyLoadContext.Default.Resolving += ResolveToolAssemblyDependency;
+            try
+            {
+                var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(fullPath);
+                ToolAssemblyCache[fullPath] = assembly;
+                return assembly;
+            }
+            finally
+            {
+                AssemblyLoadContext.Default.Resolving -= ResolveToolAssemblyDependency;
+            }
         }
     }
 
     private static Assembly LoadToolAssemblyIsolated(string relativeAssemblyPath)
     {
         var fullPath = Path.GetFullPath(Path.Combine(GetRepoRoot(), relativeAssemblyPath));
-        if (IsolatedToolAssemblyCache.TryGetValue(fullPath, out var cached))
+        lock (ToolAssemblyCacheLock)
         {
-            return cached;
-        }
+            if (IsolatedToolAssemblyCache.TryGetValue(fullPath, out var cached))
+            {
+                return cached;
+            }
 
-        RequireFreshToolAssembly(relativeAssemblyPath, fullPath);
-        var loadContext = new ToolAssemblyLoadContext(fullPath);
-        var assembly = loadContext.LoadFromAssemblyPath(fullPath);
-        IsolatedToolAssemblyCache[fullPath] = assembly;
-        IsolatedToolAssemblyContexts[fullPath] = loadContext;
-        return assembly;
+            RequireFreshToolAssembly(relativeAssemblyPath, fullPath);
+            var loadContext = new ToolAssemblyLoadContext(fullPath);
+            var assembly = loadContext.LoadFromAssemblyPath(fullPath);
+            IsolatedToolAssemblyCache[fullPath] = assembly;
+            IsolatedToolAssemblyContexts[fullPath] = loadContext;
+            return assembly;
+        }
     }
 
     private sealed class ToolAssemblyLoadContext : AssemblyLoadContext

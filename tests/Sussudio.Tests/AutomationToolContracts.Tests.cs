@@ -5,7 +5,7 @@ static partial class Program
 {
     private static Type RequireSharedToolType(string typeName)
     {
-        var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var assembly = LoadToolAssemblyIsolated(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
         return assembly.GetType(typeName)
                ?? throw new InvalidOperationException($"{typeName} was not found in the shared tool assembly.");
     }

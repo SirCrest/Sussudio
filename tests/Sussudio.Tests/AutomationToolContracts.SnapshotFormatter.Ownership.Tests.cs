@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationSnapshotFormatter_SourceOwnership_IsSplit()
+    internal static Task AutomationSnapshotFormatter_SourceOwnership_IsSplit()
     {
         var sharedFormatterSource = global::Sussudio.Tests.RuntimeContractSource.ReadAutomationSnapshotFormatterSource();
         var sharedFormatterRootSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");

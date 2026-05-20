@@ -716,8 +716,10 @@ offline harness catalog. Shared formatter tests now mirror the formatter partial
 snapshot-formatter test owns accessors, invalid-response handling, section
 ordering, core section formatting, and the Flashback opt-in gate; Flashback
 output, Preview D3D output, and source ownership live in focused
-`AutomationToolContracts.SnapshotFormatter.*.Tests.cs` owners registered with
-the offline harness. ssctl formatter output smoke checks stay in
+`AutomationToolContracts.SnapshotFormatter.*.Tests.cs` implementation owners,
+with `tests/Sussudio.Tests/XUnit.AutomationSnapshotFormatterContractsTests.cs`
+owning their xUnit execution surface after removal from the legacy offline
+harness catalog. ssctl formatter output smoke checks stay in
 `Formatters.Tests.cs`, while `Formatters.SnapshotOwnership.Tests.cs` owns ssctl
 formatter source ownership assertions through the shared `RuntimeContractSource`
 formatter source-family readers.
