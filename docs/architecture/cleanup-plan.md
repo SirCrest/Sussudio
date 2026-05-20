@@ -3754,8 +3754,8 @@ typed `AutomationCommandKind` command-id routing plus `not_ready` retry policy,
 string and typed commands, shared response-element validation, synthetic error
 shaping, and handoff to
 `Sussudio.Automation.Contracts/AutomationUnknownCommandHandling.cs`,
-`AutomationPipeClient.ResponseState.cs` owns tolerant response-state parsing
-handoff to `Sussudio.Automation.Contracts/AutomationResponseState.cs`,
+`AutomationPipeClient.Commands.cs` owns tolerant response-state parsing handoff
+to `Sussudio.Automation.Contracts/AutomationResponseState.cs`,
 `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs` owns the command
 result handoff and pipe client exception taxonomy, and
 `Sussudio.Automation.Contracts/AutomationSyntheticErrorResponse.cs` owns shared
@@ -3798,7 +3798,6 @@ Remaining `tools/Common` ownership:
 - `AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs`
 - `AutomationPipeClient/AutomationPipeClient.Commands.cs`
 - `AutomationPipeClient/AutomationCommandTransport.cs`
-- `AutomationPipeClient/AutomationPipeClient.ResponseState.cs`
 - `DiagnosticSessionBackgroundTasks.cs`
 - `DiagnosticSessionBackgroundTasks.FaultDrain.cs`
 - `DiagnosticSessionCleanupActions.cs`
