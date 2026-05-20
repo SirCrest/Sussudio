@@ -3,7 +3,7 @@ using System.Reflection;
 
 static partial class Program
 {
-    private static Task WindowTitleController_FormatsBuildStampAndRecordingSuffix()
+    internal static Task WindowTitleController_FormatsBuildStampAndRecordingSuffix()
     {
         var originalCulture = CultureInfo.CurrentCulture;
         var originalUiCulture = CultureInfo.CurrentUICulture;

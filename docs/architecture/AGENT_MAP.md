@@ -2498,6 +2498,10 @@ Primary current owners:
   owns the former presentation-preview MainWindow preview screenshot workflow
   and plan-policy checks after their removal from the legacy offline harness
   catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewShellChromeContractsTests.cs`
+  owns the former presentation-preview MainWindow shell chrome, window title,
+  live signal, and status-strip checks after their removal from the legacy
+  offline harness catalog.
 - `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral

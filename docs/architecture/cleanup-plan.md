@@ -893,6 +893,10 @@ Presentation-preview preview screenshot checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewScreenshotContractsTests.cs`,
 keeping button workflow and plan-policy contracts in xUnit after their removal
 from the legacy harness catalog.
+Presentation-preview shell chrome checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewShellChromeContractsTests.cs`,
+keeping settings shelf, window title, live signal, and status-strip contracts
+in xUnit after their removal from the legacy harness catalog.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the

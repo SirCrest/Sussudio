@@ -6,9 +6,6 @@ static partial class Program
     private static async Task AddPresentationPreviewMainWindowChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Settings shelf lifecycle lives in controller",
-            SettingsShelfLifecycle_LivesInController);
-        await AddCheckAsync(results,
             "MainWindow property changed routing delegates to focused controllers",
             MainWindowPropertyChangedRouting_DelegatesToFocusedControllers);
         await AddCheckAsync(results,
@@ -87,12 +84,6 @@ static partial class Program
             "Preview runtime D3D frame-ownership policy preserves null renderer defaults",
             PreviewRuntimeD3DFrameOwnershipPolicy_PreservesNullRendererDefaults);
         await AddCheckAsync(results,
-            "Window title formatting lives in controller and MainWindow is the adapter",
-            MainWindowTitlePresentation_LivesInController);
-        await AddCheckAsync(results,
-            "Window title controller formats build stamp and recording suffix",
-            WindowTitleController_FormatsBuildStampAndRecordingSuffix);
-        await AddCheckAsync(results,
             "MainWindow native bootstrap lives in controller",
             MainWindowNativeBootstrap_LivesInFocusedController);
         await AddCheckAsync(results,
@@ -134,12 +125,6 @@ static partial class Program
         await AddCheckAsync(results,
             "Recording button action lives in controller",
             RecordingButtonAction_LivesInController);
-        await AddCheckAsync(results,
-            "Live signal info presentation lives in controller",
-            LiveSignalInfoPresentation_LivesInController);
-        await AddCheckAsync(results,
-            "Status strip presentation lives in controller",
-            StatusStripPresentation_LivesInController);
         await AddCheckAsync(results,
             "Preview audio fade state lives in controller",
             PreviewAudioFadeState_LivesInController);
