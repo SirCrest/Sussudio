@@ -45,7 +45,7 @@ static partial class Program
         AssertContains(diagnosticScenariosText, "internal const string FlashbackRecordingSettingsDeferred = \"flashback-recording-settings-deferred\";");
         AssertContains(diagnosticScenariosText, "internal const string FlashbackRecordingExportRejected = \"flashback-recording-export-rejected\";");
         AssertContains(diagnosticScenariosText, "internal const string FlashbackExportRejected = \"flashback-export-rejected\";");
-        AssertContains(diagnosticSessionText, "internal readonly record struct DiagnosticSessionScenarioPlan(");
+        AssertContains(diagnosticSessionText, "internal readonly partial record struct DiagnosticSessionScenarioPlan(");
         AssertContains(diagnosticSessionText, "catch (AutomationPipeException ex) when (ex is not AutomationPipeConnectException)");
         AssertContains(diagnosticSessionText, "return BuildLocalFailureResponse(command, ex.Message);");
         AssertContains(diagnosticSessionText, "catch (JsonException ex)");

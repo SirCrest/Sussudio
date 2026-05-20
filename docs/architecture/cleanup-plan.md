@@ -3692,9 +3692,11 @@ owns scenario ordering by spreading focused entry groups; `.Entries.Core.cs`,
 `.Entries.FlashbackRecording.cs`, and `.Entries.Combined.cs` own the setup
 requirement metadata, export verification filenames, and plan assigned to each
 normalized scenario group.
-`tools/Common/DiagnosticSessionScenarioPlan.cs` owns the plan DTO plus grouped
-warning/validation policy switches, including the preview-cycle grouped
-predicate, so the runner does not grow direct scenario string comparisons.
+`tools/Common/DiagnosticSessionScenarioPlan.cs` owns the plan DTO, creation
+factory, and catalog lookup handoff. Grouped warning/validation policy switches
+now live in `tools/Common/DiagnosticSessionScenarioPlan.Policies.cs`, including
+the preview-cycle grouped predicate, so the runner does not grow direct
+scenario string comparisons.
 
 Diagnostic-session cleanup restore validation now lives in
 `tools/Common/DiagnosticSessionCleanupPolicy.cs`. It owns warnings for preview,
@@ -3785,7 +3787,7 @@ Diagnostic-session Flashback preview-cycle scenarios now live in a focused
 partial family. `.Registrations.cs` owns task registration, priority,
 task-label, and started-action wiring while preview-cycle scenario selection
 stays in the `DiagnosticSessionScenarioCatalog` family and grouped
-preview-cycle policy stays in `DiagnosticSessionScenarioPlan.cs`.
+preview-cycle policy stays in `DiagnosticSessionScenarioPlan.Policies.cs`.
 `.Flashback.cs`, `.Playback.cs`, and `.Recording.cs` own preview stop/restart
 command choreography for normal Flashback, playback, and recording-backed
 diagnostics. Normal Flashback preview-cycle validation is split by runtime
@@ -4139,6 +4141,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioCatalog.Entries.FlashbackRecording.cs`
 - `DiagnosticSessionScenarioCatalog.Entries.Combined.cs`
 - `DiagnosticSessionScenarioPlan.cs`
+- `DiagnosticSessionScenarioPlan.Policies.cs`
 - `DiagnosticSessionScenarioSetup.cs`
 - `DiagnosticSessionScenarioStartup.cs`
 - `DiagnosticSessionScenarioStartup.Registrations.cs`

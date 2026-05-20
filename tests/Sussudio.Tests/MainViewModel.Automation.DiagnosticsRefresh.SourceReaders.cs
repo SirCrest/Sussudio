@@ -134,7 +134,7 @@ static partial class Program
                 + "\n" + ReadDiagnosticSessionResultFormatterSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionSampler.cs")
                 + "\n" + ReadDiagnosticSessionScenarioCatalogSource()
-                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs")
+                + "\n" + ReadDiagnosticSessionScenarioPlanSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionOptionalTextFormatter.cs"),
             ReadDiagnosticSessionModelsSource(),
             ReadDiagnosticSessionScenarioCatalogSource());
@@ -169,6 +169,12 @@ static partial class Program
             + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Entries.FlashbackExport.cs")
             + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Entries.FlashbackRecording.cs")
             + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Entries.Combined.cs");
+    }
+
+    private static string ReadDiagnosticSessionScenarioPlanSource()
+    {
+        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs")
+            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioPlan.Policies.cs");
     }
 
     private static string ReadDiagnosticSessionFlashbackExportsSource()

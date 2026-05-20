@@ -4548,10 +4548,13 @@ Primary owners:
   diagnostic-session wait command helpers, `WaitForCondition` payload shaping,
   and routing that fixed wait command through the channel's
   `AutomationCommandKind` overload.
-- `tools/Common/DiagnosticSessionScenarioPlan.cs` owns the scenario plan DTO and
-  grouped warning/validation policies, including the preview-cycle grouped
-  predicate, used by the runner. Keep new scenario booleans there instead of
-  adding string comparisons in `DiagnosticSessionRunner`.
+- `tools/Common/DiagnosticSessionScenarioPlan.cs` owns the scenario plan DTO,
+  creation factory, and catalog lookup handoff.
+  `tools/Common/DiagnosticSessionScenarioPlan.Policies.cs` owns grouped
+  warning/validation policies, including the preview-cycle grouped predicate,
+  used by the runner. Keep new scenario booleans in the DTO and grouped
+  derivations in the policy partial instead of adding string comparisons in
+  `DiagnosticSessionRunner`.
 - `tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon option/result,
   summary, swap-chain, app-correlation summary, and metric DTOs.
 - `tools/Common/PresentMon/PresentMonProbe.Options.cs` owns
@@ -4634,5 +4637,6 @@ Invariants:
   wiring scenario behavior into `DiagnosticSessionRunner`. Preserve the final
   order in `tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs`.
 - Keep diagnostic-session grouped policy derivation in
-  `tools/Common/DiagnosticSessionScenarioPlan.cs`; the runner should consume
-  named properties instead of comparing normalized scenario strings directly.
+  `tools/Common/DiagnosticSessionScenarioPlan.Policies.cs`; the runner should
+  consume named properties instead of comparing normalized scenario strings
+  directly.
