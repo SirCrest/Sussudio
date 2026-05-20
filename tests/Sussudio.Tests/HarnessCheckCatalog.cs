@@ -7,7 +7,6 @@ static partial class Program
     private static async Task<List<CheckResult>> RunAllChecksAsync()
     {
         var results = new List<CheckResult>();
-        await AddAutomationDiagnosticsChecksAsync(results);
         await AddPresentationPreviewChecksAsync(results);
         await AddMcpDiagnosticsPipelineChecksAsync(results);
         return results;
@@ -15,11 +14,6 @@ static partial class Program
 
     private static async Task AddCheckAsync(List<CheckResult> results, string name, Func<Task> check)
         => results.Add(await RunCheckAsync(name, check));
-
-    private static async Task AddAutomationDiagnosticsChecksAsync(List<CheckResult> results)
-    {
-        await AddAutomationDiagnosticsSnapshotProjectionChecksAsync(results);
-    }
 
     private static async Task AddPresentationPreviewChecksAsync(List<CheckResult> results)
     {

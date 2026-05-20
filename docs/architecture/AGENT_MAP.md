@@ -2420,9 +2420,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.RuntimeHelpersTests.cs` owns pure runtime helper
   contracts for AtomicMax, TelemetryAgeHelper, EnvironmentHelpers, and
   RingBufferHelpers.
-- Focused `tests/Sussudio.Tests/HarnessCheckCatalog.AutomationDiagnostics.*.cs`
-  partials own the remaining automation-diagnostics snapshot projection
-  registration group.
 - `tests/Sussudio.Tests/XUnit.AutomationAppSurfaceContractsTests.cs` owns the
   former automation-diagnostics app-surface registration group for App exception
   policy, converter/display formatting, LoggingJsonContext, MainWindow
@@ -2446,6 +2443,11 @@ Primary current owners:
   coordinator contracts, service namespace/source ownership, and diagnostics
   snapshot refresh serialization after their removal from the legacy offline
   harness catalog.
+- `tests/Sussudio.Tests/XUnit.AutomationSnapshotProjectionContractsTests.cs`
+  owns the former automation-diagnostics snapshot-projection registration group
+  for snapshot status/evaluation, audio, capture/settings, source/cadence,
+  MJPEG, recording, process/A/V sync, preview, and Flashback projection
+  ownership after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/ServiceNamespace.Tests.cs` owns the harness-visible
   service namespace/source ownership orchestrator.
 - `tests/Sussudio.Tests/ServiceNamespace.FolderRules.Tests.cs` owns service

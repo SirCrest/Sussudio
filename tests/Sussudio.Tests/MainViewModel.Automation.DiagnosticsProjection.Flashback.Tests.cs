@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationDiagnosticsFlashbackExportProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsFlashbackExportProjection_LivesInFocusedPartial()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
@@ -50,7 +50,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationDiagnosticsFlashbackRecordingProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsFlashbackRecordingProjection_LivesInFocusedPartial()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
@@ -127,7 +127,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationDiagnosticsFlashbackPlaybackProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsFlashbackPlaybackProjection_LivesInFocusedPartial()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");

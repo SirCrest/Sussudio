@@ -876,10 +876,11 @@ keeping Flashback routing, capture transition policy, capture session
 coordinator contracts, service namespace/source ownership, and diagnostics
 snapshot refresh serialization checks in xUnit after their removal from the
 legacy harness catalog.
-
-Projection ownership checks are split into snapshot/status, audio, capture and
-source, MJPEG, recording, system resources and A/V sync, preview, and Flashback
-owner files.
+Automation diagnostics snapshot-projection checks now execute through
+`tests/Sussudio.Tests/XUnit.AutomationSnapshotProjectionContractsTests.cs`,
+keeping snapshot/status, audio, capture and source, MJPEG, recording, system
+resources and A/V sync, preview, and Flashback owner checks in xUnit after their
+removal from the legacy harness catalog.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task AutomationDiagnosticsSnapshotAudioProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsSnapshotAudioProjection_LivesInFocusedPartial()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");

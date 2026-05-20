@@ -130,6 +130,10 @@ add xUnit alongside, and port incrementally.
   legacy automation capture/Flashback routing registration group: Flashback
   routing, capture transition policy, capture session coordinator contracts,
   service namespace ownership, and diagnostics snapshot refresh serialization.
+- `XUnit.AutomationSnapshotProjectionContractsTests.cs` owns the former legacy
+  automation diagnostics snapshot-projection registration group: snapshot
+  status/evaluation, audio, capture/settings, source/cadence, MJPEG, recording,
+  process/A/V sync, preview, and Flashback projection ownership checks.
 - `XUnit.ToolProbeContractsTests.cs` owns the former legacy PresentMon parser,
   ssctl pipe transport, KS audio-node, and EGAVDS probe contract checks.
 - `XUnit.AutomationSnapshotFormatterContractsTests.cs` owns the former legacy
