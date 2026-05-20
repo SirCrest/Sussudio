@@ -3653,10 +3653,12 @@ Diagnostic-session Flashback cycle scenarios now live in named partial owners.
 `DiagnosticSessionFlashbackCycleScenarios.Restart.cs` owns the restart-cycle
 command flow, playback priming, restart validation, export verification, and
 restart-cycle warning/action strings. `DiagnosticSessionFlashbackCycleScenarios.Encoder.cs`
-owns preset cycling, buffer readiness, export verification, preset restoration,
-and encoder-cycle warning/action strings. `.Registrations.cs` owns task
-registration, priority, task-label, and started-action wiring while startup only
-delegates selected cycle scenario registration. Do not reintroduce an empty
+owns preset cycling and buffer-readiness command choreography. Encoder-cycle
+post-cycle snapshot warnings live in `.EncoderValidation.cs`, export request and
+verification live in `.EncoderExport.cs`, and original-preset restore plus
+post-restore readiness live in `.EncoderRestore.cs`. `.Registrations.cs` owns
+task registration, priority, task-label, and started-action wiring while startup
+only delegates selected cycle scenario registration. Do not reintroduce an empty
 family root.
 
 Diagnostic-session sampling now lives in
@@ -3872,6 +3874,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRecordingVerification.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.Restart.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.Encoder.cs`
+- `DiagnosticSessionFlashbackCycleScenarios.EncoderValidation.cs`
+- `DiagnosticSessionFlashbackCycleScenarios.EncoderExport.cs`
+- `DiagnosticSessionFlashbackCycleScenarios.EncoderRestore.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackExports.AudioSwitch.cs`

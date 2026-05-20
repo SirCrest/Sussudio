@@ -4138,9 +4138,17 @@ Primary owners:
   restart-cycle command flow, including playback priming, restart validation,
   export verification, and restart-cycle warning/action strings.
 - `tools/Common/DiagnosticSessionFlashbackCycleScenarios.Encoder.cs` owns the
-  encoder-cycle command flow, including preset cycling, buffer readiness,
-  export verification, preset restoration, and encoder-cycle warning/action
-  strings.
+  encoder-cycle command choreography, including preset cycling, buffer
+  readiness, and delegation to focused validation/export/restore owners.
+- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.EncoderValidation.cs`
+  owns encoder-cycle post-cycle snapshot warnings for encoder readiness,
+  Flashback file rotation, and playback-state cleanliness.
+- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.EncoderExport.cs`
+  owns encoder-cycle export request, strict verification payload, timeout, and
+  export warning/action strings.
+- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.EncoderRestore.cs`
+  owns encoder-cycle original-preset restore, restore warning, and post-restore
+  buffer readiness check.
 - `tools/Common/DiagnosticSessionFlashbackCycleScenarios.Registrations.cs` owns
   Flashback restart/encoder cycle diagnostic task registration, priorities,
   task labels, and started action strings.
