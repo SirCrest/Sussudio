@@ -102,6 +102,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var metricsCollectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.MetricsCollection.cs")
             .Replace("\r\n", "\n");
+        var playbackDecodeMetricsCollectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackDecodeMetricsCollection.cs")
+            .Replace("\r\n", "\n");
 
         var resetMetricsBlock = ExtractTextBetween(
             sourceText,
@@ -112,9 +114,14 @@ static partial class Program
         AssertContains(metricsCollectionText, "private readonly Stopwatch _playbackFpsClock = new();");
         AssertContains(metricsCollectionText, "private const int PlaybackCadenceSampleCapacity = 240;");
         AssertContains(metricsCollectionText, "private readonly double[] _playbackFrameIntervalsMs = new double[PlaybackCadenceSampleCapacity];");
-        AssertContains(metricsCollectionText, "private readonly double[] _playbackDecodeDurationsMs = new double[PlaybackCadenceSampleCapacity];");
-        AssertContains(metricsCollectionText, "private double _playbackMaxDecodeTotalMs;");
-        AssertContains(metricsCollectionText, "private string _playbackMaxDecodePhase = string.Empty;");
+        AssertContains(playbackDecodeMetricsCollectionText, "private readonly double[] _playbackDecodeDurationsMs = new double[PlaybackCadenceSampleCapacity];");
+        AssertContains(playbackDecodeMetricsCollectionText, "private double _playbackMaxDecodeTotalMs;");
+        AssertContains(playbackDecodeMetricsCollectionText, "private string _playbackMaxDecodePhase = string.Empty;");
+        AssertContains(playbackDecodeMetricsCollectionText, "private bool TryDecodeNextVideoFrameWithMetrics(");
+        AssertContains(playbackDecodeMetricsCollectionText, "private void TrackPlaybackDecodeDuration(");
+        AssertContains(playbackDecodeMetricsCollectionText, "private static string ResolveDominantDecodePhase(FlashbackDecoder.PlaybackDecodePhaseTimings phaseTimings)");
+        AssertDoesNotContain(metricsCollectionText, "private bool TryDecodeNextVideoFrameWithMetrics(");
+        AssertDoesNotContain(metricsCollectionText, "private static string ResolveDominantDecodePhase(FlashbackDecoder.PlaybackDecodePhaseTimings phaseTimings)");
         AssertDoesNotContain(rootText, "private long _playbackFrameCount;");
         AssertDoesNotContain(rootText, "private readonly Stopwatch _playbackFpsClock = new();");
         AssertDoesNotContain(rootText, "private readonly double[] _playbackFrameIntervalsMs = new double[PlaybackCadenceSampleCapacity];");
