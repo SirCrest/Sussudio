@@ -131,6 +131,8 @@ static partial class Program
     private static string ReadDiagnosticSessionFlashbackWaitsSource()
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionFlashbackWaits.cs",
+            "tools/Common/DiagnosticSessionFlashbackWaits.RecordingReady.cs",
+            "tools/Common/DiagnosticSessionFlashbackWaits.BufferReady.cs",
             "tools/Common/DiagnosticSessionFlashbackWaits.Playback.cs",
             "tools/Common/DiagnosticSessionFlashbackWaits.PlaybackBoundary.cs",
             "tools/Common/DiagnosticSessionFlashbackWaits.PlaybackWarmSample.cs",

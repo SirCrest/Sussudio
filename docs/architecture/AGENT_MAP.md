@@ -4356,8 +4356,11 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.AudioMaster.cs` owns
   warmed-playback audio-master fallback classification.
 - `tools/Common/DiagnosticSessionFlashbackWaits.cs` owns read-only snapshot
-  polling waits used by Flashback diagnostic scenarios, including preview
-  active, Flashback active, recording-ready, and buffer-ready waits.
+  polling waits for preview-active and Flashback-active state.
+- `tools/Common/DiagnosticSessionFlashbackWaits.RecordingReady.cs` owns
+  Flashback-backed recording readiness polling.
+- `tools/Common/DiagnosticSessionFlashbackWaits.BufferReady.cs` owns Flashback
+  stress buffer readiness polling.
 - `tools/Common/DiagnosticSessionFlashbackWaits.Playback.cs` owns Flashback
   playback state polling.
 - `tools/Common/DiagnosticSessionFlashbackWaits.PlaybackBoundary.cs` owns
