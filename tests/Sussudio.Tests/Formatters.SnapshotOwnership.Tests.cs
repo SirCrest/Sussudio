@@ -11,6 +11,7 @@ static partial class Program
         var ssctlSnapshotCaptureSettingsSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.CaptureSettings.cs");
         var ssctlSnapshotDiagnosticLanesSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs");
         var ssctlSnapshotFlashbackSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.cs");
+        var ssctlSnapshotFlashbackExportSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.Export.cs");
         var ssctlSnapshotFlashbackPlaybackSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.Playback.cs");
         var ssctlSnapshotMjpegSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Mjpeg.cs");
         var ssctlSnapshotPreviewD3DSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.PreviewD3D.cs");
@@ -76,10 +77,11 @@ static partial class Program
         AssertContains(ssctlSnapshotFlashbackSource, "Encoder: {encCodec}");
         AssertContains(ssctlSnapshotFlashbackSource, "Flashback Queue Latency:");
         AssertContains(ssctlSnapshotFlashbackSource, "Flashback GPU Queue:");
-        AssertContains(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackExportSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotFlashbackSource, "Export: active=");
-        AssertContains(ssctlSnapshotFlashbackSource, "FlashbackExportThroughputBytesPerSec");
-        AssertContains(ssctlSnapshotFlashbackSource, "forceRotateFallbacks=");
+        AssertDoesNotContain(ssctlSnapshotFlashbackSource, "Export: active=");
+        AssertContains(ssctlSnapshotFlashbackExportSource, "private static void AppendSnapshotFlashbackExportSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotFlashbackExportSource, "Export: active=");
+        AssertContains(ssctlSnapshotFlashbackExportSource, "FlashbackExportThroughputBytesPerSec");
+        AssertContains(ssctlSnapshotFlashbackExportSource, "forceRotateFallbacks=");
         AssertDoesNotContain(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackPlaybackStatusSection(StringBuilder builder, JsonElement snapshot)");
         AssertDoesNotContain(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackPlaybackMetricsSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotFlashbackPlaybackSource, "private static void AppendSnapshotFlashbackPlaybackStatusSection(StringBuilder builder, JsonElement snapshot)");

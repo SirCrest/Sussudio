@@ -567,8 +567,10 @@ frame-rate text in `Formatters.Snapshot.CaptureSettings.cs`, runtime source,
 video-pipeline, capture cadence, embedded AV-sync drift, and preview
 renderer-mode routing/non-D3D fallback text in `Formatters.Snapshot.Runtime.cs`,
 diagnostic health/frame-lane text in `Formatters.Snapshot.DiagnosticLanes.cs`,
-Flashback snapshot gating/order, encoder/buffer/queue, and export text in
-`Formatters.Snapshot.Flashback.cs`, Flashback playback status, command,
+Flashback snapshot gating/order, encoder/buffer/queue, and failure text in
+`Formatters.Snapshot.Flashback.cs`, Flashback export progress, result,
+throughput, force-rotate fallback, range, output path, and message text in
+`Formatters.Snapshot.Flashback.Export.cs`, Flashback playback status, command,
 cadence, decode, frame, stage, and A/V drift text in
 `Formatters.Snapshot.Flashback.Playback.cs`, MJPEG timing text in
 `Formatters.Snapshot.Mjpeg.cs`, D3D preview renderer text in

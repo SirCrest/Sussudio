@@ -225,6 +225,7 @@ internal static class RuntimeContractSource
             "tools/ssctl/Formatters.Snapshot.CaptureSettings.cs",
             "tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs",
             "tools/ssctl/Formatters.Snapshot.Flashback.cs",
+            "tools/ssctl/Formatters.Snapshot.Flashback.Export.cs",
             "tools/ssctl/Formatters.Snapshot.Flashback.Playback.cs",
             "tools/ssctl/Formatters.Snapshot.Mjpeg.cs",
             "tools/ssctl/Formatters.Snapshot.PreviewD3D.cs",

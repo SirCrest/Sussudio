@@ -3823,8 +3823,10 @@ Primary owners:
   summary, evidence, and frame-lane snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot
   active/failure gating, section ordering, encoder, buffer, temp-cache,
-  queue-latency, backpressure, failure, GPU queue, and export progress/result
-  snapshot text.
+  queue-latency, backpressure, failure, and GPU queue snapshot text.
+- `tools/ssctl/Formatters.Snapshot.Flashback.Export.cs` owns Flashback export
+  progress, result, throughput, force-rotate fallback, range, output path, and
+  message snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.Playback.cs` owns Flashback
   playback state, command-queue, cadence, decode, frame, stage, and A/V drift
   snapshot text.
