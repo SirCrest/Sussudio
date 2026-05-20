@@ -42,7 +42,11 @@ static partial class Program
             FlashbackRecordingAlertsEncoderText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackRecordingAlerts.Encoder.cs"),
             FlashbackRecordingAlertsDegradationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackRecordingAlerts.Degradation.cs"),
             FlashbackPlaybackAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackAlerts.cs"),
+            FlashbackPlaybackAlertsCommandsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackAlerts.Commands.cs"),
+            FlashbackPlaybackPerformanceAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.cs"),
+            FlashbackPlaybackPerformanceAlertsAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Audio.cs"),
             FlashbackPlaybackPerformanceAlertsCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Cadence.cs"),
+            FlashbackPlaybackPerformanceAlertsSubmitText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Submit.cs"),
             EventsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvents.cs"),
             VerificationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Verification.cs"),
             VerificationAutoText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Verification.Auto.cs"),
@@ -183,7 +187,11 @@ static partial class Program
         public string FlashbackRecordingAlertsEncoderText { get; init; } = string.Empty;
         public string FlashbackRecordingAlertsDegradationText { get; init; } = string.Empty;
         public string FlashbackPlaybackAlertsText { get; init; } = string.Empty;
+        public string FlashbackPlaybackAlertsCommandsText { get; init; } = string.Empty;
+        public string FlashbackPlaybackPerformanceAlertsText { get; init; } = string.Empty;
+        public string FlashbackPlaybackPerformanceAlertsAudioText { get; init; } = string.Empty;
         public string FlashbackPlaybackPerformanceAlertsCadenceText { get; init; } = string.Empty;
+        public string FlashbackPlaybackPerformanceAlertsSubmitText { get; init; } = string.Empty;
         public string EventsText { get; init; } = string.Empty;
         public string VerificationText { get; init; } = string.Empty;
         public string VerificationAutoText { get; init; } = string.Empty;
@@ -303,7 +311,11 @@ static partial class Program
                 FlashbackRecordingAlertsEncoderText,
                 FlashbackRecordingAlertsDegradationText,
                 FlashbackPlaybackAlertsText,
+                FlashbackPlaybackAlertsCommandsText,
+                FlashbackPlaybackPerformanceAlertsText,
+                FlashbackPlaybackPerformanceAlertsAudioText,
                 FlashbackPlaybackPerformanceAlertsCadenceText,
+                FlashbackPlaybackPerformanceAlertsSubmitText,
                 EventsText,
                 VerificationText,
                 VerificationAutoText,
