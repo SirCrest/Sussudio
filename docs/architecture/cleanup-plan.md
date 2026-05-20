@@ -2924,7 +2924,9 @@ compact value and command-message formatting helpers in
 bottleneck formatting in `PerformanceTimelineTools.Formatting.Preview.cs`,
 Flashback stage, cleanup, export, and byte-rate formatting in
 `PerformanceTimelineTools.Formatting.Flashback.cs`, and
-target/pressure summaries in `PerformanceTimelineTools.Summaries.cs`.
+target summaries in `PerformanceTimelineTools.Summaries.cs`, with preview,
+Flashback, and system pressure summaries in
+`PerformanceTimelineTools.Summaries.Pressure.cs`.
 The frame-pacing verdict MCP tool follows the same shape: keep MCP attributes,
 method signature, pipe command orchestration, and response shaping in
 `FramePacingVerdictTools.cs`; keep channel/timeline projection, readiness and

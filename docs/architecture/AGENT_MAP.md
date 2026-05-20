@@ -3183,7 +3183,9 @@ Primary owners:
   `tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Flashback.cs`
   owns Flashback stage, cleanup, export, and byte-rate formatting.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs` owns 1%-low
-  target summaries, pressure summaries, counters, and budget predicates.
+  target summaries and shared summary predicates.
+  `tools/McpServer/Tools/PerformanceTimelineTools.Summaries.Pressure.cs`
+  owns preview, Flashback, and system pressure summaries and pressure counters.
 - `tools/McpServer/Tools/FramePacingVerdictTools.cs` owns the public
   `get_frame_pacing_verdict` MCP tool entry point, pipe command orchestration,
   and response shaping. `FramePacingVerdictTools.Channels.cs` owns snapshot
