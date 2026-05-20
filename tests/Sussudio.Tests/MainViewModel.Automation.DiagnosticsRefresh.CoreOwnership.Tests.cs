@@ -175,6 +175,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningPreviewD3DText, "private static PreviewD3DFlattenedProjection BuildPreviewD3DFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildFlashbackExportFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackExportText, "private static FlashbackExportFlattenedProjection BuildFlashbackExportFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildFlashbackRecordingFlattenedProjection(flashbackRecording)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningFlashbackRecordingText, "private static FlashbackRecordingFlattenedProjection BuildFlashbackRecordingFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingIntegrityFlattenedProjection(recordingIntegrity)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingIntegrityText, "private static RecordingIntegrityFlattenedProjection BuildRecordingIntegrityFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingOutputFlattenedProjection(recordingBackend, recordingOutput)");

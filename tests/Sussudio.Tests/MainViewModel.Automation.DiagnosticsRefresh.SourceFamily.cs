@@ -52,6 +52,7 @@ static partial class Program
             SnapshotProjectionFlatteningPreviewRuntimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.cs"),
             SnapshotProjectionFlatteningPreviewD3DText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.cs"),
             SnapshotProjectionFlatteningFlashbackExportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackExport.cs"),
+            SnapshotProjectionFlatteningFlashbackRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.cs"),
             SnapshotProjectionSnapshotStatusText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.SnapshotStatus.cs"),
             SnapshotProjectionSnapshotEvaluationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.SnapshotEvaluation.cs"),
             SnapshotProjectionAvSyncText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.AvSync.cs"),
@@ -173,6 +174,7 @@ static partial class Program
         public string SnapshotProjectionFlatteningPreviewRuntimeText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningPreviewD3DText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningFlashbackExportText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningFlashbackRecordingText { get; init; } = string.Empty;
         public string SnapshotProjectionSnapshotStatusText { get; init; } = string.Empty;
         public string SnapshotProjectionSnapshotEvaluationText { get; init; } = string.Empty;
         public string SnapshotProjectionAvSyncText { get; init; } = string.Empty;
@@ -273,6 +275,7 @@ static partial class Program
                 SnapshotProjectionFlatteningPreviewRuntimeText,
                 SnapshotProjectionFlatteningPreviewD3DText,
                 SnapshotProjectionFlatteningFlashbackExportText,
+                SnapshotProjectionFlatteningFlashbackRecordingText,
                 SnapshotProjectionSnapshotStatusText,
                 SnapshotProjectionSnapshotEvaluationText,
                 SnapshotProjectionAvSyncText,

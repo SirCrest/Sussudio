@@ -24,7 +24,8 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "status.Equals(\"Succeeded\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(diagnostics.SourceFamilyText, "status.Equals(\"Cancelled\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(diagnostics.SourceFamilyText, "snapshot.FlashbackExportFailureKind");
-        AssertContains(diagnostics.SourceFamilyText, "FlashbackBackendSettingsStale = flashbackRecording.BackendSettingsStale,");
+        AssertContains(diagnostics.SourceFamilyText, "FlashbackBackendSettingsStale = flashbackRecordingFlattening.BackendSettingsStale,");
+        AssertContains(diagnostics.SourceFamilyText, "BackendSettingsStale = flashbackRecording.BackendSettingsStale,");
         AssertContains(diagnostics.SourceFamilyText, "BackendSettingsStale = health.FlashbackBackendSettingsStale,");
         AssertContains(diagnostics.SourceFamilyText, "backendStale={health.FlashbackBackendSettingsStale}");
         AssertContains(diagnostics.SourceFamilyText, "kind={failureKind}");
@@ -68,9 +69,11 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "Flashback export rotation skipped live-edge frames:");
         AssertContains(diagnostics.SourceFamilyText, "forceRotate={snapshot.FlashbackForceRotateActive}");
         AssertContains(diagnostics.SourceFamilyText, "requested={snapshot.FlashbackForceRotateRequested} draining={snapshot.FlashbackForceRotateDraining}");
+        AssertContains(diagnostics.SourceFamilyText, "FatalCleanupInProgress = flashbackRecordingFlattening.FatalCleanupInProgress");
         AssertContains(diagnostics.SourceFamilyText, "FatalCleanupInProgress = flashbackRecording.FatalCleanupInProgress");
         AssertContains(diagnostics.SourceFamilyText, "FatalCleanupInProgress = health.FatalCleanupInProgress");
-        AssertContains(diagnostics.SourceFamilyText, "FlashbackCleanupInProgress = flashbackRecording.CleanupInProgress");
+        AssertContains(diagnostics.SourceFamilyText, "FlashbackCleanupInProgress = flashbackRecordingFlattening.CleanupInProgress");
+        AssertContains(diagnostics.SourceFamilyText, "CleanupInProgress = flashbackRecording.CleanupInProgress");
         AssertContains(diagnostics.SourceFamilyText, "CleanupInProgress = health.FlashbackCleanupInProgress");
         AssertContains(diagnostics.SourceFamilyText, "recentBackpressureEvents={flashbackRecordingRecent.BackpressureEvents}");
         AssertContains(diagnostics.SourceFamilyText, "private static bool IsFlashbackRecordingQueueBackedUp(");
