@@ -62,6 +62,7 @@ static partial class Program
             SnapshotProjectionPreviewD3DFrameFlowText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameFlow.cs"),
             SnapshotProjectionPreviewD3DFrameLatencyWaitText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameLatencyWait.cs"),
             SnapshotProjectionPreviewD3DFrameStatsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameStats.cs"),
+            SnapshotProjectionPreviewD3DPipelineLatencyText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.PipelineLatency.cs"),
             SnapshotProjectionPreviewD3DCpuTimingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DCpuTiming.cs"),
             SnapshotProjectionPreviewRuntimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs"),
             SnapshotProjectionProcessResourcesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs"),
@@ -162,6 +163,7 @@ static partial class Program
         public string SnapshotProjectionPreviewD3DFrameFlowText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewD3DFrameLatencyWaitText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewD3DFrameStatsText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewD3DPipelineLatencyText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewD3DCpuTimingText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewRuntimeText { get; init; } = string.Empty;
         public string SnapshotProjectionProcessResourcesText { get; init; } = string.Empty;
@@ -239,6 +241,7 @@ static partial class Program
                 SnapshotProjectionPreviewD3DFrameFlowText,
                 SnapshotProjectionPreviewD3DFrameLatencyWaitText,
                 SnapshotProjectionPreviewD3DFrameStatsText,
+                SnapshotProjectionPreviewD3DPipelineLatencyText,
                 SnapshotProjectionPreviewRuntimeText,
                 SnapshotProjectionProcessResourcesText,
                 SnapshotProjectionRecordingIntegrityText,

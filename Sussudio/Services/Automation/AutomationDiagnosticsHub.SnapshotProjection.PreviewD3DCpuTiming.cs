@@ -24,12 +24,7 @@ public sealed partial class AutomationDiagnosticsHub
             TotalFrameAvgMs = previewRuntime.D3DTotalFrameCpuAvgMs,
             TotalFrameP95Ms = previewRuntime.D3DTotalFrameCpuP95Ms,
             TotalFrameP99Ms = previewRuntime.D3DTotalFrameCpuP99Ms,
-            TotalFrameMaxMs = previewRuntime.D3DTotalFrameCpuMaxMs,
-            PipelineLatencySampleCount = previewRuntime.D3DPipelineLatencySampleCount,
-            PipelineLatencyAvgMs = previewRuntime.D3DPipelineLatencyAvgMs,
-            PipelineLatencyP95Ms = previewRuntime.D3DPipelineLatencyP95Ms,
-            PipelineLatencyP99Ms = previewRuntime.D3DPipelineLatencyP99Ms,
-            PipelineLatencyMaxMs = previewRuntime.D3DPipelineLatencyMaxMs
+            TotalFrameMaxMs = previewRuntime.D3DTotalFrameCpuMaxMs
         };
 
     private readonly record struct PreviewD3DCpuTimingProjection
@@ -51,10 +46,5 @@ public sealed partial class AutomationDiagnosticsHub
         public double TotalFrameP95Ms { get; init; }
         public double TotalFrameP99Ms { get; init; }
         public double TotalFrameMaxMs { get; init; }
-        public int PipelineLatencySampleCount { get; init; }
-        public double PipelineLatencyAvgMs { get; init; }
-        public double PipelineLatencyP95Ms { get; init; }
-        public double PipelineLatencyP99Ms { get; init; }
-        public double PipelineLatencyMaxMs { get; init; }
     }
 }

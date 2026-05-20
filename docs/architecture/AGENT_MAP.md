@@ -401,8 +401,10 @@ Automation diagnostics ownership:
   owns D3D preview swap-chain and renderer-state projection plus composition of
   D3D leaf projections consumed by `AutomationSnapshot`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DCpuTiming.cs`
-  owns D3D CPU upload/render/present/total-frame timing and pipeline latency
-  projection consumed by `AutomationSnapshot`.
+  owns D3D CPU upload/render/present/total-frame timing consumed by
+  `AutomationSnapshot`.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.PipelineLatency.cs`
+  owns D3D pipeline-latency projection consumed by `AutomationSnapshot`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameFlow.cs`
   owns submitted/rendered/dropped frame ownership and recent slow-frame
   projection.

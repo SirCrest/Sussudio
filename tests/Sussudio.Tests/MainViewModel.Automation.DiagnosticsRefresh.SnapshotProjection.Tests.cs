@@ -39,7 +39,12 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionPreviewD3DText, "CpuTiming = cpuTiming,");
         AssertContains(diagnostics.SnapshotProjectionPreviewD3DCpuTimingText, "private static PreviewD3DCpuTimingProjection BuildPreviewD3DCpuTimingProjection(");
         AssertContains(diagnostics.SnapshotProjectionPreviewD3DCpuTimingText, "InputUploadP99Ms = previewRuntime.D3DInputUploadCpuP99Ms,");
-        AssertContains(diagnostics.SnapshotProjectionPreviewD3DCpuTimingText, "PipelineLatencyMaxMs = previewRuntime.D3DPipelineLatencyMaxMs");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionPreviewD3DCpuTimingText, "PipelineLatencyMaxMs = previewRuntime.D3DPipelineLatencyMaxMs");
+        AssertContains(diagnostics.SnapshotProjectionPreviewD3DText, "var pipelineLatency = BuildPreviewD3DPipelineLatencyProjection(previewRuntime);");
+        AssertContains(diagnostics.SnapshotProjectionPreviewD3DText, "PipelineLatency = pipelineLatency,");
+        AssertContains(diagnostics.SnapshotProjectionPreviewD3DPipelineLatencyText, "private static PreviewD3DPipelineLatencyProjection BuildPreviewD3DPipelineLatencyProjection(");
+        AssertContains(diagnostics.SnapshotProjectionPreviewD3DPipelineLatencyText, "SampleCount = previewRuntime.D3DPipelineLatencySampleCount,");
+        AssertContains(diagnostics.SnapshotProjectionPreviewD3DPipelineLatencyText, "MaxMs = previewRuntime.D3DPipelineLatencyMaxMs");
         AssertContains(diagnostics.SnapshotProjectionPreviewD3DText, "var frameFlow = BuildPreviewD3DFrameFlowProjection(previewRuntime);");
         AssertContains(diagnostics.SnapshotProjectionPreviewD3DText, "FrameFlow = frameFlow");
         AssertContains(diagnostics.SnapshotProjectionPreviewD3DFrameFlowText, "private static PreviewD3DFrameFlowProjection BuildPreviewD3DFrameFlowProjection(");

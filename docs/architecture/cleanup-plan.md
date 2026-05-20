@@ -197,8 +197,10 @@ owns playback command queue projection.
 swap-chain and renderer-state projection plus composition of D3D leaf
 projections consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DCpuTiming.cs` owns D3D
-CPU upload/render/present/total-frame timing and pipeline latency projection
-consumed by the automation snapshot DTO.
+CPU upload/render/present/total-frame timing consumed by the automation snapshot
+DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.PipelineLatency.cs`
+owns D3D pipeline-latency projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameFlow.cs` owns
 submitted/rendered/dropped frame ownership and recent slow-frame projection.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameLatencyWait.cs`

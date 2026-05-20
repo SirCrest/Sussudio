@@ -12,6 +12,7 @@ public sealed partial class AutomationDiagnosticsHub
         var cpuTiming = BuildPreviewD3DCpuTimingProjection(previewRuntime);
         var frameFlow = BuildPreviewD3DFrameFlowProjection(previewRuntime);
         var frameLatencyWait = BuildPreviewD3DFrameLatencyWaitProjection(previewRuntime);
+        var pipelineLatency = BuildPreviewD3DPipelineLatencyProjection(previewRuntime);
         var frameStats = BuildPreviewD3DFrameStatsProjection(
             previewRuntime,
             recentD3DMissedRefreshes,
@@ -35,6 +36,7 @@ public sealed partial class AutomationDiagnosticsHub
             OutputColorSpace = previewRuntime.D3DOutputColorSpace,
             CpuTiming = cpuTiming,
             FrameLatencyWait = frameLatencyWait,
+            PipelineLatency = pipelineLatency,
             FrameStats = frameStats,
             FrameFlow = frameFlow
         };
@@ -58,6 +60,7 @@ public sealed partial class AutomationDiagnosticsHub
         public string OutputColorSpace { get; init; }
         public PreviewD3DCpuTimingProjection CpuTiming { get; init; }
         public PreviewD3DFrameLatencyWaitProjection FrameLatencyWait { get; init; }
+        public PreviewD3DPipelineLatencyProjection PipelineLatency { get; init; }
         public PreviewD3DFrameStatsProjection FrameStats { get; init; }
         public PreviewD3DFrameFlowProjection FrameFlow { get; init; }
     }
