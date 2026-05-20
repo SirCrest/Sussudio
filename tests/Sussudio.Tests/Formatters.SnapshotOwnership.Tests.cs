@@ -17,6 +17,7 @@ static partial class Program
         var ssctlSnapshotSourceSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Source.cs");
         var ssctlSnapshotDiagnosticLanesSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs");
         var ssctlSnapshotFlashbackSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.cs");
+        var ssctlSnapshotFlashbackEncodingSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.Encoding.cs");
         var ssctlSnapshotFlashbackExportSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.Export.cs");
         var ssctlSnapshotFlashbackPlaybackSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.Playback.cs");
         var ssctlSnapshotMjpegSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Mjpeg.cs");
@@ -96,10 +97,14 @@ static partial class Program
         AssertContains(ssctlSnapshotFlashbackSource, "AppendSnapshotFlashbackPlaybackStatusSection(builder, snapshot);");
         AssertContains(ssctlSnapshotFlashbackSource, "AppendSnapshotFlashbackExportSection(builder, snapshot);");
         AssertContains(ssctlSnapshotFlashbackSource, "AppendSnapshotFlashbackPlaybackMetricsSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackEncodingSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotFlashbackSource, "Encoder: {encCodec}");
-        AssertContains(ssctlSnapshotFlashbackSource, "Flashback Queue Latency:");
-        AssertContains(ssctlSnapshotFlashbackSource, "Flashback GPU Queue:");
+        AssertDoesNotContain(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackEncodingSection(StringBuilder builder, JsonElement snapshot)");
+        AssertDoesNotContain(ssctlSnapshotFlashbackSource, "Encoder: {encCodec}");
+        AssertDoesNotContain(ssctlSnapshotFlashbackSource, "Flashback Queue Latency:");
+        AssertDoesNotContain(ssctlSnapshotFlashbackSource, "Flashback GPU Queue:");
+        AssertContains(ssctlSnapshotFlashbackEncodingSource, "private static void AppendSnapshotFlashbackEncodingSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotFlashbackEncodingSource, "Encoder: {encCodec}");
+        AssertContains(ssctlSnapshotFlashbackEncodingSource, "Flashback Queue Latency:");
+        AssertContains(ssctlSnapshotFlashbackEncodingSource, "Flashback GPU Queue:");
         AssertDoesNotContain(ssctlSnapshotFlashbackSource, "Export: active=");
         AssertContains(ssctlSnapshotFlashbackExportSource, "private static void AppendSnapshotFlashbackExportSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotFlashbackExportSource, "Export: active=");

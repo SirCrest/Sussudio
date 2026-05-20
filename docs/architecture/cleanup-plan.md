@@ -610,10 +610,11 @@ pipeline, diagnostics, and capture cadence text live in
 `AutomationSnapshotFormatter.Values.cs`, while byte/number/interval,
 frame-budget, and tick-age display helpers live in
 `AutomationSnapshotFormatter.DisplayValues.cs`; the Flashback gate/header/order
-lives in `AutomationSnapshotFormatter.Flashback.cs` with encoder, buffer,
-cache, queue, and failure text. Flashback export progress, result, throughput,
-force-rotate fallback, range, output path, and message text lives in
-`AutomationSnapshotFormatter.Flashback.Export.cs`. Flashback playback status,
+lives in `AutomationSnapshotFormatter.Flashback.cs`; Flashback encoder, buffer,
+temp-cache, queue latency, backpressure, failure, and GPU queue text lives in
+`AutomationSnapshotFormatter.Flashback.Encoding.cs`. Flashback export progress,
+result, throughput, force-rotate fallback, range, output path, and message text
+lives in `AutomationSnapshotFormatter.Flashback.Export.cs`. Flashback playback status,
 command, cadence, decode, frame, stage, and A/V drift text lives in
 `AutomationSnapshotFormatter.Flashback.Playback.cs`. Capture cadence owns the
 capture cadence, MJPEG packet fingerprint, and visual cadence rows, while
