@@ -24,6 +24,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var threadLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs")
             .Replace("\r\n", "\n");
+        var threadChannelText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadChannel.cs")
+            .Replace("\r\n", "\n");
         var commandTelemetryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandTelemetry.cs")
             .Replace("\r\n", "\n");
         var commandFailuresText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandFailures.cs")
@@ -80,12 +82,14 @@ static partial class Program
         AssertContains(sourceText, "private bool EnsurePlaybackThread(CommandKind commandKind)");
         AssertContains(threadLifecycleText, "private static readonly TimeSpan PlaybackThreadStopTimeout = TimeSpan.FromSeconds(3);");
         AssertContains(threadLifecycleText, "private static readonly TimeSpan PreviewDetachThreadStopTimeout = TimeSpan.FromSeconds(10);");
-        AssertContains(threadLifecycleText, "private const int CommandQueueCapacity = 256;");
+        AssertContains(threadChannelText, "private const int CommandQueueCapacity = 256;");
         AssertContains(threadLifecycleText, "private readonly object _playbackThreadSync = new();");
         AssertContains(threadLifecycleText, "private Thread? _playbackThread;");
         AssertContains(threadLifecycleText, "private int _playbackThreadStarted;");
         AssertContains(threadLifecycleText, "private CancellationTokenSource? _playCts;");
-        AssertContains(threadLifecycleText, "private Channel<PlaybackCommand> _commandChannel;");
+        AssertContains(threadChannelText, "private Channel<PlaybackCommand> _commandChannel;");
+        AssertDoesNotContain(threadLifecycleText, "private const int CommandQueueCapacity = 256;");
+        AssertDoesNotContain(threadLifecycleText, "private Channel<PlaybackCommand> _commandChannel;");
         AssertDoesNotContain(rootText, "private static readonly TimeSpan PlaybackThreadStopTimeout = TimeSpan.FromSeconds(3);");
         AssertDoesNotContain(rootText, "private static readonly TimeSpan PreviewDetachThreadStopTimeout = TimeSpan.FromSeconds(10);");
         AssertDoesNotContain(rootText, "private const int CommandQueueCapacity = 256;");
@@ -132,10 +136,11 @@ static partial class Program
         AssertContains(sourceText, "private Channel<PlaybackCommand> _commandChannel;");
         AssertContains(sourceText, "_commandChannel = CreateCommandChannel();");
         AssertContains(sourceText, "_commandChannel = CreateCommandChannel();");
-        AssertContains(sourceText, "private Channel<PlaybackCommand> CreateCommandChannel()");
-        AssertContains(sourceText, "Channel.CreateBounded<PlaybackCommand>");
-        AssertContains(sourceText, "new BoundedChannelOptions(CommandQueueCapacity)");
-        AssertContains(sourceText, "FullMode = BoundedChannelFullMode.Wait");
+        AssertContains(threadChannelText, "private Channel<PlaybackCommand> CreateCommandChannel()");
+        AssertContains(threadChannelText, "Channel.CreateBounded<PlaybackCommand>");
+        AssertContains(threadChannelText, "new BoundedChannelOptions(CommandQueueCapacity)");
+        AssertContains(threadChannelText, "FullMode = BoundedChannelFullMode.Wait");
+        AssertDoesNotContain(threadLifecycleText, "private Channel<PlaybackCommand> CreateCommandChannel()");
         AssertContains(sourceText, "private bool IsCommandChannelOpenForDropRetry()");
         AssertContains(sourceText, "private bool TryDropOldestQueuedCommandForNewCommand(out PlaybackCommand droppedCommand)");
         AssertContains(sourceText, "private void TrackDroppedQueuedCommand(PlaybackCommand droppedCommand, CommandKind newCommandKind)");
@@ -230,12 +235,14 @@ static partial class Program
         AssertContains(sourceText, "release_ms={releaseMs:0.###} close_ms={closeMs:0.###} dispose_ms={disposeMs:0.###} total_ms={totalMs:0.###}");
         AssertContains(sourceText, "fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";");
         AssertContains(sourceText, "CompleteCommandChannelForThreadExit(commandChannel);\n            DrainAbandonedCommandsOnThreadExit(commandChannel);");
-        AssertContains(sourceText, "private static void CompleteCommandChannelForThreadExit(Channel<PlaybackCommand> commandChannel)");
-        AssertContains(sourceText, "commandChannel.Writer.TryComplete();");
-        AssertContains(sourceText, "FLASHBACK_PLAYBACK_CHANNEL_COMPLETE_WARN");
-        AssertContains(sourceText, "Interlocked.Add(ref _commandsDropped, abandoned);");
-        AssertContains(sourceText, "if (string.IsNullOrEmpty(Volatile.Read(ref _lastCommandFailure)))\n            {\n                SetLastCommandFailure($\"abandoned_on_exit:{abandoned}\");\n            }");
-        AssertContains(sourceText, "Interlocked.Exchange(ref _pendingCommands, 0);");
+        AssertContains(threadChannelText, "private static void CompleteCommandChannelForThreadExit(Channel<PlaybackCommand> commandChannel)");
+        AssertContains(threadChannelText, "commandChannel.Writer.TryComplete();");
+        AssertContains(threadChannelText, "FLASHBACK_PLAYBACK_CHANNEL_COMPLETE_WARN");
+        AssertContains(threadChannelText, "Interlocked.Add(ref _commandsDropped, abandoned);");
+        AssertContains(threadChannelText, "if (string.IsNullOrEmpty(Volatile.Read(ref _lastCommandFailure)))\n            {\n                SetLastCommandFailure($\"abandoned_on_exit:{abandoned}\");\n            }");
+        AssertContains(threadChannelText, "Interlocked.Exchange(ref _pendingCommands, 0);");
+        AssertDoesNotContain(threadLifecycleText, "private static void CompleteCommandChannelForThreadExit(Channel<PlaybackCommand> commandChannel)");
+        AssertDoesNotContain(threadLifecycleText, "private void DrainAbandonedCommandsOnThreadExit(Channel<PlaybackCommand> commandChannel)");
         AssertContains(sourceText, "var ownsPlaybackThread = ReferenceEquals(Thread.CurrentThread, _playbackThread);");
         AssertContains(sourceText, "var ownsCts = ReferenceEquals(cts, _playCts);");
         AssertContains(sourceText, "if (ownsPlaybackThread)\n            {\n                _playbackThread = null;\n            }");
