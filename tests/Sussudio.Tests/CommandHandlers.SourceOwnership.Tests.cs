@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task SsctlCommandHandlers_SourceOwnership_IsSplit()
+    internal static Task SsctlCommandHandlers_SourceOwnership_IsSplit()
     {
         AssertSsctlCommandRoutingTestsUseCommandIdHelper();
         var commandHandlersSource = ReadSsctlCommandHandlersFamilyText();

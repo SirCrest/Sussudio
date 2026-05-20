@@ -727,7 +727,9 @@ ssctl command-handler routing coverage now lives in focused
 `CommandHandlers.Routing.Control/Flashback/Workflow.Tests.cs` owners for device,
 capture controls, recordings, Flashback, window, manifest, observability,
 automation-flow, UI visibility, and verification commands, with source ownership
-kept separate in `CommandHandlers.SourceOwnership.Tests.cs`. Captured ssctl
+kept separate in `CommandHandlers.SourceOwnership.Tests.cs` and xUnit execution
+owned by `tests/Sussudio.Tests/XUnit.SsctlCommandHandlerContractsTests.cs` after
+removal from the legacy offline harness catalog. Captured ssctl
 `request.command` ID assertions now flow through `AssertSsctlCommandRequest`,
 which delegates to the shared golden-table-backed `AssertAutomationCommandId`
 helper instead of duplicating numeric IDs in routing tests. Fixed ssctl source

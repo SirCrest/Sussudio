@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task SsctlCommandHandlers_RouteAutomationFlowCommands()
+    internal static async Task SsctlCommandHandlers_RouteAutomationFlowCommands()
     {
         var context = CreateSsctlCommandRoutingContext();
 
@@ -49,7 +49,7 @@ static partial class Program
         AssertSsctlCommandRequestHasEmptyPayload(probeRequest, "ProbePreviewColor");
     }
 
-    private static async Task SsctlCommandHandlers_RouteUiVisibilityCommands()
+    internal static async Task SsctlCommandHandlers_RouteUiVisibilityCommands()
     {
         var context = CreateSsctlCommandRoutingContext();
 
@@ -91,7 +91,7 @@ static partial class Program
         AssertSsctlCommandRequest(frameTimeRequest, "SetFrameTimeOverlayVisible", ("visible", false));
     }
 
-    private static async Task SsctlCommandHandlers_RouteVerificationCommands()
+    internal static async Task SsctlCommandHandlers_RouteVerificationCommands()
     {
         var context = CreateSsctlCommandRoutingContext();
 

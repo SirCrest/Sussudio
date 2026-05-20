@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task SsctlCommandHandlers_RouteDeviceCommands()
+    internal static async Task SsctlCommandHandlers_RouteDeviceCommands()
     {
         var context = CreateSsctlCommandRoutingContext();
 
@@ -45,7 +45,7 @@ static partial class Program
         AssertSsctlCommandRequestHasEmptyPayload(deviceListRequests[1], "GetCaptureOptions");
     }
 
-    private static async Task SsctlCommandHandlers_RouteCaptureControlCommands()
+    internal static async Task SsctlCommandHandlers_RouteCaptureControlCommands()
     {
         var context = CreateSsctlCommandRoutingContext();
 
@@ -61,7 +61,7 @@ static partial class Program
         AssertSsctlCommandRequest(previewRequest, "SetPreviewEnabled", ("enabled", true));
     }
 
-    private static async Task SsctlCommandHandlers_RouteRecordingsCommands()
+    internal static async Task SsctlCommandHandlers_RouteRecordingsCommands()
     {
         var context = CreateSsctlCommandRoutingContext();
 
@@ -77,7 +77,7 @@ static partial class Program
         AssertSsctlCommandRequestHasEmptyPayload(recordingsRequest, "OpenRecordingsFolder");
     }
 
-    private static async Task SsctlCommandHandlers_RouteWindowCommands()
+    internal static async Task SsctlCommandHandlers_RouteWindowCommands()
     {
         var context = CreateSsctlCommandRoutingContext();
 
@@ -119,7 +119,7 @@ static partial class Program
         AssertSsctlCommandRequest(windowCloseDeniedRequests[0], "ArmClose", ("armed", true));
     }
 
-    private static async Task SsctlCommandHandlers_RouteManifestCommand()
+    internal static async Task SsctlCommandHandlers_RouteManifestCommand()
     {
         var context = CreateSsctlCommandRoutingContext();
 

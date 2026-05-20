@@ -6,7 +6,7 @@ using Sussudio.Tools;
 
 static partial class Program
 {
-    private static Task SsctlHelp_UsesCatalogCliHelpForAutomationCommands()
+    internal static Task SsctlHelp_UsesCatalogCliHelpForAutomationCommands()
     {
         var ssctlProgramText = ReadRepoFile("tools/ssctl/Program.cs")
             .Replace("\r\n", "\n");
@@ -21,7 +21,7 @@ static partial class Program
             "\n",
             ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs").Replace("\r\n", "\n"),
             ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs").Replace("\r\n", "\n"));
-        var ssctlAssembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var ssctlAssembly = LoadToolAssemblyIsolated(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
         var helpWriterType = ssctlAssembly.GetType("Sussudio.Tools.Ssctl.SsctlHelpWriter")
             ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.SsctlHelpWriter type not found.");
         var diagnosticSessionOptionsType = ssctlAssembly.GetType("Sussudio.Tools.DiagnosticSessionOptions")

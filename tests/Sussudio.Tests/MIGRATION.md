@@ -88,6 +88,9 @@ add xUnit alongside, and port incrementally.
 - `XUnit.AutomationSnapshotFormatterContractsTests.cs` owns the former legacy
   shared automation snapshot formatter core, Flashback, Preview D3D, and source
   ownership contract checks.
+- `XUnit.SsctlCommandHandlerContractsTests.cs` owns the former legacy ssctl
+  command-handler routing, source ownership, and catalog-backed help contract
+  checks.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, and test-project shape guard checks.
 - `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy

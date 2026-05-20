@@ -2378,6 +2378,9 @@ Primary current owners:
   `CommandHandlers.SourceOwnership.Tests.cs` owns ssctl handler partial-family
   source ownership assertions, and `CommandHandlers.Help.Tests.cs` owns ssctl
   help/catalog force-flag coverage.
+  `tests/Sussudio.Tests/XUnit.SsctlCommandHandlerContractsTests.cs` owns the
+  xUnit execution surface for those command-handler routing, source ownership,
+  and help checks after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/PresentMonProbe.Tests.cs` owns PresentMon parser
   behavior contracts for swap-chain selection, artifact filtering, CSV field
   versions, and app-present correlation.

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task SsctlCommandHandlers_RouteFlashbackCommands()
+    internal static async Task SsctlCommandHandlers_RouteFlashbackCommands()
     {
         var context = CreateSsctlCommandRoutingContext();
 
@@ -89,7 +89,7 @@ static partial class Program
             ("action", "clear-in-out-points"));
     }
 
-    private static async Task SsctlCommandHandlers_RouteObservabilityCommands()
+    internal static async Task SsctlCommandHandlers_RouteObservabilityCommands()
     {
         var context = CreateSsctlCommandRoutingContext();
 

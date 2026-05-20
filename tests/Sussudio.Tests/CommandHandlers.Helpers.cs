@@ -9,7 +9,7 @@ static partial class Program
     private static SsctlCommandRoutingContext CreateSsctlCommandRoutingContext()
     {
         var assemblyPath = Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll");
-        var ssctlAssembly = LoadToolAssembly(assemblyPath);
+        var ssctlAssembly = LoadToolAssemblyIsolated(assemblyPath);
         var transportType = ssctlAssembly.GetType("Sussudio.Tools.Ssctl.PipeTransport")
             ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.PipeTransport type not found.");
         var commandHandlersType = ssctlAssembly.GetType("Sussudio.Tools.Ssctl.CommandHandlers")
