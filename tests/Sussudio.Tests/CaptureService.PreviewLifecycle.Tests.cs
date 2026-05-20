@@ -79,7 +79,7 @@ static partial class Program
         AssertNotNull(teardownMethod, $"{type.FullName}.{teardownMethodName}(CancellationToken)");
     }
 
-    private static Task PreviewStartup_ToleratesMissingAudioCaptureDevices()
+    internal static Task PreviewStartup_ToleratesMissingAudioCaptureDevices()
     {
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs").Replace("\r\n", "\n");
 
@@ -90,7 +90,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureService_PreviewLifecycleLivesInFocusedPartials()
+    internal static Task CaptureService_PreviewLifecycleLivesInFocusedPartials()
     {
         var startText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStart.cs").Replace("\r\n", "\n");
         var audioGraphText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs").Replace("\r\n", "\n");
@@ -170,7 +170,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static async Task AudioPreview_RemainsInactive_WhenNoAudioCaptureDeviceExists()
+    internal static async Task AudioPreview_RemainsInactive_WhenNoAudioCaptureDeviceExists()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
@@ -216,7 +216,7 @@ static partial class Program
         }
     }
 
-    private static Task PreviewBackendLog_ReflectsVideoOnlyFallback()
+    internal static Task PreviewBackendLog_ReflectsVideoOnlyFallback()
     {
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs").Replace("\r\n", "\n");
 

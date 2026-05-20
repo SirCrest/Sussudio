@@ -261,6 +261,10 @@ add xUnit alongside, and port incrementally.
 - `XUnit.PresentationPreviewStartupSignalContractsTests.cs` owns the former
   legacy presentation-preview preview-startup signal group: signal formatter,
   readiness-signal controller state, and failure text formatter contracts.
+- `XUnit.PresentationPreviewCapturePreviewLifecycleContractsTests.cs` owns the
+  former legacy presentation-preview capture preview-lifecycle group: video-only
+  preview fallback, missing audio endpoint behavior, focused CaptureService
+  preview lifecycle ownership, audio monitoring visuals, and backend log text.
 - `XUnit.PresentationPreviewCaptureRuntimeGuardContractsTests.cs` owns the
   former legacy presentation-preview capture runtime guardrail group: recording
   stop failure propagation, preview stop overload/API compatibility, and
