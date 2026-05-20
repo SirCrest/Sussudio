@@ -2672,7 +2672,10 @@ clock-drift calculation, and wall-clock sleep/spin pacing now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs`.
 Decoder close best-effort handling now lives with decoder file ownership, and
 decode-error snap-to-live recovery lives with the continuous playback loop, so
-the root controller can remain a field/property facade plus shared state setter.
+the root controller can remain a construction shell. Public playback state,
+GPU-decode toggling, live-gap projection, decoder HW state, playback PTS
+anchors, scrub resume state, and state-transition logging now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackState.cs`.
 
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/Flashback/FlashbackPollingController.cs`.
