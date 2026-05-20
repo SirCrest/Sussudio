@@ -444,8 +444,25 @@ Automation diagnostics ownership:
   owns final capture-command projection-to-`AutomationSnapshot` field
   flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs`
-  owns requested, actual, negotiated, observed, and encoder format projection
-  inputs consumed by `AutomationSnapshot`.
+  owns capture-format projection routing and groups requested, HDR-request,
+  actual, negotiated, reader-observation, and encoder format input modules
+  consumed by `AutomationSnapshot`.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Requested.cs`
+  owns requested capture format, quality, HDR toggle, and audio-toggle
+  projection inputs.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.HdrRequest.cs`
+  owns HDR activation and auto-downgrade projection inputs.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Actual.cs`
+  owns actual capture dimensions and frame-rate projection inputs.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Negotiated.cs`
+  owns negotiated capture dimensions, frame-rate, pixel format, and media
+  subtype token projection inputs.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.ReaderObservation.cs`
+  owns source-reader subtype and observed pixel/surface format projection
+  inputs.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Encoder.cs`
+  owns encoder format, codec, profile, and ten-bit confirmation projection
+  inputs.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureFormat.cs`
   owns final capture-format projection-to-`AutomationSnapshot` field
   flattening.

@@ -6,19 +6,19 @@ public sealed partial class AutomationDiagnosticsHub
         CaptureFormatProjection captureFormat)
         => new()
         {
-            RequestedReaderSubtype = captureFormat.RequestedReaderSubtype,
-            ReaderSourceStreamType = captureFormat.ReaderSourceStreamType,
-            ReaderSourceSubtype = captureFormat.ReaderSourceSubtype,
-            FirstObservedFramePixelFormat = captureFormat.FirstObservedFramePixelFormat,
-            LatestObservedFramePixelFormat = captureFormat.LatestObservedFramePixelFormat,
-            LatestObservedSurfaceFormat = captureFormat.LatestObservedSurfaceFormat,
-            ObservedP010FrameCount = captureFormat.ObservedP010FrameCount,
-            ObservedNv12FrameCount = captureFormat.ObservedNv12FrameCount,
-            ObservedOtherFrameCount = captureFormat.ObservedOtherFrameCount,
-            ObservedP010BitDepthSampleCount = captureFormat.ObservedP010BitDepthSampleCount,
-            ObservedP010Low2BitNonZeroPercent = captureFormat.ObservedP010Low2BitNonZeroPercent,
-            ObservedP010Likely8BitUpscaled = captureFormat.ObservedP010Likely8BitUpscaled,
-            MfReadwriteDisableConverters = captureFormat.MfReadwriteDisableConverters
+            RequestedReaderSubtype = captureFormat.ReaderObservation.RequestedReaderSubtype,
+            ReaderSourceStreamType = captureFormat.ReaderObservation.ReaderSourceStreamType,
+            ReaderSourceSubtype = captureFormat.ReaderObservation.ReaderSourceSubtype,
+            FirstObservedFramePixelFormat = captureFormat.ReaderObservation.FirstObservedFramePixelFormat,
+            LatestObservedFramePixelFormat = captureFormat.ReaderObservation.LatestObservedFramePixelFormat,
+            LatestObservedSurfaceFormat = captureFormat.ReaderObservation.LatestObservedSurfaceFormat,
+            ObservedP010FrameCount = captureFormat.ReaderObservation.ObservedP010FrameCount,
+            ObservedNv12FrameCount = captureFormat.ReaderObservation.ObservedNv12FrameCount,
+            ObservedOtherFrameCount = captureFormat.ReaderObservation.ObservedOtherFrameCount,
+            ObservedP010BitDepthSampleCount = captureFormat.ReaderObservation.ObservedP010BitDepthSampleCount,
+            ObservedP010Low2BitNonZeroPercent = captureFormat.ReaderObservation.ObservedP010Low2BitNonZeroPercent,
+            ObservedP010Likely8BitUpscaled = captureFormat.ReaderObservation.ObservedP010Likely8BitUpscaled,
+            MfReadwriteDisableConverters = captureFormat.ReaderObservation.MfReadwriteDisableConverters
         };
 
     private readonly record struct CaptureFormatReaderObservationFlattenedProjection

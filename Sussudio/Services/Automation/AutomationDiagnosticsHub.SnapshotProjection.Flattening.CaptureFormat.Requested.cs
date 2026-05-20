@@ -6,18 +6,18 @@ public sealed partial class AutomationDiagnosticsHub
         CaptureFormatProjection captureFormat)
         => new()
         {
-            Width = captureFormat.RequestedWidth,
-            Height = captureFormat.RequestedHeight,
-            FrameRate = captureFormat.RequestedFrameRate,
-            FrameRateArg = captureFormat.RequestedFrameRateArg,
-            FrameRateNumerator = captureFormat.RequestedFrameRateNumerator,
-            FrameRateDenominator = captureFormat.RequestedFrameRateDenominator,
-            PixelFormat = captureFormat.RequestedPixelFormat,
-            Format = captureFormat.RequestedFormat,
-            Quality = captureFormat.RequestedQuality,
-            HdrEnabled = captureFormat.RequestedHdrEnabled,
-            HdrMasteringMetadata = captureFormat.RequestedHdrMasteringMetadata,
-            AudioEnabled = captureFormat.RequestedAudioEnabled
+            Width = captureFormat.Requested.Width,
+            Height = captureFormat.Requested.Height,
+            FrameRate = captureFormat.Requested.FrameRate,
+            FrameRateArg = captureFormat.Requested.FrameRateArg,
+            FrameRateNumerator = captureFormat.Requested.FrameRateNumerator,
+            FrameRateDenominator = captureFormat.Requested.FrameRateDenominator,
+            PixelFormat = captureFormat.Requested.PixelFormat,
+            Format = captureFormat.Requested.Format,
+            Quality = captureFormat.Requested.Quality,
+            HdrEnabled = captureFormat.Requested.HdrEnabled,
+            HdrMasteringMetadata = captureFormat.Requested.HdrMasteringMetadata,
+            AudioEnabled = captureFormat.Requested.AudioEnabled
         };
 
     private readonly record struct CaptureFormatRequestedFlattenedProjection

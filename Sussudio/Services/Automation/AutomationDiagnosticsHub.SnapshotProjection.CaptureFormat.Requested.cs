@@ -1,0 +1,39 @@
+using Sussudio.Models;
+
+namespace Sussudio.Services.Automation;
+
+public sealed partial class AutomationDiagnosticsHub
+{
+    private static CaptureFormatRequestedProjection BuildCaptureFormatRequestedProjection(CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            Width = captureRuntime.RequestedWidth,
+            Height = captureRuntime.RequestedHeight,
+            FrameRate = captureRuntime.RequestedFrameRate,
+            FrameRateArg = captureRuntime.RequestedFrameRateArg,
+            FrameRateNumerator = captureRuntime.RequestedFrameRateNumerator,
+            FrameRateDenominator = captureRuntime.RequestedFrameRateDenominator,
+            PixelFormat = captureRuntime.RequestedPixelFormat,
+            Format = captureRuntime.RequestedFormat,
+            Quality = captureRuntime.RequestedQuality,
+            HdrEnabled = captureRuntime.RequestedHdrEnabled,
+            HdrMasteringMetadata = captureRuntime.RequestedHdrMasteringMetadata,
+            AudioEnabled = captureRuntime.RequestedAudioEnabled
+        };
+
+    private readonly record struct CaptureFormatRequestedProjection
+    {
+        public uint? Width { get; init; }
+        public uint? Height { get; init; }
+        public double? FrameRate { get; init; }
+        public string? FrameRateArg { get; init; }
+        public uint? FrameRateNumerator { get; init; }
+        public uint? FrameRateDenominator { get; init; }
+        public string? PixelFormat { get; init; }
+        public string? Format { get; init; }
+        public string? Quality { get; init; }
+        public bool? HdrEnabled { get; init; }
+        public bool? HdrMasteringMetadata { get; init; }
+        public bool? AudioEnabled { get; init; }
+    }
+}

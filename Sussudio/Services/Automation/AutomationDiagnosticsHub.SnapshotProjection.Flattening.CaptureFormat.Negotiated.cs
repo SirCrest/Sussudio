@@ -6,14 +6,14 @@ public sealed partial class AutomationDiagnosticsHub
         CaptureFormatProjection captureFormat)
         => new()
         {
-            Width = captureFormat.NegotiatedWidth,
-            Height = captureFormat.NegotiatedHeight,
-            FrameRate = captureFormat.NegotiatedFrameRate,
-            FrameRateArg = captureFormat.NegotiatedFrameRateArg,
-            FrameRateNumerator = captureFormat.NegotiatedFrameRateNumerator,
-            FrameRateDenominator = captureFormat.NegotiatedFrameRateDenominator,
-            PixelFormat = captureFormat.NegotiatedPixelFormat,
-            MediaSubtypeToken = captureFormat.NegotiatedMediaSubtypeToken
+            Width = captureFormat.Negotiated.Width,
+            Height = captureFormat.Negotiated.Height,
+            FrameRate = captureFormat.Negotiated.FrameRate,
+            FrameRateArg = captureFormat.Negotiated.FrameRateArg,
+            FrameRateNumerator = captureFormat.Negotiated.FrameRateNumerator,
+            FrameRateDenominator = captureFormat.Negotiated.FrameRateDenominator,
+            PixelFormat = captureFormat.Negotiated.PixelFormat,
+            MediaSubtypeToken = captureFormat.Negotiated.MediaSubtypeToken
         };
 
     private readonly record struct CaptureFormatNegotiatedFlattenedProjection

@@ -6,11 +6,11 @@ public sealed partial class AutomationDiagnosticsHub
         CaptureFormatProjection captureFormat)
         => new()
         {
-            InputPixelFormat = captureFormat.EncoderInputPixelFormat,
-            OutputPixelFormat = captureFormat.EncoderOutputPixelFormat,
-            VideoCodec = captureFormat.EncoderVideoCodec,
-            VideoProfile = captureFormat.EncoderVideoProfile,
-            TenBitPipelineConfirmed = captureFormat.EncoderTenBitPipelineConfirmed
+            InputPixelFormat = captureFormat.Encoder.InputPixelFormat,
+            OutputPixelFormat = captureFormat.Encoder.OutputPixelFormat,
+            VideoCodec = captureFormat.Encoder.VideoCodec,
+            VideoProfile = captureFormat.Encoder.VideoProfile,
+            TenBitPipelineConfirmed = captureFormat.Encoder.TenBitPipelineConfirmed
         };
 
     private readonly record struct CaptureFormatEncoderFlattenedProjection

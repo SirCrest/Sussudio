@@ -6,10 +6,10 @@ public sealed partial class AutomationDiagnosticsHub
         CaptureFormatProjection captureFormat)
         => new()
         {
-            Width = captureFormat.ActualWidth,
-            Height = captureFormat.ActualHeight,
-            FrameRate = captureFormat.ActualFrameRate,
-            FrameRateArg = captureFormat.ActualFrameRateArg
+            Width = captureFormat.Actual.Width,
+            Height = captureFormat.Actual.Height,
+            FrameRate = captureFormat.Actual.FrameRate,
+            FrameRateArg = captureFormat.Actual.FrameRateArg
         };
 
     private readonly record struct CaptureFormatActualFlattenedProjection

@@ -6,10 +6,10 @@ public sealed partial class AutomationDiagnosticsHub
         CaptureFormatProjection captureFormat)
         => new()
         {
-            ActivationReason = captureFormat.HdrActivationReason,
-            AutoDowngraded = captureFormat.HdrAutoDowngraded,
-            AutoDowngradeReason = captureFormat.HdrAutoDowngradeReason,
-            RequestedButSourceNot10Bit = captureFormat.HdrRequestedButSourceNot10Bit
+            ActivationReason = captureFormat.HdrRequest.ActivationReason,
+            AutoDowngraded = captureFormat.HdrRequest.AutoDowngraded,
+            AutoDowngradeReason = captureFormat.HdrRequest.AutoDowngradeReason,
+            RequestedButSourceNot10Bit = captureFormat.HdrRequest.RequestedButSourceNot10Bit
         };
 
     private readonly record struct CaptureFormatHdrRequestFlattenedProjection

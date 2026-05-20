@@ -194,9 +194,24 @@ session command queue counters, latency, last-command, and last-error
 projection inputs consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureCommands.cs`
 owns final capture-command projection-to-`AutomationSnapshot` field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns requested,
-actual, negotiated, observed, and encoder format projection inputs consumed by
+`AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns
+capture-format projection routing and groups requested, HDR-request, actual,
+negotiated, reader-observation, and encoder format input modules consumed by
 the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Requested.cs` owns
+requested capture format, quality, HDR toggle, and audio-toggle projection
+inputs.
+`AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.HdrRequest.cs` owns
+HDR activation and auto-downgrade projection inputs.
+`AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Actual.cs` owns
+actual capture dimensions and frame-rate projection inputs.
+`AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Negotiated.cs` owns
+negotiated capture dimensions, frame-rate, pixel format, and media subtype
+token projection inputs.
+`AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.ReaderObservation.cs`
+owns source-reader subtype and observed pixel/surface format projection inputs.
+`AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Encoder.cs` owns
+encoder format, codec, profile, and ten-bit confirmation projection inputs.
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureFormat.cs`
 owns final capture-format projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureFormat.Requested.cs`
