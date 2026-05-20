@@ -224,7 +224,10 @@ internal static class RuntimeContractSource
             "tools/Common/AutomationSnapshotFormatter.PreviewD3D.Timing.cs",
             "tools/Common/AutomationSnapshotFormatter.PreviewD3D.FrameFlow.cs",
             "tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs",
-            "tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs"
+            "tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs",
+            "tools/Common/AutomationSnapshotFormatter.ThreadHealth.SourceReader.cs",
+            "tools/Common/AutomationSnapshotFormatter.ThreadHealth.WasapiCapture.cs",
+            "tools/Common/AutomationSnapshotFormatter.ThreadHealth.WasapiPlayback.cs"
         });
 
     public static string ReadSsctlSnapshotFormatterSource()
@@ -253,6 +256,9 @@ internal static class RuntimeContractSource
             "tools/ssctl/Formatters.Snapshot.PreviewD3D.FrameFlow.cs",
             "tools/ssctl/Formatters.Snapshot.Runtime.cs",
             "tools/ssctl/Formatters.Snapshot.ThreadHealth.cs",
+            "tools/ssctl/Formatters.Snapshot.ThreadHealth.SourceReader.cs",
+            "tools/ssctl/Formatters.Snapshot.ThreadHealth.WasapiCapture.cs",
+            "tools/ssctl/Formatters.Snapshot.ThreadHealth.WasapiPlayback.cs",
         });
 
     public static string ReadSourceFamily(IReadOnlyList<string> files)

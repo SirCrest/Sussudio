@@ -584,8 +584,11 @@ renderer routing/header text in `Formatters.Snapshot.PreviewD3D.cs`, D3D CPU
 timing, pipeline latency, and frame-latency wait text in
 `Formatters.Snapshot.PreviewD3D.Timing.cs`, D3D frame ownership and DXGI
 frame-stat text in `Formatters.Snapshot.PreviewD3D.FrameFlow.cs`, delegation to
-the shared slow-frame formatter in the D3D root, thread-health text in
-`Formatters.Snapshot.ThreadHealth.cs`, diagnostic-event text in
+the shared slow-frame formatter in the D3D root, thread-health section order in
+`Formatters.Snapshot.ThreadHealth.cs`, source-reader text in
+`Formatters.Snapshot.ThreadHealth.SourceReader.cs`, WASAPI capture text in
+`Formatters.Snapshot.ThreadHealth.WasapiCapture.cs`, WASAPI playback text in
+`Formatters.Snapshot.ThreadHealth.WasapiPlayback.cs`, diagnostic-event text in
 `Formatters.Diagnostics.cs`, capture option/device text in `Formatters.Options.cs`,
 performance timeline orchestration in `Formatters.Timeline.cs`, timeline row
 projection in `Formatters.Timeline.Rows.cs`, the private row model in
@@ -634,7 +637,10 @@ timing, pipeline latency, and frame-latency wait text; and
 `AutomationSnapshotFormatter.PreviewD3D.FrameFlow.cs` owns D3D frame ownership
 and DXGI frame-stat text. Slow-frame diagnostics stay in
 `AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs` because `ssctl` reuses
-that formatter directly. Tests that reason about formatter source use the
+that formatter directly. `AutomationSnapshotFormatter.ThreadHealth.cs` owns
+thread-health section order, while `.ThreadHealth.SourceReader.cs`,
+`.ThreadHealth.WasapiCapture.cs`, and `.ThreadHealth.WasapiPlayback.cs` own
+their respective text rows. Tests that reason about formatter source use the
 shared `RuntimeContractSource` snapshot formatter source-family readers so
 ownership checks cover the full partial family from both the legacy harness and
 xUnit formatter contracts.
