@@ -196,6 +196,9 @@ owns playback command queue projection.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs` owns D3D preview
 swap-chain and renderer-state projection plus composition of D3D leaf
 projections consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.cs` owns
+the final D3D projection-to-`AutomationSnapshot` field flattening consumed by
+the root snapshot initializer.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DCpuTiming.cs` owns D3D
 CPU upload/render/present/total-frame timing consumed by the automation snapshot
 DTO.

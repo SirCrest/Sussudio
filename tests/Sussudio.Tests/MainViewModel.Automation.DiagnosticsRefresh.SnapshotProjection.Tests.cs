@@ -57,6 +57,14 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionPreviewD3DFrameLatencyWaitText, "private static PreviewD3DFrameLatencyWaitProjection BuildPreviewD3DFrameLatencyWaitProjection(");
         AssertContains(diagnostics.SnapshotProjectionPreviewD3DFrameLatencyWaitText, "TimeoutCount = previewRuntime.D3DFrameLatencyWaitTimeoutCount,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionPreviewD3DText, "private static PreviewD3DFrameLatencyWaitProjection BuildPreviewD3DFrameLatencyWaitProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var previewD3DFlattening = BuildPreviewD3DFlattenedProjection(previewD3D);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "PreviewD3DInputUploadCpuP99Ms = previewD3DFlattening.InputUploadCpuP99Ms,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "PreviewD3DRecentSlowFrames = previewD3DFlattening.RecentSlowFrames,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningPreviewD3DText, "private static PreviewD3DFlattenedProjection BuildPreviewD3DFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningPreviewD3DText, "InputUploadCpuP99Ms = previewD3D.CpuTiming.InputUploadP99Ms,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningPreviewD3DText, "RecentSlowFrames = previewD3D.FrameFlow.RecentSlowFrames");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "PreviewD3DInputUploadCpuP99Ms = previewD3D.CpuTiming.InputUploadP99Ms,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "PreviewD3DRecentSlowFrames = previewD3D.FrameFlow.RecentSlowFrames,");
         AssertContains(diagnostics.SnapshotProjectionPreviewD3DText, "FrameStats = frameStats,");
         AssertContains(diagnostics.SnapshotProjectionPreviewD3DFrameStatsText, "private static PreviewD3DFrameStatsProjection BuildPreviewD3DFrameStatsProjection(");
         AssertContains(diagnostics.SnapshotProjectionPreviewD3DFrameStatsText, "RecentMissedRefreshCount = recentD3DMissedRefreshes,");
