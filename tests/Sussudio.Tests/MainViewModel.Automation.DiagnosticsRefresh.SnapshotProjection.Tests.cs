@@ -225,6 +225,12 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionMjpegText, "PreviewJitter = previewJitter,");
         AssertContains(diagnostics.SnapshotProjectionMjpegPreviewJitterText, "private static MjpegPreviewJitterProjection BuildMjpegPreviewJitterProjection(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SnapshotProjectionMjpegPreviewJitterText, "LastDropReason = health.MjpegPreviewJitterLastDropReason,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var mjpegPreviewJitterFlattening = BuildMjpegPreviewJitterFlattenedProjection(mjpeg.PreviewJitter);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegPreviewJitterText, "Enabled = previewJitter.Enabled,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegPreviewJitterText, "LastDropReason = previewJitter.LastDropReason,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegPreviewJitterText, "ScheduleLateCount = previewJitter.ScheduleLateCount");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "MjpegPreviewJitterLastDropReason = mjpegPreviewJitterFlattening.LastDropReason,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "MjpegPreviewJitterLastDropReason = mjpeg.PreviewJitter.LastDropReason,");
         AssertContains(diagnostics.SnapshotProjectionMjpegText, "PacketHash = packetHash,");
         AssertContains(diagnostics.SnapshotProjectionMjpegPacketHashText, "private static MjpegPacketHashProjection BuildMjpegPacketHashProjection(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SnapshotProjectionMjpegPacketHashText, "Pattern = health.MjpegPacketHashPattern,");

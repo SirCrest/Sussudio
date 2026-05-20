@@ -184,6 +184,9 @@ final CPU MJPEG timing projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.cs` owns MJPEG
 preview jitter queue, timing, drop, underflow, and adaptive-depth projection
 inputs consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPreviewJitter.cs`
+owns final MJPEG preview jitter projection-to-`AutomationSnapshot` field
+flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.MjpegPacketHash.cs` owns MJPEG
 packet duplicate-run / unique-frame projection inputs consumed by the automation
 snapshot DTO.

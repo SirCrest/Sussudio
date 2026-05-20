@@ -44,6 +44,7 @@ static partial class Program
             SnapshotProjectionFlatteningCaptureCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureCadence.cs"),
             SnapshotProjectionFlatteningVisualCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.VisualCadence.cs"),
             SnapshotProjectionFlatteningMjpegTimingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegTiming.cs"),
+            SnapshotProjectionFlatteningMjpegPreviewJitterText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPreviewJitter.cs"),
             SnapshotProjectionFlatteningMjpegPacketHashText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPacketHash.cs"),
             SnapshotProjectionFlatteningSourceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.cs"),
             SnapshotProjectionFlatteningSettingsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.Settings.cs"),
@@ -156,6 +157,7 @@ static partial class Program
         public string SnapshotProjectionFlatteningCaptureCadenceText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningVisualCadenceText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningMjpegTimingText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningMjpegPreviewJitterText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningMjpegPacketHashText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSourceText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSettingsText { get; init; } = string.Empty;
@@ -247,6 +249,7 @@ static partial class Program
                 SnapshotProjectionFlatteningCaptureCadenceText,
                 SnapshotProjectionFlatteningVisualCadenceText,
                 SnapshotProjectionFlatteningMjpegTimingText,
+                SnapshotProjectionFlatteningMjpegPreviewJitterText,
                 SnapshotProjectionFlatteningMjpegPacketHashText,
                 SnapshotProjectionFlatteningSourceText,
                 SnapshotProjectionFlatteningSettingsText,
