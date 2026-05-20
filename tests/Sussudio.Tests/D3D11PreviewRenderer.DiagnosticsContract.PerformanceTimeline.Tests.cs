@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task D3D11PreviewRenderer_DiagnosticsContract_PerformanceTimelineExposesExpectedProperties()
+    internal static Task D3D11PreviewRenderer_DiagnosticsContract_PerformanceTimelineExposesExpectedProperties()
     {
         var rootModelText = ReadRepoFile("Sussudio/Models/Automation/PerformanceTimelineEntry.cs");
         var previewModelText = ReadRepoFile("Sussudio/Models/Automation/PerformanceTimelineEntry.Preview.cs");

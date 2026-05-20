@@ -967,6 +967,10 @@ Presentation-preview D3D device-lost checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DDeviceLostContractsTests.cs`,
 keeping device-lost classification and recovery ownership contracts in xUnit
 after their removal from the legacy harness catalog.
+Presentation-preview D3D diagnostics checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DDiagnosticsContractsTests.cs`,
+keeping swap-chain/render timing, snapshot-model, and performance-timeline
+contracts in xUnit after their removal from the legacy harness catalog.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the

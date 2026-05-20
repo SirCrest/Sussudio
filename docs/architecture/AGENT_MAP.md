@@ -2566,6 +2566,10 @@ Primary current owners:
   owns the former presentation-preview D3D device-lost group for device-lost
   classification and recovery ownership checks after their removal from the
   legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DDiagnosticsContractsTests.cs`
+  owns the former presentation-preview D3D diagnostics group for swap-chain and
+  render timing, snapshot-model, and performance-timeline contract checks after
+  their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral

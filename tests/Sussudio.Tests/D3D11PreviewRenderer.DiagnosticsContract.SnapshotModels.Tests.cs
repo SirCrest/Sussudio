@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task D3D11PreviewRenderer_DiagnosticsContract_SnapshotModelsExposeExpectedProperties()
+    internal static Task D3D11PreviewRenderer_DiagnosticsContract_SnapshotModelsExposeExpectedProperties()
     {
         var displayClockSnapshotType = RequireType("Sussudio.Services.Preview.PreviewDisplayClockSnapshot");
         foreach (var prop in new[] { "LastPresentTick", "FrameIntervalTicks", "ExpectedFrameIntervalMs", "SampleCount" })

@@ -8,7 +8,7 @@ static partial class Program
         string RenderSource,
         string CaptureSource);
 
-    private static Task D3D11PreviewRenderer_DiagnosticsContract_ExposesSwapChainAndRenderTiming()
+    internal static Task D3D11PreviewRenderer_DiagnosticsContract_ExposesSwapChainAndRenderTiming()
     {
         var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
         var sources = ReadD3D11PreviewRendererDiagnosticsContractSources();

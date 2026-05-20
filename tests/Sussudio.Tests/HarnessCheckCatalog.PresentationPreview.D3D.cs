@@ -6,15 +6,6 @@ static partial class Program
     private static async Task AddPresentationPreviewD3DChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "D3D preview diagnostics expose swap-chain and render timing contract",
-            D3D11PreviewRenderer_DiagnosticsContract_ExposesSwapChainAndRenderTiming);
-        await AddCheckAsync(results,
-            "D3D preview diagnostics expose snapshot model contract",
-            D3D11PreviewRenderer_DiagnosticsContract_SnapshotModelsExposeExpectedProperties);
-        await AddCheckAsync(results,
-            "D3D preview diagnostics expose performance timeline contract",
-            D3D11PreviewRenderer_DiagnosticsContract_PerformanceTimelineExposesExpectedProperties);
-        await AddCheckAsync(results,
             "D3D preview configuration lives in focused partial",
             D3D11PreviewRenderer_ConfigurationLivesInFocusedPartial);
         await AddCheckAsync(results,

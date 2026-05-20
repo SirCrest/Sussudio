@@ -222,6 +222,10 @@ add xUnit alongside, and port incrementally.
 - `XUnit.PresentationPreviewD3DDeviceLostContractsTests.cs` owns the former
   legacy presentation-preview D3D device-lost registration group:
   device-lost classification and recovery ownership checks.
+- `XUnit.PresentationPreviewD3DDiagnosticsContractsTests.cs` owns the former
+  legacy presentation-preview D3D diagnostics registration group:
+  swap-chain/render timing, snapshot-model, and performance-timeline contract
+  checks.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, and test-project shape guard checks.
 - `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy
