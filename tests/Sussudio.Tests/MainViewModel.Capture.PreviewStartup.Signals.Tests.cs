@@ -83,7 +83,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewStartupReadinessSignalController_PreservesSignalStateContracts()
+    internal static Task PreviewStartupReadinessSignalController_PreservesSignalStateContracts()
     {
         var controllerType = RequireType("Sussudio.Controllers.PreviewStartupReadinessSignalController");
         var signalType = RequireType("Sussudio.Models.PreviewStartupSignalFlags");
@@ -142,7 +142,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewStartupSignalFormatter_PreservesSignalStrings()
+    internal static Task PreviewStartupSignalFormatter_PreservesSignalStrings()
     {
         var formatterType = RequireType("Sussudio.Controllers.PreviewStartupSignalFormatter");
         var signalType = RequireType("Sussudio.Models.PreviewStartupSignalFlags");
@@ -179,7 +179,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewStartupFailureTextFormatter_PreservesFailureStrings()
+    internal static Task PreviewStartupFailureTextFormatter_PreservesFailureStrings()
     {
         var watchdogType = RequireType("Sussudio.Controllers.PreviewStartupWatchdogController");
         var formatTimeoutReason = watchdogType.GetMethod("FormatTimeoutReason", BindingFlags.NonPublic | BindingFlags.Static)

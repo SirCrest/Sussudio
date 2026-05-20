@@ -258,6 +258,9 @@ add xUnit alongside, and port incrementally.
   legacy presentation-preview preview-startup behavior group: watchdog timeout
   and failure-stop gating, session attempt-state orchestration, reinit
   transition state, and pending Flashback-cycle wait checks.
+- `XUnit.PresentationPreviewStartupSignalContractsTests.cs` owns the former
+  legacy presentation-preview preview-startup signal group: signal formatter,
+  readiness-signal controller state, and failure text formatter contracts.
 - `XUnit.PresentationPreviewCaptureRuntimeGuardContractsTests.cs` owns the
   former legacy presentation-preview capture runtime guardrail group: recording
   stop failure propagation, preview stop overload/API compatibility, and

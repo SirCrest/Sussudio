@@ -4021,6 +4021,9 @@ owner, fold it back into that owner and update the source-shape tests and
    `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupBehaviorContractsTests.cs`
    owns xUnit execution for the preview-startup controller behavior checks after
    their removal from the legacy presentation-preview capture catalog.
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupSignalContractsTests.cs`
+   owns xUnit execution for the preview-startup signal and failure-text checks
+   after their removal from the legacy presentation-preview capture catalog.
    Preview startup ordering coverage is split between lifecycle-event
    ownership, device-discovery ordering, reveal priming, and stop audio-ramp
    owners. MainViewModel automation recording-transition coverage is split
