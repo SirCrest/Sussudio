@@ -27,12 +27,4 @@ public sealed partial class DiagnosticSessionResult
     public string Evidence { get; init; } = string.Empty;
     public string[] Actions { get; set; } = Array.Empty<string>();
     public string[] Warnings { get; set; } = Array.Empty<string>();
-
-    // End-of-run overview.
-    public double ProcessCpuPercentAtEnd { get; init; }
-    public double ProcessCpuMaxPercentObserved { get; init; }
-    public bool RecordingVerificationRun { get; init; }
-    public bool? RecordingVerificationSucceeded { get; init; }
-    public string? RecordingVerificationMessage { get; init; }
-    public PresentMonProbeResult? PresentMon { get; init; }
 }
