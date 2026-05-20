@@ -593,11 +593,14 @@ projection in `Formatters.Timeline.Rows.cs`, the private row model in
 `Formatters.Common.cs`.
 
 `tools/Common/AutomationSnapshotFormatter.cs` is now the shared automation
-snapshot formatter facade for top-level text flow. State/audio/performance/
-memory core sections live in `AutomationSnapshotFormatter.CoreSections.cs`;
-recording output, backend, integrity, audio-integrity, and last-finalize text
-lives in `AutomationSnapshotFormatter.Recording.cs`; capture settings,
-video pipeline, diagnostics, and capture cadence text live in
+snapshot formatter facade for top-level text flow. State and capture-command
+summary text lives in `AutomationSnapshotFormatter.CoreSections.cs`; audio
+signal text lives in `AutomationSnapshotFormatter.Audio.cs`; recording output,
+backend, integrity, audio-integrity, and last-finalize text lives in
+`AutomationSnapshotFormatter.Recording.cs`; legacy performance plus process
+CPU, Memory/GC, and thread-pool text lives in
+`AutomationSnapshotFormatter.ProcessResources.cs`; capture settings, video
+pipeline, diagnostics, and capture cadence text live in
 `AutomationSnapshotFormatter.CaptureSettings.cs`,
 `AutomationSnapshotFormatter.VideoPipeline.cs`,
 `AutomationSnapshotFormatter.Diagnostics.cs`,

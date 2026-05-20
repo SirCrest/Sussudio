@@ -8,7 +8,9 @@ static partial class Program
         var ssctlFormatterSource = global::Sussudio.Tests.RuntimeContractSource.ReadSsctlSnapshotFormatterSource();
         var ssctlSnapshotRootSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.cs");
         var ssctlSnapshotCoreSectionsSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.CoreSections.cs");
+        var ssctlSnapshotAudioSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Audio.cs");
         var ssctlSnapshotRecordingSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Recording.cs");
+        var ssctlSnapshotProcessResourcesSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.ProcessResources.cs");
         var ssctlSnapshotCaptureSettingsSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.CaptureSettings.cs");
         var ssctlSnapshotCaptureCadenceSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.CaptureCadence.cs");
         var ssctlSnapshotDiagnosticLanesSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs");
@@ -56,8 +58,9 @@ static partial class Program
         AssertContains(ssctlSnapshotCoreSectionsSource, "builder.AppendLine(\"== Sussudio State ==\");");
         AssertContains(ssctlSnapshotCaptureSettingsSource, "private static void AppendSnapshotCaptureSettingsSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotCaptureSettingsSource, "private static string FormatSnapshotFrameRateSummary(JsonElement snapshot)");
-        AssertContains(ssctlSnapshotCoreSectionsSource, "private static void AppendSnapshotAudioSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotCoreSectionsSource, "builder.AppendLine(\"== Audio ==\");");
+        AssertDoesNotContain(ssctlSnapshotCoreSectionsSource, "private static void AppendSnapshotAudioSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotAudioSource, "private static void AppendSnapshotAudioSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotAudioSource, "builder.AppendLine(\"== Audio ==\");");
         AssertContains(ssctlSnapshotRuntimeSource, "private static void AppendSnapshotVideoPipelineSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotRuntimeSource, "builder.AppendLine(\"== Video Pipeline ==\");");
         AssertDoesNotContain(ssctlSnapshotCoreSectionsSource, "private static void AppendSnapshotRecordingSection(StringBuilder builder, JsonElement snapshot)");
@@ -67,8 +70,9 @@ static partial class Program
         AssertContains(ssctlSnapshotRecordingSource, "RecordingIntegrityStatus");
         AssertContains(ssctlSnapshotDiagnosticLanesSource, "private static void AppendSnapshotDiagnosticLanesSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotDiagnosticLanesSource, "builder.AppendLine(\"== Diagnostics ==\");");
-        AssertContains(ssctlSnapshotCoreSectionsSource, "private static void AppendSnapshotPerformanceSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotCoreSectionsSource, "builder.AppendLine(\"== Performance ==\");");
+        AssertDoesNotContain(ssctlSnapshotCoreSectionsSource, "private static void AppendSnapshotPerformanceSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotProcessResourcesSource, "private static void AppendSnapshotPerformanceSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotProcessResourcesSource, "builder.AppendLine(\"== Performance ==\");");
         AssertDoesNotContain(ssctlSnapshotRuntimeSource, "private static void AppendSnapshotCaptureCadenceSection(StringBuilder builder, JsonElement snapshot)");
         AssertDoesNotContain(ssctlSnapshotRuntimeSource, "private static void AppendSnapshotAvSyncSection(StringBuilder builder, JsonElement snapshot)");
         AssertDoesNotContain(ssctlSnapshotRuntimeSource, "private static void AppendSnapshotPreviewSection(StringBuilder builder, JsonElement snapshot)");
@@ -101,8 +105,11 @@ static partial class Program
         AssertContains(ssctlSnapshotFlashbackPlaybackSource, "private static void AppendSnapshotFlashbackPlaybackMetricsSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotFlashbackPlaybackSource, "Playback Decode:");
         AssertContains(ssctlSnapshotFlashbackPlaybackSource, "A/V Drift:");
-        AssertContains(ssctlSnapshotCoreSectionsSource, "private static void AppendSnapshotMemorySection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotCoreSectionsSource, "builder.AppendLine(\"== Memory & GC ==\");");
+        AssertDoesNotContain(ssctlSnapshotCoreSectionsSource, "private static void AppendSnapshotMemorySection(StringBuilder builder, JsonElement snapshot)");
+        AssertDoesNotContain(ssctlSnapshotCoreSectionsSource, "ProcessCpuPercent");
+        AssertContains(ssctlSnapshotProcessResourcesSource, "private static void AppendSnapshotMemorySection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotProcessResourcesSource, "builder.AppendLine(\"== Memory & GC ==\");");
+        AssertContains(ssctlSnapshotProcessResourcesSource, "ProcessCpuPercent");
         AssertContains(ssctlSnapshotMjpegSource, "private static void AppendSnapshotMjpegTimingSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotMjpegSource, "var mjpegDecodeSamples = AutomationSnapshotFormatter.Get(snapshot, \"MjpegDecodeSampleCount\", \"0\");");
         AssertContains(ssctlSnapshotMjpegSource, "AppendSnapshotMjpegPreviewJitterSection(builder, snapshot);");
