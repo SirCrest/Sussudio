@@ -41,6 +41,7 @@ static partial class Program
             SnapshotProjectionFlatteningText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs"),
             SnapshotProjectionFlatteningCaptureFormatText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureFormat.cs"),
             SnapshotProjectionFlatteningSourceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.cs"),
+            SnapshotProjectionFlatteningSettingsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.Settings.cs"),
             SnapshotProjectionFlatteningPreviewRuntimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.cs"),
             SnapshotProjectionFlatteningPreviewD3DText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.cs"),
             SnapshotProjectionSnapshotStatusText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.SnapshotStatus.cs"),
@@ -146,6 +147,7 @@ static partial class Program
         public string SnapshotProjectionFlatteningText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningCaptureFormatText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSourceText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningSettingsText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningPreviewRuntimeText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningPreviewD3DText { get; init; } = string.Empty;
         public string SnapshotProjectionSnapshotStatusText { get; init; } = string.Empty;
@@ -230,6 +232,7 @@ static partial class Program
                 SnapshotProjectionFlatteningText,
                 SnapshotProjectionFlatteningCaptureFormatText,
                 SnapshotProjectionFlatteningSourceText,
+                SnapshotProjectionFlatteningSettingsText,
                 SnapshotProjectionFlatteningPreviewRuntimeText,
                 SnapshotProjectionFlatteningPreviewD3DText,
                 SnapshotProjectionSnapshotStatusText,

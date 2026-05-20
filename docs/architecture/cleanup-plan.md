@@ -245,6 +245,9 @@ flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.UserSettings.cs` owns selected
 device, selected capture/recording options, preview volume, and stats
 visibility projection consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.Settings.cs` owns final
+selected device, selected capture/recording options, preview volume, and stats
+visibility projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.HdrPipeline.cs` owns HDR
 availability/request state, runtime/readiness fallback, HDR warmup/downgrade,
 pipeline parity, telemetry-alignment, and HDR truth verdict projection consumed
