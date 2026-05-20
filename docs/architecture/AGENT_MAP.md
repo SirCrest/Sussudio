@@ -1598,8 +1598,14 @@ Primary current owners:
   owns MainWindow preview resize telemetry and preview renderer startup-plan
   fallback policy assertions.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.RendererHost.Tests.cs`
-  owns MainWindow preview renderer host and preview runtime/snapshot ownership
-  assertions.
+  owns MainWindow preview renderer host lifecycle, D3D startup/reinit, startup
+  plan, and stats adapter ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Snapshot.Tests.cs`
+  owns preview runtime snapshot adapter, input, controller, mapper, and
+  snapshot projection policy ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.D3DProjection.Tests.cs`
+  owns preview runtime D3D projection root, leaf partial, builder, and policy
+  ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Surface.Tests.cs`
   owns MainWindow preview surface presentation and shadow controller ownership
   assertions.

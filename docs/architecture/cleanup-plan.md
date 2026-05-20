@@ -988,6 +988,9 @@ automation paths.
 MainWindow shell ownership tests mirror these runtime owners through focused
 `MainWindow.ShellOwnership.*.Tests.cs` files for chrome, startup, preview
 runtime, native bootstrap, and window lifecycle contracts.
+Preview runtime source-shape coverage is split across renderer-host,
+snapshot, D3D-projection, and surface test owners so failures point at the
+runtime owner that actually drifted instead of one combined harness check.
 MainWindow Flashback ownership tests mirror the Flashback controller owners
 through focused `MainWindow.FlashbackOwnership.*.Tests.cs` files: polling,
 timeline presentation, playhead/CTI motion, playback presentation/coordinator

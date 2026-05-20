@@ -46,6 +46,12 @@ static partial class Program
             "Preview renderer runtime state lives in host controller",
             PreviewRendererHostController_OwnsRuntimeState);
         await AddCheckAsync(results,
+            "Preview runtime snapshot ownership lives in controller and mapper",
+            PreviewRuntimeSnapshotController_OwnsSnapshotMapping);
+        await AddCheckAsync(results,
+            "Preview runtime D3D projection ownership lives in policy groups",
+            PreviewRuntimeD3DProjection_OwnsPolicyGroups);
+        await AddCheckAsync(results,
             "Preview surface presentation and shadow live in controllers",
             PreviewSurfacePresentationAndShadow_LiveInControllers);
         await AddCheckAsync(results,
