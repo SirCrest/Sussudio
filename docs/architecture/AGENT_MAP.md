@@ -1111,10 +1111,12 @@ Entry points:
 - `FlashbackPlaybackController.CommandFailures.cs` owns command readiness
   guards, skipped-not-ready accounting, failure-detail formatting, last-command
   failure state, and no-op logging.
+- `FlashbackPlaybackController.ThreadScheduling.cs` owns playback-thread
+  timer-resolution P/Invoke plus MMCSS task/priority env policy for playback
+  pacing sleeps.
 - `FlashbackPlaybackController.ThreadLoop.cs` owns `PlaybackThreadEntry`,
   command dequeue, active-command telemetry, `Stop` handling, and dispatch to
-  playback-thread command handlers, plus timer-resolution P/Invoke and MMCSS
-  policy for playback pacing sleeps.
+  playback-thread command handlers.
 - `FlashbackPlaybackController.ThreadSeekCommands.cs` owns playback-thread seek
   command execution, including coalesced seek resolution, exact resume targets,
   playback resume handoff, and audio/preview suppression/resume ordering.

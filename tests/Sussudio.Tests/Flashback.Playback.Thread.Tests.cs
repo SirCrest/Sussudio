@@ -20,6 +20,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var threadCommandsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
             .Replace("\r\n", "\n");
+        var threadSchedulingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadScheduling.cs")
+            .Replace("\r\n", "\n");
         var threadLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs")
             .Replace("\r\n", "\n");
         var commandTelemetryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandTelemetry.cs")
@@ -38,9 +40,10 @@ static partial class Program
         AssertContains(commandModelsText, "public ScrubUpdateIntentSlot? ScrubUpdateSlot { get; init; }");
         AssertDoesNotContain(rootText, "private enum CommandKind");
         AssertDoesNotContain(rootText, "private readonly struct PlaybackCommand");
-        AssertContains(threadLoopText, "[DllImport(\"winmm.dll\", ExactSpelling = true)]");
-        AssertContains(threadLoopText, "private static extern uint timeBeginPeriod(uint uMilliseconds);");
-        AssertContains(threadLoopText, "private static extern uint timeEndPeriod(uint uMilliseconds);");
+        AssertContains(threadSchedulingText, "[DllImport(\"winmm.dll\", ExactSpelling = true)]");
+        AssertContains(threadSchedulingText, "private static extern uint timeBeginPeriod(uint uMilliseconds);");
+        AssertContains(threadSchedulingText, "private static extern uint timeEndPeriod(uint uMilliseconds);");
+        AssertDoesNotContain(threadLoopText, "[DllImport(\"winmm.dll\", ExactSpelling = true)]");
         AssertContains(threadLoopText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_ENTER\");");
         AssertContains(threadSeekCommandsText, "private void HandleSeekCommand(");
         AssertContains(threadSeekScrubCommandsText, "private void HandleBeginScrubCommand(");
@@ -149,8 +152,10 @@ static partial class Program
         AssertContains(sourceText, "private void PlaybackThreadEntry(CancellationTokenSource cts, Channel<PlaybackCommand> commandChannel)");
         AssertContains(sourceText, "SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_TASK");
         AssertContains(sourceText, "SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_PRIORITY");
-        AssertContains(threadLoopText, "private readonly string _playbackMmcssTask = Environment.GetEnvironmentVariable(\"SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_TASK\") ?? \"Playback\";");
-        AssertContains(threadLoopText, "private readonly int _playbackMmcssPriority = EnvironmentHelpers.GetIntFromEnv(\"SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_PRIORITY\", 1, -2, 2);");
+        AssertContains(threadSchedulingText, "private readonly string _playbackMmcssTask = Environment.GetEnvironmentVariable(\"SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_TASK\") ?? \"Playback\";");
+        AssertContains(threadSchedulingText, "private readonly int _playbackMmcssPriority = EnvironmentHelpers.GetIntFromEnv(\"SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_PRIORITY\", 1, -2, 2);");
+        AssertDoesNotContain(threadLoopText, "private readonly string _playbackMmcssTask");
+        AssertDoesNotContain(threadLoopText, "private readonly int _playbackMmcssPriority");
         AssertDoesNotContain(rootText, "private readonly string _playbackMmcssTask");
         AssertDoesNotContain(rootText, "private readonly int _playbackMmcssPriority");
         AssertContains(sourceText, "using var mmcss = MmcssThreadRegistration.TryRegister(_playbackMmcssTask, _playbackMmcssPriority, message => Logger.Log(message));");

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -15,15 +14,6 @@ namespace Sussudio.Services.Flashback;
 internal sealed partial class FlashbackPlaybackController
 {
     // --- Playback thread ---
-
-    private readonly string _playbackMmcssTask = Environment.GetEnvironmentVariable("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_TASK") ?? "Playback";
-    private readonly int _playbackMmcssPriority = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_PRIORITY", 1, -2, 2);
-
-    [DllImport("winmm.dll", ExactSpelling = true)]
-    private static extern uint timeBeginPeriod(uint uMilliseconds);
-
-    [DllImport("winmm.dll", ExactSpelling = true)]
-    private static extern uint timeEndPeriod(uint uMilliseconds);
 
     private void PlaybackThreadEntry(CancellationTokenSource cts, Channel<PlaybackCommand> commandChannel)
     {
