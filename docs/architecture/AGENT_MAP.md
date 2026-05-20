@@ -1084,7 +1084,7 @@ Entry points:
   near-live/adjacent-segment retry windows.
 - `FlashbackPlaybackController.DecoderSegmentReopen.cs` owns segment-edge fMP4
   reopen/reseek recovery and fMP4 reopen audio-gate restoration.
-- `FlashbackPlaybackController.Lifecycle.cs` owns initialize/update component references, preview-detach cleanup, deferred reattach, and dispose.
+- `FlashbackPlaybackController.Lifecycle.cs` owns initialize/update component references, lifecycle/dispose state, preview-detach cleanup, deferred reattach state, and dispose.
 - `FlashbackPlaybackController.CommandModels.cs` owns the playback-thread
   command enum and payload contract shared by the queue, coalescing,
   telemetry, and thread-command owners.

@@ -1,10 +1,6 @@
 using System;
 using System.Threading;
 using Sussudio.Models;
-using Sussudio.Services.Audio;
-using Sussudio.Services.Contracts;
-using Sussudio.Services.Preview;
-using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Flashback;
@@ -18,20 +14,10 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
 {
     // --- Dependencies ---
     private readonly FlashbackBufferManager _bufferManager;
-    private IPreviewFrameSink? _previewSink;
-    private ILiveVideoSource? _videoCapture;
-    private volatile WasapiAudioPlayback? _audioPlayback;
-    private volatile WasapiAudioCapture? _audioCapture;
 
     // --- State (read from UI thread, written primarily from playback thread) ---
     private volatile FlashbackPlaybackState _state = FlashbackPlaybackState.Live;
     private long _playbackPositionTicks;
-    private volatile bool _initialized;
-    private volatile int _disposedFlag;
-    private int _previewDetachStopTimeoutActive;
-    private int _deferredPreviewAttachApplyRetryScheduled;
-    private IPreviewFrameSink? _pendingPreviewSinkAfterDetachTimeout;
-    private ILiveVideoSource? _pendingVideoCaptureAfterDetachTimeout;
     private volatile string _decoderHwAccel = "N/A";
 
     /// <summary>

@@ -7,6 +7,8 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var previewFramesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrames.cs")
             .Replace("\r\n", "\n");
+        var lifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs")
+            .Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
@@ -15,6 +17,26 @@ static partial class Program
         AssertContains(previewFramesText, "private bool _hasPreviousHeldFrame;");
         AssertDoesNotContain(rootText, "private DecodedVideoFrame _previousHeldFrame;");
         AssertDoesNotContain(rootText, "private bool _hasPreviousHeldFrame;");
+        AssertContains(lifecycleText, "private IPreviewFrameSink? _previewSink;");
+        AssertContains(lifecycleText, "private ILiveVideoSource? _videoCapture;");
+        AssertContains(lifecycleText, "private volatile WasapiAudioPlayback? _audioPlayback;");
+        AssertContains(lifecycleText, "private volatile WasapiAudioCapture? _audioCapture;");
+        AssertContains(lifecycleText, "private volatile bool _initialized;");
+        AssertContains(lifecycleText, "private volatile int _disposedFlag;");
+        AssertContains(lifecycleText, "private int _previewDetachStopTimeoutActive;");
+        AssertContains(lifecycleText, "private int _deferredPreviewAttachApplyRetryScheduled;");
+        AssertContains(lifecycleText, "private IPreviewFrameSink? _pendingPreviewSinkAfterDetachTimeout;");
+        AssertContains(lifecycleText, "private ILiveVideoSource? _pendingVideoCaptureAfterDetachTimeout;");
+        AssertDoesNotContain(rootText, "private IPreviewFrameSink? _previewSink;");
+        AssertDoesNotContain(rootText, "private ILiveVideoSource? _videoCapture;");
+        AssertDoesNotContain(rootText, "private volatile WasapiAudioPlayback? _audioPlayback;");
+        AssertDoesNotContain(rootText, "private volatile WasapiAudioCapture? _audioCapture;");
+        AssertDoesNotContain(rootText, "private volatile bool _initialized;");
+        AssertDoesNotContain(rootText, "private volatile int _disposedFlag;");
+        AssertDoesNotContain(rootText, "private int _previewDetachStopTimeoutActive;");
+        AssertDoesNotContain(rootText, "private int _deferredPreviewAttachApplyRetryScheduled;");
+        AssertDoesNotContain(rootText, "private IPreviewFrameSink? _pendingPreviewSinkAfterDetachTimeout;");
+        AssertDoesNotContain(rootText, "private ILiveVideoSource? _pendingVideoCaptureAfterDetachTimeout;");
         AssertContains(sourceText, "if (!TryValidatePreviewFrame(frame, out var skipReason))");
         AssertContains(sourceText, "Interlocked.Increment(ref _playbackSubmitFailures);");
         AssertContains(sourceText, "SetLastSubmitFailure($\"{operation}:{skipReason}\");");

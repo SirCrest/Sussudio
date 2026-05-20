@@ -13,6 +13,17 @@ internal sealed partial class FlashbackPlaybackController
 {
     // --- Lifecycle ---
 
+    private IPreviewFrameSink? _previewSink;
+    private ILiveVideoSource? _videoCapture;
+    private volatile WasapiAudioPlayback? _audioPlayback;
+    private volatile WasapiAudioCapture? _audioCapture;
+    private volatile bool _initialized;
+    private volatile int _disposedFlag;
+    private int _previewDetachStopTimeoutActive;
+    private int _deferredPreviewAttachApplyRetryScheduled;
+    private IPreviewFrameSink? _pendingPreviewSinkAfterDetachTimeout;
+    private ILiveVideoSource? _pendingVideoCaptureAfterDetachTimeout;
+
     public void Initialize(
         IPreviewFrameSink previewSink,
         ILiveVideoSource videoCapture,
