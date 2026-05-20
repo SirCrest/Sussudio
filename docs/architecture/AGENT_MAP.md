@@ -1131,7 +1131,9 @@ Entry points:
 - `FlashbackPlaybackController.Markers.cs` owns in/out marker state, marker API, marker normalization, and out-point pause checks.
 - `FlashbackPlaybackController.PositionMapping.cs` owns scrub/seek clamp policy, saturating timestamp math, active fMP4 segment detection, and playback path comparison.
 - `FlashbackPlaybackController.Metrics.cs` owns playback diagnostic counters and cadence/decode summary records.
-- `FlashbackPlaybackController.MetricsCollection.cs` owns private metric collection, percentile math, seek-cap telemetry, decode timing wrappers, and metric reset.
+- `FlashbackPlaybackController.MetricsCollection.cs` owns private metric state,
+  cadence/decode sample rings, percentile math, seek-cap telemetry, decode
+  timing wrappers, and metric reset.
 - `FlashbackEncoderSink.Startup.cs` owns session validation, buffer session creation, encoder initialization, queue creation, background task startup, and startup rollback.
 - `FlashbackEncoderSink.Options.cs` owns encoder option construction, recording-to-Flashback session mapping, packet records, file-size/session-id helpers, and buffer/COM return helpers.
 - `FlashbackEncoderSink.VideoQueueSubmission.cs` owns video/GPU queue admission, enqueue rejection guards/logging, and TryWrite depth accounting.

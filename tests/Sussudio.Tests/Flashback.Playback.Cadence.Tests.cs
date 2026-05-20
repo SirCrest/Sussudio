@@ -90,11 +90,27 @@ static partial class Program
     private static Task FlashbackPlaybackController_ResetClearsDecodeMetrics()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+        var metricsCollectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.MetricsCollection.cs")
+            .Replace("\r\n", "\n");
 
         var resetMetricsBlock = ExtractTextBetween(
             sourceText,
             "private void ResetPlaybackMetrics()",
             "private void RestoreAudioCallback");
+        AssertContains(metricsCollectionText, "private long _playbackFrameCount;");
+        AssertContains(metricsCollectionText, "private long _playbackDroppedFrames;");
+        AssertContains(metricsCollectionText, "private readonly Stopwatch _playbackFpsClock = new();");
+        AssertContains(metricsCollectionText, "private const int PlaybackCadenceSampleCapacity = 240;");
+        AssertContains(metricsCollectionText, "private readonly double[] _playbackFrameIntervalsMs = new double[PlaybackCadenceSampleCapacity];");
+        AssertContains(metricsCollectionText, "private readonly double[] _playbackDecodeDurationsMs = new double[PlaybackCadenceSampleCapacity];");
+        AssertContains(metricsCollectionText, "private double _playbackMaxDecodeTotalMs;");
+        AssertContains(metricsCollectionText, "private string _playbackMaxDecodePhase = string.Empty;");
+        AssertDoesNotContain(rootText, "private long _playbackFrameCount;");
+        AssertDoesNotContain(rootText, "private readonly Stopwatch _playbackFpsClock = new();");
+        AssertDoesNotContain(rootText, "private readonly double[] _playbackFrameIntervalsMs = new double[PlaybackCadenceSampleCapacity];");
+        AssertDoesNotContain(rootText, "private string _playbackMaxDecodePhase = string.Empty;");
         AssertContains(resetMetricsBlock, "Interlocked.Exchange(ref _playbackPreviewPresentId, 0);");
         AssertContains(resetMetricsBlock, "lock (_playbackDecodeLock)");
         AssertContains(resetMetricsBlock, "Array.Clear(_playbackDecodeDurationsMs);");

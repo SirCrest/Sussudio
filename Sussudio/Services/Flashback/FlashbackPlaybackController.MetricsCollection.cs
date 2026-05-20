@@ -6,6 +6,58 @@ namespace Sussudio.Services.Flashback;
 
 internal sealed partial class FlashbackPlaybackController
 {
+    // Playback cadence metrics are written on the playback thread and read from
+    // UI/diagnostics snapshots.
+    private long _playbackFrameCount;
+    private long _playbackPreviewPresentId;
+    private long _playbackLateFrames;
+    private long _playbackDroppedFrames;
+    private long _playbackSegmentSwitches;
+    private long _playbackFmp4Reopens;
+    private long _playbackReopenAudioNullWindowCount;
+    private long _playbackWriteHeadWaits;
+    private long _playbackNearLiveSnaps;
+    private long _playbackDecodeErrorSnaps;
+    private long _playbackSubmitFailures;
+    private long _lastPlaybackDropUtcUnixMs;
+    private string _lastPlaybackDropReason = string.Empty;
+    private long _lastSubmitFailureUtcUnixMs;
+    private string _lastSubmitFailure = string.Empty;
+    private long _lastSegmentSwitchUtcUnixMs;
+    private long _lastFmp4ReopenUtcUnixMs;
+    private long _lastWriteHeadWaitGapMs;
+    private double _playbackTargetFps;
+    private double _playbackObservedFps;
+    private double _playbackAvgFrameMs;
+    private long _lastPlaybackCadencePtsTicks = -1;
+    private long _playbackPtsCadenceMismatchCount;
+    private long _lastPlaybackPtsCadenceMismatchUtcUnixMs;
+    private double _lastPlaybackPtsCadenceDeltaMs;
+    private double _lastPlaybackPtsCadenceExpectedMs;
+    private long _playbackSeekForwardDecodeCapHits;
+    private int _lastPlaybackSeekHitForwardDecodeCap;
+    private readonly Stopwatch _playbackFpsClock = new();
+    private const int PlaybackCadenceSampleCapacity = 240;
+    private readonly object _playbackCadenceLock = new();
+    private readonly double[] _playbackFrameIntervalsMs = new double[PlaybackCadenceSampleCapacity];
+    private int _playbackFrameIntervalHead;
+    private int _playbackFrameIntervalCount;
+    private long _playbackSlowFrameCount;
+    private readonly object _playbackDecodeLock = new();
+    private readonly double[] _playbackDecodeDurationsMs = new double[PlaybackCadenceSampleCapacity];
+    private int _playbackDecodeDurationHead;
+    private int _playbackDecodeDurationCount;
+    private double _playbackMaxDecodeTotalMs;
+    private double _playbackMaxDecodeReceiveMs;
+    private double _playbackMaxDecodeFeedMs;
+    private double _playbackMaxDecodeReadMs;
+    private double _playbackMaxDecodeSendMs;
+    private double _playbackMaxDecodeAudioMs;
+    private double _playbackMaxDecodeConvertMs;
+    private string _playbackMaxDecodePhase = string.Empty;
+    private long _playbackMaxDecodeUtcUnixMs;
+    private long _playbackMaxDecodePositionMs;
+
     // --- Playback metric collection and reset ---
 
     private static double PercentileFromSorted(double[] sortedSamples, double percentile)
