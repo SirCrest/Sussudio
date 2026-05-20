@@ -1912,10 +1912,32 @@ Primary current owners:
   registered-property coverage helpers.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.CpuMjpeg.Tests.cs` owns
   xUnit automation snapshot CPU MJPEG metric shape checks.
+- `tests/Sussudio.Tests/SnapshotModels.Automation.MjpegPreview.Tests.cs` owns
+  xUnit automation snapshot MJPEG preview jitter and packet-hash metric shape
+  checks.
+- `tests/Sussudio.Tests/SnapshotModels.Automation.PreviewDiagnostics.Tests.cs`
+  owns xUnit automation snapshot preview D3D, diagnostic lane, and preview
+  pacing metric shape checks.
+- `tests/Sussudio.Tests/SnapshotModels.Automation.CaptureCommands.Tests.cs`
+  owns xUnit automation snapshot capture-command queue metric shape checks.
+- `tests/Sussudio.Tests/SnapshotModels.Automation.Recording.Tests.cs` owns
+  xUnit automation snapshot recording video metric shape checks.
+- `tests/Sussudio.Tests/SnapshotModels.Automation.FlashbackRecording.Tests.cs`
+  owns xUnit automation snapshot Flashback recording, cleanup, backend, and
+  queue metric shape checks.
+- `tests/Sussudio.Tests/SnapshotModels.Automation.FlashbackPlayback.Tests.cs`
+  owns xUnit automation snapshot Flashback playback, cadence, decode, and
+  command metric shape checks.
+- `tests/Sussudio.Tests/SnapshotModels.Automation.FlashbackExport.Tests.cs`
+  owns xUnit automation snapshot Flashback export metric shape checks.
+- `tests/Sussudio.Tests/SnapshotModels.Automation.VisualCadence.Tests.cs`
+  owns xUnit automation snapshot visual cadence metric shape checks.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.Options.Tests.cs` owns
   xUnit automation options DTO shape checks.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.CpuMjpegContractSpec.cs` owns
-  the CPU MJPEG automation snapshot property-list contract used by that check.
+  the CPU MJPEG automation snapshot property-list contract plus shared
+  AutomationSnapshot property assertions used by focused automation snapshot
+  shape checks.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.Tests.cs` owns xUnit
   CaptureDiagnosticsSnapshot default, round-trip, reflection JSON, and MJPEG
   source-ownership checks.

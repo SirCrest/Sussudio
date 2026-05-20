@@ -55,4 +55,12 @@ public partial class SnapshotModelsTests
             AssertNotNull(decoderType.GetProperty(propertyName), $"MjpegDecoderAutomationSnapshot.{propertyName}");
         }
     }
+
+    private static void AssertAutomationSnapshotProperties(Type snapshotType, params string[] propertyNames)
+    {
+        foreach (var propertyName in propertyNames)
+        {
+            AssertNotNull(snapshotType.GetProperty(propertyName), $"AutomationSnapshot.{propertyName}");
+        }
+    }
 }

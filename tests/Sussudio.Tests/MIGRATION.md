@@ -41,7 +41,19 @@ add xUnit alongside, and port incrementally.
   former legacy CaptureDiagnosticsSnapshot, CaptureHealthSnapshot,
   SourceSignalTelemetrySnapshot, SourceTelemetryDetailEntry, and source
   telemetry automation projection contract checks, plus AutomationSnapshot CPU
-  MJPEG and AutomationOptions DTO shape checks.
+  MJPEG, MJPEG preview, preview diagnostics, capture-command, recording,
+  Flashback recording/playback/export, visual cadence, and AutomationOptions DTO
+  shape checks.
+  `SnapshotModels.Automation.CpuMjpeg.Tests.cs`,
+  `SnapshotModels.Automation.MjpegPreview.Tests.cs`,
+  `SnapshotModels.Automation.PreviewDiagnostics.Tests.cs`,
+  `SnapshotModels.Automation.CaptureCommands.Tests.cs`,
+  `SnapshotModels.Automation.Recording.Tests.cs`,
+  `SnapshotModels.Automation.FlashbackRecording.Tests.cs`,
+  `SnapshotModels.Automation.FlashbackPlayback.Tests.cs`,
+  `SnapshotModels.Automation.FlashbackExport.Tests.cs`, and
+  `SnapshotModels.Automation.VisualCadence.Tests.cs` own the focused
+  AutomationSnapshot metric-shape checks.
 - `XUnit.SmallContractsTests.cs` owns the former legacy audio input, audio
   level event, capture device, and automation window action small contracts.
 - `XUnit.CaptureConfigurationModelsTests.cs` owns shared reflection helpers for

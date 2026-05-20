@@ -664,7 +664,10 @@ coverage is split into CaptureDiagnosticsSnapshot, CaptureHealthSnapshot,
 SourceSignalTelemetrySnapshot, SourceTelemetryDetailEntry, and source telemetry
 automation projection owner files. AutomationSnapshot CPU MJPEG and
 AutomationOptions DTO checks are ported into the same partial family, with
-shared reflection/spec helpers kept there.
+shared reflection/spec helpers kept there. AutomationSnapshot metric-shape
+checks are split by DTO surface across CPU/MJPEG, MJPEG preview and packet hash,
+preview diagnostics, capture commands, recording, Flashback recording,
+Flashback playback, Flashback export, and visual cadence owner files.
 
 `Sussudio/Models/Capture/CaptureHealthSnapshot.Flashback.cs` now owns the
 Flashback playback, Flashback encoder/backend, and Flashback export health DTO
