@@ -2468,7 +2468,9 @@ Primary current owners:
   checks, capture runtime failure/runtime-flag checks, and the large Flashback
   buffer manager behavior/source-ownership group.
 - Focused `tests/Sussudio.Tests/HarnessCheckCatalog.Flashback.*.cs` partials
-  own Flashback model, playback, decoder, encoder sink, and exporter
+  own the remaining Flashback playback, decoder, and exporter registration
+  groups. `tests/Sussudio.Tests/XUnit.FlashbackEncoderSinkContractsTests.cs`
+  owns the xUnit execution surface for the former legacy Flashback encoder sink
   registration groups.
 - `tests/Sussudio.Tests/XUnit.ToolModelContractsTests.cs` owns the xUnit
   execution surface for the former legacy NVML snapshot and
@@ -2666,6 +2668,10 @@ Primary current owners:
   and drain-loop ordering tests.
 - `tests/Sussudio.Tests/Flashback.EncoderSink.ForceRotate.Tests.cs` owns
   Flashback encoder sink force-rotate and segment-registration recovery tests.
+- `tests/Sussudio.Tests/XUnit.FlashbackEncoderSinkContractsTests.cs` owns the
+  xUnit execution surface for the former legacy Flashback encoder sink
+  frame-rate, codec, counter, queue, force-rotate, packet-drain, startup, and
+  source-ownership checks after their removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/Flashback.Exporter.Basic.Tests.cs` owns Flashback
   exporter request-surface smoke tests, path/request validation, and export
   throttle tests.

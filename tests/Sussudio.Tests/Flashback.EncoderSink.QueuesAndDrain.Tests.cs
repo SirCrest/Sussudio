@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackEncoderSink_ForceRotateDrainingRejectsVideoAndGpuEnqueues()
+    internal static Task FlashbackEncoderSink_ForceRotateDrainingRejectsVideoAndGpuEnqueues()
     {
         var sinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");
         var optionsType = RequireType("Sussudio.Models.FlashbackBufferOptions");
@@ -33,7 +33,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_DisposeResetsGpuQueueDepth()
+    internal static Task FlashbackEncoderSink_DisposeResetsGpuQueueDepth()
     {
         var sourceText = ReadFlashbackEncoderSinkSource();
 
@@ -145,7 +145,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_AudioPacketsAreValidatedBeforeRent()
+    internal static Task FlashbackEncoderSink_AudioPacketsAreValidatedBeforeRent()
     {
         var sourceText = ReadFlashbackEncoderSinkSource();
 
@@ -164,7 +164,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches()
+    internal static Task FlashbackEncoderSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches()
     {
         var sourceText = ReadFlashbackEncoderSinkSource();
 

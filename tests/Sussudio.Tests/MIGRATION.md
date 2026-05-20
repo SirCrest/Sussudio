@@ -82,6 +82,9 @@ add xUnit alongside, and port incrementally.
   sizing, session, playback-state, export progress, export segment, and export
   request model contract checks; `XUnit.FlashbackModels.PropertyAssertions.cs`
   owns the shared reflection/nullability assertion helpers for that suite.
+- `XUnit.FlashbackEncoderSinkContractsTests.cs` owns the former legacy
+  Flashback encoder sink frame-rate, codec, counter, queue, force-rotate,
+  packet-drain, startup, and source-ownership checks.
 - `Flashback.Playback.Markers.Tests.cs` owns the former legacy Flashback
   playback in/out marker API, normalization, disposal, and marker clamp checks.
 - `StatsDockPresentation.Tests.cs`, `StatsPresentation.Ownership.Tests.cs`,

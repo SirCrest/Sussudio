@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureService_FlashbackExportThrottleRespondsToLiveQueuePressure()
+    internal static Task CaptureService_FlashbackExportThrottleRespondsToLiveQueuePressure()
     {
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var resolve = serviceType.GetMethod("ResolveFlashbackExportThrottleDelayMs", BindingFlags.Static | BindingFlags.NonPublic)

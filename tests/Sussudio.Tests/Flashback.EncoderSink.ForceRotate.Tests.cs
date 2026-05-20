@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackEncoderSink_RotateFailureRestoresActiveSegment()
+    internal static Task FlashbackEncoderSink_RotateFailureRestoresActiveSegment()
     {
         var sinkText = ReadFlashbackEncoderSinkSource();
         var bufferText = ReadFlashbackBufferManagerSource();
@@ -35,7 +35,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_RegistersSegmentsOnCancellationAndRotationFailure()
+    internal static Task FlashbackEncoderSink_RegistersSegmentsOnCancellationAndRotationFailure()
     {
         var sourceText = ReadFlashbackEncoderSinkSource();
 
@@ -71,7 +71,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_ForceRotateRejectsFailedEncoder()
+    internal static Task FlashbackEncoderSink_ForceRotateRejectsFailedEncoder()
     {
         var sourceText = ReadFlashbackEncoderSinkSource();
 
@@ -96,7 +96,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_ForceRotateSkipsCompletedPendingRequest()
+    internal static Task FlashbackEncoderSink_ForceRotateSkipsCompletedPendingRequest()
     {
         var sourceText = ReadFlashbackEncoderSinkSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs").Replace("\r\n", "\n");
@@ -181,7 +181,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_FatalSegmentRegistrationFailuresAreLogged()
+    internal static Task FlashbackEncoderSink_FatalSegmentRegistrationFailuresAreLogged()
     {
         var sourceText = ReadFlashbackEncoderSinkSource();
 

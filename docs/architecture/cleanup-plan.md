@@ -824,6 +824,11 @@ CPU MJPEG pipeline runtime checks now execute through
 `tests/Sussudio.Tests/XUnit.MjpegPipelineContractsTests.cs`, keeping pipeline,
 cadence, pooled-frame, preview-jitter, and queued lease-release contracts in
 xUnit after their removal from the legacy harness catalog.
+Flashback encoder sink checks now execute through
+`tests/Sussudio.Tests/XUnit.FlashbackEncoderSinkContractsTests.cs`, keeping
+frame-rate, codec, counter, queue, force-rotate, packet-drain, startup, and
+source-ownership contracts in xUnit after their removal from the legacy harness
+catalog.
 
 Projection ownership checks are split into snapshot/status, audio, capture and
 source, MJPEG, recording, system resources and A/V sync, preview, and Flashback

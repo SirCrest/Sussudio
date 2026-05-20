@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackEncoderSink_StartupLivesInFocusedPartial()
+    internal static Task FlashbackEncoderSink_StartupLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
@@ -21,7 +21,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_PacketDrainLivesInFocusedPartial()
+    internal static Task FlashbackEncoderSink_PacketDrainLivesInFocusedPartial()
     {
         var loopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs").Replace("\r\n", "\n");
         var packetDrainText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.PacketDrain.cs").Replace("\r\n", "\n");
@@ -47,7 +47,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_QueueCleanupLivesInFocusedPartial()
+    internal static Task FlashbackEncoderSink_QueueCleanupLivesInFocusedPartial()
     {
         var queuesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs")
             .Replace("\r\n", "\n");

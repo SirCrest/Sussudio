@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackEncoderSink_ResolveFrameRateParts_ParsesFractionalRates()
+    internal static Task FlashbackEncoderSink_ResolveFrameRateParts_ParsesFractionalRates()
     {
         var sinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");
         var method = sinkType.GetMethod("ResolveFrameRateParts", BindingFlags.Static | BindingFlags.NonPublic)
@@ -38,7 +38,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_MapCodecName_MapsFormats()
+    internal static Task FlashbackEncoderSink_MapCodecName_MapsFormats()
     {
         var sinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");
         var method = sinkType.GetMethod("MapCodecName", BindingFlags.Static | BindingFlags.NonPublic)
@@ -55,7 +55,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_CountersDefaultToZero()
+    internal static Task FlashbackEncoderSink_CountersDefaultToZero()
     {
         var sinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");
         var optionsType = RequireType("Sussudio.Models.FlashbackBufferOptions");
@@ -70,7 +70,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_HighResolutionCpuQueueCapacityIsBounded()
+    internal static Task FlashbackEncoderSink_HighResolutionCpuQueueCapacityIsBounded()
     {
         var sinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");
         var contextType = RequireType("Sussudio.Models.FlashbackSessionContext");
@@ -91,7 +91,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_StartFailureRollsBackStartedState()
+    internal static Task FlashbackEncoderSink_StartFailureRollsBackStartedState()
     {
         var sourceText = ReadFlashbackEncoderSinkSource();
 
@@ -124,7 +124,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_EncoderPtsGuardsInvalidFrameRate()
+    internal static Task FlashbackEncoderSink_EncoderPtsGuardsInvalidFrameRate()
     {
         var sourceText = ReadFlashbackEncoderSinkSource();
 
