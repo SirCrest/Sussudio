@@ -45,7 +45,6 @@ static partial class Program
     {
         await AddMcpToolSurfaceChecksAsync(results);
         await AddDiagnosticSessionChecksAsync(results);
-        await AddMcpPerformanceAndProbeToolChecksAsync(results);
         await AddMjpegPipelineChecksAsync(results);
         await AddRecordingPipelineChecksAsync(results);
     }

@@ -102,6 +102,8 @@ add xUnit alongside, and port incrementally.
 - `XUnit.McpWindowPreviewToolContractsTests.cs` owns the former legacy MCP
   window/preview wait, screenshot, frame-capture, window-action, and
   preview-toggle/probe checks.
+- `XUnit.McpPerformanceToolContractsTests.cs` owns the former legacy MCP
+  PresentMon correlation, performance timeline, and frame-pacing verdict checks.
 - `XUnit.PresentationPreviewHarnessRegistrationTests.cs` owns the former legacy
   presentation-preview harness registration guard.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpFramePacingVerdictTool_FlagsHalfRatePreviewAndPlayback()
+    internal static async Task McpFramePacingVerdictTool_FlagsHalfRatePreviewAndPlayback()
     {
         var pipeName = NewMcpToolPipeName("frame-pacing");
         var pipeClient = CreateMcpPipeClient(pipeName);
@@ -125,7 +125,7 @@ static partial class Program
         AssertCommandRequest(requests[1], "GetPerformanceTimeline", ("maxEntries", 240));
     }
 
-    private static async Task McpFramePacingVerdictTool_FlagsInsufficientSampleDuration()
+    internal static async Task McpFramePacingVerdictTool_FlagsInsufficientSampleDuration()
     {
         var pipeName = NewMcpToolPipeName("frame-pacing-short");
         var pipeClient = CreateMcpPipeClient(pipeName);

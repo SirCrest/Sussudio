@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpPresentMonTools_RouteSnapshotCorrelation()
+    internal static async Task McpPresentMonTools_RouteSnapshotCorrelation()
     {
         var presentMonTools = RequireMcpType("McpServer.Tools.PresentMonTools");
 

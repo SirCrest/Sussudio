@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task McpPerformanceTimelineTool_ExposesD3DP99StageTiming()
+    internal static Task McpPerformanceTimelineTool_ExposesD3DP99StageTiming()
     {
         var sources = ReadMcpPerformanceTimelineSources();
 

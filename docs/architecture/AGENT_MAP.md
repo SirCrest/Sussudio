@@ -2601,6 +2601,9 @@ Primary current owners:
   `McpToolSurface.Performance.TimelineContract.*.Tests.cs` partials for shared
   source loading, source-ownership assertions, rendering text contracts, and
   `PerformanceTimelineEntry` projection contracts.
+  `tests/Sussudio.Tests/XUnit.McpPerformanceToolContractsTests.cs` owns the
+  xUnit execution surface for these performance/probe contracts after their
+  removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/McpToolSurface.WindowPreview.*.Tests.cs` owns MCP
   wait, window action, preview toggle, Flashback toggle, screenshot, and probe
   tests. `tests/Sussudio.Tests/XUnit.McpWindowPreviewToolContractsTests.cs`

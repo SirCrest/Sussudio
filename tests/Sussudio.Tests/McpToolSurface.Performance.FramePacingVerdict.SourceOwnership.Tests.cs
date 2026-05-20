@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task McpFramePacingVerdictTool_SourceOwnershipIsSplit()
+    internal static Task McpFramePacingVerdictTool_SourceOwnershipIsSplit()
     {
         var rootSource = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.cs");
         var channelsSource = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.Channels.cs");

@@ -627,6 +627,10 @@ Window/preview MCP tool checks for condition wait, window actions, screenshots,
 preview-frame capture, preview toggles, and preview/video-source probes now
 execute through `tests/Sussudio.Tests/XUnit.McpWindowPreviewToolContractsTests.cs`
 after their removal from the legacy harness catalog.
+MCP performance/probe checks for PresentMon correlation, performance timeline
+formatting/contracts, and frame-pacing verdict policy now execute through
+`tests/Sussudio.Tests/XUnit.McpPerformanceToolContractsTests.cs` after their
+removal from the legacy harness catalog.
 
 `tests/Sussudio.Tests/Flashback.Tests.cs` is now only the shared helper shell.
 Flashback regression coverage is split into buffer, encoder-sink, exporter

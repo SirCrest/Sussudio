@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task McpPerformanceTimelineTool_RendersFlashbackCommandCounters()
+    internal static async Task McpPerformanceTimelineTool_RendersFlashbackCommandCounters()
     {
         var pipeName = NewMcpToolPipeName("timeline-counters");
         var pipeClient = CreateMcpPipeClient(pipeName);

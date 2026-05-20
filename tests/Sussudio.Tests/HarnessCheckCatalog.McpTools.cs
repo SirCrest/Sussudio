@@ -52,25 +52,4 @@ static partial class Program
             McpDiagnosticSessionTool_SurfacesDiagnosticFailureAsToolError);
     }
 
-    private static async Task AddMcpPerformanceAndProbeToolChecksAsync(List<CheckResult> results)
-    {
-        await AddCheckAsync(results,
-            "MCP PresentMon tool routes snapshot correlation",
-            McpPresentMonTools_RouteSnapshotCorrelation);
-        await AddCheckAsync(results,
-            "MCP performance timeline exposes D3D P99 stage timing",
-            McpPerformanceTimelineTool_ExposesD3DP99StageTiming);
-        await AddCheckAsync(results,
-            "MCP performance timeline renders flashback command counters",
-            McpPerformanceTimelineTool_RendersFlashbackCommandCounters);
-        await AddCheckAsync(results,
-            "MCP frame pacing verdict flags half-rate preview and playback",
-            McpFramePacingVerdictTool_FlagsHalfRatePreviewAndPlayback);
-        await AddCheckAsync(results,
-            "MCP frame pacing verdict flags insufficient sample duration",
-            McpFramePacingVerdictTool_FlagsInsufficientSampleDuration);
-        await AddCheckAsync(results,
-            "MCP frame pacing verdict ownership is split",
-            McpFramePacingVerdictTool_SourceOwnershipIsSplit);
-    }
 }
