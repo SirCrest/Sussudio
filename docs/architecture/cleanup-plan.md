@@ -3465,10 +3465,12 @@ owner, fold it back into that owner and update the source-shape tests and
    queue behavior, and queued lease release owners. MainWindow shell ownership
    tests are split into chrome, startup, preview runtime, and window lifecycle
    owners. MainViewModel dependency-composition ownership now keeps
-   source-telemetry, runtime lifecycle/event-ingress, and disposal controller
-   dependency-context assertions in a focused runtime owner instead of the root
-   composition catch-all. Flashback buffer segment tests are split between validation,
-   accounting, disposal/recovery, and segment lookup/list projection coverage.
+   capture/device controller dependency-context assertions in a focused
+   capture-device owner, and source-telemetry, runtime lifecycle/event-ingress,
+   and disposal controller dependency-context assertions in a focused runtime
+   owner instead of the root composition catch-all. Flashback buffer segment
+   tests are split between validation, accounting, disposal/recovery, and
+   segment lookup/list projection coverage.
 
 3. Continue converting MainWindow partial concerns into controllers.
 

@@ -1616,8 +1616,13 @@ Primary current owners:
   ownership, and audio meter callback-state assertions.
 - `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Tests.cs` owns the
   MainViewModel dependency-composition seam assertions for root construction,
-  controller graph creation, presentation/capture/audio controller contexts,
-  state partial ownership, and default dependency factory wiring.
+  controller graph creation, presentation/recording-transition controller
+  contexts, state partial ownership, and default dependency factory wiring.
+- `tests/Sussudio.Tests/MainViewModel.DependencyComposition.CaptureDevice.Tests.cs`
+  owns the MainViewModel capture/device composition assertions for device
+  refresh, device-native audio, capture mode rebuild, capture settings
+  automation, recording settings/capability, and late format-probe retarget
+  controller contexts.
 - `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Runtime.Tests.cs`
   owns the MainViewModel source-telemetry, runtime lifecycle, runtime event
   ingress, subscription, and disposal controller dependency-context assertions.

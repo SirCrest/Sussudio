@@ -61,6 +61,7 @@ static partial class Program
         "tests/Sussudio.Tests/MainViewModel.Capture.SettingsProjection.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.DiskSpacePresentation.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.DeviceFormatProbeRetarget.Tests.cs",
+        "tests/Sussudio.Tests/MainViewModel.DependencyComposition.CaptureDevice.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.DependencyComposition.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.DependencyComposition.Runtime.Tests.cs"
     };

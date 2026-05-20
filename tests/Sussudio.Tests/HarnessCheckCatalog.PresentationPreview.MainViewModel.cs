@@ -82,6 +82,9 @@ static partial class Program
             "MainViewModel uses dependency composition seam",
             MainViewModel_UsesDependencyCompositionSeam);
         await AddCheckAsync(results,
+            "MainViewModel capture and device controllers use dependency composition contexts",
+            MainViewModelCaptureDeviceControllers_UseDependencyCompositionContexts);
+        await AddCheckAsync(results,
             "MainViewModel runtime controllers use dependency composition contexts",
             MainViewModelRuntimeControllers_UseDependencyCompositionContexts);
         await AddCheckAsync(results,
