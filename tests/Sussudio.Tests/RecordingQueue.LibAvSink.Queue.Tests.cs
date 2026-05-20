@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 // Tests for recording sink queue limits, drops, and latency accounting.
 static partial class Program
 {
-    private static Task RecordingVideoTryEnqueuePaths_DoNotBlockCaptureCallbacks()
+    internal static Task RecordingVideoTryEnqueuePaths_DoNotBlockCaptureCallbacks()
     {
         var libAvSource = ReadLibAvRecordingSinkSource();
         var flashbackSource = ReadFlashbackEncoderSinkSource();

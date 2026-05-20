@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 // Tests for recording sink queue limits, drops, and latency accounting.
 static partial class Program
 {
-    private static Task UnifiedVideoCapture_SinkFanoutLivesInFocusedPartial()
+    internal static Task UnifiedVideoCapture_SinkFanoutLivesInFocusedPartial()
     {
         var rootSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
             .Replace("\r\n", "\n");
@@ -29,7 +29,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task UnifiedVideoCapture_FrameIngressLivesInFocusedPartial()
+    internal static Task UnifiedVideoCapture_FrameIngressLivesInFocusedPartial()
     {
         var rootSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
             .Replace("\r\n", "\n");
@@ -91,7 +91,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task UnifiedVideoCapture_LifecycleLivesInFocusedPartial()
+    internal static Task UnifiedVideoCapture_LifecycleLivesInFocusedPartial()
     {
         var rootSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
             .Replace("\r\n", "\n");
@@ -128,7 +128,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureService_FlashbackBackendOwnershipUsesResourceAggregate()
+    internal static Task CaptureService_FlashbackBackendOwnershipUsesResourceAggregate()
     {
         var captureSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")

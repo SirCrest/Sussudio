@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task LibAvRecordingSink_StopValidatesFinalOutput()
+    internal static Task LibAvRecordingSink_StopValidatesFinalOutput()
     {
         var libAvSource = ReadLibAvRecordingSinkSource();
 

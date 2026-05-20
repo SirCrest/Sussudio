@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task RecordingBackendFlashbackBufferCycle_PreservesPolicies()
+    internal static Task RecordingBackendFlashbackBufferCycle_PreservesPolicies()
     {
         var sources = ReadRecordingQueueOverloadPolicySources();
         var bufferCycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackBufferCycle.cs")

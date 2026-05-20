@@ -3771,7 +3771,10 @@ owner, fold it back into that owner and update the source-shape tests and
    low-risk contract groups first. Snapshot-model contract tests are split by
    CaptureDiagnostics, CaptureHealth, and source-signal telemetry model owner.
    Recording queue tests are split into overload policy, LibAv sink, WASAPI,
-   and capture fan-out/backend owners. D3D preview renderer tests are split
+   and capture fan-out/backend owners. These recording pipeline ownership
+   checks now execute through
+   `tests/Sussudio.Tests/XUnit.RecordingPipelineContractsTests.cs` after their
+   removal from the legacy harness catalog. D3D preview renderer tests are split
    into geometry, cadence, diagnostics-contract, source-ownership marker plus
    ContractsAndMetrics/RenderPipeline/RuntimeCapture owners, device-lost, and
    frame-flow owners. Automation tool contract tests are split into

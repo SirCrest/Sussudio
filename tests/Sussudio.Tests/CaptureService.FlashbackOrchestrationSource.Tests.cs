@@ -74,7 +74,7 @@ static partial class Program
             "\n",
             CaptureServicePreviewLifecycleFiles.Select(ReadRepoCodeWithoutCommentsOrStrings));
 
-    private static Task CaptureService_FlashbackOrchestrationLivesInFocusedPartials()
+    internal static Task CaptureService_FlashbackOrchestrationLivesInFocusedPartials()
     {
         var controlsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs");
         var audioInputsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackAudioInputs.cs");
@@ -133,7 +133,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureService_RecordingFinalizationLivesInFocusedPartials()
+    internal static Task CaptureService_RecordingFinalizationLivesInFocusedPartials()
     {
         var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs");
         var flashbackBackendFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs");

@@ -44,7 +44,6 @@ static partial class Program
     private static async Task AddMcpDiagnosticsPipelineChecksAsync(List<CheckResult> results)
     {
         await AddDiagnosticSessionChecksAsync(results);
-        await AddRecordingPipelineChecksAsync(results);
     }
 
     private static async Task AddFlashbackChecksAsync(List<CheckResult> results)

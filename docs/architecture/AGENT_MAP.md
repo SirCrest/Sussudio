@@ -2154,6 +2154,10 @@ Primary current owners:
   CaptureService audio source-family helpers, audio focused-partial ownership,
   PreviewAudioGraphResources ownership, and post-recording microphone monitor
   restart assertions.
+  `tests/Sussudio.Tests/XUnit.RecordingPipelineContractsTests.cs` owns the
+  xUnit execution surface for these recording queue, LibAv sink, WASAPI,
+  capture fan-out, and CaptureService recording ownership contracts after their
+  removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/CaptureCadence.Tests.cs` owns packet-hash duplicate
   cadence and visual-cadence crop sampling assertions.
 - `tests/Sussudio.Tests/UnifiedVideoCapture.Runtime.Tests.cs` owns

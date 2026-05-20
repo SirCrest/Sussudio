@@ -64,6 +64,9 @@ add xUnit alongside, and port incrementally.
   output path/file naming, bitrate policy, and MJPEG HFR policy checks.
 - `XUnit.RecordingConfigurationPolicyTests.cs` owns recording selection policy,
   encoder support, and recording pipeline option contract checks.
+- `XUnit.RecordingPipelineContractsTests.cs` owns the former legacy recording
+  queue overload-policy, LibAv sink, WASAPI, capture fan-out, and CaptureService
+  recording ownership checks.
 - `RecordingArtifactManager.Tests.cs` owns the former legacy temp artifact
   finalization and rollback behavior checks for recording output cleanup.
 - `MjpegPipeline.Timing.Tests.cs` owns the former legacy CPU MJPEG timing

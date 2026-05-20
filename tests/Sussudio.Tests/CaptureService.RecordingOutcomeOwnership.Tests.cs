@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureService_RecordingRollbackLivesInFocusedPartial()
+    internal static Task CaptureService_RecordingRollbackLivesInFocusedPartial()
     {
         var finalizationCallSiteText = string.Join(
             "\n",
@@ -44,7 +44,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureService_RecordingOutcomeStateLivesInFocusedPartial()
+    internal static Task CaptureService_RecordingOutcomeStateLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");

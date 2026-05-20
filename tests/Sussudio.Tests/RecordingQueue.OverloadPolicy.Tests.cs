@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 // Tests for recording sink queue limits, drops, and latency accounting.
 static partial class Program
 {
-    private static Task RecordingVideoQueues_FailExplicitlyInsteadOfEvictingFrames()
+    internal static Task RecordingVideoQueues_FailExplicitlyInsteadOfEvictingFrames()
     {
         var sources = ReadRecordingQueueOverloadPolicySources();
         var libAvSource = sources.LibAvSource;

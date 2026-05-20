@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 // Tests for recording sink queue limits, drops, and latency accounting.
 static partial class Program
 {
-    private static Task WasapiAudioCapture_HotAudioWritesRejectIncompleteTasks()
+    internal static Task WasapiAudioCapture_HotAudioWritesRejectIncompleteTasks()
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
             .Replace("\r\n", "\n");
@@ -60,7 +60,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task WasapiAudioCapture_ConversionLivesInFocusedPartial()
+    internal static Task WasapiAudioCapture_ConversionLivesInFocusedPartial()
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
             .Replace("\r\n", "\n");
@@ -93,7 +93,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task WasapiAudioCapture_InitializationLivesInFocusedPartial()
+    internal static Task WasapiAudioCapture_InitializationLivesInFocusedPartial()
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
             .Replace("\r\n", "\n");
@@ -124,7 +124,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task WasapiAudioPlayback_InitializationLivesInFocusedPartial()
+    internal static Task WasapiAudioPlayback_InitializationLivesInFocusedPartial()
     {
         var playbackSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs")
             .Replace("\r\n", "\n");
@@ -159,7 +159,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task WasapiAudioCapture_DiagnosticsLivesInFocusedPartial()
+    internal static Task WasapiAudioCapture_DiagnosticsLivesInFocusedPartial()
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
             .Replace("\r\n", "\n");
@@ -185,7 +185,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task WasapiComInterop_ContractsLiveInFocusedFiles()
+    internal static Task WasapiComInterop_ContractsLiveInFocusedFiles()
     {
         var rootSource = ReadRepoFile("Sussudio/Services/Audio/WasapiComInterop.cs")
             .Replace("\r\n", "\n");
@@ -247,7 +247,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task WasapiAudioCapture_StopUsesBoundedThreadJoin()
+    internal static Task WasapiAudioCapture_StopUsesBoundedThreadJoin()
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
             .Replace("\r\n", "\n");

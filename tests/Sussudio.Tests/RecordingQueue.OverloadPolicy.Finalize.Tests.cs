@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 // Tests for recording backend finalize, cleanup, and Flashback recovery boundaries.
 static partial class Program
 {
-    private static Task RecordingBackendFinalizeAndCleanup_PreservesFlashbackBoundaries()
+    internal static Task RecordingBackendFinalizeAndCleanup_PreservesFlashbackBoundaries()
     {
         var sources = ReadRecordingQueueOverloadPolicySources();
         var flashbackBackendSource = sources.FlashbackBackendSource;

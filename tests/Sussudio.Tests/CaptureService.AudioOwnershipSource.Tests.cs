@@ -23,7 +23,7 @@ static partial class Program
             "\n",
             CaptureServiceAudioFiles.Select(ReadRepoCodeWithoutCommentsOrStrings));
 
-    private static Task CaptureService_AudioOwnershipLivesInFocusedPartials()
+    internal static Task CaptureService_AudioOwnershipLivesInFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs");
         var audioText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs");
@@ -91,7 +91,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureService_MicrophoneRestartAfterRecordingLivesInMicrophoneMonitorPartial()
+    internal static Task CaptureService_MicrophoneRestartAfterRecordingLivesInMicrophoneMonitorPartial()
     {
         var finalizationText = ReadCaptureServiceRecordingFinalizationSource()
             .Replace("\r\n", "\n");

@@ -27,7 +27,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureService_RecordingLifecycleAndBackendResourcesHaveFocusedOwners()
+    internal static Task CaptureService_RecordingLifecycleAndBackendResourcesHaveFocusedOwners()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
