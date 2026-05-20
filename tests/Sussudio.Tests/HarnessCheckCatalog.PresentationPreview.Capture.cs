@@ -6,18 +6,6 @@ static partial class Program
     private static async Task AddPresentationPreviewCaptureChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Recording stop propagates unified video stop failures",
-            RecordingStop_PropagatesUnifiedVideoStopFailure);
-        await AddCheckAsync(results,
-            "Preview stop compatibility overloads are preserved",
-            PreviewStopCompatibilityOverloads_ArePreserved);
-        await AddCheckAsync(results,
-            "Preview stop API surface has no default-literal ambiguity",
-            PreviewStopApiSurface_HasNoDefaultLiteralAmbiguity);
-        await AddCheckAsync(results,
-            "Emergency recording stop does not dispatch to blocked UI thread",
-            EmergencyRecordingStop_DoesNotDispatchBackToBlockedUiThread);
-        await AddCheckAsync(results,
             "Flashback buffer manager cleans stale session directories",
             FlashbackBufferManager_CleansStaleSessionDirectories);
         await AddCheckAsync(results,

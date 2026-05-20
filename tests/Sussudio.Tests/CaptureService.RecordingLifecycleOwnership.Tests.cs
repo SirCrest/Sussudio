@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task RecordingStop_PropagatesUnifiedVideoStopFailure()
+    internal static Task RecordingStop_PropagatesUnifiedVideoStopFailure()
     {
         var captureServiceText = (
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs")

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task PreviewStopCompatibilityOverloads_ArePreserved()
+    internal static Task PreviewStopCompatibilityOverloads_ArePreserved()
     {
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
@@ -34,7 +34,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewStopApiSurface_HasNoDefaultLiteralAmbiguity()
+    internal static Task PreviewStopApiSurface_HasNoDefaultLiteralAmbiguity()
     {
         AssertPreviewStopSurface("Sussudio.Services.Capture.CaptureService");
         AssertPreviewStopSurface("Sussudio.Services.Capture.CaptureSessionCoordinator");

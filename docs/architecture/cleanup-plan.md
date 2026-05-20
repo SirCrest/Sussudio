@@ -981,6 +981,11 @@ settings projection, preview lifecycle ownership, and audio ramp trace telemetry
 contracts in xUnit after their removal from the legacy harness catalog.
 MainViewModel presentation-preview contract execution is now owned by the
 focused xUnit wrappers above, with no remaining legacy catalog hook.
+Presentation-preview capture runtime guardrail checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureRuntimeGuardContractsTests.cs`,
+keeping recording stop failure propagation, preview stop overload/API
+compatibility, and emergency recording stop threading contracts in xUnit after
+their removal from the legacy harness catalog.
 Presentation-preview D3D pacing checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`,
 keeping transition-drain, frame-capture cancellation, and shared-device

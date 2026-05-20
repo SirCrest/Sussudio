@@ -2579,6 +2579,11 @@ Primary current owners:
   automation preview/HDR/volume routing, audio monitoring, capture settings
   projection, preview lifecycle ownership, and audio ramp trace telemetry after
   their removal from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureRuntimeGuardContractsTests.cs`
+  owns the former presentation-preview capture runtime guardrail group for
+  recording stop failure propagation, preview stop overload/API compatibility,
+  and emergency recording stop threading after their removal from the legacy
+  offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`
   owns the former presentation-preview D3D pacing group for transition-drain,
   frame-capture cancellation, and shared-device reference lifecycle checks after

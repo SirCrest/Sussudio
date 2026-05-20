@@ -232,6 +232,10 @@ add xUnit alongside, and port incrementally.
   final former legacy presentation-preview MainViewModel runtime group:
   automation preview/HDR/volume routing, audio monitoring, capture settings
   projection, preview lifecycle ownership, and audio ramp trace telemetry.
+- `XUnit.PresentationPreviewCaptureRuntimeGuardContractsTests.cs` owns the
+  former legacy presentation-preview capture runtime guardrail group: recording
+  stop failure propagation, preview stop overload/API compatibility, and
+  emergency recording stop threading.
 - `XUnit.PresentationPreviewD3DPacingContractsTests.cs` owns the former legacy
   presentation-preview D3D pacing registration group: transition-drain,
   frame-capture cancellation, and shared-device reference lifecycle checks.
