@@ -2564,15 +2564,11 @@ Flashback playback position/file-PTS mapping now lives in
 It owns scrub/seek clamping, marker-bound range limits, saturating timestamp
 math, active fMP4 segment detection, and playback path comparison.
 
-Flashback playback diagnostics now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs`. That
-partial owns public playback counters, excluding command/thread, audio-master,
-decoded-PTS cadence, max decode timing, and seek-cap telemetry projection.
 Cadence summary DTO construction, percentile math, and low-FPS derivation live
 in `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackCadenceMetrics.cs`.
 Decode summary DTO construction and decode timing percentile projection live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackDecodeMetrics.cs`.
-Private playback metric counters and cadence sample rings now live in
+Private playback metric counters, read-only counter projection, and cadence sample rings now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.MetricsCollection.cs`.
 Playback metric reset behavior now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.MetricReset.cs`.

@@ -8,7 +8,7 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
-        var metricsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs")
+        var metricsCollectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.MetricsCollection.cs")
             .Replace("\r\n", "\n");
         var playbackTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs")
             .Replace("\r\n", "\n");
@@ -46,8 +46,8 @@ static partial class Program
         AssertContains(playbackPtsCadenceText, "FLASHBACK_PLAYBACK_PTS_CADENCE_MISMATCH");
         AssertDoesNotContain(playbackTimingText, "private void TrackDecodedPtsCadence(TimeSpan pts, TimeSpan expectedFrameDuration)");
         AssertDoesNotContain(playbackTimingText, "FLASHBACK_PLAYBACK_PTS_CADENCE_MISMATCH");
-        AssertDoesNotContain(metricsText, "public long PlaybackPtsCadenceMismatchCount =>");
-        AssertDoesNotContain(metricsText, "public double LastPlaybackPtsCadenceDeltaMs =>");
+        AssertDoesNotContain(metricsCollectionText, "public long PlaybackPtsCadenceMismatchCount =>");
+        AssertDoesNotContain(metricsCollectionText, "public double LastPlaybackPtsCadenceDeltaMs =>");
         AssertContains(sourceText, "public long PlaybackPtsCadenceMismatchCount => Interlocked.Read(ref _playbackPtsCadenceMismatchCount);");
         AssertContains(sourceText, "Interlocked.Exchange(ref _playbackPtsCadenceMismatchCount, 0);");
 
@@ -119,8 +119,6 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
-        var metricsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs")
-            .Replace("\r\n", "\n");
         var metricsCollectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.MetricsCollection.cs")
             .Replace("\r\n", "\n");
         var metricResetText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.MetricReset.cs")
@@ -141,6 +139,9 @@ static partial class Program
         AssertContains(metricsCollectionText, "private readonly Stopwatch _playbackFpsClock = new();");
         AssertContains(metricsCollectionText, "private const int PlaybackCadenceSampleCapacity = 240;");
         AssertContains(metricsCollectionText, "private readonly double[] _playbackFrameIntervalsMs = new double[PlaybackCadenceSampleCapacity];");
+        AssertContains(metricsCollectionText, "public long PlaybackFrameCount => Interlocked.Read(ref _playbackFrameCount);");
+        AssertContains(metricsCollectionText, "public string LastPlaybackDropReason => Volatile.Read(ref _lastPlaybackDropReason);");
+        AssertContains(metricsCollectionText, "public double PlaybackAvgFrameMs => _playbackAvgFrameMs;");
         AssertDoesNotContain(metricsCollectionText, "private long _lastPlaybackCadencePtsTicks = -1;");
         AssertDoesNotContain(metricsCollectionText, "private long _playbackPtsCadenceMismatchCount;");
         AssertContains(metricResetText, "private void ResetPlaybackMetrics()");
@@ -163,8 +164,8 @@ static partial class Program
         AssertContains(playbackDecodeMetricsCollectionText, "private bool TryDecodeNextVideoFrameWithMetrics(");
         AssertContains(playbackDecodeMetricsCollectionText, "private void TrackPlaybackDecodeDuration(");
         AssertContains(playbackDecodeMetricsCollectionText, "private static string ResolveDominantDecodePhase(FlashbackDecoder.PlaybackDecodePhaseTimings phaseTimings)");
-        AssertDoesNotContain(metricsText, "public string PlaybackMaxDecodePhase =>");
-        AssertDoesNotContain(metricsText, "public double PlaybackMaxDecodeSendMs =>");
+        AssertDoesNotContain(metricsCollectionText, "public string PlaybackMaxDecodePhase =>");
+        AssertDoesNotContain(metricsCollectionText, "public double PlaybackMaxDecodeSendMs =>");
         AssertDoesNotContain(metricsCollectionText, "private static double PercentileFromSorted(double[] sortedSamples, double percentile)");
         AssertDoesNotContain(metricsCollectionText, "private bool TryDecodeNextVideoFrameWithMetrics(");
         AssertDoesNotContain(metricsCollectionText, "private static string ResolveDominantDecodePhase(FlashbackDecoder.PlaybackDecodePhaseTimings phaseTimings)");

@@ -21,8 +21,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var decoderSegmentReopenText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderSegmentReopen.cs")
             .Replace("\r\n", "\n");
-        var metricsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs")
-            .Replace("\r\n", "\n");
         var metricsCollectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.MetricsCollection.cs")
             .Replace("\r\n", "\n");
         var seekCapTelemetryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.SeekCapTelemetry.cs")
@@ -81,8 +79,8 @@ static partial class Program
         AssertContains(seekCapTelemetryText, "private bool SeekToWithCapTelemetry(");
         AssertContains(seekCapTelemetryText, "FLASHBACK_PLAYBACK_SEEK_FORWARD_DECODE_CAP");
         AssertContains(seekCapTelemetryText, "Interlocked.Increment(ref _playbackSeekForwardDecodeCapHits)");
-        AssertDoesNotContain(metricsText, "public long PlaybackSeekForwardDecodeCapHits =>");
-        AssertDoesNotContain(metricsText, "public bool LastPlaybackSeekHitForwardDecodeCap =>");
+        AssertDoesNotContain(metricsCollectionText, "public long PlaybackSeekForwardDecodeCapHits =>");
+        AssertDoesNotContain(metricsCollectionText, "public bool LastPlaybackSeekHitForwardDecodeCap =>");
         AssertDoesNotContain(metricsCollectionText, "private bool SeekToWithCapTelemetry(");
         AssertDoesNotContain(metricsCollectionText, "FLASHBACK_PLAYBACK_SEEK_FORWARD_DECODE_CAP");
         AssertContains(sourceText, "if (ShouldSkipActiveFmp4ReopenNearLive(seekTarget, reason))\n            {\n                SetReopenFailure(reason, \"near_live\", seekTarget);\n                return false;\n            }\n\n            return TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, reason, cancellationToken);");
