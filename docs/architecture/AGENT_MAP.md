@@ -972,9 +972,10 @@ Important entry points:
 - `CaptureService.FlashbackPreviewBackend.cs` owns Flashback preview backend
   transition coordination: AV1 encoder support probing, video/audio readiness
   waiting, resource-owner request construction, and deferred cleanup handoff.
-  Startup construction, install, playback initialization, and producer
-  attachment live in `FlashbackBackendResources.Startup.cs`; startup rollback
-  cleanup lives in `FlashbackBackendResources.Startup.Rollback.cs`; teardown
+  Startup construction, install, and playback initialization live in
+  `FlashbackBackendResources.Startup.cs`; producer attach/detach request
+  contracts and feed wiring live in `FlashbackBackendResources.Producers.cs`;
+  startup rollback cleanup lives in `FlashbackBackendResources.Startup.Rollback.cs`; teardown
   mechanics live in `FlashbackBackendResources.PreviewDisposal.cs`; backend
   artifact cleanup lives in `FlashbackBackendResources.ArtifactCleanup.cs`.
 - `CaptureService.FlashbackPreviewBackendDisposal.cs` owns Flashback preview
@@ -1356,10 +1357,13 @@ Primary current owner: `Sussudio/Services/Flashback/`
 Entry points:
 
 - `FlashbackBackendResources.cs` owns preview backend resource grouping,
-  recovery-preserve state, recording-finalize handoff, and producer attach/detach
-  request shaping for video, audio, and microphone feeds.
+  install/take/clear state, and recovery-preserve flag storage.
+  `FlashbackBackendResources.Producers.cs` owns producer attach/detach request
+  shapes plus video, audio, and microphone feed wiring.
+  `FlashbackBackendResources.RecordingFinalize.cs` owns recovery-preserve policy
+  and recording-finalize handoff.
   `FlashbackBackendResources.Startup.cs` owns preview backend startup
-  construction/install/playback initialization and successful producer attachment.
+  construction/install/playback initialization.
   `FlashbackBackendResources.Startup.Rollback.cs` owns startup failure rollback
   cleanup: producer detach, playback/sink/exporter/buffer cleanup, deferred
   cleanup scheduling, and final backend clear.

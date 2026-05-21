@@ -1762,12 +1762,17 @@ keep codec selection, GPU handle handoff, and HDR guardrails there.
 owns delivered-cadence frame-rate rational preservation/inference, and
 `Sussudio/Services/Capture/CaptureService.FlashbackRecording.SnapshotCompatibility.cs`
 owns legacy Flashback export verification/downgrade snapshot fields.
-Preview-backend producer wiring now belongs to
+Preview-backend resource state now belongs to
 `Sussudio/Services/Flashback/FlashbackBackendResources.cs`, which owns the
-video/audio/microphone attach and detach request shapes used by preview startup,
-buffer cycling, and teardown. `Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs`
-owns preview backend startup construction/install/playback initialization and
-successful producer attachment.
+preview backend resource grouping, install/take/clear state, and
+recovery-preserve flag storage.
+`Sussudio/Services/Flashback/FlashbackBackendResources.Producers.cs` owns the
+video/audio/microphone attach and detach request shapes and feed wiring used by
+preview startup, buffer cycling, teardown, and rollback.
+`Sussudio/Services/Flashback/FlashbackBackendResources.RecordingFinalize.cs`
+owns recovery-preserve policy and recording-finalize handoff.
+`Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs`
+owns preview backend startup construction/install/playback initialization.
 `Sussudio/Services/Flashback/FlashbackBackendResources.Startup.Rollback.cs`
 owns startup failure rollback cleanup: producer detach, playback/sink/exporter/
 buffer cleanup, deferred cleanup scheduling, and final backend clear.
@@ -5398,10 +5403,14 @@ owner, fold it back into that owner and update the source-shape tests and
    kept it authoritative while introducing smaller owners for the audio graph,
    Flashback backend resources, active recording backend resources, and active
    video pipeline resources.
-   `FlashbackBackendResources.cs` now owns the preview backend resource set and
-   producer attach/detach wiring.
+   `FlashbackBackendResources.cs` now owns the preview backend resource set,
+   install/take/clear state, and recovery-preserve flag storage.
+   `FlashbackBackendResources.Producers.cs` owns producer attach/detach request
+   shapes plus video, audio, and microphone feed wiring.
+   `FlashbackBackendResources.RecordingFinalize.cs` owns recovery-preserve
+   policy and recording-finalize handoff.
    `FlashbackBackendResources.Startup.cs` owns startup construction,
-   install/playback initialization, and successful producer attachment.
+   install/playback initialization.
    `FlashbackBackendResources.Startup.Rollback.cs` owns startup failure
    rollback cleanup: producer detach, playback/sink/exporter/buffer cleanup,
    deferred cleanup scheduling, and final backend clear.

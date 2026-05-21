@@ -101,6 +101,8 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.Lifecycle.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.Rollback.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.RecordingFinalize.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Producers.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
 
         AssertContains(flashbackStateText, "public bool IsFlashbackActive => _flashbackBackend.Sink != null;");
@@ -154,6 +156,10 @@ static partial class Program
         AssertContains(cleanupPlanText, "FlashbackBackendResources.BufferCycle.Lifecycle.cs");
         AssertContains(agentMapText, "FlashbackBackendResources.Startup.Rollback.cs");
         AssertContains(cleanupPlanText, "FlashbackBackendResources.Startup.Rollback.cs");
+        AssertContains(agentMapText, "FlashbackBackendResources.RecordingFinalize.cs");
+        AssertContains(cleanupPlanText, "FlashbackBackendResources.RecordingFinalize.cs");
+        AssertContains(agentMapText, "FlashbackBackendResources.Producers.cs");
+        AssertContains(cleanupPlanText, "FlashbackBackendResources.Producers.cs");
         AssertContains(backendResourcesText, "private FlashbackBufferCyclePlaybackState DisposePlaybackForBufferCycle(");
         AssertContains(backendResourcesText, "private static async Task StopAndDisposeOldSinkForBufferCycleAsync(");
         AssertContains(backendResourcesText, "private async Task<bool> TryStartReplacementSinkForBufferCycleAsync(");
@@ -163,6 +169,10 @@ static partial class Program
         AssertContains(backendResourcesText, "private async Task RollBackPreviewBackendStartAsync(");
         AssertContains(backendResourcesText, "FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN");
         AssertContains(backendResourcesText, "preview_init_rollback");
+        AssertContains(backendResourcesText, "public async Task<FinalizeResult> FinalizeRecordingAsync(");
+        AssertContains(backendResourcesText, "private static FinalizeResult PreserveEndArtifactsOnFailure(");
+        AssertContains(backendResourcesText, "public void AttachProducers(FlashbackProducerAttachRequest request)");
+        AssertContains(backendResourcesText, "public void DetachProducers(FlashbackProducerDetachRequest request)");
         AssertDoesNotContain(flashbackEnableText, "private async Task RestartFlashbackCoreAsync(");
         AssertDoesNotContain(flashbackRestartText, "public Task SetFlashbackEnabledAsync(");
         AssertDoesNotContain(flashbackStateText, "RunTransitionAsync(CurrentSessionState,");
