@@ -4948,8 +4948,10 @@ owner, fold it back into that owner and update the source-shape tests and
    user-facing export result/status handling now live in
    `MainViewModel.FlashbackExport.cs`. Shared Flashback export operation
    lifecycle, including outcome classification, core export execution,
-   current-operation checks, progress/cancellation handoff, and CTS cleanup,
-   now lives in `MainViewModel.FlashbackExportOperation.cs`.
+   progress handoff, and stale-result classification, now lives in
+   `MainViewModel.FlashbackExportOperation.cs`. Shared current-operation checks
+   and CTS cancellation/disposal cleanup live in
+   `MainViewModel.FlashbackExportOperationState.cs`.
    Automation-facing Flashback export command execution, linked cancellation,
    and dispatcher cleanup now live in
    `MainViewModel.FlashbackExportAutomation.cs`. Frame-rate selection reactions and
