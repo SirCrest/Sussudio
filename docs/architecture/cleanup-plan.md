@@ -2162,9 +2162,24 @@ frame-rate rational inference, confidence scoring, and boolean token helpers
 there.
 
 Flashback encoder sink startup now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs`. Keep session
-validation, buffer session creation, encoder initialization, queue creation,
-background task startup, and startup rollback there.
+`Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs`. Keep buffer
+session creation, encoder initialization, queue creation, background task
+startup, and startup rollback there.
+
+Flashback encoder sink startup policy now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.StartupPolicy.cs`. Keep
+session validation, frame-rate fallback/clamping, high-resolution queue
+capacity policy, and hardware-vs-CPU queue capacity resolution there.
+
+Flashback encoder diagnostics reset now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.DiagnosticsReset.cs`. Keep
+counter resets, queue-depth resets, rejection-reason clears, video diagnostics
+reset, and segment-start byte reset there.
+
+Flashback encoder recording accounting helpers now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.RecordingAccounting.cs`.
+Keep saturated PTS conversion, non-negative byte/duration math, and best-effort
+eviction resume fallback there.
 
 Flashback encoder sink options now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs`. Keep encoder

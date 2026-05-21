@@ -21,6 +21,48 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    internal static Task FlashbackEncoderSink_RootHelpersLiveInFocusedPartials()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
+        var startupPolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.StartupPolicy.cs")
+            .Replace("\r\n", "\n");
+        var diagnosticsResetText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.DiagnosticsReset.cs")
+            .Replace("\r\n", "\n");
+        var recordingAccountingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.RecordingAccounting.cs")
+            .Replace("\r\n", "\n");
+        var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
+            .Replace("\r\n", "\n") + "\n" +
+            ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
+
+        AssertContains(rootText, "public FlashbackEncoderSink(FlashbackBufferOptions? options = null)");
+        AssertContains(rootText, "public FlashbackEncoderSink(FlashbackBufferManager bufferManager)");
+        AssertDoesNotContain(rootText, "private static int ResolveVideoQueueCapacity");
+        AssertDoesNotContain(rootText, "private void ResetEncodingCounters()");
+        AssertDoesNotContain(rootText, "private static long NonNegativeByteDelta");
+
+        AssertContains(startupPolicyText, "private static int ResolveVideoQueueCapacity(FlashbackSessionContext context, bool useHardwareFrames)");
+        AssertContains(startupPolicyText, "private static bool IsHighResolutionFrame(FlashbackSessionContext context)");
+        AssertContains(startupPolicyText, "private static double ResolveSessionFrameRate(double frameRate)");
+        AssertContains(startupPolicyText, "private static void ValidateSessionContext(FlashbackSessionContext context)");
+
+        AssertContains(diagnosticsResetText, "private void ResetEncodingCounters()");
+        AssertContains(diagnosticsResetText, "ResetVideoDiagnostics();");
+        AssertContains(diagnosticsResetText, "Interlocked.Exchange(ref _segmentStartBytes, 0);");
+
+        AssertContains(recordingAccountingText, "private static long ToNonNegativeLongSaturated(double value)");
+        AssertContains(recordingAccountingText, "private static long NonNegativeByteDelta(long currentBytes, long startBytes)");
+        AssertContains(recordingAccountingText, "private static TimeSpan NonNegativeDuration(TimeSpan end, TimeSpan start)");
+        AssertContains(recordingAccountingText, "private static (TimeSpan StartPts, TimeSpan EndPts) ResumeEvictionBestEffort(");
+        AssertContains(recordingAccountingText, "FLASHBACK_SINK_EVICTION_RESUME_WARN");
+
+        AssertContains(docsText, "FlashbackEncoderSink.StartupPolicy.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.DiagnosticsReset.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.RecordingAccounting.cs");
+
+        return Task.CompletedTask;
+    }
+
     internal static Task FlashbackEncoderSink_PacketDrainLivesInFocusedPartial()
     {
         var loopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs").Replace("\r\n", "\n");
