@@ -70,7 +70,7 @@ public partial class CaptureService
                     oldCapture,
                     OnWasapiAudioLevelUpdated,
                     OnWasapiCaptureFailed,
-                    _flashbackPlaybackController);
+                    _flashbackBackend.PlaybackController);
                 _wasapiAudioCapture = newCapture;
                 _audioDeviceId = audioDeviceId;
                 _audioDeviceName = audioDeviceName;
@@ -78,7 +78,7 @@ public partial class CaptureService
 
                 AttachFlashbackAudioIfSupported(newCapture, "audio_input_switch");
 
-                if (activeSink != null && !ReferenceEquals(activeSink, _flashbackSink))
+                if (activeSink != null && !ReferenceEquals(activeSink, _flashbackBackend.Sink))
                 {
                     newCapture.AttachRecordingSink(activeSink);
                 }
@@ -89,7 +89,7 @@ public partial class CaptureService
                     {
                         await _previewAudioGraph.StartPlaybackAsync(
                             committedSwitchToken,
-                            _flashbackPlaybackController).ConfigureAwait(false);
+                            _flashbackBackend.PlaybackController).ConfigureAwait(false);
                     }
 
                     Logger.Log($"Audio input switched to: {audioDeviceName ?? resolvedId}");
@@ -116,7 +116,7 @@ public partial class CaptureService
                     oldCapture,
                     OnWasapiAudioLevelUpdated,
                     OnWasapiCaptureFailed,
-                    _flashbackPlaybackController);
+                    _flashbackBackend.PlaybackController);
                 try
                 {
                     await oldCapture.DisposeAsync().ConfigureAwait(false);

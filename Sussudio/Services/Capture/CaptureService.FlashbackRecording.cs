@@ -10,8 +10,8 @@ namespace Sussudio.Services.Capture;
 public partial class CaptureService
 {
     private bool IsFlashbackRecordingBackendActive()
-        => _flashbackSink != null &&
-           _recordingBackend.IsFlashbackBackend(_flashbackSink);
+        => _flashbackBackend.Sink != null &&
+           _recordingBackend.IsFlashbackBackend(_flashbackBackend.Sink);
 
     private bool IsFlashbackRecordingBackendOwnedByRecording()
         => Volatile.Read(ref _flashbackRecordingStartInProgress) != 0 ||
@@ -20,7 +20,7 @@ public partial class CaptureService
 
     private void AttachFlashbackAudioIfSupported(WasapiAudioCapture? capture, string reason)
     {
-        var flashbackSink = _flashbackSink;
+        var flashbackSink = _flashbackBackend.Sink;
         if (capture == null || flashbackSink == null)
             return;
 

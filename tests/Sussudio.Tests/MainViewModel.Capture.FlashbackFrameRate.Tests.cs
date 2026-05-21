@@ -91,7 +91,7 @@ static partial class Program
 
         AssertContains(setFlashbackEnabled, "_pendingFlashbackEnableAfterRecording = false;");
         AssertContains(setFlashbackEnabled, "if (_flashbackEnabled == enabled)");
-        AssertContains(setFlashbackEnabled, "if (enabled && (_flashbackSink != null || _isRecording))");
+        AssertContains(setFlashbackEnabled, "if (enabled && (_flashbackBackend.Sink != null || _isRecording))");
         AssertContains(setFlashbackEnabled, "if (!enabled && !_flashbackBackend.HasAnyResource)");
         AssertContains(
             setFlashbackEnabled,

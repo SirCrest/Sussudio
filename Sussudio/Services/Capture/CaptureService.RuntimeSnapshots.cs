@@ -51,7 +51,7 @@ public partial class CaptureService
             _actualPixelFormat,
             _lastMfSourceReaderNegotiatedFormat);
         var recordingIntegrity = CaptureRuntimeRecordingIntegritySnapshotFields(
-            ResolveRecordingIntegritySummary(unifiedVideoCapture, sink, _flashbackSink));
+            ResolveRecordingIntegritySummary(unifiedVideoCapture, sink, _flashbackBackend.Sink));
         var (runtimeAvSyncDriftMs, runtimeAvSyncDriftRate) = ComputeAvSyncDrift();
         var (runtimeAvSyncEncoderDriftMs, runtimeAvSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();
 

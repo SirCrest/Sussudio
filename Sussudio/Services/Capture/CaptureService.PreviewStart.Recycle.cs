@@ -29,7 +29,7 @@ public partial class CaptureService
 
         if (_unifiedVideoCapture != null &&
             !_isRecording &&
-            _flashbackSink != null &&
+            _flashbackBackend.Sink != null &&
             flashbackBackendSettingsChanged)
         {
             Logger.Log("PREVIEW_START recycle_flashback=1 reason=flashback_settings_changed");

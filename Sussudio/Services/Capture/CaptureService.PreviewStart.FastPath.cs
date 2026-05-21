@@ -21,7 +21,7 @@ public partial class CaptureService
         // Fast-path: the capture pipeline is already running (recording active, or
         // flashback backend kept alive across a prior preview toggle). Just reattach
         // the preview renderer: no device re-init, no flashback restart.
-        if (_flashbackSink?.IsP010 is bool sinkIsP010 &&
+        if (_flashbackBackend.Sink?.IsP010 is bool sinkIsP010 &&
             sinkIsP010 != unifiedVideoCapture.IsP010)
         {
             Logger.Log(
@@ -34,10 +34,10 @@ public partial class CaptureService
                 "Rebuild the flashback backend with the correct format.");
         }
 
-        Logger.Log($"PREVIEW_START fast_path=1 recording={_isRecording} flashback_alive={_flashbackSink != null}");
+        Logger.Log($"PREVIEW_START fast_path=1 recording={_isRecording} flashback_alive={_flashbackBackend.Sink != null}");
         unifiedVideoCapture.SetPreviewSink(_previewFrameSink);
         TryApplySharedPreviewDevice(unifiedVideoCapture, _previewFrameSink);
-        if (!_isRecording && _flashbackEnabled && _flashbackSink == null)
+        if (!_isRecording && _flashbackEnabled && _flashbackBackend.Sink == null)
         {
             await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, transitionToken).ConfigureAwait(false);
         }

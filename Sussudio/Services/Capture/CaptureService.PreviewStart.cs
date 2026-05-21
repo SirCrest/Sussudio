@@ -14,8 +14,8 @@ public partial class CaptureService
             if (_currentDevice == null) throw new InvalidOperationException("No selected video device is available for preview.");
             if (_isVideoPreviewActive) return;
             transitionToken.ThrowIfCancellationRequested();
-            var previousSettings = _flashbackBackendSettings ?? _currentSettings;
-            var flashbackBackendSettingsChanged = _flashbackSink != null &&
+            var previousSettings = _flashbackBackend.SettingsSnapshot ?? _currentSettings;
+            var flashbackBackendSettingsChanged = _flashbackBackend.Sink != null &&
                 previousSettings != null &&
                 !CanReuseFlashbackBackend(previousSettings, settings);
             _currentSettings = settings;

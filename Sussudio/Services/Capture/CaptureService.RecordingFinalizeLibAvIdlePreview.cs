@@ -52,7 +52,7 @@ public partial class CaptureService
             capture,
             OnWasapiAudioLevelUpdated,
             OnWasapiCaptureFailed,
-            _flashbackPlaybackController);
+            _flashbackBackend.PlaybackController);
         if (capture != null)
         {
             try

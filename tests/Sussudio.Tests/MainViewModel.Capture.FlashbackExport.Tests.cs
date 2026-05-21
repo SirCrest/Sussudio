@@ -93,9 +93,9 @@ static partial class Program
         AssertContains(lastNExport, "resolveRangeAfterEvictionPaused: CreateFlashbackExportLastNRangeResolver(seconds)");
 
         var backendSnapshot = ExtractMemberCode(exportBackendSnapshotText, "SnapshotFlashbackExportBackendAsync");
-        AssertContains(backendSnapshot, "var bufferManager = _flashbackBufferManager;");
-        AssertContains(backendSnapshot, "var flashbackSink = _flashbackSink;");
-        AssertContains(backendSnapshot, "var flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
+        AssertContains(backendSnapshot, "var bufferManager = _flashbackBackend.BufferManager;");
+        AssertContains(backendSnapshot, "var flashbackSink = _flashbackBackend.Sink;");
+        AssertContains(backendSnapshot, "var flashbackExporter = bufferManager != null\n                ? _flashbackBackend.Exporter ??= new FlashbackExporter()\n                : _flashbackBackend.Exporter;");
         AssertContains(backendSnapshot, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);\n            exportOperationLockHeld = true;");
         AssertOccursBefore(backendSnapshot, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);", "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
         AssertContains(backendSnapshot, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
@@ -112,7 +112,7 @@ static partial class Program
         AssertContains(exportCore, "if (!exportOperationLockAlreadyHeld)");
         AssertContains(exportCore, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
         AssertOccursBefore(exportCore, "if (bufferManager == null)", "var exporter = snapshotExporter;");
-        AssertContains(exportCore, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackExporter ??= new FlashbackExporter();\n            }");
+        AssertContains(exportCore, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackBackend.Exporter ??= new FlashbackExporter();\n            }");
         AssertContains(exportCore, "var preparedExport = PrepareFlashbackExportRequest(");
         AssertContains(exportCore, "if (preparedExport.FailureResult is { } preparationFailure)");
         AssertContains(exportForceRotateText, "var forceRotateFallbackUsed = false;");

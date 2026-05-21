@@ -77,7 +77,7 @@ public partial class CaptureService
                 rollback.OwnedWasapiAudioCapture,
                 OnWasapiAudioLevelUpdated,
                 OnWasapiCaptureFailed,
-                _flashbackPlaybackController);
+                _flashbackBackend.PlaybackController);
             _wasapiAudioCapture = null;
         }
 

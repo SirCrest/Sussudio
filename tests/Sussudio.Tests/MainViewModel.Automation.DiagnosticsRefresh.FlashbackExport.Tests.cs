@@ -41,7 +41,7 @@ static partial class Program
         AssertContains(exportProgressText, "private sealed class FlashbackExportProgressForwarder");
         AssertContains(captureServiceText, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);");
         AssertContains(captureServiceText, "FlashbackExporter? snapshotExporter = null,");
-        AssertContains(captureServiceText, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackExporter ??= new FlashbackExporter();\n            }");
+        AssertContains(captureServiceText, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackBackend.Exporter ??= new FlashbackExporter();\n            }");
         AssertOccursBefore(captureServiceText, "if (bufferManager == null)", "var exporter = snapshotExporter;");
         AssertContains(captureServiceText, "var sessionLockHeld = false;");
         AssertContains(captureServiceText, "sessionLockHeld = true;");

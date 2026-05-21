@@ -21,7 +21,7 @@ public partial class CaptureService
             // Report estimated size from the flashback buffer bytes written since recording start.
             if (_isRecording && IsFlashbackRecordingBackendActive())
             {
-                var bufferManager = _flashbackBufferManager;
+                var bufferManager = _flashbackBackend.BufferManager;
                 if (bufferManager != null)
                 {
                     return new RecordingStats(bufferManager.TotalBytesWritten - _flashbackRecordingStartBytes, 0, isFlashbackEstimate: true);

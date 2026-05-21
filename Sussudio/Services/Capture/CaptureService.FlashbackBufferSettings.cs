@@ -26,9 +26,9 @@ public partial class CaptureService
                 _currentSettings.FlashbackGpuDecode = gpuDecode;
             }
 
-            if (_flashbackPlaybackController != null)
+            if (_flashbackBackend.PlaybackController != null)
             {
-                _flashbackPlaybackController.GpuDecodeEnabled = gpuDecode;
+                _flashbackBackend.PlaybackController.GpuDecodeEnabled = gpuDecode;
             }
 
             if (_isRecording && IsFlashbackRecordingBackendActive())

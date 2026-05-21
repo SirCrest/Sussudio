@@ -198,11 +198,11 @@ static partial class Program
         AssertContains(backendSource, "public void Clear()");
 
         AssertContains(captureSource, "private readonly FlashbackBackendResources _flashbackBackend = new();");
-        AssertDoesNotContain(captureSource, "private FlashbackBufferManager? _flashbackBufferManager;");
-        AssertDoesNotContain(captureSource, "private FlashbackEncoderSink? _flashbackSink;");
-        AssertDoesNotContain(captureSource, "private FlashbackExporter? _flashbackExporter;");
-        AssertDoesNotContain(captureSource, "private FlashbackPlaybackController? _flashbackPlaybackController;");
-        AssertDoesNotContain(captureSource, "private CaptureSettings? _flashbackBackendSettings;");
+        AssertDoesNotContain(captureSource, "_flashbackBufferManager");
+        AssertDoesNotContain(captureSource, "_flashbackSink");
+        AssertDoesNotContain(captureSource, "_flashbackExporter");
+        AssertDoesNotContain(captureSource, "_flashbackPlaybackController");
+        AssertDoesNotContain(captureSource, "_flashbackBackendSettings");
         AssertContains(captureSource, "_flashbackBackend.HasAnyResource");
         AssertContains(captureSource, "_flashbackBackend.StartPreviewBackendAsync(");
         AssertContains(backendSource, "Install(");

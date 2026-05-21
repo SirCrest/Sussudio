@@ -200,7 +200,7 @@ static partial class Program
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeLibAvResources.cs")),
             "old broad LibAv resource finalization partial removed");
         AssertContains(flashbackFinalizeText, "var fbRecordingContext = _recordingBackend.DetachFlashbackBackend();");
-        AssertContains(flashbackRecordingText, "_recordingBackend.IsFlashbackBackend(_flashbackSink)");
+        AssertContains(flashbackRecordingText, "_recordingBackend.IsFlashbackBackend(_flashbackBackend.Sink)");
         AssertContains(flashbackRecordingSessionContextText, "private FlashbackSessionContext CreateFlashbackSessionContext(");
         AssertContains(flashbackRecordingSessionContextText, "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveFlashbackSessionFrameRateParts(");
         AssertDoesNotContain(flashbackRecordingText, "private FlashbackSessionContext CreateFlashbackSessionContext(");

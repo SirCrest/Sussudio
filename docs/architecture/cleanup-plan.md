@@ -1717,7 +1717,8 @@ owns backend artifact cleanup request/retry/dispose/purge mechanics and
 `Sussudio/Services/Flashback/FlashbackBackendResources.PreviewDisposal.cs`
 owns preview-backend teardown mechanics, sink stop/dispose, and backend clear. `CaptureService`
 supplies the service-level export-lock adapter, purge-policy resolution,
-cancellation-token choice, and full rebuild fallback orchestration.
+cancellation-token choice, and full rebuild fallback orchestration while using
+the backend aggregate directly instead of private root resource shims.
 
 Recording start lifecycle now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`. That file owns
@@ -5015,8 +5016,9 @@ owner, fold it back into that owner and update the source-shape tests and
    `FlashbackBackendResources.BufferCycle.cs` owns sink-only buffer-cycle
    mechanics, `FlashbackBackendResources.PreviewDisposal.cs` owns backend
    teardown, and `FlashbackBackendResources.ArtifactCleanup.cs` owns artifact
-   cleanup mechanics. Keep later Flashback backend mechanics in the matching
-   focused owner before inventing another small owner;
+   cleanup mechanics. CaptureService callers now use that aggregate directly
+   instead of private root resource shim properties. Keep later Flashback backend
+   mechanics in the matching focused owner before inventing another small owner;
    `CaptureService.FlashbackPreviewBackend.cs` should stay the transition
    coordinator for AV1 probing, readiness waiting, and cleanup handoff.
    `CaptureRecordingBackendResources.cs` now owns active recording backend

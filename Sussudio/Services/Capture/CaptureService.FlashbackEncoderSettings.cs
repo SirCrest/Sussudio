@@ -63,7 +63,7 @@ public partial class CaptureService
             _currentSettings.Format = format;
 
             var cycleFailed = false;
-            if (_flashbackSink != null)
+            if (_flashbackBackend.Sink != null)
             {
                 try
                 {
@@ -149,9 +149,9 @@ public partial class CaptureService
                 return;
             }
 
-            var cycledBuffer = _flashbackSink != null;
+            var cycledBuffer = _flashbackBackend.Sink != null;
             var cycleFailed = false;
-            if (_flashbackSink != null)
+            if (_flashbackBackend.Sink != null)
             {
                 try
                 {

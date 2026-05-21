@@ -108,7 +108,7 @@ static partial class Program
         AssertContains(bufferCycleText, "_flashbackBackend.CycleSinkOnlyAsync(");
         AssertContains(bufferSettingsText, "public Task UpdateFlashbackSettingsAsync(");
         AssertContains(bufferSettingsText, "_currentSettings.FlashbackBufferMinutes = bufferMinutes;");
-        AssertContains(bufferSettingsText, "_flashbackPlaybackController.GpuDecodeEnabled = gpuDecode;");
+        AssertContains(bufferSettingsText, "_flashbackBackend.PlaybackController.GpuDecodeEnabled = gpuDecode;");
         AssertDoesNotContain(bufferSettingsText, "FLASHBACK_FORMAT_CHANGE_");
         AssertDoesNotContain(bufferSettingsText, "FLASHBACK_ENCODER_SETTINGS_CHANGE_");
         AssertContains(encoderSettingsText, "private void UpdateEncodingSettings(CaptureSettings source)");

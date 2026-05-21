@@ -49,7 +49,7 @@ public partial class CaptureService
                 return;
             }
 
-            if (!_flashbackEnabled || unifiedVideoCapture == null || currentSettings == null || _flashbackBufferManager == null || _flashbackSink == null)
+            if (!_flashbackEnabled || unifiedVideoCapture == null || currentSettings == null || _flashbackBackend.BufferManager == null || _flashbackBackend.Sink == null)
             {
                 await DisposeFlashbackPreviewBackendCoreAsync(
                         cancellationToken,

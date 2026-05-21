@@ -37,7 +37,7 @@ public partial class CaptureService
             {
                 await _previewAudioGraph.StartPlaybackAsync(
                     transitionToken,
-                    _flashbackPlaybackController).ConfigureAwait(false);
+                    _flashbackBackend.PlaybackController).ConfigureAwait(false);
             }
         }
 

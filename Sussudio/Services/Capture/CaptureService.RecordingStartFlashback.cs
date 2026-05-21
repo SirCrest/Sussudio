@@ -9,13 +9,14 @@ public partial class CaptureService
 {
     private async Task DisposeUnusableFlashbackRecordingBackendAsync(CancellationToken transitionToken)
     {
+        var flashbackSink = _flashbackBackend.Sink;
         if (_flashbackEnabled &&
-            _flashbackSink != null &&
-            !_flashbackSink.CanBeginRecording)
+            flashbackSink != null &&
+            !flashbackSink.CanBeginRecording)
         {
             Logger.Log(
                 "FLASHBACK_RECORDING_BACKEND_UNUSABLE_FALLBACK " +
-                $"failed={_flashbackSink.EncodingFailed} type={_flashbackSink.EncodingFailureType ?? "None"}");
+                $"failed={flashbackSink.EncodingFailed} type={flashbackSink.EncodingFailureType ?? "None"}");
             await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: true).ConfigureAwait(false);
         }
     }
@@ -25,14 +26,12 @@ public partial class CaptureService
         CancellationToken transitionToken,
         RecordingStartRollbackState rollback)
     {
-        if (_flashbackSink == null)
-        {
-            throw new InvalidOperationException("Flashback backend is not available for recording.");
-        }
+        var flashbackSink = _flashbackBackend.Sink
+            ?? throw new InvalidOperationException("Flashback backend is not available for recording.");
 
         // Guard: if the existing flashback sink's pixel format no longer matches the
         // negotiated UVC format, reject the reuse path so the slow path rebuilds correctly.
-        if (_flashbackSink.IsP010 is bool recSinkIsP010 &&
+        if (flashbackSink.IsP010 is bool recSinkIsP010 &&
             _unifiedVideoCapture != null &&
             recSinkIsP010 != _unifiedVideoCapture.IsP010)
         {
@@ -59,18 +58,18 @@ public partial class CaptureService
 
         // If flashback settings changed while preview was stopped, rebuild
         // before recording so the retained backend matches the requested file.
-        var flashbackBackendSettingsChanged = _flashbackBackendSettings == null ||
-            !CanReuseFlashbackBackend(_flashbackBackendSettings, settings);
+        var flashbackBackendSettingsChanged = _flashbackBackend.SettingsSnapshot == null ||
+            !CanReuseFlashbackBackend(_flashbackBackend.SettingsSnapshot, settings);
         var flashbackAudioTopologyChanged =
-            _flashbackSink.AudioEnabled != settings.AudioEnabled ||
-            _flashbackSink.MicrophoneEnabled != settings.MicrophoneEnabled;
+            flashbackSink.AudioEnabled != settings.AudioEnabled ||
+            flashbackSink.MicrophoneEnabled != settings.MicrophoneEnabled;
         if (flashbackAudioTopologyChanged)
         {
             Logger.Log($"FLASHBACK_RECORDING_TOPOLOGY_MISMATCH_REJECT " +
-                $"audio={settings.AudioEnabled} (was {_flashbackSink.AudioEnabled}) " +
-                $"mic={settings.MicrophoneEnabled} (was {_flashbackSink.MicrophoneEnabled})");
+                $"audio={settings.AudioEnabled} (was {flashbackSink.AudioEnabled}) " +
+                $"mic={settings.MicrophoneEnabled} (was {flashbackSink.MicrophoneEnabled})");
             EnsureFlashbackRecordingTopologyMatches(
-                _flashbackSink,
+                flashbackSink,
                 settings.AudioEnabled,
                 settings.MicrophoneEnabled);
         }
@@ -90,10 +89,8 @@ public partial class CaptureService
                 await EnsureFlashbackPreviewBackendAsync(uvc, settings, transitionToken).ConfigureAwait(false);
             }
 
-            if (_flashbackSink == null)
-            {
-                throw new InvalidOperationException("Failed to restart flashback backend for updated recording settings.");
-            }
+            flashbackSink = _flashbackBackend.Sink
+                ?? throw new InvalidOperationException("Failed to restart flashback backend for updated recording settings.");
         }
 
         await EnsureFlashbackAudioInputsAsync(settings, transitionToken, "recording_flashback_start").ConfigureAwait(false);
@@ -102,8 +99,7 @@ public partial class CaptureService
         Volatile.Write(ref _flashbackRecordingStartInProgress, 1);
         try
         {
-            var activeFlashbackSink = _flashbackSink
-                ?? throw new InvalidOperationException("Flashback backend is not available for recording.");
+            var activeFlashbackSink = flashbackSink;
             if (!activeFlashbackSink.CanBeginRecording)
             {
                 throw new InvalidOperationException("Flashback backend is not healthy enough to begin recording.");
@@ -136,7 +132,7 @@ public partial class CaptureService
             _recordingBackend.InstallFlashback(activeFlashbackSink, fbRecordingContext, settings);
             ClearLastRecordingFailure();
             _isRecording = true;
-            _flashbackRecordingStartBytes = _flashbackBufferManager?.TotalBytesWritten ?? 0;
+            _flashbackRecordingStartBytes = _flashbackBackend.BufferManager?.TotalBytesWritten ?? 0;
             PublishRecordingStartedOutcome(fbRecordingContext.FinalOutputPath);
             _recordingStopwatch.Restart();
             StatusChanged?.Invoke(this, "Recording");

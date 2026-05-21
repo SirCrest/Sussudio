@@ -78,9 +78,9 @@ static partial class Program
         AssertDoesNotContain(captureServiceRootText, "private async Task DisposePreviewPipelineAsync");
         AssertContains(previewLifecycleText, "public Task StartVideoPreviewAsync");
         AssertContains(previewLifecycleText, "private async Task DisposePreviewPipelineAsync");
-        AssertContains(startVideoPreview, "var previousSettings = _flashbackBackendSettings ?? _currentSettings;");
+        AssertContains(startVideoPreview, "var previousSettings = _flashbackBackend.SettingsSnapshot ?? _currentSettings;");
         AssertContains(startVideoPreview, "CanReuseFlashbackBackend(previousSettings, settings)");
-        AssertOccursBefore(startVideoPreview, "var previousSettings = _flashbackBackendSettings ?? _currentSettings;", "_currentSettings = settings;");
+        AssertOccursBefore(startVideoPreview, "var previousSettings = _flashbackBackend.SettingsSnapshot ?? _currentSettings;", "_currentSettings = settings;");
         AssertOccursBefore(startVideoPreview, "CanReuseFlashbackBackend(previousSettings, settings)", "_currentSettings = settings;");
         AssertContains(startVideoPreview, "CanReuseVideoCaptureForPreview(_unifiedVideoCapture, settings)");
         AssertRegex(
@@ -93,7 +93,7 @@ static partial class Program
             "preview flashback-disabled recycle branch");
         AssertRegex(
             startVideoPreview,
-            @"if\s*\(\s*_unifiedVideoCapture\s*!=\s*null\s*&&\s*!_isRecording\s*&&\s*_flashbackSink\s*!=\s*null\s*&&\s*flashbackBackendSettingsChanged\s*\)\s*\{[^{}]*DisposeFlashbackPreviewBackendAsync\(transitionToken,\s*purgeSegments:\s*true\)",
+            @"if\s*\(\s*_unifiedVideoCapture\s*!=\s*null\s*&&\s*!_isRecording\s*&&\s*_flashbackBackend\.Sink\s*!=\s*null\s*&&\s*flashbackBackendSettingsChanged\s*\)\s*\{[^{}]*DisposeFlashbackPreviewBackendAsync\(transitionToken,\s*purgeSegments:\s*true\)",
             "preview flashback-backend recycle branch");
 
         AssertContains(retainedPreviewFastPath, "unifiedVideoCapture.SetPreviewSink(_previewFrameSink)");
@@ -164,7 +164,7 @@ static partial class Program
             "_previewAudioGraph.DetachCapture(");
         AssertContains(updateAudioInput, "_audioDeviceId = previousDeviceId;");
         AssertContains(updateAudioInput, "_audioDeviceName = previousDeviceName;");
-        AssertContains(updateAudioInput, "activeSink != null && !ReferenceEquals(activeSink, _flashbackSink)");
+        AssertContains(updateAudioInput, "activeSink != null && !ReferenceEquals(activeSink, _flashbackBackend.Sink)");
         AssertOccursBefore(
             updateAudioInput,
             "newCapture.AttachRecordingSink(activeSink);",
@@ -213,7 +213,7 @@ static partial class Program
         AssertContains(coordinatorText, "controller == null || controller.IsDisposed");
         AssertContains(coordinatorText, "controller is { IsDisposed: false, IsInitialized: true, State: not FlashbackPlaybackState.Disabled }");
         AssertContains(coordinatorText, "? \"disposed\"");
-        AssertContains(captureServiceText, "!CanReuseFlashbackBackend(_flashbackBackendSettings, settings)");
+        AssertContains(captureServiceText, "!CanReuseFlashbackBackend(_flashbackBackend.SettingsSnapshot, settings)");
         AssertContains(captureServiceText, "await EnsureFlashbackAudioInputsAsync(settings, transitionToken,");
         AssertContains(startVideoPreview, "var previewStartRollbackToken = CancellationToken.None;");
         AssertContains(startVideoPreview, "await DisposeFlashbackPreviewBackendAsync(previewStartRollbackToken)");
@@ -238,7 +238,7 @@ static partial class Program
         AssertOccursBefore(
             ExtractTextBetween(
                 captureServiceText,
-                "if (_flashbackEnabled && _flashbackSink != null)",
+                "if (_flashbackEnabled && _flashbackBackend.Sink != null)",
                 "_recordingBackend.InstallFlashback(activeFlashbackSink, fbRecordingContext, settings);"),
             "await EnsureFlashbackAudioInputsAsync(settings, transitionToken,",
             "activeFlashbackSink.BeginRecording");

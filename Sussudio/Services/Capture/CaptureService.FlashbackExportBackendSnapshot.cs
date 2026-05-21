@@ -48,11 +48,11 @@ public partial class CaptureService
 
             await _flashbackBackendLeaseLock.WaitAsync(ct).ConfigureAwait(false);
             backendLeaseHeld = true;
-            var bufferManager = _flashbackBufferManager;
-            var flashbackSink = _flashbackSink;
+            var bufferManager = _flashbackBackend.BufferManager;
+            var flashbackSink = _flashbackBackend.Sink;
             var flashbackExporter = bufferManager != null
-                ? _flashbackExporter ??= new FlashbackExporter()
-                : _flashbackExporter;
+                ? _flashbackBackend.Exporter ??= new FlashbackExporter()
+                : _flashbackBackend.Exporter;
 
             await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);
             exportOperationLockHeld = true;

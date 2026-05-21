@@ -12,9 +12,9 @@ public partial class CaptureService
     {
         var sink = _recordingBackend.LibAvSink;
         var unifiedVideoCapture = _unifiedVideoCapture;
-        var fbSink = _flashbackSink;
-        var bufMgr = _flashbackBufferManager;
-        var fbPlayback = _flashbackPlaybackController;
+        var fbSink = _flashbackBackend.Sink;
+        var bufMgr = _flashbackBackend.BufferManager;
+        var fbPlayback = _flashbackBackend.PlaybackController;
         var fatalCleanupInProgress = Volatile.Read(ref _fatalCleanupInProgress) != 0;
         var flashbackCleanupInProgress = Volatile.Read(ref _flashbackCleanupInProgress) != 0;
         var observedTelemetry = ResolveObservedFrameTelemetry();
@@ -28,7 +28,7 @@ public partial class CaptureService
             recordingHealth.FlashbackVideoQueueLatencyMetrics);
         var snapshotUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var flashbackExport = CaptureFlashbackExportHealthSnapshotFields(snapshotUtcUnixMs);
-        var flashbackBackendSettings = _flashbackBackendSettings;
+        var flashbackBackendSettings = _flashbackBackend.SettingsSnapshot;
         var flashbackBuffer = CaptureFlashbackBufferHealthSnapshotFields(
             fbSink,
             bufMgr,

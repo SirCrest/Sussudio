@@ -39,35 +39,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
     private readonly CaptureRecordingBackendResources _recordingBackend = new();
     private readonly FlashbackBackendResources _flashbackBackend = new();
-    private FlashbackBufferManager? _flashbackBufferManager
-    {
-        get => _flashbackBackend.BufferManager;
-        set => _flashbackBackend.BufferManager = value;
-    }
-
-    private FlashbackEncoderSink? _flashbackSink
-    {
-        get => _flashbackBackend.Sink;
-        set => _flashbackBackend.Sink = value;
-    }
-
-    private FlashbackExporter? _flashbackExporter
-    {
-        get => _flashbackBackend.Exporter;
-        set => _flashbackBackend.Exporter = value;
-    }
-
-    private FlashbackPlaybackController? _flashbackPlaybackController
-    {
-        get => _flashbackBackend.PlaybackController;
-        set => _flashbackBackend.PlaybackController = value;
-    }
-
-    private CaptureSettings? _flashbackBackendSettings
-    {
-        get => _flashbackBackend.SettingsSnapshot;
-        set => _flashbackBackend.SettingsSnapshot = value;
-    }
 
     // Flashback uses a preview-owned continuous encoder when the user is not
     // recording, but can also become the recording backend. These flags track

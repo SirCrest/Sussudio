@@ -83,7 +83,7 @@ static partial class Program
         AssertContains(captureServiceSource, "Flashback backend export rotation did not quiesce before recording start.");
         var flashbackRecordingStartMismatch = ExtractSourceBlock(
             captureServiceSource,
-            "var flashbackBackendSettingsChanged = _flashbackBackendSettings == null",
+            "var flashbackBackendSettingsChanged = _flashbackBackend.SettingsSnapshot == null",
             "await EnsureFlashbackAudioInputsAsync(settings, transitionToken, \"recording_flashback_start\")");
         AssertContains(flashbackRecordingStartMismatch, "FLASHBACK_RECORDING_TOPOLOGY_MISMATCH_REJECT");
         AssertContains(flashbackRecordingStartMismatch, "EnsureFlashbackRecordingTopologyMatches(");

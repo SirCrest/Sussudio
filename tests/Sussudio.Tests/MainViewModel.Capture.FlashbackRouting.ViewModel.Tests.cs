@@ -116,7 +116,7 @@ static partial class Program
         AssertDoesNotContain(inactivePlaybackSnapshotBranch, "FlashbackInPoint = null;");
         AssertDoesNotContain(inactivePlaybackSnapshotBranch, "FlashbackOutPoint = null;");
         AssertMemberContains(flashbackPlaybackText, "UpdateFlashbackBitrate", "_sessionCoordinator.FlashbackTotalBytesWritten");
-        AssertContains(captureServiceText, "public long FlashbackTotalBytesWritten => _flashbackBufferManager?.TotalBytesWritten ?? 0;");
+        AssertContains(captureServiceText, "public long FlashbackTotalBytesWritten => _flashbackBackend.BufferManager?.TotalBytesWritten ?? 0;");
         AssertContains(captureServiceText, "ClassifyCaptureFailureSource(object? sender)");
         AssertContains(captureServiceText, "ReferenceEquals(sender, ProgramCapture)");
         AssertContains(captureServiceText, "ReferenceEquals(sender, MicrophoneCapture)");

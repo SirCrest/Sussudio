@@ -18,7 +18,7 @@ public partial class CaptureService
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
-        var controller = _flashbackPlaybackController;
+        var controller = _flashbackBackend.PlaybackController;
         if (sink == null && controller is { IsDisposed: false, IsInitialized: true })
         {
             controller.PrepareForPreviewDetach();

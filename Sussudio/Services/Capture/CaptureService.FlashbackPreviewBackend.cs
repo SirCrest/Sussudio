@@ -15,7 +15,7 @@ public partial class CaptureService
         CaptureSettings settings,
         CancellationToken cancellationToken)
     {
-        if (!_flashbackEnabled || _flashbackSink != null)
+        if (!_flashbackEnabled || _flashbackBackend.Sink != null)
             return;
 
         // Cache AV1 NVENC availability on first flashback init (async-safe here)

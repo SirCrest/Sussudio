@@ -12,13 +12,13 @@ public partial class CaptureService
 {
     private async Task<FinalizeResult> StopAndDisposeFlashbackRecordingBackendAsync(CancellationToken cancellationToken)
     {
-        var flashbackSink = _flashbackSink!;
+        var flashbackSink = _flashbackBackend.Sink!;
         var fbRecordingContext = _recordingBackend.DetachFlashbackBackend();
         var fbOutputPath = fbRecordingContext?.FinalOutputPath ?? (_lastOutputPath ?? string.Empty);
         var recordingBoundary = new FlashbackRecordingBoundarySnapshot();
 
         Volatile.Write(ref _flashbackRecordingFinalizeInProgress, 1);
-        // Don't null _flashbackSink - it continues for the buffer
+        // Do not clear the backend sink here; it continues serving the buffer.
 
         FinalizeResult fbResult;
         OperationCanceledException? flashbackCancellationException = null;

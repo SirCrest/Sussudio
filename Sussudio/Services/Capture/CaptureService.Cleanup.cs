@@ -101,7 +101,7 @@ public partial class CaptureService
             wasapiCapture,
             OnWasapiAudioLevelUpdated,
             OnWasapiCaptureFailed,
-            _flashbackPlaybackController);
+            _flashbackBackend.PlaybackController);
         if (wasapiCapture != null)
         {
             try

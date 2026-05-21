@@ -27,11 +27,11 @@ public partial class CaptureService
                 // Keep the capture + flashback backend alive across preview toggles unless the
                 // caller explicitly requests a full teardown (reinit, shutdown, settings change).
                 var keepPipelineAlive = !teardownPipeline &&
-                    (_isRecording || (_flashbackEnabled && _flashbackSink != null));
+                    (_isRecording || (_flashbackEnabled && _flashbackBackend.Sink != null));
 
                 if (keepPipelineAlive)
                 {
-                    Logger.Log($"PREVIEW_STOP keep_pipeline_alive=1 recording={_isRecording} flashback_alive={_flashbackSink != null}");
+                    Logger.Log($"PREVIEW_STOP keep_pipeline_alive=1 recording={_isRecording} flashback_alive={_flashbackBackend.Sink != null}");
                     _unifiedVideoCapture?.SetPreviewSink(null);
                 }
                 else

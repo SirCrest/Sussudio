@@ -34,7 +34,7 @@ public partial class CaptureService
             {
                 await _previewAudioGraph.StartPlaybackAsync(
                     transitionToken,
-                    _flashbackPlaybackController).ConfigureAwait(false);
+                    _flashbackBackend.PlaybackController).ConfigureAwait(false);
             }
 
             Logger.Log(
@@ -69,7 +69,7 @@ public partial class CaptureService
             micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
             micCapture.CaptureFailed += OnWasapiCaptureFailed;
             micCapture.Start();
-            if (_flashbackSink is { MicrophoneEnabled: true } fbSink)
+            if (_flashbackBackend.Sink is { MicrophoneEnabled: true } fbSink)
             {
                 micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));
                 Logger.Log("FLASHBACK_MIC_ATTACH_OK reason='preview_mic_monitor_start'");
@@ -121,7 +121,7 @@ public partial class CaptureService
                 capture,
                 OnWasapiAudioLevelUpdated,
                 OnWasapiCaptureFailed,
-                _flashbackPlaybackController);
+                _flashbackBackend.PlaybackController);
             try
             {
                 await capture.DisposeAsync().ConfigureAwait(false);

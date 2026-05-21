@@ -87,7 +87,7 @@ public partial class CaptureService
             }
         }
 
-        if (_microphoneCapture != null && _flashbackSink is { MicrophoneEnabled: true } fbSink)
+        if (_microphoneCapture != null && _flashbackBackend.Sink is { MicrophoneEnabled: true } fbSink)
         {
             _microphoneCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));
             Logger.Log($"FLASHBACK_MIC_ATTACH_OK reason='{reason}'");

@@ -37,8 +37,8 @@ public partial class CaptureService
         bool force = false,
         FlashbackExportRangeResolver? resolveRangeAfterEvictionPaused = null)
     {
-        var flashbackSink = snapshotSink ?? _flashbackSink;
-        var bufferManager = snapshotBufferManager ?? _flashbackBufferManager;
+        var flashbackSink = snapshotSink ?? _flashbackBackend.Sink;
+        var bufferManager = snapshotBufferManager ?? _flashbackBackend.BufferManager;
 
         var exportId = 0L;
         var evictionPaused = false;
@@ -66,7 +66,7 @@ public partial class CaptureService
             var exporter = snapshotExporter;
             if (exporter == null)
             {
-                exporter = _flashbackExporter ??= new FlashbackExporter();
+                exporter = _flashbackBackend.Exporter ??= new FlashbackExporter();
             }
 
             // Pause eviction so segments aren't deleted while the exporter reads them.

@@ -11,24 +11,24 @@ namespace Sussudio.Services.Capture;
 // restarts, and encoder-setting cycles.
 public partial class CaptureService
 {
-    public bool IsFlashbackActive => _flashbackSink != null;
-    public TimeSpan FlashbackBufferedDuration => _flashbackBufferManager?.BufferedDuration ?? TimeSpan.Zero;
-    public long FlashbackDiskBytes => _flashbackBufferManager?.TotalDiskBytes ?? 0;
-    public int FlashbackSegmentCount => _flashbackBufferManager?.SegmentCount ?? 0;
-    internal FlashbackPlaybackController? FlashbackPlaybackController => _flashbackPlaybackController;
-    internal FlashbackBufferManager? FlashbackBufferManager => _flashbackBufferManager;
-    public long FlashbackOutputBytes => _flashbackSink?.OutputBytes ?? 0;
-    public long FlashbackTotalBytesWritten => _flashbackBufferManager?.TotalBytesWritten ?? 0;
-    public string? EncoderCodecName => _flashbackSink?.CodecName;
-    public uint EncoderTargetBitRate => _flashbackSink?.TargetBitRate ?? 0;
-    public int EncoderWidth => _flashbackSink?.EncoderWidth ?? 0;
-    public int EncoderHeight => _flashbackSink?.EncoderHeight ?? 0;
-    public double EncoderFrameRate => _flashbackSink?.EncoderFrameRate ?? 0;
+    public bool IsFlashbackActive => _flashbackBackend.Sink != null;
+    public TimeSpan FlashbackBufferedDuration => _flashbackBackend.BufferManager?.BufferedDuration ?? TimeSpan.Zero;
+    public long FlashbackDiskBytes => _flashbackBackend.BufferManager?.TotalDiskBytes ?? 0;
+    public int FlashbackSegmentCount => _flashbackBackend.BufferManager?.SegmentCount ?? 0;
+    internal FlashbackPlaybackController? FlashbackPlaybackController => _flashbackBackend.PlaybackController;
+    internal FlashbackBufferManager? FlashbackBufferManager => _flashbackBackend.BufferManager;
+    public long FlashbackOutputBytes => _flashbackBackend.Sink?.OutputBytes ?? 0;
+    public long FlashbackTotalBytesWritten => _flashbackBackend.BufferManager?.TotalBytesWritten ?? 0;
+    public string? EncoderCodecName => _flashbackBackend.Sink?.CodecName;
+    public uint EncoderTargetBitRate => _flashbackBackend.Sink?.TargetBitRate ?? 0;
+    public int EncoderWidth => _flashbackBackend.Sink?.EncoderWidth ?? 0;
+    public int EncoderHeight => _flashbackBackend.Sink?.EncoderHeight ?? 0;
+    public double EncoderFrameRate => _flashbackBackend.Sink?.EncoderFrameRate ?? 0;
     public FinalizeResult? LastExportResult => _lastExportResult;
 
     internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()
     {
-        return _flashbackBufferManager?.GetSegmentInfoList()
+        return _flashbackBackend.BufferManager?.GetSegmentInfoList()
             ?? Array.Empty<FlashbackSegmentInfo>();
     }
 
@@ -43,7 +43,7 @@ public partial class CaptureService
 
             if (_flashbackEnabled == enabled)
             {
-                if (enabled && (_flashbackSink != null || _isRecording))
+                if (enabled && (_flashbackBackend.Sink != null || _isRecording))
                 {
                     return;
                 }

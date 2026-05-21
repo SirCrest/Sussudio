@@ -1279,8 +1279,8 @@ Entry points:
   receives export-lock wait/release delegates from `CaptureService` rather than
   owning service semaphores directly during preview backend startup, cycling,
   and teardown. `CaptureService`
-  remains the transition/readiness coordinator and delegates backend mechanics
-  into this owner.
+  remains the transition/readiness coordinator and reads/writes the backend
+  aggregate directly, without private resource shim properties.
 - `FlashbackBufferManager.cs` owns buffer core state and read-only live counters.
 - `FlashbackBufferManager.LiveAccounting.cs` owns latest-PTS reset/update,
   sink-cycle active segment finalization, encoder frame-rate truth, and

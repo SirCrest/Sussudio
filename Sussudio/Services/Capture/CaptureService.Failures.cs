@@ -23,7 +23,7 @@ public partial class CaptureService
             RecordLastRecordingFailure(ex);
         }
 
-        if (_flashbackSink != null)
+        if (_flashbackBackend.Sink != null)
         {
             RecordLastFlashbackFailure(ex);
         }
@@ -51,7 +51,7 @@ public partial class CaptureService
             RecordLastRecordingFailure(ex);
         }
 
-        if (_flashbackSink != null)
+        if (_flashbackBackend.Sink != null)
         {
             RecordLastFlashbackFailure(ex);
         }

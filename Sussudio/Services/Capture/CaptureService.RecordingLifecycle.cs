@@ -37,7 +37,7 @@ public partial class CaptureService
             {
                 await DisposeUnusableFlashbackRecordingBackendAsync(transitionToken).ConfigureAwait(false);
 
-                if (_flashbackEnabled && _flashbackSink != null)
+                if (_flashbackEnabled && _flashbackBackend.Sink != null)
                 {
                     await StartFlashbackRecordingAsync(settings, transitionToken, rollback).ConfigureAwait(false);
                     return;

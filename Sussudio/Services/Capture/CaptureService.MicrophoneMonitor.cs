@@ -75,7 +75,7 @@ public partial class CaptureService
                     nextMicCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
                     nextMicCapture.CaptureFailed += OnWasapiCaptureFailed;
                     nextMicCapture.Start();
-                    if (_flashbackSink is { MicrophoneEnabled: true } fbSink)
+                    if (_flashbackBackend.Sink is { MicrophoneEnabled: true } fbSink)
                     {
                         nextMicCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));
                         Logger.Log("FLASHBACK_MIC_ATTACH_OK reason='mic_monitor_update'");
@@ -145,7 +145,7 @@ public partial class CaptureService
             micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
             micCapture.CaptureFailed += OnWasapiCaptureFailed;
             micCapture.Start();
-            if (_flashbackSink is { MicrophoneEnabled: true } fbSink)
+            if (_flashbackBackend.Sink is { MicrophoneEnabled: true } fbSink)
             {
                 micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));
                 if (!string.IsNullOrWhiteSpace(options.FlashbackAttachReason))
