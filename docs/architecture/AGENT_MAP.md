@@ -4232,7 +4232,8 @@ Primary owners:
   during result construction.
 - `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs` owns
   diagnostic-session health summary snapshot selection, health summary text
-  projection, health verdict composition, warning tolerance, and health warning
+  projection, source-reader/ingest warning deltas for sparse source-capture
+  tolerance, health verdict composition, warning tolerance, and health warning
   text emitted during result construction.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs` owns
   diagnostic-session preview-scheduler analysis handoff and result projection

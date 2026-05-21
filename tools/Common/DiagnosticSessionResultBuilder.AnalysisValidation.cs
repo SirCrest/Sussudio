@@ -25,9 +25,7 @@ internal static partial class DiagnosticSessionResultBuilder
         PreviewCadenceSessionMetrics previewCadenceMetrics,
         PreviewD3DMetrics previewD3DMetrics,
         VisualCadenceSessionMetrics visualCadenceMetrics,
-        DiagnosticSessionPreviewSchedulerAnalysis previewScheduler,
-        long sourceReaderFramesDroppedDelta,
-        long videoIngestErrorsDelta)
+        DiagnosticSessionPreviewSchedulerAnalysis previewScheduler)
     {
         var warnings = request.Warnings;
         if (request.ScenarioPlan.RunFlashbackPlayback)
@@ -60,11 +58,11 @@ internal static partial class DiagnosticSessionResultBuilder
 
         var diagnosticHealthSucceeded = AnalyzeDiagnosticHealth(
             request.Samples,
+            initialSnapshot,
+            lastSnapshot,
             diagnosticHealthSnapshot,
             request.ScenarioPlan,
             sourceCadenceMetrics,
-            sourceReaderFramesDroppedDelta,
-            videoIngestErrorsDelta,
             request.DurationSeconds,
             previewScheduler,
             visualCadenceMetrics,

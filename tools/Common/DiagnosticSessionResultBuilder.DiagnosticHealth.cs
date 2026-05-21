@@ -35,11 +35,11 @@ internal static partial class DiagnosticSessionResultBuilder
 
     private static bool AnalyzeDiagnosticHealth(
         IReadOnlyList<DiagnosticSessionSample> samples,
+        JsonElement initialSnapshot,
+        JsonElement lastSnapshot,
         JsonElement diagnosticHealthSnapshot,
         DiagnosticSessionScenarioPlan scenarioPlan,
         SourceCadenceSessionMetrics sourceCadenceMetrics,
-        long sourceReaderFramesDroppedDelta,
-        long videoIngestErrorsDelta,
         int durationSeconds,
         DiagnosticSessionPreviewSchedulerAnalysis previewScheduler,
         VisualCadenceSessionMetrics visualCadenceMetrics,
@@ -57,13 +57,14 @@ internal static partial class DiagnosticSessionResultBuilder
             previewScheduler.UnderflowsDelta,
             durationSeconds,
             visualCadenceHealthy);
+        var sourceWarningCounters = BuildDiagnosticHealthSourceWarningCounters(initialSnapshot, lastSnapshot);
         var sparseSourceCaptureCadenceWarning =
             isFlashbackScenario &&
             IsSparseSourceCaptureCadenceWarningRun(
                 diagnosticHealthObservation,
                 sourceCadenceMetrics,
-                sourceReaderFramesDroppedDelta,
-                videoIngestErrorsDelta,
+                sourceWarningCounters.SourceReaderFramesDroppedDelta,
+                sourceWarningCounters.VideoIngestErrorsDelta,
                 durationSeconds,
                 visualCadenceHealthy);
         var diagnosticHealthTolerated =
@@ -109,5 +110,18 @@ internal static partial class DiagnosticSessionResultBuilder
         }
 
         return diagnosticHealthSucceeded;
+    }
+
+    private readonly record struct DiagnosticHealthSourceWarningCounters(
+        long SourceReaderFramesDroppedDelta,
+        long VideoIngestErrorsDelta);
+
+    private static DiagnosticHealthSourceWarningCounters BuildDiagnosticHealthSourceWarningCounters(
+        JsonElement initialSnapshot,
+        JsonElement lastSnapshot)
+    {
+        return new DiagnosticHealthSourceWarningCounters(
+            SourceReaderFramesDroppedDelta: GetCounterDelta(lastSnapshot, initialSnapshot, "MfSourceReaderFramesDropped"),
+            VideoIngestErrorsDelta: GetCounterDelta(lastSnapshot, initialSnapshot, "VideoIngestErrorCount"));
     }
 }

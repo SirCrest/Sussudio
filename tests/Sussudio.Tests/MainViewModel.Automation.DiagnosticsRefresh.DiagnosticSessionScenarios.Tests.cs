@@ -176,8 +176,9 @@ static partial class Program
         AssertDoesNotContain(diagnosticSessionText, "flashback segment playback: excessive late frames");
         AssertContains(diagnosticSessionText, "var diagnosticHealthObservation = BuildSessionDiagnosticHealthObservation(");
         AssertContains(diagnosticSessionText, "BuildSourceCadenceSessionMetrics(samples, lastSnapshot)");
-        AssertContains(diagnosticSessionText, "var sourceReaderFramesDroppedDelta = GetCounterDelta(lastSnapshot, initialSnapshot, \"MfSourceReaderFramesDropped\")");
-        AssertContains(diagnosticSessionText, "var videoIngestErrorsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, \"VideoIngestErrorCount\")");
+        AssertContains(diagnosticSessionText, "BuildDiagnosticHealthSourceWarningCounters(initialSnapshot, lastSnapshot)");
+        AssertContains(diagnosticSessionText, "SourceReaderFramesDroppedDelta: GetCounterDelta(lastSnapshot, initialSnapshot, \"MfSourceReaderFramesDropped\")");
+        AssertContains(diagnosticSessionText, "VideoIngestErrorsDelta: GetCounterDelta(lastSnapshot, initialSnapshot, \"VideoIngestErrorCount\")");
         AssertContains(diagnosticSessionText, "var sparseSourceCaptureCadenceWarning =");
         AssertContains(diagnosticSessionText, "IsSparseSourceCaptureCadenceWarningRun(");
         AssertContains(diagnosticSessionText, "internal static bool IsSparseSourceCaptureCadenceWarningRun(");

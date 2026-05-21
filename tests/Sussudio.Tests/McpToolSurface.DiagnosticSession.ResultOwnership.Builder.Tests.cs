@@ -57,6 +57,8 @@ static partial class Program
         AssertContains(analysisValidationText, "ValidateFlashbackPreviewSchedulerAnalysis(");
         AssertContains(analysisValidationText, "AnalyzeDiagnosticHealth(");
         AssertContains(analysisValidationText, "IsToleratedFlashbackScenarioWarning(");
+        AssertDoesNotContain(analysisText, "MfSourceReaderFramesDropped");
+        AssertDoesNotContain(analysisText, "VideoIngestErrorCount");
         AssertDoesNotContain(flatteningText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
         AssertDoesNotContain(builderText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
         AssertDoesNotContain(builderText, "return new DiagnosticSessionResult\n        {");

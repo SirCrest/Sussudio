@@ -105,6 +105,12 @@ static partial class Program
         AssertContains(healthText, "request.StoppedRecordingForVerification");
         AssertContains(healthText, "GetString(diagnosticHealthSnapshot, \"DiagnosticHealthStatus\") ?? \"Unknown\"");
         AssertContains(healthText, "private static bool AnalyzeDiagnosticHealth(");
+        AssertContains(healthText, "private readonly record struct DiagnosticHealthSourceWarningCounters(");
+        AssertContains(healthText, "private static DiagnosticHealthSourceWarningCounters BuildDiagnosticHealthSourceWarningCounters(");
+        AssertContains(healthText, "SourceReaderFramesDroppedDelta: GetCounterDelta(lastSnapshot, initialSnapshot, \"MfSourceReaderFramesDropped\")");
+        AssertContains(healthText, "VideoIngestErrorsDelta: GetCounterDelta(lastSnapshot, initialSnapshot, \"VideoIngestErrorCount\")");
+        AssertContains(healthText, "sourceWarningCounters.SourceReaderFramesDroppedDelta");
+        AssertContains(healthText, "sourceWarningCounters.VideoIngestErrorsDelta");
         AssertContains(healthText, "BuildSessionDiagnosticHealthObservation(");
         AssertContains(healthText, "IsSparseSourceCaptureCadenceWarningRun(");
         AssertContains(healthText, "IsSparsePreviewSchedulerDeadlineDropRun(");
@@ -115,6 +121,8 @@ static partial class Program
         AssertDoesNotContain(analysisText, "AnalyzeDiagnosticHealth(");
         AssertDoesNotContain(analysisText, "DiagnosticHealthStatus");
         AssertDoesNotContain(analysisText, "DiagnosticLikelyStage");
+        AssertDoesNotContain(analysisText, "MfSourceReaderFramesDropped");
+        AssertDoesNotContain(analysisText, "VideoIngestErrorCount");
         AssertDoesNotContain(analysisText, "BuildSessionDiagnosticHealthObservation(");
         AssertDoesNotContain(analysisText, "diagnostic health degraded during session");
         AssertDoesNotContain(analysisText, "diagnostic health {toleratedReason}:");

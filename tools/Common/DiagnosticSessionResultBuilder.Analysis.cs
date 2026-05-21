@@ -32,8 +32,6 @@ internal static partial class DiagnosticSessionResultBuilder
         var previewCadenceMetrics = BuildPreviewCadenceSessionMetrics(samples, lastSnapshot);
         var previewD3DMetrics = BuildPreviewD3DMetrics(initialSnapshot, lastSnapshot, samples);
         var visualCadenceMetrics = BuildVisualCadenceSessionMetrics(samples, lastSnapshot);
-        var sourceReaderFramesDroppedDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MfSourceReaderFramesDropped");
-        var videoIngestErrorsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "VideoIngestErrorCount");
         var previewScheduler = BuildPreviewSchedulerAnalysis(initialSnapshot, lastSnapshot, samples);
         var validationOutcome = ValidateAnalysis(
             request,
@@ -47,9 +45,7 @@ internal static partial class DiagnosticSessionResultBuilder
             previewCadenceMetrics,
             previewD3DMetrics,
             visualCadenceMetrics,
-            previewScheduler,
-            sourceReaderFramesDroppedDelta,
-            videoIngestErrorsDelta);
+            previewScheduler);
 
         return new DiagnosticSessionResultAnalysis(
             lastSnapshot,
