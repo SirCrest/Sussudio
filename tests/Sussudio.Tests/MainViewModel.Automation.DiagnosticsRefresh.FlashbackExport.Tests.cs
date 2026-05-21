@@ -7,6 +7,8 @@ static partial class Program
         var exportOperationsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs");
         var exportCoreText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs");
         var exportRequestPreparationText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRequestPreparation.cs");
+        var exportDiagnosticsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs");
+        var exportProgressText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs");
         AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
@@ -18,6 +20,15 @@ static partial class Program
         AssertContains(exportRequestPreparationText, "private FlashbackExportPreparationResult PrepareFlashbackExportRequest(");
         AssertContains(exportRequestPreparationText, "ForceRotateForExport");
         AssertContains(exportRequestPreparationText, "CreateFlashbackExportThrottleDelayProvider");
+        AssertContains(exportDiagnosticsText, "private long BeginFlashbackExportDiagnostics(");
+        AssertContains(exportDiagnosticsText, "private void RecordRejectedFlashbackExportDiagnostics(");
+        AssertContains(exportDiagnosticsText, "private void CompleteFlashbackExportDiagnostics(");
+        AssertDoesNotContain(exportDiagnosticsText, "private void UpdateFlashbackExportProgress(");
+        AssertDoesNotContain(exportDiagnosticsText, "private void RecordFlashbackExportForceRotateFallback(");
+        AssertContains(exportProgressText, "private IProgress<ExportProgress> CreateFlashbackExportProgressSink(");
+        AssertContains(exportProgressText, "private void UpdateFlashbackExportProgress(");
+        AssertContains(exportProgressText, "private void RecordFlashbackExportForceRotateFallback(");
+        AssertContains(exportProgressText, "private sealed class FlashbackExportProgressForwarder");
         AssertContains(captureServiceText, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);");
         AssertContains(captureServiceText, "FlashbackExporter? snapshotExporter = null,");
         AssertContains(captureServiceText, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackExporter ??= new FlashbackExporter();\n            }");

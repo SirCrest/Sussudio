@@ -1804,8 +1804,10 @@ orchestration.
 
 Flashback export diagnostics now lives in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs`.
-Keep export attempt state, progress forwarding, rejection records,
-force-rotate fallback counters, and completion status projection there.
+Keep export attempt lifecycle, result, rejection, and completion diagnostic state
+there. Flashback export progress now lives in
+`Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs`. Keep
+progress forwarding/normalization and force-rotate fallback counters there.
 
 Shared video-pipeline lifecycle handoff now lives in
 `Sussudio/Services/Capture/CaptureService.VideoPipelineLifecycle.cs`. That file
