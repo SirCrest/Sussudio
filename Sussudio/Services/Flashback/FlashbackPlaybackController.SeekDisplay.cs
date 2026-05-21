@@ -1,6 +1,5 @@
 using System;
 using System.Threading;
-using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Flashback;
 
@@ -73,50 +72,14 @@ internal sealed partial class FlashbackPlaybackController
             seekSuccess:
             cancellationToken.ThrowIfCancellationRequested();
 
-            var gotFrame = TryDecodeNextVideoFrameWithMetrics(decoder, out var frame, cancellationToken);
-            var frameOwned = gotFrame;
-            try
-            {
-                if (!gotFrame &&
-                    TrySeekAdjacentSegmentStart(decoder, ref fileOpen, filePts, $"seek_display:{kind}", out var adjacentFilePts, cancellationToken))
-                {
-                    filePts = adjacentFilePts;
-                    cancellationToken.ThrowIfCancellationRequested();
-                    gotFrame = TryDecodeNextVideoFrameWithMetrics(decoder, out frame, cancellationToken);
-                    frameOwned = gotFrame;
-                }
-
-                if (gotFrame)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var submitted = TrySubmitAndHoldFrame(frame, "seek");
-                    frameOwned = false;
-                    if (!submitted)
-                    {
-                        PlaybackPosition = bufferPosition;
-                        SetSeekDisplayFailure(kind, "submit_failed", bufferPosition);
-                        return false;
-                    }
-                    Interlocked.Exchange(ref _lastVideoPtsTicks, frame.Pts.Ticks);
-
-                    // Set position to actual decoded frame PTS mapped back to buffer position
-                    var actualPosition = SaturatingSubtract(frame.Pts, validStartPts);
-                    if (actualPosition < TimeSpan.Zero) actualPosition = TimeSpan.Zero;
-                    PlaybackPosition = actualPosition;
-                }
-                else
-                {
-                    PlaybackPosition = bufferPosition;
-                    RecordSeekDisplayDecodeFailure(kind, bufferPosition, filePts);
-                }
-            }
-            finally
-            {
-                if (frameOwned)
-                {
-                    ReleaseHeldFrameBestEffort(frame, "seek_cancelled");
-                }
-            }
+            var gotFrame = TryDecodeAndDisplaySeekFrame(
+                decoder,
+                ref fileOpen,
+                kind,
+                bufferPosition,
+                validStartPts,
+                ref filePts,
+                cancellationToken);
 
             Logger.Log($"FLASHBACK_PLAYBACK_SEEK_OK pos_ms={(long)PlaybackPosition.TotalMilliseconds} file_pts_ms={(long)filePts.TotalMilliseconds} got_frame={gotFrame}");
             return gotFrame;
@@ -133,14 +96,5 @@ internal sealed partial class FlashbackPlaybackController
             Logger.Log($"FLASHBACK_PLAYBACK_SEEK_ERROR type={ex.GetType().Name} error='{ex.Message}'");
             return false;
         }
-    }
-
-    private void RecordSeekDisplayDecodeFailure(CommandKind kind, TimeSpan bufferPosition, TimeSpan filePts)
-    {
-        Interlocked.Increment(ref _playbackDecodeErrorSnaps);
-        RecordPlaybackDroppedFrame("seek_display_no_frame");
-        SetSeekDisplayFailure(kind, "no_frame", bufferPosition);
-        Logger.Log(
-            $"FLASHBACK_PLAYBACK_SEEK_NO_FRAME_SNAP_TO_LIVE kind={kind} pos_ms={(long)bufferPosition.TotalMilliseconds} file_pts_ms={(long)filePts.TotalMilliseconds}");
     }
 }

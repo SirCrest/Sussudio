@@ -3512,9 +3512,12 @@ Keep seek-display and playback pacing in the controller core/thread partials.
 
 Flashback playback seek/scrub frame display now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.SeekDisplay.cs`.
-Keep keyframe seek display, displayed-frame PTS mapping, adjacent-segment
-fallback for seek display, and seek-display failure accounting there; keep
-continuous playback pacing in the controller core/thread partials.
+Keep keyframe seek display, active fMP4 keyframe retry, and displayed-frame PTS
+mapping there. Seek/scrub decoded-frame acquisition, adjacent-segment fallback
+display, frame submission/held-frame release, and no-frame seek-display failure
+accounting now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.SeekDisplayFrames.cs`;
+keep continuous playback pacing in the controller core/thread partials.
 
 Flashback continuous playback progression now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLoop.cs`.

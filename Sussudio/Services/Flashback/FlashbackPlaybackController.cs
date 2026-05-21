@@ -23,7 +23,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     // See: FlashbackPlaybackController.PlaybackState.cs, .CommandQueue.cs, .CommandCoalescing.cs, .CommandControlYieldPolicy.cs, .CommandTelemetry.cs, .CommandMetrics.cs, .CommandFailures.cs, .DecoderFiles.cs, .DecoderCleanup.cs,
     // .DecoderReopen.cs, .DecoderAdjacentSegmentSeek.cs, .DecoderSegmentReopen.cs,
     // .ThreadLoop.cs, .ThreadExit.cs, .ThreadLifecycle.cs, .ThreadStartLifecycle.cs, .ThreadStopLifecycle.cs, .ThreadCleanup.cs, .ThreadEndScrubCommand.cs, .PlaybackLoop.cs,
-    // .PlaybackSegmentEdges.cs, .PlaybackSegmentSwitch.cs, .PlaybackTiming.cs, .PlaybackPtsCadence.cs, .PlaybackSoftwareBudget.cs,
+    // .PlaybackSegmentEdges.cs, .PlaybackSegmentSwitch.cs, .PlaybackTiming.cs, .PlaybackPtsCadence.cs, .PlaybackSoftwareBudget.cs, .SeekDisplayFrames.cs,
     // .AudioMasterClock.cs, .AudioMasterPacing.cs, .AudioMasterFallbacks.cs, .AudioCallback.cs, .AudioRouting.cs, .AudioPreviewGuards.cs, .AudioPrebuffer.cs,
     // .PreviewFrames.cs, .PreviewFrameValidation.cs, .PlaybackFrameOwnership.cs, .PlaybackLiveRecovery.cs, .PreviewDetachLifecycle.cs,
     // .PlaybackCadenceMetrics.cs, .PlaybackDecodeMetrics.cs, .MetricsCollection.cs, .MetricReset.cs, .SeekCapTelemetry.cs, .PlaybackDecodeMetricsCollection.cs
