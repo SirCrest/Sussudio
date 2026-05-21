@@ -21,7 +21,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackObservationAudioMasterText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs")
             .Replace("\r\n", "\n");
+        var playbackResultModelText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs")
+            .Replace("\r\n", "\n");
         var playbackResultText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs")
+            .Replace("\r\n", "\n");
+        var playbackResultObservedReadsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.ObservedReads.cs")
             .Replace("\r\n", "\n");
         var playbackResultCommandsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Commands.cs")
             .Replace("\r\n", "\n");
@@ -39,14 +43,15 @@ static partial class Program
         AssertContains(metricsText, "internal static partial class DiagnosticSessionFlashbackMetrics");
         AssertContains(recordingText, "internal sealed class FlashbackRecordingSessionMetrics");
         AssertContains(playbackSessionText, "internal sealed class FlashbackPlaybackSessionMetrics");
-        AssertContains(playbackResultText, "internal sealed class FlashbackPlaybackResultMetrics");
+        AssertContains(playbackResultModelText, "internal sealed class FlashbackPlaybackResultMetrics");
         AssertContains(exportText, "internal sealed class FlashbackExportSessionMetrics");
         AssertContains(playbackSessionText, "public JsonElement BaselineSnapshot { get; init; }");
         AssertContains(playbackSessionText, "public long MinOnePercentLowAudioMasterFallbacks { get; set; }");
-        AssertContains(playbackResultText, "public long SeekForwardDecodeCapHitsDelta { get; init; }");
+        AssertContains(playbackResultModelText, "public long SeekForwardDecodeCapHitsDelta { get; init; }");
         AssertContains(exportText, "public long ForceRotateFallbacksAtEnd { get; set; }");
         AssertDoesNotContain(recordingText, "internal sealed class FlashbackPlaybackSessionMetrics");
         AssertDoesNotContain(playbackSessionText, "internal sealed class FlashbackPlaybackResultMetrics");
+        AssertDoesNotContain(playbackResultText, "internal sealed class FlashbackPlaybackResultMetrics");
         AssertDoesNotContain(playbackResultText, "internal sealed class FlashbackExportSessionMetrics");
         AssertContains(metricsText, "internal static FlashbackRecordingSessionMetrics BuildFlashbackRecordingMetrics(");
         AssertContains(playbackSessionText, "internal static FlashbackPlaybackSessionMetrics BuildFlashbackPlaybackSessionMetrics(");
@@ -63,6 +68,8 @@ static partial class Program
         AssertContains(playbackResultText, "internal static FlashbackPlaybackResultMetrics BuildFlashbackPlaybackResultMetrics(");
         AssertContains(playbackResultText, "var commands = BuildFlashbackPlaybackResultCommandMetrics(observed, endSnapshot, metrics);");
         AssertContains(playbackResultText, "PendingCommandsAtEnd = commands.PendingCommandsAtEnd,");
+        AssertContains(playbackResultObservedReadsText, "private static long GetObservedLong(bool observed, JsonElement snapshot, string propertyName)");
+        AssertContains(playbackResultObservedReadsText, "private static double GetObservedDouble(bool observed, JsonElement snapshot, string propertyName)");
         AssertContains(playbackResultCommandsText, "private static FlashbackPlaybackResultCommandMetrics BuildFlashbackPlaybackResultCommandMetrics(");
         AssertContains(playbackResultCommandsText, "PendingCommandsAtEnd: observed ? GetInt(endSnapshot, \"FlashbackPlaybackPendingCommands\") : 0");
         AssertContains(playbackResultCommandsText, "LastCommandFailureAtEnd: observed ? GetString(endSnapshot, \"FlashbackPlaybackLastCommandFailure\") ?? string.Empty : string.Empty");
@@ -82,6 +89,8 @@ static partial class Program
         AssertDoesNotContain(playbackResultText, "GetObservedLong(observed, endSnapshot, \"FlashbackPlaybackCommandsDropped\")");
         AssertDoesNotContain(playbackResultText, "GetObservedDouble(observed, endSnapshot, \"FlashbackPlaybackDecodeMaxMs\")");
         AssertDoesNotContain(playbackResultText, "GetObservedLong(observed, endSnapshot, \"FlashbackPlaybackAudioMasterFallbacks\")");
+        AssertDoesNotContain(playbackResultText, "private static long GetObservedLong(");
+        AssertDoesNotContain(playbackResultText, "private static double GetObservedDouble(");
         AssertDoesNotContain(playbackResultCommandsText, "FlashbackPlaybackDecodeMaxMs");
         AssertDoesNotContain(playbackResultCadenceText, "FlashbackPlaybackAudioMasterFallbacks");
         AssertDoesNotContain(playbackResultDecodeText, "FlashbackPlaybackSegmentSwitches");

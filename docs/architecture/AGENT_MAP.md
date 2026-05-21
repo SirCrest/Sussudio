@@ -4902,9 +4902,15 @@ Primary owners:
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.FrameDecode.cs`
   owns frame/decode maxima, and
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs`
-  owns audio-master maxima. Playback result-copy root keeps the
-  `FlashbackPlaybackResultMetrics` handoff shape and final initializer while focused helpers own
-  end-snapshot command, cadence, decode, audio-master, and stage metric reads:
+  owns audio-master maxima.
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs`
+  owns the `FlashbackPlaybackResultMetrics` handoff shape, and
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs` owns final
+  result metric construction.
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.ObservedReads.cs`
+  owns observed-gated primitive reads used by focused playback-result helpers.
+  Focused helpers own end-snapshot command, cadence, decode, audio-master, and
+  stage metric reads:
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Commands.cs`,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Cadence.cs`,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.cs`,

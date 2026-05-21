@@ -4479,9 +4479,13 @@ polling, `.PlaybackBoundary.cs` owns boundary-crossing polling,
 `.PlaybackPosition.cs` owns position convergence polling while the runner keeps
 scenario command sequencing.
 
-Diagnostic-session Flashback playback result metrics now keep final
-`FlashbackPlaybackResultMetrics` construction in
-`tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`, with
+Diagnostic-session Flashback playback result metrics now keep the
+`FlashbackPlaybackResultMetrics` handoff shape in
+`tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs` and
+final construction in
+`tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`.
+Observed-gated primitive reads live in
+`DiagnosticSessionFlashbackMetrics.PlaybackResult.ObservedReads.cs`, with
 end-snapshot reads split into named owners: `.PlaybackResult.Commands.cs` owns
 command queue and command failure fields, `.PlaybackResult.Cadence.cs` owns
 frame cadence and dropped-frame fields, `.PlaybackResult.Decode.cs` owns decode
@@ -4621,7 +4625,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.OnePercentLow.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.FrameDecode.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackResult.ObservedReads.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.Commands.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.Cadence.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.cs`
