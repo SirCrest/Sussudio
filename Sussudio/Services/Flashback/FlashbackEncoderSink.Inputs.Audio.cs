@@ -81,4 +81,26 @@ internal sealed partial class FlashbackEncoderSink
         EnqueueMicrophoneSamples(samples);
         return Task.CompletedTask;
     }
+
+    private static long GetSampleCount(int byteLength)
+    {
+        return byteLength > 0 ? byteLength / AudioInputBlockAlignBytes : 0;
+    }
+
+    private static bool TryValidateAudioPacketLength(int byteLength, string source)
+    {
+        if (byteLength <= 0 || byteLength > MaxAudioPacketBytes)
+        {
+            Logger.Log($"FLASHBACK_SINK_AUDIO_PACKET_REJECT source={source} reason=size bytes={byteLength}");
+            return false;
+        }
+
+        if (byteLength % AudioInputBlockAlignBytes != 0)
+        {
+            Logger.Log($"FLASHBACK_SINK_AUDIO_PACKET_REJECT source={source} reason=alignment bytes={byteLength} align={AudioInputBlockAlignBytes}");
+            return false;
+        }
+
+        return true;
+    }
 }

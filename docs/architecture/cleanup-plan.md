@@ -2166,12 +2166,29 @@ Flashback encoder sink startup now lives in
 validation, buffer session creation, encoder initialization, queue creation,
 background task startup, and startup rollback there.
 
-Flashback encoder sink options and packet helpers now live in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs`. Keep
-recording-context mapping, encoder option creation, segment extension policy,
-packet records, and buffer/COM release helpers there so
-`FlashbackEncoderSink.cs` stays focused on construction, core state, and small
-shared helpers.
+Flashback encoder sink options now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs`. Keep encoder
+option creation, segment extension policy, transport container selection, and
+session frame-rate rational validation there.
+
+Flashback encoder recording-context mapping now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.SessionContext.cs`. Keep
+`RecordingContext` to `FlashbackSessionContext` projection, recording-format
+codec mapping, split-encode mode wire mapping, and recording frame-rate argument
+parsing there.
+
+Flashback encoder file/session helpers now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.FileSessionHelpers.cs`. Keep
+best-effort file-size probing and generated session ID formatting there.
+
+Flashback encoder packet buffer ownership now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.PacketBuffers.cs`. Keep
+ArrayPool rent/return helpers, leased video packet disposal, best-effort video
+packet cleanup, and GPU texture release helpers there.
+
+Flashback encoder packet records now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.PacketTypes.cs`. Keep
+video/audio/GPU packet DTOs and video enqueue result classification there.
 
 Flashback encoder queue helpers now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs`. Keep queue

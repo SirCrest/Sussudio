@@ -211,4 +211,64 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    internal static Task FlashbackEncoderSink_OptionsHelpersLiveInFocusedPartials()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
+        var optionsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs")
+            .Replace("\r\n", "\n");
+        var sessionContextText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.SessionContext.cs")
+            .Replace("\r\n", "\n");
+        var fileSessionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.FileSessionHelpers.cs")
+            .Replace("\r\n", "\n");
+        var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.PacketBuffers.cs")
+            .Replace("\r\n", "\n");
+        var packetTypesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.PacketTypes.cs")
+            .Replace("\r\n", "\n");
+        var audioInputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.Audio.cs")
+            .Replace("\r\n", "\n");
+        var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
+            .Replace("\r\n", "\n") + "\n" +
+            ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
+
+        AssertContains(optionsText, "private static LibAvEncoderOptions CreateOptions(FlashbackSessionContext context, string outputPath)");
+        AssertContains(optionsText, "internal static string GetSegmentExtension(string codecName)");
+        AssertContains(optionsText, "private static (int? Numerator, int? Denominator) ResolveSessionFrameRateParts(int? numerator, int? denominator)");
+        AssertDoesNotContain(optionsText, "private static FlashbackSessionContext CreateSessionContext");
+        AssertDoesNotContain(optionsText, "private readonly record struct VideoFramePacket");
+        AssertDoesNotContain(optionsText, "private static byte[] GetBuffer");
+
+        AssertContains(sessionContextText, "private static FlashbackSessionContext CreateSessionContext(RecordingContext context)");
+        AssertContains(sessionContextText, "private static (int? Numerator, int? Denominator) ResolveFrameRateParts(string frameRateArg)");
+        AssertContains(sessionContextText, "private static string MapCodecName(RecordingFormat format)");
+        AssertContains(sessionContextText, "SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode)");
+
+        AssertContains(fileSessionText, "private static long GetFileSize(string path)");
+        AssertContains(fileSessionText, "private static string CreateSessionId()");
+        AssertContains(fileSessionText, "FLASHBACK_SINK_FILE_SIZE_WARN");
+
+        AssertContains(packetBuffersText, "private static byte[] GetBuffer(int size)");
+        AssertContains(packetBuffersText, "private static void ReturnBuffer(byte[] buffer)");
+        AssertContains(packetBuffersText, "private static void ReturnVideoPacket(VideoFramePacket packet)");
+        AssertContains(packetBuffersText, "private static void ReturnVideoPacketBestEffort(VideoFramePacket packet)");
+        AssertContains(packetBuffersText, "private static void ReleaseGpuTextureBestEffort(IntPtr texture)");
+        AssertContains(packetBuffersText, "ArrayPool<byte>.Shared.Rent(size)");
+        AssertContains(packetBuffersText, "Marshal.Release(texture);");
+
+        AssertContains(packetTypesText, "private readonly record struct VideoFramePacket");
+        AssertContains(packetTypesText, "private enum VideoEnqueueResult");
+        AssertContains(packetTypesText, "private readonly record struct AudioSamplePacket");
+        AssertContains(packetTypesText, "private readonly record struct GpuFramePacket");
+
+        AssertContains(audioInputsText, "private static long GetSampleCount(int byteLength)");
+        AssertContains(audioInputsText, "private static bool TryValidateAudioPacketLength(int byteLength, string source)");
+        AssertDoesNotContain(rootText, "private static FlashbackSessionContext CreateSessionContext");
+        AssertDoesNotContain(rootText, "private static byte[] GetBuffer");
+        AssertContains(docsText, "FlashbackEncoderSink.SessionContext.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.PacketBuffers.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.PacketTypes.cs");
+
+        return Task.CompletedTask;
+    }
 }
