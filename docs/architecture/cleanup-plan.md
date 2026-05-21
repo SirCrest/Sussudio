@@ -2885,20 +2885,17 @@ projection ownership coverage lives in
 `CaptureRuntimeSnapshot` DTO construction from already-sampled field groups.
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssemblyFields.cs` owns the
 private runtime snapshot assembly handoff contract consumed by the assembler.
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotModels.cs` owns the private
-runtime snapshot projection handoff models as one substantial model owner
-instead of per-section tiny files.
 Video ingest, source-reader health, WASAPI capture, and playback output counter
-projection lives in
+projection and its private ingest/audio handoff model lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs`,
 requested/negotiated reader transport, memory preference, frame-ledger, and
-preview renderer-mode projection now lives in
+preview renderer-mode projection and its private reader/transport handoff model now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotReaderTransport.cs`,
-HDR pipeline parity/downgrade and warmup state/count projection now lives in
+HDR pipeline parity/downgrade, warmup state/count projection, and their private handoff models now live in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs`,
-source telemetry detail/age/alignment projection now lives in
+source telemetry detail/age/alignment projection and its private handoff model now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs`,
-and recording-integrity summary projection now lives in
+and recording-integrity summary projection and its private handoff model now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotRecordingIntegrity.cs`.
 Recording-format and observed-frame helper policy live in focused snapshot
 partials.

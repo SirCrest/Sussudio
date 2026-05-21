@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Sussudio.Models;
 using Sussudio.Services.Runtime;
 
@@ -8,6 +9,43 @@ namespace Sussudio.Services.Capture;
 // age, circuit state, and request alignment are evidence for callers only.
 public partial class CaptureService
 {
+    private sealed class RuntimeSourceTelemetrySnapshotFields
+    {
+        public double? DetectedSourceFrameRate { get; init; }
+        public string? DetectedSourceFrameRateArg { get; init; }
+        public string SourceFrameRateOrigin { get; init; } = "Unknown";
+        public int? SourceWidth { get; init; }
+        public int? SourceHeight { get; init; }
+        public bool? SourceIsHdr { get; init; }
+        public string? SourceVideoFormat { get; init; }
+        public string? SourceColorimetry { get; init; }
+        public string? SourceQuantization { get; init; }
+        public string? SourceHdrTransferFunction { get; init; }
+        public int? SourceHdrTransferCode { get; init; }
+        public string? SourceFirmware { get; init; }
+        public string? SourceAudioFormat { get; init; }
+        public string? SourceAudioSampleRate { get; init; }
+        public string? SourceInputSource { get; init; }
+        public string? SourceUsbHostProtocol { get; init; }
+        public string? SourceHdcpMode { get; init; }
+        public string? SourceHdcpVersion { get; init; }
+        public string? SourceRxTxHdcpVersion { get; init; }
+        public string? SourceRawTimingHex { get; init; }
+        public string Availability { get; init; } = "Unknown";
+        public string OriginDetail { get; init; } = "Unknown";
+        public string Confidence { get; init; } = "Unknown";
+        public string? DiagnosticSummary { get; init; }
+        public IReadOnlyList<SourceTelemetryDetailEntry> Details { get; init; } = Array.Empty<SourceTelemetryDetailEntry>();
+        public DateTimeOffset? TimestampUtc { get; init; }
+        public int? AgeSeconds { get; init; }
+        public string Backend { get; init; } = "Unknown";
+        public bool Suppressed { get; init; }
+        public string? SuppressedReason { get; init; }
+        public string CircuitState { get; init; } = "Closed";
+        public string AlignmentStatus { get; init; } = "Unknown";
+        public string AlignmentReason { get; init; } = string.Empty;
+    }
+
     private static RuntimeSourceTelemetrySnapshotFields CaptureRuntimeSourceTelemetrySnapshotFields(
         CaptureSettings? requestedSettings,
         SourceSignalTelemetrySnapshot telemetry,

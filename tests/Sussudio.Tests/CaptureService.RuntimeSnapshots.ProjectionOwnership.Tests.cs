@@ -18,6 +18,7 @@ static partial class Program
         AssertContains(assemblerText, "WasapiPlaybackTargetVolumePercent = ingestAudio.WasapiPlaybackTargetVolumePercent,");
 
         AssertContains(ingestAudioText, "private RuntimeIngestAudioSnapshotFields CaptureRuntimeIngestAudioSnapshotFields(");
+        AssertContains(ingestAudioText, "private sealed class RuntimeIngestAudioSnapshotFields");
         AssertContains(ingestAudioText, "VideoReaderActive = unifiedVideoCapture != null && (videoPreviewActive || recordingActive)");
         AssertContains(ingestAudioText, "IngestLastVideoFrameAgeMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0)");
         AssertContains(ingestAudioText, "SourceReaderFrameChannelDepth = sink?.VideoQueueCount ?? 0");
@@ -38,7 +39,15 @@ static partial class Program
             .Replace("\r\n", "\n");
         var assemblyFieldsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssemblyFields.cs")
             .Replace("\r\n", "\n");
-        var modelsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotModels.cs")
+        var ingestAudioText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs")
+            .Replace("\r\n", "\n");
+        var readerTransportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotReaderTransport.cs")
+            .Replace("\r\n", "\n");
+        var hdrPipelineText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs")
+            .Replace("\r\n", "\n");
+        var sourceTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs")
+            .Replace("\r\n", "\n");
+        var recordingIntegrityText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotRecordingIntegrity.cs")
             .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
             .Replace("\r\n", "\n");
@@ -57,14 +66,18 @@ static partial class Program
         AssertContains(assemblyFieldsText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
         AssertContains(assemblyFieldsText, "public RuntimeHdrWarmupSnapshotFields HdrWarmup { get; init; } = new();");
         AssertContains(assemblyFieldsText, "public ObservedFrameSnapshotFields ObservedTelemetry { get; init; }");
-        AssertContains(modelsText, "private sealed class RuntimeIngestAudioSnapshotFields");
-        AssertContains(modelsText, "private sealed class RuntimeReaderTransportSnapshotFields");
-        AssertContains(modelsText, "private sealed class RuntimeHdrPipelineSnapshotFields");
-        AssertContains(modelsText, "private sealed class RuntimeHdrWarmupSnapshotFields");
-        AssertContains(modelsText, "private sealed class RuntimeSourceTelemetrySnapshotFields");
-        AssertContains(modelsText, "private sealed class RuntimeRecordingIntegritySnapshotFields");
+        AssertContains(ingestAudioText, "private sealed class RuntimeIngestAudioSnapshotFields");
+        AssertContains(readerTransportText, "private sealed class RuntimeReaderTransportSnapshotFields");
+        AssertContains(hdrPipelineText, "private sealed class RuntimeHdrPipelineSnapshotFields");
+        AssertContains(hdrPipelineText, "private sealed class RuntimeHdrWarmupSnapshotFields");
+        AssertContains(sourceTelemetryText, "private sealed class RuntimeSourceTelemetrySnapshotFields");
+        AssertContains(recordingIntegrityText, "private sealed class RuntimeRecordingIntegritySnapshotFields");
         AssertDoesNotContain(assemblerText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
-        AssertDoesNotContain(modelsText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
+        AssertDoesNotContain(ingestAudioText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
+        AssertDoesNotContain(readerTransportText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
+        AssertDoesNotContain(hdrPipelineText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
+        AssertDoesNotContain(sourceTelemetryText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
+        AssertDoesNotContain(recordingIntegrityText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
         AssertDoesNotContain(assemblerText, "bool? ObservedP010Likely8BitUpscaled) ObservedTelemetry");
         AssertContains(assemblerText, "return new CaptureRuntimeSnapshot");
         AssertContains(assemblerText, "TimestampUtc = fields.TimestampUtc,");
@@ -78,11 +91,19 @@ static partial class Program
         AssertContains(agentMapText, "`CaptureService.RuntimeSnapshots.cs` samples runtime snapshot inputs consumed by UI,");
         AssertContains(agentMapText, "`CaptureService.RuntimeSnapshotAssembler.cs` owns final `CaptureRuntimeSnapshot` DTO construction");
         AssertContains(agentMapText, "`CaptureService.RuntimeSnapshotAssemblyFields.cs` owns the private runtime snapshot assembly handoff contract");
-        AssertContains(agentMapText, "`CaptureService.RuntimeSnapshotModels.cs` owns the private runtime snapshot projection handoff models");
+        AssertContains(agentMapText, "and its private ingest/audio handoff model.");
+        AssertContains(agentMapText, "and its private reader/transport handoff model.");
+        AssertContains(agentMapText, "and its private HDR pipeline/warmup handoff models.");
+        AssertContains(agentMapText, "and its private source-telemetry handoff model.");
+        AssertContains(agentMapText, "and its private recording-integrity handoff model.");
         AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples");
         AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs` owns final");
         AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssemblyFields.cs` owns the");
-        AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotModels.cs` owns the");
+        AssertContains(cleanupPlanText, "projection and its private ingest/audio handoff model lives in");
+        AssertContains(cleanupPlanText, "preview renderer-mode projection and its private reader/transport handoff model now lives in");
+        AssertContains(cleanupPlanText, "HDR pipeline parity/downgrade, warmup state/count projection, and their private handoff models now live in");
+        AssertContains(cleanupPlanText, "source telemetry detail/age/alignment projection and its private handoff model now lives in");
+        AssertContains(cleanupPlanText, "and recording-integrity summary projection and its private handoff model now lives in");
 
         return Task.CompletedTask;
     }
@@ -107,6 +128,7 @@ static partial class Program
         AssertContains(assemblerText, "ReaderSourceSubtype = readerTransport.ReaderSourceSubtype,");
 
         AssertContains(readerTransportText, "private static RuntimeReaderTransportSnapshotFields CaptureRuntimeReaderTransportSnapshotFields(");
+        AssertContains(readerTransportText, "private sealed class RuntimeReaderTransportSnapshotFields");
         AssertContains(readerTransportText, "requestedSettings!.RequestedPixelFormat");
         AssertContains(readerTransportText, "mfSourceReaderNegotiatedFormat.Contains(\"P010\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(readerTransportText, "unifiedVideoCapture.IsHighFrameRateMjpegMode ? \"MJPG\"");
@@ -145,6 +167,8 @@ static partial class Program
 
         AssertContains(hdrPipelineText, "private static RuntimeHdrPipelineSnapshotFields CaptureRuntimeHdrPipelineSnapshotFields(");
         AssertContains(hdrPipelineText, "private static RuntimeHdrWarmupSnapshotFields CaptureRuntimeHdrWarmupSnapshotFields(");
+        AssertContains(hdrPipelineText, "private sealed class RuntimeHdrPipelineSnapshotFields");
+        AssertContains(hdrPipelineText, "private sealed class RuntimeHdrWarmupSnapshotFields");
         AssertContains(hdrPipelineText, "ResolveEncoderOutputPixelFormat(recordingContext, requestedSettings)");
         AssertContains(hdrPipelineText, "Requested pipeline '{requestedPipelineMode}'");
         AssertContains(hdrPipelineText, "HdrDowngradeCode = hdrAutoDowngraded ? \"encoder-input-not-p010\" : string.Empty");
@@ -175,6 +199,7 @@ static partial class Program
         AssertContains(assemblerText, "TelemetryAlignmentStatus = sourceTelemetry.AlignmentStatus,");
 
         AssertContains(sourceTelemetryText, "private static RuntimeSourceTelemetrySnapshotFields CaptureRuntimeSourceTelemetrySnapshotFields(");
+        AssertContains(sourceTelemetryText, "private sealed class RuntimeSourceTelemetrySnapshotFields");
         AssertContains(sourceTelemetryText, "TelemetryAgeHelper.ComputeAgeSeconds(telemetryTimestampUtc, DateTimeOffset.UtcNow)");
         AssertContains(sourceTelemetryText, "ResolveTelemetryAlignment(");
         AssertContains(sourceTelemetryText, "CircuitState = ResolveSourceTelemetryCircuitState(telemetry.Availability, suppressed)");
@@ -203,6 +228,7 @@ static partial class Program
         AssertContains(assemblerText, "RecordingIntegrityEncoderAvSyncDriftMs = recordingIntegrity.EncoderAvSyncDriftMs,");
 
         AssertContains(recordingIntegrityText, "private static RuntimeRecordingIntegritySnapshotFields CaptureRuntimeRecordingIntegritySnapshotFields(");
+        AssertContains(recordingIntegrityText, "private sealed class RuntimeRecordingIntegritySnapshotFields");
         AssertContains(recordingIntegrityText, "Status = recordingIntegrity.Status,");
         AssertContains(recordingIntegrityText, "AudioFramesWrittenToSink = recordingIntegrity.AudioFramesWrittenToSink,");
         AssertContains(recordingIntegrityText, "EncoderAvSyncDriftMs = recordingIntegrity.EncoderAvSyncDriftMs,");

@@ -8,6 +8,40 @@ namespace Sussudio.Services.Capture;
 // parity and downgrade evidence without changing selected capture settings.
 public partial class CaptureService
 {
+    private sealed class RuntimeHdrPipelineSnapshotFields
+    {
+        public bool HdrRequested { get; init; }
+        public string? EncoderInputPixelFormat { get; init; }
+        public string? EncoderOutputPixelFormat { get; init; }
+        public string? EncoderVideoCodec { get; init; }
+        public string? EncoderVideoProfile { get; init; }
+        public bool? EncoderTenBitPipelineConfirmed { get; init; }
+        public bool MfConvertersDisabled { get; init; }
+        public string NegotiatedMediaSubtypeToken { get; init; } = "NV12";
+        public bool HdrOutputActive { get; init; }
+        public string HdrActivationReason { get; init; } = "Unknown";
+        public string HdrRuntimeState { get; init; } = "Inactive";
+        public string HdrReadinessReason { get; init; } = string.Empty;
+        public bool HdrAutoDowngraded { get; init; }
+        public string HdrAutoDowngradeReason { get; init; } = string.Empty;
+        public string HdrDowngradeCode { get; init; } = string.Empty;
+        public bool HdrRequestedButSourceNot10Bit { get; init; }
+        public string RequestedPipelineMode { get; init; } = "SDR";
+        public string ActivePipelineMode { get; init; } = "SDR";
+        public bool PipelineModeMatched { get; init; } = true;
+        public string PipelineModeStatus { get; init; } = "Ready";
+        public string PipelineModeReason { get; init; } = string.Empty;
+    }
+
+    private sealed class RuntimeHdrWarmupSnapshotFields
+    {
+        public string State { get; init; } = "NotRequested";
+        public int RequiredP010Frames { get; init; }
+        public int AllowedNonP010Frames { get; init; }
+        public int ObservedP010Frames { get; init; }
+        public int ObservedNonP010Frames { get; init; }
+    }
+
     private static RuntimeHdrPipelineSnapshotFields CaptureRuntimeHdrPipelineSnapshotFields(
         CaptureSettings? requestedSettings,
         string? encoderInputPixelFormat,
