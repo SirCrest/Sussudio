@@ -1803,12 +1803,26 @@ Primary current owners:
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs` owns
   graph factory wiring from those contexts: snapshot provider, frame-time
   presentation, dock graph, overlay controller, and section chrome controller.
-  `Sussudio/MainWindow.StatsOverlay.cs` owns the stats overlay XAML adapter,
-  binding setup, and visibility commands delegated to the composition
-  controller.
+  `Sussudio/MainWindow.StatsOverlay.cs` is the stats overlay XAML adapter-family
+  marker. `Sussudio/MainWindow.StatsOverlay.Composition.cs` owns composition
+  controller instantiation, `Sussudio/MainWindow.StatsOverlay.Shell.cs` owns
+  shell-control and visibility source wiring,
+  `Sussudio/MainWindow.StatsOverlay.Snapshot.cs` owns stats snapshot source
+  wiring and the snapshot adapter, `Sussudio/MainWindow.StatsOverlay.DockTargets.cs`
+  owns dock target control wiring,
+  `Sussudio/MainWindow.StatsOverlay.HardwareSources.cs` owns MJPEG/NVML source
+  wiring, `Sussudio/MainWindow.StatsOverlay.FrameTime.cs` owns compact
+  frame-time target wiring and visibility adapters,
+  `Sussudio/MainWindow.StatsOverlay.Lifecycle.cs` owns binding setup, polling,
+  and stats dock visibility commands delegated to the composition controller,
+  and `Sussudio/MainWindow.StatsOverlay.Sections.cs` owns section chrome event
+  adapters.
   `Sussudio/Controllers/Stats/StatsDockControllerGraph.cs` owns stats dock
   presentation, diagnostic row, hardware row, and refresh-controller graph
   construction because the dock is only driven by the overlay controller.
+  `Sussudio/Controllers/Stats/StatsDockControllerGraph.Contexts.cs` owns the
+  dock graph context contract that groups dock metric targets, diagnostics
+  targets, hardware sources, and refresh predicates.
   `Sussudio/Controllers/Stats/StatsOverlayController.DockAnimation.cs` owns stats dock
   show/hide storyboard construction, dock visibility mutations, and completion
   state.
@@ -1819,17 +1833,18 @@ Primary current owners:
   stats dock metric text, visibility, and status brush application after the
   presentation model is built. `Sussudio/Controllers/Stats/StatsSectionChromeController.cs`
   owns stats dock section expand/collapse chrome and automation-visible section
-  visibility application; `Sussudio/MainWindow.StatsOverlay.cs` is the
-  XAML/automation adapter for that stats shell wiring.
+  visibility application; `Sussudio/MainWindow.StatsOverlay.Sections.cs` is
+  the XAML/automation adapter for that stats shell wiring.
   `Sussudio/Controllers/Stats/StatsWindowPresentationController.cs`
   owns detached stats-window metric text and delegates dynamic telemetry detail
   rendering to `Sussudio/Controllers/Stats/StatsWindowTelemetryDetailsController.cs`.
   `Sussudio/Controllers/Stats/StatsSnapshotProvider.cs` owns shell stats snapshot
   orchestration from capture-health, renderer metrics, and view state, including
   renderer cadence/recent-sample acquisition and null fallback policy.
-  `Sussudio/MainWindow.StatsOverlay.cs` is the XAML-facing adapter for stats
-  visibility, polling, and section chrome commands; stats provider/controller
-  context contracts live in
+  The `Sussudio/MainWindow.StatsOverlay.*.cs` adapter family is the XAML-facing
+  surface for stats visibility, polling, snapshot source wiring, frame-time
+  targets, and section chrome commands; stats provider/controller context
+  contracts live in
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.Contexts.cs`
   and provider/controller composition lives in
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs`.
@@ -1862,9 +1877,8 @@ Primary current owners:
   frame-time overlay text application and graph-line mutation, while
   `Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs` owns frame-time
   canvas sizing, sample projection, and expected-line geometry.
-  `Sussudio/MainWindow.StatsOverlay.cs` owns the XAML-facing compact overlay
-  adapter and presentation-controller composition beside the stats overlay
-  visibility route.
+  `Sussudio/MainWindow.StatsOverlay.FrameTime.cs` owns the XAML-facing compact
+  overlay adapter beside the stats overlay visibility route.
   `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns shared stats
   formatting helpers.
   `Sussudio/ViewModels/StatsPresentationBuilder.Dock.cs` owns stats dock
@@ -2297,6 +2311,9 @@ Primary current owners:
   adapter family.
 - `tests/Sussudio.Tests/MainWindow.ShellChromeOwnership.Helpers.cs` owns the
   shared source reader for the split `MainWindow.ShellChrome.*.cs` adapter
+  family.
+- `tests/Sussudio.Tests/MainWindow.StatsOverlayOwnership.Helpers.cs` owns the
+  shared source reader for the split `MainWindow.StatsOverlay.*.cs` adapter
   family.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
   Flashback export backend-lease, export-operation lock, ViewModel export

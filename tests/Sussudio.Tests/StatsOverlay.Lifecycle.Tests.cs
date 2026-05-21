@@ -7,7 +7,7 @@ public class StatsOverlayLifecycleTests
     [Fact]
     public void StatsOverlayLifecycle_LivesInController()
     {
-        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs");
+        var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
         var statsOverlayCompositionContextsText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.Contexts.cs");
         var statsOverlayCompositionGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs");
@@ -42,11 +42,16 @@ public class StatsOverlayLifecycleTests
         AssertContains(statsOverlayCompositionText, "_statsDockControllerGraph = CreateDockControllerGraph(context);");
         AssertContains(statsOverlayCompositionText, "_statsOverlayController = CreateOverlayController(context);");
         AssertContains(statsOverlayCompositionText, "_statsSectionChromeController = CreateSectionChromeController(context);");
-        AssertContains(statsOverlayText, "Shell = new StatsOverlayShellContext");
-        AssertContains(statsOverlayText, "SnapshotSources = new StatsOverlaySnapshotSourceContext");
-        AssertContains(statsOverlayText, "DockTargets = new StatsOverlayDockTargetsContext");
-        AssertContains(statsOverlayText, "HardwareSources = new StatsOverlayHardwareSourceContext");
-        AssertContains(statsOverlayText, "FrameTimeTargets = new StatsOverlayFrameTimeTargetsContext");
+        AssertContains(statsOverlayText, "Shell = CreateStatsOverlayShellContext(),");
+        AssertContains(statsOverlayText, "SnapshotSources = CreateStatsOverlaySnapshotSourceContext(),");
+        AssertContains(statsOverlayText, "DockTargets = CreateStatsOverlayDockTargetsContext(),");
+        AssertContains(statsOverlayText, "HardwareSources = CreateStatsOverlayHardwareSourceContext(),");
+        AssertContains(statsOverlayText, "FrameTimeTargets = CreateStatsOverlayFrameTimeTargetsContext(),");
+        AssertContains(statsOverlayText, "private StatsOverlayShellContext CreateStatsOverlayShellContext()");
+        AssertContains(statsOverlayText, "private StatsOverlaySnapshotSourceContext CreateStatsOverlaySnapshotSourceContext()");
+        AssertContains(statsOverlayText, "private StatsOverlayDockTargetsContext CreateStatsOverlayDockTargetsContext()");
+        AssertContains(statsOverlayText, "private StatsOverlayHardwareSourceContext CreateStatsOverlayHardwareSourceContext()");
+        AssertContains(statsOverlayText, "private StatsOverlayFrameTimeTargetsContext CreateStatsOverlayFrameTimeTargetsContext()");
         AssertContains(statsOverlayText, "StatsToggle = StatsToggle,");
         AssertContains(statsOverlayText, "IsWindowClosing = () => _isWindowClosing,");
         AssertContains(statsOverlayText, "SetStatsVisible = visible => ViewModel.IsStatsVisible = visible,");
@@ -158,7 +163,7 @@ public class StatsOverlayLifecycleTests
     [Fact]
     public void StatsSectionChrome_LivesInFocusedPartial()
     {
-        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs");
+        var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
         var statsOverlayCompositionGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs");
