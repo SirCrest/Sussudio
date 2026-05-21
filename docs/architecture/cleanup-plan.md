@@ -90,8 +90,11 @@ D3D recent-counter baselines and delta updates.
 and delta updates.
 `AutomationDiagnosticsHub.Counters.FlashbackRecording.cs` owns Flashback
 recording recent-counter baselines and delta updates.
-`AutomationDiagnosticsHub.Snapshots.cs` owns snapshot refresh and read-only
-snapshot access. `AutomationDiagnosticsHub.SnapshotProjection.cs`
+`AutomationDiagnosticsHub.Snapshots.Access.cs` owns public snapshot read/refresh
+APIs and refresh-gate serialization. `AutomationDiagnosticsHub.Snapshots.cs`
+owns core snapshot refresh orchestration, latest-snapshot publication, timeline
+append, event notification, and auto-verification handoff.
+`AutomationDiagnosticsHub.SnapshotProjection.cs`
 owns the `BuildAutomationSnapshot` shell and dispatch into projection
 composition/flattening. `AutomationDiagnosticsHub.SnapshotProjection.Composition.cs`
 owns projection-set composition from runtime/view-model snapshots and diagnostic

@@ -5,6 +5,12 @@ static partial class Program
         AssertContains(diagnostics.SnapshotsText, "var snapshot = BuildAutomationSnapshot(");
         AssertDoesNotContain(diagnostics.SnapshotsText, "new AutomationSnapshot");
         AssertContains(diagnostics.SnapshotsText, "AppendPerformanceTimelineEntry(snapshot);");
+        AssertContains(diagnostics.SnapshotsAccessText, "public AutomationSnapshot GetLatestSnapshot()");
+        AssertContains(diagnostics.SnapshotsAccessText, "public Task<AutomationSnapshot> RefreshSnapshotNowAsync(CancellationToken cancellationToken = default)");
+        AssertContains(diagnostics.SnapshotsAccessText, "await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(diagnostics.SnapshotsAccessText, "return await RefreshSnapshotCoreAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(diagnostics.SnapshotsCoreText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
+        AssertDoesNotContain(diagnostics.SnapshotsCoreText, "public AutomationSnapshot GetLatestSnapshot()");
         AssertContains(diagnostics.SnapshotStateText, "private AudioSignalState UpdateAudioSignalState(");
         AssertContains(diagnostics.SnapshotStateText, "private bool UpdateRecordingFileGrowthState(");
         AssertContains(diagnostics.SnapshotStateText, "private readonly record struct AudioSignalState(");

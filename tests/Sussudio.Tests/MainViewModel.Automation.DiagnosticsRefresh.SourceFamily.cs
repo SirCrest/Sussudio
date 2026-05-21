@@ -56,7 +56,9 @@ static partial class Program
             HdrCoreText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Hdr.cs"),
             HdrTruthText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Hdr.Truth.cs"),
             HdrPreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Hdr.Preview.cs"),
-            SnapshotsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
+            SnapshotsText = ReadAutomationDiagnosticsHubSnapshotsSource(),
+            SnapshotsCoreText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
+            SnapshotsAccessText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.Access.cs"),
             SnapshotProjectionText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
             SnapshotProjectionCompositionText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Composition.cs"),
             SnapshotProjectionFlatteningText = string.Join(
@@ -249,6 +251,17 @@ static partial class Program
             });
     }
 
+    private static string ReadAutomationDiagnosticsHubSnapshotsSource()
+    {
+        return string.Join(
+            "\n",
+            new[]
+            {
+                ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.Access.cs"),
+                ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
+            });
+    }
+
     private static string ReadAutomationDiagnosticsHubTimelineProjectionFlashbackPlaybackSource()
     {
         return string.Join(
@@ -283,6 +296,8 @@ static partial class Program
         public string HdrTruthText { get; init; } = string.Empty;
         public string HdrPreviewText { get; init; } = string.Empty;
         public string SnapshotsText { get; init; } = string.Empty;
+        public string SnapshotsCoreText { get; init; } = string.Empty;
+        public string SnapshotsAccessText { get; init; } = string.Empty;
         public string SnapshotStateText { get; init; } = string.Empty;
         public string PreviewPacingText { get; init; } = string.Empty;
         public string OutputFilesText { get; init; } = string.Empty;

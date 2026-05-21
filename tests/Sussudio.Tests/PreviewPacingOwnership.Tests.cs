@@ -61,7 +61,10 @@ public sealed class PreviewPacingOwnershipTests
     public void PreviewPacingClassifier_IsWiredIntoAutomationSnapshots()
     {
         var contractsText = ReadAutomationSnapshotFamilyText();
-        var diagnosticsSnapshotsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
+        var diagnosticsSnapshotsText = string.Join(
+            "\n",
+            ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.Access.cs"),
+            ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs"));
         var diagnosticsSnapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs");
         var diagnosticsSnapshotProjectionCompositionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs");
         var diagnosticsSnapshotProjectionFlatteningText = string.Join(

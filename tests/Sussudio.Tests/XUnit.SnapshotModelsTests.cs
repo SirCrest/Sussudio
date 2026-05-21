@@ -20,6 +20,7 @@ public partial class SnapshotModelsTests
         var diagnosticsHubText = string.Join(
             "\n",
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs"),
+            ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.Access.cs"),
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs"),
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs"),
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs"),
