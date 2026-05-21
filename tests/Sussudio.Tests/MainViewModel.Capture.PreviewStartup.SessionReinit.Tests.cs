@@ -7,8 +7,7 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
-            .Replace("\r\n", "\n");
+        var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
         var previewStartupSessionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs")
             .Replace("\r\n", "\n");
         var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")

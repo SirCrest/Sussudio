@@ -2279,6 +2279,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupOrderingContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview preview
   startup ordering catalog group.
+- `tests/Sussudio.Tests/MainWindow.PreviewStartupOwnership.Helpers.cs` owns
+  the shared source reader for the split `MainWindow.PreviewStartup.*.cs`
+  adapter family.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
   Flashback export backend-lease, export-operation lock, ViewModel export
   routing, and export CTS lifecycle assertions.
@@ -3361,16 +3364,16 @@ Primary current owners:
   details, state/log transitions, first-visual confirmation sequencing,
   signal-window predicates, snapshot missing-signal refresh gates, and reset
   orchestration. `Sussudio/MainWindow.PreviewStartup.cs` is the
-  XAML/MainWindow-facing adapter that supplies UI/runtime callbacks for startup
-  session state, watchdog/timeout payloads, and readiness-signal handoff.
+  XAML/MainWindow-facing adapter-family marker. `Sussudio/MainWindow.PreviewStartup.Session.cs`
+  supplies UI/runtime callbacks for startup session state.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs` owns
   watchdog/telemetry timers, timeout configuration, timeout recovery, and
-  failure-stop scheduling. `Sussudio/MainWindow.PreviewStartup.cs` wires
+  failure-stop scheduling. `Sussudio/MainWindow.PreviewStartup.Watchdog.cs` wires
   the MainWindow/XAML-facing adapter and raw timeout diagnostic snapshot.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs` owns readiness-
   signal coordination: readiness-signal state handoff, missing-signal updates,
   playback-progress diagnostics, startup signal log strings, GPU position
-  counter state, and first-visual confirmation decisions. `MainWindow.PreviewStartup.cs`
+  counter state, and first-visual confirmation decisions. `Sussudio/MainWindow.PreviewStartup.Signals.cs`
   is the XAML/MainWindow-facing adapter that supplies live preview state,
   renderer visibility details, logging, and confirmation callbacks.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs` owns
@@ -3885,8 +3888,10 @@ Refactor direction:
   Preview startup, preview runtime snapshot dispatch/sampling, MainWindow UI
   dispatching, stats projection, and Flashback playback/export presentation
   already have named owners. The Flashback adapter family is split across
-  focused `MainWindow.Flashback.*.cs` partials; start the next UI cleanup from
-  remaining broad adapters not covered by controller ownership tests.
+  focused `MainWindow.Flashback.*.cs` partials, and the preview-startup adapter
+  family is split across focused `MainWindow.PreviewStartup.*.cs` partials;
+  start the next UI cleanup from remaining broad adapters not covered by
+  controller ownership tests.
 - Keep `MainViewModel` as a compatibility facade while moving feature state to
   capture, recording, audio, Flashback, diagnostics, and automation adapters.
 - `Sussudio/Services/Automation/IAutomationViewModel.cs` keeps the aggregate

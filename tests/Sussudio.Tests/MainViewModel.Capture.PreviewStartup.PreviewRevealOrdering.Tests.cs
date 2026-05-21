@@ -12,8 +12,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewActionsText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
             .Replace("\r\n", "\n");
-        var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
-            .Replace("\r\n", "\n");
+        var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
         var previewFadeInText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
             .Replace("\r\n", "\n");
         var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewFadeInController.cs")

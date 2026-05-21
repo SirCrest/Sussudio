@@ -3398,16 +3398,16 @@ sequencing, signal-window predicates, snapshot missing-signal refresh gates,
 and reset orchestration now live in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs` instead of a
 MainWindow field bundle. `Sussudio/MainWindow.PreviewStartup.cs` is the
-XAML/MainWindow-facing adapter that supplies UI/runtime callbacks for startup
-session state, watchdog/timeout payloads, and readiness-signal handoff.
+XAML/MainWindow-facing adapter-family marker; `Sussudio/MainWindow.PreviewStartup.Session.cs`
+supplies UI/runtime callbacks for startup session state.
 Watchdog/telemetry timers, timeout configuration, timeout recovery, and failure-stop scheduling live in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`;
-`Sussudio/MainWindow.PreviewStartup.cs` wires the MainWindow/XAML-facing
+`Sussudio/MainWindow.PreviewStartup.Watchdog.cs` wires the MainWindow/XAML-facing
 adapter and raw timeout diagnostic snapshot. Readiness-signal coordination now lives
 in `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs`: missing-signal
 updates, playback-progress diagnostics, startup signal log strings, GPU
 position counter state, and first-visual confirmation decisions. The
-`Sussudio/MainWindow.PreviewStartup.cs` partial is the XAML/MainWindow
+`Sussudio/MainWindow.PreviewStartup.Signals.cs` partial is the XAML/MainWindow
 adapter that supplies live preview state, renderer visibility details, logging,
 and confirmation callbacks. Readiness-signal required/received state,
 missing-signal calculation, playback-advance threshold checks, and readiness
@@ -4570,6 +4570,9 @@ owner, fold it back into that owner and update the source-shape tests and
    Flashback XAML-facing adapter family is now split into focused
    `MainWindow.Flashback.*.cs` partials so command, polling, playhead, scrub,
    settings, timeline, and presentation wrappers can be audited independently.
+   The preview-startup XAML-facing adapter family is now split into focused
+   `MainWindow.PreviewStartup.*.cs` partials so session, signal, and watchdog
+   callback surfaces can be audited independently.
    `MainWindow.xaml.cs` now keeps the controller initialization list grouped
    into shell, Flashback, presentation, preview, recording, launch/status,
    preview action, audio, capture, and output phases so the composition root

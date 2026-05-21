@@ -1,0 +1,15 @@
+using System.Linq;
+
+static partial class Program
+{
+    private static string ReadMainWindowPreviewStartupAdapterSource()
+        => string.Join(
+            "\n",
+            new[]
+            {
+                "Sussudio/MainWindow.PreviewStartup.cs",
+                "Sussudio/MainWindow.PreviewStartup.Session.cs",
+                "Sussudio/MainWindow.PreviewStartup.Signals.cs",
+                "Sussudio/MainWindow.PreviewStartup.Watchdog.cs",
+            }.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
+}

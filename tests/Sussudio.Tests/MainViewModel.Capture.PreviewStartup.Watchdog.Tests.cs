@@ -12,10 +12,8 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
-            .Replace("\r\n", "\n");
-        var previewStartupWatchdogText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
-            .Replace("\r\n", "\n");
+        var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
+        var previewStartupWatchdogText = ReadMainWindowPreviewStartupAdapterSource();
         var previewStartupWatchdogControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs")
             .Replace("\r\n", "\n");
         var previewStartupSignalFormatterText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupSignalFormatter.cs")
@@ -23,9 +21,9 @@ static partial class Program
 
         AssertContains(mainWindowText, "InitializePreviewStartupWatchdogController();");
         AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewStartupWatchdog.cs")),
-            "preview startup watchdog adapter is consolidated into the startup adapter");
+            true,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewStartup.Watchdog.cs")),
+            "preview startup watchdog adapter lives in the focused startup watchdog partial");
         AssertContains(previewStartupWatchdogText, "private PreviewStartupWatchdogController _previewStartupWatchdogController = null!;");
         AssertContains(previewStartupWatchdogText, "private void InitializePreviewStartupWatchdogController()");
         AssertContains(previewStartupWatchdogText, "IsWaitingForFirstVisual = () => _previewStartupSessionController.IsWaitingForFirstVisual,");
@@ -100,7 +98,7 @@ static partial class Program
         AssertEqual(
             true,
             previewStartupText.Split('\n').Length >= 100,
-            "preview startup adapter is a substantial consolidated adapter file");
+            "preview startup adapter family remains a substantial adapter surface");
         AssertDoesNotContain(previewStartupText, "private Task HandlePreviewStartupTimeoutAsync()");
         AssertDoesNotContain(previewStartupText, "PreviewStartupFailureTextFormatter.FormatTimeoutReason(");
         AssertDoesNotContain(previewStartupText, "private const int PreviewStartupDefaultVisualTimeoutMs = 10000;");

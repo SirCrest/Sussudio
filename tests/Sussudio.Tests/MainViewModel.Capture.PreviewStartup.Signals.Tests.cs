@@ -11,10 +11,8 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
-            .Replace("\r\n", "\n");
-        var previewStartupSignalsText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
-            .Replace("\r\n", "\n");
+        var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
+        var previewStartupSignalsText = ReadMainWindowPreviewStartupAdapterSource();
         var previewStartupSignalCoordinatorText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs")
             .Replace("\r\n", "\n");
         var previewStartupReadinessSignalControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs")
@@ -23,9 +21,9 @@ static partial class Program
         AssertContains(mainWindowText, "InitializePreviewStartupSignalCoordinator();");
         AssertContains(previewStartupSignalsText, "XAML-facing preview startup signal adapter");
         AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewStartupSignals.cs")),
-            "preview startup signal adapter is consolidated into the startup adapter");
+            true,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewStartup.Signals.cs")),
+            "preview startup signal adapter lives in the focused startup signal partial");
         AssertContains(previewStartupSignalsText, "private PreviewStartupSignalCoordinator _previewStartupSignalCoordinator = null!;");
         AssertContains(previewStartupSignalsText, "private void InitializePreviewStartupSignalCoordinator()");
         AssertContains(previewStartupSignalsText, "IsSignalWindowActive = IsPreviewStartupSignalWindowActive,");
@@ -73,7 +71,7 @@ static partial class Program
         AssertEqual(
             true,
             previewStartupText.Split('\n').Length >= 100,
-            "preview startup adapter is a substantial consolidated adapter file");
+            "preview startup adapter family remains a substantial adapter surface");
         AssertDoesNotContain(previewStartupSignalsText, "private readonly PreviewStartupReadinessSignalController");
         AssertDoesNotContain(previewStartupSignalsText, "private long _previewStartupPositionEventCount;");
         AssertDoesNotContain(previewStartupSignalsText, "_readinessSignals.TrackPlaybackPosition(");
