@@ -5,6 +5,7 @@ internal static partial class DiagnosticSessionResultBuilder
     private readonly record struct DiagnosticSessionFlashbackPlaybackResultProjection(
         DiagnosticSessionFlashbackPlaybackCommandsResultProjection CommandsResult,
         DiagnosticSessionFlashbackPlaybackCadenceResultProjection CadenceResult,
+        DiagnosticSessionFlashbackPlaybackOnePercentLowResultProjection OnePercentLowResult,
         DiagnosticSessionFlashbackPlaybackDecodeResultProjection DecodeResult,
         DiagnosticSessionFlashbackPlaybackAudioMasterResultProjection AudioMasterResult,
         DiagnosticSessionFlashbackPlaybackStagesResultProjection StagesResult);
@@ -16,6 +17,7 @@ internal static partial class DiagnosticSessionResultBuilder
         var playbackResultMetrics = analysis.PlaybackResultMetrics;
         var commandsResult = BuildFlashbackPlaybackCommandsResultProjection(playbackResultMetrics);
         var cadenceResult = BuildFlashbackPlaybackCadenceResultProjection(playbackSessionMetrics, playbackResultMetrics);
+        var onePercentLowResult = BuildFlashbackPlaybackOnePercentLowResultProjection(playbackSessionMetrics, playbackResultMetrics);
         var decodeResult = BuildFlashbackPlaybackDecodeResultProjection(playbackSessionMetrics, playbackResultMetrics);
         var audioMasterResult = BuildFlashbackPlaybackAudioMasterResultProjection(playbackSessionMetrics, playbackResultMetrics);
         var stagesResult = BuildFlashbackPlaybackStagesResultProjection(playbackSessionMetrics, playbackResultMetrics);
@@ -23,6 +25,7 @@ internal static partial class DiagnosticSessionResultBuilder
         return new DiagnosticSessionFlashbackPlaybackResultProjection(
             CommandsResult: commandsResult,
             CadenceResult: cadenceResult,
+            OnePercentLowResult: onePercentLowResult,
             DecodeResult: decodeResult,
             AudioMasterResult: audioMasterResult,
             StagesResult: stagesResult);

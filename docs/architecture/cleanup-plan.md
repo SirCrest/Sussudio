@@ -3963,6 +3963,7 @@ Diagnostic session DTOs live in feature-oriented model files:
 `tools/Common/DiagnosticSessionResult.PreviewVisualCadence.cs`,
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.Commands.cs`,
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.Cadence.cs`,
+`tools/Common/DiagnosticSessionResult.FlashbackPlayback.OnePercentLow.cs`,
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.Decode.cs`,
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.AudioMaster.cs`,
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.Stage.cs`,
@@ -4017,10 +4018,11 @@ request mapping consumed by the completion phase.
 The public options/result/sample contracts are separated from runner behavior. The result
 DTO root owns core session metadata, terminal state, artifacts, actions, and
 warnings; the result partials own capture/source, Flashback playback command
-queue, Flashback playback cadence, Flashback playback decode, Flashback
-playback audio-master, Flashback playback stage/seek, Flashback recording,
-Flashback export, preview cadence, preview scheduler, preview D3D, preview
-visual cadence, process, recording verification, and PresentMon fields.
+queue, Flashback playback cadence, Flashback playback 1% low sample-window
+evidence, Flashback playback decode, Flashback playback audio-master, Flashback
+playback submit/stage/seek, Flashback recording, Flashback export, preview
+cadence, preview scheduler, preview D3D, preview visual cadence, process,
+recording verification, and PresentMon fields.
 
 Diagnostic-session result text now lives in a focused partial family rooted at
 `tools/Common/DiagnosticSessionResultFormatter.cs`. The root owns the public
@@ -4031,8 +4033,9 @@ verification text, `.PresentMon.cs` owns PresentMon text, and
 `.ProcessPerformance.cs` owns process-performance text. `.Flashback.cs` owns
 Flashback section ordering. `.FlashbackPlayback.Commands.cs` owns playback
 command rows, `.FlashbackPlayback.Performance.cs` owns playback performance row
-assembly, `.FlashbackPlayback.Cadence.cs` owns playback cadence/1% low/slow
-frame performance text, `.FlashbackPlayback.AudioMaster.cs` owns audio-master
+assembly, `.FlashbackPlayback.Cadence.cs` owns playback cadence/slow-frame/
+dropped-frame performance text, `.FlashbackPlayback.OnePercentLow.cs` owns
+playback 1% low performance text, `.FlashbackPlayback.AudioMaster.cs` owns audio-master
 performance text, and `.FlashbackPlayback.Stages.cs` owns playback
 stage/seek-cap rows.
 `.FlashbackRecording.cs` owns Flashback recording summary text,
@@ -4107,9 +4110,10 @@ set.
 The detailed playback result DTO value maps are split by runtime metric owner:
 command queue values live in
 `DiagnosticSessionResultBuilder.FlashbackPlaybackCommandsResult.cs`, cadence/
-1% low/slow-frame/dropped-frame values live in
-`DiagnosticSessionResultBuilder.FlashbackPlaybackCadenceResult.cs`, decode
-timing values live in
+slow-frame/dropped-frame values live in
+`DiagnosticSessionResultBuilder.FlashbackPlaybackCadenceResult.cs`, 1% low
+sample-window values live in
+`DiagnosticSessionResultBuilder.FlashbackPlaybackOnePercentLowResult.cs`, decode timing values live in
 `DiagnosticSessionResultBuilder.FlashbackPlaybackDecodeResult.cs`, and
 submit/segment/write-head/near-live/seek-cap stage values live in
 `DiagnosticSessionResultBuilder.FlashbackPlaybackStagesResult.cs`.
@@ -4777,6 +4781,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResult.PreviewVisualCadence.cs`
 - `DiagnosticSessionResult.FlashbackPlayback.Commands.cs`
 - `DiagnosticSessionResult.FlashbackPlayback.Cadence.cs`
+- `DiagnosticSessionResult.FlashbackPlayback.OnePercentLow.cs`
 - `DiagnosticSessionResult.FlashbackPlayback.Decode.cs`
 - `DiagnosticSessionResult.FlashbackPlayback.AudioMaster.cs`
 - `DiagnosticSessionResult.FlashbackPlayback.Stage.cs`
@@ -4800,6 +4805,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackCommandsResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackCadenceResult.cs`
+- `DiagnosticSessionResultBuilder.FlashbackPlaybackOnePercentLowResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackDecodeResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackAudioMasterResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackStagesResult.cs`
@@ -4823,6 +4829,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultFormatter.Flashback.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Cadence.cs`
+- `DiagnosticSessionResultFormatter.FlashbackPlayback.OnePercentLow.cs`
 - `DiagnosticSessionResultFormatter.FlashbackRecording.cs`
 - `DiagnosticSessionResultFormatter.FlashbackExport.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs`

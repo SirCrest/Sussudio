@@ -4578,10 +4578,13 @@ Primary owners:
   owns Flashback playback command queue fields,
   `DiagnosticSessionResult.FlashbackPlayback.Cadence.cs` owns playback cadence
   and frame-delivery fields,
+  `DiagnosticSessionResult.FlashbackPlayback.OnePercentLow.cs` owns playback
+  1% low sample-window fields,
   `DiagnosticSessionResult.FlashbackPlayback.Decode.cs` owns decode timing
   fields, `DiagnosticSessionResult.FlashbackPlayback.AudioMaster.cs` owns
   audio-master fallback/drift fields, and
-  `DiagnosticSessionResult.FlashbackPlayback.Stage.cs` owns stage/seek fields.
+  `DiagnosticSessionResult.FlashbackPlayback.Stage.cs` owns submit-failure,
+  stage, and seek fields.
   `DiagnosticSessionResult.FlashbackRecording.cs` owns Flashback recording
   summary fields, and `DiagnosticSessionResult.FlashbackExport.cs` owns
   Flashback export summary fields.
@@ -4640,14 +4643,17 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs` owns
   Flashback playback result projection composition: it gathers playback
   session/result metrics, asks the focused projection owners for command,
-  cadence, decode, audio-master, and stage values, and returns the cohesive
-  playback projection record consumed by the final result initializer.
+  cadence, 1% low, decode, audio-master, and stage values, and returns the
+  cohesive playback projection record consumed by the final result initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackCommandsResult.cs`
   owns Flashback playback command queue result DTO value mapping and projection
   record shape.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackCadenceResult.cs`
-  owns Flashback playback cadence, 1% low, slow-frame, and dropped-frame result
-  DTO value mapping and projection record shape.
+  owns Flashback playback cadence, slow-frame, and dropped-frame result DTO
+  value mapping and projection record shape.
+- `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackOnePercentLowResult.cs`
+  owns Flashback playback 1% low result DTO value mapping and projection record
+  shape.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackDecodeResult.cs`
   owns Flashback playback decode timing result DTO value mapping and projection
   record shape.
@@ -5112,7 +5118,9 @@ Primary owners:
   `DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs` owns
   playback performance row assembly and submit-failure fields.
   `DiagnosticSessionResultFormatter.FlashbackPlayback.Cadence.cs` owns
-  playback cadence, 1% low, slow-frame, and dropped-frame performance text.
+  playback cadence, slow-frame, and dropped-frame performance text.
+  `DiagnosticSessionResultFormatter.FlashbackPlayback.OnePercentLow.cs` owns
+  playback 1% low performance text.
   `DiagnosticSessionResultFormatter.FlashbackPlayback.AudioMaster.cs` owns
   audio-master fallback, buffering, queue, and A/V-drift performance text.
   `DiagnosticSessionResultFormatter.FlashbackPlayback.Stages.cs` owns playback
