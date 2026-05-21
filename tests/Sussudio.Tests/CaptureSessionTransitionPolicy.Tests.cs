@@ -144,7 +144,9 @@ static partial class Program
         {
             "Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs",
             "Sussudio/Services/Capture/CaptureService.FlashbackBufferSettings.cs",
-            "Sussudio/Services/Capture/CaptureService.FlashbackControls.cs",
+            "Sussudio/Services/Capture/CaptureService.FlashbackEnable.cs",
+            "Sussudio/Services/Capture/CaptureService.FlashbackRestart.cs",
+            "Sussudio/Services/Capture/CaptureService.FlashbackRecordingFormat.cs",
             "Sussudio/Services/Capture/CaptureService.FlashbackEncoderSettings.cs",
             "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs"
         };
