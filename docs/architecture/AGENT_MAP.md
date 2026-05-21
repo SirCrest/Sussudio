@@ -204,10 +204,15 @@ dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore
 Automation diagnostics ownership:
 
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.cs` owns the
-  command envelope, manifest/auth/readiness gates, port-typed trivial-handler
-  dispatch, and error shaping. Construct it with `AutomationViewModelPorts`;
-  this dispatcher root should not expose or store the aggregate automation
-  ViewModel dependency.
+  command envelope, correlation setup, dispatch pipeline shell, and error
+  shaping. Construct it with `AutomationViewModelPorts`; this dispatcher root
+  should not expose or store the aggregate automation ViewModel dependency.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.Preflight.cs`
+  owns manifest revision validation, authentication command handling,
+  unauthorized-command rejection, and device-readiness gating.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs`
+  owns UI/settings command pre-routing and port-typed trivial-handler dispatch
+  before the custom command router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.AudioControlCommands.cs`
   owns device-audio mode, analog audio gain, and microphone-enable command
   bodies behind the custom command router.
@@ -252,9 +257,9 @@ Automation diagnostics ownership:
   composition-time adapter from the aggregate compatibility contract to named
   port targets. Keep those ports grouped in this file until a consumer needs a
   separate file; do not create many tiny interface files for line-count optics.
-  `AutomationCommandDispatcher.cs` consumes the readiness port for device-ready
-  gating, while `AutomationCommandDispatcher.DeviceCommands.cs` consumes the
-  device-selection and snapshot-query ports.
+  `AutomationCommandDispatcher.Preflight.cs` consumes the readiness port for
+  device-ready gating, while `AutomationCommandDispatcher.DeviceCommands.cs`
+  consumes the device-selection and snapshot-query ports.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.Authorization.cs`
   owns auth-token fallback lookup, constant-time token comparison, and auth
   failure logging.

@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Runtime;
-using Sussudio.Tools;
 
 namespace Sussudio.Services.Automation;
 
@@ -63,99 +62,23 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
 
         try
         {
-            if (request.ManifestRevision.HasValue)
+            var preflightResponse = TryCreatePreflightResponse(request, correlationId);
+            if (preflightResponse != null)
             {
-                if (request.ManifestRevision.Value != AutomationPipeProtocol.CommandManifestRevision)
-                {
-                    Logger.Log(
-                        $"AUTOMATION_MANIFEST_MISMATCH command={request.Command} " +
-                        $"clientRevision={request.ManifestRevision.Value} " +
-                        $"serverRevision={AutomationPipeProtocol.CommandManifestRevision} " +
-                        $"correlationId={correlationId}");
-                    return CreateResponse(
-                        correlationId,
-                        $"Automation command manifest revision mismatch (client={request.ManifestRevision.Value}, server={AutomationPipeProtocol.CommandManifestRevision}). " +
-                        "Rebuild ssctl/MCP/StreamDeck against the current Sussudio source to refresh the numeric command IDs.",
-                        errorCode: "manifest-mismatch",
-                        success: false,
-                        status: AutomationResponseStatus.Error,
-                        includeSnapshot: false);
-                }
-            }
-            else
-            {
-                Logger.Log(
-                    $"STALE_CLIENT_NO_MANIFEST_REVISION command={request.Command} correlationId={correlationId} " +
-                    "(client predates manifest-revision handshake; allowing for back-compat but command IDs are not verified).");
-            }
-
-            var authorized = IsAuthorized(request);
-            if (request.Command == AutomationCommandKind.Authenticate)
-            {
-                return CreateResponse(
-                    correlationId,
-                    authorized
-                        ? "Authentication accepted."
-                        : "Authentication rejected.",
-                    errorCode: authorized ? null : "unauthorized",
-                    success: authorized,
-                    status: authorized ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
-                    includeSnapshot: false);
-            }
-
-            if (!authorized)
-            {
-                return CreateResponse(
-                    correlationId,
-                    "Unauthorized command request.",
-                    errorCode: "unauthorized",
-                    success: false,
-                    status: AutomationResponseStatus.Error,
-                    includeSnapshot: false);
-            }
-
-            if (RequiresReadyDevices(request.Command) && !IsAutomationReady())
-            {
-                return CreateResponse(
-                    correlationId,
-                    "Automation is still initializing devices; retry shortly.",
-                    errorCode: "not-ready",
-                    success: false,
-                    status: AutomationResponseStatus.NotReady,
-                    retryAfterMs: 1000);
+                return preflightResponse;
             }
 
             var payload = request.Payload;
 
-            var uiSettingsResponse = await TryExecuteUiSettingsCommandAsync(request.Command, payload, correlationId, cancellationToken)
+            var portMappedResponse = await TryExecutePortMappedCommandAsync(
+                    request.Command,
+                    payload,
+                    correlationId,
+                    cancellationToken)
                 .ConfigureAwait(false);
-            if (uiSettingsResponse != null)
+            if (portMappedResponse != null)
             {
-                return uiSettingsResponse;
-            }
-
-            if (TrivialDeviceSelectionHandlers.TryGetValue(request.Command, out var deviceSelectionHandler))
-            {
-                await deviceSelectionHandler.InvokeAsync(_deviceSelectionPort, payload, cancellationToken).ConfigureAwait(false);
-                return CreateAcknowledgedResponse(correlationId, deviceSelectionHandler.AcknowledgeMessage(request.Command, payload));
-            }
-
-            if (TrivialCaptureSettingsHandlers.TryGetValue(request.Command, out var captureSettingsHandler))
-            {
-                await captureSettingsHandler.InvokeAsync(_captureSettingsPort, payload, cancellationToken).ConfigureAwait(false);
-                return CreateAcknowledgedResponse(correlationId, captureSettingsHandler.AcknowledgeMessage(request.Command, payload));
-            }
-
-            if (TrivialAudioHandlers.TryGetValue(request.Command, out var audioHandler))
-            {
-                await audioHandler.InvokeAsync(_audioPort, payload, cancellationToken).ConfigureAwait(false);
-                return CreateAcknowledgedResponse(correlationId, audioHandler.AcknowledgeMessage(request.Command, payload));
-            }
-
-            if (TrivialPreviewRecordingHandlers.TryGetValue(request.Command, out var previewRecordingHandler))
-            {
-                await previewRecordingHandler.InvokeAsync(_previewRecordingPort, payload, cancellationToken).ConfigureAwait(false);
-                return CreateAcknowledgedResponse(correlationId, previewRecordingHandler.AcknowledgeMessage(request.Command, payload));
+                return portMappedResponse;
             }
 
             return await ExecuteCustomCommandAsync(request, payload, correlationId, cancellationToken)
@@ -189,10 +112,5 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
                 status: AutomationResponseStatus.Error,
                 elapsedMs: (long)Math.Round(Stopwatch.GetElapsedTime(commandStartedAt).TotalMilliseconds));
         }
-    }
-
-    private bool IsAutomationReady()
-    {
-        return _readinessPort.IsInitialized || _readinessPort.Devices.Count > 0;
     }
 }

@@ -645,8 +645,12 @@ verification scheduling and recording-start verification reset.
 adaptation.
 
 Automation command dispatch now keeps the root router focused on the command
-envelope: manifest revision checks, auth/readiness gates, port-typed
-trivial-handler dispatch, and error shaping. `AutomationCommandDispatcher.CustomCommands.cs`
+envelope, correlation setup, dispatch pipeline shell, and error shaping.
+`AutomationCommandDispatcher.Preflight.cs` owns manifest revision checks,
+auth command handling, unauthorized-command rejection, and readiness gating.
+`AutomationCommandDispatcher.PortMappedDispatch.cs` owns UI/settings pre-routing
+and port-typed trivial-handler dispatch.
+`AutomationCommandDispatcher.CustomCommands.cs`
 owns the custom command switch/router for commands that need multi-field
 payloads, special response shapes, capture/Flashback routing, or domain command
 handoff. `IAutomationViewModel.cs` now keeps the aggregate automation ViewModel
@@ -658,11 +662,12 @@ named port targets for the automation host. Keep these ports grouped there
 until a consumer needs a separate file; avoid tiny interface files that only
 reduce line count. The dispatcher no longer exposes or stores the aggregate
 ViewModel; its port-bundle constructor assigns narrow ports and invokes
-trivial/UI handler tables through matching port targets. The dispatcher consumes the readiness port for
-device-ready gating and the device-selection/snapshot-query ports for device
-commands, the audio port for device-audio/microphone commands, and the
-capture-settings plus preview-recording ports for MJPEG decoder, output path,
-recording, preview, and related one-field commands. Visual probe commands
+trivial/UI handler tables through matching port targets. The preflight owner
+consumes the readiness port for device-ready gating. Device commands consume
+the device-selection/snapshot-query ports, audio commands consume the audio
+port, and the port-mapped dispatch owner routes capture-settings plus
+preview-recording ports for MJPEG decoder, output path, recording, preview, and
+related one-field commands. Visual probe commands
 consume the probe port while window screenshots remain on the window-control
 surface. Stats-section UI commands consume the UI port, audio-ramp trace reads
 consume the snapshot-query port, and Flashback commands consume the Flashback
@@ -699,7 +704,8 @@ preview-color probe, preview-frame capture, window screenshot capture, default
 capture output paths, and capture response status shaping behind the custom
 command router.
 `AutomationCommandDispatcher.TrivialHandlers.cs` owns the simple one-property
-capture and pipeline command table. Named partials own support responsibilities:
+capture and pipeline command table. `AutomationCommandDispatcher.PortMappedDispatch.cs`
+owns the ordered dispatch through those tables. Named partials own support responsibilities:
 `AutomationCommandDispatcher.Authorization.cs` handles auth-token lookup and
 constant-time comparison;
 `AutomationCommandDispatcher.CommandParsing.cs` handles command metadata,

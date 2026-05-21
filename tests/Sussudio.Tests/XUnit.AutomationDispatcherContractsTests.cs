@@ -47,6 +47,10 @@ public sealed class AutomationDispatcherContractsTests
         => global::Program.AutomationCommandDispatcher_WaitAndAssertCommands_LiveWithSupportOwners();
 
     [Fact]
+    public Task AutomationDispatcherEntryPipelineLivesInFocusedPartials()
+        => global::Program.AutomationCommandDispatcher_EntryPipeline_LivesInFocusedPartials();
+
+    [Fact]
     public Task AutomationDispatcherTrivialHandlerPayloadFieldsMatchCatalog()
         => global::Program.AutomationCommandDispatcher_OneFieldHandlers_MatchCatalogPayloadFields();
 

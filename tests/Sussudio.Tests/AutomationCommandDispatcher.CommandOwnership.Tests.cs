@@ -65,6 +65,46 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    internal static Task AutomationCommandDispatcher_EntryPipeline_LivesInFocusedPartials()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
+            .Replace("\r\n", "\n");
+        var preflightText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.Preflight.cs")
+            .Replace("\r\n", "\n");
+        var portMappedDispatchText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs")
+            .Replace("\r\n", "\n");
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
+        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
+
+        AssertContains(rootText, "var preflightResponse = TryCreatePreflightResponse(request, correlationId);");
+        AssertContains(rootText, "var portMappedResponse = await TryExecutePortMappedCommandAsync(");
+        AssertContains(rootText, "return await ExecuteCustomCommandAsync(request, payload, correlationId, cancellationToken)");
+        AssertDoesNotContain(rootText, "AUTOMATION_MANIFEST_MISMATCH");
+        AssertDoesNotContain(rootText, "TrivialDeviceSelectionHandlers.TryGetValue");
+
+        AssertContains(preflightText, "private AutomationCommandResponse? TryCreatePreflightResponse(");
+        AssertContains(preflightText, "AUTOMATION_MANIFEST_MISMATCH");
+        AssertContains(preflightText, "request.Command == AutomationCommandKind.Authenticate");
+        AssertContains(preflightText, "RequiresReadyDevices(request.Command) && !IsAutomationReady()");
+        AssertContains(preflightText, "_readinessPort.IsInitialized || _readinessPort.Devices.Count > 0");
+        AssertDoesNotContain(preflightText, "TrivialDeviceSelectionHandlers.TryGetValue");
+
+        AssertContains(portMappedDispatchText, "private async Task<AutomationCommandResponse?> TryExecutePortMappedCommandAsync(");
+        AssertContains(portMappedDispatchText, "TryExecuteUiSettingsCommandAsync(command, payload, correlationId, cancellationToken)");
+        AssertContains(portMappedDispatchText, "TrivialDeviceSelectionHandlers.TryGetValue(command");
+        AssertContains(portMappedDispatchText, "TrivialCaptureSettingsHandlers.TryGetValue(command");
+        AssertContains(portMappedDispatchText, "TrivialAudioHandlers.TryGetValue(command");
+        AssertContains(portMappedDispatchText, "TrivialPreviewRecordingHandlers.TryGetValue(command");
+        AssertDoesNotContain(portMappedDispatchText, "ExecuteCustomCommandAsync");
+
+        AssertContains(agentMapText, "`Sussudio/Services/Automation/AutomationCommandDispatcher.Preflight.cs`");
+        AssertContains(agentMapText, "`Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs`");
+        AssertContains(cleanupPlanText, "`AutomationCommandDispatcher.Preflight.cs`");
+        AssertContains(cleanupPlanText, "`AutomationCommandDispatcher.PortMappedDispatch.cs`");
+
+        return Task.CompletedTask;
+    }
+
     internal static Task AutomationCommandDispatcher_WindowCommands_LiveInFocusedPartial()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
