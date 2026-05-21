@@ -106,9 +106,7 @@ public sealed partial class MainWindow
     private long PreviewStartupGpuPositionEventCount => _previewStartupSignalCoordinator.PositionEventCount;
 
     private bool IsPreviewStartupSignalWindowActive()
-        => ViewModel.IsPreviewing &&
-           !IsPreviewFirstVisualConfirmed &&
-           CurrentPreviewStartupState is PreviewStartupState.StartingSession or PreviewStartupState.RendererAttaching or PreviewStartupState.WaitingForFirstVisual;
+        => _previewStartupSessionController.IsSignalWindowActive(ViewModel.IsPreviewing);
 
     private void ResetPreviewSignalState()
         => _previewStartupSignalCoordinator.Reset();
@@ -152,7 +150,7 @@ public sealed partial class MainWindow
         => _previewStartupWatchdogController = new PreviewStartupWatchdogController(new PreviewStartupWatchdogControllerContext
         {
             DispatcherQueue = _dispatcherQueue,
-            IsWaitingForFirstVisual = () => CurrentPreviewStartupState == PreviewStartupState.WaitingForFirstVisual,
+            IsWaitingForFirstVisual = () => _previewStartupSessionController.IsWaitingForFirstVisual,
             IsSignalWindowActive = IsPreviewStartupSignalWindowActive,
             IsWindowClosing = () => _isWindowClosing,
             IsPreviewStopRequestedByUser = () => IsPreviewStopRequestedByUser,

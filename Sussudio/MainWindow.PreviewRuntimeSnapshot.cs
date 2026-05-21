@@ -19,7 +19,7 @@ public sealed partial class MainWindow
     {
         var startupMissingSignals = PreviewStartupMissingSignals;
         if (string.IsNullOrWhiteSpace(startupMissingSignals) &&
-            CurrentPreviewStartupState is PreviewStartupState.WaitingForFirstVisual or PreviewStartupState.Failed)
+            _previewStartupSessionController.ShouldRefreshMissingSignalsForSnapshot)
         {
             startupMissingSignals = BuildPreviewStartupMissingSignals();
         }
@@ -38,7 +38,7 @@ public sealed partial class MainWindow
             LastPresentedTick = _previewRendererHostController.LastPresentedTick,
             PreviewMinPresentationIntervalMs = _previewRendererHostController.PreviewMinPresentationIntervalMs,
             StartupState = CurrentPreviewStartupState.ToString(),
-            IsStartupWaitingForFirstVisual = CurrentPreviewStartupState == PreviewStartupState.WaitingForFirstVisual,
+            IsStartupWaitingForFirstVisual = _previewStartupSessionController.IsWaitingForFirstVisual,
             StartupAttemptId = PreviewStartupAttemptId,
             StartupRequestedUtc = PreviewStartupRequestedUtc,
             StartupTimeoutMs = PreviewStartupVisualTimeoutMs,

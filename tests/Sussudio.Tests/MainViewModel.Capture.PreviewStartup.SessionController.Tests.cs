@@ -54,14 +54,21 @@ static partial class Program
             ?? throw new InvalidOperationException("PreviewStartupSessionController.ResetStartupTracking was not found.");
         var getElapsedMilliseconds = controllerType.GetMethod("GetElapsedMilliseconds")
             ?? throw new InvalidOperationException("PreviewStartupSessionController.GetElapsedMilliseconds was not found.");
+        var isSignalWindowActive = controllerType.GetMethod("IsSignalWindowActive")
+            ?? throw new InvalidOperationException("PreviewStartupSessionController.IsSignalWindowActive was not found.");
 
         object State(string value) => Enum.Parse(stateType, value);
+        bool SignalWindowActive(bool previewing) => (bool)isSignalWindowActive.Invoke(controller, new object[] { previewing })!;
 
         AssertEqual(State("Idle"), GetPropertyValue(controller, "State"), "initial startup state");
         AssertEqual(true, GetBoolProperty(controller, "ShouldBeginAttempt"), "initial attempt gate");
+        AssertEqual(false, GetBoolProperty(controller, "ShouldRefreshMissingSignalsForSnapshot"), "idle does not refresh missing signals");
+        AssertEqual(false, SignalWindowActive(previewing: true), "idle signal window inactive");
 
         beginStartupAttempt.Invoke(controller, Array.Empty<object>());
         AssertEqual(State("StartingSession"), GetPropertyValue(controller, "State"), "state after begin attempt");
+        AssertEqual(true, SignalWindowActive(previewing: true), "starting session signal window active");
+        AssertEqual(false, SignalWindowActive(previewing: false), "stopped preview signal window inactive");
         AssertEqual("attempt-1", GetStringProperty(controller, "AttemptId"), "attempt id after begin");
         AssertEqual(now, GetPropertyValue(controller, "RequestedUtc"), "requested UTC after begin");
         AssertEqual(false, GetBoolProperty(controller, "FirstVisualConfirmed"), "first visual reset on begin");
@@ -77,6 +84,8 @@ static partial class Program
         AssertEqual(string.Empty, string.Join("|", events), "duplicate state without reason suppresses log");
         setStartupState.Invoke(controller, new object?[] { State("Failed"), "renderer-attach-failed:test" });
         AssertEqual(State("Failed"), GetPropertyValue(controller, "State"), "failed state");
+        AssertEqual(false, SignalWindowActive(previewing: true), "failed state signal window inactive");
+        AssertEqual(true, GetBoolProperty(controller, "ShouldRefreshMissingSignalsForSnapshot"), "failed state refreshes missing signals");
         AssertEqual("renderer-attach-failed:test", GetStringProperty(controller, "LastFailureReason"), "failure reason retained");
         AssertEqual(true, GetBoolProperty(controller, "ShouldBeginAttempt"), "failed attempt gate");
         resetStartupTracking.Invoke(controller, new object[] { false, false });
@@ -88,10 +97,14 @@ static partial class Program
         setStartupState.Invoke(controller, new object?[] { State("WaitingForFirstVisual"), null });
         setMissingSignals.Invoke(controller, new object?[] { "FirstVisual" });
         markRendererAttached.Invoke(controller, new object[] { now.AddMilliseconds(100) });
+        AssertEqual(true, GetBoolProperty(controller, "IsWaitingForFirstVisual"), "waiting state predicate");
+        AssertEqual(true, GetBoolProperty(controller, "ShouldRefreshMissingSignalsForSnapshot"), "waiting state refreshes missing signals");
+        AssertEqual(true, SignalWindowActive(previewing: true), "waiting state signal window active");
         AssertEqual(now.AddMilliseconds(100), GetPropertyValue(controller, "RendererAttachedUtc"), "renderer attached UTC");
         AssertEqual(true, markFirstVisualConfirmed.Invoke(controller, new object[] { now.AddMilliseconds(300) }), "first visual confirmation");
         AssertEqual(false, markFirstVisualConfirmed.Invoke(controller, new object[] { now.AddMilliseconds(400) }), "duplicate first visual suppressed");
         AssertEqual(true, GetBoolProperty(controller, "FirstVisualConfirmed"), "first visual confirmed flag");
+        AssertEqual(false, SignalWindowActive(previewing: true), "confirmed first visual signal window inactive");
         AssertEqual(now.AddMilliseconds(300), GetPropertyValue(controller, "FirstVisualUtc"), "first visual UTC");
         AssertEqual("FirstVisual", GetStringProperty(controller, "MissingSignals"), "missing signals cached until adapter clears them");
 

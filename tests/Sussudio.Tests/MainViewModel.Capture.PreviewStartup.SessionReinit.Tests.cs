@@ -51,7 +51,9 @@ static partial class Program
         AssertContains(previewStartupSessionControllerText, "public string? MissingSignals { get; private set; }");
         AssertContains(previewStartupSessionControllerText, "public int RecoveryAttemptCount { get; private set; }");
         AssertContains(previewStartupSessionControllerText, "public bool FirstVisualConfirmed { get; private set; }");
+        AssertContains(previewStartupSessionControllerText, "public bool ShouldRefreshMissingSignalsForSnapshot => IsWaitingForFirstVisual || IsFailed;");
         AssertContains(previewStartupSessionControllerText, "public bool ShouldBeginAttempt => string.IsNullOrWhiteSpace(AttemptId) || IsFailed || IsIdle;");
+        AssertContains(previewStartupSessionControllerText, "public bool IsSignalWindowActive(bool isPreviewing)");
         AssertContains(previewStartupSessionControllerText, "public string AttemptLabel => AttemptId ?? \"none\";");
         AssertContains(previewStartupSessionControllerText, "public void BeginStartupAttempt()");
         AssertContains(previewStartupSessionControllerText, "public void SetStartupState(PreviewStartupState state, string? reason = null)");

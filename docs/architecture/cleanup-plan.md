@@ -3385,7 +3385,8 @@ renderer-stop-before-teardown and UI callback endpoints for reinit completion.
 
 Preview startup attempt/state bookkeeping, timestamps, cached failure/
 missing-signal details, state/log transitions, first-visual confirmation
-sequencing, and reset orchestration now live in
+sequencing, signal-window predicates, snapshot missing-signal refresh gates,
+and reset orchestration now live in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs` instead of a
 MainWindow field bundle. `Sussudio/MainWindow.PreviewStartup.cs` is the
 XAML/MainWindow-facing adapter that supplies UI/runtime callbacks for startup

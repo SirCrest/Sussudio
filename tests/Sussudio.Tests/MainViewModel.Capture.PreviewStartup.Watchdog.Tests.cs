@@ -28,6 +28,7 @@ static partial class Program
             "preview startup watchdog adapter is consolidated into the startup adapter");
         AssertContains(previewStartupWatchdogText, "private PreviewStartupWatchdogController _previewStartupWatchdogController = null!;");
         AssertContains(previewStartupWatchdogText, "private void InitializePreviewStartupWatchdogController()");
+        AssertContains(previewStartupWatchdogText, "IsWaitingForFirstVisual = () => _previewStartupSessionController.IsWaitingForFirstVisual,");
         AssertContains(previewStartupWatchdogText, "private void StartPreviewStartupWatchdog()");
         AssertContains(previewStartupWatchdogText, "=> _previewStartupWatchdogController.Start();");
         AssertContains(previewStartupWatchdogText, "private void StopPreviewStartupWatchdog()");
@@ -92,6 +93,7 @@ static partial class Program
         AssertDoesNotContain(previewStartupWatchdogText, "private DispatcherQueueTimer? _previewStartupTelemetryTimer;");
         AssertDoesNotContain(previewStartupWatchdogText, "private int _previewStartupFailureStopScheduled;");
         AssertDoesNotContain(previewStartupWatchdogText, "private Task HandlePreviewStartupTimeoutAsync()");
+        AssertDoesNotContain(previewStartupWatchdogText, "CurrentPreviewStartupState == PreviewStartupState.WaitingForFirstVisual");
         AssertDoesNotContain(previewStartupWatchdogText, "placeholder={NoDevicePlaceholder.Visibility}");
         AssertDoesNotContain(previewStartupWatchdogText, "PreviewStartupSignalFormatter.FormatSignalList(_previewStartupRequiredSignals)");
         AssertDoesNotContain(previewStartupText, "_previewStartupFailureStopScheduled");

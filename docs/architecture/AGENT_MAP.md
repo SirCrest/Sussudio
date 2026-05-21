@@ -3342,8 +3342,9 @@ Primary current owners:
   renderer-stop-before-teardown and UI callback endpoints for reinit completion.
 - `Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs` owns preview
   startup attempt/state bookkeeping, timestamps, cached failure/missing-signal
-  details, state/log transitions, first-visual confirmation sequencing, and
-  reset orchestration. `Sussudio/MainWindow.PreviewStartup.cs` is the
+  details, state/log transitions, first-visual confirmation sequencing,
+  signal-window predicates, snapshot missing-signal refresh gates, and reset
+  orchestration. `Sussudio/MainWindow.PreviewStartup.cs` is the
   XAML/MainWindow-facing adapter that supplies UI/runtime callbacks for startup
   session state, watchdog/timeout payloads, and readiness-signal handoff.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs` owns

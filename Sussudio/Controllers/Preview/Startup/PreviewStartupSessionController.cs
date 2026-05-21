@@ -57,8 +57,14 @@ internal sealed class PreviewStartupSessionController
     public bool IsIdle => State == PreviewStartupState.Idle;
     public bool IsWaitingForFirstVisual => State == PreviewStartupState.WaitingForFirstVisual;
     public bool IsTerminal => IsTerminalState(State);
+    public bool ShouldRefreshMissingSignalsForSnapshot => IsWaitingForFirstVisual || IsFailed;
     public bool ShouldBeginAttempt => string.IsNullOrWhiteSpace(AttemptId) || IsFailed || IsIdle;
     public string AttemptLabel => AttemptId ?? "none";
+
+    public bool IsSignalWindowActive(bool isPreviewing)
+        => isPreviewing &&
+           !FirstVisualConfirmed &&
+           State is PreviewStartupState.StartingSession or PreviewStartupState.RendererAttaching or PreviewStartupState.WaitingForFirstVisual;
 
     public static bool IsFailedState(PreviewStartupState state)
         => state == PreviewStartupState.Failed;

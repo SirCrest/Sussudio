@@ -33,6 +33,7 @@ static partial class Program
         AssertContains(previewStartupSignalsText, "GetPlaybackSnapshotState = GetPreviewStartupPlaybackSnapshotState");
         AssertContains(previewStartupSignalsText, "private long PreviewStartupGpuPositionEventCount => _previewStartupSignalCoordinator.PositionEventCount;");
         AssertContains(previewStartupSignalsText, "private bool IsPreviewStartupSignalWindowActive()");
+        AssertContains(previewStartupSignalsText, "=> _previewStartupSessionController.IsSignalWindowActive(ViewModel.IsPreviewing);");
         AssertContains(previewStartupSignalsText, "private void ResetPreviewSignalState()");
         AssertContains(previewStartupSignalsText, "private void ConfigurePreviewStartupSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)");
         AssertContains(previewStartupSignalsText, "private void LogPreviewStartupPlaybackSnapshot(string reason)");
@@ -79,6 +80,7 @@ static partial class Program
         AssertDoesNotContain(previewStartupSignalsText, "PREVIEW_START_SIGNAL");
         AssertDoesNotContain(previewStartupSignalsText, "PREVIEW_START_WAITING");
         AssertDoesNotContain(previewStartupSignalsText, "private static string BuildPreviewStartupSignalList");
+        AssertDoesNotContain(previewStartupSignalsText, "CurrentPreviewStartupState is PreviewStartupState.StartingSession");
 
         return Task.CompletedTask;
     }
