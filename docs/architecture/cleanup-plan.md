@@ -1309,12 +1309,17 @@ directory fallback, file naming, status text, and log text policy.
 `MainWindow.Screenshot.cs` is the XAML-facing adapter; the controller keeps
 directory creation, preview-frame capture, logging side effects, and button
 enable/disable state.
-Renderer-level preview frame capture request state, timeout/cancellation
-handling, staging-resource ownership, and screenshot error result construction
-now live in
+Renderer-level preview frame capture request state and timeout/cancellation
+handling now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotRequests.cs`.
+Preview-frame capture staging-resource reuse and teardown live in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotStaging.cs`, while
+screenshot error result construction and capture-result logging live in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotResults.cs`.
 Render-thread GPU readback and before-present screenshot dispatch stay in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs`.
+`Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs`, with
+off-thread PNG completion gate state in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotPngCompletion.cs`.
 Preview-frame BMP/PNG pixel conversion, mapped-frame buffer copying, luminance
 analysis, and letterbox/pillarbox measurement live in the
 `Sussudio/Services/Preview/PreviewScreenshotCapture*.cs` family:
@@ -2567,7 +2572,7 @@ resource cleanup orchestration there. VideoProcessor input texture teardown stay
 `D3D11PreviewRenderer.InputResources.cs`, HDR shader input teardown stays with
 `D3D11PreviewRenderer.HdrInputResources.cs`, shader/SRV teardown stays with
 `D3D11PreviewRenderer.ShaderRendering.cs`, and preview-frame capture staging
-teardown stays with `D3D11PreviewRenderer.ScreenshotCapture.cs`; keep
+teardown stays with `D3D11PreviewRenderer.ScreenshotStaging.cs`; keep
 swap-chain color-space application with render-pass selection in
 `D3D11PreviewRenderer.RenderPasses.cs`.
 Raw-frame VideoProcessor input texture allocation now lives in

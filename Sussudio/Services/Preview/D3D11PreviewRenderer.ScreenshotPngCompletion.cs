@@ -8,6 +8,17 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    private int _frameCaptureEncodeInProgress;
+
+    private bool IsPngFrameCaptureCompletionInProgress()
+        => Volatile.Read(ref _frameCaptureEncodeInProgress) != 0;
+
+    private bool TryBeginPngFrameCaptureCompletion()
+        => Interlocked.CompareExchange(ref _frameCaptureEncodeInProgress, 1, 0) == 0;
+
+    private void EndPngFrameCaptureCompletion()
+        => Interlocked.Exchange(ref _frameCaptureEncodeInProgress, 0);
+
     private void BeginPngFrameCaptureCompletion(
         TaskCompletionSource<PreviewFrameCaptureResult> request,
         byte[] frameBuffer,
@@ -32,17 +43,16 @@ internal sealed partial class D3D11PreviewRenderer
                         rendererMode,
                         backBufferFormat);
                     request.TrySetResult(captureResult);
-                    Logger.Log(
-                        $"PREVIEW_FRAME_CAPTURE_RESULT ok={captureResult.Succeeded} renderer={captureResult.RendererMode} path={captureResult.FilePath ?? "n/a"} width={captureResult.CapturedWidth} height={captureResult.CapturedHeight} avgLum={captureResult.AverageLuminance:0.00} pureBlackPct={captureResult.PureBlackPercent:0.00}");
+                    LogFrameCaptureResult(captureResult);
                 }
                 catch (Exception ex)
                 {
                     request.TrySetResult(CreateFrameCaptureError($"Preview frame capture failed: {ex.Message}", rendererMode));
-                    Logger.Log($"PREVIEW_FRAME_CAPTURE_RESULT ok=false renderer={rendererMode} type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+                    LogFrameCaptureFailure(ex, rendererMode);
                 }
                 finally
                 {
-                    Interlocked.Exchange(ref _frameCaptureEncodeInProgress, 0);
+                    EndPngFrameCaptureCompletion();
                 }
             });
     }

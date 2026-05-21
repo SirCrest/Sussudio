@@ -4,6 +4,11 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    // Persistent staging texture for frame capture (avoids GPU resource churn)
+    private ID3D11Texture2D? _captureStagingTexture;
+    private int _captureStagingWidth;
+    private int _captureStagingHeight;
+
     private ID3D11Texture2D EnsureFrameCaptureStagingTexture(Texture2DDescription backBufferDescription, int width, int height)
     {
         if (_captureStagingTexture == null ||
@@ -28,5 +33,13 @@ internal sealed partial class D3D11PreviewRenderer
         }
 
         return _captureStagingTexture!;
+    }
+
+    private void DisposeFrameCaptureStagingResources()
+    {
+        _captureStagingTexture?.Dispose();
+        _captureStagingTexture = null;
+        _captureStagingWidth = 0;
+        _captureStagingHeight = 0;
     }
 }

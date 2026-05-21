@@ -3,7 +3,6 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
-using Vortice.Direct3D11;
 
 namespace Sussudio.Services.Preview;
 
@@ -12,13 +11,7 @@ internal sealed partial class D3D11PreviewRenderer
     private const int FrameCaptureTimeoutMs = 5000;
 
     private TaskCompletionSource<PreviewFrameCaptureResult>? _frameCaptureRequest;
-    private int _frameCaptureEncodeInProgress;
     private string? _frameCaptureOutputPath;
-
-    // Persistent staging texture for frame capture (avoids GPU resource churn)
-    private ID3D11Texture2D? _captureStagingTexture;
-    private int _captureStagingWidth;
-    private int _captureStagingHeight;
 
     public Task<PreviewFrameCaptureResult> CaptureNextFrameAsync(string outputPath)
         => CaptureNextFrameAsync(outputPath, CancellationToken.None);
@@ -35,7 +28,7 @@ internal sealed partial class D3D11PreviewRenderer
             return Task.FromResult(CreateFrameCaptureError("No active preview renderer."));
         }
 
-        if (Volatile.Read(ref _frameCaptureEncodeInProgress) != 0)
+        if (IsPngFrameCaptureCompletionInProgress())
         {
             return Task.FromResult(CreateFrameCaptureError("A preview frame capture is already pending."));
         }
@@ -109,24 +102,5 @@ internal sealed partial class D3D11PreviewRenderer
 
         request.TrySetResult(CreateFrameCaptureError(message));
         Logger.Log($"PREVIEW_FRAME_CAPTURE_ABORTED reason={message}");
-    }
-
-    private void DisposeFrameCaptureStagingResources()
-    {
-        _captureStagingTexture?.Dispose();
-        _captureStagingTexture = null;
-        _captureStagingWidth = 0;
-        _captureStagingHeight = 0;
-    }
-
-    private static PreviewFrameCaptureResult CreateFrameCaptureError(string message, string rendererMode = "Unknown")
-    {
-        return new PreviewFrameCaptureResult
-        {
-            Succeeded = false,
-            Message = message,
-            RendererMode = rendererMode,
-            LuminanceHistogram = new int[16]
-        };
     }
 }
