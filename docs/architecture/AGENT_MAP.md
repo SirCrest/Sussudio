@@ -5104,14 +5104,21 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultFormatter.ProcessPerformance.cs` owns
   the process-performance summary row.
 - `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs` owns Flashback
-  diagnostic-session text section ordering plus playback command and playback
+  diagnostic-session text section ordering.
+  `DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs` owns
+  playback command lines.
+  `DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs` owns
+  playback performance row assembly and submit-failure fields.
+  `DiagnosticSessionResultFormatter.FlashbackPlayback.Cadence.cs` owns
+  playback cadence, 1% low, slow-frame, and dropped-frame performance text.
+  `DiagnosticSessionResultFormatter.FlashbackPlayback.AudioMaster.cs` owns
+  audio-master fallback, buffering, queue, and A/V-drift performance text.
+  `DiagnosticSessionResultFormatter.FlashbackPlayback.Stages.cs` owns playback
   stage/seek-cap lines.
   `DiagnosticSessionResultFormatter.FlashbackRecording.cs` owns Flashback
   recording summary text. `DiagnosticSessionResultFormatter.FlashbackExport.cs`
   owns Flashback export summary text, including force-rotate fallback and
   throughput formatting.
-  `DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs` owns
-  playback cadence/audio-master performance lines,
   `DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs` owns playback
   decode timing lines.
 - `tools/Common/DiagnosticSessionResultFormatter.Preview.cs` owns preview

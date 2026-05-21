@@ -4011,12 +4011,15 @@ header/summary/evidence section, `.CaptureMode.cs` owns the capture-mode row and
 frame-rate text formatting, `.RecordingVerification.cs` owns recording
 verification text, `.PresentMon.cs` owns PresentMon text, and
 `.ProcessPerformance.cs` owns process-performance text. `.Flashback.cs` owns
-Flashback section ordering plus simple playback command and playback
-stage/seek-cap rows,
+Flashback section ordering. `.FlashbackPlayback.Commands.cs` owns playback
+command rows, `.FlashbackPlayback.Performance.cs` owns playback performance row
+assembly, `.FlashbackPlayback.Cadence.cs` owns playback cadence/1% low/slow
+frame performance text, `.FlashbackPlayback.AudioMaster.cs` owns audio-master
+performance text, and `.FlashbackPlayback.Stages.cs` owns playback
+stage/seek-cap rows.
 `.FlashbackRecording.cs` owns Flashback recording summary text,
 `.FlashbackExport.cs` owns Flashback export summary text, and
-`.FlashbackPlayback.Performance.cs` owns playback cadence/audio-master
-performance text. `.FlashbackPlayback.Decode.cs` owns playback decode text,
+`.FlashbackPlayback.Decode.cs` owns playback decode text,
 `.Preview.cs` owns preview section ordering plus preview scheduler text,
 `.PreviewD3D.cs` owns D3D performance/slow-frame and CPU timing text, and
 `.PreviewVisualCadence.cs` owns visual cadence text. `.Artifacts.cs` owns
@@ -4795,10 +4798,14 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultFormatter.PresentMon.cs`
 - `DiagnosticSessionResultFormatter.ProcessPerformance.cs`
 - `DiagnosticSessionResultFormatter.Flashback.cs`
+- `DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs`
+- `DiagnosticSessionResultFormatter.FlashbackPlayback.Cadence.cs`
 - `DiagnosticSessionResultFormatter.FlashbackRecording.cs`
 - `DiagnosticSessionResultFormatter.FlashbackExport.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs`
+- `DiagnosticSessionResultFormatter.FlashbackPlayback.AudioMaster.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs`
+- `DiagnosticSessionResultFormatter.FlashbackPlayback.Stages.cs`
 - `DiagnosticSessionResultFormatter.Preview.cs`
 - `DiagnosticSessionResultFormatter.PreviewD3D.cs`
 - `DiagnosticSessionResultFormatter.PreviewVisualCadence.cs`
