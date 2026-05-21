@@ -3493,7 +3493,10 @@ Preview-audio volume transition mechanics now live in the
 state, transition priming and restore behavior, trace adapters, and
 property-to-session volume forwarding. `PreviewAudioVolumeTransitionController.Ramps.cs`
 owns the ramp constants/easing and async ramp-down/ramp-up execution.
-Monitoring enable/disable orchestration and coordinator sequencing remain in
+`Sussudio/ViewModels/MainViewModel.PreviewVolumeTransitions.cs` is the
+view-model compatibility facade for preview-volume save suppression, override,
+change notification, and ramp adapter methods. Monitoring enable/disable
+orchestration and coordinator sequencing remain in
 `Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs`; audio capture and
 audio-preview property-change handlers live in
 `Sussudio/ViewModels/MainViewModel.AudioPropertyChanges.cs`.
@@ -4745,7 +4748,8 @@ owner, fold it back into that owner and update the source-shape tests and
    `Sussudio/ViewModels/AudioRampTraceRecorder.Capture.cs`, with
    `Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs` kept as the
    automation-facing adapter and trace/preview-volume controller wiring owner;
-   keep preview monitoring
+   preview-volume save/override and ramp adapter methods now live in
+   `MainViewModel.PreviewVolumeTransitions.cs`; keep preview monitoring
    coordinator sequencing in
    `MainViewModel.AudioMonitoring.cs`, audio capture/audio-preview property
    handlers in `MainViewModel.AudioPropertyChanges.cs`, while custom audio-input property
@@ -5116,10 +5120,12 @@ owner, fold it back into that owner and update the source-shape tests and
    UI-only automation mutators for settings visibility, Flashback timeline
    visibility, show-all capture options, stats dock/section visibility, and
    frame-time overlay display now live in `MainViewModel.AutomationUi.cs`.
-   Automation command entry points for audio enablement, audio-preview
-   enablement, preview-volume clamp/persist, device-native mode/gain
-   application, and microphone enablement with recording-time
-   refusal/idempotent handling now live in `MainViewModel.AutomationAudio.cs`.
+   Automation command entry points for app audio enablement, audio-preview
+   enablement, and preview-volume clamp/persist now live in
+   `MainViewModel.AutomationAudio.cs`; device-native mode/gain application
+   lives in `MainViewModel.AutomationDeviceAudio.cs`; microphone enablement
+   with recording-time refusal/idempotent handling now lives in
+   `MainViewModel.AutomationMicrophone.cs`.
    Automation preview enable/disable idempotence, pending-reinit cancellation,
    and preview start/stop routing now live in
    top-level `MainViewModelPreviewLifecycleController.cs` plus graph-built

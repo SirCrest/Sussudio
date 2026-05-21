@@ -86,7 +86,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Recording lifecycle facade/state: MainViewModel.RecordingState.cs; top-level transition owner: MainViewModelRecordingTransitionController.cs
     // Capture settings projection: MainViewModel.CaptureSettings.cs and CaptureSettingsProjectionBuilder.cs
     // Flashback automation and buffer/GPU reactions: MainViewModel.FlashbackSettings.cs
-    // Audio automation: MainViewModel.AutomationAudio.cs
+    // Audio automation: MainViewModel.AutomationAudio.cs, .AutomationDeviceAudio.cs, .AutomationMicrophone.cs
     // HDR automation: MainViewModel.CaptureModeTransactions.cs
     // Automation snapshots and probes: MainViewModel.AutomationSnapshots.cs
     // Automation options projection: MainViewModel.AutomationOptionsSnapshot.cs
@@ -95,6 +95,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // UI-only automation: MainViewModel.AutomationUi.cs
     // UI dispatch policy: MainViewModelUiDispatchController.cs; adapter/fan-out: MainViewModel.Dispatching.cs
     // Audio monitoring: MainViewModel.AudioMonitoring.cs
+    // Preview volume transition facade: MainViewModel.PreviewVolumeTransitions.cs
     // Audio input selection/property changes: MainViewModel.AudioInputSelection.cs
     // Audio ramp trace and preview-volume wiring: MainViewModel.AudioRampTrace.cs
     // Microphone endpoint volume: MainViewModel.MicrophoneVolume.cs

@@ -9,7 +9,7 @@ static partial class Program
         var previewActionsText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewPropertyChangedText = ReadMainWindowPropertyChangedPreviewAdapterSource();
-        var audioMonitoringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs")
+        var previewVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.PreviewVolumeTransitions.cs")
             .Replace("\r\n", "\n");
         var audioVolumeTransitionText = string.Join(
                 "\n",
@@ -33,7 +33,7 @@ static partial class Program
         AssertContains(uiFadeOut, "_context.ViewModel.PreviewVolume = 0;");
         AssertContains(uiFadeOut, "PREVIEW_AUDIO_FADE_OUT_STARTED");
 
-        var vmStopRamp = ExtractMemberCode(audioMonitoringText, "RampPreviewVolumeDownForStopAsync");
+        var vmStopRamp = ExtractMemberCode(previewVolumeTransitionText, "RampPreviewVolumeDownForStopAsync");
         AssertContains(vmStopRamp, "_previewAudioVolumeTransitionController.RampDownForStopAsync(cancellationToken)");
 
         var vmRampDown = ExtractMemberCode(audioVolumeTransitionText, "RampDownForAudioTransitionAsync");

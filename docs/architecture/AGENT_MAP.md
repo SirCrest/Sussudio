@@ -3719,6 +3719,9 @@ Primary current owners:
   trace adapters, and property-to-session volume forwarding.
   `PreviewAudioVolumeTransitionController.Ramps.cs` owns preview-audio ramp
   constants, easing, and async ramp-down/ramp-up execution.
+  `MainViewModel.PreviewVolumeTransitions.cs` owns the view-model facade for
+  preview-volume save suppression/override properties, change notification,
+  ramp adapter methods, and persisted preview-volume save routing.
   `MainViewModel.AudioMonitoring.cs` owns preview monitoring
   coordinator sequencing. `MainViewModel.AudioPropertyChanges.cs` owns audio
   capture and audio-preview property-change handlers.
@@ -4023,10 +4026,13 @@ Primary current owners:
   for settings visibility, Flashback timeline visibility, show-all capture
   options, stats dock/section visibility, and frame-time overlay display.
   `MainViewModel.AutomationAudio.cs`
-  owns automation command entry points for audio enablement, audio-preview
-  enablement, preview-volume clamp/persist, device-native mode/gain
-  application, and microphone enablement with recording-time refusal and
-  idempotent handling.
+  owns automation command entry points for app audio enablement,
+  audio-preview enablement, and preview-volume clamp/persist.
+  `MainViewModel.AutomationDeviceAudio.cs` owns automation command entry
+  points for device-native mode/gain application.
+  `MainViewModel.AutomationMicrophone.cs` owns automation command entry
+  points for microphone enablement with recording-time refusal and idempotent
+  handling.
   `MainViewModelPreviewLifecycleController.cs` owns top-level automation preview
   enable/disable idempotence, pending-reinit cancellation, and start/stop
   routing behind the `MainViewModel.cs` compatibility facade.

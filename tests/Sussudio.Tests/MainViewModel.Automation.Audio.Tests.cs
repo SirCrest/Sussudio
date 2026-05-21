@@ -8,6 +8,10 @@ static partial class Program
     {
         var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudio.cs")
             .Replace("\r\n", "\n");
+        var automationDeviceAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceAudio.cs")
+            .Replace("\r\n", "\n");
+        var automationMicrophoneText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationMicrophone.cs")
+            .Replace("\r\n", "\n");
         var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationUi.cs")
             .Replace("\r\n", "\n");
         var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
@@ -35,45 +39,50 @@ static partial class Program
         AssertContains(automationAudioText, "public Task SetAudioEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "public Task SetAudioPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "public Task SetPreviewVolumeAsync(double previewVolumePercent, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "public Task SetDeviceAudioModeAsync(string mode, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "public Task SetAnalogAudioGainAsync(double gainPercent, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "public Task SetMicrophoneEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "private async Task SetMicrophoneEnabledAutomationAsync(bool enabled, CancellationToken cancellationToken)");
-        AssertContains(automationAudioText, "Logger.Log($\"MIC_TOGGLE_NOOP reason=recording_active_idempotent requested={enabled}\");");
-        AssertContains(automationAudioText, "Logger.Log($\"MIC_TOGGLE_REFUSED reason=recording_active requested={enabled} current={request.CurrentMicEnabled}\");");
-        AssertContains(automationAudioText, "Cannot change microphone enable state while recording. Stop the recording first.");
         AssertContains(automationAudioText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SavePreviewVolume();");
-        AssertContains(automationAudioText, "WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = normalizedMode);");
-        AssertContains(automationAudioText, "WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = clampedGain);");
-        AssertContains(automationAudioText, "_suppressMicrophoneMonitorUpdate = true;");
-        AssertContains(automationAudioText, "await _sessionCoordinator.UpdateMicrophoneMonitorAsync(");
-        AssertContains(automationAudioText, "cancellationToken).ConfigureAwait(false);");
-        AssertContains(automationAudioText, "IsMicrophoneEnabled = enabled;\n                }\n                finally\n                {\n                    _suppressMicrophoneMonitorUpdate = false;\n                }\n\n                return true;\n            },\n            cancellationToken).ConfigureAwait(false);");
+        AssertContains(automationDeviceAudioText, "public Task SetDeviceAudioModeAsync(string mode, CancellationToken cancellationToken = default)");
+        AssertContains(automationDeviceAudioText, "public Task SetAnalogAudioGainAsync(double gainPercent, CancellationToken cancellationToken = default)");
+        AssertContains(automationDeviceAudioText, "WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = normalizedMode);");
+        AssertContains(automationDeviceAudioText, "WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = clampedGain);");
+        AssertContains(automationMicrophoneText, "public Task SetMicrophoneEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(automationMicrophoneText, "private async Task SetMicrophoneEnabledAutomationAsync(bool enabled, CancellationToken cancellationToken)");
+        AssertContains(automationMicrophoneText, "Logger.Log($\"MIC_TOGGLE_NOOP reason=recording_active_idempotent requested={enabled}\");");
+        AssertContains(automationMicrophoneText, "Logger.Log($\"MIC_TOGGLE_REFUSED reason=recording_active requested={enabled} current={request.CurrentMicEnabled}\");");
+        AssertContains(automationMicrophoneText, "Cannot change microphone enable state while recording. Stop the recording first.");
+        AssertContains(automationMicrophoneText, "_suppressMicrophoneMonitorUpdate = true;");
+        AssertContains(automationMicrophoneText, "await _sessionCoordinator.UpdateMicrophoneMonitorAsync(");
+        AssertContains(automationMicrophoneText, "cancellationToken).ConfigureAwait(false);");
+        AssertContains(automationMicrophoneText, "IsMicrophoneEnabled = enabled;\n                }\n                finally\n                {\n                    _suppressMicrophoneMonitorUpdate = false;\n                }\n\n                return true;\n            },\n            cancellationToken).ConfigureAwait(false);");
+        AssertDoesNotContain(automationAudioText, "SetDeviceAudioModeAsync");
+        AssertDoesNotContain(automationAudioText, "SetAnalogAudioGainAsync");
+        AssertDoesNotContain(automationAudioText, "SetMicrophoneEnabledAsync");
+        AssertDoesNotContain(automationDeviceAudioText, "SetMicrophoneEnabledAsync");
+        AssertDoesNotContain(automationMicrophoneText, "SetDeviceAudioModeAsync");
         AssertDoesNotContain(automationUiText, "public Task SetPreviewVolumeAsync");
         AssertContains(viewModelText, "if (_suppressMicrophoneMonitorUpdate)");
         AssertContains(captureServiceText, "var previousEnabled = _micMonitorEnabled;");
         AssertContains(captureServiceText, "await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);\n\n                _micMonitorEnabled = enabled;");
 
-        var microphoneUpdateIndex = automationAudioText.IndexOf(
+        var microphoneUpdateIndex = automationMicrophoneText.IndexOf(
             "await _sessionCoordinator.UpdateMicrophoneMonitorAsync(",
             StringComparison.Ordinal);
-        var microphonePersistIndex = automationAudioText.IndexOf(
+        var microphonePersistIndex = automationMicrophoneText.IndexOf(
             "IsMicrophoneEnabled = enabled;",
             StringComparison.Ordinal);
         AssertEqual(
             true,
             microphoneUpdateIndex >= 0 && microphonePersistIndex > microphoneUpdateIndex,
             "automation microphone persists only after monitor update");
-        foreach (var stalePath in new[]
+        foreach (var expectedPath in new[]
         {
             "MainViewModel.AutomationDeviceAudio.cs",
             "MainViewModel.AutomationMicrophone.cs"
         })
         {
             AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", stalePath)),
-                $"stale audio automation partial {stalePath}");
+                true,
+                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", expectedPath)),
+                $"audio automation partial {expectedPath}");
         }
 
         return Task.CompletedTask;
