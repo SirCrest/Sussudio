@@ -2301,10 +2301,21 @@ Flashback encoder retroactive recording lifecycle now lives in
 `IRecordingSink.StartAsync` adapter, `CanBeginRecording`, recording begin/cancel/end,
 recording PTS boundaries, and recording eviction-pause handshake there.
 
-Flashback encoder public runtime state now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.cs`. Keep public
-counters, queue-depth/status projections, encoder format summaries,
-fatal-error callback registration, and the frame-encoded event surface there.
+Flashback encoder public runtime counters now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.Counters.cs`.
+Keep public frame/audio/disk counters, drop counters, rotation-failure counts,
+and the frame-encoded event surface there.
+
+Flashback encoder public queue telemetry now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.QueueMetrics.cs`.
+Keep queue-depth/capacity/max-depth projections, queue rejection summaries, GPU
+queue projections, and video queue latency/backpressure metrics there.
+
+Flashback encoder public status and format projections now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.Status.cs`. Keep
+encoding failure status, audio/microphone enablement, fatal-error callback
+registration, encoder format summaries, HDR P010 projection, and encoding
+completion task exposure there.
 
 Flashback decoder audio output now lives in
 `Sussudio/Services/Flashback/FlashbackDecoder.AudioOutput.cs`. Keep audio packet
