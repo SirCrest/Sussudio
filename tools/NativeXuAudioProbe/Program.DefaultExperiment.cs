@@ -4,6 +4,19 @@ using static NativeXuProbeCommands;
 using static NativeXuProbeExperimentPayloads;
 using static NativeXuProbeFormatting;
 
+enum ValueKind
+{
+    Byte,
+    Int16,
+    Int32
+}
+
+sealed record GetterSpec(string Name, int Cmd, ValueKind Kind);
+
+sealed record SetterSpec(string Name, int SetCmd, int ReadbackCmd, int PayloadWidth = 2);
+
+sealed record SetExperiment(string Group, SetterSpec Setter, string DisplayValue, byte[] Payload);
+
 static partial class NativeXuProbeDefaultExperiment
 {
     public static async Task<int> RunAsync(CaptureDevice device)

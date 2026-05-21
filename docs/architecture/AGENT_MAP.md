@@ -3960,14 +3960,13 @@ Primary owners:
   flag parsing, output-path defaulting, parent-directory creation, and
   `FlashbackExport` payload shaping.
 - `tools/NativeXuAudioProbe/Program.cs` owns probe command routing and command
-  workflows; `Program.Models.cs` owns probe experiment/readback DTOs and
-  result-diff records; `Program.Commands.cs` owns Native XU command IDs and
-  shared raw-payload formatting;
+  workflows; `Program.Commands.cs` owns Native XU command IDs and shared
+  raw-payload formatting;
   `Program.AtCommands.cs` owns direct AT read/write/input subcommands;
   `Program.DefaultExperiment.cs` owns the default baseline/experiment/restore
-  runner and analog-gain sequence;
+  runner, experiment spec records, and analog-gain sequence;
   `Program.DefaultExperiment.Reporting.cs` owns default experiment AT
-  read/decode/diff/snapshot reporting;
+  read/decode/diff/snapshot reporting plus readback/result-diff records;
   `Program.I2cCommands.cs` owns the exploratory `i2c-cmd` router/basic
   get/set/scan paths; `Program.I2cCommands.SelectorProbe.cs` owns selector
   transport probing for that command family;

@@ -55,7 +55,6 @@ static partial class Program
         AssertContains(probeProgramText, "NativeXuProbeDeviceLocator.Find(null)");
         AssertContains(probeProgramText, "RtkI2cProbe.Run(rtkArgs, dev)");
         var probeAtCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.AtCommands.cs"));
-        var probeModelsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Models.cs"));
         var probeCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Commands.cs"));
         var probeDefaultExperimentText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.DefaultExperiment.cs"));
         var probeDefaultExperimentReportingText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.DefaultExperiment.Reporting.cs"));
@@ -96,23 +95,31 @@ static partial class Program
         AssertContains(probeProgramText, "NativeXuProbeI2cSwitch.RunAsync(args)");
         AssertContains(probeProgramText, "NativeXuProbeServiceProbe.RunServiceControlProbeAsync");
         AssertContains(probeProgramText, "NativeXuProbeServiceProbe.RunServiceSmokeAsync");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Models.cs")),
+            "old NativeXu probe model bucket removed");
         AssertContains(probeAtCommandsText, "static class NativeXuProbeAtCommands");
         AssertContains(probeAtCommandsText, "public static async Task<int> RunAtReadAsync");
         AssertContains(probeAtCommandsText, "public static async Task<int> RunAtWriteAsync");
         AssertContains(probeAtCommandsText, "public static async Task<int> RunAtSetInputAsync");
         AssertContains(probeAtCommandsText, "using static NativeXuProbeFormatting;");
-        AssertContains(probeModelsText, "sealed record GetterSpec");
-        AssertContains(probeModelsText, "sealed class ExperimentResult");
         AssertContains(probeCommandsText, "public const int CmdAudioFormat = 0x04;");
         AssertContains(probeCommandsText, "public const int CmdSetAuxOutVolume = 0x82;");
         AssertContains(probeCommandsText, "static class NativeXuProbeFormatting");
         AssertContains(probeCommandsText, "public static string FormatRaw");
         AssertContains(probeDefaultExperimentText, "static partial class NativeXuProbeDefaultExperiment");
+        AssertContains(probeDefaultExperimentText, "sealed record GetterSpec");
+        AssertContains(probeDefaultExperimentText, "sealed record SetterSpec");
+        AssertContains(probeDefaultExperimentText, "sealed record SetExperiment");
         AssertContains(probeDefaultExperimentText, "public static async Task<int> RunAsync(CaptureDevice device)");
         AssertContains(probeDefaultExperimentText, "RunAnalogGainSequenceAsync");
         AssertDoesNotContain(probeDefaultExperimentText, "private static AtReadResult Decode(");
         AssertDoesNotContain(probeDefaultExperimentText, "private static void PrintSnapshot(");
         AssertContains(probeDefaultExperimentReportingText, "static partial class NativeXuProbeDefaultExperiment");
+        AssertContains(probeDefaultExperimentReportingText, "sealed record AtReadResult");
+        AssertContains(probeDefaultExperimentReportingText, "sealed record ChangedValue");
+        AssertContains(probeDefaultExperimentReportingText, "sealed class ExperimentResult");
         AssertContains(probeDefaultExperimentReportingText, "private static async Task<Dictionary<int, AtReadResult>> ReadAllAsync");
         AssertContains(probeDefaultExperimentReportingText, "private static AtReadResult Decode");
         AssertContains(probeDefaultExperimentReportingText, "private static void PrintInterestingChanges");
