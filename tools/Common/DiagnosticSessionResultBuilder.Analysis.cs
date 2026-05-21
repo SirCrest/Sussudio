@@ -1,3 +1,4 @@
+using System.Text.Json;
 using static Sussudio.Tools.DiagnosticSessionFlashbackMetrics;
 using static Sussudio.Tools.DiagnosticSessionMetrics;
 
@@ -5,6 +6,20 @@ namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionResultBuilder
 {
+    private sealed record DiagnosticSessionResultAnalysis(
+        JsonElement LastSnapshot,
+        DiagnosticSessionHealthSummary HealthSummary,
+        FlashbackPlaybackSessionMetrics PlaybackSessionMetrics,
+        FlashbackPlaybackResultMetrics PlaybackResultMetrics,
+        FlashbackRecordingSessionMetrics RecordingMetrics,
+        FlashbackExportSessionMetrics ExportMetrics,
+        PreviewCadenceSessionMetrics PreviewCadenceMetrics,
+        PreviewD3DMetrics PreviewD3DMetrics,
+        VisualCadenceSessionMetrics VisualCadenceMetrics,
+        DiagnosticSessionPreviewSchedulerAnalysis PreviewScheduler,
+        bool DiagnosticHealthSucceeded,
+        bool FlashbackWarningsSucceeded);
+
     private static DiagnosticSessionResultAnalysis Analyze(DiagnosticSessionResultBuildRequest request)
     {
         var samples = request.Samples;

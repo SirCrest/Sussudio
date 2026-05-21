@@ -4213,8 +4213,8 @@ Primary owners:
   stable in the builder family.
 - `tools/Common/DiagnosticSessionResultBuilder.Flattening.cs` owns final
   `DiagnosticSessionResult` DTO assignment from the projection set. Keep
-  domain projection composition in the projection owners and root projection-set
-  assembly, not in this initializer.
+  domain projection composition in the projection owners and projection-set
+  owner, not in this initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.OverviewResult.cs` owns
   diagnostic-session outcome policy plus overview DTO projection for process
   CPU end/max-observed aggregation, recording verification, and PresentMon
@@ -4222,7 +4222,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.Analysis.cs` owns
   diagnostic-session metric preparation for validation/result projections,
   analysis warning emission, and the handoff into the named
-  analysis-validation owner before summary construction.
+  analysis-validation owner before summary construction. It also owns the
+  private analysis handoff record, including the single `PreviewScheduler`
+  record property used by preview-scheduler result projection.
 - `tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs` owns
   diagnostic-session validation handoff order for Flashback playback, cleanup
   lifecycle restore, preview scheduler analysis, and diagnostic health.
@@ -4288,10 +4290,12 @@ Primary owners:
   frame-stats, slow-frame, and CPU-timing DTO projection values consumed by the
   final result initializer. It should not map scheduler metrics directly, and
   D3D fields stay in their own projection struct.
-- `tools/Common/DiagnosticSessionResultBuilder.Models.cs` owns the builder
-  request record, private analysis handoff record, and private projection-set
-  handoff record, including the single `PreviewScheduler` record property used
-  by preview-scheduler result projection.
+- `tools/Common/DiagnosticSessionResultBuildRequest.cs` owns the result-build
+  request handoff created by `DiagnosticSessionRunExecution.ResultBuildRequest.cs`
+  and consumed by the result builder.
+- `tools/Common/DiagnosticSessionResultBuilder.ProjectionSet.cs` owns the
+  private projection-set handoff record plus projection-set assembly from the
+  focused result projection owners.
 - `tools/Common/DiagnosticSessionResultArtifacts.cs` owns diagnostic-session
   result artifact path construction and pre-summary sample, frame-ledger, and
   timeline artifact writes.

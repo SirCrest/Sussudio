@@ -3632,25 +3632,25 @@ Diagnostic-session result construction now lives in
 orchestration, artifact-write handoff, summary-write handoff, and final
 summary emission plus summary-write failure repair while the runner keeps the
 phase sequence. It also owns final-result orchestration from analysis and
-artifact paths into the named projection set and flattening owner, plus
-Flashback playback projection composition from focused playback projection
-owners.
+artifact paths into the named projection-set owner and flattening owner.
 `DiagnosticSessionResultBuilder.Flattening.cs` owns final
 `DiagnosticSessionResult` DTO assignment from the projection set; keep domain
-projection composition outside this initializer. The root owns projection-set
-assembly from overview, capture, Flashback, preview, D3D, and visual-cadence
-projection owners. Overview
+projection composition outside this initializer.
+`DiagnosticSessionResultBuilder.ProjectionSet.cs` owns projection-set assembly
+from overview, capture, Flashback, preview, D3D, and visual-cadence projection
+owners plus the private projection-set handoff record. Overview
 outcome policy plus process CPU end/max-observed aggregation, recording
 verification, and PresentMon DTO projection values live in
 `DiagnosticSessionResultBuilder.OverviewResult.cs`. Diagnostic metric gathering
 for validation/result projections and analysis warning emission live in
-`DiagnosticSessionResultBuilder.Analysis.cs`, while named validation handoff
-order lives in `DiagnosticSessionResultBuilder.AnalysisValidation.cs`.
+`DiagnosticSessionResultBuilder.Analysis.cs`, which also owns the private
+analysis handoff record. Named validation handoff order lives in
+`DiagnosticSessionResultBuilder.AnalysisValidation.cs`.
 Flashback playback/export analysis warning text, thresholds, and tolerated
 Flashback scenario warning classification live in
-`DiagnosticSessionResultBuilder.FlashbackWarnings.cs`; result-build request,
-analysis, and projection-set handoff models live in
-`DiagnosticSessionResultBuilder.Models.cs`. Diagnostic health verdict
+`DiagnosticSessionResultBuilder.FlashbackWarnings.cs`; the top-level
+`DiagnosticSessionResultBuildRequest.cs` owns the result-build request handoff
+created by `DiagnosticSessionRunExecution.ResultBuildRequest.cs`. Diagnostic health verdict
 composition, warning tolerance, and health warning text now live in
 `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`. Diagnostic health summary
 snapshot selection and health summary text projection live in
@@ -4342,7 +4342,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.PreviewResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewD3DResult.cs`
-- `DiagnosticSessionResultBuilder.Models.cs`
+- `DiagnosticSessionResultBuildRequest.cs`
+- `DiagnosticSessionResultBuilder.ProjectionSet.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionResultFormatter.Overview.cs`
 - `DiagnosticSessionResultFormatter.CaptureMode.cs`

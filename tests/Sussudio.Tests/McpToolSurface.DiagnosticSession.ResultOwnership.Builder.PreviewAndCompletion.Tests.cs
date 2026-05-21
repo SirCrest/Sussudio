@@ -8,6 +8,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flatteningText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Flattening.cs")
             .Replace("\r\n", "\n");
+        var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.ProjectionSet.cs")
+            .Replace("\r\n", "\n");
         var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs")
             .Replace("\r\n", "\n");
         var previewD3DResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewD3DResult.cs")
@@ -19,10 +21,10 @@ static partial class Program
 
         AssertContains(builderText, "return FlattenResultProjectionSet(");
         AssertContains(flatteningText, "private static DiagnosticSessionResult FlattenResultProjectionSet(");
-        AssertContains(builderText, "Preview: BuildPreviewResultProjection(analysis)");
-        AssertContains(builderText, "PreviewScheduler: BuildPreviewSchedulerResultProjection(analysis)");
-        AssertContains(builderText, "PreviewD3D: BuildPreviewD3DResultProjection(analysis)");
-        AssertContains(builderText, "PreviewVisualCadence: BuildPreviewVisualCadenceResultProjection(analysis)");
+        AssertContains(projectionSetText, "Preview: BuildPreviewResultProjection(analysis)");
+        AssertContains(projectionSetText, "PreviewScheduler: BuildPreviewSchedulerResultProjection(analysis)");
+        AssertContains(projectionSetText, "PreviewD3D: BuildPreviewD3DResultProjection(analysis)");
+        AssertContains(projectionSetText, "PreviewVisualCadence: BuildPreviewVisualCadenceResultProjection(analysis)");
         AssertContains(flatteningText, "var previewResult = resultProjections.Preview;");
         AssertContains(flatteningText, "var previewSchedulerResult = resultProjections.PreviewScheduler;");
         AssertContains(flatteningText, "var previewD3DResult = resultProjections.PreviewD3D;");

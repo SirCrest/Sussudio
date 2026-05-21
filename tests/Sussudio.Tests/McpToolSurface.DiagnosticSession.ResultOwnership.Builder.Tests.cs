@@ -21,6 +21,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flatteningText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Flattening.cs")
             .Replace("\r\n", "\n");
+        var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.ProjectionSet.cs")
+            .Replace("\r\n", "\n");
+        var resultBuildRequestText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuildRequest.cs")
+            .Replace("\r\n", "\n");
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
         var analysisValidationText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs")
@@ -35,20 +39,19 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs")
             .Replace("\r\n", "\n");
-        var modelsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Models.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(builderText, "internal static partial class DiagnosticSessionResultBuilder");
         AssertContains(builderText, "internal static async Task<DiagnosticSessionResult> BuildAndWriteAsync(");
         AssertContains(builderText, "private static DiagnosticSessionResult CreateResult(");
         AssertContains(flatteningText, "private static DiagnosticSessionResult FlattenResultProjectionSet(");
-        AssertContains(builderText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
-        AssertContains(modelsText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
+        AssertContains(projectionSetText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
+        AssertContains(projectionSetText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
         AssertContains(previewSchedulerText, "private static DiagnosticSessionPreviewSchedulerAnalysis BuildPreviewSchedulerAnalysis(");
         AssertContains(previewSchedulerText, "private readonly record struct DiagnosticSessionPreviewSchedulerAnalysis(");
-        AssertContains(modelsText, "internal sealed record DiagnosticSessionResultBuildRequest(");
-        AssertContains(modelsText, "DiagnosticSessionOverviewResultProjection Overview,");
-        AssertContains(modelsText, "DiagnosticSessionPreviewVisualCadenceResultProjection PreviewVisualCadence");
+        AssertContains(resultBuildRequestText, "internal sealed record DiagnosticSessionResultBuildRequest(");
+        AssertContains(analysisText, "private sealed record DiagnosticSessionResultAnalysis(");
+        AssertContains(projectionSetText, "DiagnosticSessionOverviewResultProjection Overview,");
+        AssertContains(projectionSetText, "DiagnosticSessionPreviewVisualCadenceResultProjection PreviewVisualCadence");
         AssertContains(builderText, "runState.SetStage(\"result-analysis\")");
         AssertContains(builderText, "return FlattenResultProjectionSet(");
         AssertContains(flatteningText, "return new DiagnosticSessionResult\n        {");
@@ -78,6 +81,7 @@ static partial class Program
         AssertDoesNotContain(analysisText, "VideoIngestErrorCount");
         AssertDoesNotContain(analysisValidationText, "IsToleratedFlashbackScenarioWarning(");
         AssertDoesNotContain(flatteningText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
+        AssertDoesNotContain(builderText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
         AssertDoesNotContain(builderText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
         AssertDoesNotContain(builderText, "return new DiagnosticSessionResult\n        {");
         AssertDoesNotContain(analysisText, "ValidateCleanupLifecycleRestored(");
@@ -92,8 +96,6 @@ static partial class Program
         var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs")
             .Replace("\r\n", "\n");
         var previewSchedulerValidationText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs")
-            .Replace("\r\n", "\n");
-        var modelsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Models.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(analysisText, "previewScheduler,");
@@ -117,7 +119,7 @@ static partial class Program
         AssertContains(previewSchedulerValidationText, "scenarioPlan.ToleratesSparsePreviewSchedulerStressTransitions &&");
         AssertContains(previewSchedulerValidationText, "IsSparsePreviewSchedulerStressRun(");
         AssertContains(previewSchedulerValidationText, "ValidateFlashbackPreviewScheduler(");
-        AssertContains(modelsText, "DiagnosticSessionPreviewSchedulerAnalysis PreviewScheduler,");
+        AssertContains(analysisText, "DiagnosticSessionPreviewSchedulerAnalysis PreviewScheduler,");
         AssertContains(previewSchedulerText, "private readonly record struct DiagnosticSessionPreviewSchedulerResultProjection(");
         AssertContains(previewSchedulerText, "private static DiagnosticSessionPreviewSchedulerResultProjection BuildPreviewSchedulerResultProjection(");
         AssertContains(previewSchedulerText, "var previewScheduler = analysis.PreviewScheduler;");
@@ -127,8 +129,8 @@ static partial class Program
         AssertContains(previewSchedulerText, "PreviewSchedulerLastUnderflowReasonAtEnd: previewScheduler.LastUnderflowReasonAtEnd");
         AssertContains(previewSchedulerText, "PreviewSchedulerLastUnderflowInputAgeMsAtEnd: previewScheduler.LastUnderflowInputAgeMsAtEnd");
         AssertContains(previewSchedulerText, "PreviewSchedulerLastUnderflowOutputAgeMsAtEnd: previewScheduler.LastUnderflowOutputAgeMsAtEnd");
-        AssertDoesNotContain(modelsText, "long PreviewSchedulerDroppedAtEnd");
-        AssertDoesNotContain(modelsText, "double PreviewSchedulerMaxScheduleLateMsObserved");
+        AssertDoesNotContain(analysisText, "long PreviewSchedulerDroppedAtEnd");
+        AssertDoesNotContain(analysisText, "double PreviewSchedulerMaxScheduleLateMsObserved");
         AssertDoesNotContain(previewSchedulerText, "analysis.PreviewSchedulerDroppedAtEnd");
         AssertDoesNotContain(previewSchedulerText, "analysis.PreviewSchedulerMaxScheduleLateMsObserved");
         AssertDoesNotContain(analysisText, "var previewSchedulerDroppedAtEnd =");
@@ -141,6 +143,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flatteningText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Flattening.cs")
             .Replace("\r\n", "\n");
+        var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.ProjectionSet.cs")
+            .Replace("\r\n", "\n");
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
         var overviewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.OverviewResult.cs")
@@ -152,7 +156,7 @@ static partial class Program
         AssertContains(builderText, "return FlattenResultProjectionSet(");
         AssertDoesNotContain(builderText, "return new DiagnosticSessionResult\n        {");
         AssertContains(flatteningText, "private static DiagnosticSessionResult FlattenResultProjectionSet(");
-        AssertContains(builderText, "Overview: BuildOverviewResultProjection(request, runState, analysis)");
+        AssertContains(projectionSetText, "Overview: BuildOverviewResultProjection(request, runState, analysis)");
         AssertContains(flatteningText, "var overviewResult = resultProjections.Overview;");
         AssertContains(flatteningText, "Success = overviewResult.Success,");
         AssertContains(overviewResultText, "private readonly record struct DiagnosticSessionOverviewResultProjection(");
@@ -179,7 +183,7 @@ static partial class Program
         AssertDoesNotContain(flatteningText, "RecordingVerificationMessage = request.Verification.HasValue");
         AssertDoesNotContain(analysisText, "ProcessCpuMaxPercentObserved");
         AssertDoesNotContain(overviewResultText, "analysis.ProcessCpuMaxPercentObserved");
-        AssertContains(builderText, "Capture: BuildCaptureResultProjection(analysis)");
+        AssertContains(projectionSetText, "Capture: BuildCaptureResultProjection(analysis)");
         AssertContains(flatteningText, "var captureResult = resultProjections.Capture;");
         AssertContains(captureResultText, "private readonly record struct DiagnosticSessionCaptureResultProjection(");
         AssertContains(captureResultText, "private static DiagnosticSessionCaptureResultProjection BuildCaptureResultProjection(");

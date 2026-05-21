@@ -168,7 +168,9 @@ static partial class Program
 
     private static string ReadDiagnosticSessionResultBuilderSource()
         => ReadNormalizedSourceFiles(
+            "tools/Common/DiagnosticSessionResultBuildRequest.cs",
             "tools/Common/DiagnosticSessionResultBuilder.cs",
+            "tools/Common/DiagnosticSessionResultBuilder.ProjectionSet.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Flattening.cs",
             "tools/Common/DiagnosticSessionResultBuilder.OverviewResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Analysis.cs",
@@ -190,8 +192,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultBuilder.CaptureResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewD3DResult.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.Models.cs");
+            "tools/Common/DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs");
 
     private static string ReadDiagnosticSessionResultFormatterSource()
         => ReadNormalizedSourceFiles(
