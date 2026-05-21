@@ -4,6 +4,26 @@ namespace Sussudio.Services.Capture;
 
 public partial class CaptureService
 {
+    private readonly record struct FlashbackPlaybackCommandHealthSnapshotFields(
+        long CommandsEnqueued,
+        long CommandsProcessed,
+        long CommandsDropped,
+        long CommandsSkippedNotReady,
+        long ScrubUpdatesCoalesced,
+        long SeekCommandsCoalesced,
+        int CommandQueueCapacity,
+        int PendingCommands,
+        int MaxPendingCommands,
+        long LastCommandQueueLatencyMs,
+        long MaxCommandQueueLatencyMs,
+        string MaxCommandQueueLatencyCommand,
+        string LastCommandQueued,
+        string LastCommandProcessed,
+        long LastCommandQueuedUtcUnixMs,
+        long LastCommandProcessedUtcUnixMs,
+        long LastCommandFailureUtcUnixMs,
+        string LastCommandFailure);
+
     private static FlashbackPlaybackCommandHealthSnapshotFields CaptureFlashbackPlaybackCommandHealthSnapshotFields(
         FlashbackPlaybackController? fbPlayback)
         => new(

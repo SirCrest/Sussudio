@@ -6,7 +6,6 @@ static partial class Program
     {
         var rootSource = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.cs");
         var channelsSource = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.Channels.cs");
-        var modelsSource = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.Models.cs");
         var policySource = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.Policy.cs");
         var renderingSource = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.Rendering.cs");
         var timelineSource = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.Timeline.cs");
@@ -24,9 +23,8 @@ static partial class Program
         AssertDoesNotContain(rootSource, "private static double[] GetDoubleArray");
 
         AssertContains(channelsSource, "private static FramePacingChannel ReadChannel(");
+        AssertContains(channelsSource, "private sealed record FramePacingChannel");
         AssertContains(channelsSource, "private static double[] GetDoubleArray");
-        AssertContains(modelsSource, "private sealed record FramePacingChannel");
-        AssertContains(modelsSource, "private sealed record TimelineRow");
         AssertContains(policySource, "private static double ResolveTargetFps");
         AssertContains(policySource, "private static bool IsSampleReady");
         AssertContains(policySource, "private static bool IsHalfRate");
@@ -38,6 +36,7 @@ static partial class Program
         AssertContains(renderingSource, "new StringBuilder()");
         AssertContains(renderingSource, "Verdict: {verdict}");
         AssertContains(timelineSource, "private static IReadOnlyList<TimelineRow> ReadTimeline");
+        AssertContains(timelineSource, "private sealed record TimelineRow");
         AssertContains(timelineSource, "PreviewD3DFrameStatsRecentMissedRefreshCount");
 
         return Task.CompletedTask;

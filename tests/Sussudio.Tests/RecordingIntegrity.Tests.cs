@@ -79,7 +79,6 @@ static partial class Program
     internal static Task CaptureService_RecordingIntegrityLivesInFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs");
-        var modelsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Models.cs");
         var summaryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Summary.cs");
         var countersText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Counters.cs");
         var audioText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Audio.cs");
@@ -91,8 +90,8 @@ static partial class Program
         AssertDoesNotContain(rootText, "private RecordingAudioIntegrityCounterSnapshot GetRecordingAudioCountersSinceBaseline(");
         AssertDoesNotContain(rootText, "private static void LogRecordingIntegritySummary(");
 
-        AssertContains(modelsText, "private sealed record RecordingIntegrityCounterSnapshot(");
-        AssertContains(modelsText, "private sealed record RecordingAudioIntegrityCounterSnapshot(");
+        AssertContains(countersText, "private sealed record RecordingIntegrityCounterSnapshot(");
+        AssertContains(audioText, "private sealed record RecordingAudioIntegrityCounterSnapshot(");
         AssertContains(summaryText, "private static RecordingIntegritySummary BuildRecordingIntegritySummary(");
         AssertContains(summaryText, "RecordingIntegrityAvSyncDriftWarningMs");
         AssertContains(summaryText, "private static void LogRecordingIntegritySummary(");

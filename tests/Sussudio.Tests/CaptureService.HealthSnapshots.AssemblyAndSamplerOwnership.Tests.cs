@@ -11,8 +11,6 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerModelsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.Models.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "return CaptureHealthSnapshotAssembler.Build(new CaptureHealthSnapshotAssemblyFields");
         AssertContains(healthSnapshotText, "SessionState = CurrentSessionState,");
@@ -20,15 +18,9 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(healthSnapshotText, "LastFrameArrivalMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),");
         AssertContains(healthSnapshotAssemblerText, "private static class CaptureHealthSnapshotAssembler");
         AssertContains(healthSnapshotAssemblerText, "public static CaptureHealthSnapshot Build(");
-        AssertContains(healthSnapshotAssemblerModelsText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
-        AssertContains(healthSnapshotAssemblerModelsText, "public CaptureCadenceHealthSnapshotFields CaptureCadence { get; init; }");
-        AssertContains(healthSnapshotAssemblerModelsText, "private readonly record struct CaptureCadenceHealthSnapshotFields(");
-        AssertContains(healthSnapshotAssemblerModelsText, "private readonly record struct MjpegHealthSnapshotFields(");
-        Assert.True(
-            healthSnapshotAssemblerModelsText.Split('\n').Length >= 100,
-            "Capture health snapshot assembler models should stay in one substantial owner instead of tiny per-section files.");
+        AssertContains(healthSnapshotAssemblerText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
+        AssertContains(healthSnapshotAssemblerText, "public CaptureCadenceHealthSnapshotFields CaptureCadence { get; init; }");
         AssertDoesNotContain(healthSnapshotText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
-        AssertDoesNotContain(healthSnapshotAssemblerText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
         AssertDoesNotContain(healthSnapshotAssemblerText, "private readonly record struct CaptureCadenceHealthSnapshotFields");
         AssertDoesNotContain(healthSnapshotAssemblerText, "private readonly record struct MjpegHealthSnapshotFields");
         AssertDoesNotContain(healthSnapshotAssemblerText, "LibAvRecordingSink? Sink");
@@ -58,6 +50,7 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(healthSnapshotAssemblerText, "CaptureCadenceEstimatedDropPercent = captureCadence.EstimatedDropPercent,");
         AssertDoesNotContain(healthSnapshotText, "private static CaptureCadenceHealthSnapshotFields BuildCaptureCadenceHealthSnapshotFields(");
         AssertContains(captureCadenceText, "private static CaptureCadenceHealthSnapshotFields BuildCaptureCadenceHealthSnapshotFields(");
+        AssertContains(captureCadenceText, "private readonly record struct CaptureCadenceHealthSnapshotFields(");
         AssertContains(captureCadenceText, "unifiedVideoCapture?.GetSourceCadenceMetrics()");
         AssertContains(captureCadenceText, "default(MfSourceReaderVideoCapture.SourceCadenceMetrics)");
         AssertDoesNotContain(healthSnapshotText, "private readonly record struct CaptureCadenceHealthSnapshotFields");
@@ -83,6 +76,7 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(healthSnapshotAssemblerText, "MjpegPerDecoder = mjpegHealth.PerDecoder,");
         AssertDoesNotContain(healthSnapshotText, "private MjpegHealthSnapshotFields CaptureMjpegHealthSnapshotFields(");
         AssertContains(mjpegHealthText, "private MjpegHealthSnapshotFields CaptureMjpegHealthSnapshotFields(");
+        AssertContains(mjpegHealthText, "private readonly record struct MjpegHealthSnapshotFields(");
         AssertContains(mjpegHealthText, "_videoPipeline.GetMjpegTimingSnapshot(unifiedVideoCapture)");
         AssertContains(videoPipelineResourcesText, "GetMjpegPipelineTimingSnapshot()");
         AssertContains(mjpegHealthText, "GetMjpegPreviewJitterMetrics()");

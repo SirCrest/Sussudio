@@ -5,6 +5,11 @@ namespace McpServer.Tools;
 
 public static partial class FramePacingVerdictTools
 {
+    private sealed record TimelineRow(
+        long DxgiRecentMissed,
+        long MjpegJitterDropped,
+        long PlaybackDroppedFrames);
+
     private static IReadOnlyList<TimelineRow> ReadTimeline(JsonElement timelineResponse)
     {
         if (!timelineResponse.TryGetProperty("Data", out var data) ||

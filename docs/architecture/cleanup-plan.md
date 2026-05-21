@@ -2795,14 +2795,11 @@ projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs`; pure
 diagnostics/automation DTO construction lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs`. The
-private assembler field records, including `CaptureHealthSnapshotAssemblyFields`,
-`CaptureCadenceHealthSnapshotFields`, and `MjpegHealthSnapshotFields`, live
-together in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.Models.cs`
-as one substantial model owner. The assembler remains intentionally
-allocation-neutral final DTO construction from captured fields; do not split it
-into post-construction mutators or shallow fragment records just to reduce line
-count.
+private assembler field record now lives beside that final DTO construction,
+while cadence and MJPEG field records live beside their samplers. The assembler
+remains intentionally allocation-neutral final DTO construction from captured
+fields; do not split it into post-construction mutators or shallow fragment
+records just to reduce line count.
 source telemetry, backend, suppression, and circuit-state projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotSourceTelemetry.cs`;
 Flashback buffer, startup-cache, backend-staleness reason policy, encoder
@@ -2816,7 +2813,8 @@ backend-specific queue/counter normalization live in
 Flashback export diagnostic and derived progress/throughput projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs`.
 Flashback playback health snapshot orchestration now lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs`;
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs`
+with the aggregate playback field record;
 state/frame/segment/PTS/seek-cap/submit-failure/A/V drift sampling lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.State.cs`;
 playback cadence metric sampling lives in
@@ -2826,10 +2824,8 @@ decode timing and max-phase metric sampling lives in
 audio-master pacing/fallback sampling lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.AudioMaster.cs`;
 and playback command telemetry sampling lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.Commands.cs`,
-while the private playback health projection field records live in the single
-substantial model owner
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.Models.cs`.
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.Commands.cs`.
+Each focused playback sampler owns the matching private field record.
 The general snapshot partial is now the diagnostics-snapshot compatibility
 entry point plus shared tick-age snapshot helper policy. Flashback
 backend-staleness reason policy now stays with the buffer health partial, while

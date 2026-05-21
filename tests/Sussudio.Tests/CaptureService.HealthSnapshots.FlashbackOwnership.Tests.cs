@@ -106,8 +106,6 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
             .Replace("\r\n", "\n");
         var flashbackPlaybackCommandsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.Commands.cs")
             .Replace("\r\n", "\n");
-        var flashbackPlaybackModelsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.Models.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var flashbackPlayback = CaptureFlashbackPlaybackHealthSnapshotFields(fbPlayback);");
         AssertContains(healthSnapshotAssemblerText, "FlashbackPlaybackState = flashbackPlayback.State,");
@@ -123,33 +121,29 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(flashbackPlaybackText, "var decode = CaptureFlashbackPlaybackDecodeHealthSnapshotFields(fbPlayback);");
         AssertContains(flashbackPlaybackText, "var audioMaster = CaptureFlashbackPlaybackAudioMasterHealthSnapshotFields(fbPlayback);");
         AssertContains(flashbackPlaybackText, "var commands = CaptureFlashbackPlaybackCommandHealthSnapshotFields(fbPlayback);");
-        AssertDoesNotContain(flashbackPlaybackText, "private readonly record struct FlashbackPlaybackHealthSnapshotFields");
+        AssertContains(flashbackPlaybackText, "private readonly record struct FlashbackPlaybackHealthSnapshotFields");
         AssertDoesNotContain(flashbackPlaybackText, "fbPlayback?.GetPlaybackCadenceMetrics() ?? default");
         AssertDoesNotContain(flashbackPlaybackText, "fbPlayback?.GetPlaybackDecodeMetrics() ?? default");
         AssertContains(flashbackPlaybackStateText, "private static FlashbackPlaybackStateHealthSnapshotFields CaptureFlashbackPlaybackStateHealthSnapshotFields(");
+        AssertContains(flashbackPlaybackStateText, "private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(");
         AssertContains(flashbackPlaybackStateText, "fbPlayback?.State.ToString() ?? \"N/A\"");
         AssertContains(flashbackPlaybackStateText, "fbPlayback?.PlaybackFrameCount ?? 0");
         AssertContains(flashbackPlaybackStateText, "fbPlayback?.PlaybackThreadAlive ?? false");
         AssertContains(flashbackPlaybackCadenceText, "private static FlashbackPlaybackCadenceHealthSnapshotFields CaptureFlashbackPlaybackCadenceHealthSnapshotFields(");
+        AssertContains(flashbackPlaybackCadenceText, "private readonly record struct FlashbackPlaybackCadenceHealthSnapshotFields(");
         AssertContains(flashbackPlaybackCadenceText, "fbPlayback?.GetPlaybackCadenceMetrics() ?? default");
         AssertContains(flashbackPlaybackDecodeText, "private static FlashbackPlaybackDecodeHealthSnapshotFields CaptureFlashbackPlaybackDecodeHealthSnapshotFields(");
+        AssertContains(flashbackPlaybackDecodeText, "private readonly record struct FlashbackPlaybackDecodeHealthSnapshotFields(");
         AssertContains(flashbackPlaybackDecodeText, "fbPlayback?.GetPlaybackDecodeMetrics() ?? default");
         AssertContains(flashbackPlaybackDecodeText, "fbPlayback?.PlaybackMaxDecodePhase ?? string.Empty");
         AssertContains(flashbackPlaybackAudioMasterText, "private static FlashbackPlaybackAudioMasterHealthSnapshotFields CaptureFlashbackPlaybackAudioMasterHealthSnapshotFields(");
+        AssertContains(flashbackPlaybackAudioMasterText, "private readonly record struct FlashbackPlaybackAudioMasterHealthSnapshotFields(");
         AssertContains(flashbackPlaybackAudioMasterText, "fbPlayback?.PlaybackAudioMasterFallbacks ?? 0");
         AssertContains(flashbackPlaybackCommandsText, "private static FlashbackPlaybackCommandHealthSnapshotFields CaptureFlashbackPlaybackCommandHealthSnapshotFields(");
+        AssertContains(flashbackPlaybackCommandsText, "private readonly record struct FlashbackPlaybackCommandHealthSnapshotFields(");
         AssertContains(flashbackPlaybackCommandsText, "fbPlayback?.CommandsEnqueued ?? 0");
-        AssertContains(flashbackPlaybackModelsText, "private readonly record struct FlashbackPlaybackHealthSnapshotFields");
-        AssertContains(flashbackPlaybackModelsText, "private readonly record struct FlashbackPlaybackStateHealthSnapshotFields");
-        AssertContains(flashbackPlaybackModelsText, "private readonly record struct FlashbackPlaybackCadenceHealthSnapshotFields");
-        AssertContains(flashbackPlaybackModelsText, "private readonly record struct FlashbackPlaybackDecodeHealthSnapshotFields");
-        AssertContains(flashbackPlaybackModelsText, "private readonly record struct FlashbackPlaybackAudioMasterHealthSnapshotFields");
-        AssertContains(flashbackPlaybackModelsText, "private readonly record struct FlashbackPlaybackCommandHealthSnapshotFields");
-        AssertContains(flashbackPlaybackModelsText, "double[] RecentFrameIntervalsMs");
-        AssertContains(flashbackPlaybackModelsText, "string LastCommandFailure");
-        Assert.True(
-            flashbackPlaybackModelsText.Split('\n').Length >= 100,
-            "Flashback playback health models should stay in one substantial model owner instead of tiny per-section files.");
+        AssertContains(flashbackPlaybackCadenceText, "double[] RecentFrameIntervalsMs");
+        AssertContains(flashbackPlaybackCommandsText, "string LastCommandFailure");
 
     }
 }

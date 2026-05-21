@@ -6,6 +6,15 @@ namespace Sussudio.Services.Capture;
 
 public partial class CaptureService
 {
+    private readonly record struct MjpegHealthSnapshotFields(
+        UnifiedVideoCapture.MjpegPipelineTimingMetrics Timing,
+        ParallelMjpegDecodePipeline.PipelineTimingMetrics? FullTiming,
+        MjpegPreviewJitterBuffer.Metrics PreviewJitter,
+        VisualCadenceTracker.Metrics VisualCadence,
+        VisualCadenceTracker.Metrics VisualCenterCadence,
+        FrameFingerprintCadenceTracker.Metrics PacketHash,
+        MjpegDecoderHealthSnapshot[] PerDecoder);
+
     private MjpegHealthSnapshotFields CaptureMjpegHealthSnapshotFields(
         UnifiedVideoCapture? unifiedVideoCapture)
     {

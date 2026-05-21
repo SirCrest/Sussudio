@@ -4,6 +4,18 @@ namespace Sussudio.Services.Capture;
 
 public partial class CaptureService
 {
+    private readonly record struct FlashbackPlaybackCadenceHealthSnapshotFields(
+        int SampleCount,
+        double P95FrameMs,
+        double P99FrameMs,
+        double MaxFrameMs,
+        long SlowFrames,
+        double SlowFramePercent,
+        double OnePercentLowFps,
+        double FivePercentLowFps,
+        double SampleDurationMs,
+        double[] RecentFrameIntervalsMs);
+
     private static FlashbackPlaybackCadenceHealthSnapshotFields CaptureFlashbackPlaybackCadenceHealthSnapshotFields(
         FlashbackPlaybackController? fbPlayback)
     {

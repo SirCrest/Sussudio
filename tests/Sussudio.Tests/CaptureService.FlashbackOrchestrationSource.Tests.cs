@@ -38,7 +38,6 @@ static partial class Program
     private static readonly string[] CaptureServiceRecordingIntegrityFiles =
     {
         "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs",
-        "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Models.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Summary.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Counters.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Audio.cs"

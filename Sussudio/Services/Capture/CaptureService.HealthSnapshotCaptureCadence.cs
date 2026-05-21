@@ -2,6 +2,23 @@ namespace Sussudio.Services.Capture;
 
 public partial class CaptureService
 {
+    private readonly record struct CaptureCadenceHealthSnapshotFields(
+        int SampleCount,
+        double ObservedFps,
+        double ExpectedIntervalMs,
+        double AverageIntervalMs,
+        double P95IntervalMs,
+        double P99IntervalMs,
+        double MaxIntervalMs,
+        double OnePercentLowFps,
+        double FivePercentLowFps,
+        double SampleDurationMs,
+        double[] RecentIntervalsMs,
+        double JitterStdDevMs,
+        long SevereGapCount,
+        long EstimatedDroppedFrames,
+        double EstimatedDropPercent);
+
     private static CaptureCadenceHealthSnapshotFields BuildCaptureCadenceHealthSnapshotFields(
         UnifiedVideoCapture? unifiedVideoCapture)
     {

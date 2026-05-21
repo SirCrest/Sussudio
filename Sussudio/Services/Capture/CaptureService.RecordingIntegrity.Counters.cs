@@ -6,6 +6,23 @@ namespace Sussudio.Services.Capture;
 
 public partial class CaptureService
 {
+    private sealed record RecordingIntegrityCounterSnapshot(
+        string Backend,
+        long SubmittedFrames,
+        long EncodedFrames,
+        long PacketsWritten,
+        long EncoderDroppedFrames,
+        long QueueDroppedFrames,
+        long SequenceGaps,
+        int QueueMaxDepth,
+        long QueueOldestFrameAgeMs,
+        long BackpressureWaitMs,
+        long BackpressureEvents,
+        long BackpressureMaxWaitMs,
+        bool EncodingFailed,
+        string? EncodingFailureType,
+        string? EncodingFailureMessage);
+
     private RecordingIntegrityCounterSnapshot GetRecordingIntegrityCountersSinceBaseline(RecordingIntegrityCounterSnapshot current)
     {
         var baseline = _recordingIntegrityCounterBaseline;
