@@ -8,6 +8,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.Preview.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackExport.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.System.cs");
@@ -115,6 +116,24 @@ static partial class Program
             else if (propertyName is "ProcessCpuPercent" or "ThreadPoolWorkerAvailable")
             {
                 AssertContains(diagnosticsHubSource, $"{propertyName} = system.{propertyName}");
+                AssertContains(diagnosticsHubSource, $"{propertyName}: snapshot.{propertyName}");
+            }
+            else if (propertyName.StartsWith("PreviewCadence", StringComparison.Ordinal))
+            {
+                var projectionName = propertyName["Preview".Length..];
+                AssertContains(diagnosticsHubSource, $"{propertyName} = preview.{projectionName}");
+                AssertContains(diagnosticsHubSource, $"{projectionName}: snapshot.{propertyName.Replace("Ms", "IntervalMs", StringComparison.Ordinal)}");
+            }
+            else if (propertyName.StartsWith("PreviewPacing", StringComparison.Ordinal))
+            {
+                var projectionName = propertyName["Preview".Length..];
+                AssertContains(diagnosticsHubSource, $"{propertyName} = preview.{projectionName}");
+                AssertContains(diagnosticsHubSource, $"{projectionName}: snapshot.{propertyName}");
+            }
+            else if (propertyName.StartsWith("VisualCadence", StringComparison.Ordinal) ||
+                     propertyName.StartsWith("MjpegPacketHash", StringComparison.Ordinal))
+            {
+                AssertContains(diagnosticsHubSource, $"{propertyName} = preview.{propertyName}");
                 AssertContains(diagnosticsHubSource, $"{propertyName}: snapshot.{propertyName}");
             }
             else

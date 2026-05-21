@@ -21,12 +21,16 @@ static partial class Program
         AssertContains(diagnostics.TimelineText, "BuildPerformanceTimelineEntry(snapshot)");
         AssertDoesNotContain(diagnostics.TimelineText, "new PerformanceTimelineEntry\n        {");
         AssertContains(diagnostics.TimelineProjectionText, "private static PerformanceTimelineEntry BuildPerformanceTimelineEntry(AutomationSnapshot snapshot)");
+        AssertContains(diagnostics.TimelineProjectionText, "var preview = BuildPerformanceTimelinePreviewProjection(snapshot);");
         AssertContains(diagnostics.TimelineProjectionText, "var flashbackPlayback = BuildPerformanceTimelineFlashbackPlaybackProjection(snapshot);");
         AssertContains(diagnostics.TimelineProjectionText, "var flashbackExport = BuildPerformanceTimelineFlashbackExportProjection(snapshot);");
         AssertContains(diagnostics.TimelineProjectionText, "var system = BuildPerformanceTimelineSystemProjection(snapshot);");
+        AssertContains(diagnostics.TimelineProjectionText, "PreviewD3DPresentCallP95Ms = preview.D3DPresentCallP95Ms");
         AssertContains(diagnostics.TimelineProjectionText, "FlashbackPlaybackCommandsEnqueued = flashbackPlayback.CommandsEnqueued");
         AssertContains(diagnostics.TimelineProjectionText, "FlashbackExportPercent = flashbackExport.Percent");
         AssertContains(diagnostics.TimelineProjectionText, "ProcessCpuPercent = system.ProcessCpuPercent");
+        AssertContains(diagnostics.TimelineProjectionPreviewText, "private static PerformanceTimelinePreviewProjection BuildPerformanceTimelinePreviewProjection(");
+        AssertContains(diagnostics.TimelineProjectionPreviewText, "D3DPresentCallP95Ms: snapshot.PreviewD3DPresentCallP95Ms");
         AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "private static PerformanceTimelineFlashbackPlaybackProjection BuildPerformanceTimelineFlashbackPlaybackProjection(");
         AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "CommandsEnqueued: snapshot.FlashbackPlaybackCommandsEnqueued");
         AssertContains(diagnostics.TimelineProjectionFlashbackExportText, "private static PerformanceTimelineFlashbackExportProjection BuildPerformanceTimelineFlashbackExportProjection(");

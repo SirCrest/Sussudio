@@ -761,6 +761,9 @@ Automation diagnostics ownership:
   performance-timeline ring reads and append mechanics.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs`
   owns final `AutomationSnapshot` to `PerformanceTimelineEntry` assignment.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.Preview.cs`
+  owns preview cadence, visual cadence, MJPEG packet/jitter, D3D preview, and
+  preview-pacing timeline projection.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs`
   owns the Flashback playback snapshot-to-performance-timeline projection group.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackExport.cs`

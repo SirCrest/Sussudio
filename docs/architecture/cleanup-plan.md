@@ -106,6 +106,9 @@ growth tracking. `AutomationDiagnosticsHub.Timeline.cs`
 owns performance-timeline ring reads and append mechanics.
 `AutomationDiagnosticsHub.TimelineProjection.cs` owns final
 `AutomationSnapshot` to `PerformanceTimelineEntry` assignment.
+`AutomationDiagnosticsHub.TimelineProjection.Preview.cs` owns preview cadence,
+visual cadence, MJPEG packet/jitter, D3D preview, and preview-pacing timeline
+projection.
 `AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs` owns the
 Flashback playback snapshot-to-performance-timeline projection group.
 `AutomationDiagnosticsHub.TimelineProjection.FlashbackExport.cs` owns the
