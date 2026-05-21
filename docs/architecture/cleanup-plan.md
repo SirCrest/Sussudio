@@ -2259,9 +2259,18 @@ force-rotate state, status projections, and idle waits there.
 
 Flashback encoder export force-rotation request admission now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateRequests.cs`. Keep
-`ForceRotateForExport`, the `ForceRotateRequest` state machine, request
-timeout/cancellation handling, pending-request cleanup, and force-rotate drain
-abort classification there.
+`ForceRotateForExport`, request publication, timeout/cancellation result
+classification, and committed-pending grace handling there.
+
+Flashback encoder export force-rotation lifecycle helpers now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateLifecycle.cs`.
+Keep pending-request cancellation, empty completion on stop/dispose/failure, and
+force-rotate drain abort classification there.
+
+Flashback encoder export force-rotation request state now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateRequest.cs`. Keep
+the `ForceRotateRequest` state machine, commit transition, cancellation, and
+completion result publication there.
 
 Flashback encoder force-rotate execution now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateExecution.cs`.

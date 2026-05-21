@@ -183,8 +183,15 @@ static partial class Program
             .Replace("\r\n", "\n");
         var forceRotateRequestsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateRequests.cs")
             .Replace("\r\n", "\n");
+        var forceRotateLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateLifecycle.cs")
+            .Replace("\r\n", "\n");
+        var forceRotateRequestText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateRequest.cs")
+            .Replace("\r\n", "\n");
         var forceRotateExecutionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateExecution.cs")
             .Replace("\r\n", "\n");
+        var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
+            .Replace("\r\n", "\n") + "\n" +
+            ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
 
         AssertContains(forceRotateText, "public bool IsForceRotateActive =>");
         AssertContains(forceRotateText, "public bool IsForceRotateRequested =>");
@@ -196,11 +203,18 @@ static partial class Program
         AssertContains(forceRotateText, "private TimeSpan _forceRotateOutPoint;");
         AssertContains(forceRotateText, "private bool _forceRotateDraining;");
         AssertContains(forceRotateRequestsText, "public FlashbackForceRotateResult ForceRotateForExport(");
-        AssertContains(forceRotateRequestsText, "private sealed class ForceRotateRequest");
         AssertContains(forceRotateRequestsText, "private const int ForceRotateCommittedGraceMs = 1_000;");
-        AssertContains(forceRotateRequestsText, "private bool TryCancelForceRotate(ForceRotateRequest request)");
-        AssertContains(forceRotateRequestsText, "private void CompletePendingForceRotateWithEmptyResult()");
-        AssertContains(forceRotateRequestsText, "private static bool ShouldAbortForceRotateDrain(");
+        AssertContains(forceRotateRequestsText, "var request = new ForceRotateRequest();");
+        AssertContains(forceRotateRequestsText, "TryCancelForceRotate(request)");
+        AssertDoesNotContain(forceRotateRequestsText, "private sealed class ForceRotateRequest");
+        AssertDoesNotContain(forceRotateRequestsText, "private void CompletePendingForceRotateWithEmptyResult()");
+        AssertContains(forceRotateLifecycleText, "private bool TryCancelForceRotate(ForceRotateRequest request)");
+        AssertContains(forceRotateLifecycleText, "private void CompletePendingForceRotateWithEmptyResult()");
+        AssertContains(forceRotateLifecycleText, "private static bool ShouldAbortForceRotateDrain(");
+        AssertContains(forceRotateRequestText, "private sealed class ForceRotateRequest");
+        AssertContains(forceRotateRequestText, "public bool TryBeginCommit()");
+        AssertContains(forceRotateRequestText, "public bool TryCancel()");
+        AssertContains(forceRotateRequestText, "public void Complete(IReadOnlyList<string> paths)");
         AssertContains(forceRotateExecutionText, "private bool ProcessPendingForceRotate(");
         AssertContains(forceRotateExecutionText, "Volatile.Write(ref _forceRotateDraining, true);");
         AssertContains(forceRotateExecutionText, "while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))");
@@ -223,6 +237,8 @@ static partial class Program
         AssertDoesNotContain(forceRotateText, "private sealed class ForceRotateRequest");
         AssertDoesNotContain(forceRotateText, "private const int ForceRotateCommittedGraceMs = 1_000;");
         AssertDoesNotContain(forceRotateText, "private bool ProcessPendingForceRotate(");
+        AssertContains(docsText, "FlashbackEncoderSink.ForceRotateLifecycle.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.ForceRotateRequest.cs");
 
         return Task.CompletedTask;
     }
