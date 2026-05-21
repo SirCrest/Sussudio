@@ -83,6 +83,8 @@ static partial class Program
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportBackendSnapshot.cs")
             .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRangeResolution.cs")
+            .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRequestPreparation.cs")
@@ -92,7 +94,8 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs")
                 .Replace("\r\n", "\n");
 
-        AssertContains(captureServiceText, "resolveRangeAfterEvictionPaused: manager =>");
+        AssertContains(captureServiceText, "resolveRangeAfterEvictionPaused: CreateFlashbackExportRangeResolver(");
+        AssertContains(captureServiceText, "ResolveFlashbackExportRangeAfterEvictionPaused(");
         AssertContains(captureServiceText, "if (inPointFilePts.HasValue || outPointFilePts.HasValue)");
         AssertContains(captureServiceText, "var absoluteInPoint = inPointFilePts ?? validStart;");
         AssertContains(captureServiceText, "var absoluteOutPoint = outPointFilePts ?? TimeSpan.MaxValue;");

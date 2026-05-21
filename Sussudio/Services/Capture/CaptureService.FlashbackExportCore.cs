@@ -35,7 +35,7 @@ public partial class CaptureService
         bool exportOperationLockAlreadyHeld = false,
         bool throttleHighResolutionBaseline = true,
         bool force = false,
-        Func<FlashbackBufferManager, (bool Succeeded, TimeSpan InPoint, TimeSpan OutPoint, string? FailureMessage)>? resolveRangeAfterEvictionPaused = null)
+        FlashbackExportRangeResolver? resolveRangeAfterEvictionPaused = null)
     {
         var flashbackSink = snapshotSink ?? _flashbackSink;
         var bufferManager = snapshotBufferManager ?? _flashbackBufferManager;

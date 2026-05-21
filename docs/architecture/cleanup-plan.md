@@ -1787,11 +1787,15 @@ capture diagnostics both consume it.
 
 Flashback export entry points now live in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs`.
-Keep range export, last-N export, and operation-specific range resolution there.
+Keep range export, last-N export, and routing into the backend snapshot,
+range-resolution, and shared-core owners there.
 Flashback export backend snapshotting now lives in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportBackendSnapshot.cs`.
 Keep lock-scoped backend reference capture plus session/backend lock release
-before native export there. The shared export lifetime now lives in
+before native export there. Flashback export range resolution now lives in
+`Sussudio/Services/Capture/CaptureService.FlashbackExportRangeResolution.cs`.
+Keep range and last-N post-eviction range resolution, buffer position clamps,
+and PTS offset math there. The shared export lifetime now lives in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`; keep
 export-operation locking, eviction pause/resume, diagnostics completion,
 exporter execution, and cleanup there. Shared request preparation now lives in
@@ -1801,9 +1805,9 @@ request construction, and partial-fallback result marking there.
 
 Flashback export planning now lives in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportPlanning.cs`. Keep
-segment metadata mapping, live-export throttle policy, buffer range clamps, and
-PTS offset helpers there so the export operation partial stays focused on
-orchestration.
+segment metadata mapping, live-export throttle policy, segment path
+normalization, and segment PTS timestamp repair there so the export operation
+partial stays focused on orchestration.
 
 Flashback export diagnostics now lives in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs`.

@@ -160,40 +160,4 @@ public partial class CaptureService
             : TimeSpan.FromMilliseconds(milliseconds);
     }
 
-    private static TimeSpan ClampFlashbackBufferPosition(TimeSpan position, TimeSpan bufferedDuration)
-    {
-        if (bufferedDuration <= TimeSpan.Zero)
-        {
-            return TimeSpan.Zero;
-        }
-
-        if (position < TimeSpan.Zero)
-        {
-            return TimeSpan.Zero;
-        }
-
-        return position > bufferedDuration ? bufferedDuration : position;
-    }
-
-    private static TimeSpan AddFlashbackPtsOffsetOrMax(TimeSpan position, TimeSpan offset)
-    {
-        if (position == TimeSpan.MaxValue || offset == TimeSpan.MaxValue)
-        {
-            return TimeSpan.MaxValue;
-        }
-
-        if (position < TimeSpan.Zero)
-        {
-            position = TimeSpan.Zero;
-        }
-
-        if (offset <= TimeSpan.Zero)
-        {
-            return position;
-        }
-
-        return position > TimeSpan.MaxValue - offset
-            ? TimeSpan.MaxValue
-            : position + offset;
-    }
 }
