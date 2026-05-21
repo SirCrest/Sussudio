@@ -83,7 +83,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     // -- Partial class references ----
     // Preview lifecycle facade/state/events: MainViewModel.PreviewState.cs; top-level preview lifecycle owner: MainViewModelPreviewLifecycleController.cs; preview reinitialize transaction: MainViewModelPreviewReinitializeController.cs
-    // Recording lifecycle facade/state: MainViewModel.RecordingState.cs; transition owner: MainViewModelRecordingTransitionController.cs
+    // Recording lifecycle facade/state: MainViewModel.RecordingState.cs; top-level transition owner: MainViewModelRecordingTransitionController.cs
     // Capture settings projection: MainViewModel.CaptureSettings.cs and CaptureSettingsProjectionBuilder.cs
     // Flashback automation and buffer/GPU reactions: MainViewModel.FlashbackSettings.cs
     // Audio automation: MainViewModel.AutomationAudio.cs

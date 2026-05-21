@@ -4818,13 +4818,13 @@ owner, fold it back into that owner and update the source-shape tests and
    coordinator bridge, now live in `MainViewModel.RecordingState.cs`, while
    recording toggle serialization,
    desired-state routing, graceful stop, transition gating, and in-flight
-   transition wait/error propagation now live in
+   transition wait/error propagation now live in the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`;
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Context.cs`
-   owns the recording transition graph-port contract for UI dispatch,
+   owns the top-level recording transition graph-port contract for UI dispatch,
    recording/session state, capture settings construction, coordinator start/stop
    calls, recording timer state, and status/count presentation updates;
-   concrete start/stop operation execution plus failure/cancellation state
+   concrete top-level start/stop operation execution plus failure/cancellation state
    repair through graph-built context ports, including direct use of the preview
    lifecycle owner for recording startup initialization, live in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`.
@@ -5073,6 +5073,7 @@ owner, fold it back into that owner and update the source-shape tests and
    cycles.
    The automation recording desired-state bridge enters through
    `MainViewModel.RecordingState.cs` and is serialized by
+   the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`,
    with graph-built context ports and start/stop execution in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`.

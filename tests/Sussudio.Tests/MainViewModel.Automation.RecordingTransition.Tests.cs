@@ -84,8 +84,12 @@ static partial class Program
         AssertDoesNotContain(rootViewModelText, "public Task ToggleRecordingAsync()");
         AssertDoesNotContain(rootViewModelText, "public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(rootViewModelText, "internal Task SetRecordingDesiredStateAsync");
-        AssertContains(recordingTransitionControllerRootText, "private sealed partial class MainViewModelRecordingTransitionController");
-        AssertContains(recordingTransitionControllerContextText, "private sealed class MainViewModelRecordingTransitionControllerContext");
+        AssertContains(recordingTransitionControllerRootText, "namespace Sussudio.Controllers;");
+        AssertContains(recordingTransitionControllerRootText, "internal sealed partial class MainViewModelRecordingTransitionController");
+        AssertContains(recordingTransitionControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(recordingTransitionControllerContextText, "internal sealed class MainViewModelRecordingTransitionControllerContext");
+        AssertContains(recordingTransitionControllerOperationsText, "namespace Sussudio.Controllers;");
+        AssertContains(recordingTransitionControllerOperationsText, "internal sealed partial class MainViewModelRecordingTransitionController");
         AssertContains(recordingTransitionControllerRootText, "private readonly MainViewModelRecordingTransitionControllerContext _context;");
         AssertDoesNotContain(recordingTransitionControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(recordingTransitionControllerText, "_viewModel.");

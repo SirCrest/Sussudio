@@ -22,8 +22,12 @@ static partial class Program
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
             "var recordingTransitionController = CreateRecordingTransitionController(viewModel, previewLifecycleController);");
 
-        AssertContains(recordingTransitionControllerText, "private sealed partial class MainViewModelRecordingTransitionController");
-        AssertContains(recordingTransitionControllerContextText, "private sealed class MainViewModelRecordingTransitionControllerContext");
+        AssertContains(recordingTransitionControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(recordingTransitionControllerText, "internal sealed partial class MainViewModelRecordingTransitionController");
+        AssertContains(recordingTransitionControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(recordingTransitionControllerContextText, "internal sealed class MainViewModelRecordingTransitionControllerContext");
+        AssertContains(recordingTransitionControllerOperationsText, "namespace Sussudio.Controllers;");
+        AssertContains(recordingTransitionControllerOperationsText, "internal sealed partial class MainViewModelRecordingTransitionController");
         AssertContains(recordingTransitionControllerText, "private readonly MainViewModelRecordingTransitionControllerContext _context;");
         AssertDoesNotContain(recordingTransitionControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(recordingTransitionControllerText, "_viewModel.");
