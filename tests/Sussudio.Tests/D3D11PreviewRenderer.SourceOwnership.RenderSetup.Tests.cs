@@ -47,6 +47,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var videoProcessorPipelineText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.VideoProcessorPipeline.cs")
             .Replace("\r\n", "\n");
+        var videoProcessorOutputViewsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.VideoProcessorOutputViews.cs")
+            .Replace("\r\n", "\n");
+        var videoProcessorColorSpacesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.VideoProcessorColorSpaces.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(resourcesText, "private ID3D11Device? _device;");
         AssertContains(resourcesText, "private IDXGISwapChain1? _swapChain;");
@@ -66,14 +70,21 @@ static partial class Program
         AssertContains(swapChainInitializationText, "Format.B8G8R8A8_UNorm");
         AssertContains(swapChainInitializationText, "_configuredOutputWidth = pixelWidth;");
         AssertContains(videoProcessorPipelineText, "private void EnsurePipeline(int width, int height, bool isHdr, bool useExternalTexture)");
-        AssertContains(videoProcessorPipelineText, "private void EnsureSwapChainRTV()");
-        AssertContains(videoProcessorPipelineText, "private void RecreateOutputView()");
-        AssertContains(videoProcessorPipelineText, "private void ApplyColorSpaces(bool isHdr)");
+        AssertContains(videoProcessorOutputViewsText, "private void EnsureSwapChainRTV()");
+        AssertContains(videoProcessorOutputViewsText, "private void RecreateOutputView()");
+        AssertContains(videoProcessorColorSpacesText, "private void ApplyColorSpaces(bool isHdr)");
         AssertContains(videoProcessorPipelineText, "private void DisposeProcessorResources()");
         AssertContains(videoProcessorPipelineText, "DisposeProcessorInputResources();");
         AssertContains(videoProcessorPipelineText, "DisposeNv12ShaderResourceViews();");
         AssertContains(videoProcessorPipelineText, "new VideoProcessorContentDescription");
-        AssertContains(videoProcessorPipelineText, "_videoContext1.VideoProcessorSetStreamColorSpace1(");
+        AssertContains(videoProcessorPipelineText, "RecreateOutputView();");
+        AssertContains(videoProcessorPipelineText, "ApplyColorSpaces(isHdr);");
+        AssertContains(videoProcessorOutputViewsText, "_videoDevice.CreateVideoProcessorOutputView(");
+        AssertContains(videoProcessorColorSpacesText, "_videoContext1.VideoProcessorSetStreamColorSpace1(");
+        AssertContains(videoProcessorColorSpacesText, "D3D11 preview color space input=");
+        AssertDoesNotContain(videoProcessorPipelineText, "private void EnsureSwapChainRTV()");
+        AssertDoesNotContain(videoProcessorPipelineText, "private void RecreateOutputView()");
+        AssertDoesNotContain(videoProcessorPipelineText, "private void ApplyColorSpaces(bool isHdr)");
         AssertContains(resourcesText, "private void CleanupD3DResources()");
         AssertContains(resourcesText, "DisposeInputTextureResources();");
         AssertContains(resourcesText, "DisposeShaderPipelineResources();");
