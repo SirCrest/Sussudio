@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using static Sussudio.Tools.DiagnosticSessionHealthPolicy;
-using static Sussudio.Tools.DiagnosticSessionHealthTolerances;
 using static Sussudio.Tools.DiagnosticSessionMetrics;
 using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;
 
@@ -27,38 +26,19 @@ internal static partial class DiagnosticSessionResultBuilder
             samples,
             diagnosticHealthSnapshot,
             isFlashbackScenario);
-        var visualCadenceHealthy = IsVisualCadenceSessionHealthy(visualCadenceMetrics, expectedCaptureFrameRate);
-        var sparsePreviewSchedulerDeadlineDropRun = IsSparsePreviewSchedulerDeadlineDropRun(
-            previewScheduler.DeadlineDropsDelta,
-            previewScheduler.UnderflowsDelta,
+        var tolerance = BuildDiagnosticHealthToleranceVerdict(
+            initialSnapshot,
+            lastSnapshot,
+            diagnosticHealthObservation,
+            scenarioPlan,
+            sourceCadenceMetrics,
             durationSeconds,
-            visualCadenceHealthy);
-        var sourceWarningCounters = BuildDiagnosticHealthSourceWarningCounters(initialSnapshot, lastSnapshot);
-        var sparseSourceCaptureCadenceWarning =
-            isFlashbackScenario &&
-            IsSparseSourceCaptureCadenceWarningRun(
-                diagnosticHealthObservation,
-                sourceCadenceMetrics,
-                sourceWarningCounters.SourceReaderFramesDroppedDelta,
-                sourceWarningCounters.VideoIngestErrorsDelta,
-                durationSeconds,
-                visualCadenceHealthy);
-        var diagnosticHealthTolerated =
-            (scenarioPlan.ToleratesSourceSignalHealthWarning &&
-             IsSourceSignalDiagnosticHealthObservation(diagnosticHealthObservation)) ||
-            (scenarioPlan.ToleratesFlashbackForceRotateDrainWarning &&
-             IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)) ||
-            sparseSourceCaptureCadenceWarning ||
-            (isFlashbackScenario &&
-             scenarioPlan.IsPreviewCycleScenario &&
-             visualCadenceHealthy &&
-             IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)) ||
-            (isFlashbackScenario &&
-             sparsePreviewSchedulerDeadlineDropRun &&
-             IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation));
+            previewScheduler,
+            visualCadenceMetrics,
+            expectedCaptureFrameRate);
         var diagnosticHealthSucceeded =
             !IsFailingDiagnosticHealthSeverity(diagnosticHealthObservation.Severity) ||
-            diagnosticHealthTolerated;
+            tolerance.IsTolerated;
         if (!diagnosticHealthSucceeded)
         {
             warnings.Add(
@@ -68,17 +48,12 @@ internal static partial class DiagnosticSessionResultBuilder
                 $"offsetMs={diagnosticHealthObservation.OffsetMs} " +
                 $"evidence={FormatOptional(diagnosticHealthObservation.Evidence)}");
         }
-        else if (diagnosticHealthTolerated &&
-                 !sparseSourceCaptureCadenceWarning &&
-                 !sparsePreviewSchedulerDeadlineDropRun)
+        else if (tolerance.IsTolerated &&
+                 !tolerance.SparseSourceCaptureCadenceWarning &&
+                 !tolerance.SparsePreviewSchedulerDeadlineDropRun)
         {
-            var toleratedReason = IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)
-                ? "preview scheduler transition warning tolerated for preview-cycle scenario"
-                : IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)
-                    ? "flashback force-rotate drain warning tolerated for flashback scenario"
-                    : "source-signal warning tolerated for export reliability scenario";
             warnings.Add(
-                $"diagnostic health {toleratedReason}: " +
+                $"diagnostic health {tolerance.WarningReason}: " +
                 $"health={diagnosticHealthObservation.HealthStatus} " +
                 $"stage={diagnosticHealthObservation.LikelyStage} " +
                 $"offsetMs={diagnosticHealthObservation.OffsetMs} " +

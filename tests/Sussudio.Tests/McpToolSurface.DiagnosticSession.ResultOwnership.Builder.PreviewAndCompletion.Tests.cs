@@ -106,6 +106,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var healthText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs")
             .Replace("\r\n", "\n");
+        var healthToleranceText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthTolerance.cs")
+            .Replace("\r\n", "\n");
         var healthSummaryText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSummary.cs")
             .Replace("\r\n", "\n");
         var healthSourceWarningsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSourceWarnings.cs")
@@ -122,15 +124,18 @@ static partial class Program
         AssertContains(healthSourceWarningsText, "private static DiagnosticHealthSourceWarningCounters BuildDiagnosticHealthSourceWarningCounters(");
         AssertContains(healthSourceWarningsText, "SourceReaderFramesDroppedDelta: GetCounterDelta(lastSnapshot, initialSnapshot, \"MfSourceReaderFramesDropped\")");
         AssertContains(healthSourceWarningsText, "VideoIngestErrorsDelta: GetCounterDelta(lastSnapshot, initialSnapshot, \"VideoIngestErrorCount\")");
-        AssertContains(healthText, "sourceWarningCounters.SourceReaderFramesDroppedDelta");
-        AssertContains(healthText, "sourceWarningCounters.VideoIngestErrorsDelta");
+        AssertContains(healthText, "BuildDiagnosticHealthToleranceVerdict(");
+        AssertContains(healthToleranceText, "private readonly record struct DiagnosticSessionHealthToleranceVerdict(");
+        AssertContains(healthToleranceText, "private static DiagnosticSessionHealthToleranceVerdict BuildDiagnosticHealthToleranceVerdict(");
+        AssertContains(healthToleranceText, "sourceWarningCounters.SourceReaderFramesDroppedDelta");
+        AssertContains(healthToleranceText, "sourceWarningCounters.VideoIngestErrorsDelta");
         AssertContains(healthText, "BuildSessionDiagnosticHealthObservation(");
-        AssertContains(healthText, "IsSparseSourceCaptureCadenceWarningRun(");
-        AssertContains(healthText, "IsSparsePreviewSchedulerDeadlineDropRun(");
-        AssertContains(healthText, "IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)");
+        AssertContains(healthToleranceText, "IsSparseSourceCaptureCadenceWarningRun(");
+        AssertContains(healthToleranceText, "IsSparsePreviewSchedulerDeadlineDropRun(");
+        AssertContains(healthToleranceText, "IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)");
         AssertContains(healthText, "diagnostic health degraded during session");
-        AssertContains(healthText, "diagnostic health {toleratedReason}:");
-        AssertContains(healthText, "flashback force-rotate drain warning tolerated for flashback scenario");
+        AssertContains(healthText, "diagnostic health {tolerance.WarningReason}:");
+        AssertContains(healthToleranceText, "flashback force-rotate drain warning tolerated for flashback scenario");
         AssertDoesNotContain(analysisText, "AnalyzeDiagnosticHealth(");
         AssertDoesNotContain(analysisText, "DiagnosticHealthStatus");
         AssertDoesNotContain(analysisText, "DiagnosticLikelyStage");
@@ -139,6 +144,9 @@ static partial class Program
         AssertDoesNotContain(analysisText, "BuildSessionDiagnosticHealthObservation(");
         AssertDoesNotContain(analysisText, "diagnostic health degraded during session");
         AssertDoesNotContain(analysisText, "diagnostic health {toleratedReason}:");
+        AssertDoesNotContain(healthText, "sourceWarningCounters.SourceReaderFramesDroppedDelta");
+        AssertDoesNotContain(healthText, "IsSparseSourceCaptureCadenceWarningRun(");
+        AssertDoesNotContain(healthText, "IsSparsePreviewSchedulerDeadlineDropRun(");
         AssertDoesNotContain(healthText, "private static DiagnosticSessionHealthSummary BuildDiagnosticHealthSummary(");
         AssertDoesNotContain(healthText, "private static DiagnosticHealthSourceWarningCounters BuildDiagnosticHealthSourceWarningCounters(");
 

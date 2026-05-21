@@ -4047,8 +4047,11 @@ Flashback scenario warning classification live in
 `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`; the top-level
 `DiagnosticSessionResultBuildRequest.cs` owns the result-build request handoff
 created by `DiagnosticSessionRunExecution.ResultBuildRequest.cs`. Diagnostic health verdict
-composition, warning tolerance, and health warning text now live in
-`DiagnosticSessionResultBuilder.DiagnosticHealth.cs`. Diagnostic health summary
+composition and health warning text now live in
+`DiagnosticSessionResultBuilder.DiagnosticHealth.cs`. Diagnostic-health warning
+tolerance, sparse source-cadence warning tolerance, sparse preview-scheduler
+warning tolerance, and tolerated-warning reason selection live in
+`DiagnosticSessionResultBuilder.DiagnosticHealthTolerance.cs`. Diagnostic health summary
 snapshot selection and health summary text projection live in
 `DiagnosticSessionResultBuilder.DiagnosticHealthSummary.cs`; source-reader/
 ingest warning deltas for sparse source-capture tolerance live in

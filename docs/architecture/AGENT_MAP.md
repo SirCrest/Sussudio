@@ -4611,8 +4611,12 @@ Primary owners:
   during result construction, and tolerated Flashback scenario warning
   classification.
 - `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs` owns
-  diagnostic-session health verdict composition, warning tolerance, and health
-  warning text emitted during result construction.
+  diagnostic-session health verdict composition and health warning text emitted
+  during result construction.
+- `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthTolerance.cs`
+  owns diagnostic-health warning tolerance, sparse source-cadence warning
+  tolerance, sparse preview-scheduler warning tolerance, and tolerated-warning
+  reason selection.
 - `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSummary.cs`
   owns diagnostic-session health summary snapshot selection and health summary
   text projection.
