@@ -826,7 +826,24 @@ Automation diagnostics ownership:
   owns preview cadence, visual cadence, MJPEG packet/jitter, D3D preview, and
   preview-pacing timeline projection.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs`
-  owns the Flashback playback snapshot-to-performance-timeline projection group.
+  owns root Flashback playback timeline projection composition and final grouped
+  handoff.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.Cadence.cs`
+  owns playback FPS, cadence, slow-frame, and dropped-frame timeline projection.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.Decode.cs`
+  owns decode timing, decode phase, and seek-cap timeline projection.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.Commands.cs`
+  owns command queue, coalescing, queue latency, and command failure timeline
+  projection.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.AudioMaster.cs`
+  owns audio-master fallback, drift outlier, and fallback clock-age timeline
+  projection.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.Stages.cs`
+  owns submit/drop failure, segment switch, write-head, near-live, and decode
+  error snap timeline projection.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.Backend.cs`
+  owns backend settings, queue reject, cleanup, and force-rotate timeline
+  projection.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackExport.cs`
   owns the Flashback export progress and force-rotate fallback timeline
   projection group.
