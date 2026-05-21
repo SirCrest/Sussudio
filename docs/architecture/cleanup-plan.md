@@ -3650,11 +3650,13 @@ Flashback playback/export analysis warning text, thresholds, and tolerated
 Flashback scenario warning classification live in
 `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`; result-build request,
 analysis, and projection-set handoff models live in
-`DiagnosticSessionResultBuilder.Models.cs`. Diagnostic health summary snapshot
-selection, health summary text projection, source-reader/ingest warning deltas
-for sparse source-capture tolerance, verdict composition, warning tolerance,
-and health warning text now live in
-`DiagnosticSessionResultBuilder.DiagnosticHealth.cs`.
+`DiagnosticSessionResultBuilder.Models.cs`. Diagnostic health verdict
+composition, warning tolerance, and health warning text now live in
+`DiagnosticSessionResultBuilder.DiagnosticHealth.cs`. Diagnostic health summary
+snapshot selection and health summary text projection live in
+`DiagnosticSessionResultBuilder.DiagnosticHealthSummary.cs`; source-reader/
+ingest warning deltas for sparse source-capture tolerance live in
+`DiagnosticSessionResultBuilder.DiagnosticHealthSourceWarnings.cs`.
 Preview-scheduler analysis handoff values live in
 `DiagnosticSessionResultBuilder.PreviewScheduler.cs`: MJPEG jitter-buffer
 counter/delta reads, last drop/underflow reason and age reads,
@@ -4322,6 +4324,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.AnalysisValidation.cs`
 - `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
+- `DiagnosticSessionResultBuilder.DiagnosticHealthSummary.cs`
+- `DiagnosticSessionResultBuilder.DiagnosticHealthSourceWarnings.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackCommandsResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackCadenceResult.cs`

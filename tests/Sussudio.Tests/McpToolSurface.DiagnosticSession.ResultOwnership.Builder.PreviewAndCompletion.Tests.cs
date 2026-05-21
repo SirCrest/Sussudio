@@ -104,18 +104,22 @@ static partial class Program
             .Replace("\r\n", "\n");
         var healthText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs")
             .Replace("\r\n", "\n");
+        var healthSummaryText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSummary.cs")
+            .Replace("\r\n", "\n");
+        var healthSourceWarningsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSourceWarnings.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(analysisText, "var validationOutcome = ValidateAnalysis(");
         AssertContains(analysisValidationText, "var diagnosticHealthSucceeded = AnalyzeDiagnosticHealth(");
-        AssertContains(healthText, "private readonly record struct DiagnosticSessionHealthSummary(");
-        AssertContains(healthText, "private static DiagnosticSessionHealthSummary BuildDiagnosticHealthSummary(");
-        AssertContains(healthText, "request.StoppedRecordingForVerification");
-        AssertContains(healthText, "GetString(diagnosticHealthSnapshot, \"DiagnosticHealthStatus\") ?? \"Unknown\"");
+        AssertContains(healthSummaryText, "private readonly record struct DiagnosticSessionHealthSummary(");
+        AssertContains(healthSummaryText, "private static DiagnosticSessionHealthSummary BuildDiagnosticHealthSummary(");
+        AssertContains(healthSummaryText, "request.StoppedRecordingForVerification");
+        AssertContains(healthSummaryText, "GetString(diagnosticHealthSnapshot, \"DiagnosticHealthStatus\") ?? \"Unknown\"");
         AssertContains(healthText, "private static bool AnalyzeDiagnosticHealth(");
-        AssertContains(healthText, "private readonly record struct DiagnosticHealthSourceWarningCounters(");
-        AssertContains(healthText, "private static DiagnosticHealthSourceWarningCounters BuildDiagnosticHealthSourceWarningCounters(");
-        AssertContains(healthText, "SourceReaderFramesDroppedDelta: GetCounterDelta(lastSnapshot, initialSnapshot, \"MfSourceReaderFramesDropped\")");
-        AssertContains(healthText, "VideoIngestErrorsDelta: GetCounterDelta(lastSnapshot, initialSnapshot, \"VideoIngestErrorCount\")");
+        AssertContains(healthSourceWarningsText, "private readonly record struct DiagnosticHealthSourceWarningCounters(");
+        AssertContains(healthSourceWarningsText, "private static DiagnosticHealthSourceWarningCounters BuildDiagnosticHealthSourceWarningCounters(");
+        AssertContains(healthSourceWarningsText, "SourceReaderFramesDroppedDelta: GetCounterDelta(lastSnapshot, initialSnapshot, \"MfSourceReaderFramesDropped\")");
+        AssertContains(healthSourceWarningsText, "VideoIngestErrorsDelta: GetCounterDelta(lastSnapshot, initialSnapshot, \"VideoIngestErrorCount\")");
         AssertContains(healthText, "sourceWarningCounters.SourceReaderFramesDroppedDelta");
         AssertContains(healthText, "sourceWarningCounters.VideoIngestErrorsDelta");
         AssertContains(healthText, "BuildSessionDiagnosticHealthObservation(");
@@ -133,6 +137,8 @@ static partial class Program
         AssertDoesNotContain(analysisText, "BuildSessionDiagnosticHealthObservation(");
         AssertDoesNotContain(analysisText, "diagnostic health degraded during session");
         AssertDoesNotContain(analysisText, "diagnostic health {toleratedReason}:");
+        AssertDoesNotContain(healthText, "private static DiagnosticSessionHealthSummary BuildDiagnosticHealthSummary(");
+        AssertDoesNotContain(healthText, "private static DiagnosticHealthSourceWarningCounters BuildDiagnosticHealthSourceWarningCounters(");
 
         return Task.CompletedTask;
     }

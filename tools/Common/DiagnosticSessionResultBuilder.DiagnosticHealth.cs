@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Text.Json;
-using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionHealthPolicy;
 using static Sussudio.Tools.DiagnosticSessionHealthTolerances;
 using static Sussudio.Tools.DiagnosticSessionMetrics;
@@ -10,29 +9,6 @@ namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionResultBuilder
 {
-    private readonly record struct DiagnosticSessionHealthSummary(
-        JsonElement Snapshot,
-        string HealthStatus,
-        string LikelyStage,
-        string Summary,
-        string Evidence);
-
-    private static DiagnosticSessionHealthSummary BuildDiagnosticHealthSummary(
-        DiagnosticSessionResultBuildRequest request,
-        JsonElement lastSnapshot)
-    {
-        var diagnosticHealthSnapshot = request.StoppedRecordingForVerification
-            ? lastSnapshot
-            : request.HealthSnapshot;
-
-        return new DiagnosticSessionHealthSummary(
-            Snapshot: diagnosticHealthSnapshot,
-            HealthStatus: GetString(diagnosticHealthSnapshot, "DiagnosticHealthStatus") ?? "Unknown",
-            LikelyStage: GetString(diagnosticHealthSnapshot, "DiagnosticLikelyStage") ?? "diagnostic_unavailable",
-            Summary: GetString(diagnosticHealthSnapshot, "DiagnosticSummary") ?? string.Empty,
-            Evidence: GetString(diagnosticHealthSnapshot, "DiagnosticEvidence") ?? string.Empty);
-    }
-
     private static bool AnalyzeDiagnosticHealth(
         IReadOnlyList<DiagnosticSessionSample> samples,
         JsonElement initialSnapshot,
@@ -110,18 +86,5 @@ internal static partial class DiagnosticSessionResultBuilder
         }
 
         return diagnosticHealthSucceeded;
-    }
-
-    private readonly record struct DiagnosticHealthSourceWarningCounters(
-        long SourceReaderFramesDroppedDelta,
-        long VideoIngestErrorsDelta);
-
-    private static DiagnosticHealthSourceWarningCounters BuildDiagnosticHealthSourceWarningCounters(
-        JsonElement initialSnapshot,
-        JsonElement lastSnapshot)
-    {
-        return new DiagnosticHealthSourceWarningCounters(
-            SourceReaderFramesDroppedDelta: GetCounterDelta(lastSnapshot, initialSnapshot, "MfSourceReaderFramesDropped"),
-            VideoIngestErrorsDelta: GetCounterDelta(lastSnapshot, initialSnapshot, "VideoIngestErrorCount"));
     }
 }

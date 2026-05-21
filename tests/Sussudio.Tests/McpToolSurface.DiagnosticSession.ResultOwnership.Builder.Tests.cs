@@ -27,6 +27,12 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackWarningsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs")
             .Replace("\r\n", "\n");
+        var diagnosticHealthText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs")
+            .Replace("\r\n", "\n");
+        var diagnosticHealthSummaryText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSummary.cs")
+            .Replace("\r\n", "\n");
+        var diagnosticHealthSourceWarningsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSourceWarnings.cs")
+            .Replace("\r\n", "\n");
         var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs")
             .Replace("\r\n", "\n");
         var modelsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Models.cs")
@@ -52,6 +58,13 @@ static partial class Program
         AssertContains(analysisText, "healthSummary,");
         AssertContains(analysisText, "var previewScheduler = BuildPreviewSchedulerAnalysis(initialSnapshot, lastSnapshot, samples);");
         AssertContains(analysisText, "var validationOutcome = ValidateAnalysis(");
+        AssertContains(diagnosticHealthSummaryText, "private readonly record struct DiagnosticSessionHealthSummary(");
+        AssertContains(diagnosticHealthSummaryText, "private static DiagnosticSessionHealthSummary BuildDiagnosticHealthSummary(");
+        AssertContains(diagnosticHealthSourceWarningsText, "private readonly record struct DiagnosticHealthSourceWarningCounters(");
+        AssertContains(diagnosticHealthSourceWarningsText, "private static DiagnosticHealthSourceWarningCounters BuildDiagnosticHealthSourceWarningCounters(");
+        AssertContains(diagnosticHealthText, "var sourceWarningCounters = BuildDiagnosticHealthSourceWarningCounters(initialSnapshot, lastSnapshot);");
+        AssertDoesNotContain(diagnosticHealthText, "private static DiagnosticSessionHealthSummary BuildDiagnosticHealthSummary(");
+        AssertDoesNotContain(diagnosticHealthText, "private static DiagnosticHealthSourceWarningCounters BuildDiagnosticHealthSourceWarningCounters(");
         AssertContains(analysisValidationText, "private readonly record struct DiagnosticSessionAnalysisValidationOutcome(");
         AssertContains(analysisValidationText, "private static DiagnosticSessionAnalysisValidationOutcome ValidateAnalysis(");
         AssertContains(analysisValidationText, "ValidateFlashbackPlaybackSession(");

@@ -4231,10 +4231,13 @@ Primary owners:
   during result construction, and tolerated Flashback scenario warning
   classification.
 - `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs` owns
-  diagnostic-session health summary snapshot selection, health summary text
-  projection, source-reader/ingest warning deltas for sparse source-capture
-  tolerance, health verdict composition, warning tolerance, and health warning
-  text emitted during result construction.
+  diagnostic-session health verdict composition, warning tolerance, and health
+  warning text emitted during result construction.
+- `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSummary.cs`
+  owns diagnostic-session health summary snapshot selection and health summary
+  text projection.
+- `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSourceWarnings.cs`
+  owns source-reader/ingest warning deltas for sparse source-capture tolerance.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs` owns
   diagnostic-session preview-scheduler analysis handoff and result projection
   values: MJPEG jitter-buffer counters, deltas, last drop/underflow reasons,

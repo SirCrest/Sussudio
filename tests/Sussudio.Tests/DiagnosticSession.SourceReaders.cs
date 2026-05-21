@@ -177,6 +177,8 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs",
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs",
             "tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs",
+            "tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSummary.cs",
+            "tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSourceWarnings.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs",
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs",
