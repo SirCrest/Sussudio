@@ -4900,7 +4900,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.Validation.cs`
   owns post-disable playback-thread/queue health checks and post-re-enable
   active-state validation.
-- `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs` owns read-only
+- `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.Model.cs` owns the
+  `FlashbackRecordingSessionMetrics` handoff shape, and
+  `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs` owns read-only
   recording metric projection.
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs`
   owns the `FlashbackPlaybackSessionMetrics` handoff shape, and

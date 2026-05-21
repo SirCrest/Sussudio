@@ -4486,7 +4486,11 @@ polling, `.PlaybackBoundary.cs` owns boundary-crossing polling,
 `.PlaybackPosition.cs` owns position convergence polling while the runner keeps
 scenario command sequencing.
 
-Diagnostic-session Flashback playback session metrics keep the
+Diagnostic-session Flashback recording metrics keep the
+`FlashbackRecordingSessionMetrics` handoff shape in
+`DiagnosticSessionFlashbackMetrics.Recording.Model.cs`, while
+`DiagnosticSessionFlashbackMetrics.Recording.cs` owns recording metric
+projection. Flashback playback session metrics keep the
 `FlashbackPlaybackSessionMetrics` handoff shape in
 `DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs`, while
 `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs` owns playback session
@@ -4638,6 +4642,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackLifecycleScenarios.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.Validation.cs`
+- `DiagnosticSessionFlashbackMetrics.Recording.Model.cs`
+- `DiagnosticSessionFlashbackMetrics.Recording.cs`
 - `DiagnosticSessionFlashbackMetrics.Export.Model.cs`
 - `DiagnosticSessionFlashbackMetrics.Export.cs`
 - `DiagnosticSessionFlashbackMetrics.ExportObservation.cs`
@@ -4655,7 +4661,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.AudioMaster.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.Stages.cs`
-- `DiagnosticSessionFlashbackMetrics.Recording.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackPreStop.cs`

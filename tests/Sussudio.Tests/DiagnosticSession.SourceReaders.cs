@@ -52,6 +52,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionFlashbackMetricsSource()
         => ReadNormalizedSourceFiles(
+            "tools/Common/DiagnosticSessionFlashbackMetrics.Recording.Model.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs",

@@ -9,6 +9,8 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var metricsText = ReadDiagnosticSessionFlashbackMetricsSource();
+        var recordingModelText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.Recording.Model.cs")
+            .Replace("\r\n", "\n");
         var recordingText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs")
             .Replace("\r\n", "\n");
         var playbackSessionModelText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs")
@@ -47,7 +49,7 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(metricsText, "internal static partial class DiagnosticSessionFlashbackMetrics");
-        AssertContains(recordingText, "internal sealed class FlashbackRecordingSessionMetrics");
+        AssertContains(recordingModelText, "internal sealed class FlashbackRecordingSessionMetrics");
         AssertContains(playbackSessionModelText, "internal sealed class FlashbackPlaybackSessionMetrics");
         AssertContains(playbackResultModelText, "internal sealed class FlashbackPlaybackResultMetrics");
         AssertContains(exportModelText, "internal sealed class FlashbackExportSessionMetrics");
@@ -55,6 +57,7 @@ static partial class Program
         AssertContains(playbackSessionModelText, "public long MinOnePercentLowAudioMasterFallbacks { get; set; }");
         AssertContains(playbackResultModelText, "public long SeekForwardDecodeCapHitsDelta { get; init; }");
         AssertContains(exportModelText, "public long ForceRotateFallbacksAtEnd { get; set; }");
+        AssertDoesNotContain(recordingText, "internal sealed class FlashbackRecordingSessionMetrics");
         AssertDoesNotContain(recordingText, "internal sealed class FlashbackPlaybackSessionMetrics");
         AssertDoesNotContain(playbackSessionText, "internal sealed class FlashbackPlaybackResultMetrics");
         AssertDoesNotContain(playbackSessionText, "internal sealed class FlashbackPlaybackSessionMetrics");
