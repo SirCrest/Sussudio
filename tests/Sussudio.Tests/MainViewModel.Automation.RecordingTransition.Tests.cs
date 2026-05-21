@@ -34,6 +34,10 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackPlayback.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackSegments.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackBufferStatus.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackPlaybackCommands.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackPlaybackAutomation.cs")
@@ -52,7 +56,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
             .Replace("\r\n", "\n");
-        var flashbackPlaybackText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackPlayback.cs")
+        var flashbackBufferStatusText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackBufferStatus.cs")
             .Replace("\r\n", "\n");
         var bitrateSampleWindowText = ReadRepoFile("Sussudio/ViewModels/BitrateSampleWindow.cs")
             .Replace("\r\n", "\n");
@@ -128,7 +132,7 @@ static partial class Program
         AssertContains(recordingRuntimeText, "var smoothed = _recordingBitrateSamples.AddSampleAndCompute(now, totalBytes);");
         AssertContains(recordingRuntimeText, "RecordingSizeInfo = DisplayFormatters.FormatBytes(totalBytes, \"0\");");
         AssertContains(recordingRuntimeText, "RecordingBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : \"--\";");
-        AssertContains(flashbackPlaybackText, "var smoothed = _flashbackBitrateSamples.AddSampleAndCompute(now, diskBytes);");
+        AssertContains(flashbackBufferStatusText, "var smoothed = _flashbackBitrateSamples.AddSampleAndCompute(now, diskBytes);");
         AssertContains(bitrateSampleWindowText, "internal sealed class BitrateSampleWindow");
         AssertContains(bitrateSampleWindowText, "public double? AddSampleAndCompute(long tick, long bytes)");
         AssertContains(bitrateSampleWindowText, "private static double? ComputeAverageBitrate(Queue<(long Tick, long Bytes)> samples)");

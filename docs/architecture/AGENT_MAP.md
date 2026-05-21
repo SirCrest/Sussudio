@@ -3879,7 +3879,11 @@ Primary current owners:
   `MainViewModel.FlashbackMarkers.cs` owns in/out marker command routing.
   `MainViewModel.FlashbackPlayback.cs`
   owns read-only Flashback playback snapshot access plus rejection status
-  projection, buffer, bitrate, playback-state, in/out marker, and gap-from-live UI projection. `MainViewModel.FlashbackExport.cs` owns
+  projection. `MainViewModel.FlashbackSegments.cs` owns read-only Flashback
+  segment projection for UI, CLI, and MCP callers.
+  `MainViewModel.FlashbackBufferStatus.cs` owns buffer, bitrate,
+  playback-state, in/out marker, and gap-from-live UI projection.
+  `MainViewModel.FlashbackExport.cs` owns
   Flashback UI export commands, save-picker flow, active-export guard, and
   user-facing export result/status handling.
   `MainViewModel.FlashbackExportOperation.cs` owns shared Flashback export
@@ -3887,8 +3891,6 @@ Primary current owners:
   current-operation checks, progress/cancellation handoff, and CTS cleanup.
   `MainViewModel.FlashbackExportAutomation.cs` owns automation-facing Flashback
   export command execution, linked cancellation, and dispatcher cleanup.
-  `MainViewModel.FlashbackPlayback.cs` also owns read-only Flashback segment
-  projection for UI, CLI, and MCP callers.
   `MainViewModel.FrameRateOptions.cs` owns frame-rate selection reactions and
   auto-selection entry points. `MainViewModel.CaptureModeTransactions.cs` keeps
   the resolution, frame-rate, selected-format, and video-format rebuild

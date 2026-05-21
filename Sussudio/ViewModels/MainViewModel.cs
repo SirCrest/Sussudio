@@ -87,6 +87,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Capture settings projection: MainViewModel.CaptureSettings.cs and CaptureSettingsProjectionBuilder.cs
     // Flashback automation and buffer/GPU reactions: MainViewModel.FlashbackSettings.cs
     // Flashback playback commands/automation/markers: MainViewModel.FlashbackPlaybackCommands.cs, .FlashbackPlaybackAutomation.cs, .FlashbackMarkers.cs
+    // Flashback playback read models: MainViewModel.FlashbackPlayback.cs, .FlashbackSegments.cs, .FlashbackBufferStatus.cs
     // Audio automation: MainViewModel.AutomationAudio.cs, .AutomationDeviceAudio.cs, .AutomationMicrophone.cs
     // HDR automation: MainViewModel.CaptureModeTransactions.cs
     // Automation snapshots and probes: MainViewModel.AutomationSnapshots.cs
