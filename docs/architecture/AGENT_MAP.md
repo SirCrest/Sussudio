@@ -1769,7 +1769,7 @@ Primary current owners:
 - `Sussudio/MainWindow.PropertyChanged.cs` owns only the root ViewModel
   PropertyChanged event envelope, property-name normalization, and route order.
   Capture-selection and status-strip adapters are still considered first through
-  `MainWindow.CaptureSelectionBindings.cs` and
+  the `Sussudio/MainWindow.CaptureSelectionBindings.*.cs` adapter family and
   `MainWindow.StatusStripPresentation.cs`; broad domain property-name switches
   and status-strip routing logic live in focused controllers/partials.
 - `Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs` owns shared
@@ -2315,6 +2315,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.StatsOverlayOwnership.Helpers.cs` owns the
   shared source reader for the split `MainWindow.StatsOverlay.*.cs` adapter
   family.
+- `tests/Sussudio.Tests/MainWindow.CaptureSelectionBindingsOwnership.Helpers.cs`
+  owns the shared source reader for the split
+  `MainWindow.CaptureSelectionBindings.*.cs` adapter family.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
   Flashback export backend-lease, export-operation lock, ViewModel export
   routing, and export CTS lifecycle assertions.
@@ -3515,7 +3518,22 @@ Primary current owners:
   device-audio mode/gain control projection.
   `Sussudio/Controllers/Capture/CaptureSelectionBindingController.PropertyChanges.cs`
   owns the capture-selection `PropertyChanged` router.
-  `MainWindow.CaptureSelectionBindings.cs` is the XAML-facing adapter.
+  `Sussudio/MainWindow.CaptureSelectionBindings.cs` is the XAML-facing
+  adapter-family marker. `Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs`
+  owns controller instantiation and XAML dependency wiring,
+  `Sussudio/MainWindow.CaptureSelectionBindings.CollectionSync.cs` owns the
+  collection binding adapter, `Sussudio/MainWindow.CaptureSelectionBindings.PropertyRouter.cs`
+  owns the property router adapter,
+  `Sussudio/MainWindow.CaptureSelectionBindings.DeviceSelection.cs` owns
+  device-selection and apply-button adapters,
+  `Sussudio/MainWindow.CaptureSelectionBindings.AudioSelection.cs` owns audio
+  input and microphone selection adapters,
+  `Sussudio/MainWindow.CaptureSelectionBindings.DeviceAudio.cs` owns
+  device-audio mode/gain adapters,
+  `Sussudio/MainWindow.CaptureSelectionBindings.CaptureMode.cs` owns
+  resolution/frame-rate adapters, and
+  `Sussudio/MainWindow.CaptureSelectionBindings.RecordingSelection.cs` owns
+  recording format/quality/preset/split-encode adapters.
 - `Sussudio/Controllers/Audio/AudioControlBindingController.cs` owns the audio-control
   binding context, and
   `Sussudio/Controllers/Audio/AudioControlBindingController.Bindings.cs` owns
