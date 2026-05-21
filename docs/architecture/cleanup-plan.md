@@ -3952,9 +3952,11 @@ Diagnostic session DTOs live in feature-oriented model files:
 `tools/Common/DiagnosticSessionResult.FlashbackExport.cs`,
 `tools/Common/DiagnosticSessionSample.cs`. `DiagnosticSessionOptions.cs` also owns
 shared tool invocation defaults and the ssctl diagnostic-session usage string,
-while `DiagnosticSessionScenarioCatalog.cs` owns scenario name constants,
-normalization, the MCP-compatible scenario description, the CLI help-list
-constant, setup requirement queries, and export verification artifact lookup.
+while `DiagnosticSessionScenarioCatalog.cs` owns normalization and entry lookup.
+`DiagnosticSessionScenarioCatalog.Names.cs` owns scenario name constants, the
+MCP-compatible scenario description, and the CLI help-list constant.
+`DiagnosticSessionScenarioCatalog.Requirements.cs` owns setup requirement
+queries and export verification artifact lookup.
 `DiagnosticSessionScenarioCatalog.Entries.cs` owns scenario ordering by
 composing focused entry groups. Core, Flashback playback, Flashback export/
 lifecycle, Flashback recording/rejection, and combined scenario requirement
@@ -4305,9 +4307,11 @@ keeps the high-level post-cleanup phase order.
 
 Diagnostic-session scenario metadata now lives in the
 `tools/Common/DiagnosticSessionScenarioCatalog.*.cs` family. The root catalog
-owns scenario names, HelpList/Description text, normalization, requirement
-queries, and export-verification lookup. `DiagnosticSessionScenarioCatalog.Entries.cs`
-owns scenario ordering by spreading focused entry groups; `.Entries.Core.cs`,
+owns normalization and entry lookup. `.Names.cs` owns scenario names,
+HelpList/Description text, and the `Names` projection. `.Requirements.cs` owns
+requirement queries and export-verification lookup.
+`DiagnosticSessionScenarioCatalog.Entries.cs` owns scenario ordering by
+spreading focused entry groups; `.Entries.Core.cs`,
 `.Entries.FlashbackPlayback.cs`, `.Entries.FlashbackExport.cs`,
 `.Entries.FlashbackRecording.cs`, and `.Entries.Combined.cs` own the setup
 requirement metadata, export verification filenames, and plan assigned to each
@@ -4805,6 +4809,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRunContext.PhaseContexts.cs`
 - `DiagnosticSessionSampler.cs`
 - `DiagnosticSessionScenarioCatalog.cs`
+- `DiagnosticSessionScenarioCatalog.Names.cs`
+- `DiagnosticSessionScenarioCatalog.Requirements.cs`
 - `DiagnosticSessionScenarioCatalog.Entries.cs`
 - `DiagnosticSessionScenarioCatalog.Entries.Core.cs`
 - `DiagnosticSessionScenarioCatalog.Entries.FlashbackPlayback.cs`

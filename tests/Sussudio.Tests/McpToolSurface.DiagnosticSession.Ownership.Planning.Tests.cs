@@ -47,6 +47,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var catalogText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs")
             .Replace("\r\n", "\n");
+        var catalogNamesText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Names.cs")
+            .Replace("\r\n", "\n");
+        var catalogRequirementsText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Requirements.cs")
+            .Replace("\r\n", "\n");
         var catalogEntriesText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs")
             .Replace("\r\n", "\n");
         var catalogCoreEntriesText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Entries.Core.cs")
@@ -61,12 +65,21 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(catalogText, "internal static partial class DiagnosticSessionScenarioCatalog");
-        AssertContains(catalogText, "internal const string HelpList =");
-        AssertContains(catalogText, "internal const string Description =");
-        AssertContains(catalogText, "internal static IReadOnlyList<string> Names => Entries.Select");
         AssertContains(catalogText, "TryGetEntry(normalized, out _)");
-        AssertContains(catalogText, "TryGetEntry(scenario, out var entry) && entry.RequiresPreview");
-        AssertContains(catalogText, "entry.FlashbackExportVerificationFileName");
+        AssertDoesNotContain(catalogText, "internal const string HelpList =");
+        AssertDoesNotContain(catalogText, "internal const string Description =");
+        AssertDoesNotContain(catalogText, "entry.RequiresPreview");
+        AssertDoesNotContain(catalogText, "entry.FlashbackExportVerificationFileName");
+        AssertContains(catalogNamesText, "internal static partial class DiagnosticSessionScenarioCatalog");
+        AssertContains(catalogNamesText, "internal const string HelpList =");
+        AssertContains(catalogNamesText, "internal const string Description =");
+        AssertContains(catalogNamesText, "internal static IReadOnlyList<string> Names => Entries.Select");
+        AssertDoesNotContain(catalogNamesText, "NeedsPreview(");
+        AssertDoesNotContain(catalogNamesText, "TryGetFlashbackExportVerificationPath(");
+        AssertContains(catalogRequirementsText, "internal static partial class DiagnosticSessionScenarioCatalog");
+        AssertContains(catalogRequirementsText, "TryGetEntry(scenario, out var entry) && entry.RequiresPreview");
+        AssertContains(catalogRequirementsText, "entry.FlashbackExportVerificationFileName");
+        AssertDoesNotContain(catalogRequirementsText, "internal const string HelpList =");
         AssertDoesNotContain(catalogText, "internal static IReadOnlyList<DiagnosticSessionScenarioCatalogEntry> Entries { get; }");
         AssertContains(catalogEntriesText, "internal static partial class DiagnosticSessionScenarioCatalog");
         AssertContains(catalogEntriesText, "internal static IReadOnlyList<DiagnosticSessionScenarioCatalogEntry> Entries { get; }");
