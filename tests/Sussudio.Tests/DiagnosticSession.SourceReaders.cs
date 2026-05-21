@@ -57,6 +57,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs",
+            "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.Relevance.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.OnePercentLow.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.FrameDecode.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs",

@@ -15,10 +15,12 @@ internal static partial class DiagnosticSessionFlashbackMetrics
         long baselineCommandsProcessed,
         bool baselinePlaybackActive)
     {
-        var frameCount = GetNullableLong(snapshot, "FlashbackPlaybackFrameCount") ?? 0;
-        var sessionFrameCount = frameCount >= baselineFrameCount
-            ? frameCount - baselineFrameCount
-            : frameCount;
+        var relevance = BuildPlaybackSnapshotRelevance(
+            snapshot,
+            baselineFrameCount,
+            baselineCommandsEnqueued,
+            baselineCommandsProcessed,
+            baselinePlaybackActive);
         var targetFps = GetDouble(snapshot, "FlashbackPlaybackTargetFps");
         if (targetFps <= 0)
         {
@@ -31,24 +33,17 @@ internal static partial class DiagnosticSessionFlashbackMetrics
         metrics.MinimumOnePercentLowFrameCount = Math.Max(
             metrics.MinimumOnePercentLowFrameCount,
             minimumPlaybackFramesForLowPercentile);
-        metrics.MaxSessionFrameCountObserved = Math.Max(metrics.MaxSessionFrameCountObserved, sessionFrameCount);
-        var commandsEnqueued = GetNullableLong(snapshot, "FlashbackPlaybackCommandsEnqueued") ?? 0;
-        var commandsProcessed = GetNullableLong(snapshot, "FlashbackPlaybackCommandsProcessed") ?? 0;
-        var relevantToSession =
-            IsPlaybackSnapshotActive(snapshot) ||
-            GetInt(snapshot, "FlashbackPlaybackPendingCommands") > 0 ||
-            frameCount > baselineFrameCount ||
-            commandsEnqueued > baselineCommandsEnqueued ||
-            commandsProcessed > baselineCommandsProcessed ||
-            baselinePlaybackActive;
-        if (!relevantToSession)
+        metrics.MaxSessionFrameCountObserved = Math.Max(
+            metrics.MaxSessionFrameCountObserved,
+            relevance.SessionFrameCount);
+        if (!relevance.IsRelevant)
         {
             return;
         }
 
         metrics.Observed = true;
         metrics.EndSnapshot = snapshot;
-        metrics.EndSessionFrameCount = sessionFrameCount;
+        metrics.EndSessionFrameCount = relevance.SessionFrameCount;
         metrics.MaxPendingCommandsObserved = Math.Max(
             metrics.MaxPendingCommandsObserved,
             GetInt(snapshot, "FlashbackPlaybackMaxPendingCommands"));
@@ -69,19 +64,10 @@ internal static partial class DiagnosticSessionFlashbackMetrics
             metrics,
             snapshot,
             offsetMs,
-            frameCount,
-            sessionFrameCount,
+            relevance.FrameCount,
+            relevance.SessionFrameCount,
             minimumPlaybackFramesForLowPercentile);
         ObservePlaybackFrameAndDecodeMetrics(metrics, snapshot);
         ObservePlaybackAudioMasterMetrics(metrics, snapshot);
-    }
-
-    private static bool IsPlaybackSnapshotActive(JsonElement snapshot)
-    {
-        var state = GetString(snapshot, "FlashbackPlaybackState") ?? string.Empty;
-        return GetBool(snapshot, "FlashbackPlaybackThreadAlive") ||
-               string.Equals(state, "Playing", StringComparison.OrdinalIgnoreCase) ||
-               string.Equals(state, "Paused", StringComparison.OrdinalIgnoreCase) ||
-               string.Equals(state, "Seeking", StringComparison.OrdinalIgnoreCase);
     }
 }

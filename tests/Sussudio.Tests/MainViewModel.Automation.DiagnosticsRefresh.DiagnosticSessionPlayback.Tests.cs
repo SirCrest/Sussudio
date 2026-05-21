@@ -90,14 +90,15 @@ static partial class Program
         AssertContains(diagnosticSessionText, "frameCount > baselineFrameCount");
         AssertContains(diagnosticSessionText, "commandsProcessed > baselineCommandsProcessed");
         AssertContains(diagnosticSessionText, "IsPlaybackSnapshotActive(snapshot)");
+        AssertContains(diagnosticSessionText, "private static FlashbackPlaybackSnapshotRelevance BuildPlaybackSnapshotRelevance(");
         AssertContains(diagnosticSessionText, "var sessionFrameCount = frameCount >= baselineFrameCount");
         AssertContains(diagnosticSessionText, "? frameCount - baselineFrameCount");
         AssertContains(diagnosticSessionText, ": frameCount;");
-        AssertContains(diagnosticSessionText, "metrics.EndSessionFrameCount = sessionFrameCount;");
+        AssertContains(diagnosticSessionText, "metrics.EndSessionFrameCount = relevance.SessionFrameCount;");
         AssertContains(diagnosticSessionText, "targetFps > 0 ? (long)Math.Ceiling(targetFps * 10.0) : 240");
         AssertContains(diagnosticSessionText, "if (onePercentLow <= 0 || sessionFrameCount < minimumPlaybackFramesForLowPercentile)");
         AssertContains(diagnosticSessionText, "metrics.OnePercentLowSampleWindowObserved = true;");
-        AssertContains(diagnosticSessionText, "metrics.MaxSessionFrameCountObserved = Math.Max(metrics.MaxSessionFrameCountObserved, sessionFrameCount);");
+        AssertContains(diagnosticSessionText, "relevance.SessionFrameCount);");
         AssertContains(diagnosticSessionText, "fpsMin={result.FlashbackPlaybackMinObservedFpsObserved:0.##}");
         AssertContains(diagnosticSessionText, "onePercentLowFpsMin={result.FlashbackPlaybackMinOnePercentLowFpsObserved:0.##}");
         AssertContains(diagnosticSessionText, "onePercentLowWindow={result.FlashbackPlaybackOnePercentLowSampleWindowObserved}");
