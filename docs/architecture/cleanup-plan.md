@@ -4888,8 +4888,9 @@ owner, fold it back into that owner and update the source-shape tests and
    settings load/save adapter stay in `MainViewModel.SettingsPersistence.cs`.
    `MainViewModel.SettingsLoadApplication.cs` owns applying validated load plans
    to ViewModel state and deferred device/audio/microphone selections, while
-   `MainViewModelSettingsPersistenceProjection.cs` owns persisted-settings
-   validation, clamping, deferred-selection handoff, and save DTO projection;
+   `MainViewModelSettingsPersistenceProjection.Load.cs` owns persisted-settings
+   validation, clamping, and deferred-selection handoff, and
+   `MainViewModelSettingsPersistenceProjection.Save.cs` owns save DTO projection;
    active Flashback reactions to recording format
    and encoder quality/preset/split/bitrate now live in
    `MainViewModel.FlashbackEncoderSettings.cs`; buffer/GPU decode reactions stay

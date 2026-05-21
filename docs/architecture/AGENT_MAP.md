@@ -3778,10 +3778,10 @@ Primary current owners:
   `MainViewModel.SettingsPersistence.cs` owns settings initialization, simple
   persistence reactions, and the impure settings load/save adapter.
   `MainViewModel.SettingsLoadApplication.cs` owns applying validated load plans
-  to ViewModel state and deferred device/audio/microphone selections, while
-  `MainViewModelSettingsPersistenceProjection.cs`
-  owns persisted-settings validation, clamping, deferred-selection handoff, and
-  save DTO projection.
+  to ViewModel state and deferred device/audio/microphone selections.
+  `MainViewModelSettingsPersistenceProjection.Load.cs` owns persisted-settings
+  validation, clamping, and deferred-selection handoff, while
+  `MainViewModelSettingsPersistenceProjection.Save.cs` owns save DTO projection.
   `MainViewModel.FlashbackEncoderSettings.cs` owns active
   Flashback reactions to recording-format, encoder quality/preset/split, and
   bitrate changes. `MainViewModel.FlashbackSettings.cs` owns active Flashback
