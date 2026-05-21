@@ -1003,12 +1003,13 @@ Important entry points:
 - `CaptureService.HealthSnapshotMjpeg.cs` owns MJPEG timing, preview jitter,
   visual cadence, packet hash, per-decoder projection, and its health field
   record for health snapshots.
+- `CaptureService.HealthSnapshotAssemblyFields.cs` owns the private health
+  snapshot assembly handoff contract consumed by the final DTO assembler.
 - `CaptureService.HealthSnapshotAssembler.cs` owns final
-  pure `CaptureHealthSnapshot` DTO construction from captured fields plus the
-  private assembler handoff record. Keep this allocation-neutral
-  `init`-property map intact unless a deliberate snapshot construction pattern
-  exists; sampling and domain projection belong in the focused health snapshot
-  partials, not in post-construction mutators.
+  pure `CaptureHealthSnapshot` DTO construction from captured fields. Keep this
+  allocation-neutral `init`-property map intact unless a deliberate snapshot
+  construction pattern exists; sampling and domain projection belong in the
+  focused health snapshot partials, not in post-construction mutators.
 - `CaptureService.HealthSnapshotFlashbackBackend.cs` owns Flashback buffer,
   startup-cache, backend-staleness reason policy, and encoder summary field
   projection for health snapshots.
@@ -1133,9 +1134,8 @@ Important entry points:
   automation, and verification, then delegates final DTO construction.
 - `CaptureService.RuntimeSnapshotAssembler.cs` owns final `CaptureRuntimeSnapshot` DTO construction
   from already-sampled field groups.
-- `CaptureService.RuntimeSnapshotModels.cs` owns the private runtime snapshot
-  assembly and projection handoff models as one substantial model owner instead
-  of per-section tiny files.
+- `CaptureService.RuntimeSnapshotAssemblyFields.cs` owns the private runtime snapshot assembly handoff contract consumed by the final DTO assembler.
+- `CaptureService.RuntimeSnapshotModels.cs` owns the private runtime snapshot projection handoff models as one substantial model owner instead of per-section tiny files.
 - `CaptureService.RuntimeSnapshotIngestAudio.cs` owns runtime snapshot projection
   for video ingest, source-reader health, WASAPI capture, and playback output
   counters.

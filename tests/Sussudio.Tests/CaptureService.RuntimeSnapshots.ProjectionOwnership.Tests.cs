@@ -36,6 +36,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
+        var assemblyFieldsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssemblyFields.cs")
+            .Replace("\r\n", "\n");
         var modelsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotModels.cs")
             .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
@@ -52,9 +54,9 @@ static partial class Program
 
         AssertContains(assemblerText, "private static class CaptureRuntimeSnapshotAssembler");
         AssertContains(assemblerText, "public static CaptureRuntimeSnapshot Build(CaptureRuntimeSnapshotAssemblyFields fields)");
-        AssertContains(modelsText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
-        AssertContains(modelsText, "public RuntimeHdrWarmupSnapshotFields HdrWarmup { get; init; } = new();");
-        AssertContains(modelsText, "public ObservedFrameSnapshotFields ObservedTelemetry { get; init; }");
+        AssertContains(assemblyFieldsText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
+        AssertContains(assemblyFieldsText, "public RuntimeHdrWarmupSnapshotFields HdrWarmup { get; init; } = new();");
+        AssertContains(assemblyFieldsText, "public ObservedFrameSnapshotFields ObservedTelemetry { get; init; }");
         AssertContains(modelsText, "private sealed class RuntimeIngestAudioSnapshotFields");
         AssertContains(modelsText, "private sealed class RuntimeReaderTransportSnapshotFields");
         AssertContains(modelsText, "private sealed class RuntimeHdrPipelineSnapshotFields");
@@ -62,6 +64,7 @@ static partial class Program
         AssertContains(modelsText, "private sealed class RuntimeSourceTelemetrySnapshotFields");
         AssertContains(modelsText, "private sealed class RuntimeRecordingIntegritySnapshotFields");
         AssertDoesNotContain(assemblerText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
+        AssertDoesNotContain(modelsText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
         AssertDoesNotContain(assemblerText, "bool? ObservedP010Likely8BitUpscaled) ObservedTelemetry");
         AssertContains(assemblerText, "return new CaptureRuntimeSnapshot");
         AssertContains(assemblerText, "TimestampUtc = fields.TimestampUtc,");
@@ -74,9 +77,11 @@ static partial class Program
 
         AssertContains(agentMapText, "`CaptureService.RuntimeSnapshots.cs` samples runtime snapshot inputs consumed by UI,");
         AssertContains(agentMapText, "`CaptureService.RuntimeSnapshotAssembler.cs` owns final `CaptureRuntimeSnapshot` DTO construction");
-        AssertContains(agentMapText, "`CaptureService.RuntimeSnapshotModels.cs` owns the private runtime snapshot");
+        AssertContains(agentMapText, "`CaptureService.RuntimeSnapshotAssemblyFields.cs` owns the private runtime snapshot assembly handoff contract");
+        AssertContains(agentMapText, "`CaptureService.RuntimeSnapshotModels.cs` owns the private runtime snapshot projection handoff models");
         AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples");
         AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs` owns final");
+        AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssemblyFields.cs` owns the");
         AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotModels.cs` owns the");
 
         return Task.CompletedTask;

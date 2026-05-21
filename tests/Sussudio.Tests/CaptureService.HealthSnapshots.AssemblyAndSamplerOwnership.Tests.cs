@@ -11,6 +11,8 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
+        var healthSnapshotAssemblyFieldsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssemblyFields.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "return CaptureHealthSnapshotAssembler.Build(new CaptureHealthSnapshotAssemblyFields");
         AssertContains(healthSnapshotText, "SessionState = CurrentSessionState,");
@@ -18,9 +20,11 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(healthSnapshotText, "LastFrameArrivalMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),");
         AssertContains(healthSnapshotAssemblerText, "private static class CaptureHealthSnapshotAssembler");
         AssertContains(healthSnapshotAssemblerText, "public static CaptureHealthSnapshot Build(");
-        AssertContains(healthSnapshotAssemblerText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
-        AssertContains(healthSnapshotAssemblerText, "public CaptureCadenceHealthSnapshotFields CaptureCadence { get; init; }");
+        AssertContains(healthSnapshotAssemblyFieldsText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
+        AssertContains(healthSnapshotAssemblyFieldsText, "public CaptureCadenceHealthSnapshotFields CaptureCadence { get; init; }");
+        AssertContains(healthSnapshotAssemblyFieldsText, "public FlashbackPlaybackHealthSnapshotFields FlashbackPlayback { get; init; }");
         AssertDoesNotContain(healthSnapshotText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
+        AssertDoesNotContain(healthSnapshotAssemblerText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
         AssertDoesNotContain(healthSnapshotAssemblerText, "private readonly record struct CaptureCadenceHealthSnapshotFields");
         AssertDoesNotContain(healthSnapshotAssemblerText, "private readonly record struct MjpegHealthSnapshotFields");
         AssertDoesNotContain(healthSnapshotAssemblerText, "LibAvRecordingSink? Sink");

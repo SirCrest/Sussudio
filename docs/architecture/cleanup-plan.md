@@ -2883,9 +2883,11 @@ projection ownership coverage lives in
 `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.ProjectionOwnership.Tests.cs`.
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs` owns final
 `CaptureRuntimeSnapshot` DTO construction from already-sampled field groups.
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotModels.cs` owns the
-private runtime snapshot assembly and projection handoff models as one
-substantial model owner instead of per-section tiny files.
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssemblyFields.cs` owns the
+private runtime snapshot assembly handoff contract consumed by the assembler.
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotModels.cs` owns the private
+runtime snapshot projection handoff models as one substantial model owner
+instead of per-section tiny files.
 Video ingest, source-reader health, WASAPI capture, and playback output counter
 projection lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs`,
@@ -2911,12 +2913,13 @@ MJPEG timing, preview jitter, visual cadence, packet hash, and per-decoder
 projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs`; pure
 diagnostics/automation DTO construction lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs`. The
-private assembler field record now lives beside that final DTO construction,
-while cadence and MJPEG field records live beside their samplers. The assembler
-remains intentionally allocation-neutral final DTO construction from captured
-fields; do not split it into post-construction mutators or shallow fragment
-records just to reduce line count.
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs`.
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotAssemblyFields.cs`
+owns the private assembler field handoff contract, while cadence and MJPEG field
+records live beside their samplers. The assembler remains intentionally
+allocation-neutral final DTO construction from captured fields; do not split it
+into post-construction mutators or shallow fragment records just to reduce line
+count.
 source telemetry, backend, suppression, and circuit-state projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotSourceTelemetry.cs`;
 Flashback buffer, startup-cache, backend-staleness reason policy, and encoder
