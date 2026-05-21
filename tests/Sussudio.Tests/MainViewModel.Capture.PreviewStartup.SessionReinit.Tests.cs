@@ -71,10 +71,24 @@ static partial class Program
         AssertContains(previewReinitText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
         AssertContains(previewReinitText, "private Task ViewModel_PreviewRendererStopRequested()");
         AssertContains(previewReinitText, "private void HandlePreviewReinitializingChanged()");
+        AssertContains(previewReinitText, "=> _previewReinitTransitionController.HandleReinitializingChanged(");
+        AssertContains(previewReinitText, "new PreviewReinitCompletionPresentationContext");
+        AssertContains(previewReinitText, "IsPreviewReinitializing = ViewModel.IsPreviewReinitializing,");
+        AssertContains(previewReinitText, "IsPreviewing = ViewModel.IsPreviewing,");
+        AssertContains(previewReinitText, "IsFirstVisualConfirmed = IsPreviewFirstVisualConfirmed,");
+        AssertContains(previewReinitText, "AttemptLabel = PreviewStartupAttemptLabel,");
+        AssertContains(previewReinitText, "CallerName = nameof(HandleViewModelPropertyChangedAsync),");
+        AssertContains(previewReinitText, "UpdateDeviceApplyButtonState = UpdateDeviceApplyButtonState,");
+        AssertContains(previewReinitText, "RevealUnavailablePlaceholder = RevealPreviewUnavailablePlaceholder,");
+        AssertContains(previewReinitText, "StopPreviewStartupOverlay = StopPreviewStartupOverlay,");
+        AssertContains(previewReinitText, "ResetPreviewContentTransform = ResetPreviewContentTransform,");
+        AssertContains(previewReinitText, "ShowStartPreviewButtonPresentation = ShowStartPreviewButtonPresentation,");
         AssertContains(previewReinitTransitionControllerText, "internal sealed class PreviewReinitTransitionController");
+        AssertContains(previewReinitTransitionControllerText, "internal sealed class PreviewReinitCompletionPresentationContext");
         AssertContains(previewReinitTransitionControllerText, "public bool IsAnimating { get; private set; }");
         AssertContains(previewReinitTransitionControllerText, "public void BeginAnimateOut(string reason, string callerName)");
         AssertContains(previewReinitTransitionControllerText, "public PreviewReinitCompletionPresentation GetCompletionPresentation(");
+        AssertContains(previewReinitTransitionControllerText, "public void HandleReinitializingChanged(PreviewReinitCompletionPresentationContext context)");
         AssertContains(previewReinitTransitionControllerText, "public void CompleteFirstVisualTransition(string attemptLabel, string callerName)");
         AssertContains(previewReinitTransitionControllerText, "public void ResetConfirmedVisualTransition(string attemptLabel, string reason, string callerName)");
         AssertContains(previewReinitTransitionControllerText, "public void ClearForStartupReset(bool preserveReinitAnimation, string callerName)");
@@ -97,6 +111,8 @@ static partial class Program
         AssertDoesNotContain(previewStartupText, "private string? _previewStartupMissingSignals;");
         AssertDoesNotContain(previewStartupText, "private int _previewRecoveryAttemptCount;");
         AssertDoesNotContain(previewStartupText, "private bool _previewFirstVisualConfirmed;");
+        AssertDoesNotContain(previewReinitText, "case PreviewReinitCompletionPresentation.");
+        AssertDoesNotContain(previewReinitText, "GetCompletionPresentation(");
 
         return Task.CompletedTask;
     }

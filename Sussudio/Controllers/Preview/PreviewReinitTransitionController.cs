@@ -1,3 +1,5 @@
+using System;
+
 namespace Sussudio.Controllers;
 
 internal enum PreviewReinitCompletionPresentation
@@ -6,6 +8,29 @@ internal enum PreviewReinitCompletionPresentation
     RevealUnavailablePlaceholder,
     ResetConfirmedVisual,
     ShowStartPreviewButton
+}
+
+internal sealed class PreviewReinitCompletionPresentationContext
+{
+    public required bool IsPreviewReinitializing { get; init; }
+
+    public required bool IsPreviewing { get; init; }
+
+    public required bool IsFirstVisualConfirmed { get; init; }
+
+    public required string AttemptLabel { get; init; }
+
+    public required string CallerName { get; init; }
+
+    public required Action UpdateDeviceApplyButtonState { get; init; }
+
+    public required Action RevealUnavailablePlaceholder { get; init; }
+
+    public required Action StopPreviewStartupOverlay { get; init; }
+
+    public required Action ResetPreviewContentTransform { get; init; }
+
+    public required Action ShowStartPreviewButtonPresentation { get; init; }
 }
 
 internal sealed class PreviewReinitTransitionController
@@ -42,6 +67,34 @@ internal sealed class PreviewReinitTransitionController
         }
 
         return PreviewReinitCompletionPresentation.None;
+    }
+
+    public void HandleReinitializingChanged(PreviewReinitCompletionPresentationContext context)
+    {
+        context.UpdateDeviceApplyButtonState();
+        switch (GetCompletionPresentation(
+            context.IsPreviewReinitializing,
+            context.IsPreviewing,
+            context.IsFirstVisualConfirmed))
+        {
+            case PreviewReinitCompletionPresentation.RevealUnavailablePlaceholder:
+                Clear(context.CallerName, logWhenInactive: false);
+                context.RevealUnavailablePlaceholder();
+                break;
+
+            case PreviewReinitCompletionPresentation.ResetConfirmedVisual:
+                ResetConfirmedVisualTransition(
+                    context.AttemptLabel,
+                    "reinit-stop-failed",
+                    context.CallerName);
+                context.StopPreviewStartupOverlay();
+                context.ResetPreviewContentTransform();
+                break;
+
+            case PreviewReinitCompletionPresentation.ShowStartPreviewButton:
+                context.ShowStartPreviewButtonPresentation();
+                break;
+        }
     }
 
     public void CompleteFirstVisualTransition(string attemptLabel, string callerName)

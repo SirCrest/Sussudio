@@ -3337,8 +3337,8 @@ Primary current owners:
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and the
   `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs.
-  `MainWindow.PreviewTransitions.cs` is the XAML/MainWindow adapter for
-  renderer-stop-before-teardown and reinit completion side effects.
+  `MainWindow.PreviewTransitions.cs` is the XAML/MainWindow adapter that supplies
+  renderer-stop-before-teardown and UI callback endpoints for reinit completion.
 - `Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs` owns preview
   startup attempt/state bookkeeping, timestamps, cached failure/missing-signal
   details, state/log transitions, first-visual confirmation sequencing, and
@@ -3370,7 +3370,7 @@ Primary current owners:
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and reinit transition logs.
   `MainWindow.PreviewTransitions.cs` keeps the renderer-stop-before-teardown handoff
-  and XAML presentation side effects.
+  and XAML callback endpoints for completion presentation.
   Keep preview startup fields out of the composition root.
 - `Sussudio/Controllers/Preview/PreviewFadeInController.cs` owns delayed preview
   reveal after first visual: rendered-frame threshold, fade-in timer, renderer

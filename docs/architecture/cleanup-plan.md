@@ -3380,8 +3380,8 @@ Preview reinit animation active state, first-visual transition clears,
 startup-reset preservation, completion presentation decisions, and
 `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs now live in
 `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs`.
-`MainWindow.PreviewTransitions.cs` is the XAML/MainWindow adapter for
-renderer-stop-before-teardown and reinit completion side effects.
+`MainWindow.PreviewTransitions.cs` is the XAML/MainWindow adapter that supplies
+renderer-stop-before-teardown and UI callback endpoints for reinit completion.
 
 Preview startup attempt/state bookkeeping, timestamps, cached failure/
 missing-signal details, state/log transitions, first-visual confirmation
@@ -3434,7 +3434,7 @@ the `PropertyChanged` event envelope, property-name normalization, and visible
 route order. Preview reinit transition state and log ownership now live in
 `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs`, while
 `Sussudio/MainWindow.PreviewTransitions.cs` keeps the renderer-stop-before-teardown
-handoff and XAML completion side effects.
+handoff and XAML callback endpoints for completion presentation.
 
 Bottom status-strip projection now lives in
 `Sussudio/Controllers/Shell/StatusStripPresentationController.cs`, while

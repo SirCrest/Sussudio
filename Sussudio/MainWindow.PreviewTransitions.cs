@@ -163,32 +163,20 @@ public sealed partial class MainWindow
         => _previewTransitionAnimationController.RevealUnavailablePlaceholder();
 
     private void HandlePreviewReinitializingChanged()
-    {
-        UpdateDeviceApplyButtonState();
-        switch (_previewReinitTransitionController.GetCompletionPresentation(
-            ViewModel.IsPreviewReinitializing,
-            ViewModel.IsPreviewing,
-            IsPreviewFirstVisualConfirmed))
-        {
-            case PreviewReinitCompletionPresentation.RevealUnavailablePlaceholder:
-                _previewReinitTransitionController.Clear(nameof(HandleViewModelPropertyChangedAsync), logWhenInactive: false);
-                RevealPreviewUnavailablePlaceholder();
-                break;
-
-            case PreviewReinitCompletionPresentation.ResetConfirmedVisual:
-                _previewReinitTransitionController.ResetConfirmedVisualTransition(
-                    PreviewStartupAttemptLabel,
-                    "reinit-stop-failed",
-                    nameof(HandleViewModelPropertyChangedAsync));
-                StopPreviewStartupOverlay();
-                ResetPreviewContentTransform();
-                break;
-
-            case PreviewReinitCompletionPresentation.ShowStartPreviewButton:
-                ShowStartPreviewButtonPresentation();
-                break;
-        }
-    }
+        => _previewReinitTransitionController.HandleReinitializingChanged(
+            new PreviewReinitCompletionPresentationContext
+            {
+                IsPreviewReinitializing = ViewModel.IsPreviewReinitializing,
+                IsPreviewing = ViewModel.IsPreviewing,
+                IsFirstVisualConfirmed = IsPreviewFirstVisualConfirmed,
+                AttemptLabel = PreviewStartupAttemptLabel,
+                CallerName = nameof(HandleViewModelPropertyChangedAsync),
+                UpdateDeviceApplyButtonState = UpdateDeviceApplyButtonState,
+                RevealUnavailablePlaceholder = RevealPreviewUnavailablePlaceholder,
+                StopPreviewStartupOverlay = StopPreviewStartupOverlay,
+                ResetPreviewContentTransform = ResetPreviewContentTransform,
+                ShowStartPreviewButtonPresentation = ShowStartPreviewButtonPresentation,
+            });
 
     private static void FadeOutElement(UIElement element)
         => PreviewTransitionAnimationController.FadeOutElement(element);

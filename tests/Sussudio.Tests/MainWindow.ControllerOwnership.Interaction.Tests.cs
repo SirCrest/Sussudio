@@ -132,7 +132,8 @@ static partial class Program
         AssertContains(mainWindowText, "InitializePreviewButtonPresentationController();");
         AssertContains(previewLifecycleControllerText, "_context.ShowStopPreviewButtonPresentation();");
         AssertContains(previewLifecycleControllerText, "_context.ShowStartPreviewButtonPresentation();");
-        AssertContains(previewReinitText, "ShowStartPreviewButtonPresentation();");
+        AssertContains(previewReinitText, "ShowStartPreviewButtonPresentation = ShowStartPreviewButtonPresentation,");
+        AssertContains(reinitTransitionControllerText, "context.ShowStartPreviewButtonPresentation();");
         AssertContains(controllerText, "internal sealed class PreviewButtonPresentationController");
         AssertContains(controllerText, "private const string StopPreviewGlyph = \"\\uE71A\";");
         AssertContains(controllerText, "private const string StartPreviewGlyph = \"\\uE768\";");
