@@ -135,6 +135,7 @@ static partial class Program
         var timingResolverContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.Context.cs").Replace("\r\n", "\n");
         var controllerGraphCaptureModesText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureModes.cs").Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var compositionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Composition.cs").Replace("\r\n", "\n");
         var timingPolicyText = ReadRepoFile("Sussudio/ViewModels/FrameRateTimingPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(captureModeTransactionsText, "private void UpdateSelectedFormat()");
@@ -151,7 +152,8 @@ static partial class Program
         AssertContains(
             ReadRepoFile("Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs").Replace("\r\n", "\n"),
             "FrameRateTimingPolicy.SelectPreferredFrameRateFormat(");
-        AssertContains(rootText, "private readonly MainViewModelFrameRateTimingResolver _frameRateTimingResolver;");
+        AssertDoesNotContain(rootText, "private readonly MainViewModelFrameRateTimingResolver _frameRateTimingResolver;");
+        AssertContains(compositionText, "private readonly MainViewModelFrameRateTimingResolver _frameRateTimingResolver;");
         AssertContains(controllerGraphCaptureModesText, "internal static MainViewModelFrameRateTimingResolver CreateFrameRateTimingResolver(MainViewModel viewModel)");
         AssertContains(controllerGraphCaptureModesText, "new MainViewModelFrameRateTimingResolverContext");
         AssertContains(timingResolverContextText, "internal sealed class MainViewModelFrameRateTimingResolverContext");

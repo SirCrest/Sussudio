@@ -3743,9 +3743,11 @@ Primary current owners:
   path truncation text policy. `MainWindow.OutputPath.cs` is the XAML-facing
   adapter used by binding setup and property changes.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
-  automation-facing compatibility. `MainViewModel.cs` owns compatibility-facade
-  construction, dependency assignment, collaborator construction, and small bridge
-  methods. `MainViewModel.State.cs` owns shared shell/status/live-info flags,
+  automation-facing compatibility. `MainViewModel.cs` owns the public
+  compatibility-facade shell and small bridge methods, while
+  `MainViewModel.Composition.cs` owns construction, dependency assignment,
+  collaborator fields, controller graph handoff, and startup lifecycle kick-off.
+  `MainViewModel.State.cs` owns shared shell/status/live-info flags,
   native window handle state, UI collection replacement, and non-preview
   coordination gates; `MainViewModel.PreviewState.cs` owns preview lifecycle
   compatibility entry points, preview-sink handoff, preview lifecycle flags,

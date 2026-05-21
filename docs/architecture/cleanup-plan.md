@@ -4932,9 +4932,11 @@ owner, fold it back into that owner and update the source-shape tests and
    presentation state. `MainViewModel.AudioState.cs` owns audio/microphone
    state, `MainViewModel.DeviceAudioState.cs` owns device-native audio/XU UI
    state, and `MainViewModel.FlashbackState.cs` owns Flashback timeline/export
-   state. Keep the root `MainViewModel.cs` focused on the
-   compatibility facade, dependency assignment, startup timing, and small
-   bridge methods. `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs`
+   state. Keep `MainViewModel.cs` focused on the public compatibility-facade
+   shell and small bridge methods; `MainViewModel.Composition.cs` owns
+   construction, dependency assignment, collaborator fields, controller graph
+   handoff, and startup lifecycle kick-off.
+   `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs`
    owns controller graph construction order, while
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.UiDispatch.cs`
    owns UI-dispatch graph ports,

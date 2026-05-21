@@ -5,6 +5,7 @@ static partial class Program
     internal static Task MainViewModel_UsesDependencyCompositionSeam()
     {
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var compositionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Composition.cs").Replace("\r\n", "\n");
         var stateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.PreviewState.cs").Replace("\r\n", "\n");
@@ -16,46 +17,52 @@ static partial class Program
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
         var dependenciesText = ReadRepoFile("Sussudio/ViewModels/MainViewModelDependencies.cs").Replace("\r\n", "\n");
 
-        AssertContains(rootText, "public MainViewModel()\n        : this(MainViewModelDependencies.CreateDefault())");
-        AssertContains(rootText, "internal MainViewModel(MainViewModelDependencies dependencies)");
-        AssertContains(rootText, "_deviceService = dependencies.DeviceService;");
-        AssertContains(rootText, "_captureService = dependencies.CaptureService;");
-        AssertContains(rootText, "_sessionCoordinator = dependencies.SessionCoordinator;");
-        AssertContains(rootText, "_audioRampTraceRecorder = CreateAudioRampTraceRecorder();");
-        AssertContains(rootText, "_previewAudioVolumeTransitionController = CreatePreviewAudioVolumeTransitionController();");
-        AssertContains(rootText, "_deviceAudioControlService = dependencies.DeviceAudioControlService;");
-        AssertContains(rootText, "_dispatcherQueue = dependencies.DispatcherQueue;");
-        AssertContains(rootText, "_audioDeviceWatcher = dependencies.AudioDeviceWatcher;");
-        AssertContains(rootText, "var controllerGraph = MainViewModelControllerGraph.Create(this);");
-        AssertContains(rootText, "_uiDispatchController = controllerGraph.UiDispatchController;");
-        AssertContains(rootText, "_recordingTransitionController = controllerGraph.RecordingTransitionController;");
-        AssertContains(rootText, "_previewLifecycleController = controllerGraph.PreviewLifecycleController;");
-        AssertContains(rootText, "_deviceAudioRequestController = controllerGraph.DeviceAudioRequestController;");
-        AssertContains(rootText, "_recordingCapabilityController = controllerGraph.RecordingCapabilityController;");
-        AssertContains(rootText, "_captureSettingsAutomationController = controllerGraph.CaptureSettingsAutomationController;");
-        AssertContains(rootText, "_recordingSettingsAutomationController = controllerGraph.RecordingSettingsAutomationController;");
-        AssertContains(rootText, "_captureModeOptionRebuildController = controllerGraph.CaptureModeOptionRebuildController;");
+        AssertContains(rootText, "public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDisposable, IAutomationViewModel");
+        AssertContains(rootText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
+        AssertDoesNotContain(rootText, "internal MainViewModel(MainViewModelDependencies dependencies)");
+        AssertDoesNotContain(rootText, "private readonly DeviceService _deviceService;");
+        AssertContains(compositionText, "public MainViewModel()\n        : this(MainViewModelDependencies.CreateDefault())");
+        AssertContains(compositionText, "internal MainViewModel(MainViewModelDependencies dependencies)");
+        AssertContains(compositionText, "private readonly DeviceService _deviceService;");
+        AssertContains(compositionText, "_deviceService = dependencies.DeviceService;");
+        AssertContains(compositionText, "_captureService = dependencies.CaptureService;");
+        AssertContains(compositionText, "_sessionCoordinator = dependencies.SessionCoordinator;");
+        AssertContains(compositionText, "_audioRampTraceRecorder = CreateAudioRampTraceRecorder();");
+        AssertContains(compositionText, "_previewAudioVolumeTransitionController = CreatePreviewAudioVolumeTransitionController();");
+        AssertContains(compositionText, "_deviceAudioControlService = dependencies.DeviceAudioControlService;");
+        AssertContains(compositionText, "_dispatcherQueue = dependencies.DispatcherQueue;");
+        AssertContains(compositionText, "_audioDeviceWatcher = dependencies.AudioDeviceWatcher;");
+        AssertContains(compositionText, "var controllerGraph = MainViewModelControllerGraph.Create(this);");
+        AssertContains(compositionText, "_uiDispatchController = controllerGraph.UiDispatchController;");
+        AssertContains(compositionText, "_recordingTransitionController = controllerGraph.RecordingTransitionController;");
+        AssertContains(compositionText, "_previewLifecycleController = controllerGraph.PreviewLifecycleController;");
+        AssertContains(compositionText, "_deviceAudioRequestController = controllerGraph.DeviceAudioRequestController;");
+        AssertContains(compositionText, "_recordingCapabilityController = controllerGraph.RecordingCapabilityController;");
+        AssertContains(compositionText, "_captureSettingsAutomationController = controllerGraph.CaptureSettingsAutomationController;");
+        AssertContains(compositionText, "_recordingSettingsAutomationController = controllerGraph.RecordingSettingsAutomationController;");
+        AssertContains(compositionText, "_captureModeOptionRebuildController = controllerGraph.CaptureModeOptionRebuildController;");
         AssertDoesNotContain(rootText, "_resolutionOptionRebuildController");
-        AssertDoesNotContain(rootText, "new MainViewModelResolutionOptionRebuildController");
-        AssertContains(rootText, "_deviceFormatProbeController = controllerGraph.DeviceFormatProbeController;");
-        AssertContains(rootText, "_sourceTelemetryController = controllerGraph.SourceTelemetryController;");
-        AssertContains(rootText, "_runtimeLifecycleController = controllerGraph.RuntimeLifecycleController;");
-        AssertContains(rootText, "_disposalController = controllerGraph.DisposalController;");
-        AssertContains(rootText, "_runtimeLifecycleController.Start();");
-        AssertContains(rootText, "_runtimeLifecycleController.InitializePresentation();");
-        AssertDoesNotContain(rootText, "new MainViewModelUiDispatchController(");
-        AssertDoesNotContain(rootText, "new MainViewModelRecordingTransitionController(this)");
-        AssertDoesNotContain(rootText, "new MainViewModelRuntimeLifecycleController(this)");
-        AssertDoesNotContain(rootText, "_deviceService = new DeviceService();");
-        AssertDoesNotContain(rootText, "_captureService = new CaptureService();");
-        AssertDoesNotContain(rootText, "_sessionCoordinator = new CaptureSessionCoordinator(_captureService);");
-        AssertDoesNotContain(rootText, "_deviceAudioControlService = new NativeXuAudioControlService();");
-        AssertDoesNotContain(rootText, "_audioDeviceWatcher = new AudioDeviceWatcher();");
-        AssertDoesNotContain(rootText, "new AudioRampTraceRecorderContext");
-        AssertDoesNotContain(rootText, "new PreviewAudioVolumeTransitionControllerContext");
-        AssertDoesNotContain(rootText, "_captureService.StatusChanged += OnCaptureStatusChanged;");
-        AssertDoesNotContain(rootText, "_captureService.AudioLevelUpdated += OnAudioLevelUpdated;");
-        AssertDoesNotContain(rootText, "SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;");
+        AssertDoesNotContain(compositionText, "_resolutionOptionRebuildController");
+        AssertDoesNotContain(compositionText, "new MainViewModelResolutionOptionRebuildController");
+        AssertContains(compositionText, "_deviceFormatProbeController = controllerGraph.DeviceFormatProbeController;");
+        AssertContains(compositionText, "_sourceTelemetryController = controllerGraph.SourceTelemetryController;");
+        AssertContains(compositionText, "_runtimeLifecycleController = controllerGraph.RuntimeLifecycleController;");
+        AssertContains(compositionText, "_disposalController = controllerGraph.DisposalController;");
+        AssertContains(compositionText, "_runtimeLifecycleController.Start();");
+        AssertContains(compositionText, "_runtimeLifecycleController.InitializePresentation();");
+        AssertDoesNotContain(compositionText, "new MainViewModelUiDispatchController(");
+        AssertDoesNotContain(compositionText, "new MainViewModelRecordingTransitionController(this)");
+        AssertDoesNotContain(compositionText, "new MainViewModelRuntimeLifecycleController(this)");
+        AssertDoesNotContain(compositionText, "_deviceService = new DeviceService();");
+        AssertDoesNotContain(compositionText, "_captureService = new CaptureService();");
+        AssertDoesNotContain(compositionText, "_sessionCoordinator = new CaptureSessionCoordinator(_captureService);");
+        AssertDoesNotContain(compositionText, "_deviceAudioControlService = new NativeXuAudioControlService();");
+        AssertDoesNotContain(compositionText, "_audioDeviceWatcher = new AudioDeviceWatcher();");
+        AssertDoesNotContain(compositionText, "new AudioRampTraceRecorderContext");
+        AssertDoesNotContain(compositionText, "new PreviewAudioVolumeTransitionControllerContext");
+        AssertDoesNotContain(compositionText, "_captureService.StatusChanged += OnCaptureStatusChanged;");
+        AssertDoesNotContain(compositionText, "_captureService.AudioLevelUpdated += OnAudioLevelUpdated;");
+        AssertDoesNotContain(compositionText, "SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;");
         AssertDoesNotContain(rootText, "[ObservableProperty]");
 
         AssertContains(controllerGraphText, "private sealed partial class MainViewModelControllerGraph");
@@ -67,7 +74,7 @@ static partial class Program
         AssertContains(controllerGraphText, "public MainViewModelDisposalController DisposalController { get; }");
         AssertDoesNotContain(controllerGraphText, "RuntimeLifecycleController.Start();");
         AssertOccursBefore(
-            rootText,
+            compositionText,
             "_runtimeLifecycleController = controllerGraph.RuntimeLifecycleController;",
             "_runtimeLifecycleController.Start();");
         AssertOccursBefore(
