@@ -103,7 +103,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Microphone endpoint volume: MainViewModel.MicrophoneVolume.cs
     // Device-native audio controls: request lifetime and property-change adapter: MainViewModelDeviceAudioRequestController.cs; guards: MainViewModel.AudioControls.cs; mode writes: MainViewModel.DeviceAudioMode.cs; refresh: MainViewModel.DeviceAudioRefresh.cs; analog gain writes: MainViewModel.AnalogAudioGain.cs
     // Watcher-driven audio endpoint discovery: MainViewModel.AudioDeviceDiscovery.cs
-    // Audio capture/preview property changes: MainViewModel.AudioPropertyChanges.cs
+    // Audio capture/preview property changes: MainViewModel.AudioCapturePropertyChanges.cs, MainViewModel.AudioPreviewPropertyChanges.cs
     // Audio input/microphone property changes: focused partials
     // Device refresh facade: this file; top-level refresh owner: MainViewModelDeviceRefreshController.cs
     // Device selection reactions: MainViewModel.DeviceSelection.cs

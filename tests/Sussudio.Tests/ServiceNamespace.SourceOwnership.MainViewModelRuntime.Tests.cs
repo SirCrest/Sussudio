@@ -4,7 +4,8 @@ static partial class Program
     private static void AssertServiceNamespaceMainViewModelRuntimeSourceOwnership(string repoRoot)
     {
         var mainViewModelText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
-        var mainViewModelAudioPropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioPropertyChanges.cs"));
+        var mainViewModelAudioCapturePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioCapturePropertyChanges.cs"));
+        var mainViewModelAudioPreviewPropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioPreviewPropertyChanges.cs"));
         var mainViewModelAudioInputSelectionText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioInputSelection.cs"));
         var mainViewModelMicrophonePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.MicrophonePropertyChanges.cs"));
         var mainViewModelDeviceAudioRequestControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceAudioRequestController.cs"));
@@ -45,8 +46,12 @@ static partial class Program
         AssertDoesNotContain(mainViewModelDispatchingText, "TaskCompletionSource");
         AssertDoesNotContain(mainViewModelDispatchingText, "_dispatcherQueue.TryEnqueue");
         AssertDoesNotContain(mainViewModelText, "private bool EnqueueUiOperation");
-        AssertContains(mainViewModelAudioPropertyChangesText, "OnIsAudioEnabledChanged");
-        AssertContains(mainViewModelAudioPropertyChangesText, "OnIsAudioPreviewEnabledChanged");
+        AssertContains(mainViewModelAudioCapturePropertyChangesText, "OnIsAudioEnabledChanged");
+        AssertContains(mainViewModelAudioPreviewPropertyChangesText, "OnIsAudioPreviewEnabledChanged");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioPropertyChanges.cs")),
+            "MainViewModel legacy audio property-change partial");
         AssertContains(mainViewModelAudioInputSelectionText, "OnIsCustomAudioInputEnabledChanged");
         AssertContains(mainViewModelAudioInputSelectionText, "OnSelectedAudioInputDeviceChanged");
         AssertContains(mainViewModelAudioInputSelectionText, "private async Task ApplyAudioInputSelectionAsync");
@@ -80,9 +85,12 @@ static partial class Program
         AssertContains(mainViewModelCaptureModePropertyChangesText, "partial void OnSelectedVideoFormatChanged(string value)");
         AssertContains(mainViewModelCaptureModePropertyChangesText, "partial void OnMjpegDecoderCountChanged(int value)");
         AssertContains(mainViewModelCaptureModePropertyChangesText, "BuildCaptureSettings().UseMjpegHighFrameRateMode");
-        AssertDoesNotContain(mainViewModelAudioPropertyChangesText, "OnSelectedDeviceAudioModeChanged");
-        AssertDoesNotContain(mainViewModelAudioPropertyChangesText, "OnSelectedMicrophoneDeviceChanged");
-        AssertDoesNotContain(mainViewModelAudioPropertyChangesText, "OnSelectedAudioInputDeviceChanged");
+        AssertDoesNotContain(mainViewModelAudioCapturePropertyChangesText, "OnSelectedDeviceAudioModeChanged");
+        AssertDoesNotContain(mainViewModelAudioCapturePropertyChangesText, "OnSelectedMicrophoneDeviceChanged");
+        AssertDoesNotContain(mainViewModelAudioCapturePropertyChangesText, "OnSelectedAudioInputDeviceChanged");
+        AssertDoesNotContain(mainViewModelAudioPreviewPropertyChangesText, "OnSelectedDeviceAudioModeChanged");
+        AssertDoesNotContain(mainViewModelAudioPreviewPropertyChangesText, "OnSelectedMicrophoneDeviceChanged");
+        AssertDoesNotContain(mainViewModelAudioPreviewPropertyChangesText, "OnSelectedAudioInputDeviceChanged");
         AssertDoesNotContain(
             File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioMonitoring.cs")),
             "OnIsAudioPreviewEnabledChanged");

@@ -54,7 +54,7 @@ static partial class Program
 
         var monitoringCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs");
         var previewVolumeTransitionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.PreviewVolumeTransitions.cs");
-        var audioPropertyChangesCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioPropertyChanges.cs");
+        var audioPreviewPropertyChangesCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioPreviewPropertyChanges.cs");
         var audioInputSelectionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioInputSelection.cs");
         var transitionCode =
             ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs") +
@@ -67,7 +67,7 @@ static partial class Program
         var primeTransition = ExtractMemberCode(transitionCode, "PrimeForAudioTransition");
         var restoreTransition = ExtractMemberCode(transitionCode, "RestoreAfterUnavailableAudio");
         var monitoringTransition = ExtractMemberCode(monitoringCode, "SetAudioMonitoringEnabledWithVolumeTransitionAsync");
-        var audioPreviewChanged = ExtractMemberCode(audioPropertyChangesCode, "OnIsAudioPreviewEnabledChanged");
+        var audioPreviewChanged = ExtractMemberCode(audioPreviewPropertyChangesCode, "OnIsAudioPreviewEnabledChanged");
         var applyAudioInputSelection = ExtractMemberCode(audioInputSelectionCode, "ApplyAudioInputSelectionAsync");
 
         AssertContains(previewVolumeTransitionCode, "get => _previewAudioVolumeTransitionController.SuppressVolumeSave;");

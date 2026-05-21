@@ -3497,9 +3497,11 @@ owns the ramp constants/easing and async ramp-down/ramp-up execution.
 view-model compatibility facade for preview-volume save suppression, override,
 change notification, and ramp adapter methods. Monitoring enable/disable
 orchestration and coordinator sequencing remain in
-`Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs`; audio capture and
-audio-preview property-change handlers live in
-`Sussudio/ViewModels/MainViewModel.AudioPropertyChanges.cs`.
+`Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs`; audio capture
+enablement and Flashback restart/teardown routing live in
+`Sussudio/ViewModels/MainViewModel.AudioCapturePropertyChanges.cs`, while
+audio-preview monitoring toggles live in
+`Sussudio/ViewModels/MainViewModel.AudioPreviewPropertyChanges.cs`.
 
 Preview reinit animation active state, first-visual transition clears,
 startup-reset preservation, completion presentation decisions, and
@@ -4751,8 +4753,9 @@ owner, fold it back into that owner and update the source-shape tests and
    preview-volume save/override and ramp adapter methods now live in
    `MainViewModel.PreviewVolumeTransitions.cs`; keep preview monitoring
    coordinator sequencing in
-   `MainViewModel.AudioMonitoring.cs`, audio capture/audio-preview property
-   handlers in `MainViewModel.AudioPropertyChanges.cs`, while custom audio-input property
+   `MainViewModel.AudioMonitoring.cs`, audio capture property handlers in
+   `MainViewModel.AudioCapturePropertyChanges.cs`, audio-preview property
+   handlers in `MainViewModel.AudioPreviewPropertyChanges.cs`, while custom audio-input property
    handlers, retargeting, and preview-monitoring ramp handoff live in
    `MainViewModel.AudioInputSelection.cs`.
    Microphone endpoint volume synchronization and persistence now live in
@@ -4813,8 +4816,10 @@ owner, fold it back into that owner and update the source-shape tests and
    owns runtime event-ingress graph ports, and
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Runtime.cs`
    owns runtime lifecycle graph ports.
-   `MainViewModelDependencies.cs` continues to own service construction. Audio capture/preview property handlers now live in
-   `MainViewModel.AudioPropertyChanges.cs`, microphone monitor/device
+   `MainViewModelDependencies.cs` continues to own service construction. Audio
+   capture property handlers now live in
+   `MainViewModel.AudioCapturePropertyChanges.cs`, audio-preview property
+   handlers live in `MainViewModel.AudioPreviewPropertyChanges.cs`, microphone monitor/device
    selection handlers live in `MainViewModel.MicrophonePropertyChanges.cs`,
    capture-mode property handlers live in `MainViewModel.CaptureModePropertyChanges.cs`. Shared
    view-model UI dispatcher enqueue/invoke policy now lives in

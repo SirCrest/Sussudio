@@ -3723,8 +3723,10 @@ Primary current owners:
   preview-volume save suppression/override properties, change notification,
   ramp adapter methods, and persisted preview-volume save routing.
   `MainViewModel.AudioMonitoring.cs` owns preview monitoring
-  coordinator sequencing. `MainViewModel.AudioPropertyChanges.cs` owns audio
-  capture and audio-preview property-change handlers.
+  coordinator sequencing. `MainViewModel.AudioCapturePropertyChanges.cs` owns
+  audio capture enablement and Flashback restart/teardown routing.
+  `MainViewModel.AudioPreviewPropertyChanges.cs` owns audio-preview monitoring
+  toggle routing.
   `MainViewModel.AudioInputSelection.cs`
   owns custom audio-input property handlers, retargeting, and
   preview-monitoring ramp handoff.
@@ -3753,8 +3755,9 @@ Primary current owners:
   gain XU writes and settings persistence.
   `Sussudio/ViewModels/DeviceAudioGainMapper.cs` owns the pure percent-to-XU-
   byte analog gain curve used by device-native gain application.
-  `MainViewModel.AudioPropertyChanges.cs` owns audio capture/preview property
-  handlers. `MainViewModel.MicrophonePropertyChanges.cs` owns microphone
+  `MainViewModel.AudioCapturePropertyChanges.cs` owns audio capture property
+  handlers. `MainViewModel.AudioPreviewPropertyChanges.cs` owns audio-preview
+  property handlers. `MainViewModel.MicrophonePropertyChanges.cs` owns microphone
   monitor and selected-microphone property handlers.
   `MainViewModel.CaptureModePropertyChanges.cs`
   owns capture-mode property handlers for selected resolution, selected format,
