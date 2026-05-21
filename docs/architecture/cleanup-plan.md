@@ -3484,8 +3484,9 @@ NV12/P010 byte-size policy now live in
 Held playback frame backing state, release-for-live reset policy, and best-effort decoded
 frame release warnings now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrameOwnership.cs`;
-seek-display and playback-submit failure recovery plus decode-error, near-live,
-and software-decode-budget recovery back to live playback state now live in
+seek-display and playback-submit failure recovery plus decode-error snap,
+near-live snap, and software-decode-budget recovery back to live playback state
+now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLiveRecovery.cs`;
 keep seek and playback loops in the core/thread partials.
 
@@ -3514,9 +3515,10 @@ continuous playback pacing in the controller core/thread partials.
 
 Flashback continuous playback progression now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLoop.cs`.
-Keep decoded-frame submission flow, decode-error snap triggers, and near-live
-snap detection, including the recovery near-live snap threshold, there; recovery
-back to live state belongs in the playback live recovery owner. Playback frame reads, prebuffer cleanup, and A/V drift
+Keep decoded-frame submission flow, live-recovery policy invocation, cadence
+pacing, and A/V drift diagnostics there; decode-error and near-live snap policy,
+including the recovery near-live snap threshold, belongs in the playback live
+recovery owner. Playback frame reads, prebuffer cleanup, and A/V drift
 frame-skip catch-up policy live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`.
 Segment-edge routing decisions and write-head waits now live in
