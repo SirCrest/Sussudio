@@ -6,8 +6,8 @@ static partial class Program
     internal static Task LaunchEntranceAnimation_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var startupText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs").Replace("\r\n", "\n");
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs").Replace("\r\n", "\n");
+        var startupText = ReadMainWindowShellChromeAdapterSource();
+        var adapterText = ReadMainWindowShellChromeAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
         var splashText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs").Replace("\r\n", "\n");
         var shellText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
@@ -26,9 +26,9 @@ static partial class Program
         AssertContains(adapterText, "=> _launchEntranceAnimationController.PrepareInitialState();");
         AssertContains(adapterText, "=> _launchEntranceAnimationController.PlaySplashAndEntrance();");
         AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.LaunchEntrance.cs")),
-            "launch entrance adapter is consolidated into the shell chrome adapter");
+            true,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShellChrome.LaunchEntrance.cs")),
+            "launch entrance adapter lives in the focused shell chrome launch entrance partial");
         AssertContains(mainWindowText, "InitializeLaunchEntranceAnimationController();");
         AssertContains(mainWindowText, "PrepareLaunchEntranceInitialState();");
         AssertContains(startupText, "PlaySplashAndEntrance();");
@@ -72,7 +72,7 @@ static partial class Program
     internal static Task MainWindowStartupHosting_LivesInStartupPartial()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var startupText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs").Replace("\r\n", "\n");
+        var startupText = ReadMainWindowShellChromeAdapterSource();
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs").Replace("\r\n", "\n");
         var launchStartupControllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchStartupController.cs").Replace("\r\n", "\n");
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
@@ -108,9 +108,9 @@ static partial class Program
         AssertContains(agentMapText, "Sussudio/Controllers/Launch/LaunchStartupController.cs");
         AssertContains(cleanupPlanText, "Sussudio/Controllers/Launch/LaunchStartupController.cs");
         AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Startup.cs")),
-            "startup adapter is consolidated into the shell chrome adapter");
+            true,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShellChrome.LaunchStartup.cs")),
+            "startup adapter lives in the focused shell chrome launch startup partial");
         AssertContains(mainWindowText, "private readonly WindowAutomationHostLifecycleController _automationHostLifecycleController;");
         AssertEqual(
             false,

@@ -1353,7 +1353,9 @@ string-based.
 First-load startup, initial ViewModel/device refresh, automation startup timing,
 and the launch entrance trigger now live in
 `Sussudio/Controllers/Launch/LaunchStartupController.cs`.
-`Sussudio/MainWindow.ShellChrome.cs` keeps the XAML-facing Loaded adapter and
+`Sussudio/MainWindow.ShellChrome.cs` is the XAML-facing shell launch/chrome
+adapter-family marker; `Sussudio/MainWindow.ShellChrome.LaunchStartup.cs` keeps
+the Loaded adapter and `Sussudio/MainWindow.ShellChrome.NativeWindow.cs` keeps
 native shell bootstrap wiring.
 Automation host composition, once-only
 startup, ready/disabled logging, and pipe-before-hub shutdown disposal now live
@@ -1488,8 +1490,8 @@ Native `AppWindow` lookup, ViewModel window handle handoff, minimum-size
 subclassing, DWM cloak/dark-mode setup, first-composed-frame shell reveal
 scheduling/cancellation, initial shell size, icon, and uncloaking now live in
 `Sussudio/Controllers/Window/NativeWindowBootstrapController.cs`.
-`Sussudio/MainWindow.ShellChrome.cs` is the XAML-facing shell launch/chrome
-adapter and keeps the `_hwnd` field consumed by screenshot and window
+`Sussudio/MainWindow.ShellChrome.NativeWindow.cs` is the XAML-facing shell
+launch/chrome native-window adapter and keeps the `_hwnd` field consumed by screenshot and window
 automation paths.
 MainWindow shell ownership tests mirror these runtime owners through focused
 `MainWindow.ShellOwnership.*.Tests.cs` files for chrome, startup, preview
@@ -3290,8 +3292,9 @@ lives in `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Cti.c
 
 Settings shelf visibility, the animation gate, and show/hide storyboard
 construction now live in
-`Sussudio/Controllers/Shell/SettingsShelfController.cs`. `MainWindow.ShellChrome.cs`
-is the XAML-facing settings shelf adapter.
+`Sussudio/Controllers/Shell/SettingsShelfController.cs`.
+`Sussudio/MainWindow.ShellChrome.SettingsShelf.cs` is the XAML-facing settings
+shelf adapter.
 
 Splash phrase file lookup, Markdown-ish parsing, cached defaults, and exception
 fallback now live in `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseCatalog.cs`.
@@ -3299,16 +3302,17 @@ Randomized interval/mode selection now lives in
 `Sussudio/Controllers/Launch/Splash/SplashLoadingPhrasePacingPolicy.cs`.
 `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs` owns
 DispatcherTimer lifecycle and the two-line splash text animation.
-Its MainWindow wiring is folded into `MainWindow.ShellChrome.cs` because launch
-entrance owns the only phrase start/stop choreography and now shares the shell
-launch adapter.
+Its MainWindow wiring lives in `Sussudio/MainWindow.ShellChrome.SplashPhrases.cs`
+because launch entrance owns the only phrase start/stop choreography and shares
+the shell launch adapter family.
 
 Loaded-time startup ordering now lives in
 `Sussudio/Controllers/Launch/LaunchStartupController.cs`: native shell reveal
 scheduling, initial ViewModel settings load, preview audio fade priming before
 device refresh, no-preview placeholder fallback, automation host start in the
-finally path, and splash/entrance trigger. `MainWindow.ShellChrome.cs` preserves
-the XAML event handler and context wiring.
+finally path, and splash/entrance trigger.
+`Sussudio/MainWindow.ShellChrome.LaunchStartup.cs` preserves the XAML event
+handler and context wiring.
 
 Launch entrance ownership is split by phase:
 `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs` owns context and
@@ -3319,16 +3323,16 @@ handoff into shell entrance, and
 `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs` owns shell
 chrome/button/stats entrance choreography, deferred preview reveal logging,
 active-storyboard cleanup, and control-bar shadow fade. `MainWindow.ShellChrome.cs`
-is the XAML-facing adapter for launch entrance and splash phrase controller
-wiring.
+is the adapter-family marker; `Sussudio/MainWindow.ShellChrome.LaunchEntrance.cs`
+is the XAML-facing adapter for launch entrance wiring.
 
 Control-bar button ownership and hover/press/release scale behavior now live in
 `Sussudio/Controllers/Shell/ControlBarAnimationController.cs`.
-`MainWindow.ShellChrome.cs` is the XAML-facing adapter.
+`Sussudio/MainWindow.ShellChrome.ControlBar.cs` is the XAML-facing adapter.
 
 Static shell ThemeShadow and translation setup for the control bar and record
 button now live in `Sussudio/Controllers/Shell/ShellElevationController.cs`.
-`MainWindow.ShellChrome.cs` is the XAML-facing adapter.
+`Sussudio/MainWindow.ShellChrome.ShellElevation.cs` is the XAML-facing adapter.
 
 Preview shell/content fade and scale transitions, video-shadow fade timing, and
 unavailable-placeholder presentation now live in
@@ -3472,8 +3476,9 @@ Capture-option property-name routing still lives in the focused
 `Sussudio/MainWindow.CaptureOptionBindings.cs` adapter. Output-path routing
 lives in `OutputPathController`, shell visibility route order lives in
 `ShellPropertyChangedController` over `StatsOverlayCompositionController` and
-`SettingsShelfController`, and live source-signal routing lives in
-`LiveSignalInfoController`. Keep the root dispatcher limited to route order,
+`SettingsShelfController` through
+`Sussudio/MainWindow.ShellChrome.ShellPropertyChanged.cs`, and live
+source-signal routing lives in `LiveSignalInfoController`. Keep the root dispatcher limited to route order,
 and add new property-name cases to the nearest focused owner.
 
 Flashback-specific ViewModel property adapter dispatch now lives in

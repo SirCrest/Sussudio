@@ -31,8 +31,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs")
             .Replace("\r\n", "\n");
-        var startupText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs")
-            .Replace("\r\n", "\n");
+        var startupText = ReadMainWindowShellChromeAdapterSource();
         var launchStartupControllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchStartupController.cs")
             .Replace("\r\n", "\n");
 

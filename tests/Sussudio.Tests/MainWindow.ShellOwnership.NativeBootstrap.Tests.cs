@@ -5,7 +5,7 @@ static partial class Program
     internal static Task MainWindowNativeBootstrap_LivesInFocusedController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var nativeWindowText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs").Replace("\r\n", "\n");
+        var nativeWindowText = ReadMainWindowShellChromeAdapterSource();
         var nativeWindowControllerText = ReadRepoFile("Sussudio/Controllers/Window/NativeWindowBootstrapController.cs").Replace("\r\n", "\n");
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
@@ -45,9 +45,9 @@ static partial class Program
         AssertContains(nativeWindowText, "private void CancelNativeShellRevealAfterFirstFrame()");
         AssertContains(nativeWindowText, "=> _nativeWindowBootstrapController.CancelPendingFirstFrameReveal();");
         AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.NativeWindow.cs")),
-            "native window adapter is consolidated into the shell chrome adapter");
+            true,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShellChrome.NativeWindow.cs")),
+            "native window adapter lives in the focused shell chrome native window partial");
         AssertDoesNotContain(nativeWindowText, "private static extern int DwmSetWindowAttribute(");
         AssertDoesNotContain(nativeWindowText, "MinSizeWindowSubclass.Install(");
 

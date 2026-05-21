@@ -29,8 +29,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs")
             .Replace("\r\n", "\n");
-        var startupText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs")
-            .Replace("\r\n", "\n");
+        var startupText = ReadMainWindowShellChromeAdapterSource();
         var launchStartupText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchStartupController.cs")
             .Replace("\r\n", "\n");
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml")
