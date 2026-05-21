@@ -3402,9 +3402,12 @@ Command readiness guards, skipped-not-ready accounting, failure-detail
 formatting, last-command failure state, and no-op logging now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.CommandFailures.cs`.
 Keep command failure updates there instead of growing command channel mechanics.
-Playback thread state, CTS lifetime, stop timeout policy, thread start/recovery,
-and join/cancel diagnostics now live in
+Playback thread state fields and stop timeout policy now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs`.
+Playback thread start/recovery and start-failure rollback now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadStartLifecycle.cs`.
+Playback thread stop/cancel/join diagnostics and post-stop cleanup now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadStopLifecycle.cs`.
 Playback-thread command channel capacity/state, bounded-channel recreation,
 thread-exit completion, and abandoned-command draining now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadChannel.cs`.

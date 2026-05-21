@@ -1,11 +1,12 @@
 using System;
-using System.Diagnostics;
 using System.Threading;
 
 namespace Sussudio.Services.Flashback;
 
 internal sealed partial class FlashbackPlaybackController
 {
+    // --- Playback thread state and timeout policy ---
+
     private static readonly TimeSpan PlaybackThreadStopTimeout = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan PreviewDetachThreadStopTimeout = TimeSpan.FromSeconds(10);
 
@@ -13,129 +14,4 @@ internal sealed partial class FlashbackPlaybackController
     private Thread? _playbackThread;
     private int _playbackThreadStarted;
     private CancellationTokenSource? _playCts;
-
-    // --- Playback thread lifecycle ---
-
-    private bool EnsurePlaybackThread(CommandKind commandKind)
-    {
-        lock (_playbackThreadSync)
-        {
-        if (_disposedFlag != 0) return RejectCommand(commandKind, "disposed", "disposed", false);
-        if (Volatile.Read(ref _playbackThreadStarted) != 0)
-        {
-            if (_playbackThread is { IsAlive: true })
-            {
-                return true;
-            }
-
-            Logger.Log("FLASHBACK_PLAYBACK_THREAD_RECOVER reason=stale_stopped");
-            DrainAbandonedCommandsOnThreadExit(_commandChannel);
-            DisposePlaybackCtsBestEffort(_playCts, "recover_stale_thread");
-            _playCts = null;
-            _playbackThread = null;
-            Interlocked.Exchange(ref _pendingCommands, 0);
-            ClearQueuedCommandSlotsBarrier();
-            Volatile.Write(ref _playbackThreadStarted, 0);
-        }
-
-        if (Interlocked.CompareExchange(ref _playbackThreadStarted, 1, 0) != 0)
-            return true;
-
-        // Recreate the command channel - the previous one was completed by StopPlaybackThread.
-        // A completed channel silently drops all TryWrite calls.
-        _commandChannel = CreateCommandChannel();
-        var commandChannel = _commandChannel;
-        _playCts = new CancellationTokenSource();
-        var threadCts = _playCts;
-        _playbackThread = new Thread(() => PlaybackThreadEntry(threadCts, commandChannel))
-        {
-            Name = "FlashbackPlayback",
-            IsBackground = true,
-            Priority = ThreadPriority.AboveNormal
-        };
-        try
-        {
-            _playbackThread.Start();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_PLAYBACK_THREAD_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
-            DisposePlaybackCtsBestEffort(_playCts, "thread_start_fail");
-            _playCts = null;
-            _playbackThread = null;
-            Interlocked.Exchange(ref _playbackThreadStarted, 0);
-            return RejectCommand(
-                commandKind,
-                $"thread_start_failed:{ex.GetType().Name}:{ex.Message}",
-                $"thread_start_failed type={ex.GetType().Name}",
-                false);
-        }
-        Logger.Log("FLASHBACK_PLAYBACK_THREAD_START");
-        return true;
-        }
-    }
-
-    private bool StopPlaybackThread(TimeSpan timeout, string operation)
-    {
-        lock (_playbackThreadSync)
-        {
-            var stopStarted = Stopwatch.GetTimestamp();
-            var thread = _playbackThread;
-            var threadWasAlive = Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true };
-            var activeKindAtRequest = FormatActiveCommandKind(Volatile.Read(ref _activeCommandKind));
-            var activeElapsedMsAtRequest = GetActiveCommandElapsedMs(stopStarted);
-            if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })
-            {
-                SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });
-            }
-
-            _commandChannel.Writer.TryComplete();
-
-            try
-            {
-                _playCts?.Cancel();
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"FLASHBACK_PLAYBACK_CANCEL_WARN type={ex.GetType().Name} msg='{ex.Message}'");
-            }
-
-            var threadExited = true;
-            if (thread is { IsAlive: true })
-            {
-                if (ReferenceEquals(Thread.CurrentThread, thread))
-                {
-                    Logger.Log("FLASHBACK_PLAYBACK_THREAD_JOIN_SKIP reason=self");
-                    SetLastCommandFailure("thread_join_skipped:self");
-                    threadExited = false;
-                }
-                else if (!thread.Join(timeout))
-                {
-                    Logger.Log($"FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT op={operation} timeout_ms={timeout.TotalMilliseconds:0}");
-                    SetLastCommandFailure($"thread_join_timeout:{operation}");
-                    threadExited = false;
-                }
-            }
-
-            var stopElapsedMs = Stopwatch.GetElapsedTime(stopStarted).TotalMilliseconds;
-            Logger.Log(
-                $"FLASHBACK_PLAYBACK_STOP_THREAD_COMPLETE op={operation} duration_ms={stopElapsedMs:0.###} " +
-                $"thread_was_alive={threadWasAlive} thread_exited={threadExited} " +
-                $"active_at_request={activeKindAtRequest} active_ms_at_request={activeElapsedMsAtRequest:0.###} " +
-                $"pending={Volatile.Read(ref _pendingCommands)}");
-
-            if (threadExited)
-            {
-                ApplyDeferredPreviewAttachAfterStopTimeout();
-                DisposePlaybackCtsBestEffort(_playCts, "stop_thread");
-                _playCts = null;
-                _playbackThread = null;
-                Interlocked.Exchange(ref _pendingCommands, 0);
-                ClearQueuedCommandSlotsBarrier();
-                Volatile.Write(ref _playbackThreadStarted, 0);
-            }
-
-            return threadExited;
-        }
-    }
 }
