@@ -3378,8 +3378,11 @@ in `Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs`.
 
 Preview button glyph/tooltip presentation for Start Preview and Stop Preview
 now lives in `Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs`.
-`MainWindow.PropertyChangedPreview.cs` wires preview button presentation into
-preview lifecycle property/event routing. Preview
+`Sussudio/MainWindow.PropertyChangedPreview.cs` is the preview property-change
+adapter-family marker, `Sussudio/MainWindow.PropertyChangedPreview.Button.cs`
+wires preview button presentation callbacks, and
+`Sussudio/MainWindow.PropertyChangedPreview.Lifecycle.cs` wires preview
+lifecycle property/event routing. Preview
 button command choreography now lives in
 `Sussudio/Controllers/Preview/PreviewButtonActionController.cs`, while
 `Sussudio/MainWindow.PreviewTransitions.ButtonActions.cs` keeps the XAML event
@@ -3447,8 +3450,11 @@ in `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs`: mi
 updates, playback-progress diagnostics, startup signal log strings, GPU
 position counter state, and first-visual confirmation decisions. The
 `Sussudio/MainWindow.PreviewStartup.Signals.cs` partial is the XAML/MainWindow
-adapter that supplies live preview state, renderer visibility details, logging,
-and confirmation callbacks. Readiness-signal required/received state,
+adapter-family marker, `Sussudio/MainWindow.PreviewStartup.Signals.Composition.cs`
+wires coordinator context, `Sussudio/MainWindow.PreviewStartup.Signals.State.cs`
+supplies live preview signal state, and
+`Sussudio/MainWindow.PreviewStartup.Signals.Events.cs` supplies renderer visibility
+details, logging, and confirmation callbacks. Readiness-signal required/received state,
 missing-signal calculation, playback-advance threshold checks, and readiness
 result snapshots live in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs`. Missing-signal,
@@ -3481,10 +3487,13 @@ shutdown, and reinit-unsafe-window adapters; reinit renderer-stop/timeout policy
 Preview-specific ViewModel event lifecycle and preview property-change routing
 now live in `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`.
 `Sussudio/MainWindow.PropertyChangedPreview.cs` is the XAML/MainWindow-facing
-adapter that preserves event handler signatures and delegates into the
-controller. The broad `MainWindow.PropertyChanged.cs` dispatcher now owns only
-the `PropertyChanged` event envelope, property-name normalization, and visible
-route order. Preview reinit transition state and log ownership now live in
+adapter-family marker, `Sussudio/MainWindow.PropertyChangedPreview.Button.cs`
+wires button presentation callbacks, and
+`Sussudio/MainWindow.PropertyChangedPreview.Lifecycle.cs` preserves event
+handler signatures and delegates into the controller. The broad
+`MainWindow.PropertyChanged.cs` dispatcher now owns only the `PropertyChanged`
+event envelope, property-name normalization, and visible route order. Preview
+reinit transition state and log ownership now live in
 `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs`, while
 `Sussudio/MainWindow.PreviewTransitions.Reinit.cs` keeps the renderer-stop-before-teardown
 handoff and XAML callback endpoints for completion presentation.

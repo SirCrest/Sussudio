@@ -25,8 +25,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
             .Replace("\r\n", "\n");
-        var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs")
-            .Replace("\r\n", "\n");
+        var previewPropertyChangedText = ReadMainWindowPropertyChangedPreviewAdapterSource();
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs")
             .Replace("\r\n", "\n");
         var startupText = ReadMainWindowShellChromeAdapterSource();

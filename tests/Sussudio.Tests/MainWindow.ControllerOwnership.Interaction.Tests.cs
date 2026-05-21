@@ -41,7 +41,7 @@ static partial class Program
         var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.AudioBindings.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
-        var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
+        var previewPropertyChangedText = ReadMainWindowPropertyChangedPreviewAdapterSource();
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
         var adapterText = ReadMainWindowPreviewTransitionsAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewAudioFadeController.cs").Replace("\r\n", "\n");
@@ -114,7 +114,7 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var previewActionsText = ReadMainWindowPreviewTransitionsAdapterSource();
-        var propertyChangedPreviewText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
+        var propertyChangedPreviewText = ReadMainWindowPropertyChangedPreviewAdapterSource();
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
         var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs").Replace("\r\n", "\n");

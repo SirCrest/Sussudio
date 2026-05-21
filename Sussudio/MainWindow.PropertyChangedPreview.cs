@@ -1,71 +1,7 @@
-using System.Threading.Tasks;
-using Sussudio.Controllers;
-
 namespace Sussudio;
 
-// Preview-specific ViewModel event adapter. Preview startup/teardown
-// choreography and its PropertyChanged routes live in the controller.
+// Preview-specific ViewModel event adapter family. Button presentation and
+// lifecycle routing stay split so each controller wiring surface is obvious.
 public sealed partial class MainWindow
 {
-    private PreviewButtonPresentationController _previewButtonPresentationController = null!;
-    private PreviewLifecycleEventController _previewLifecycleEventController = null!;
-
-    private void InitializePreviewButtonPresentationController()
-    {
-        _previewButtonPresentationController = new PreviewButtonPresentationController(new PreviewButtonPresentationControllerContext
-        {
-            PreviewButton = PreviewButton,
-            PreviewButtonIcon = PreviewButtonIcon,
-        });
-    }
-
-    private void InitializePreviewLifecycleEventController()
-    {
-        _previewLifecycleEventController = new PreviewLifecycleEventController(new PreviewLifecycleEventControllerContext
-        {
-            ViewModel = ViewModel,
-            ShouldBeginPreviewStartupAttempt = () => ShouldBeginPreviewStartupAttempt,
-            BeginPreviewStartupAttempt = BeginPreviewStartupAttempt,
-            PrimePreviewAudioFadeIn = PrimePreviewAudioFadeIn,
-            IsPreviewReinitAnimating = () => IsPreviewReinitAnimating,
-            PreparePreviewStartupPresentation = PreparePreviewStartupPresentation,
-            StopPreviewStartupWatchdog = StopPreviewStartupWatchdog,
-            StartPreviewStartupWatchdog = StartPreviewStartupWatchdog,
-            StopPreviewStartupOverlay = StopPreviewStartupOverlay,
-            SetPreviewStartupState = SetPreviewStartupState,
-            GetPreviewStartupAttemptLabel = () => PreviewStartupAttemptLabel,
-            StartPreviewRendererAsync = StartPreviewRendererAsync,
-            IsPreviewFirstVisualConfirmed = () => IsPreviewFirstVisualConfirmed,
-            RevealPreviewUnavailablePlaceholder = RevealPreviewUnavailablePlaceholder,
-            SchedulePreviewStartupFailureStop = SchedulePreviewStartupFailureStop,
-            ShowStopPreviewButtonPresentation = ShowStopPreviewButtonPresentation,
-            ShowStartPreviewButtonPresentation = ShowStartPreviewButtonPresentation,
-            ApplyHdrToggleEnabledState = ApplyHdrToggleEnabledState,
-            StopPreviewRendererAsync = StopPreviewRendererAsync,
-            ResetPreviewStartupTracking = preserveReinitAnimation => ResetPreviewStartupTracking(
-                preserveReinitAnimation: preserveReinitAnimation),
-            HandlePreviewReinitializingChanged = HandlePreviewReinitializingChanged,
-        });
-    }
-
-    private bool IsPreviewStopRequestedByUser
-        => _previewLifecycleEventController.StopRequestedByUser;
-
-    private void SetPreviewStopRequestedByUser(bool value)
-        => _previewLifecycleEventController.SetStopRequestedByUser(value);
-
-    private Task<bool> TryHandlePreviewPropertyChangedAsync(string propertyName)
-        => _previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);
-
-    private void ViewModel_PreviewStartRequested(object? sender, System.EventArgs e)
-        => _previewLifecycleEventController.HandlePreviewStartRequested();
-
-    private void ViewModel_PreviewStopRequested(object? sender, System.EventArgs e)
-        => _previewLifecycleEventController.HandlePreviewStopRequested();
-
-    private void ShowStopPreviewButtonPresentation()
-        => _previewButtonPresentationController.ShowStopPreview();
-
-    private void ShowStartPreviewButtonPresentation()
-        => _previewButtonPresentationController.ShowStartPreview();
 }

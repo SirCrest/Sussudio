@@ -2340,6 +2340,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.ShutdownCleanupOwnership.Helpers.cs` owns the
   shared source reader for the split `MainWindow.ShutdownCleanup.*.cs` adapter
   family.
+- `tests/Sussudio.Tests/MainWindow.PropertyChangedPreviewOwnership.Helpers.cs`
+  owns the shared source reader for the split
+  `MainWindow.PropertyChangedPreview.*.cs` adapter family.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
   Flashback export backend-lease, export-operation lock, ViewModel export
   routing, and export CTS lifecycle assertions.
@@ -3392,8 +3395,11 @@ Primary current owners:
   through `PreviewSurfaceShadowController` and `PreviewShadowFadeAnimator`.
 - `Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs` owns preview
   button glyph and tooltip presentation for Start Preview and Stop Preview.
-  `MainWindow.PropertyChangedPreview.cs` wires preview button presentation into
-  preview lifecycle property/event routing.
+  `Sussudio/MainWindow.PropertyChangedPreview.cs` is the preview property-change
+  adapter-family marker, `Sussudio/MainWindow.PropertyChangedPreview.Button.cs`
+  wires preview button presentation callbacks, and
+  `Sussudio/MainWindow.PropertyChangedPreview.Lifecycle.cs` wires preview
+  lifecycle property/event routing.
 - `Sussudio/Controllers/Preview/PreviewButtonActionController.cs` owns preview button
   command choreography: pending-reinit cancel, user stop intent, audio/visual
   fade-out ordering, preview start/stop calls, reinit animation reset, and
@@ -3446,8 +3452,12 @@ Primary current owners:
   signal coordination: readiness-signal state handoff, missing-signal updates,
   playback-progress diagnostics, startup signal log strings, GPU position
   counter state, and first-visual confirmation decisions. `Sussudio/MainWindow.PreviewStartup.Signals.cs`
-  is the XAML/MainWindow-facing adapter that supplies live preview state,
-  renderer visibility details, logging, and confirmation callbacks.
+  is the XAML/MainWindow-facing adapter-family marker,
+  `Sussudio/MainWindow.PreviewStartup.Signals.Composition.cs` wires the
+  coordinator context, `Sussudio/MainWindow.PreviewStartup.Signals.State.cs`
+  owns the stable signal snapshot properties used by automation, and
+  `Sussudio/MainWindow.PreviewStartup.Signals.Events.cs` owns GPU signal,
+  missing-signal, playback-snapshot, and first-visual adapter callbacks.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs` owns
   readiness-signal required/received state, missing-signal calculation,
   playback-advance threshold checks, and readiness result snapshots.
@@ -3456,9 +3466,11 @@ Primary current owners:
   owns preview startup timeout reason, timeout status, and failure-stop status text.
   `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview-
   specific ViewModel event lifecycle and the preview property-change router for
-  preview start/stop/reinit state. `MainWindow.PropertyChangedPreview.cs` is the
-  XAML/MainWindow-facing adapter that preserves event handler signatures and
-  delegates into the controller.
+  preview start/stop/reinit state. `Sussudio/MainWindow.PropertyChangedPreview.cs`
+  is the XAML/MainWindow-facing adapter-family marker,
+  `Sussudio/MainWindow.PropertyChangedPreview.Button.cs` wires preview button
+  presentation callbacks, and `Sussudio/MainWindow.PropertyChangedPreview.Lifecycle.cs`
+  preserves preview event-handler signatures and delegates into the controller.
   `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs` owns preview
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and reinit transition logs.

@@ -10,6 +10,9 @@ static partial class Program
                 "Sussudio/MainWindow.PreviewStartup.cs",
                 "Sussudio/MainWindow.PreviewStartup.Session.cs",
                 "Sussudio/MainWindow.PreviewStartup.Signals.cs",
+                "Sussudio/MainWindow.PreviewStartup.Signals.Composition.cs",
+                "Sussudio/MainWindow.PreviewStartup.Signals.State.cs",
+                "Sussudio/MainWindow.PreviewStartup.Signals.Events.cs",
                 "Sussudio/MainWindow.PreviewStartup.Watchdog.cs",
             }.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
 }
