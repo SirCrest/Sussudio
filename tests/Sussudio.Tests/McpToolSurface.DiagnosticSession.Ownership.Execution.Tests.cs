@@ -22,8 +22,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var recordingSettingsTasksText = ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.RecordingSettingsDeferred.cs")
             .Replace("\r\n", "\n");
-        var taskModelsText = ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.Models.cs")
-            .Replace("\r\n", "\n");
         var faultDrainText = ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.FaultDrain.cs")
             .Replace("\r\n", "\n");
 
@@ -31,6 +29,7 @@ static partial class Program
         AssertContains(startupText, "internal static async Task<DiagnosticSessionScenarioStartupResult> StartAsync(");
         AssertContains(startupText, "internal readonly record struct DiagnosticSessionScenarioStartupResult(bool StartedFlashbackPlayback)");
         AssertContains(tasksText, "internal sealed partial class DiagnosticSessionBackgroundTasks");
+        AssertContains(tasksRootText, "internal readonly record struct DiagnosticSessionBackgroundTaskRegistration(");
         AssertContains(tasksRootText, "private readonly List<DiagnosticSessionBackgroundTaskRegistration> _scenarioTasks = [];");
         AssertContains(tasksRootText, "internal void AddScenario(int awaitOrder, string stage, Task task)");
         AssertContains(tasksRootText, "internal async Task<FlashbackRecordingSettingsDeferredPresetState> CompleteRegisteredScenarioWorkAsync(");
@@ -47,21 +46,21 @@ static partial class Program
         AssertContains(recordingSettingsTasksText, "private async Task<FlashbackRecordingSettingsDeferredPresetState> AwaitRecordingSettingsDeferredAsync(");
         AssertContains(recordingSettingsTasksText, "private async Task<FlashbackRecordingSettingsDeferredPresetState> ObserveRecordingSettingsDeferredAfterFaultAsync(");
         AssertContains(recordingSettingsTasksText, "flashback-recording-settings-deferred-task: task still running after diagnostic interruption");
+        AssertContains(faultDrainText, "internal readonly record struct DiagnosticSessionBackgroundTaskDrainResult(");
         AssertContains(faultDrainText, "internal async Task<DiagnosticSessionBackgroundTaskDrainResult> ObserveAfterFaultAsync(");
         AssertContains(faultDrainText, "ObservePresentMonAfterFaultAsync(");
         AssertContains(faultDrainText, "ObserveRecordingSettingsDeferredAfterFaultAsync(");
         AssertContains(faultDrainText, "private static async Task ObserveTaskAfterFaultAsync(");
-        AssertContains(taskModelsText, "internal readonly record struct DiagnosticSessionBackgroundTaskRegistration(");
-        AssertContains(taskModelsText, "internal readonly record struct DiagnosticSessionBackgroundTaskDrainResult(");
         AssertDoesNotContain(tasksRootText, "private Task<PresentMonProbeResult>? _presentMonTask;");
         AssertDoesNotContain(tasksRootText, "private Task<FlashbackRecordingSettingsDeferredPresetState>? _recordingSettingsDeferredTask;");
         AssertDoesNotContain(tasksRootText, "internal async Task<PresentMonProbeResult?> CompletePresentMonAsync(");
         AssertDoesNotContain(tasksRootText, "internal void SetPresentMon(");
         AssertDoesNotContain(tasksRootText, "internal void SetRecordingSettingsDeferred(");
         AssertDoesNotContain(tasksRootText, "ObserveAfterFaultAsync(");
+        AssertDoesNotContain(tasksRootText, "internal readonly record struct DiagnosticSessionBackgroundTaskDrainResult(");
         AssertDoesNotContain(presentMonTasksText, "SetRecordingSettingsDeferred(");
         AssertDoesNotContain(recordingSettingsTasksText, "SetPresentMon(");
-        AssertDoesNotContain(faultDrainText, "internal readonly record struct DiagnosticSessionBackgroundTaskDrainResult(");
+        AssertDoesNotContain(faultDrainText, "internal readonly record struct DiagnosticSessionBackgroundTaskRegistration(");
         AssertDoesNotContain(faultDrainText, "presentmon-task: task still running after diagnostic interruption");
         AssertDoesNotContain(faultDrainText, "flashback-recording-settings-deferred-task: task still running after diagnostic interruption");
         AssertContains(runnerText, "var backgroundTasks = new DiagnosticSessionBackgroundTasks();");

@@ -5,6 +5,12 @@ using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 
 namespace Sussudio.Tools;
 
+internal readonly record struct FlashbackSegmentPlaybackTarget(
+    FlashbackSegmentProbe Segment,
+    long ValidStartPtsMs,
+    long BoundaryPositionMs,
+    long BufferedDurationMs);
+
 internal static partial class DiagnosticSessionFlashbackSegments
 {
     internal static async Task<FlashbackSegmentPlaybackTarget?> WaitForFlashbackPlayableCompletedSegmentAsync(

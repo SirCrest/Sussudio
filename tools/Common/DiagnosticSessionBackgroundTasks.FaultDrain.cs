@@ -5,6 +5,10 @@ using System.Threading.Tasks;
 
 namespace Sussudio.Tools;
 
+internal readonly record struct DiagnosticSessionBackgroundTaskDrainResult(
+    PresentMonProbeResult? PresentMon,
+    FlashbackRecordingSettingsDeferredPresetState RecordingSettingsDeferredPresetState);
+
 internal sealed partial class DiagnosticSessionBackgroundTasks
 {
     internal async Task<DiagnosticSessionBackgroundTaskDrainResult> ObserveAfterFaultAsync(

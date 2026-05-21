@@ -7,6 +7,11 @@ namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionFlashbackExportScenarios
 {
+    private readonly record struct FlashbackSelectionRange(
+        JsonElement BaselineSnapshot,
+        int RangeStartMs,
+        int RangeEndMs);
+
     private static async Task<FlashbackSelectionRange?> PrepareFlashbackSelectionRangeAsync(
         int outPointMs,
         string scenarioLabel,

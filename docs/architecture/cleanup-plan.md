@@ -3588,8 +3588,10 @@ mapping from completion evidence and run bootstrap metadata.
 `DiagnosticSessionRunExecution.cs` hands scenario execution directly to
 `DiagnosticSessionScenarioPhaseRunner.cs`, which owns the main scenario phase
 for setup/startup, sampling/completion delegation, and fault drain delegation.
-`DiagnosticSessionScenarioPhaseRunner.Models.cs` owns the
-explicit phase context/state/result records.
+`DiagnosticSessionScenarioPhaseContext.cs` owns the explicit phase input
+handoff from run context construction into the phase runner.
+`DiagnosticSessionScenarioPhaseResult.cs` owns the immutable completion handoff,
+and `DiagnosticSessionScenarioPhaseState.cs` owns mutable in-flight phase state.
 `DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owns scenario sampling:
 live-state sampling setup, sample-loop invocation, and handoff to completion.
 `DiagnosticSessionScenarioPhaseCompletion.cs` owns post-sampling completion
@@ -3843,15 +3845,15 @@ acquires and disposes the lock.
 Diagnostic-session background task tracking now lives in
 `tools/Common/DiagnosticSessionBackgroundTasks.cs`. The root owns scenario task
 registration, deterministic await order, and normal registered scenario
-completion. `DiagnosticSessionBackgroundTasks.PresentMon.cs` owns PresentMon
+completion, plus the registration record that preserves await order.
+`DiagnosticSessionBackgroundTasks.PresentMon.cs` owns PresentMon
 task registration, normal completion, and interrupted-session observation,
 `DiagnosticSessionBackgroundTasks.RecordingSettingsDeferred.cs` owns deferred
 Flashback recording-settings registration, normal completion, and
-interrupted-session observation, and
-`DiagnosticSessionBackgroundTasks.Models.cs` owns the small background-task
-registration and drain handoff records.
+interrupted-session observation.
 `DiagnosticSessionBackgroundTasks.FaultDrain.cs` owns interrupted drain
-orchestration and generic scenario-task warning collection.
+orchestration, generic scenario-task warning collection, and the drain handoff
+record.
 
 Diagnostic-session scenario startup now lives in a focused partial family.
 `tools/Common/DiagnosticSessionScenarioStartup.cs` owns the public startup
@@ -4034,7 +4036,8 @@ failure-kind and last-result assertions, and `.Recording.cs` owns
 active-Flashback-recording failure-kind and backend-stability assertions.
 
 Diagnostic-session Flashback recording-settings deferral now lives in named
-partial owners. `DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs`
+partial owners.
+`DiagnosticSessionFlashbackRecordingSettingsScenarios.DeferredPresetState.cs`
 owns deferred preset state. During-recording command choreography lives in
 `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`,
 restart/disable rejection-message policy lives in
@@ -4060,12 +4063,12 @@ while the `DiagnosticSessionFlashbackSegments.*` family stays read-only segment
 parsing and wait policy.
 
 Diagnostic-session Flashback segment handling now lives in a small read-only
-family. `DiagnosticSessionFlashbackSegments.Models.cs` owns segment DTOs,
-`.Parsing.cs` owns `FlashbackGetSegments` response parsing,
+family. `.Parsing.cs` owns `FlashbackGetSegments` response parsing and the
+parsed segment probe DTO,
 `.CompletedWaits.cs` owns completed-segment discovery waits,
-`.PlaybackTargetWaits.cs` owns playable completed-segment target selection, and
-`.PlaybackHeadroomWaits.cs` owns playback-boundary headroom polling while the
-runner keeps scenario command sequencing.
+`.PlaybackTargetWaits.cs` owns playable completed-segment target selection plus
+the playback-target DTO, and `.PlaybackHeadroomWaits.cs` owns playback-boundary
+headroom polling while the runner keeps scenario command sequencing.
 
 Diagnostic-session Flashback snapshot waits now live in
 `tools/Common/DiagnosticSessionFlashbackWaits*.cs`. The root owns read-only
@@ -4178,7 +4181,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionBackgroundTasks.cs`
 - `DiagnosticSessionBackgroundTasks.PresentMon.cs`
 - `DiagnosticSessionBackgroundTasks.RecordingSettingsDeferred.cs`
-- `DiagnosticSessionBackgroundTasks.Models.cs`
 - `DiagnosticSessionBackgroundTasks.FaultDrain.cs`
 - `DiagnosticSessionCleanupActions.cs`
 - `DiagnosticSessionCleanupActions.Recording.cs`
@@ -4207,7 +4209,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExportScenarios.Range.cs`
 - `DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs`
 - `DiagnosticSessionFlashbackExportScenarios.RangeSelection.Markers.cs`
-- `DiagnosticSessionFlashbackExportScenarios.RangeSelection.Models.cs`
 - `DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Registrations.Playback.cs`
@@ -4252,7 +4253,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackRejectedExports.Inactive.cs`
 - `DiagnosticSessionFlashbackRejectedExports.Recording.cs`
-- `DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs`
+- `DiagnosticSessionFlashbackRecordingSettingsScenarios.DeferredPresetState.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingRejections.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingValidation.cs`
@@ -4267,7 +4268,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackSegments.CompletedWaits.cs`
 - `DiagnosticSessionFlashbackSegments.PlaybackTargetWaits.cs`
 - `DiagnosticSessionFlashbackSegments.PlaybackHeadroomWaits.cs`
-- `DiagnosticSessionFlashbackSegments.Models.cs`
 - `DiagnosticSessionFlashbackSegments.Parsing.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`
 - `DiagnosticSessionFlashbackStressScenario.Stress.cs`
@@ -4389,7 +4389,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRunExecution.CompletionContext.cs`
 - `DiagnosticSessionRunExecution.ResultBuildRequest.cs`
 - `DiagnosticSessionScenarioPhaseRunner.cs`
-- `DiagnosticSessionScenarioPhaseRunner.Models.cs`
+- `DiagnosticSessionScenarioPhaseContext.cs`
+- `DiagnosticSessionScenarioPhaseResult.cs`
+- `DiagnosticSessionScenarioPhaseState.cs`
 - `ToolJsonOptions.cs`
 - `tools/Common/PresentMon/PresentMonProbe.cs`
 - `tools/Common/PresentMon/PresentMonProbe.Paths.cs`
@@ -4423,8 +4425,10 @@ owner, fold it back into that owner and update the source-shape tests and
    context handoff and `DiagnosticSessionRunExecution.ResultBuildRequest.cs`
    owning result-build request mapping, while
    `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario execution
-   phase. `DiagnosticSessionScenarioPhaseRunner.Models.cs`
-   owns the explicit scenario context/state/result handoff, with
+   phase. `DiagnosticSessionScenarioPhaseContext.cs`,
+   `DiagnosticSessionScenarioPhaseResult.cs`, and
+   `DiagnosticSessionScenarioPhaseState.cs` own the explicit scenario
+   context/result/state handoffs, with
    `DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owning sampling and
    `DiagnosticSessionScenarioPhaseCompletion.cs` owning post-sampling
    completion ordering and fault-drain delegation while background task

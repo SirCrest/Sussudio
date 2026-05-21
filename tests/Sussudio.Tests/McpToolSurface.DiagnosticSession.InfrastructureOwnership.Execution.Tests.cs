@@ -9,7 +9,11 @@ static partial class Program
         var scenarioText = ReadDiagnosticSessionRunExecutionScenarioSource();
         var phaseRunnerText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseRunner.cs")
             .Replace("\r\n", "\n");
-        var phaseModelsText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseRunner.Models.cs")
+        var phaseContextText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseContext.cs")
+            .Replace("\r\n", "\n");
+        var phaseResultText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseResult.cs")
+            .Replace("\r\n", "\n");
+        var phaseStateText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseState.cs")
             .Replace("\r\n", "\n");
         var samplingText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseRunner.Sampling.cs")
             .Replace("\r\n", "\n");
@@ -19,9 +23,9 @@ static partial class Program
 
         AssertContains(executionText, "DiagnosticSessionScenarioPhaseRunner.RunAsync(scenarioPhaseContext)");
         AssertContains(phaseRunnerText, "internal static partial class DiagnosticSessionScenarioPhaseRunner");
-        AssertContains(phaseModelsText, "internal sealed class DiagnosticSessionScenarioPhaseContext");
-        AssertContains(phaseModelsText, "internal sealed record DiagnosticSessionScenarioPhaseResult(");
-        AssertContains(phaseModelsText, "internal sealed class DiagnosticSessionScenarioPhaseState");
+        AssertContains(phaseContextText, "internal sealed class DiagnosticSessionScenarioPhaseContext");
+        AssertContains(phaseResultText, "internal sealed record DiagnosticSessionScenarioPhaseResult(");
+        AssertContains(phaseStateText, "internal sealed class DiagnosticSessionScenarioPhaseState");
         AssertContains(samplingText, "internal static partial class DiagnosticSessionScenarioPhaseRunner");
         AssertContains(scenarioText, "internal sealed class DiagnosticSessionScenarioPhaseContext");
         AssertContains(scenarioText, "internal sealed record DiagnosticSessionScenarioPhaseResult(");

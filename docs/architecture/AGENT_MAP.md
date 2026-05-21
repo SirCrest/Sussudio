@@ -19,7 +19,7 @@ mentions the moved files.
 
 | Area | Current owners / split families | Preferred next owner |
 |------|---------------------|----------------------|
-| Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs`, `tools/Common/DiagnosticSessionRunExecution.cs`, `tools/Common/DiagnosticSessionRunContext.cs`, `tools/Common/DiagnosticSessionRunContext.InitialSnapshot.cs`, `tools/Common/DiagnosticSessionRunContext.LiveState.cs`, `tools/Common/DiagnosticSessionRunContext.Lifetime.cs`, `tools/Common/DiagnosticSessionRunContext.PhaseContexts.cs`, `tools/Common/DiagnosticSessionRunExecution.Completion.cs`, `tools/Common/DiagnosticSessionRunExecution.CompletionContext.cs`, `tools/Common/DiagnosticSessionRunExecution.ResultBuildRequest.cs`, `tools/Common/DiagnosticSessionScenarioPhaseRunner.cs`, `tools/Common/DiagnosticSessionScenarioPhaseRunner.Models.cs`, `tools/Common/DiagnosticSessionScenarioPhaseRunner.Sampling.cs`, `tools/Common/DiagnosticSessionScenarioPhaseCompletion.cs` | public runner compatibility wrapper, phase sequencing, core mutable run infrastructure, initial snapshot state, live-state handoff, run context disposal, scenario/completion context construction, post-cleanup completion phase, completion context handoff, result-build request mapping, named scenario phase execution/context/state/result, scenario sampling, post-sampling completion order/fault-drain delegation, run bootstrap/options normalization, scenario catalog, startup/cleanup/recording-check/post-run snapshot helpers, result formatter, plus per-scenario runners |
+| Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs`, `tools/Common/DiagnosticSessionRunExecution.cs`, `tools/Common/DiagnosticSessionRunContext.cs`, `tools/Common/DiagnosticSessionRunContext.InitialSnapshot.cs`, `tools/Common/DiagnosticSessionRunContext.LiveState.cs`, `tools/Common/DiagnosticSessionRunContext.Lifetime.cs`, `tools/Common/DiagnosticSessionRunContext.PhaseContexts.cs`, `tools/Common/DiagnosticSessionRunExecution.Completion.cs`, `tools/Common/DiagnosticSessionRunExecution.CompletionContext.cs`, `tools/Common/DiagnosticSessionRunExecution.ResultBuildRequest.cs`, `tools/Common/DiagnosticSessionScenarioPhaseRunner.cs`, `tools/Common/DiagnosticSessionScenarioPhaseContext.cs`, `tools/Common/DiagnosticSessionScenarioPhaseResult.cs`, `tools/Common/DiagnosticSessionScenarioPhaseState.cs`, `tools/Common/DiagnosticSessionScenarioPhaseRunner.Sampling.cs`, `tools/Common/DiagnosticSessionScenarioPhaseCompletion.cs` | public runner compatibility wrapper, phase sequencing, core mutable run infrastructure, initial snapshot state, live-state handoff, run context disposal, scenario/completion context construction, post-cleanup completion phase, completion context handoff, result-build request mapping, named scenario phase execution/context/result/state, scenario sampling, post-sampling completion order/fault-drain delegation, run bootstrap/options normalization, scenario catalog, startup/cleanup/recording-check/post-run snapshot helpers, result formatter, plus per-scenario runners |
 | Offline regression harness | `tests/Sussudio.Tests/Program.cs`, `tests/Sussudio.Tests/HarnessCheckCatalog*.cs` | runner entry point, topic check catalogs, xUnit slices, and focused contract tests such as `StatsPresentation.*.Tests.cs` |
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Initialization.cs`, `CaptureService.Audio.cs`, `CaptureService.AudioPreviewLifecycle.cs`, `CaptureService.AudioInputSwitching.cs`, `CaptureService.MicrophoneMonitor.cs`, `PreviewAudioGraphResources.cs`, `CaptureRecordingBackendResources.cs`, `CaptureVideoPipelineResources.cs`, `CaptureService.Cleanup.cs`, `CaptureService.Coordination.cs`, `CaptureService.DisposalLifecycle.cs`, `CaptureService.ResourceRelease.cs`, `CaptureService.DeferredCleanup.cs`, `CaptureService.Failures.cs`, `CaptureService.FailureCleanup.cs`, `CaptureService.FlashbackBackendFailureCleanup.cs`, `CaptureService.FlashbackControls.cs`, `CaptureService.FlashbackAudioInputs.cs`, `CaptureService.FlashbackPreviewBackend.cs`, `CaptureService.FlashbackPreviewBackendDisposal.cs`, `CaptureService.FlashbackBufferCycle.cs`, `CaptureService.FlashbackExportDiagnostics.cs`, `CaptureService.FlashbackExportFailureClassification.cs`, `CaptureService.FlashbackExportOperations.cs`, `CaptureService.FlashbackExportCore.cs`, `CaptureService.FlashbackExportRequestPreparation.cs`, `CaptureService.FlashbackExportPlanning.cs`, `CaptureService.FlashbackRecording.cs`, `CaptureService.FlashbackRecording.SessionContext.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.HealthSnapshotCaptureCadence.cs`, `CaptureService.HealthSnapshotMjpeg.cs`, `CaptureService.HealthSnapshotAssembler.cs`, `CaptureService.HealthSnapshotAssembler.Models.cs`, `CaptureService.HealthSnapshotFlashbackBackend.cs`, `CaptureService.HealthSnapshotSourceTelemetry.cs`, `CaptureService.HealthSnapshotFlashbackExport.cs`, `CaptureService.HealthSnapshotFlashbackPlayback.cs`, `CaptureService.HealthSnapshotFlashbackPlayback.State.cs`, `CaptureService.HealthSnapshotFlashbackPlayback.Cadence.cs`, `CaptureService.HealthSnapshotFlashbackPlayback.Decode.cs`, `CaptureService.HealthSnapshotFlashbackPlayback.AudioMaster.cs`, `CaptureService.HealthSnapshotFlashbackPlayback.Commands.cs`, `CaptureService.HealthSnapshotRecording.cs`, `CaptureService.HealthSnapshotRecordingActiveBackend.cs`, `CaptureService.PreviewStart.cs`, `CaptureService.PreviewAudioGraph.cs`, `CaptureService.PreviewStop.cs`, `CaptureService.PreviewReuse.cs`, `CaptureService.PreviewDisposal.cs`, `CaptureService.VideoPipelineLifecycle.cs`, `CaptureService.Probes.cs`, `CaptureService.RecordingIntegrity.cs`, `CaptureService.RecordingIntegrity.Models.cs`, `CaptureService.RecordingIntegrity.Summary.cs`, `CaptureService.RecordingIntegrity.Counters.cs`, `CaptureService.RecordingIntegrity.Audio.cs`, `CaptureService.RecordingLifecycle.cs`, `CaptureService.RecordingStartFlashback.cs`, `CaptureService.RecordingStartLibAv.cs`, `CaptureService.RecordingStartLibAv.AudioInputs.cs`, `CaptureService.RecordingStopLifecycle.cs`, `CaptureService.RecordingFinalizeFlashbackBackend.cs`, `CaptureService.RecordingFinalizeLibAvBackend.cs`, `CaptureService.RecordingFinalizeLibAvResources.cs`, `CaptureService.RecordingFinalizeLibAvPreviewRestore.cs`, `CaptureService.RecordingFinalizeFlashback.cs`, `CaptureService.RecordingOutcomeState.cs`, `CaptureService.RecordingRollback.cs`, `CaptureService.RuntimeSnapshots.cs`, `CaptureService.RuntimeSnapshotAssembler.cs`, `CaptureService.RuntimeSnapshotModels.cs`, `CaptureService.RuntimeSnapshotIngestAudio.cs`, `CaptureService.RuntimeSnapshotReaderTransport.cs`, `CaptureService.RuntimeSnapshotHdrPipeline.cs`, `CaptureService.RuntimeSnapshotSourceTelemetry.cs`, `CaptureService.RuntimeSnapshotRecordingIntegrity.cs`, `CaptureService.Snapshots.cs`, `CaptureService.SnapshotRecordingStats.cs`, `CaptureService.SnapshotRecordingFormat.cs`, `CaptureService.SnapshotObservedFrames.cs`, `CaptureService.SnapshotAvSync.cs`, `CaptureService.SnapshotTelemetry.cs`, `CaptureService.ObservedPixelTelemetry.cs`, `CaptureService.Telemetry.cs`, `CaptureService.CaptureFormatTelemetry.cs` | service state and construction owner, initialization owner, preview volume/audio event owner, audio-preview lifecycle owner, live audio input switching owner, microphone monitoring owner, preview audio resource owner, active recording backend resource owner, video pipeline resource owner, cleanup owner, transition owner, disposal-triggered cleanup caller, resource release helper owner, deferred cleanup owner, failure callback and failure-telemetry owner, fatal cleanup launch owner, Flashback backend failure cleanup/device-lost owner, Flashback control and restart orchestration owner, Flashback audio input restoration owner, Flashback preview backend startup owner, Flashback preview backend disposal owner, Flashback buffer cycle coordination owner, Flashback export diagnostics/progress owner, Flashback export failure taxonomy, Flashback export entry owner, Flashback export core lifetime owner, Flashback export request-preparation owner, Flashback export planning/throttle owner, Flashback recording backend/capability owner, Flashback recording session-context policy owner, health snapshot sampler with capture cadence/MJPEG projections, health snapshot DTO assembler, health snapshot assembler field-record owner, Flashback backend health projection, source telemetry health projection, Flashback export health projection, Flashback playback health projection, recording health orchestration, active recording backend health projection, preview start transition owner, preview audio graph owner, preview disposal transition owner, video pipeline lifecycle owner, probe owner, recording integrity active-backend resolver, integrity DTOs, integrity summary classification/log rendering, integrity counter capture, audio integrity capture, recording start transition/router and rollback-state holder, Flashback recording start owner, LibAv recording start owner, LibAv recording audio-input startup owner, recording stop transition/finalization router owner, Flashback recording backend finalization and reconciliation owner, LibAv recording finalization sequence and outcome publication owner, LibAv recording resource stop/dispose owner, LibAv recording preview-restore owner, Flashback recording export-finalize and boundary snapshot owner, recording outcome-state owner, transient recording rollback owner, runtime snapshot sampler, runtime snapshot DTO assembler, runtime ingest/audio projection, runtime reader/transport projection, runtime HDR/encoder pipeline projection, runtime source-telemetry projection, runtime recording-integrity projection, diagnostics compatibility and shared snapshot utilities, recording stats snapshot policy, recording format snapshot policy, observed frame snapshot telemetry, A/V sync snapshot policy, source telemetry snapshot policy, observed pixel telemetry owner, source telemetry polling owner, capture-format telemetry owner, resource managers |
 | App shell | `Sussudio/App.xaml.cs`, `Sussudio/App.ExceptionPolicy.cs`, `Sussudio/App.LaunchLifecycle.cs` | constructor/resource root, FFmpeg startup check and global handler hookup, recoverable/fatal exception policy plus emergency recording finalization, single-instance guard, startup identity logging, and MainWindow activation |
@@ -4347,9 +4347,14 @@ Primary owners:
   diagnostic-session scenario phase: state-mutation gating, setup/startup,
   sampling/completion delegation, fault drain delegation, and the cleanup result
   consumed by `RunAsync`.
-- `tools/Common/DiagnosticSessionScenarioPhaseRunner.Models.cs` owns the
-  explicit scenario phase context, mutable phase state, and immutable phase
-  result handoff records.
+- `tools/Common/DiagnosticSessionScenarioPhaseContext.cs` owns the explicit
+  scenario phase input handoff from run context construction into the phase
+  runner.
+- `tools/Common/DiagnosticSessionScenarioPhaseResult.cs` owns the immutable
+  scenario phase result handoff consumed by completion.
+- `tools/Common/DiagnosticSessionScenarioPhaseState.cs` owns the mutable
+  in-flight scenario phase state that setup, startup, sampling, and completion
+  update before it is projected into the result.
 - `tools/Common/DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owns
   diagnostic-session scenario sampling: live-state sampling setup, sample-loop
   invocation, and handoff to the phase completion owner.
@@ -4363,18 +4368,17 @@ Primary owners:
   same artifact set.
 - `tools/Common/DiagnosticSessionBackgroundTasks.cs` owns diagnostic-session
   scenario background task registration, deterministic await order, and normal
-  registered scenario completion.
+  registered scenario completion, plus the registration record used to preserve
+  await order.
 - `tools/Common/DiagnosticSessionBackgroundTasks.PresentMon.cs` owns
   diagnostic-session PresentMon task registration, normal completion, and
   interrupted-session PresentMon task observation.
 - `tools/Common/DiagnosticSessionBackgroundTasks.RecordingSettingsDeferred.cs`
   owns deferred Flashback recording-settings task registration and normal
   completion plus interrupted-session observation.
-- `tools/Common/DiagnosticSessionBackgroundTasks.Models.cs` owns the small
-  background-task registration and drain handoff records.
 - `tools/Common/DiagnosticSessionBackgroundTasks.FaultDrain.cs` owns
-  interrupted background-task drain orchestration and generic scenario-task
-  warning collection.
+  interrupted background-task drain orchestration, generic scenario-task warning
+  collection, and the drain result handoff.
 - `tools/Common/DiagnosticSessionScenarioStartup.cs` owns diagnostic-session
   optional background startup orchestration.
 - `tools/Common/DiagnosticSessionScenarioStartup.Registrations.cs` owns
@@ -4474,11 +4478,10 @@ Primary owners:
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs` owns
   selection-range export orchestration.
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs`
-  owns range buffer-readiness waits and near-live range projection.
+  owns range buffer-readiness waits, near-live range projection, and the
+  selection-range DTO.
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.Markers.cs`
   owns playback seeking plus in/out marker mutation.
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.Models.cs`
-  owns the selection-range DTO shared by range setup and cleanup validation.
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs`
   owns range duration/status validation, and
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs`
@@ -4570,7 +4573,7 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackRejectedExports.Recording.cs` owns
   active-Flashback-recording rejected-export failure-kind and backend-stability
   assertions.
-- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs`
+- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DeferredPresetState.cs`
   owns deferred recording-settings preset state.
 - `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`
   owns deferred recording-settings command choreography while Flashback is
@@ -4601,15 +4604,13 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`
   owns recording-assisted segment rotation and best-effort stop cleanup for
   segment playback diagnostics.
-- `tools/Common/DiagnosticSessionFlashbackSegments.Models.cs` owns read-only
-  Flashback segment probe and playback-target DTOs.
 - `tools/Common/DiagnosticSessionFlashbackSegments.Parsing.cs` owns
-  `FlashbackGetSegments` response parsing.
+  `FlashbackGetSegments` response parsing and the parsed segment probe DTO.
 - `tools/Common/DiagnosticSessionFlashbackSegments.CompletedWaits.cs` owns
   read-only completed-segment discovery waits.
 - `tools/Common/DiagnosticSessionFlashbackSegments.PlaybackTargetWaits.cs`
-  owns playable completed-segment target selection and buffered-boundary
-  projection.
+  owns playable completed-segment target selection, buffered-boundary
+  projection, and the playback-target DTO.
 - `tools/Common/DiagnosticSessionFlashbackSegments.PlaybackHeadroomWaits.cs`
   owns read-only playback boundary headroom polling. Do not add state-mutating
   scenario steps to the segment helper family.

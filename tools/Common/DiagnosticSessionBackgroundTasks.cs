@@ -4,6 +4,11 @@ using System.Threading.Tasks;
 
 namespace Sussudio.Tools;
 
+internal readonly record struct DiagnosticSessionBackgroundTaskRegistration(
+    int AwaitOrder,
+    string Stage,
+    Task Task);
+
 internal sealed partial class DiagnosticSessionBackgroundTasks
 {
     private readonly List<DiagnosticSessionBackgroundTaskRegistration> _scenarioTasks = [];

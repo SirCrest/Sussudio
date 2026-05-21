@@ -31,8 +31,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var rangeSelectionMarkersText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.Markers.cs")
             .Replace("\r\n", "\n");
-        var rangeSelectionModelsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.Models.cs")
-            .Replace("\r\n", "\n");
         var scenariosTextWithoutSpaces = scenariosText.Replace(" ", string.Empty);
 
         AssertContains(scenariosText, "internal static partial class DiagnosticSessionFlashbackExportScenarios");
@@ -72,10 +70,10 @@ static partial class Program
         AssertContains(playbackFinalStateText, "flashback export playback: pending commands remained after go-live");
         AssertContains(scenariosText, "internal static async Task RunFlashbackRangeExportAsync(");
         AssertContains(rangeSelectionText, "private static async Task<FlashbackSelectionRange?> PrepareFlashbackSelectionRangeAsync(");
+        AssertContains(rangeSelectionText, "private readonly record struct FlashbackSelectionRange(");
         AssertContains(rangeSelectionText, "WaitForFlashbackStressBufferReadyAsync(");
         AssertContains(rangeSelectionMarkersText, "private static async Task MarkFlashbackSelectionPointAsync(");
         AssertContains(rangeSelectionMarkersText, "WaitForFlashbackPlaybackPositionAsync(");
-        AssertContains(rangeSelectionModelsText, "private readonly record struct FlashbackSelectionRange(");
         AssertDoesNotContain(rangeSelectionText, "WaitForFlashbackPlaybackPositionAsync(");
         AssertContains(scenariosText, "\"clear-in-out-points\"");
         AssertContains(scenariosText, "\"set-in-point\"");
@@ -169,16 +167,14 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackHeadroomWaitsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.PlaybackHeadroomWaits.cs")
             .Replace("\r\n", "\n");
-        var segmentModelsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.Models.cs")
-            .Replace("\r\n", "\n");
         var segmentParsingText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.Parsing.cs")
             .Replace("\r\n", "\n");
         var segmentsText = ReadDiagnosticSessionFlashbackSegmentsSource();
         var segmentWaitsText = completedWaitsText + "\n" + playbackTargetWaitsText + "\n" + playbackHeadroomWaitsText;
 
         AssertContains(segmentsText, "internal static partial class DiagnosticSessionFlashbackSegments");
-        AssertContains(segmentModelsText, "internal readonly record struct FlashbackSegmentProbe(");
-        AssertContains(segmentModelsText, "internal readonly record struct FlashbackSegmentPlaybackTarget(");
+        AssertContains(segmentParsingText, "internal readonly record struct FlashbackSegmentProbe(");
+        AssertContains(playbackTargetWaitsText, "internal readonly record struct FlashbackSegmentPlaybackTarget(");
         AssertContains(completedWaitsText, "internal static async Task<FlashbackSegmentProbe?> WaitForFlashbackCompletedSegmentAsync(");
         AssertContains(completedWaitsText, "\"FlashbackGetSegments\"");
         AssertContains(segmentParsingText, "internal static bool TryGetFlashbackSegments(");
@@ -191,7 +187,6 @@ static partial class Program
         AssertDoesNotContain(segmentWaitsText, "segments.Add(new FlashbackSegmentProbe(");
         AssertDoesNotContain(completedWaitsText, "GetSnapshot");
         AssertDoesNotContain(playbackHeadroomWaitsText, "FlashbackGetSegments");
-        AssertDoesNotContain(segmentModelsText, "TryGetFlashbackSegments(");
         AssertDoesNotContain(segmentParsingText, "WaitForFlashbackPlayableCompletedSegmentAsync(");
         AssertContains(exportScenariosText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegments;");
         AssertContains(segmentPlaybackText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegments;");

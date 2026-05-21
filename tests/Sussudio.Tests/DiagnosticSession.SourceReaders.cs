@@ -5,7 +5,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionBackgroundTasks.cs",
             "tools/Common/DiagnosticSessionBackgroundTasks.PresentMon.cs",
             "tools/Common/DiagnosticSessionBackgroundTasks.RecordingSettingsDeferred.cs",
-            "tools/Common/DiagnosticSessionBackgroundTasks.Models.cs",
             "tools/Common/DiagnosticSessionBackgroundTasks.FaultDrain.cs");
 
     private static string ReadDiagnosticSessionCleanupActionsSource()
@@ -42,7 +41,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.Markers.cs",
-            "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.Models.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs");
 
@@ -92,7 +90,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionFlashbackRecordingSettingsScenariosSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs",
+            "tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DeferredPresetState.cs",
             "tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs",
             "tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingRejections.cs",
             "tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingValidation.cs",
@@ -113,7 +111,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackSegments.CompletedWaits.cs",
             "tools/Common/DiagnosticSessionFlashbackSegments.PlaybackTargetWaits.cs",
             "tools/Common/DiagnosticSessionFlashbackSegments.PlaybackHeadroomWaits.cs",
-            "tools/Common/DiagnosticSessionFlashbackSegments.Models.cs",
             "tools/Common/DiagnosticSessionFlashbackSegments.Parsing.cs");
 
     private static string ReadDiagnosticSessionFlashbackStressScenarioSource()
@@ -225,7 +222,9 @@ static partial class Program
             "tools/Common/DiagnosticSessionRunExecution.CompletionContext.cs",
             "tools/Common/DiagnosticSessionRunExecution.ResultBuildRequest.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseRunner.cs",
-            "tools/Common/DiagnosticSessionScenarioPhaseRunner.Models.cs",
+            "tools/Common/DiagnosticSessionScenarioPhaseContext.cs",
+            "tools/Common/DiagnosticSessionScenarioPhaseResult.cs",
+            "tools/Common/DiagnosticSessionScenarioPhaseState.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseRunner.Sampling.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseCompletion.cs");
 
@@ -257,7 +256,9 @@ static partial class Program
     private static string ReadDiagnosticSessionRunExecutionScenarioSource()
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionScenarioPhaseRunner.cs",
-            "tools/Common/DiagnosticSessionScenarioPhaseRunner.Models.cs",
+            "tools/Common/DiagnosticSessionScenarioPhaseContext.cs",
+            "tools/Common/DiagnosticSessionScenarioPhaseResult.cs",
+            "tools/Common/DiagnosticSessionScenarioPhaseState.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseRunner.Sampling.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseCompletion.cs");
 

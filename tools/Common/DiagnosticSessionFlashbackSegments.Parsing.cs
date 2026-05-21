@@ -3,6 +3,12 @@ using static Sussudio.Tools.AutomationSnapshotFormatter;
 
 namespace Sussudio.Tools;
 
+internal readonly record struct FlashbackSegmentProbe(
+    int SequenceNumber,
+    long StartPtsMs,
+    long EndPtsMs,
+    bool IsActive);
+
 internal static partial class DiagnosticSessionFlashbackSegments
 {
     internal static bool TryGetFlashbackSegments(JsonElement response, out List<FlashbackSegmentProbe> segments)
