@@ -205,6 +205,8 @@ public sealed class AutomationToolContractsProtocolXunitTests
         var diagnosticSessionText = ReadDiagnosticSessionRunnerSource();
         var diagnosticSessionCommandChannelText = RuntimeContractSource.ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var diagnosticSessionCommandChannelRawSendingText = RuntimeContractSource.ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.RawSending.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
         var diagnosticSessionPipeRetryText = RuntimeContractSource.ReadRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var automationResponseStateText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationResponseState.cs")
@@ -286,8 +288,10 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("\"pipe-io-error\"", automationSyntheticErrorResponseText);
         Assert.Contains("\"pipe-canceled\"", automationSyntheticErrorResponseText);
 
-        Assert.Contains("using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;", diagnosticSessionCommandChannelText);
-        Assert.Contains("SendCommandWithConnectRetryAsync(", diagnosticSessionCommandChannelText);
+        Assert.Contains("using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;", diagnosticSessionCommandChannelRawSendingText);
+        Assert.Contains("SendCommandWithConnectRetryAsync(", diagnosticSessionCommandChannelRawSendingText);
+        Assert.DoesNotContain("using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;", diagnosticSessionCommandChannelText);
+        Assert.DoesNotContain("SendCommandWithConnectRetryAsync(", diagnosticSessionCommandChannelText);
         Assert.DoesNotContain("using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;", diagnosticSessionText);
         Assert.Contains("internal static class DiagnosticSessionPipeRetryPolicy", diagnosticSessionPipeRetryText);
         Assert.Contains("internal static async Task<JsonElement?> SendCommandWithConnectRetryAsync(", diagnosticSessionPipeRetryText);

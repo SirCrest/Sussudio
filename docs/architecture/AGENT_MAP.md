@@ -4760,11 +4760,13 @@ Primary owners:
 - `tools/Common/DiagnosticSessionPipeRetryPolicy.cs` owns diagnostic-session
   connect retry classification and local failure-response envelopes.
 - `tools/Common/DiagnosticSessionCommandChannel.cs` owns serialized
-  diagnostic-session automation command sending, connect-retry wrapping,
-  command failure accounting, and `AutomationCommandKind`-to-catalog
-  command-name resolution for fixed channel-owned commands, including setup and
-  cleanup lifecycle mutations. Keep the underlying runner delegate
-  string-compatible.
+  diagnostic-session automation command sending, command failure accounting,
+  and `AutomationCommandKind`-to-catalog command-name resolution for fixed
+  channel-owned commands, including setup and cleanup lifecycle mutations. Keep
+  the underlying runner delegate string-compatible.
+- `tools/Common/DiagnosticSessionCommandChannel.RawSending.cs` owns raw
+  command send overloads, connect-retry wrapping, and local failure-response
+  fallback when connect retry returns no response.
 - `tools/Common/DiagnosticSessionCommandChannel.WaitConditions.cs` owns
   diagnostic-session wait command helpers, `WaitForCondition` payload shaping,
   and routing that fixed wait command through the channel's

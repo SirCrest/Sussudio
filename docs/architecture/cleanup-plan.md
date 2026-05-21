@@ -3768,9 +3768,12 @@ permanent failure and connect failed/timeout responses retryable.
 
 Diagnostic-session command sending now lives in
 `tools/Common/DiagnosticSessionCommandChannel.cs`. It owns serialized command
-execution, connect-retry wrapping, command failure accounting, and enum-backed
-command-name resolution for fixed diagnostic-session commands. Scenario setup
-and cleanup pass the channel itself for lifecycle mutations so
+execution, command failure accounting, and enum-backed command-name resolution
+for fixed diagnostic-session commands.
+`DiagnosticSessionCommandChannel.RawSending.cs` owns raw command send overloads,
+connect-retry wrapping, and local failure-response fallback when connect retry
+returns no response. Scenario setup and cleanup pass the channel itself for
+lifecycle mutations so
 `SetFlashbackEnabled`, `SetPreviewEnabled`, `SetRecordingEnabled`, and
 `FlashbackAction` flow through `AutomationCommandKind` overloads; the runner
 keeps phase orchestration and its public string delegate compatibility.
@@ -4293,6 +4296,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionSample.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionCommandChannel.cs`
+- `DiagnosticSessionCommandChannel.RawSending.cs`
 - `DiagnosticSessionPostRunSnapshots.cs`
 - `DiagnosticSessionResultArtifacts.cs`
 - `DiagnosticSessionResultBuilder.cs`
