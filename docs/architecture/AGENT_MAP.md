@@ -4900,14 +4900,19 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.Validation.cs`
   owns post-disable playback-thread/queue health checks and post-re-enable
   active-state validation.
-- `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs`,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs`,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`, and
-  `tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs` own read-only
-  recording, playback session orchestration, playback snapshot observation,
-  result-copy orchestration, export metric projections, and their public
-  metric handoff shapes. Playback observation root owns
+- `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs` owns read-only
+  recording metric projection.
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs`
+  owns the `FlashbackPlaybackSessionMetrics` handoff shape, and
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs` owns
+  playback session metric orchestration plus end-of-session playback counter
+  deltas. `tools/Common/DiagnosticSessionFlashbackMetrics.Export.Model.cs`
+  owns the `FlashbackExportSessionMetrics` handoff shape,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.ExportObservation.cs` owns
+  export-relevance and snapshot max aggregation, and
+  `tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs` owns export metric
+  orchestration plus final force-rotate fallback counters.
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs` owns
   active/relevant snapshot gating and dispatches to focused observation helpers:
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.OnePercentLow.cs`
   owns 1% low window capture,

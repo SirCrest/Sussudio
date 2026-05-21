@@ -4486,6 +4486,17 @@ polling, `.PlaybackBoundary.cs` owns boundary-crossing polling,
 `.PlaybackPosition.cs` owns position convergence polling while the runner keeps
 scenario command sequencing.
 
+Diagnostic-session Flashback playback session metrics keep the
+`FlashbackPlaybackSessionMetrics` handoff shape in
+`DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs`, while
+`DiagnosticSessionFlashbackMetrics.PlaybackSession.cs` owns playback session
+metric orchestration and end-of-session playback counter deltas. Flashback
+export metrics keep the `FlashbackExportSessionMetrics` handoff shape in
+`DiagnosticSessionFlashbackMetrics.Export.Model.cs`, export-relevance and
+snapshot max aggregation in
+`DiagnosticSessionFlashbackMetrics.ExportObservation.cs`, and final
+force-rotate fallback counters in `DiagnosticSessionFlashbackMetrics.Export.cs`.
+
 Diagnostic-session Flashback playback result metrics now keep the
 `FlashbackPlaybackResultMetrics` handoff shape in
 `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs` and
@@ -4627,7 +4638,11 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackLifecycleScenarios.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.Validation.cs`
+- `DiagnosticSessionFlashbackMetrics.Export.Model.cs`
 - `DiagnosticSessionFlashbackMetrics.Export.cs`
+- `DiagnosticSessionFlashbackMetrics.ExportObservation.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.OnePercentLow.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.FrameDecode.cs`
@@ -4640,7 +4655,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.AudioMaster.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.Stages.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
 - `DiagnosticSessionFlashbackMetrics.Recording.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`

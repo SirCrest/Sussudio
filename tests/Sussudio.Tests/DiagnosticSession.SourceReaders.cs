@@ -53,6 +53,7 @@ static partial class Program
     private static string ReadDiagnosticSessionFlashbackMetricsSource()
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs",
+            "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.OnePercentLow.cs",
@@ -66,6 +67,8 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.AudioMaster.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Stages.cs",
+            "tools/Common/DiagnosticSessionFlashbackMetrics.Export.Model.cs",
+            "tools/Common/DiagnosticSessionFlashbackMetrics.ExportObservation.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs");
 
     private static string ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource()
