@@ -3696,23 +3696,23 @@ Primary current owners:
   `MainViewModel.Dispatching.cs` owns the stable private adapter names plus
   preview event fan-out for the partial family.
   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs`
-  owns periodic timer refresh orchestration and initial
+  is a top-level `Sussudio.Controllers` owner for periodic timer refresh orchestration and initial
   source-telemetry/HDR/live-info/timer/disk-space bootstrap through
   graph-built context ports. `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.Context.cs`
-  owns the runtime lifecycle graph-port contract for timer creation, runtime
+  is a top-level `Sussudio.Controllers` owner for the runtime lifecycle graph-port contract for timer creation, runtime
   snapshot sampling, telemetry bootstrap, live-info/HDR projection, recording
   stats refresh, Flashback bitrate refresh, disk-space refresh, and watcher
   disposal, while
   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs`
-  owns runtime event handling through graph-built context ports:
+  is a top-level `Sussudio.Controllers` owner for runtime event handling through graph-built context ports:
   system-resume preview rebind handling, audio-device-invalidated rebind
   scheduling through the preview lifecycle owner, capture status/error fan-out,
   capture pre-cleanup renderer stop fan-out, and frame-captured callbacks.
   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Context.cs`
-  owns the runtime event ingress graph-port contract that both handlers and
+  is a top-level `Sussudio.Controllers` owner for the runtime event ingress graph-port contract that both handlers and
   subscription wiring consume.
   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Subscriptions.cs`
-  owns runtime event subscription/unsubscription ordering through graph-built
+  is a top-level `Sussudio.Controllers` owner for runtime event subscription/unsubscription ordering through graph-built
   context ports, including the desktop power-resume signal.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`
   is a top-level `Sussudio.Controllers` owner for late device-format probe event
@@ -3930,11 +3930,12 @@ Primary current owners:
   resolution dropdown mutation routes through the top-level
   `MainViewModelCaptureModeOptionRebuildController.Resolution.cs`.
   `Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs`
-  owns source telemetry ingress behavior, projection, enum-string caching,
+  is a top-level `Sussudio.Controllers` owner for source telemetry ingress behavior, projection, enum-string caching,
   summary-age refresh, and source-aware auto-retargeting hints.
   `Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.Context.cs`
-  owns the source telemetry graph-port contract consumed by source telemetry
-  ingress and projection.
+  is a top-level `Sussudio.Controllers` owner for the source telemetry graph-port contract consumed by source telemetry
+  ingress and projection, including the pure summary builder and auto-resolution
+  predicate ports that keep facade-private helpers explicit.
   `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`
   owns source telemetry summary, telemetry age, and target-summary display text formatting.
   `MainViewModel.SettingsPersistence.cs` owns settings initialization, simple

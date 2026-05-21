@@ -78,11 +78,13 @@ static partial class Program
     internal static Task SourceTelemetryPresentationBuilder_LivesInFocusedHelper()
     {
         var telemetryText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs").Replace("\r\n", "\n");
+        var controllerGraphSourceTelemetryText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.SourceTelemetry.cs").Replace("\r\n", "\n");
         var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CapturePresentation.cs").Replace("\r\n", "\n");
         var builderText = ReadRepoFile("Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs").Replace("\r\n", "\n");
 
-        AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildSourceSummary(_context.GetLatestSourceTelemetry(), DateTimeOffset.UtcNow);");
-        AssertContains(telemetryText, "_context.SetSourceTelemetrySummaryText(SourceTelemetryPresentationBuilder.BuildSourceSummary(snapshot, DateTimeOffset.UtcNow));");
+        AssertContains(telemetryText, "_context.BuildSourceTelemetrySummary(_context.GetLatestSourceTelemetry(), DateTimeOffset.UtcNow);");
+        AssertContains(telemetryText, "_context.SetSourceTelemetrySummaryText(_context.BuildSourceTelemetrySummary(snapshot, DateTimeOffset.UtcNow));");
+        AssertContains(controllerGraphSourceTelemetryText, "BuildSourceTelemetrySummary = SourceTelemetryPresentationBuilder.BuildSourceSummary,");
         AssertContains(telemetryText, "_context.UpdateTargetSummary();");
         AssertDoesNotContain(telemetryText, "private void UpdateHdrRuntimeStatusFromCapture(");
         AssertContains(capturePresentationText, "private void UpdateHdrRuntimeStatusFromCapture(CaptureRuntimeSnapshot? runtimeSnapshot = null)");

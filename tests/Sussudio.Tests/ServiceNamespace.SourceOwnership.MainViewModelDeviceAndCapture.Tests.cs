@@ -112,16 +112,21 @@ static partial class Program
         AssertDoesNotContain(mainViewModelDeviceFormatProbeRetargetApplierText, "_viewModel.");
         AssertContains(mainViewModelDeviceFormatProbeRetargetApplierText, "_context.GetCaptureRuntimeSnapshot();");
         AssertDoesNotContain(mainViewModelText, "private void OnDeviceFormatProbeCompleted");
-        AssertContains(mainViewModelSourceTelemetryControllerText, "private sealed class MainViewModelSourceTelemetryController");
-        AssertContains(mainViewModelSourceTelemetryControllerContextText, "private sealed class MainViewModelSourceTelemetryControllerContext");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "internal sealed class MainViewModelSourceTelemetryController");
+        AssertContains(mainViewModelSourceTelemetryControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(mainViewModelSourceTelemetryControllerContextText, "internal sealed class MainViewModelSourceTelemetryControllerContext");
         AssertContains(mainViewModelSourceTelemetryControllerText, "private readonly MainViewModelSourceTelemetryControllerContext _context;");
         AssertContains(mainViewModelSourceTelemetryControllerContextText, "public required Func<SourceSignalTelemetrySnapshot> GetLatestSourceTelemetry { get; init; }");
+        AssertContains(mainViewModelSourceTelemetryControllerContextText, "public required Func<SourceSignalTelemetrySnapshot, DateTimeOffset, string> BuildSourceTelemetrySummary { get; init; }");
+        AssertContains(mainViewModelSourceTelemetryControllerContextText, "public required Func<string?, bool> IsAutoResolutionValue { get; init; }");
         AssertContains(mainViewModelSourceTelemetryControllerContextText, "public required Action RebuildResolutionOptions { get; init; }");
         AssertDoesNotContain(mainViewModelSourceTelemetryControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(mainViewModelSourceTelemetryControllerText, "_viewModel.");
         AssertContains(mainViewModelSourceTelemetryControllerText, "public void OnSourceTelemetryUpdated(object? sender, SourceSignalTelemetrySnapshot snapshot)");
         AssertContains(mainViewModelSourceTelemetryControllerText, "SOURCE_TELEMETRY_UI_ENQUEUE_FAILED");
         AssertContains(mainViewModelSourceTelemetryControllerText, "private int? _lastTelemetryAgeBucket;");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "_context.IsAutoResolutionValue(_context.GetSelectedResolution())");
         AssertContains(mainViewModelSourceTelemetryControllerText, "_context.RebuildResolutionOptions();");
         AssertEqual(
             false,

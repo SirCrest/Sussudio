@@ -20,16 +20,22 @@ static partial class Program
         var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs").Replace("\r\n", "\n");
         var disposalControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.Context.cs").Replace("\r\n", "\n");
 
-        AssertContains(sourceTelemetryControllerText, "private sealed class MainViewModelSourceTelemetryController");
-        AssertContains(sourceTelemetryControllerContextText, "private sealed class MainViewModelSourceTelemetryControllerContext");
+        AssertContains(sourceTelemetryControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(sourceTelemetryControllerText, "internal sealed class MainViewModelSourceTelemetryController");
+        AssertContains(sourceTelemetryControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(sourceTelemetryControllerContextText, "internal sealed class MainViewModelSourceTelemetryControllerContext");
         AssertContains(sourceTelemetryControllerText, "private readonly MainViewModelSourceTelemetryControllerContext _context;");
         AssertDoesNotContain(sourceTelemetryControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(sourceTelemetryControllerText, "_viewModel.");
         AssertContains(controllerGraphSourceTelemetryText, "private static MainViewModelSourceTelemetryController CreateSourceTelemetryController(MainViewModel viewModel)");
         AssertContains(controllerGraphSourceTelemetryText, "new MainViewModelSourceTelemetryControllerContext");
         AssertContains(sourceTelemetryControllerContextText, "public required Func<SourceSignalTelemetrySnapshot> GetLatestSourceTelemetry { get; init; }");
+        AssertContains(sourceTelemetryControllerContextText, "public required Func<SourceSignalTelemetrySnapshot, DateTimeOffset, string> BuildSourceTelemetrySummary { get; init; }");
+        AssertContains(sourceTelemetryControllerContextText, "public required Func<string?, bool> IsAutoResolutionValue { get; init; }");
         AssertContains(sourceTelemetryControllerContextText, "public required Action RebuildResolutionOptions { get; init; }");
         AssertContains(controllerGraphSourceTelemetryText, "SetLatestSourceTelemetry = snapshot => viewModel._latestSourceTelemetry = snapshot,");
+        AssertContains(controllerGraphSourceTelemetryText, "BuildSourceTelemetrySummary = SourceTelemetryPresentationBuilder.BuildSourceSummary,");
+        AssertContains(controllerGraphSourceTelemetryText, "IsAutoResolutionValue = MainViewModel.IsAutoResolutionValue,");
         AssertContains(controllerGraphSourceTelemetryText, "RebuildResolutionOptions = viewModel.RebuildResolutionOptions,");
         AssertContains(controllerGraphSourceTelemetryText, "UpdateTargetSummary = viewModel.UpdateTargetSummary,");
         AssertContains(sourceTelemetryControllerText, "public void OnSourceTelemetryUpdated(object? sender, SourceSignalTelemetrySnapshot snapshot)");
@@ -46,9 +52,11 @@ static partial class Program
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
             "var runtimeLifecycleController = CreateRuntimeLifecycleController(viewModel, previewLifecycleController);");
 
-        AssertContains(runtimeLifecycleControllerText, "private sealed class MainViewModelRuntimeLifecycleController");
+        AssertContains(runtimeLifecycleControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(runtimeLifecycleControllerText, "internal sealed class MainViewModelRuntimeLifecycleController");
         AssertContains(runtimeLifecycleControllerText, "private readonly MainViewModelRuntimeEventIngressController _eventIngressController;");
-        AssertContains(runtimeLifecycleControllerContextText, "private sealed class MainViewModelRuntimeLifecycleControllerContext");
+        AssertContains(runtimeLifecycleControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(runtimeLifecycleControllerContextText, "internal sealed class MainViewModelRuntimeLifecycleControllerContext");
         AssertContains(runtimeLifecycleControllerText, "private readonly MainViewModelRuntimeLifecycleControllerContext _context;");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(runtimeLifecycleControllerText, "_viewModel.");
@@ -65,9 +73,12 @@ static partial class Program
         AssertContains(runtimeLifecycleControllerText, "SetupTimer();");
         AssertContains(runtimeLifecycleControllerText, "_context.UpdateDiskSpace();");
 
-        AssertContains(runtimeEventIngressControllerText, "private sealed partial class MainViewModelRuntimeEventIngressController");
-        AssertContains(runtimeEventIngressSubscriptionsText, "private sealed partial class MainViewModelRuntimeEventIngressController");
-        AssertContains(runtimeEventIngressContextText, "private sealed class MainViewModelRuntimeEventIngressControllerContext");
+        AssertContains(runtimeEventIngressControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(runtimeEventIngressControllerText, "internal sealed partial class MainViewModelRuntimeEventIngressController");
+        AssertContains(runtimeEventIngressSubscriptionsText, "namespace Sussudio.Controllers;");
+        AssertContains(runtimeEventIngressSubscriptionsText, "internal sealed partial class MainViewModelRuntimeEventIngressController");
+        AssertContains(runtimeEventIngressContextText, "namespace Sussudio.Controllers;");
+        AssertContains(runtimeEventIngressContextText, "internal sealed class MainViewModelRuntimeEventIngressControllerContext");
         AssertContains(runtimeEventIngressControllerText, "private readonly MainViewModelRuntimeEventIngressControllerContext _context;");
         AssertDoesNotContain(runtimeEventIngressControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.");

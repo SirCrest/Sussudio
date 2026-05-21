@@ -80,7 +80,10 @@ static partial class Program
             File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioMonitoring.cs")),
             "OnIsAudioPreviewEnabledChanged");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "private void SetupTimer()");
-        AssertContains(mainViewModelRuntimeLifecycleControllerContextText, "private sealed class MainViewModelRuntimeLifecycleControllerContext");
+        AssertContains(mainViewModelRuntimeLifecycleControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(mainViewModelRuntimeLifecycleControllerText, "internal sealed class MainViewModelRuntimeLifecycleController");
+        AssertContains(mainViewModelRuntimeLifecycleControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(mainViewModelRuntimeLifecycleControllerContextText, "internal sealed class MainViewModelRuntimeLifecycleControllerContext");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "private readonly MainViewModelRuntimeLifecycleControllerContext _context;");
         AssertDoesNotContain(mainViewModelRuntimeLifecycleControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(mainViewModelRuntimeLifecycleControllerText, "_viewModel.");
@@ -113,9 +116,12 @@ static partial class Program
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "=> _eventIngressController.Attach();");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_eventIngressController.Detach();");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "public void InitializePresentation()");
-        AssertContains(mainViewModelRuntimeEventIngressControllerText, "private sealed partial class MainViewModelRuntimeEventIngressController");
-        AssertContains(mainViewModelRuntimeEventIngressSubscriptionsText, "private sealed partial class MainViewModelRuntimeEventIngressController");
-        AssertContains(mainViewModelRuntimeEventIngressContextText, "private sealed class MainViewModelRuntimeEventIngressControllerContext");
+        AssertContains(mainViewModelRuntimeEventIngressControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(mainViewModelRuntimeEventIngressControllerText, "internal sealed partial class MainViewModelRuntimeEventIngressController");
+        AssertContains(mainViewModelRuntimeEventIngressSubscriptionsText, "namespace Sussudio.Controllers;");
+        AssertContains(mainViewModelRuntimeEventIngressSubscriptionsText, "internal sealed partial class MainViewModelRuntimeEventIngressController");
+        AssertContains(mainViewModelRuntimeEventIngressContextText, "namespace Sussudio.Controllers;");
+        AssertContains(mainViewModelRuntimeEventIngressContextText, "internal sealed class MainViewModelRuntimeEventIngressControllerContext");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "private readonly MainViewModelRuntimeEventIngressControllerContext _context;");
         AssertContains(mainViewModelRuntimeEventIngressContextText, "public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }");
         AssertContains(mainViewModelRuntimeEventIngressContextText, "public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }");

@@ -1,3 +1,5 @@
+using Sussudio.Controllers;
+
 namespace Sussudio.ViewModels;
 
 public partial class MainViewModel
@@ -12,6 +14,7 @@ public partial class MainViewModel
                     TryEnqueueOnUiThread = operation => viewModel._dispatcherQueue.TryEnqueue(() => operation()),
                     GetLatestSourceTelemetry = () => viewModel._latestSourceTelemetry,
                     SetLatestSourceTelemetry = snapshot => viewModel._latestSourceTelemetry = snapshot,
+                    BuildSourceTelemetrySummary = SourceTelemetryPresentationBuilder.BuildSourceSummary,
                     SetSourceWidth = value => viewModel.SourceWidth = value,
                     SetSourceHeight = value => viewModel.SourceHeight = value,
                     SetSourceIsHdr = value => viewModel.SourceIsHdr = value,
@@ -32,6 +35,7 @@ public partial class MainViewModel
                     GetLastSourceModeKey = () => viewModel._lastSourceModeKey,
                     SetLastSourceModeKey = value => viewModel._lastSourceModeKey = value,
                     GetSelectedResolution = () => viewModel.SelectedResolution,
+                    IsAutoResolutionValue = MainViewModel.IsAutoResolutionValue,
                     HasUserOverriddenResolutionForCurrentMode = () => viewModel._hasUserOverriddenResolutionForCurrentMode,
                     SetHasUserOverriddenResolutionForCurrentMode = value => viewModel._hasUserOverriddenResolutionForCurrentMode = value,
                     IsAutoFrameRateSelected = () => viewModel.IsAutoFrameRateSelected,
