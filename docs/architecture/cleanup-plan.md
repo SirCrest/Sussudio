@@ -2457,8 +2457,10 @@ execution in `D3D11PreviewRenderer.Nv12ShaderPass.cs` and
 
 D3D preview renderer frame upload now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs`. Keep
-video-processor input view resolution, external texture input-view creation,
-direct raw-frame texture updates, and staging uploads there; keep present
+VideoProcessor input view resolution and external texture input-view creation
+there. Raw frame byte/lease upload, direct texture update fallback, and staging
+copy mechanics now live in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.RawFrameUpload.cs`; keep present
 tracking in `D3D11PreviewRenderer.Present.cs`.
 
 D3D preview renderer render-pass selection now lives in

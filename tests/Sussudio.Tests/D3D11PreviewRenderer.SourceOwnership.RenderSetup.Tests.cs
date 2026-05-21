@@ -169,15 +169,22 @@ static partial class Program
             .Replace("\r\n", "\n");
         var frameUploadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs")
             .Replace("\r\n", "\n");
+        var rawFrameUploadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RawFrameUpload.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(frameUploadText, "private bool TryResolveInputView(PendingFrame frame, out ID3D11VideoProcessorInputView? inputView, out bool disposeInputView)");
         AssertContains(frameUploadText, "private ID3D11VideoProcessorInputView CreateInputViewFromTexture(ID3D11Texture2D texture, int subresourceIndex)");
-        AssertContains(frameUploadText, "private bool _loggedDirectUploadFallback;");
-        AssertContains(frameUploadText, "private unsafe bool UploadRawFrameToTexture(");
-        AssertContains(frameUploadText, "private unsafe bool TryUpdateRawFrameTexture(");
-        AssertContains(frameUploadText, "private unsafe bool UploadRawFrameViaStaging(");
-        AssertContains(frameUploadText, "_deviceContext.UpdateSubresource(");
-        AssertContains(frameUploadText, "_deviceContext.CopyResource(inputTexture, stagingTexture);");
+        AssertContains(frameUploadText, "inputView = CreateInputViewFromTexture(frame.D3DTexture, frame.D3DSubresourceIndex);");
+        AssertContains(frameUploadText, "UploadRawFrameToTexture(frame.RawData, frame.RawDataLength");
+        AssertContains(rawFrameUploadText, "private bool _loggedDirectUploadFallback;");
+        AssertContains(rawFrameUploadText, "private unsafe bool UploadRawFrameToTexture(");
+        AssertContains(rawFrameUploadText, "private unsafe bool TryUpdateRawFrameTexture(");
+        AssertContains(rawFrameUploadText, "private unsafe bool UploadRawFrameViaStaging(");
+        AssertContains(rawFrameUploadText, "_deviceContext.UpdateSubresource(");
+        AssertContains(rawFrameUploadText, "_deviceContext.CopyResource(inputTexture, stagingTexture);");
+        AssertDoesNotContain(frameUploadText, "private bool _loggedDirectUploadFallback;");
+        AssertDoesNotContain(frameUploadText, "private unsafe bool TryUpdateRawFrameTexture(");
+        AssertDoesNotContain(frameUploadText, "private unsafe bool UploadRawFrameViaStaging(");
         AssertDoesNotContain(renderPassesText, "private bool TryResolveInputView(PendingFrame frame, out ID3D11VideoProcessorInputView? inputView, out bool disposeInputView)");
         AssertDoesNotContain(renderPassesText, "private unsafe bool UploadRawFrameViaStaging(");
         AssertDoesNotContain(renderPassesText, "private bool _loggedDirectUploadFallback;");
