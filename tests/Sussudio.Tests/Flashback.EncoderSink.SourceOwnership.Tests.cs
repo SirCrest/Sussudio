@@ -75,6 +75,7 @@ static partial class Program
 
         AssertContains(diagnosticsResetText, "private void ResetEncodingCounters()");
         AssertContains(diagnosticsResetText, "ResetVideoDiagnostics();");
+        AssertContains(diagnosticsResetText, "private void ResetVideoDiagnostics()");
         AssertContains(diagnosticsResetText, "Interlocked.Exchange(ref _segmentStartBytes, 0);");
 
         AssertContains(recordingAccountingText, "private static long ToNonNegativeLongSaturated(double value)");
@@ -133,6 +134,8 @@ static partial class Program
     internal static Task FlashbackEncoderSink_QueueCleanupLivesInFocusedPartial()
     {
         var queuesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs")
+            .Replace("\r\n", "\n");
+        var audioQueueSubmissionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.AudioQueueSubmission.cs")
             .Replace("\r\n", "\n");
         var videoQueueSubmissionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.cs")
             .Replace("\r\n", "\n");
@@ -217,11 +220,27 @@ static partial class Program
         AssertContains(queuesText, "private void SignalWork(string operation)");
         AssertContains(queuesText, "private bool WaitForCancellation(TimeSpan timeout)");
         AssertContains(queuesText, "private void FailEncoding(Exception ex)");
-        AssertContains(queuesText, "private bool TryEnqueueAudioPacket(");
-        AssertContains(queuesText, "private static bool TryWriteAudioPacket(");
+        AssertContains(queuesText, "private static void DecrementQueueDepth(ref int target, string queueName)");
+        AssertDoesNotContain(queuesText, "private bool TryEnqueueAudioPacket(");
+        AssertDoesNotContain(queuesText, "private static bool TryWriteAudioPacket(");
+        AssertDoesNotContain(queuesText, "private static bool IsForceRotateQueueGuarded(");
+        AssertDoesNotContain(queuesText, "private void ResetVideoDiagnostics()");
+
+        AssertContains(audioQueueSubmissionText, "private static bool IsForceRotateQueueGuarded(int queueDepth, int queueCapacity)");
+        AssertContains(audioQueueSubmissionText, "queueDepth >= Math.Ceiling(queueCapacity * ForceRotateQueueGuardRatio)");
+        AssertContains(audioQueueSubmissionText, "private bool TryEnqueueAudioPacket(");
+        AssertContains(audioQueueSubmissionText, "Volatile.Read(ref _forceRotateDraining)");
+        AssertContains(audioQueueSubmissionText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio\")");
+        AssertContains(audioQueueSubmissionText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio_after_evict\")");
+        AssertContains(audioQueueSubmissionText, "FLASHBACK_SINK_AUDIO_EVICT_PTS");
+        AssertContains(audioQueueSubmissionText, "private static bool TryWriteAudioPacket(");
+        AssertContains(audioQueueSubmissionText, "DecrementQueueDepth(ref queueDepth, $\"{queueName}_write_failed\");");
+        AssertDoesNotContain(audioQueueSubmissionText, "private void CompleteWriter<TPacket>");
+        AssertDoesNotContain(audioQueueSubmissionText, "private void FailEncoding(Exception ex)");
         AssertContains(docsText, "FlashbackEncoderSink.VideoQueueSubmission.Guards.cs");
         AssertContains(docsText, "FlashbackEncoderSink.VideoQueueSubmission.Writers.cs");
         AssertContains(docsText, "FlashbackEncoderSink.VideoQueueSubmission.Rejections.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.AudioQueueSubmission.cs");
 
         return Task.CompletedTask;
     }

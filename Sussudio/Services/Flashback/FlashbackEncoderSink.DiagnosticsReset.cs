@@ -35,4 +35,9 @@ internal sealed partial class FlashbackEncoderSink
         ResetVideoDiagnostics();
         Interlocked.Exchange(ref _segmentStartBytes, 0);
     }
+
+    private void ResetVideoDiagnostics()
+    {
+        _videoLatencyTracker.ResetAll();
+    }
 }

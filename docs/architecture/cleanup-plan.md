@@ -2217,8 +2217,13 @@ video/audio/GPU packet DTOs and video enqueue result classification there.
 
 Flashback encoder queue helpers now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs`. Keep queue
-completion/signaling, shared queue-depth accounting, force-rotate audio queue
-guard policy, failure notification, and hot audio packet enqueue there.
+completion/signaling, shared queue-depth accounting, cancellation waits, and
+failure notification there. Flashback encoder audio/microphone queue admission
+now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.AudioQueueSubmission.cs`.
+Keep force-rotate audio queue guard policy, hot audio packet enqueue,
+backlog-eviction accounting, audio-drop diagnostics, and audio channel writes
+there.
 Flashback encoder video/GPU queue admission now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.cs`.
 Keep accepted/rejected/overloaded enqueue transactions, queue-full

@@ -48,7 +48,8 @@ static partial class Program
         AssertContains(flashbackVideoEnqueue, "TrackVideoQueueRejected(rejectReason);");
         AssertContains(flashbackGpuEnqueue, "var rejectReason = GetVideoEnqueueRejectReason(isGpu: true);");
         AssertContains(flashbackGpuEnqueue, "TrackGpuQueueRejected(rejectReason);");
-        AssertContains(flashbackAudioEnqueue, "if (_disposed ||\n            !_started ||");
+        AssertContains(flashbackAudioEnqueue, "if (_disposed ||");
+        AssertContains(flashbackAudioEnqueue, "!_started ||");
         AssertContains(flashbackGpuEnqueue, "lock (_videoQueueSync)");
         AssertContains(flashbackAudioEnqueue, "lock (_videoQueueSync)");
     }
