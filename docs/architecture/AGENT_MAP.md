@@ -5122,9 +5122,13 @@ Primary owners:
   `DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs` owns playback
   decode timing lines.
 - `tools/Common/DiagnosticSessionResultFormatter.Preview.cs` owns preview
-  diagnostic-session text section ordering plus preview scheduler lines.
-  `DiagnosticSessionResultFormatter.PreviewD3D.cs` owns D3D
-  performance/slow-frame and CPU-timing lines.
+  diagnostic-session text section ordering.
+  `DiagnosticSessionResultFormatter.PreviewScheduler.cs` owns preview
+  scheduler lines.
+  `DiagnosticSessionResultFormatter.PreviewD3D.Performance.cs` owns D3D
+  performance and slow-frame lines.
+  `DiagnosticSessionResultFormatter.PreviewD3D.CpuTiming.cs` owns D3D
+  CPU-timing lines.
   `DiagnosticSessionResultFormatter.PreviewVisualCadence.cs` owns visual-cadence
   lines.
 - `tools/Common/DiagnosticSessionResultFormatter.Artifacts.cs` owns artifact,

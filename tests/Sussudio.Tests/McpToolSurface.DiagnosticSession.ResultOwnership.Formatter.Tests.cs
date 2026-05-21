@@ -39,7 +39,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewRootText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Preview.cs")
             .Replace("\r\n", "\n");
-        var previewD3DText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.PreviewD3D.cs")
+        var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.PreviewScheduler.cs")
+            .Replace("\r\n", "\n");
+        var previewD3DPerformanceText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.PreviewD3D.Performance.cs")
+            .Replace("\r\n", "\n");
+        var previewD3DCpuTimingText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.PreviewD3D.CpuTiming.cs")
             .Replace("\r\n", "\n");
         var previewVisualCadenceText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.PreviewVisualCadence.cs")
             .Replace("\r\n", "\n");
@@ -140,20 +144,25 @@ static partial class Program
         AssertContains(previewRootText, "AppendPreviewD3DPerformance(builder, result);");
         AssertContains(previewRootText, "AppendPreviewD3DCpuTiming(builder, result);");
         AssertContains(previewRootText, "AppendPreviewVisualCadence(builder, result);");
-        AssertContains(previewRootText, "private static void AppendPreviewScheduler(");
-        AssertContains(previewRootText, "\"Preview Scheduler: \"");
-        AssertContains(previewRootText, "FormatOptional(result.PreviewSchedulerLastUnderflowReasonAtEnd)");
+        AssertDoesNotContain(previewRootText, "private static void AppendPreviewScheduler(");
+        AssertDoesNotContain(previewRootText, "\"Preview Scheduler: \"");
+        AssertDoesNotContain(previewRootText, "FormatOptional(result.PreviewSchedulerLastUnderflowReasonAtEnd)");
         AssertDoesNotContain(previewRootText, "private static void AppendPreviewD3DPerformance(");
         AssertDoesNotContain(previewRootText, "\"Preview D3D Perf: \"");
         AssertDoesNotContain(previewRootText, "private static void AppendPreviewD3DCpuTiming(");
         AssertDoesNotContain(previewRootText, "\"Preview D3D CPU Timing: \"");
         AssertDoesNotContain(previewRootText, "private static void AppendPreviewVisualCadence(");
         AssertDoesNotContain(previewRootText, "\"Preview Visual Cadence: \"");
-        AssertContains(previewD3DText, "private static void AppendPreviewD3DPerformance(");
-        AssertContains(previewD3DText, "\"Preview D3D Perf: \"");
-        AssertContains(previewD3DText, "FormatOptional(result.PreviewD3DLatestSlowFrameReason)");
-        AssertContains(previewD3DText, "private static void AppendPreviewD3DCpuTiming(");
-        AssertContains(previewD3DText, "\"Preview D3D CPU Timing: \"");
+        AssertContains(previewSchedulerText, "private static void AppendPreviewScheduler(");
+        AssertContains(previewSchedulerText, "\"Preview Scheduler: \"");
+        AssertContains(previewSchedulerText, "FormatOptional(result.PreviewSchedulerLastUnderflowReasonAtEnd)");
+        AssertContains(previewD3DPerformanceText, "private static void AppendPreviewD3DPerformance(");
+        AssertContains(previewD3DPerformanceText, "\"Preview D3D Perf: \"");
+        AssertContains(previewD3DPerformanceText, "FormatOptional(result.PreviewD3DLatestSlowFrameReason)");
+        AssertDoesNotContain(previewD3DPerformanceText, "\"Preview D3D CPU Timing: \"");
+        AssertContains(previewD3DCpuTimingText, "private static void AppendPreviewD3DCpuTiming(");
+        AssertContains(previewD3DCpuTimingText, "\"Preview D3D CPU Timing: \"");
+        AssertDoesNotContain(previewD3DCpuTimingText, "\"Preview D3D Perf: \"");
         AssertContains(previewVisualCadenceText, "private static void AppendPreviewVisualCadence(");
         AssertContains(previewVisualCadenceText, "\"Preview Visual Cadence: \"");
         AssertContains(previewVisualCadenceText, "VisualCadenceLongestRepeatRunAtEnd");
