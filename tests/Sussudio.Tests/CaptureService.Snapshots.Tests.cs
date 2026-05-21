@@ -142,8 +142,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotTelemetry.cs")
             .Replace("\r\n", "\n");
+        var hdrPipelineText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs")
+            .Replace("\r\n", "\n");
         AssertDoesNotContain(snapshotsText, "private static string ResolveHdrWarmupState(");
-        AssertContains(telemetryText, "private static string ResolveHdrWarmupState(");
+        AssertDoesNotContain(telemetryText, "private static string ResolveHdrWarmupState(");
+        AssertContains(hdrPipelineText, "private static string ResolveHdrWarmupState(");
 
         // HDR not requested → NotRequested
         var notRequested = method.Invoke(null, new object[] { false, false, false, 0L })?.ToString();

@@ -155,4 +155,28 @@ public partial class CaptureService
             ObservedNonP010Frames = (int)Math.Min(int.MaxValue, Math.Max(0L, observedNonP010FrameCount))
         };
     }
+
+    private static string ResolveHdrWarmupState(
+        bool hdrRequested,
+        bool hdrOutputActive,
+        bool isRecording,
+        long observedP010Frames)
+    {
+        if (!hdrRequested)
+        {
+            return "NotRequested";
+        }
+
+        if (hdrOutputActive)
+        {
+            return "Satisfied";
+        }
+
+        if (observedP010Frames > 0)
+        {
+            return isRecording ? "Partial" : "Pending";
+        }
+
+        return isRecording ? "Degraded" : "Pending";
+    }
 }

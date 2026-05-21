@@ -1143,9 +1143,10 @@ Important entry points:
   memory preference, frame-ledger summary, preview renderer mode, and its private reader/transport handoff model.
 - `CaptureService.RuntimeSnapshotHdrPipeline.cs` owns runtime HDR/encoder
   pipeline parity, downgrade reason, encoder format projection, and HDR warmup
-  state/count projection, and its private HDR pipeline/warmup handoff models.
+  state/count projection/classification, and its private HDR pipeline/warmup handoff models.
 - `CaptureService.RuntimeSnapshotSourceTelemetry.cs` owns runtime snapshot
-  projection for source telemetry details, age, circuit state, alignment, and its private source-telemetry handoff model.
+  projection for source telemetry details, frame-rate origin, age, request
+  alignment, and its private source-telemetry handoff model.
 - `CaptureService.RuntimeSnapshotRecordingIntegrity.cs` owns runtime snapshot
   projection for recording-integrity summary fields and its private recording-integrity handoff model.
 - `CaptureService.Snapshots.cs` owns the diagnostics-snapshot compatibility
@@ -1162,8 +1163,8 @@ Important entry points:
   live source/audio drift sampling, encoder correction telemetry, and the
   health-snapshot A/V sync field projection.
 - `CaptureService.SnapshotTelemetry.cs` owns source telemetry snapshot
-  presentation policy, telemetry/request alignment, and HDR warmup state
-  classification.
+  backend labels and suppression/circuit-state policy shared by runtime and
+  health projections.
 - `CaptureService.ObservedPixelTelemetry.cs` owns observed pixel-format
   normalization, reset, and explicit counter updates.
 - `Sussudio/Services/Capture/CaptureService.Telemetry.cs` owns source telemetry

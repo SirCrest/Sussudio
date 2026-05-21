@@ -163,8 +163,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotTelemetry.cs")
             .Replace("\r\n", "\n");
+        var runtimeSourceTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs")
+            .Replace("\r\n", "\n");
         AssertDoesNotContain(snapshotsText, "private static (string Status, string Reason) ResolveTelemetryAlignment(");
-        AssertContains(telemetryText, "private static (string Status, string Reason) ResolveTelemetryAlignment(");
+        AssertDoesNotContain(telemetryText, "private static (string Status, string Reason) ResolveTelemetryAlignment(");
+        AssertContains(runtimeSourceTelemetryText, "private static (string Status, string Reason) ResolveTelemetryAlignment(");
 
         // Aligned case: telemetry matches settings
         var alignedTelemetry = RuntimeHelpers.GetUninitializedObject(telemetryType);

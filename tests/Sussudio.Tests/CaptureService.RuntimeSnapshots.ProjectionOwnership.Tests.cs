@@ -102,7 +102,7 @@ static partial class Program
         AssertContains(cleanupPlanText, "projection and its private ingest/audio handoff model lives in");
         AssertContains(cleanupPlanText, "preview renderer-mode projection and its private reader/transport handoff model now lives in");
         AssertContains(cleanupPlanText, "HDR pipeline parity/downgrade, warmup state/count projection, and their private handoff models now live in");
-        AssertContains(cleanupPlanText, "source telemetry detail/age/alignment projection and its private handoff model now lives in");
+        AssertContains(cleanupPlanText, "source telemetry detail/frame-rate-origin/age/alignment projection and its private handoff model now lives in");
         AssertContains(cleanupPlanText, "and recording-integrity summary projection and its private handoff model now lives in");
 
         return Task.CompletedTask;

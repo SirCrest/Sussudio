@@ -2893,7 +2893,7 @@ preview renderer-mode projection and its private reader/transport handoff model 
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotReaderTransport.cs`,
 HDR pipeline parity/downgrade, warmup state/count projection, and their private handoff models now live in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs`,
-source telemetry detail/age/alignment projection and its private handoff model now lives in
+source telemetry detail/frame-rate-origin/age/alignment projection and its private handoff model now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs`,
 and recording-integrity summary projection and its private handoff model now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotRecordingIntegrity.cs`.
@@ -2970,9 +2970,12 @@ explicit `Interlocked.Read` counter projection and private
 counts from requested settings.
 
 Source telemetry snapshot policy now lives in
-`Sussudio/Services/Capture/CaptureService.SnapshotTelemetry.cs`. Keep telemetry
-backend labels, frame-rate origin labels, suppression/circuit-state mapping,
-request/telemetry alignment, and HDR warmup state classification there.
+`Sussudio/Services/Capture/CaptureService.SnapshotTelemetry.cs`. Keep shared
+telemetry backend labels and suppression/circuit-state mapping there. Runtime
+frame-rate origin labels and request/telemetry alignment live with
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs`;
+HDR warmup state classification lives with
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs`.
 
 A/V sync snapshot policy, health field projection, and drift baseline state now
 live in `Sussudio/Services/Capture/CaptureService.SnapshotAvSync.cs`. Keep live
