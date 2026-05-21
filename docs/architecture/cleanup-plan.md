@@ -4202,8 +4202,11 @@ Diagnostic-session wait command helpers now live in
 
 Diagnostic-session JSON artifact helpers now live in
 `tools/Common/DiagnosticSessionJsonArtifacts.cs`. The runner still owns the
-session lifecycle, but JSON writing, frame-ledger extraction, and snapshot /
-verification response extraction have a smaller home.
+session lifecycle, while JSON object creation and best-effort file writes stay
+in the shared JSON helper. Snapshot / verification response-shape extraction
+now lives in `tools/Common/DiagnosticSessionAutomationResponseJson.cs`, and
+frame-ledger trace construction lives next to pre-summary result artifact
+writes in `tools/Common/DiagnosticSessionResultArtifacts.cs`.
 
 Diagnostic-session initial snapshot capture now lives in
 `tools/Common/DiagnosticSessionInitialSnapshot.cs`. It owns the baseline
@@ -4734,6 +4737,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionHealthPolicy.cs`
 - `DiagnosticSessionHealthTolerances.cs`
 - `DiagnosticSessionJsonArtifacts.cs`
+- `DiagnosticSessionAutomationResponseJson.cs`
 - `DiagnosticSessionInitialSnapshot.cs`
 - `DiagnosticSessionMetrics.Cadence.Model.cs`
 - `DiagnosticSessionMetrics.Cadence.Source.cs`

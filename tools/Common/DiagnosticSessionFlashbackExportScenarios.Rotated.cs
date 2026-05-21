@@ -3,7 +3,6 @@ using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionFlashbackExports;
 using static Sussudio.Tools.DiagnosticSessionFlashbackSegments;
 using static Sussudio.Tools.DiagnosticSessionFlashbackWaits;
-using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 using static Sussudio.Tools.DiagnosticSessionMetrics;
 using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;
 

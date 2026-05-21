@@ -14,8 +14,8 @@ public sealed class McpDiagnosticSessionCommandRunContextContractsTests
         => global::Program.DiagnosticSessionCommandChannel_OwnsSerializedCommandSending();
 
     [Fact]
-    public Task JsonArtifactsOwnArtifactsAndResponseExtraction()
-        => global::Program.DiagnosticSessionJsonArtifacts_OwnsArtifactsAndResponseExtraction();
+    public Task JsonArtifactsOwnJsonWritingAndResponseExtractionSplit()
+        => global::Program.DiagnosticSessionJsonArtifacts_OwnsJsonWritingAndResponseExtractionSplit();
 
     [Fact]
     public Task RunStateOwnsTerminalState()

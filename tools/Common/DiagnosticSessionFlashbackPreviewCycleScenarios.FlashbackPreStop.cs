@@ -1,6 +1,6 @@
 using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
-using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
+using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;
 
 namespace Sussudio.Tools;
 

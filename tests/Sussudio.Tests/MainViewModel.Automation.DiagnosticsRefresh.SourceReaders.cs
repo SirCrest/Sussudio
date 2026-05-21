@@ -133,6 +133,7 @@ static partial class Program
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionHealthTolerances.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionJsonArtifacts.cs")
+                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionAutomationResponseJson.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionInitialSnapshot.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunContext.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunContext.InitialSnapshot.cs")

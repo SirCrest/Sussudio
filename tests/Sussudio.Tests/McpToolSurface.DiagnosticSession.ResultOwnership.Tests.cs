@@ -126,22 +126,29 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task DiagnosticSessionJsonArtifacts_OwnsArtifactsAndResponseExtraction()
+    internal static Task DiagnosticSessionJsonArtifacts_OwnsJsonWritingAndResponseExtractionSplit()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var initialSnapshotText = ReadRepoFile("tools/Common/DiagnosticSessionInitialSnapshot.cs")
             .Replace("\r\n", "\n");
-        var artifactsText = ReadRepoFile("tools/Common/DiagnosticSessionJsonArtifacts.cs")
+        var jsonArtifactsText = ReadRepoFile("tools/Common/DiagnosticSessionJsonArtifacts.cs")
+            .Replace("\r\n", "\n");
+        var responseJsonText = ReadRepoFile("tools/Common/DiagnosticSessionAutomationResponseJson.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(artifactsText, "internal static class DiagnosticSessionJsonArtifacts");
-        AssertContains(artifactsText, "internal static JsonElement CreateEmptyJsonObject()");
-        AssertContains(artifactsText, "internal static async Task WriteJsonAsync<T>(");
-        AssertContains(artifactsText, "internal static object BuildFrameLedgerTrace(");
-        AssertContains(artifactsText, "internal static bool TryGetSnapshot(");
-        AssertContains(artifactsText, "internal static bool TryGetVerification(");
+        AssertContains(jsonArtifactsText, "internal static class DiagnosticSessionJsonArtifacts");
+        AssertContains(jsonArtifactsText, "internal static JsonElement CreateEmptyJsonObject()");
+        AssertContains(jsonArtifactsText, "internal static async Task WriteJsonAsync<T>(");
+        AssertContains(responseJsonText, "internal static class DiagnosticSessionAutomationResponseJson");
+        AssertContains(responseJsonText, "internal static bool TryGetSnapshot(");
+        AssertContains(responseJsonText, "internal static bool TryGetVerification(");
+        AssertContains(initialSnapshotText, "using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;");
         AssertContains(initialSnapshotText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
+        AssertDoesNotContain(jsonArtifactsText, "BuildFrameLedgerTrace(");
+        AssertDoesNotContain(jsonArtifactsText, "TryGetSnapshot(");
+        AssertDoesNotContain(jsonArtifactsText, "TryGetVerification(");
         AssertDoesNotContain(runnerText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
+        AssertDoesNotContain(runnerText, "using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;");
         AssertDoesNotContain(runnerText, "private static async Task WriteJsonAsync<T>(");
         AssertDoesNotContain(runnerText, "private static bool TryGetSnapshot(");
         AssertDoesNotContain(runnerText, "private static bool TryGetVerification(");
@@ -181,10 +188,13 @@ static partial class Program
         AssertContains(artifactsText, "SamplesPath: Path.Combine(outputDirectory, \"samples.json\")");
         AssertContains(artifactsText, "FrameLedgerPath: Path.Combine(outputDirectory, \"frame-ledger.json\")");
         AssertContains(artifactsText, "TimelinePath: Path.Combine(outputDirectory, \"timeline.json\")");
+        AssertContains(artifactsText, "private static object BuildFrameLedgerTrace(");
+        AssertContains(artifactsText, "using static Sussudio.Tools.AutomationSnapshotFormatter;");
         AssertContains(artifactsText, "runState.WriteArtifactBestEffortAsync(\"write-samples\", paths.SamplesPath, samples)");
         AssertContains(artifactsText, "runState.WriteArtifactBestEffortAsync(\"write-frame-ledger\", paths.FrameLedgerPath, BuildFrameLedgerTrace(sessionId, samples))");
         AssertContains(artifactsText, "runState.WriteArtifactBestEffortAsync(\"write-timeline\", paths.TimelinePath, timeline)");
         AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionResultArtifacts;");
+        AssertDoesNotContain(artifactsText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
         AssertContains(builderText, "WritePreSummaryAsync(");
         AssertDoesNotContain(builderText, "Path.Combine(request.OutputDirectory, \"samples.json\")");
         AssertDoesNotContain(builderText, "BuildFrameLedgerTrace(request.SessionId, samples)");

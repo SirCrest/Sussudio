@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
-using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
+using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;
 
 namespace Sussudio.Tools;
 

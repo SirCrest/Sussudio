@@ -4686,10 +4686,12 @@ Primary owners:
   focused result projection owners.
 - `tools/Common/DiagnosticSessionResultArtifacts.cs` owns diagnostic-session
   result artifact path construction and pre-summary sample, frame-ledger, and
-  timeline artifact writes.
+  timeline artifact writes, including frame-ledger trace shaping.
 - `tools/Common/DiagnosticSessionJsonArtifacts.cs` owns diagnostic-session JSON
-  artifact writing, frame-ledger extraction, and automation response shape
-  helpers.
+  object creation and artifact writing.
+- `tools/Common/DiagnosticSessionAutomationResponseJson.cs` owns
+  diagnostic-session automation response shape helpers for snapshot and
+  verification envelopes.
 - `tools/Common/DiagnosticSessionInitialSnapshot.cs` owns the diagnostic-session
   baseline snapshot capture via `AutomationCommandKind.GetSnapshot`,
   unknown-state warning, and initial-snapshot exception recording.

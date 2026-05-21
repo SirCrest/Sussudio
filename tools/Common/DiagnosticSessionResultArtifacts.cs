@@ -1,5 +1,5 @@
 using System.Text.Json;
-using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
+using static Sussudio.Tools.AutomationSnapshotFormatter;
 
 namespace Sussudio.Tools;
 
@@ -23,6 +23,38 @@ internal static class DiagnosticSessionResultArtifacts
         await runState.WriteArtifactBestEffortAsync("write-timeline", paths.TimelinePath, timeline).ConfigureAwait(false);
 
         return paths;
+    }
+
+    private static object BuildFrameLedgerTrace(string sessionId, IReadOnlyList<DiagnosticSessionSample> samples)
+    {
+        var events = new List<JsonElement>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var sample in samples)
+        {
+            if (!sample.Snapshot.TryGetProperty("FrameLedgerRecentEvents", out var recentEvents) ||
+                recentEvents.ValueKind != JsonValueKind.Array)
+            {
+                continue;
+            }
+
+            foreach (var item in recentEvents.EnumerateArray())
+            {
+                var key =
+                    $"{Get(item, "SourceSequence")}|{Get(item, "Stage")}|{Get(item, "QpcTimestamp")}";
+                if (seen.Add(key))
+                {
+                    events.Add(item.Clone());
+                }
+            }
+        }
+
+        return new
+        {
+            SessionId = sessionId,
+            SampleCount = samples.Count,
+            EventCount = events.Count,
+            Events = events
+        };
     }
 }
 
