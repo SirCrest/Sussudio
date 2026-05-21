@@ -2,6 +2,22 @@ namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionResultBuilder
 {
+    private readonly record struct DiagnosticSessionFlashbackPlaybackAudioMasterResultProjection(
+        long FlashbackPlaybackAudioMasterDelayDoublesAtEnd,
+        long FlashbackPlaybackAudioMasterDelayShrinksAtEnd,
+        long FlashbackPlaybackAudioMasterFallbacksAtEnd,
+        long FlashbackPlaybackAudioMasterUnavailableFallbacksAtEnd,
+        long FlashbackPlaybackAudioMasterStaleFallbacksAtEnd,
+        long FlashbackPlaybackAudioMasterDriftOutlierFallbacksAtEnd,
+        string FlashbackPlaybackAudioMasterLastFallbackReasonAtEnd,
+        double FlashbackPlaybackAudioMasterLastFallbackClockAgeMsAtEnd,
+        long FlashbackPlaybackMaxAudioMasterDelayDoublesObserved,
+        long FlashbackPlaybackMaxAudioMasterDelayShrinksObserved,
+        long FlashbackPlaybackMaxAudioMasterFallbacksObserved,
+        double FlashbackPlaybackMaxAudioBufferedDurationMsObserved,
+        double FlashbackPlaybackMaxAudioQueueDurationMsObserved,
+        double FlashbackPlaybackMaxAbsAvDriftMsObserved);
+
     private static DiagnosticSessionFlashbackPlaybackAudioMasterResultProjection BuildFlashbackPlaybackAudioMasterResultProjection(
         FlashbackPlaybackSessionMetrics playbackSessionMetrics,
         FlashbackPlaybackResultMetrics playbackResultMetrics) =>

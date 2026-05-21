@@ -3678,7 +3678,8 @@ travel through a distinct `PreviewD3D` projection set member so renderer timing
 semantics stay separate from scheduler/jitter policy.
 Flashback playback result composition lives in
 `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`, which keeps the
-playback projection as one cohesive handoff into the result projection set.
+playback projection record as one cohesive handoff into the result projection
+set.
 The detailed playback result DTO value maps are split by runtime metric owner:
 command queue values live in
 `DiagnosticSessionResultBuilder.FlashbackPlaybackCommandsResult.cs`, cadence/
@@ -3689,9 +3690,9 @@ timing values live in
 submit/segment/write-head/near-live/seek-cap stage values live in
 `DiagnosticSessionResultBuilder.FlashbackPlaybackStagesResult.cs`.
 Audio-master fallback, buffering, and A/V-drift result values live in
-`DiagnosticSessionResultBuilder.FlashbackPlaybackAudioMasterResult.cs`, with
-the projection record shapes grouped in
-`DiagnosticSessionResultBuilder.FlashbackPlaybackProjectionModels.cs`.
+`DiagnosticSessionResultBuilder.FlashbackPlaybackAudioMasterResult.cs`. Each
+focused Flashback playback result owner keeps its projection record next to the
+mapping that fills it.
 Flashback recording backend/growth/integrity DTO projection values live in
 `DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`, while export
 status/progress DTO projection values live in
@@ -4332,7 +4333,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackDecodeResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackAudioMasterResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackStagesResult.cs`
-- `DiagnosticSessionResultBuilder.FlashbackPlaybackProjectionModels.cs`
 - `DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`
 - `DiagnosticSessionResultBuilder.CaptureResult.cs`

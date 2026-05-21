@@ -187,7 +187,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackDecodeResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackAudioMasterResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackStagesResult.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackProjectionModels.cs",
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackExportResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.CaptureResult.cs",

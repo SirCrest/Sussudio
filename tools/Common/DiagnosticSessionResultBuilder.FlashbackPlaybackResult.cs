@@ -2,6 +2,13 @@ namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionResultBuilder
 {
+    private readonly record struct DiagnosticSessionFlashbackPlaybackResultProjection(
+        DiagnosticSessionFlashbackPlaybackCommandsResultProjection CommandsResult,
+        DiagnosticSessionFlashbackPlaybackCadenceResultProjection CadenceResult,
+        DiagnosticSessionFlashbackPlaybackDecodeResultProjection DecodeResult,
+        DiagnosticSessionFlashbackPlaybackAudioMasterResultProjection AudioMasterResult,
+        DiagnosticSessionFlashbackPlaybackStagesResultProjection StagesResult);
+
     private static DiagnosticSessionFlashbackPlaybackResultProjection BuildFlashbackPlaybackResultProjection(
         DiagnosticSessionResultAnalysis analysis)
     {

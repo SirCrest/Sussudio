@@ -2,6 +2,35 @@ namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionResultBuilder
 {
+    private readonly record struct DiagnosticSessionFlashbackPlaybackCadenceResultProjection(
+        double FlashbackPlaybackObservedFpsAtEnd,
+        double FlashbackPlaybackMinObservedFpsObserved,
+        double FlashbackPlaybackAvgFrameMsAtEnd,
+        double FlashbackPlaybackP99FrameMsAtEnd,
+        double FlashbackPlaybackMaxFrameMsAtEnd,
+        double FlashbackPlaybackOnePercentLowFpsAtEnd,
+        double FlashbackPlaybackMinOnePercentLowFpsObserved,
+        bool FlashbackPlaybackOnePercentLowSampleWindowObserved,
+        long FlashbackPlaybackOnePercentLowMinimumFrames,
+        long FlashbackPlaybackMaxSessionFrameCountObserved,
+        long FlashbackPlaybackMinOnePercentLowOffsetMs,
+        long FlashbackPlaybackMinOnePercentLowFrameCount,
+        double FlashbackPlaybackMinOnePercentLowP99FrameMs,
+        double FlashbackPlaybackMinOnePercentLowMaxFrameMs,
+        double FlashbackPlaybackMinOnePercentLowDecodeP99Ms,
+        double FlashbackPlaybackMinOnePercentLowDecodeMaxMs,
+        double FlashbackPlaybackMinOnePercentLowAvDriftMs,
+        long FlashbackPlaybackMinOnePercentLowAudioMasterFallbacks,
+        double FlashbackPlaybackMaxP99FrameMsObserved,
+        double FlashbackPlaybackMaxFrameMsObserved,
+        double FlashbackPlaybackMaxSlowFramePercentObserved,
+        long FlashbackPlaybackFrameCountAtEnd,
+        long FlashbackPlaybackLateFramesAtEnd,
+        long FlashbackPlaybackSlowFramesAtEnd,
+        double FlashbackPlaybackSlowFramePercentAtEnd,
+        long FlashbackPlaybackDroppedFramesAtEnd,
+        long FlashbackPlaybackDroppedFramesDelta);
+
     private static DiagnosticSessionFlashbackPlaybackCadenceResultProjection BuildFlashbackPlaybackCadenceResultProjection(
         FlashbackPlaybackSessionMetrics playbackSessionMetrics,
         FlashbackPlaybackResultMetrics playbackResultMetrics) =>

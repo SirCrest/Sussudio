@@ -2,6 +2,32 @@ namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionResultBuilder
 {
+    private readonly record struct DiagnosticSessionFlashbackPlaybackDecodeResultProjection(
+        double FlashbackPlaybackDecodeAvgMsAtEnd,
+        double FlashbackPlaybackDecodeP95MsAtEnd,
+        double FlashbackPlaybackDecodeP99MsAtEnd,
+        double FlashbackPlaybackDecodeMaxMsAtEnd,
+        string FlashbackPlaybackMaxDecodePhaseAtEnd,
+        double FlashbackPlaybackMaxDecodeReceiveMsAtEnd,
+        double FlashbackPlaybackMaxDecodeFeedMsAtEnd,
+        double FlashbackPlaybackMaxDecodeReadMsAtEnd,
+        double FlashbackPlaybackMaxDecodeSendMsAtEnd,
+        double FlashbackPlaybackMaxDecodeAudioMsAtEnd,
+        double FlashbackPlaybackMaxDecodeConvertMsAtEnd,
+        long FlashbackPlaybackMaxDecodeUtcUnixMsAtEnd,
+        long FlashbackPlaybackMaxDecodePositionMsAtEnd,
+        double FlashbackPlaybackMaxDecodeP99MsObserved,
+        double FlashbackPlaybackMaxDecodeMsObserved,
+        string FlashbackPlaybackMaxDecodePhaseObserved,
+        double FlashbackPlaybackMaxDecodeReceiveMsObserved,
+        double FlashbackPlaybackMaxDecodeFeedMsObserved,
+        double FlashbackPlaybackMaxDecodeReadMsObserved,
+        double FlashbackPlaybackMaxDecodeSendMsObserved,
+        double FlashbackPlaybackMaxDecodeAudioMsObserved,
+        double FlashbackPlaybackMaxDecodeConvertMsObserved,
+        long FlashbackPlaybackMaxDecodeUtcUnixMsObserved,
+        long FlashbackPlaybackMaxDecodePositionMsObserved);
+
     private static DiagnosticSessionFlashbackPlaybackDecodeResultProjection BuildFlashbackPlaybackDecodeResultProjection(
         FlashbackPlaybackSessionMetrics playbackSessionMetrics,
         FlashbackPlaybackResultMetrics playbackResultMetrics) =>
