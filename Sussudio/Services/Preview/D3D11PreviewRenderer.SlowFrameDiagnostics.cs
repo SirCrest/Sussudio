@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using Sussudio.Models;
 
 namespace Sussudio.Services.Preview;
@@ -56,29 +55,11 @@ internal sealed partial class D3D11PreviewRenderer
             ? _slowFrameDiagnosticThresholdMs
             : Math.Max(expectedIntervalMs * 1.02, expectedIntervalMs + 0.15);
 
-        long presentDelta;
-        long presentRefreshDelta;
-        long syncRefreshDelta;
-        long missedRefreshCount;
-        var frameStatisticsFrameCounter = Interlocked.Read(ref _dxgiFrameStatisticsFrameCounter);
-        long frameStatisticsLastSampleFrameCounter;
-        lock (_dxgiFrameStatisticsLock)
-        {
-            presentDelta = _dxgiFrameStatisticsLastPresentDelta;
-            presentRefreshDelta = _dxgiFrameStatisticsLastPresentRefreshDelta;
-            syncRefreshDelta = _dxgiFrameStatisticsLastSyncRefreshDelta;
-            missedRefreshCount = _dxgiFrameStatisticsMissedRefreshCount;
-            frameStatisticsLastSampleFrameCounter = _dxgiFrameStatisticsLastSampleFrameCounter;
-        }
-
-        var dxgiRefreshSlip =
-            frameStatisticsLastSampleFrameCounter == frameStatisticsFrameCounter &&
-            presentDelta > 0 &&
-            presentRefreshDelta > presentDelta;
+        var dxgiSlip = CaptureSlowFrameDxgiSlipSnapshot();
         if ((presentIntervalMs <= 0 || presentIntervalMs < thresholdMs) &&
             totalMs < thresholdMs &&
             presentCallMs < thresholdMs &&
-            !dxgiRefreshSlip)
+            !dxgiSlip.IsRefreshSlip)
         {
             return;
         }
@@ -97,7 +78,7 @@ internal sealed partial class D3D11PreviewRenderer
             presentIntervalMs,
             totalMs,
             presentCallMs,
-            dxgiRefreshSlip,
+            dxgiSlip.IsRefreshSlip,
             thresholdMs);
         var sample = new PreviewSlowFrameDiagnostic
         {
@@ -117,10 +98,10 @@ internal sealed partial class D3D11PreviewRenderer
             WorstOverBudgetMs = worstOverBudgetMs,
             SlowReason = slowReason,
             PendingFrameCount = PendingFrameCount,
-            DxgiPresentDelta = presentDelta,
-            DxgiPresentRefreshDelta = presentRefreshDelta,
-            DxgiSyncRefreshDelta = syncRefreshDelta,
-            DxgiMissedRefreshCount = missedRefreshCount
+            DxgiPresentDelta = dxgiSlip.PresentDelta,
+            DxgiPresentRefreshDelta = dxgiSlip.PresentRefreshDelta,
+            DxgiSyncRefreshDelta = dxgiSlip.SyncRefreshDelta,
+            DxgiMissedRefreshCount = dxgiSlip.MissedRefreshCount
         };
 
         lock (_slowFrameDiagnosticsLock)
@@ -134,28 +115,4 @@ internal sealed partial class D3D11PreviewRenderer
         }
     }
 
-    private static string BuildSlowFrameDiagnosticReason(
-        double presentIntervalMs,
-        double totalFrameCpuMs,
-        double presentCallMs,
-        bool dxgiRefreshSlip,
-        double thresholdMs)
-    {
-        var reason = string.Empty;
-        AppendSlowFrameReason(ref reason, presentIntervalMs >= thresholdMs, "present_interval");
-        AppendSlowFrameReason(ref reason, totalFrameCpuMs >= thresholdMs, "total_cpu");
-        AppendSlowFrameReason(ref reason, presentCallMs >= thresholdMs, "present_call");
-        AppendSlowFrameReason(ref reason, dxgiRefreshSlip, "dxgi_refresh_slip");
-        return reason.Length > 0 ? reason : "unknown";
-    }
-
-    private static void AppendSlowFrameReason(ref string reason, bool condition, string token)
-    {
-        if (!condition)
-        {
-            return;
-        }
-
-        reason = reason.Length == 0 ? token : $"{reason}+{token}";
-    }
 }

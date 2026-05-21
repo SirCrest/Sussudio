@@ -2501,8 +2501,10 @@ present accounting and slow-frame diagnostic call sites in
 
 D3D preview renderer slow-frame diagnostics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.SlowFrameDiagnostics.cs`. Keep
-recent slow-frame snapshot access, diagnostic thresholding, DXGI refresh-slip
-reason construction, and the slow-frame ring buffer writer there; keep cadence
+recent slow-frame snapshot access, diagnostic thresholding, and the slow-frame
+ring buffer writer there. Keep DXGI refresh-slip capture in
+`D3D11PreviewRenderer.SlowFrameDxgiSlip.cs` and slow-frame reason token
+classification in `D3D11PreviewRenderer.SlowFrameReasons.cs`; keep cadence
 windows in `D3D11PreviewRenderer.PresentCadenceMetrics.cs` and CPU timing
 windows in `D3D11PreviewRenderer.Metrics.cs`.
 
