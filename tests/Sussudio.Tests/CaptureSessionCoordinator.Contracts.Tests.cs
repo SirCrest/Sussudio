@@ -31,16 +31,22 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs")
             .Replace("\r\n", "\n");
+        var flashbackStatusText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.Status.cs")
+            .Replace("\r\n", "\n");
+        var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.Export.cs")
+            .Replace("\r\n", "\n");
+        var flashbackGuardsText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.Guards.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(flashbackText, "public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)");
         AssertContains(flashbackText, "public Task UpdateRecordingFormatAsync(RecordingFormat format, CancellationToken cancellationToken = default)");
         AssertContains(flashbackText, "public Task CycleFlashbackEncoderSettingsAsync(");
         AssertContains(flashbackText, "public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(flashbackText, "internal FlashbackBufferStatus GetFlashbackBufferStatus()");
-        AssertContains(flashbackText, "internal FlashbackPlaybackSnapshot GetFlashbackPlaybackSnapshot()");
-        AssertContains(flashbackText, "internal Task<FinalizeResult> ExportFlashbackRangeAsync(");
-        AssertContains(flashbackText, "internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()");
-        AssertContains(flashbackText, "private bool TryGetActiveFlashback(");
+        AssertContains(flashbackStatusText, "internal FlashbackBufferStatus GetFlashbackBufferStatus()");
+        AssertContains(flashbackStatusText, "internal FlashbackPlaybackSnapshot GetFlashbackPlaybackSnapshot()");
+        AssertContains(flashbackExportText, "internal Task<FinalizeResult> ExportFlashbackRangeAsync(");
+        AssertContains(flashbackExportText, "internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()");
+        AssertContains(flashbackGuardsText, "private bool TryGetActiveFlashback(");
         AssertDoesNotContain(rootText, "public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)");
         AssertDoesNotContain(rootText, "public Task CycleFlashbackEncoderSettingsAsync(");
         AssertDoesNotContain(rootText, "internal FlashbackPlaybackSnapshot GetFlashbackPlaybackSnapshot()");
