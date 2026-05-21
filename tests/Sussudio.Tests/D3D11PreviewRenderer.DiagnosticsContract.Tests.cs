@@ -107,7 +107,8 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameLatency.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Viewport.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs");
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PanelComposition.cs");
         var captureSource = ReadUnifiedVideoCaptureSource();
 
         return new D3D11PreviewRendererDiagnosticsContractSources(

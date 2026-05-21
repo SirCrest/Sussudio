@@ -10,18 +10,22 @@ static partial class Program
             .Replace("\r\n", "\n");
         var panelBindingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs")
             .Replace("\r\n", "\n");
+        var panelCompositionText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PanelComposition.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(panelBindingText, "private int _swapChainBound;");
-        AssertContains(panelBindingText, "private int _compositionTransformDirty;");
-        AssertContains(panelBindingText, "private int _panelPixelWidth = 1;");
-        AssertContains(panelBindingText, "private double _panelLogicalWidth = 1.0;");
-        AssertContains(panelBindingText, "private double _rasterizationScale = 1.0;");
-        AssertContains(panelBindingText, "public void OnPanelSizeChanged(double logicalWidth, double logicalHeight, double rasterizationScale)");
         AssertContains(panelBindingText, "private void BindSwapChainToPanel(IDXGISwapChain1 swapChain)");
         AssertContains(panelBindingText, "private void UnbindSwapChainFromPanel()");
-        AssertContains(panelBindingText, "private void ApplyCompositionScaleTransform(IDXGISwapChain1 swapChain)");
         AssertContains(panelBindingText, "WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel)");
-        AssertContains(panelBindingText, "swapChain2.MatrixTransform");
+        AssertContains(panelCompositionText, "private int _compositionTransformDirty;");
+        AssertContains(panelCompositionText, "private int _panelPixelWidth = 1;");
+        AssertContains(panelCompositionText, "private double _panelLogicalWidth = 1.0;");
+        AssertContains(panelCompositionText, "private double _rasterizationScale = 1.0;");
+        AssertContains(panelCompositionText, "public void OnPanelSizeChanged(double logicalWidth, double logicalHeight, double rasterizationScale)");
+        AssertContains(panelCompositionText, "private void ApplyCompositionScaleTransform(IDXGISwapChain1 swapChain)");
+        AssertContains(panelCompositionText, "swapChain2.MatrixTransform");
+        AssertDoesNotContain(panelBindingText, "public void OnPanelSizeChanged(");
+        AssertDoesNotContain(panelBindingText, "private void ApplyCompositionScaleTransform(IDXGISwapChain1 swapChain)");
         AssertDoesNotContain(rootText, "private int _swapChainBound;");
         AssertDoesNotContain(rootText, "private int _compositionTransformDirty;");
         AssertDoesNotContain(resourcesText, "private void BindSwapChainToPanel(IDXGISwapChain1 swapChain)");
