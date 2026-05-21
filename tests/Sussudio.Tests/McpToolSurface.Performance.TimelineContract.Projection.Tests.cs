@@ -7,7 +7,8 @@ static partial class Program
         var diagnosticsHubSource = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs");
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs");
         var entryType = RequireType("Sussudio.Models.PerformanceTimelineEntry");
 
         AssertContains(sources.CombinedSource, "PreviewP99Ms = AutomationSnapshotFormatter.GetDouble(item, \"PreviewCadenceP99Ms\")");
@@ -93,7 +94,16 @@ static partial class Program
                  })
         {
             AssertNotNull(entryType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance), $"PerformanceTimelineEntry.{propertyName}");
-            AssertContains(diagnosticsHubSource, $"{propertyName} = snapshot.{propertyName}");
+            if (propertyName.StartsWith("FlashbackPlayback", StringComparison.Ordinal))
+            {
+                var projectionName = propertyName["FlashbackPlayback".Length..];
+                AssertContains(diagnosticsHubSource, $"{propertyName} = flashbackPlayback.{projectionName}");
+                AssertContains(diagnosticsHubSource, $"{projectionName}: snapshot.{propertyName}");
+            }
+            else
+            {
+                AssertContains(diagnosticsHubSource, $"{propertyName} = snapshot.{propertyName}");
+            }
         }
     }
 }

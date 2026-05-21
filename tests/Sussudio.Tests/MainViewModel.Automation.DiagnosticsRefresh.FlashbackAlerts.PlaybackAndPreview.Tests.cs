@@ -30,7 +30,8 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackTargetFps = flashbackPlaybackFlattening.Timing.TargetFps");
         AssertContains(diagnostics.SourceFamilyText, "TargetFps = timing.TargetFps");
         AssertContains(diagnostics.SourceFamilyText, "TargetFps = health.FlashbackPlaybackTargetFps");
-        AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackTargetFps = snapshot.FlashbackPlaybackTargetFps");
+        AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackTargetFps = flashbackPlayback.TargetFps");
+        AssertContains(diagnostics.SourceFamilyText, "TargetFps: snapshot.FlashbackPlaybackTargetFps");
         AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackPtsCadenceMismatchCount = flashbackPlaybackFlattening.Timing.PtsCadenceMismatchCount");
         AssertContains(diagnostics.SourceFamilyText, "PtsCadenceMismatchCount = timing.PtsCadenceMismatchCount");
         AssertContains(diagnostics.SourceFamilyText, "PtsCadenceMismatchCount = health.FlashbackPlaybackPtsCadenceMismatchCount");

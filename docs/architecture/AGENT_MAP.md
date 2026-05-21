@@ -760,7 +760,9 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs` owns
   performance-timeline ring reads and append mechanics.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs`
-  owns `AutomationSnapshot` to `PerformanceTimelineEntry` projection.
+  owns final `AutomationSnapshot` to `PerformanceTimelineEntry` assignment.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs`
+  owns the Flashback playback snapshot-to-performance-timeline projection group.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Verification.cs` owns
   manual recording/file verification commands and explicit verification events.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Verification.Auto.cs`

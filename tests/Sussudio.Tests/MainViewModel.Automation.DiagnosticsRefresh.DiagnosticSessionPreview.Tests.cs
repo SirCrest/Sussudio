@@ -76,10 +76,14 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "PreviewD3DPresentCallP99Ms = snapshot.PreviewD3DPresentCallP99Ms");
         AssertContains(diagnostics.SourceFamilyText, "PreviewD3DTotalFrameCpuP99Ms = snapshot.PreviewD3DTotalFrameCpuP99Ms");
         AssertContains(diagnostics.SourceFamilyText, "PreviewD3DFrameStatsRecentMissedRefreshCount = snapshot.PreviewD3DFrameStatsRecentMissedRefreshCount");
-        AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackP99FrameMs = snapshot.FlashbackPlaybackP99FrameMs");
-        AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackDecodeP99Ms = snapshot.FlashbackPlaybackDecodeP99Ms");
-        AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackPendingCommands = snapshot.FlashbackPlaybackPendingCommands");
-        AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackSubmitFailures = snapshot.FlashbackPlaybackSubmitFailures");
+        AssertContains(diagnostics.TimelineProjectionText, "FlashbackPlaybackP99FrameMs = flashbackPlayback.P99FrameMs");
+        AssertContains(diagnostics.TimelineProjectionText, "FlashbackPlaybackDecodeP99Ms = flashbackPlayback.DecodeP99Ms");
+        AssertContains(diagnostics.TimelineProjectionText, "FlashbackPlaybackPendingCommands = flashbackPlayback.PendingCommands");
+        AssertContains(diagnostics.TimelineProjectionText, "FlashbackPlaybackSubmitFailures = flashbackPlayback.SubmitFailures");
+        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "P99FrameMs: snapshot.FlashbackPlaybackP99FrameMs");
+        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "DecodeP99Ms: snapshot.FlashbackPlaybackDecodeP99Ms");
+        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "PendingCommands: snapshot.FlashbackPlaybackPendingCommands");
+        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "SubmitFailures: snapshot.FlashbackPlaybackSubmitFailures");
         AssertContains(diagnostics.SourceFamilyText, "FlashbackExportPercent = snapshot.FlashbackExportPercent");
         AssertContains(diagnostics.SourceFamilyText, "FlashbackExportThroughputBytesPerSec = snapshot.FlashbackExportThroughputBytesPerSec");
         AssertContains(diagnostics.SourceFamilyText, "FlashbackExportLastProgressAgeMs = snapshot.FlashbackExportLastProgressAgeMs");

@@ -104,8 +104,10 @@ pattern is introduced first. `AutomationDiagnosticsHub.SnapshotState.cs`
 owns stateful snapshot bookkeeping for audio mute suspicion and recording file
 growth tracking. `AutomationDiagnosticsHub.Timeline.cs`
 owns performance-timeline ring reads and append mechanics.
-`AutomationDiagnosticsHub.TimelineProjection.cs` owns `AutomationSnapshot` to
-`PerformanceTimelineEntry` projection.
+`AutomationDiagnosticsHub.TimelineProjection.cs` owns final
+`AutomationSnapshot` to `PerformanceTimelineEntry` assignment.
+`AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs` owns the
+Flashback playback snapshot-to-performance-timeline projection group.
 `AutomationDiagnosticsHub.SnapshotProjection.SnapshotStatus.cs` owns timestamp,
 view-model lifecycle/audio flags, verification-in-progress, session state, and
 status-text projection consumed by the automation snapshot DTO.

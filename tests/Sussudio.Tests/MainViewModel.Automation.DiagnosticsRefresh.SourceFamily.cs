@@ -199,6 +199,7 @@ static partial class Program
             ProcessMetricsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.ProcessMetrics.cs"),
             TimelineText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Timeline.cs"),
             TimelineProjectionText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.cs"),
+            TimelineProjectionFlashbackPlaybackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs"),
         };
     }
 
@@ -243,5 +244,6 @@ static partial class Program
         public string ProcessMetricsText { get; init; } = string.Empty;
         public string TimelineText { get; init; } = string.Empty;
         public string TimelineProjectionText { get; init; } = string.Empty;
+        public string TimelineProjectionFlashbackPlaybackText { get; init; } = string.Empty;
     }
 }

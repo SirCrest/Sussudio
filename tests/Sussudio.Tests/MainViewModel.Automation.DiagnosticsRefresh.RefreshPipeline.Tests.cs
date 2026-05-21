@@ -21,7 +21,10 @@ static partial class Program
         AssertContains(diagnostics.TimelineText, "BuildPerformanceTimelineEntry(snapshot)");
         AssertDoesNotContain(diagnostics.TimelineText, "new PerformanceTimelineEntry\n        {");
         AssertContains(diagnostics.TimelineProjectionText, "private static PerformanceTimelineEntry BuildPerformanceTimelineEntry(AutomationSnapshot snapshot)");
-        AssertContains(diagnostics.TimelineProjectionText, "FlashbackPlaybackCommandsEnqueued = snapshot.FlashbackPlaybackCommandsEnqueued");
+        AssertContains(diagnostics.TimelineProjectionText, "var flashbackPlayback = BuildPerformanceTimelineFlashbackPlaybackProjection(snapshot);");
+        AssertContains(diagnostics.TimelineProjectionText, "FlashbackPlaybackCommandsEnqueued = flashbackPlayback.CommandsEnqueued");
+        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "private static PerformanceTimelineFlashbackPlaybackProjection BuildPerformanceTimelineFlashbackPlaybackProjection(");
+        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "CommandsEnqueued: snapshot.FlashbackPlaybackCommandsEnqueued");
         AssertDoesNotContain(diagnostics.HubText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
         AssertContains(diagnostics.SnapshotsText, "var shouldAutoVerify = ShouldAutoVerifySnapshot(snapshot);");
         AssertContains(diagnostics.SnapshotsText, "var lastVerification = CaptureLastVerificationForSnapshot(recordingStarted);");

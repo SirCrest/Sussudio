@@ -198,6 +198,7 @@ static partial class Program
                 ProcessMetricsText,
                 TimelineText,
                 TimelineProjectionText,
+                TimelineProjectionFlashbackPlaybackText,
                 SnapshotProjectionPreviewD3DCpuTimingText,
                 SnapshotProjectionMjpegTimingText,
             });
