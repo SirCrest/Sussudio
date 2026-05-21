@@ -129,14 +129,20 @@ static partial class Program
         AssertContains(controllerGraphRecordingCapabilityText, "ReplaceAvailableRecordingFormats = formats =>");
         AssertContains(controllerGraphRecordingCapabilityText, "NotifySelectedRecordingFormatChanged = () => viewModel.OnPropertyChanged(nameof(SelectedRecordingFormat)),");
 
-        AssertContains(captureModeOptionRebuildControllerText, "private sealed partial class MainViewModelCaptureModeOptionRebuildController");
-        AssertContains(captureModeOptionRebuildControllerContextText, "private sealed class MainViewModelCaptureModeOptionRebuildControllerContext");
+        AssertContains(captureModeOptionRebuildControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(captureModeOptionRebuildControllerText, "internal sealed partial class MainViewModelCaptureModeOptionRebuildController");
+        AssertContains(captureModeOptionRebuildControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(captureModeOptionRebuildControllerContextText, "internal sealed class MainViewModelCaptureModeOptionRebuildControllerContext");
         AssertContains(captureModeOptionRebuildControllerText, "private readonly MainViewModelCaptureModeOptionRebuildControllerContext _context;");
+        AssertContains(captureModeOptionRebuildControllerContextText, "public required string AutoResolutionValue { get; init; }");
+        AssertContains(captureModeOptionRebuildControllerContextText, "public required double AutoFrameRateValue { get; init; }");
+        AssertContains(controllerGraphCaptureModesText, "AutoResolutionValue = AutoResolutionValue,");
+        AssertContains(controllerGraphCaptureModesText, "AutoFrameRateValue = AutoFrameRateValue,");
         AssertDoesNotContain(captureModeOptionRebuildControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(captureModeOptionRebuildControllerText, "_viewModel.");
         AssertDoesNotContain(captureModeOptionFrameRateRebuildControllerText, "_viewModel.");
         AssertDoesNotContain(captureModeOptionResolutionRebuildControllerText, "_viewModel.");
-        AssertContains(captureModeOptionFrameRateRebuildControllerText, "private sealed partial class MainViewModelCaptureModeOptionRebuildController");
+        AssertContains(captureModeOptionFrameRateRebuildControllerText, "internal sealed partial class MainViewModelCaptureModeOptionRebuildController");
         AssertEqual(
             true,
             captureModeOptionFrameRateRebuildControllerText.Split('\n').Length >= 100,
@@ -146,7 +152,7 @@ static partial class Program
         AssertContains(captureModeOptionRebuildControllerText, "public void RebuildVideoFormatOptions()");
         AssertContains(captureModeOptionRebuildControllerText, "public void UpdateSelectedFormat()");
         AssertDoesNotContain(captureModeOptionRebuildControllerText, "public void RebuildResolutionOptions()");
-        AssertContains(captureModeOptionResolutionRebuildControllerText, "private sealed partial class MainViewModelCaptureModeOptionRebuildController");
+        AssertContains(captureModeOptionResolutionRebuildControllerText, "internal sealed partial class MainViewModelCaptureModeOptionRebuildController");
         AssertEqual(
             true,
             captureModeOptionResolutionRebuildControllerText.Split('\n').Length >= 100,

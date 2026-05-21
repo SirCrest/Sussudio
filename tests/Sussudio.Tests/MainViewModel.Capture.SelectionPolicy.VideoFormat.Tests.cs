@@ -21,9 +21,10 @@ static partial class Program
         AssertContains(captureModeOptionsControllerText, "public void UpdateSelectedFormat()");
         AssertContains(captureModeOptionsControllerText, "public void RebuildVideoFormatOptions()");
         AssertContains(captureModeOptionsControllerText, "CaptureFormatSelectionPolicy.Select(");
-        AssertContains(captureModeOptionsControllerText, "CaptureFormatSelectionPolicy\n                .SelectModeTupleFormats(");
+        AssertContains(captureModeOptionsControllerText, ".SelectModeTupleFormats(BuildCaptureFormatSelectionRequest(");
         AssertContains(captureModeOptionsControllerText, "_context.AvailableVideoFormats.Clear();");
-        AssertContains(captureModeOptionsControllerContextText, "private sealed class MainViewModelCaptureModeOptionRebuildControllerContext");
+        AssertContains(captureModeOptionsControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(captureModeOptionsControllerContextText, "internal sealed class MainViewModelCaptureModeOptionRebuildControllerContext");
         AssertDoesNotContain(captureModeOptionsControllerText, "_viewModel.");
         AssertDoesNotContain(captureModeTransactionsText, "FrameRateTimingPolicy.SelectPreferredFrameRateFormat(");
         AssertDoesNotContain(captureModeTransactionsText, "private static bool IsHdrModeCandidate(");

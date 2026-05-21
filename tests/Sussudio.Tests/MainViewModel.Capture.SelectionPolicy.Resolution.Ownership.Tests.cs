@@ -21,7 +21,8 @@ static partial class Program
 
         AssertContains(captureModeTransactionsText, "private void RebuildResolutionOptions()");
         AssertContains(captureModeTransactionsText, "=> _captureModeOptionRebuildController.RebuildResolutionOptions();");
-        AssertContains(resolutionOptionRebuildControllerText, "private sealed partial class MainViewModelCaptureModeOptionRebuildController");
+        AssertContains(resolutionOptionRebuildControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(resolutionOptionRebuildControllerText, "internal sealed partial class MainViewModelCaptureModeOptionRebuildController");
         AssertContains(resolutionOptionRebuildControllerText, "public void RebuildResolutionOptions()");
         AssertContains(resolutionOptionRebuildControllerText, "private AutoCaptureSelection? ResolveAutoCaptureSelection(");
         AssertContains(resolutionOptionRebuildControllerText, "AutoCaptureSelectionPolicy.Select(new AutoCaptureSelectionRequest(");
@@ -35,6 +36,7 @@ static partial class Program
         AssertDoesNotContain(captureModeOptionsControllerText, "_viewModel.AvailableResolutions.Clear();");
         AssertDoesNotContain(resolutionOptionsText, "private string GetSelectedResolutionDisplayText()");
         AssertContains(resolutionOptionRebuildControllerText, "private ResolutionOption CreateAutoResolutionOption()");
+        AssertContains(resolutionOptionRebuildControllerText, "Value = _context.AutoResolutionValue,");
         AssertContains(resolutionOptionRebuildControllerText, "private bool ShouldSelectAutoResolutionOption(");
         AssertDoesNotContain(resolutionOptionsText, "private ResolutionOption? SelectBestAutoResolutionCandidate(");
         AssertEqual(

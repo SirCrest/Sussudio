@@ -1,3 +1,5 @@
+using Sussudio.Controllers;
+
 namespace Sussudio.ViewModels;
 
 public partial class MainViewModel
@@ -13,6 +15,8 @@ public partial class MainViewModel
                     AvailableFrameRates = viewModel.AvailableFrameRates,
                     AvailableResolutions = viewModel.AvailableResolutions,
                     AvailableVideoFormats = viewModel.AvailableVideoFormats,
+                    AutoResolutionValue = AutoResolutionValue,
+                    AutoFrameRateValue = AutoFrameRateValue,
                     GetResolutionToFormats = () => viewModel._resolutionToFormats,
                     GetLatestSourceTelemetry = () => viewModel._latestSourceTelemetry,
                     TryGetEffectiveResolutionSelection = viewModel.TryGetEffectiveResolutionSelection,

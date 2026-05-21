@@ -54,9 +54,11 @@ static partial class Program
         AssertContains(captureModeTransactionsText, "/// Capture-mode transactions that coordinate option rebuilds");
         AssertContains(captureModeTransactionsText, "private void RebuildFrameRateOptions()");
         AssertContains(captureModeTransactionsText, "=> _captureModeOptionRebuildController.RebuildFrameRateOptions();");
-        AssertContains(captureModeOptionsControllerText, "private sealed partial class MainViewModelCaptureModeOptionRebuildController");
+        AssertContains(captureModeOptionsControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(captureModeOptionsControllerText, "internal sealed partial class MainViewModelCaptureModeOptionRebuildController");
         AssertDoesNotContain(captureModeOptionsControllerText, "public void RebuildFrameRateOptions()");
-        AssertContains(frameRateRebuildControllerText, "private sealed partial class MainViewModelCaptureModeOptionRebuildController");
+        AssertContains(frameRateRebuildControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(frameRateRebuildControllerText, "internal sealed partial class MainViewModelCaptureModeOptionRebuildController");
         AssertContains(frameRateRebuildControllerText, "public void RebuildFrameRateOptions()");
         AssertContains(frameRateRebuildControllerText, "var sourceRate = _context.ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);");
         AssertContains(frameRateRebuildControllerText, "_context.AvailableFrameRates.Clear();");

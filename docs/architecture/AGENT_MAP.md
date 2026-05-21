@@ -3838,12 +3838,14 @@ Primary current owners:
   `MainViewModel.CaptureModeTransactions.cs` keeps selected-format and video-format
   rebuild compatibility adapters, while
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
-  owns selected-format assignment, video-format option collection mutation, and
-  capture-format request shaping for the controller family.
+  is a top-level `Sussudio.Controllers` owner for selected-format assignment,
+  video-format option collection mutation, and capture-format request shaping
+  for the controller family.
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.Context.cs`
-  owns the capture-mode option rebuild graph-port contract for option
-  collections, source telemetry, resolution/frame-rate selection state,
-  automatic retarget flags, format-change suppression, and projected status text.
+  owns the top-level capture-mode option rebuild graph-port contract for option
+  collections, stable Source/Auto sentinel values, source telemetry,
+  resolution/frame-rate selection state, automatic retarget flags,
+  format-change suppression, and projected status text.
   `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs`
   owns pure selected capture-format choice and mode-tuple video-format filtering.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`
@@ -3896,10 +3898,11 @@ Primary current owners:
   `MainViewModel.CaptureModeTransactions.cs` keeps the compatibility adapter for
   resolution option rebuild callers.
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.Resolution.cs`
-  owns resolution option rebuilds inside the capture option rebuild controller family: automatic resolution dropdown option
-  construction, automatic resolution-selection adaptation over current
-  ViewModel state, auto-resolution state refresh, and resolution dropdown
-  mutation through graph-built context ports.
+  owns resolution option rebuilds inside the promoted top-level capture option
+  rebuild controller family: automatic resolution dropdown option construction,
+  automatic resolution-selection adaptation over current ViewModel state,
+  auto-resolution state refresh, and resolution dropdown mutation through
+  graph-built context ports.
   `MainViewModel.ResolutionOptions.cs` owns effective Source resolution state
   and state-backed delegates to the pure selection policy.
   `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs` owns automatic resolution
@@ -3916,7 +3919,7 @@ Primary current owners:
   request/result records.
   State-backed capability queries for callers that live across the ViewModel
   partial family stay in `MainViewModel.ResolutionOptions.cs`; observable
-  resolution dropdown mutation routes through
+  resolution dropdown mutation routes through the top-level
   `MainViewModelCaptureModeOptionRebuildController.Resolution.cs`.
   `Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs`
   owns source telemetry ingress behavior, projection, enum-string caching,
