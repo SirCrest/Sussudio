@@ -71,6 +71,10 @@ static partial class Program
     {
         var captureText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs")
             .Replace("\r\n", "\n");
+        var pngCompletionText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotPngCompletion.cs")
+            .Replace("\r\n", "\n");
+        var stagingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotStaging.cs")
+            .Replace("\r\n", "\n");
         var captureRequestsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotRequests.cs")
             .Replace("\r\n", "\n");
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
@@ -95,9 +99,15 @@ static partial class Program
         AssertContains(captureRequestsText, "private void FailPendingFrameCapture(string message)");
         AssertContains(captureRequestsText, "private void DisposeFrameCaptureStagingResources()");
         AssertContains(captureRequestsText, "private static PreviewFrameCaptureResult CreateFrameCaptureError(");
-        AssertContains(captureText, "PreviewScreenshotCapture.CaptureFrameBufferTo16BitPng(");
+        AssertContains(captureText, "EnsureFrameCaptureStagingTexture(backBufferDescription, width, height)");
+        AssertContains(captureText, "BeginPngFrameCaptureCompletion(");
         AssertContains(captureText, "PreviewScreenshotCapture.CopyMappedFrameToBuffer(");
         AssertContains(captureText, "PreviewScreenshotCapture.CaptureMappedFrameToBmp(");
+        AssertContains(stagingText, "private ID3D11Texture2D EnsureFrameCaptureStagingTexture(");
+        AssertContains(stagingText, "_captureStagingTexture = _device!.CreateTexture2D(");
+        AssertContains(pngCompletionText, "private void BeginPngFrameCaptureCompletion(");
+        AssertContains(pngCompletionText, "PreviewScreenshotCapture.CaptureFrameBufferTo16BitPng(");
+        AssertContains(pngCompletionText, "Interlocked.Exchange(ref _frameCaptureEncodeInProgress, 0);");
         AssertContains(captureRequestsText, "_captureStagingTexture?.Dispose();");
         AssertContains(resourcesText, "DisposeFrameCaptureStagingResources();");
         AssertContains(previewScreenshotCaptureText, "internal static PreviewFrameCaptureResult CaptureMappedFrameToBmp(");
@@ -110,6 +120,7 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.ScreenshotEncoding.cs")),
             "renderer screenshot encoding partial removed");
+        AssertDoesNotContain(captureText, "PreviewScreenshotCapture.CaptureFrameBufferTo16BitPng(");
         AssertDoesNotContain(captureText, "private static PreviewFrameCaptureResult CaptureMappedFrameToBmp(");
         AssertDoesNotContain(captureText, "private static void WriteBitmapHeaders(");
         AssertDoesNotContain(resourcesText, "_captureStagingTexture?.Dispose();");

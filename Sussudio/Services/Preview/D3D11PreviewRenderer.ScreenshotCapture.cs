@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 using Sussudio.Models;
 using Vortice.Direct3D11;
 
@@ -62,28 +61,7 @@ internal sealed partial class D3D11PreviewRenderer
                     throw new InvalidOperationException("Swap chain back buffer has invalid dimensions.");
                 }
 
-                if (_captureStagingTexture == null ||
-                    _captureStagingWidth != width ||
-                    _captureStagingHeight != height)
-                {
-                    _captureStagingTexture?.Dispose();
-                    _captureStagingTexture = _device.CreateTexture2D(new Texture2DDescription(
-                        backBufferDescription.Format,
-                        (uint)width,
-                        (uint)height,
-                        1,
-                        1,
-                        BindFlags.None,
-                        ResourceUsage.Staging,
-                        CpuAccessFlags.Read,
-                        1,
-                        0,
-                        ResourceOptionFlags.None));
-                    _captureStagingWidth = width;
-                    _captureStagingHeight = height;
-                }
-
-                var stagingTexture = _captureStagingTexture;
+                var stagingTexture = EnsureFrameCaptureStagingTexture(backBufferDescription, width, height);
                 _deviceContext.CopyResource(stagingTexture, backBuffer);
 
                 _deviceContext.Map(stagingTexture, 0, MapMode.Read, Vortice.Direct3D11.MapFlags.None, out var mapped);
@@ -115,34 +93,15 @@ internal sealed partial class D3D11PreviewRenderer
 
                 if (isPng)
                 {
-                    var pngBuffer = pngFrameBuffer!;
-                    _ = Task.Run(
-                        () =>
-                        {
-                            try
-                            {
-                                var pngCaptureResult = PreviewScreenshotCapture.CaptureFrameBufferTo16BitPng(
-                                    pngBuffer,
-                                    pngSourceRowBytes,
-                                    width,
-                                    height,
-                                    fullOutputPath,
-                                    rendererMode,
-                                    backBufferDescription.Format);
-                                request.TrySetResult(pngCaptureResult);
-                                Logger.Log(
-                                    $"PREVIEW_FRAME_CAPTURE_RESULT ok={pngCaptureResult.Succeeded} renderer={pngCaptureResult.RendererMode} path={pngCaptureResult.FilePath ?? "n/a"} width={pngCaptureResult.CapturedWidth} height={pngCaptureResult.CapturedHeight} avgLum={pngCaptureResult.AverageLuminance:0.00} pureBlackPct={pngCaptureResult.PureBlackPercent:0.00}");
-                            }
-                            catch (Exception ex)
-                            {
-                                request.TrySetResult(CreateFrameCaptureError($"Preview frame capture failed: {ex.Message}", rendererMode));
-                                Logger.Log($"PREVIEW_FRAME_CAPTURE_RESULT ok=false renderer={rendererMode} type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
-                            }
-                            finally
-                            {
-                                Interlocked.Exchange(ref _frameCaptureEncodeInProgress, 0);
-                            }
-                        });
+                    BeginPngFrameCaptureCompletion(
+                        request,
+                        pngFrameBuffer!,
+                        pngSourceRowBytes,
+                        width,
+                        height,
+                        fullOutputPath,
+                        rendererMode,
+                        backBufferDescription.Format);
                     return;
                 }
 
