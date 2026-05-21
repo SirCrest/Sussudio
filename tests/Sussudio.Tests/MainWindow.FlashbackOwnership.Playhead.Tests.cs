@@ -4,12 +4,12 @@ static partial class Program
 {
     internal static Task FlashbackPlayheadMotion_LivesInController()
     {
-        var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var flashbackText = ReadMainWindowFlashbackAdapterSource();
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var scrubText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var scrubText = ReadMainWindowFlashbackAdapterSource();
         var scrubControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs").Replace("\r\n", "\n");
-        var playheadText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
-        var pollingAdapterText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var playheadText = ReadMainWindowFlashbackAdapterSource();
+        var pollingAdapterText = ReadMainWindowFlashbackAdapterSource();
         var controllerRootText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs").Replace("\r\n", "\n");
         var controllerCtiText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Cti.cs").Replace("\r\n", "\n");
         var controllerVisualsText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Visuals.cs").Replace("\r\n", "\n");
@@ -27,9 +27,9 @@ static partial class Program
         AssertContains(playheadText, "=> _flashbackPlayheadMotionController.StopCtiAnchorTimer();");
         AssertContains(mainWindowText, "InitializeFlashbackPlayheadMotionController();");
         AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.FlashbackPlayhead.cs")),
-            "Flashback playhead adapter is consolidated into MainWindow.Flashback.cs");
+            true,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Playhead.cs")),
+            "Flashback playhead adapter lives in the focused Flashback playhead partial");
         AssertOccursBefore(mainWindowText, "InitializeFlashbackScrubInteractionController();", "InitializeFlashbackPlayheadMotionController();");
         AssertOccursBefore(mainWindowText, "InitializeFlashbackPlayheadMotionController();", "InitializeFlashbackTimelineController();");
         AssertContains(controllerRootText, "internal sealed class FlashbackPlayheadMotionControllerContext");

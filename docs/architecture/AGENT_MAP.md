@@ -2032,6 +2032,8 @@ Primary current owners:
   owns Flashback playback presentation/coordinator ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Settings.Tests.cs` owns
   Flashback settings binding and command controller ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Helpers.cs` owns the
+  shared source reader for the split `MainWindow.Flashback.*.cs` adapter family.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Preview.Tests.cs` owns
   automation preview enable/disable and start/stop routing through the preview
   lifecycle controller.
@@ -3223,12 +3225,21 @@ Primary current owners:
   timeline visibility, lockout, toggle synchronization, and timeline track layout sizing.
   `Sussudio/Controllers/Flashback/FlashbackTimelineAnimationController.cs`
   owns show/hide storyboard state, immediate collapse, and fullscreen animation
-  reset. `MainWindow.Flashback.cs` is the XAML-facing Flashback adapter; command
-  semantics live in `FlashbackCommandController`.
+  reset. `MainWindow.Flashback.cs` is the XAML-facing Flashback adapter family
+  marker. The sibling `MainWindow.Flashback.*.cs` partials own focused command,
+  polling, playhead, scrub, settings, timeline, and presentation adapter
+  surfaces: `Sussudio/MainWindow.Flashback.Commands.cs`,
+  `Sussudio/MainWindow.Flashback.Polling.cs`,
+  `Sussudio/MainWindow.Flashback.Playhead.cs`,
+  `Sussudio/MainWindow.Flashback.Scrub.cs`,
+  `Sussudio/MainWindow.Flashback.Settings.cs`,
+  `Sussudio/MainWindow.Flashback.Timeline.cs`, and
+  `Sussudio/MainWindow.Flashback.Presentation.cs`. Command semantics live in
+  `FlashbackCommandController`.
 - `Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs` owns active
   Flashback pointer-scrub state, scrub throttling, release/cancel/capture-lost
   cleanup, fullscreen scrub termination, lockout clearing, and scrub visual
-  updates. `MainWindow.Flashback.cs` is the XAML-facing adapter.
+  updates. `MainWindow.Flashback.Scrub.cs` is the XAML-facing adapter.
   `Sussudio/Controllers/Flashback/FlashbackTimelineGeometry.cs` owns pure timeline
   fraction/duration math used by scrub and playhead presentation.
 - `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs` owns the
@@ -3238,14 +3249,15 @@ Primary current owners:
   long-horizon extrapolation scheduling, and CTI anchor timing. `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Visuals.cs`
   owns compositor visual setup, snap placement, magnetic pointer-scrub movement,
   linear keyframe animation, and label clamp/positioning.
-  `Sussudio/MainWindow.Flashback.cs` is the XAML-facing adapter.
+  `Sussudio/MainWindow.Flashback.Playhead.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Flashback/FlashbackMarkerPresentationController.cs` owns
   Flashback marker placement, selection-region layout, and compact duration
-  text formatting. `MainWindow.Flashback.cs` is the XAML-facing marker adapter.
+  text formatting. `MainWindow.Flashback.Presentation.cs` is the XAML-facing
+  marker adapter.
 - `Sussudio/Controllers/Flashback/FlashbackPlaybackPresentationController.cs` owns
   Flashback play/pause glyph policy, Go Live enabled state, buffer-duration
-  text, and floating playhead label text. `MainWindow.Flashback.cs` wires the
-  playback presentation controller and playback UI coordinator.
+  text, and floating playhead label text. `MainWindow.Flashback.Presentation.cs`
+  wires the playback presentation controller and playback UI coordinator.
 - `Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs` owns Flashback
   playback UI sequencing: track-resize snap/position/marker/CTI refresh order,
   playback state polling start/stop, buffer-fill/position/marker refresh order,
@@ -3253,20 +3265,20 @@ Primary current owners:
 - `Sussudio/Controllers/Flashback/FlashbackCommandController.cs` owns Flashback command
   semantics for in/out points, clear, play/pause, Go Live, fullscreen keyboard
   shortcuts including left/right nudge rejection logging, export, save-last-5m,
-  enable-toggle rollback, and apply/restart. `MainWindow.Flashback.cs`
-  preserves the XAML event-handler surface as part of the consolidated adapter.
+  enable-toggle rollback, and apply/restart. `MainWindow.Flashback.Commands.cs`
+  preserves the XAML command event-handler surface.
 - `Sussudio/Controllers/Flashback/FlashbackExportProgressPresentationController.cs` owns
   Flashback export progress-bar value, visibility, and reset-on-complete
-  semantics. `MainWindow.Flashback.cs` wires the export progress presentation
-  controller with the rest of the Flashback presentation surface.
+  semantics. `MainWindow.Flashback.Presentation.cs` wires the export progress
+  presentation controller with the rest of the Flashback presentation surface.
 - `Sussudio/Controllers/Flashback/FlashbackSettingsBindingController.cs` owns Flashback
   settings-control initialization, GPU decode toggle binding/sync, buffer
   duration combo selection/sync, and buffer-duration change logging.
-  `MainWindow.Flashback.cs` is the XAML-facing settings adapter; enable
+  `MainWindow.Flashback.Settings.cs` is the XAML-facing settings adapter; enable
   toggle rollback and apply/restart command behavior live in
   `FlashbackCommandController`.
 - `Sussudio/Controllers/Flashback/FlashbackPollingController.cs` owns Flashback status
-  and playback-position polling timers. `MainWindow.Flashback.cs` is the
+  and playback-position polling timers. `MainWindow.Flashback.Polling.cs` is the
   XAML-facing adapter; CTI anchor timing lives in
   `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Cti.cs`.
 - `Sussudio/Controllers/Shell/SettingsShelfController.cs` owns settings shelf
@@ -3872,8 +3884,9 @@ Refactor direction:
 - Keep `MainWindow.*` partials thin as XAML adapters over named controllers.
   Preview startup, preview runtime snapshot dispatch/sampling, MainWindow UI
   dispatching, stats projection, and Flashback playback/export presentation
-  already have named owners; start the next UI cleanup from remaining broad
-  adapters not covered by controller ownership tests.
+  already have named owners. The Flashback adapter family is split across
+  focused `MainWindow.Flashback.*.cs` partials; start the next UI cleanup from
+  remaining broad adapters not covered by controller ownership tests.
 - Keep `MainViewModel` as a compatibility facade while moving feature state to
   capture, recording, audio, Flashback, diagnostics, and automation adapters.
 - `Sussudio/Services/Automation/IAutomationViewModel.cs` keeps the aggregate

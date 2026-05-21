@@ -9,18 +9,15 @@ static partial class Program
 {
     internal static Task MainWindowFlashbackScrub_EndsOnReleaseCancelAndCaptureLost()
     {
-        var flashbackWindowText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
-            .Replace("\r\n", "\n");
+        var flashbackWindowText = ReadMainWindowFlashbackAdapterSource();
         var flashbackCommandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackCommandController.cs")
             .Replace("\r\n", "\n");
-        var flashbackScrubText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
-            .Replace("\r\n", "\n");
+        var flashbackScrubText = ReadMainWindowFlashbackAdapterSource();
         var flashbackScrubControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs")
             .Replace("\r\n", "\n");
         var flashbackGeometryText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineGeometry.cs")
             .Replace("\r\n", "\n");
-        var flashbackPlayheadText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
-            .Replace("\r\n", "\n");
+        var flashbackPlayheadText = ReadMainWindowFlashbackAdapterSource();
         var flashbackPlayheadControllerText = (
             ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs")
             + "\n" + ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Cti.cs")
@@ -141,9 +138,9 @@ static partial class Program
         AssertDoesNotContain(flashbackScrubText, "private long _lastScrubUpdateTick;");
         AssertDoesNotContain(flashbackScrubControllerText, "var carriedPosition = _isScrubbing ? _context.ViewModel.FlashbackPlaybackPosition : (TimeSpan?)null;");
         AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.FlashbackScrub.cs")),
-            "Flashback scrub adapter is consolidated into MainWindow.Flashback.cs");
+            true,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Scrub.cs")),
+            "Flashback scrub adapter lives in the focused Flashback scrub partial");
         AssertDoesNotContain(mainWindowText, "private bool _isFlashbackScrubbing;");
         AssertDoesNotContain(mainWindowText, "private TimeSpan? _lastScrubPointerPosition;");
 

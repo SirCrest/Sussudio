@@ -4,10 +4,10 @@ static partial class Program
 {
     internal static Task FlashbackPollingTimers_LiveInController()
     {
-        var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var flashbackText = ReadMainWindowFlashbackAdapterSource();
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var pollingAdapterText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
-        var timelineAdapterText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var pollingAdapterText = ReadMainWindowFlashbackAdapterSource();
+        var timelineAdapterText = ReadMainWindowFlashbackAdapterSource();
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPollingController.cs").Replace("\r\n", "\n");
@@ -23,9 +23,9 @@ static partial class Program
         AssertContains(pollingAdapterText, "=> _flashbackPollingController.StopPlaybackPolling();");
         AssertContains(mainWindowText, "InitializeFlashbackPollingController();");
         AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.FlashbackPolling.cs")),
-            "Flashback polling adapter is consolidated into MainWindow.Flashback.cs");
+            true,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Polling.cs")),
+            "Flashback polling adapter lives in the focused Flashback polling partial");
         AssertContains(timelineAdapterText, "StartStatusPolling = StartFlashbackStatusPolling,");
         AssertContains(shutdownCleanupText, "StopFlashbackStatusPolling();");
         AssertContains(shutdownCleanupControllerText, "_context.StopTimers();");

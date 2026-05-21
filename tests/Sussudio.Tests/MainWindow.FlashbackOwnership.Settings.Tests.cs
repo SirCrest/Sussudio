@@ -4,15 +4,15 @@ static partial class Program
 {
     internal static Task FlashbackSettingsBindings_LiveInController()
     {
-        var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var flashbackText = ReadMainWindowFlashbackAdapterSource();
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
         var flashbackPropertyChangedControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs").Replace("\r\n", "\n");
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var adapterText = ReadMainWindowFlashbackAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackSettingsBindingController.cs").Replace("\r\n", "\n");
-        var commandAdapterText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var commandAdapterText = ReadMainWindowFlashbackAdapterSource();
         var commandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackCommandController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private FlashbackSettingsBindingController _flashbackSettingsBindingController = null!;");
@@ -34,9 +34,9 @@ static partial class Program
         AssertContains(adapterText, "_flashbackSettingsBindingController.HandleBufferDurationSelectionChanged();");
         AssertContains(mainWindowText, "InitializeFlashbackSettingsBindingController();");
         AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.FlashbackSettingsBindings.cs")),
-            "Flashback settings adapter is consolidated into MainWindow.Flashback.cs");
+            true,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Settings.cs")),
+            "Flashback settings adapter lives in the focused Flashback settings partial");
         AssertContains(bindingsText, "ApplyInitialFlashbackSettings();");
         AssertContains(bindingsText, "AttachFlashbackSettingsBindings();");
 
@@ -80,9 +80,9 @@ static partial class Program
         AssertContains(commandControllerText, "NudgePlayback(TimeSpan.FromSeconds(1), \"nudge right\", \"FLASHBACK_UI_NUDGE_REJECTED direction=right\");");
         AssertContains(mainWindowText, "InitializeFlashbackCommandController();");
         AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.FlashbackCommands.cs")),
-            "Flashback command adapter is consolidated into MainWindow.Flashback.cs");
+            true,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Commands.cs")),
+            "Flashback command adapter lives in the focused Flashback command partial");
         AssertDoesNotContain(flashbackText, "private async Task ApplyFlashbackEnabledToggleAsync(bool requestedEnabled)");
         AssertDoesNotContain(bindingsText, "FlashbackEnabledToggle.IsOn = ViewModel.IsFlashbackEnabled;");
         AssertDoesNotContain(bindingsText, "FlashbackGpuDecodeToggle.IsOn = ViewModel.FlashbackGpuDecode;");

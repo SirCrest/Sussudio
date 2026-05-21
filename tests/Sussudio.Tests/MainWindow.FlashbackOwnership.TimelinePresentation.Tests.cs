@@ -4,8 +4,8 @@ static partial class Program
 {
     internal static Task FlashbackTimelineTrackLayout_LivesInController()
     {
-        var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
-        var timelineAdapterText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var flashbackText = ReadMainWindowFlashbackAdapterSource();
+        var timelineAdapterText = ReadMainWindowFlashbackAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineController.cs").Replace("\r\n", "\n");
         var animationControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineAnimationController.cs").Replace("\r\n", "\n");
         var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
@@ -13,9 +13,9 @@ static partial class Program
 
         AssertContains(timelineAdapterText, "FlashbackTrackBackground = FlashbackTrackBackground,");
         AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.FlashbackTimeline.cs")),
-            "Flashback timeline adapter is consolidated into MainWindow.Flashback.cs");
+            true,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Timeline.cs")),
+            "Flashback timeline adapter lives in the focused Flashback timeline partial");
         AssertContains(timelineAdapterText, "FlashbackScrubArea = FlashbackScrubArea,");
         AssertContains(timelineAdapterText, "FlashbackPlayhead = FlashbackPlayhead,");
         AssertContains(timelineAdapterText, "FlashbackLiveEdge = FlashbackLiveEdge,");
@@ -65,7 +65,7 @@ static partial class Program
 
     internal static Task FlashbackMarkerPresentation_LivesInController()
     {
-        var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var flashbackText = ReadMainWindowFlashbackAdapterSource();
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackMarkerPresentationController.cs").Replace("\r\n", "\n");
         var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
@@ -112,7 +112,7 @@ static partial class Program
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
         var flashbackPropertyChangedControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs").Replace("\r\n", "\n");
-        var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var flashbackText = ReadMainWindowFlashbackAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackExportProgressPresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(flashbackText, "private FlashbackExportProgressPresentationController _flashbackExportProgressPresentationController = null!;");

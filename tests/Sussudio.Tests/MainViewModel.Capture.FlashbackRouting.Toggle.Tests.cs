@@ -9,18 +9,14 @@ static partial class Program
 {
     internal static Task MainWindowFlashbackToggle_RollsBackUiStateOnFailure()
     {
-        var flashbackWindowText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
-            .Replace("\r\n", "\n");
-        var flashbackCommandAdapterText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
-            .Replace("\r\n", "\n");
+        var flashbackWindowText = ReadMainWindowFlashbackAdapterSource();
+        var flashbackCommandAdapterText = ReadMainWindowFlashbackAdapterSource();
         var flashbackCommandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackCommandController.cs")
             .Replace("\r\n", "\n");
-        var flashbackTimelineText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
-            .Replace("\r\n", "\n");
+        var flashbackTimelineText = ReadMainWindowFlashbackAdapterSource();
         var fullScreenText = ReadRepoFile("Sussudio/MainWindow.FullScreen.cs")
             .Replace("\r\n", "\n");
-        var flashbackSettingsText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
-            .Replace("\r\n", "\n");
+        var flashbackSettingsText = ReadMainWindowFlashbackAdapterSource();
         var flashbackTimelineControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineController.cs")
             .Replace("\r\n", "\n");
         var flashbackTimelineAnimationControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineAnimationController.cs")

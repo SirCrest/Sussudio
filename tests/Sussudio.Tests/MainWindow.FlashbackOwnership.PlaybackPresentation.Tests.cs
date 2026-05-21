@@ -6,7 +6,7 @@ static partial class Program
 {
     internal static Task FlashbackPlaybackPresentation_LivesInController()
     {
-        var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var flashbackText = ReadMainWindowFlashbackAdapterSource();
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackPresentationController.cs").Replace("\r\n", "\n");
         var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
