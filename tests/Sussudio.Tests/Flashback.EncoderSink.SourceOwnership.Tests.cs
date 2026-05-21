@@ -355,6 +355,53 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    internal static Task FlashbackEncoderSink_RecordingLifecycleLivesInFocusedPartials()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
+        var recordingStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.State.cs")
+            .Replace("\r\n", "\n");
+        var recordingStartText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.Start.cs")
+            .Replace("\r\n", "\n");
+        var recordingEndText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.End.cs")
+            .Replace("\r\n", "\n");
+        var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
+            .Replace("\r\n", "\n") + "\n" +
+            ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
+
+        AssertContains(recordingStateText, "public TimeSpan LastRecordingStartPts { get; private set; }");
+        AssertContains(recordingStateText, "public TimeSpan LastRecordingEndPts { get; private set; }");
+        AssertContains(recordingStateText, "public bool IsRecordingActive =>");
+        AssertContains(recordingStateText, "public bool CanBeginRecording");
+        AssertContains(recordingStateText, "!_bufferManager.IsSessionPreservedForRecovery");
+        AssertDoesNotContain(recordingStateText, "public void BeginRecording(");
+        AssertDoesNotContain(recordingStateText, "public async Task<FinalizeResult> EndRecordingAsync");
+
+        AssertContains(recordingStartText, "Task IRecordingSink.StartAsync(RecordingContext context, CancellationToken cancellationToken)");
+        AssertContains(recordingStartText, "public void BeginRecording(string outputPath)");
+        AssertContains(recordingStartText, "Cannot begin recording: flashback export rotation is still draining.");
+        AssertContains(recordingStartText, "_bufferManager.PauseEviction();");
+        AssertContains(recordingStartText, "public void CancelRecordingStartRollback(string reason)");
+        AssertContains(recordingStartText, "ResumeEvictionBestEffort(_bufferManager, \"recording_start_rollback\")");
+        AssertDoesNotContain(recordingStartText, "public bool CanBeginRecording");
+        AssertDoesNotContain(recordingStartText, "public async Task<FinalizeResult> EndRecordingAsync");
+
+        AssertContains(recordingEndText, "public async Task<FinalizeResult> EndRecordingAsync(CancellationToken cancellationToken)");
+        AssertContains(recordingEndText, "FLASHBACK_RECORDING_END_REJECTED");
+        AssertContains(recordingEndText, "FLASHBACK_RECORDING_FAIL");
+        AssertContains(recordingEndText, "ResumeEvictionBestEffort(_bufferManager, \"recording_end\")");
+        AssertContains(recordingEndText, "FLASHBACK_RECORDING_READY");
+        AssertDoesNotContain(recordingEndText, "public void BeginRecording(");
+        AssertDoesNotContain(recordingEndText, "public bool CanBeginRecording");
+
+        AssertDoesNotContain(rootText, "public void BeginRecording(string outputPath)");
+        AssertContains(docsText, "FlashbackEncoderSink.Recording.State.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.Recording.Start.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.Recording.End.cs");
+
+        return Task.CompletedTask;
+    }
+
     internal static Task FlashbackEncoderSink_OptionsHelpersLiveInFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")

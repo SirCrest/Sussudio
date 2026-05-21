@@ -2296,10 +2296,20 @@ in `FlashbackEncoderSink.Lifetime.cs`; keep `Dispose`/`DisposeAsync`, deferred
 cleanup, final dispose reset, cancellation/disposal helpers, and best-effort
 encoder/buffer manager disposal in `FlashbackEncoderSink.DisposeLifecycle.cs`.
 
-Flashback encoder retroactive recording lifecycle now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.cs`. Keep the
-`IRecordingSink.StartAsync` adapter, `CanBeginRecording`, recording begin/cancel/end,
-recording PTS boundaries, and recording eviction-pause handshake there.
+Flashback encoder recording state and gates now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.State.cs`. Keep
+recording PTS boundary state, active-recording projection, and begin-recording
+availability checks there.
+
+Flashback encoder recording start/rollback now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.Start.cs`. Keep the
+`IRecordingSink.StartAsync` adapter, recording begin validation, eviction-pause
+handoff, active-state publication, and start rollback there.
+
+Flashback encoder recording finalization now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.End.cs`. Keep
+recording end rejection/failure/success results, end-PTS capture, eviction
+resume, PTS clamping, and ready logging there.
 
 Flashback encoder public runtime counters now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.Counters.cs`.
