@@ -94,11 +94,16 @@ static partial class Program
     internal static Task FlashbackEncoderSink_StartFailureRollsBackStartedState()
     {
         var sourceText = ReadFlashbackEncoderSinkSource();
+        var startupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs")
+            .Replace("\r\n", "\n");
+        var startupRollbackText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.StartupRollback.cs")
+            .Replace("\r\n", "\n");
 
         var startCatchBlock = ExtractTextBetween(
-            sourceText,
-            "catch (Exception ex)\n        {\n            /* Cleanup must not throw",
+            startupText,
+            "catch (Exception ex)\n        {",
             "            throw;\n        }");
+        var rollbackBlock = startupRollbackText;
 
         AssertContains(sourceText, "ValidateSessionContext(context);");
         AssertContains(sourceText, "if (ptsBaseOffset < TimeSpan.Zero)\n        {\n            throw new ArgumentOutOfRangeException(nameof(ptsBaseOffset), \"PTS base offset must not be negative.\");\n        }");
@@ -109,17 +114,18 @@ static partial class Program
         AssertContains(sourceText, "Flashback session height must be positive.");
         AssertContains(sourceText, "Flashback session codec name is required.");
         AssertContains(sourceText, "if (_started || _encodingTask is { IsCompleted: false })");
-        AssertContains(startCatchBlock, "Logger.Log($\"FLASHBACK_SINK_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'\");");
-        AssertContains(startCatchBlock, "lock (_sync)\n            {\n                _started = false;\n            }");
-        AssertEqual(1, startCatchBlock.Split("_started = false;", StringSplitOptions.None).Length - 1, "Start failure rollback clears started state once");
+        AssertContains(startCatchBlock, "RollBackStartFailure(ex, startupGeneratedSegmentPath);");
+        AssertContains(rollbackBlock, "Logger.Log($\"FLASHBACK_SINK_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'\");");
+        AssertContains(rollbackBlock, "lock (_sync)\n        {\n            _started = false;\n        }");
+        AssertEqual(1, rollbackBlock.Split("_started = false;", StringSplitOptions.None).Length - 1, "Start failure rollback clears started state once");
         AssertOccursBefore(sourceText, "_started = false;", "    public bool IsForceRotateActive =>");
-        AssertContains(startCatchBlock, "_tsFilePath = null;\n            _recordingOutputPath = string.Empty;\n            _segmentStartPts = TimeSpan.Zero;\n            _segmentDuration = TimeSpan.Zero;\n            _ptsBaseOffset = TimeSpan.Zero;\n            Interlocked.Exchange(ref _segmentStartBytes, 0);");
+        AssertContains(rollbackBlock, "_tsFilePath = null;\n        _recordingOutputPath = string.Empty;\n        _segmentStartPts = TimeSpan.Zero;\n        _segmentDuration = TimeSpan.Zero;\n        _ptsBaseOffset = TimeSpan.Zero;\n        Interlocked.Exchange(ref _segmentStartBytes, 0);");
         AssertContains(sourceText, "var tsPath = _bufferManager.AcquireSegmentPath(out var startupGeneratedSegment);");
         AssertContains(sourceText, "startupGeneratedSegmentPath = tsPath;");
-        AssertContains(startCatchBlock, "DisposeEncoderBestEffort(\"start_fail\");");
-        AssertContains(startCatchBlock, "else if (startupGeneratedSegmentPath != null)\n            {\n                _bufferManager.AbandonGeneratedSegmentPath(startupGeneratedSegmentPath, restoreActivePath: null);\n            }");
-        AssertOccursBefore(startCatchBlock, "DisposeEncoderBestEffort(\"start_fail\");", "_bufferManager.PurgeAllSegments();");
-        AssertOccursBefore(startCatchBlock, "DisposeEncoderBestEffort(\"start_fail\");", "_bufferManager.AbandonGeneratedSegmentPath(startupGeneratedSegmentPath, restoreActivePath: null);");
+        AssertContains(rollbackBlock, "DisposeEncoderBestEffort(\"start_fail\");");
+        AssertContains(rollbackBlock, "else if (startupGeneratedSegmentPath != null)\n        {\n            _bufferManager.AbandonGeneratedSegmentPath(startupGeneratedSegmentPath, restoreActivePath: null);\n        }");
+        AssertOccursBefore(rollbackBlock, "DisposeEncoderBestEffort(\"start_fail\");", "_bufferManager.PurgeAllSegments();");
+        AssertOccursBefore(rollbackBlock, "DisposeEncoderBestEffort(\"start_fail\");", "_bufferManager.AbandonGeneratedSegmentPath(startupGeneratedSegmentPath, restoreActivePath: null);");
 
         return Task.CompletedTask;
     }

@@ -1,6 +1,5 @@
 using System;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Recording;
@@ -53,51 +52,7 @@ internal sealed partial class FlashbackEncoderSink
             _recordingOutputPath = string.Empty;
 
             _encoder.Initialize(CreateOptions(sessionContext, tsPath));
-
-            // FullMode = Wait only affects WriteAsync (which we never call).
-            // TryWrite returns false immediately when full regardless of FullMode,
-            // allowing our manual eviction paths to handle resource cleanup (COM Release,
-            // ArrayPool Return) before dropping the packet.
-            var videoQueueCapacity = ResolveVideoQueueCapacity(sessionContext, _encoder.UseHardwareFrames);
-            Volatile.Write(ref _videoQueueCapacity, videoQueueCapacity);
-            if (!_encoder.UseHardwareFrames && IsHighResolutionFrame(sessionContext))
-            {
-                Logger.Log($"FLASHBACK_SINK_WARN_CPU_ENCODING width={sessionContext.Width} height={sessionContext.Height} — GPU encoding unavailable, performance will be severely degraded");
-            }
-
-            if (_encoder.UseHardwareFrames)
-            {
-                _gpuQueue = Channel.CreateBounded<GpuFramePacket>(new BoundedChannelOptions(GpuQueueCapacity)
-                {
-                    FullMode = BoundedChannelFullMode.Wait,
-                    SingleReader = true,
-                    SingleWriter = true
-                });
-                _gpuEncodingEnabled = true;
-                Logger.Log($"FLASHBACK_SINK_GPU_QUEUE_INIT capacity={GpuQueueCapacity}");
-            }
-
-            _videoQueue = Channel.CreateBounded<VideoFramePacket>(new BoundedChannelOptions(videoQueueCapacity)
-            {
-                SingleReader = true,
-                SingleWriter = false,
-                FullMode = BoundedChannelFullMode.Wait
-            });
-            _audioQueue = Channel.CreateBounded<AudioSamplePacket>(new BoundedChannelOptions(AudioQueueCapacity)
-            {
-                SingleReader = true,
-                SingleWriter = false,
-                FullMode = BoundedChannelFullMode.Wait
-            });
-            if (sessionContext.MicrophoneEnabled)
-            {
-                _microphoneQueue = Channel.CreateBounded<AudioSamplePacket>(new BoundedChannelOptions(AudioQueueCapacity)
-                {
-                    SingleReader = true,
-                    SingleWriter = false,
-                    FullMode = BoundedChannelFullMode.Wait
-                });
-            }
+            InitializeStartupQueues(sessionContext);
 
             _cts = new CancellationTokenSource();
             _sessionContext = sessionContext;
@@ -146,45 +101,7 @@ internal sealed partial class FlashbackEncoderSink
         }
         catch (Exception ex)
         {
-            /* Cleanup must not throw — tear down partially-initialized queues/state before re-throwing */
-            Logger.Log($"FLASHBACK_SINK_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
-            CompleteWriter(_videoQueue);
-            CompleteWriter(_audioQueue);
-            CompleteWriter(_microphoneQueue);
-            CompleteWriter(_gpuQueue);
-            _videoQueue = null;
-            _audioQueue = null;
-            _microphoneQueue = null;
-            _gpuQueue = null;
-            _gpuEncodingEnabled = false;
-            lock (_sync)
-            {
-                _started = false;
-            }
-            DisposeCtsBestEffort(_cts, "start_fail");
-            _cts = null;
-            _encodingTask = null;
-            _sessionContext = null;
-            _width = 0;
-            _height = 0;
-            _audioEnabled = false;
-            _microphoneEnabled = false;
-            _tsFilePath = null;
-            _recordingOutputPath = string.Empty;
-            _segmentStartPts = TimeSpan.Zero;
-            _segmentDuration = TimeSpan.Zero;
-            _ptsBaseOffset = TimeSpan.Zero;
-            Interlocked.Exchange(ref _segmentStartBytes, 0);
-
-            DisposeEncoderBestEffort("start_fail");
-            if (_ownsBufferManager)
-            {
-                _bufferManager.PurgeAllSegments();
-            }
-            else if (startupGeneratedSegmentPath != null)
-            {
-                _bufferManager.AbandonGeneratedSegmentPath(startupGeneratedSegmentPath, restoreActivePath: null);
-            }
+            RollBackStartFailure(ex, startupGeneratedSegmentPath);
             throw;
         }
     }

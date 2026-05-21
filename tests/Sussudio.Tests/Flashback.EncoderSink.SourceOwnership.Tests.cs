@@ -8,15 +8,42 @@ static partial class Program
             .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs")
             .Replace("\r\n", "\n");
+        var startupQueuesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.StartupQueues.cs")
+            .Replace("\r\n", "\n");
+        var startupRollbackText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.StartupRollback.cs")
+            .Replace("\r\n", "\n");
+        var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
+            .Replace("\r\n", "\n") + "\n" +
+            ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
 
         AssertContains(startupText, "public Task StartAsync(FlashbackSessionContext context, CancellationToken cancellationToken = default, TimeSpan ptsBaseOffset = default)");
         AssertContains(startupText, "ValidateSessionContext(context);");
         AssertContains(startupText, "var tsPath = _bufferManager.AcquireSegmentPath(out var startupGeneratedSegment);");
+        AssertContains(startupText, "InitializeStartupQueues(sessionContext);");
         AssertContains(startupText, "_encodingTask = Task.Factory.StartNew(");
-        AssertContains(startupText, "FLASHBACK_SINK_START_FAIL");
-        AssertContains(startupText, "_bufferManager.AbandonGeneratedSegmentPath(startupGeneratedSegmentPath, restoreActivePath: null);");
+        AssertContains(startupText, "RollBackStartFailure(ex, startupGeneratedSegmentPath);");
+        AssertDoesNotContain(startupText, "Channel.CreateBounded<");
+        AssertDoesNotContain(startupText, "FLASHBACK_SINK_START_FAIL");
+        AssertDoesNotContain(startupText, "_bufferManager.AbandonGeneratedSegmentPath(startupGeneratedSegmentPath, restoreActivePath: null);");
+
+        AssertContains(startupQueuesText, "private void InitializeStartupQueues(FlashbackSessionContext sessionContext)");
+        AssertContains(startupQueuesText, "Channel.CreateBounded<GpuFramePacket>");
+        AssertContains(startupQueuesText, "Channel.CreateBounded<VideoFramePacket>");
+        AssertContains(startupQueuesText, "Channel.CreateBounded<AudioSamplePacket>");
+        AssertContains(startupQueuesText, "FLASHBACK_SINK_WARN_CPU_ENCODING");
+        AssertContains(startupQueuesText, "FLASHBACK_SINK_GPU_QUEUE_INIT");
+
+        AssertContains(startupRollbackText, "private void RollBackStartFailure(Exception ex, string? startupGeneratedSegmentPath)");
+        AssertContains(startupRollbackText, "FLASHBACK_SINK_START_FAIL");
+        AssertContains(startupRollbackText, "CompleteWriter(_videoQueue);");
+        AssertContains(startupRollbackText, "DisposeCtsBestEffort(_cts, \"start_fail\");");
+        AssertContains(startupRollbackText, "DisposeEncoderBestEffort(\"start_fail\");");
+        AssertContains(startupRollbackText, "_bufferManager.AbandonGeneratedSegmentPath(startupGeneratedSegmentPath, restoreActivePath: null);");
+
         AssertDoesNotContain(rootText, "public Task StartAsync(FlashbackSessionContext context, CancellationToken cancellationToken = default, TimeSpan ptsBaseOffset = default)");
         AssertDoesNotContain(rootText, "FLASHBACK_SINK_START_FAIL");
+        AssertContains(docsText, "FlashbackEncoderSink.StartupQueues.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.StartupRollback.cs");
 
         return Task.CompletedTask;
     }
