@@ -71,8 +71,8 @@ public partial class CaptureService
                 FrameRateArg = ResolveFrameRateArg(settings, effectiveFrameRate),
                 EffectiveWidth = _actualWidth ?? settings.Width,
                 EffectiveHeight = _actualHeight ?? settings.Height,
-                VideoInputPixelFormat = _unifiedVideoCapture?.IsP010 == true ? "p010le" : "nv12",
-                IsFullRangeInput = _unifiedVideoCapture?.IsSoftwareMjpegPipelineActive == true,
+                VideoInputPixelFormat = _videoPipeline.Capture?.IsP010 == true ? "p010le" : "nv12",
+                IsFullRangeInput = _videoPipeline.Capture?.IsSoftwareMjpegPipelineActive == true,
                 GpuHandles = GpuPipelineHandles.None
             }).ConfigureAwait(false);
 }

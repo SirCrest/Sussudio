@@ -10,7 +10,7 @@ public partial class CaptureService
     public CaptureRuntimeSnapshot GetRuntimeSnapshot()
     {
         var sink = _recordingBackend.LibAvSink;
-        var unifiedVideoCapture = _unifiedVideoCapture;
+        var unifiedVideoCapture = _videoPipeline.Capture;
         var wasapiCapture = _wasapiAudioCapture;
         var wasapiPlayback = _wasapiAudioPlayback;
         var ingestAudio = CaptureRuntimeIngestAudioSnapshotFields(
@@ -47,7 +47,7 @@ public partial class CaptureService
             unifiedVideoCapture,
             _isVideoPreviewActive,
             _isRecording,
-            _previewFrameSink,
+            _videoPipeline.PreviewFrameSink,
             _actualPixelFormat,
             _lastMfSourceReaderNegotiatedFormat);
         var recordingIntegrity = CaptureRuntimeRecordingIntegritySnapshotFields(

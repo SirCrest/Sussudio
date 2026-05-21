@@ -11,15 +11,17 @@ public partial class CaptureService
         bool flashbackBackendSettingsChanged,
         CancellationToken transitionToken)
     {
-        if (_unifiedVideoCapture != null &&
+        var unifiedVideoCapture = _videoPipeline.Capture;
+        if (unifiedVideoCapture != null &&
             !_isRecording &&
-            !CanReuseVideoCaptureForPreview(_unifiedVideoCapture, settings))
+            !CanReuseVideoCaptureForPreview(unifiedVideoCapture, settings))
         {
             Logger.Log("PREVIEW_START recycle_pipeline=1 reason=settings_changed");
             await DisposePreviewPipelineAsync(transitionToken, purgeFlashbackSegments: true).ConfigureAwait(false);
         }
 
-        if (_unifiedVideoCapture != null &&
+        unifiedVideoCapture = _videoPipeline.Capture;
+        if (unifiedVideoCapture != null &&
             !_isRecording &&
             !_flashbackEnabled)
         {
@@ -27,7 +29,8 @@ public partial class CaptureService
             await DisposePreviewPipelineAsync(transitionToken, purgeFlashbackSegments: false).ConfigureAwait(false);
         }
 
-        if (_unifiedVideoCapture != null &&
+        unifiedVideoCapture = _videoPipeline.Capture;
+        if (unifiedVideoCapture != null &&
             !_isRecording &&
             _flashbackBackend.Sink != null &&
             flashbackBackendSettingsChanged)

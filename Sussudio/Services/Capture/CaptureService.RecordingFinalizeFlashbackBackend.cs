@@ -63,7 +63,7 @@ public partial class CaptureService
             completedUtc: DateTimeOffset.UtcNow,
             sourceFrames: recordingBoundary.RecordingFramesDelivered,
             acceptedFrames: recordingBoundary.RecordingFramesEnqueued,
-            counters: recordingBoundary.Counters ?? CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, _unifiedVideoCapture),
+            counters: recordingBoundary.Counters ?? CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, _videoPipeline.Capture),
             audioCounters: recordingBoundary.AudioCounters ?? GetRecordingAudioCountersSinceBaseline(
                 CaptureRecordingAudioCounters(_wasapiAudioCapture, flashbackSink, _recordingBackend.SettingsSnapshot)));
         _recordingIntegrityCounterBaseline = null;
@@ -138,9 +138,11 @@ public partial class CaptureService
                 _pendingFlashbackSettingsChange = false;
                 Logger.Log("FLASHBACK_SETTINGS_APPLY_AFTER_RECORDING");
                 await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: true).ConfigureAwait(false);
-                if (_flashbackEnabled && _unifiedVideoCapture != null && _currentSettings != null)
+                var unifiedVideoCapture = _videoPipeline.Capture;
+                var settings = _currentSettings;
+                if (_flashbackEnabled && unifiedVideoCapture != null && settings != null)
                 {
-                    await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, _currentSettings, cancellationToken).ConfigureAwait(false);
+                    await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, cancellationToken).ConfigureAwait(false);
                 }
             }
             else

@@ -51,7 +51,7 @@ public partial class CaptureService
         bool exportOperationLockAlreadyHeld,
         CancellationToken cancellationToken)
         => new FlashbackPreviewBackendDisposalRequest(
-            _unifiedVideoCapture,
+            _videoPipeline.Capture,
             _wasapiAudioCapture,
             _microphoneCapture,
             OnFlashbackFrameEncoded,

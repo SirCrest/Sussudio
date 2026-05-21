@@ -1834,7 +1834,8 @@ shared D3D preview-device handoff, and fatal/pixel callback attach/detach.
 Active video capture storage, preview-frame sink storage, negotiated video
 getters, cached MJPEG pipeline timing snapshots, and deferred unified-video
 cleanup after LibAv drains now live in
-`Sussudio/Services/Capture/CaptureVideoPipelineResources.cs`.
+`Sussudio/Services/Capture/CaptureVideoPipelineResources.cs`; CaptureService
+callers use that aggregate directly instead of private root resource shims.
 
 Preview lifecycle now lives in focused CaptureService partials:
 `Sussudio/Services/Capture/CaptureService.PreviewStart.cs` owns the
@@ -5028,6 +5029,9 @@ owner, fold it back into that owner and update the source-shape tests and
    directly instead of routing through private root shim properties. Keep later
    recording backend resource mechanics there unless the behavior needs a larger,
    proven boundary.
+   `CaptureVideoPipelineResources.cs` owns active unified-video capture and
+   preview-frame sink storage; CaptureService callers use that aggregate directly
+   instead of private root resource shim properties.
 
 ## Guardrails
 

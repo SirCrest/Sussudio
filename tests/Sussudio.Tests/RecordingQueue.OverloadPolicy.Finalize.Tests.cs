@@ -135,7 +135,7 @@ static partial class Program
         AssertContains(libAvPreviewRestoreText, "private async Task<OperationCanceledException?> RestorePendingFlashbackEnableAfterLibAvRecordingAsync(");
         AssertContains(libAvPreviewRestoreText, "if (!_pendingFlashbackEnableAfterRecording)");
         AssertContains(libAvPreviewRestoreText, "_pendingFlashbackEnableAfterRecording = false;");
-        AssertContains(libAvPreviewRestoreText, "await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, _currentSettings, cancellationToken)");
+        AssertContains(libAvPreviewRestoreText, "await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, cancellationToken)");
         AssertContains(libAvPreviewRestoreText, "FLASHBACK_ENABLE_AFTER_RECORDING_CANCELLED");
         AssertContains(libAvPreviewRestoreText, "FLASHBACK_ENABLE_AFTER_RECORDING_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         var standardMicMonitorRestart = ExtractSourceBlock(

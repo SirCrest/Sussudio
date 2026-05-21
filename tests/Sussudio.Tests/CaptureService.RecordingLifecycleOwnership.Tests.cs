@@ -127,7 +127,7 @@ static partial class Program
         AssertContains(flashbackStartText, "_recordingBackend.InstallFlashback(activeFlashbackSink, fbRecordingContext, settings);");
         AssertContains(flashbackStartText, "FLASHBACK_RECORDING_TOPOLOGY_MISMATCH_REJECT");
         AssertContains(flashbackStartText, "WaitForForceRotateIdle(TimeSpan.FromSeconds(10))");
-        AssertContains(flashbackStartText, "_unifiedVideoCapture?.BeginFlashbackRecordingAccounting();");
+        AssertContains(flashbackStartText, "videoCapture?.BeginFlashbackRecordingAccounting();");
         AssertDoesNotContain(flashbackStartText, "StorageFolder.GetFolderFromPathAsync");
         AssertDoesNotContain(flashbackStartText, "new RecordingContextRequest");
         AssertDoesNotContain(flashbackStartText, "HDR_NEGOTIATION");
@@ -147,7 +147,7 @@ static partial class Program
         AssertContains(libAvVideoCaptureText, "rollback.OwnedUnifiedVideoCapture = new UnifiedVideoCapture();");
         AssertContains(libAvVideoCaptureText, "AttachUnifiedVideoCapture(rollback.OwnedUnifiedVideoCapture);");
         AssertContains(libAvVideoCaptureText, "_videoPipeline.InstallCapture(rollback.OwnedUnifiedVideoCapture);");
-        AssertContains(libAvVideoCaptureText, "TryApplySharedPreviewDevice(unifiedVideoCapture, _isVideoPreviewActive ? _previewFrameSink : null);");
+        AssertContains(libAvVideoCaptureText, "TryApplySharedPreviewDevice(unifiedVideoCapture, _isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);");
         AssertContains(libAvVideoCaptureText, "Recording requires {(requireP010 ? \"P010\" : \"NV12\")}, but the active source-reader session negotiated");
         AssertContains(libAvVideoCaptureText, "Recording requested mjpeg_hfr={useMjpegHighFrameRateMode}, but the active preview session is mjpeg_hfr=");
         AssertContains(libAvAudioInputsText, "private async Task StartLibAvRecordingAudioInputsAsync(");

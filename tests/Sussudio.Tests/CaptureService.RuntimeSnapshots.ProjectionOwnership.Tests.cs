@@ -114,7 +114,7 @@ static partial class Program
         AssertDoesNotContain(runtimeText, "var negotiatedSubtypeFromSourceReader");
         AssertDoesNotContain(runtimeText, "unifiedVideoCapture.IsHighFrameRateMjpegMode ? \"MJPG\"");
         AssertDoesNotContain(runtimeText, "GetFrameLedgerSummary() ?? FrameLedgerSummary.Empty");
-        AssertDoesNotContain(runtimeText, "(_previewFrameSink as D3D11PreviewRenderer)?.RendererMode ?? \"None\"");
+        AssertDoesNotContain(runtimeText, "(_videoPipeline.PreviewFrameSink as D3D11PreviewRenderer)?.RendererMode ?? \"None\"");
         AssertDoesNotContain(ingestAudioText, "D3DManager != null ? \"Gpu\"");
 
         return Task.CompletedTask;

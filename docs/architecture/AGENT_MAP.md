@@ -999,7 +999,8 @@ Important entry points:
 - `CaptureVideoPipelineResources.cs` owns active unified-video capture storage,
   preview-frame sink storage, negotiated video getters, and cached MJPEG
   pipeline timing snapshots, plus deferred unified-video cleanup after LibAv
-  drains.
+  drains. CaptureService callers use this aggregate directly instead of private
+  root shims for the active capture and preview sink.
 - `CaptureService.VideoPipelineLifecycle.cs` owns preview frame sink attachment,
   shared D3D preview-device handoff, unified-video fatal/pixel callback
   attach/detach.

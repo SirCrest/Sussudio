@@ -58,7 +58,7 @@ public partial class CaptureService
                         _wasapiAudioCapture,
                         _microphoneCapture,
                         _wasapiAudioPlayback,
-                        _previewFrameSink,
+                        _videoPipeline.PreviewFrameSink,
                         settings,
                         CloneCaptureSettings(settings),
                         () => CreateFlashbackSessionContext(unifiedVideoCapture, settings),

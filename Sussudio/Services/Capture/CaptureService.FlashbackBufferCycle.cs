@@ -21,7 +21,7 @@ public partial class CaptureService
             await _flashbackExportOperationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             exportOperationLockHeld = true;
 
-            var unifiedVideoCapture = _unifiedVideoCapture;
+            var unifiedVideoCapture = _videoPipeline.Capture;
             var currentSettings = _currentSettings;
             var effectivePurgeSegments = _flashbackBackend.ResolveSegmentPurge(
                 purgeSegments,
@@ -78,7 +78,7 @@ public partial class CaptureService
                         _wasapiAudioCapture,
                         _microphoneCapture,
                         _wasapiAudioPlayback,
-                        _previewFrameSink,
+                        _videoPipeline.PreviewFrameSink,
                         currentSettings,
                         CloneCaptureSettings(currentSettings),
                         () => CreateFlashbackSessionContext(unifiedVideoCapture, currentSettings),

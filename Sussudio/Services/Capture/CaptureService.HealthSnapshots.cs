@@ -11,7 +11,7 @@ public partial class CaptureService
     public CaptureHealthSnapshot GetHealthSnapshot()
     {
         var sink = _recordingBackend.LibAvSink;
-        var unifiedVideoCapture = _unifiedVideoCapture;
+        var unifiedVideoCapture = _videoPipeline.Capture;
         var fbSink = _flashbackBackend.Sink;
         var bufMgr = _flashbackBackend.BufferManager;
         var fbPlayback = _flashbackBackend.PlaybackController;

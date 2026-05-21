@@ -28,20 +28,21 @@ public partial class CaptureService
     {
         var flashbackSink = _flashbackBackend.Sink
             ?? throw new InvalidOperationException("Flashback backend is not available for recording.");
+        var videoCapture = _videoPipeline.Capture;
 
         // Guard: if the existing flashback sink's pixel format no longer matches the
         // negotiated UVC format, reject the reuse path so the slow path rebuilds correctly.
         if (flashbackSink.IsP010 is bool recSinkIsP010 &&
-            _unifiedVideoCapture != null &&
-            recSinkIsP010 != _unifiedVideoCapture.IsP010)
+            videoCapture != null &&
+            recSinkIsP010 != videoCapture.IsP010)
         {
             Logger.Log(
                 $"FLASHBACK_FAST_PATH_FORMAT_MISMATCH " +
-                $"existing_p010={recSinkIsP010} requested_p010={_unifiedVideoCapture.IsP010}");
+                $"existing_p010={recSinkIsP010} requested_p010={videoCapture.IsP010}");
             throw new InvalidOperationException(
                 $"Flashback recording fast path: pixel-format mismatch — sink was built for " +
                 $"{(recSinkIsP010 ? "P010" : "NV12")} but UVC session negotiated " +
-                $"{(_unifiedVideoCapture.IsP010 ? "P010" : "NV12")}. " +
+                $"{(videoCapture.IsP010 ? "P010" : "NV12")}. " +
                 "Rebuild the flashback backend with the correct format.");
         }
 
@@ -49,7 +50,7 @@ public partial class CaptureService
 
         transitionToken.ThrowIfCancellationRequested();
 
-        var fbEffectiveFrameRate = _unifiedVideoCapture?.Fps > 0 ? _unifiedVideoCapture.Fps : settings.FrameRate;
+        var fbEffectiveFrameRate = videoCapture?.Fps > 0 ? videoCapture.Fps : settings.FrameRate;
         var fbRecordingContext = await CreateFlashbackRecordingContextAsync(
             settings,
             fbOutputFolder,
@@ -83,10 +84,10 @@ public partial class CaptureService
 
             await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: true).ConfigureAwait(false);
 
-            var uvc = _unifiedVideoCapture;
-            if (uvc != null)
+            videoCapture = _videoPipeline.Capture;
+            if (videoCapture != null)
             {
-                await EnsureFlashbackPreviewBackendAsync(uvc, settings, transitionToken).ConfigureAwait(false);
+                await EnsureFlashbackPreviewBackendAsync(videoCapture, settings, transitionToken).ConfigureAwait(false);
             }
 
             flashbackSink = _flashbackBackend.Sink
@@ -128,7 +129,7 @@ public partial class CaptureService
                     $"Flashback backend failed while starting recording: {activeFlashbackSink.EncodingFailureMessage ?? "unknown error"}");
             }
 
-            _unifiedVideoCapture?.BeginFlashbackRecordingAccounting();
+            videoCapture?.BeginFlashbackRecordingAccounting();
             _recordingBackend.InstallFlashback(activeFlashbackSink, fbRecordingContext, settings);
             ClearLastRecordingFailure();
             _isRecording = true;

@@ -31,11 +31,13 @@ public partial class CaptureService
         }
 
         _pendingFlashbackEnableAfterRecording = false;
-        if (_flashbackEnabled && _isVideoPreviewActive && _unifiedVideoCapture != null && _currentSettings != null)
+        var unifiedVideoCapture = _videoPipeline.Capture;
+        var settings = _currentSettings;
+        if (_flashbackEnabled && _isVideoPreviewActive && unifiedVideoCapture != null && settings != null)
         {
             try
             {
-                await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, _currentSettings, cancellationToken).ConfigureAwait(false);
+                await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {

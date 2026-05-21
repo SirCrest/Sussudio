@@ -15,7 +15,7 @@ public partial class CaptureService
         bool requireP010,
         bool useMjpegHighFrameRateMode)
     {
-        var unifiedVideoCapture = _unifiedVideoCapture;
+        var unifiedVideoCapture = _videoPipeline.Capture;
         if (unifiedVideoCapture == null)
         {
             rollback.OwnedUnifiedVideoCapture = new UnifiedVideoCapture();
@@ -29,8 +29,8 @@ public partial class CaptureService
                 settings.RequestedPixelFormat,
                 useMjpegHighFrameRateMode,
                 settings.MjpegDecoderCount).ConfigureAwait(false);
-            rollback.OwnedUnifiedVideoCapture.SetPreviewSink(_isVideoPreviewActive ? _previewFrameSink : null);
-            TryApplySharedPreviewDevice(rollback.OwnedUnifiedVideoCapture, _isVideoPreviewActive ? _previewFrameSink : null);
+            rollback.OwnedUnifiedVideoCapture.SetPreviewSink(_isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);
+            TryApplySharedPreviewDevice(rollback.OwnedUnifiedVideoCapture, _isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);
             unifiedVideoCapture = rollback.OwnedUnifiedVideoCapture;
             _videoPipeline.InstallCapture(rollback.OwnedUnifiedVideoCapture);
         }
@@ -46,7 +46,7 @@ public partial class CaptureService
         }
 
         rollback.RecordingVideoCapture = unifiedVideoCapture;
-        TryApplySharedPreviewDevice(unifiedVideoCapture, _isVideoPreviewActive ? _previewFrameSink : null);
+        TryApplySharedPreviewDevice(unifiedVideoCapture, _isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);
         return unifiedVideoCapture;
     }
 }

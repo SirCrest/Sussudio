@@ -76,7 +76,7 @@ public partial class CaptureService
             return;
         }
 
-        var flashbackVideoCapture = _unifiedVideoCapture;
+        var flashbackVideoCapture = _videoPipeline.Capture;
         if (flashbackVideoCapture != null)
         {
             flashbackVideoCapture.EndFlashbackRecordingAccounting();

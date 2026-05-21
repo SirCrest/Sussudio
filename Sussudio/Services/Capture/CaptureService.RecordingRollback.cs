@@ -24,7 +24,7 @@ public partial class CaptureService
                 Logger.Log($"FLASHBACK_RECORDING_START_ROLLBACK_WARN type={rollbackEx.GetType().Name} error='{rollbackEx.Message}'");
             }
 
-            _unifiedVideoCapture?.EndFlashbackRecordingAccounting();
+            _videoPipeline.Capture?.EndFlashbackRecordingAccounting();
             if (_recordingBackend.IsFlashbackBackend(rollback.FlashbackRecordingStartedSink))
             {
                 _recordingBackend.ClearActiveBackend();
@@ -81,7 +81,7 @@ public partial class CaptureService
             _wasapiAudioCapture = null;
         }
 
-        if (rollback.OwnedUnifiedVideoCapture != null && ReferenceEquals(_unifiedVideoCapture, rollback.OwnedUnifiedVideoCapture))
+        if (rollback.OwnedUnifiedVideoCapture != null && ReferenceEquals(_videoPipeline.Capture, rollback.OwnedUnifiedVideoCapture))
         {
             CacheMjpegTimingMetrics(rollback.OwnedUnifiedVideoCapture);
             _lastMfSourceReaderFramesDelivered = rollback.OwnedUnifiedVideoCapture.VideoFramesArrived;

@@ -32,7 +32,7 @@ public partial class CaptureService
                 if (keepPipelineAlive)
                 {
                     Logger.Log($"PREVIEW_STOP keep_pipeline_alive=1 recording={_isRecording} flashback_alive={_flashbackBackend.Sink != null}");
-                    _unifiedVideoCapture?.SetPreviewSink(null);
+                    _videoPipeline.Capture?.SetPreviewSink(null);
                 }
                 else
                 {

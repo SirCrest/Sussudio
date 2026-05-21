@@ -33,8 +33,8 @@ public partial class CaptureService
                 useMjpegHighFrameRateMode,
                 settings.MjpegDecoderCount).ConfigureAwait(false);
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=init_done");
-            unifiedVideoCapture.SetPreviewSink(_previewFrameSink);
-            TryApplySharedPreviewDevice(unifiedVideoCapture, _previewFrameSink);
+            unifiedVideoCapture.SetPreviewSink(_videoPipeline.PreviewFrameSink);
+            TryApplySharedPreviewDevice(unifiedVideoCapture, _videoPipeline.PreviewFrameSink);
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=starting");
             unifiedVideoCapture.Start();
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=started");

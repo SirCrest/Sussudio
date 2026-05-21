@@ -6,12 +6,6 @@ namespace Sussudio.Services.Capture;
 
 public partial class CaptureService
 {
-    private IPreviewFrameSink? _previewFrameSink
-    {
-        get => _videoPipeline.PreviewFrameSink;
-        set => _videoPipeline.PreviewFrameSink = value;
-    }
-
     public int GetNegotiatedVideoWidth() => _videoPipeline.NegotiatedVideoWidth;
     public int GetNegotiatedVideoHeight() => _videoPipeline.NegotiatedVideoHeight;
     public double GetNegotiatedVideoFps() => _videoPipeline.NegotiatedVideoFps;
@@ -25,7 +19,7 @@ public partial class CaptureService
         }
 
         _videoPipeline.SetPreviewFrameSink(sink);
-        var unifiedVideoCapture = _unifiedVideoCapture;
+        var unifiedVideoCapture = _videoPipeline.Capture;
         TryApplySharedPreviewDevice(unifiedVideoCapture, sink);
         // Late-initialize playback controller if it was created before the renderer
         if (controller is { IsDisposed: false, IsInitialized: false } && sink != null && unifiedVideoCapture != null)

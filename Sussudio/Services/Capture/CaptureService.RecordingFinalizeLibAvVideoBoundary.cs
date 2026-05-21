@@ -13,7 +13,7 @@ public partial class CaptureService
         CancellationToken cancellationToken)
     {
         OperationCanceledException? cancellationException = null;
-        var unifiedVideoCapture = _unifiedVideoCapture;
+        var unifiedVideoCapture = _videoPipeline.Capture;
         var recordingFramesDeliveredToBoundary = 0L;
         var recordingFramesAcceptedByBoundary = 0L;
         if (unifiedVideoCapture != null)

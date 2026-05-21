@@ -16,7 +16,7 @@ public partial class CaptureService
 
     public VideoSourceProbeResult ProbeVideoSource()
     {
-        var unifiedVideoCapture = _unifiedVideoCapture;
+        var unifiedVideoCapture = _videoPipeline.Capture;
         if (unifiedVideoCapture == null)
         {
             return new VideoSourceProbeResult
@@ -56,8 +56,8 @@ public partial class CaptureService
 
     public PreviewColorProbeResult ProbePreviewColor()
     {
-        var unifiedVideoCapture = _unifiedVideoCapture;
-        var d3dSink = _previewFrameSink as D3D11PreviewRenderer;
+        var unifiedVideoCapture = _videoPipeline.Capture;
+        var d3dSink = _videoPipeline.PreviewFrameSink as D3D11PreviewRenderer;
         var d3dInputColor = d3dSink?.InputColorSpaceLabel ?? "None";
         var d3dOutputColor = d3dSink?.OutputColorSpaceLabel ?? "None";
         if (unifiedVideoCapture == null)
@@ -89,7 +89,7 @@ public partial class CaptureService
         var waitStartedAt = Stopwatch.GetTimestamp();
         while (_isVideoPreviewActive && !cancellationToken.IsCancellationRequested)
         {
-            var d3dSink = _previewFrameSink as D3D11PreviewRenderer;
+            var d3dSink = _videoPipeline.PreviewFrameSink as D3D11PreviewRenderer;
             if (d3dSink is { IsRendering: true })
             {
                 return await d3dSink.CaptureNextFrameAsync(outputPath, cancellationToken).ConfigureAwait(false);

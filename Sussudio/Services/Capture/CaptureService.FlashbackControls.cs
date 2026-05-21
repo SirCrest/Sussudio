@@ -74,11 +74,12 @@ public partial class CaptureService
             }
 
             _pendingFlashbackEnableAfterRecording = false;
-            if (_unifiedVideoCapture != null && _currentSettings != null)
+            var unifiedVideoCapture = _videoPipeline.Capture;
+            if (unifiedVideoCapture != null && _currentSettings != null)
             {
                 try
                 {
-                    await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, _currentSettings, transitionToken).ConfigureAwait(false);
+                    await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, transitionToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)
                 {
@@ -143,7 +144,7 @@ public partial class CaptureService
         await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: true).ConfigureAwait(false);
 
         var committedRestartToken = CancellationToken.None;
-        var unifiedVideoCapture = _unifiedVideoCapture;
+        var unifiedVideoCapture = _videoPipeline.Capture;
         var settings = _currentSettings;
         if (!_flashbackEnabled || unifiedVideoCapture == null || settings == null)
         {

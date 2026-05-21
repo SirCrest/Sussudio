@@ -88,11 +88,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private int _flashbackRecordingStartInProgress;
     private int _flashbackRecordingFinalizeInProgress;
     private readonly CaptureVideoPipelineResources _videoPipeline = new();
-    private UnifiedVideoCapture? _unifiedVideoCapture
-    {
-        get => _videoPipeline.Capture;
-        set => _videoPipeline.Capture = value;
-    }
 
     private readonly Stopwatch _recordingStopwatch = new();
     private RecordingIntegritySummary _lastRecordingIntegrity = RecordingIntegritySummary.NotStarted;

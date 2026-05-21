@@ -149,10 +149,17 @@ static partial class Program
         AssertContains(videoPipelineResourcesText, "public Task ScheduleDeferredUnifiedVideoCaptureCleanup(");
         AssertContains(videoPipelineResourcesText, "UNIFIED_VIDEO_DEFERRED_PREVIEW_DETACH_WARN");
         AssertContains(videoPipelineResourcesText, "UNIFIED_VIDEO_DEFERRED_CLEANUP_END");
+        AssertContains(
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs"),
+            "private readonly CaptureVideoPipelineResources _videoPipeline = new();");
+        AssertDoesNotContain(
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs"),
+            "_unifiedVideoCapture");
         AssertContains(videoPipelineLifecycleText, "internal void SetPreviewFrameSink(IPreviewFrameSink? sink)");
         AssertContains(videoPipelineLifecycleText, "private void AttachUnifiedVideoCapture(UnifiedVideoCapture unifiedVideoCapture)");
         AssertContains(videoPipelineLifecycleText, "private void DetachUnifiedVideoCapture(UnifiedVideoCapture? unifiedVideoCapture)");
         AssertContains(videoPipelineLifecycleText, "private void CacheMjpegTimingMetrics(UnifiedVideoCapture? unifiedVideoCapture)");
+        AssertDoesNotContain(videoPipelineLifecycleText, "private IPreviewFrameSink? _previewFrameSink");
         AssertDoesNotContain(videoPipelineLifecycleText, "private Task ScheduleDeferredUnifiedVideoCaptureCleanup(");
         AssertDoesNotContain(videoPipelineLifecycleText, "ThrowIfPendingLibAvDrainBlocksReentry");
         AssertDoesNotContain(videoPipelineLifecycleText, "PendingLibAvDrainTask");
