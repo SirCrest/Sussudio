@@ -141,6 +141,7 @@ internal sealed partial class D3D11PreviewRenderer
     private void DisposeProcessorResources()
     {
         DisposeProcessorInputResources();
+        DisposeHdrInputResources();
         DisposeNv12ShaderResourceViews();
         _outputView?.Dispose();
         _outputView = null;

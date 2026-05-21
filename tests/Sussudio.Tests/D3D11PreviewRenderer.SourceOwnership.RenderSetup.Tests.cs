@@ -128,25 +128,34 @@ static partial class Program
             .Replace("\r\n", "\n");
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
+        var videoProcessorPipelineText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.VideoProcessorPipeline.cs")
+            .Replace("\r\n", "\n");
         var inputResourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.InputResources.cs")
+            .Replace("\r\n", "\n");
+        var hdrInputResourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.HdrInputResources.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(inputResourcesText, "private ID3D11Texture2D? _inputTexture;");
-        AssertContains(inputResourcesText, "private ID3D11Texture2D? _hdrInputTexture;");
-        AssertContains(inputResourcesText, "private ID3D11ShaderResourceView? _hdrYPlaneSRV;");
-        AssertContains(inputResourcesText, "private bool _hdrPlaneViewsUnavailable;");
         AssertContains(inputResourcesText, "private void EnsureInputResources(int width, int height, bool isHdr)");
-        AssertContains(inputResourcesText, "private void EnsureHdrInputResources(int width, int height)");
-        AssertContains(inputResourcesText, "private ID3D11ShaderResourceView? CreateHdrPlaneView(Format format, uint planeSlice)");
         AssertContains(inputResourcesText, "private void DisposeProcessorInputResources()");
         AssertContains(inputResourcesText, "private void DisposeInputTextureResources()");
         AssertContains(inputResourcesText, "_inputTexture = _device.CreateTexture2D(inputDescription);");
-        AssertContains(inputResourcesText, "_hdrYPlaneSRV = CreateHdrPlaneView(Format.R16_UNorm, planeSlice: 0);");
+        AssertContains(videoProcessorPipelineText, "DisposeHdrInputResources();");
+        AssertContains(hdrInputResourcesText, "private ID3D11Texture2D? _hdrInputTexture;");
+        AssertContains(hdrInputResourcesText, "private ID3D11ShaderResourceView? _hdrYPlaneSRV;");
+        AssertContains(hdrInputResourcesText, "private bool _hdrPlaneViewsUnavailable;");
+        AssertContains(hdrInputResourcesText, "private void EnsureHdrInputResources(int width, int height)");
+        AssertContains(hdrInputResourcesText, "private ID3D11ShaderResourceView? CreateHdrPlaneView(Format format, uint planeSlice)");
+        AssertContains(hdrInputResourcesText, "private void DisposeHdrInputResources()");
+        AssertContains(hdrInputResourcesText, "_hdrYPlaneSRV = CreateHdrPlaneView(Format.R16_UNorm, planeSlice: 0);");
         AssertDoesNotContain(rootText, "private ID3D11Texture2D? _inputTexture;");
         AssertDoesNotContain(rootText, "private ID3D11ShaderResourceView? _hdrYPlaneSRV;");
         AssertDoesNotContain(resourcesText, "private void EnsureInputResources(int width, int height, bool isHdr)");
         AssertDoesNotContain(resourcesText, "private void EnsureHdrInputResources(int width, int height)");
         AssertDoesNotContain(resourcesText, "private ID3D11ShaderResourceView? CreateHdrPlaneView");
+        AssertDoesNotContain(inputResourcesText, "private void EnsureHdrInputResources(int width, int height)");
+        AssertDoesNotContain(inputResourcesText, "private ID3D11ShaderResourceView? CreateHdrPlaneView");
+        AssertDoesNotContain(inputResourcesText, "_hdrYPlaneSRV?.Dispose();");
         AssertDoesNotContain(resourcesText, "_inputView?.Dispose();");
         AssertDoesNotContain(resourcesText, "_hdrYPlaneSRV?.Dispose();");
         AssertDoesNotContain(resourcesText, "_stagingTexture?.Dispose();");

@@ -2397,7 +2397,8 @@ in `D3D11PreviewRenderer.Lifecycle.cs`, stop/unbind/native-call fence state in
 state in `D3D11PreviewRenderer.RenderThread.cs`, queue state and signaling in
 `D3D11PreviewRenderer.PendingFrames.cs`, D3D device/swap-chain resources in
 `D3D11PreviewRenderer.Resources.cs`, input texture resources in
-`D3D11PreviewRenderer.InputResources.cs`, swap-chain panel binding state in
+`D3D11PreviewRenderer.InputResources.cs`, HDR shader input resources in
+`D3D11PreviewRenderer.HdrInputResources.cs`, swap-chain panel binding state in
 `D3D11PreviewRenderer.PanelBinding.cs`, waitable frame-latency state in
 `D3D11PreviewRenderer.FrameLatency.cs`, render-pass selection plus
 VideoProcessor execution in `D3D11PreviewRenderer.RenderPasses.cs`, NV12 shader
@@ -2536,17 +2537,20 @@ space selection now live in
 D3D preview renderer resource management now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep
 video-processor setup, swap-chain RTV/output view creation, and top-level D3D
-resource cleanup orchestration there. Input/HDR texture teardown stays with
-`D3D11PreviewRenderer.InputResources.cs`, shader/SRV teardown stays with
+resource cleanup orchestration there. VideoProcessor input texture teardown stays with
+`D3D11PreviewRenderer.InputResources.cs`, HDR shader input teardown stays with
+`D3D11PreviewRenderer.HdrInputResources.cs`, shader/SRV teardown stays with
 `D3D11PreviewRenderer.ShaderRendering.cs`, and preview-frame capture staging
 teardown stays with `D3D11PreviewRenderer.ScreenshotCapture.cs`; keep
 swap-chain color-space application with render-pass selection in
 `D3D11PreviewRenderer.RenderPasses.cs`.
-Raw-frame and HDR shader input texture allocation now lives in
+Raw-frame VideoProcessor input texture allocation now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.InputResources.cs`. Keep
-NV12/P010 input textures, staging textures, input views, HDR plane SRV
-creation, and input/HDR texture cleanup there. Device-lost recovery has its own
-focused owner; keep render loop consumption in
+NV12/P010 VideoProcessor input textures, staging textures, input views, and
+input texture cleanup there. HDR shader input texture allocation now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.HdrInputResources.cs`; keep HDR
+P010 shader input/staging textures, plane SRV creation, Device3 fallback, and
+HDR input cleanup there. Device-lost recovery has its own focused owner; keep render loop consumption in
 `D3D11PreviewRenderer.RenderThread.cs`, present paths in
 `D3D11PreviewRenderer.Present.cs`, and shader draw paths in
 `D3D11PreviewRenderer.RenderPasses.cs`.
