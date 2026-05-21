@@ -60,7 +60,7 @@ public partial class CaptureService
 
     private (double? EncoderDriftMs, long? EncoderCorrectionSamples) GetEncoderAvSyncDrift()
     {
-        var sink = _libavSink;
+        var sink = _recordingBackend.LibAvSink;
         if (sink != null && sink.TryGetEncoderAvSyncDrift(out var driftMs, out var correctionSamples))
         {
             return (driftMs, correctionSamples);

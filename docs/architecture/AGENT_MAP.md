@@ -849,7 +849,8 @@ Important entry points:
 - `CaptureRecordingBackendResources.cs` owns active recording backend resources:
   LibAv/Flashback sink identity, recording context/settings snapshot, pending
   LibAv drain task tracking/reentry policy, and explicit install/detach/clear
-  operations used by recording start, finalization, rollback, and cleanup paths.
+  operations used directly by recording start, finalization, rollback, snapshot,
+  and cleanup paths without root `CaptureService` shim properties.
 - `CaptureService.AudioPreviewLifecycle.cs` owns audio-preview start/stop
   lifecycle, late WASAPI capture startup, playback start, preview rollback, and
   optional capture teardown.

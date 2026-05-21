@@ -23,9 +23,9 @@ public partial class CaptureService
             {
                 CacheMjpegTimingMetrics(unifiedVideoCapture);
                 DetachUnifiedVideoCapture(unifiedVideoCapture);
-                if (_pendingLibAvDrainTask is { IsCompleted: false } pendingLibAvDrainTask)
+                if (_recordingBackend.PendingLibAvDrainTask is { IsCompleted: false } pendingLibAvDrainTask)
                 {
-                    _pendingLibAvDrainTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
+                    _recordingBackend.PendingLibAvDrainTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
                         pendingLibAvDrainTask,
                         unifiedVideoCapture,
                         reason: "recording_stop_deferred_drain");

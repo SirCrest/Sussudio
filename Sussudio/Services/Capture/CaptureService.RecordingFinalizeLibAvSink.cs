@@ -75,7 +75,7 @@ public partial class CaptureService
                     var libAvDrainTask = libAvSink.EncodingCompletionTask;
                     if (!libAvDrainTask.IsCompleted)
                     {
-                        _pendingLibAvDrainTask = libAvDrainTask;
+                        _recordingBackend.PendingLibAvDrainTask = libAvDrainTask;
                     }
                 }
             }

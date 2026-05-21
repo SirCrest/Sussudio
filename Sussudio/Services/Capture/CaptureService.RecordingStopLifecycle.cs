@@ -18,7 +18,7 @@ public partial class CaptureService
     internal Task StopRecordingAsync(bool emergency, CancellationToken cancellationToken = default)
         => RunTransitionAsync(CaptureSessionState.Ready, async transitionToken =>
         {
-            if (!_isRecording && _recordingSink == null && _libavSink == null)
+            if (!_isRecording && _recordingBackend.Sink == null && _recordingBackend.LibAvSink == null)
             {
                 return;
             }

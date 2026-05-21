@@ -33,7 +33,7 @@ public partial class CaptureService
 
             Logger.Log($"Live audio input switch: {audioDeviceName ?? "(card default)"}");
 
-            var activeSink = _isRecording ? _recordingSink : null;
+            var activeSink = _isRecording ? _recordingBackend.Sink : null;
             var oldCapture = _wasapiAudioCapture;
             var committedSwitchToken = CancellationToken.None;
 

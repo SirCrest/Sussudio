@@ -44,7 +44,7 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(runtimeText, "return CaptureRuntimeSnapshotAssembler.Build(new CaptureRuntimeSnapshotAssemblyFields");
-        AssertContains(runtimeText, "var requestedSettings = _activeRecordingSettings ?? _currentSettings;");
+        AssertContains(runtimeText, "var requestedSettings = _recordingBackend.SettingsSnapshot ?? _currentSettings;");
         AssertContains(runtimeText, "FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(requestedSettings, unifiedVideoCapture),");
         AssertContains(runtimeText, "RuntimeAvSyncDriftMs = runtimeAvSyncDriftMs,");
         AssertContains(runtimeText, "HdrWarmup = hdrWarmup,");

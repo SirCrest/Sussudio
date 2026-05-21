@@ -10,7 +10,7 @@ public partial class CaptureService
 {
     public CaptureHealthSnapshot GetHealthSnapshot()
     {
-        var sink = _libavSink;
+        var sink = _recordingBackend.LibAvSink;
         var unifiedVideoCapture = _unifiedVideoCapture;
         var fbSink = _flashbackSink;
         var bufMgr = _flashbackBufferManager;

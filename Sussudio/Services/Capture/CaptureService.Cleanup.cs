@@ -65,7 +65,7 @@ public partial class CaptureService
             Logger.Log($"FLASHBACK_CLEANUP_DISPOSE_WARN type={ex.GetType().Name} msg='{ex.Message}'");
         }
 
-        var pendingLibAvDrainTask = _pendingLibAvDrainTask;
+        var pendingLibAvDrainTask = _recordingBackend.PendingLibAvDrainTask;
         var unifiedVideoCapture = _videoPipeline.TakeCapture();
         if (unifiedVideoCapture != null)
         {
@@ -78,7 +78,7 @@ public partial class CaptureService
                 DetachUnifiedVideoCapture(unifiedVideoCapture);
                 if (pendingLibAvDrainTask is { IsCompleted: false })
                 {
-                    _pendingLibAvDrainTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
+                    _recordingBackend.PendingLibAvDrainTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
                         pendingLibAvDrainTask,
                         unifiedVideoCapture,
                         reason: "cleanup_after_deferred_recording");

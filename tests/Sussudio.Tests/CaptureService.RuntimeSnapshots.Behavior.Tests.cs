@@ -129,7 +129,9 @@ static partial class Program
 
         await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
 
-        SetPropertyOrBackingField(captureService, "_activeRecordingSettings", settings);
+        var recordingBackend = GetPrivateField(captureService, "_recordingBackend")
+            ?? throw new InvalidOperationException("CaptureService recording backend resources were missing.");
+        SetPropertyOrBackingField(recordingBackend, "SettingsSnapshot", settings);
         SetPrivateField(captureService, "_isRecording", true);
         SetPrivateField(captureService, "_activeVideoInputPixelFormat", "nv12");
 

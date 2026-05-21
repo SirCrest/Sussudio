@@ -9,7 +9,7 @@ public partial class CaptureService
 {
     public CaptureRuntimeSnapshot GetRuntimeSnapshot()
     {
-        var sink = _libavSink;
+        var sink = _recordingBackend.LibAvSink;
         var unifiedVideoCapture = _unifiedVideoCapture;
         var wasapiCapture = _wasapiAudioCapture;
         var wasapiPlayback = _wasapiAudioPlayback;
@@ -20,11 +20,11 @@ public partial class CaptureService
             wasapiPlayback,
             _isVideoPreviewActive,
             _isRecording);
-        var requestedSettings = _activeRecordingSettings ?? _currentSettings;
+        var requestedSettings = _recordingBackend.SettingsSnapshot ?? _currentSettings;
         var hdrPipeline = CaptureRuntimeHdrPipelineSnapshotFields(
             requestedSettings,
             _activeVideoInputPixelFormat,
-            _recordingContext,
+            _recordingBackend.Context,
             _isRecording,
             _latestSourceTelemetry,
             _mfConvertersDisabled);

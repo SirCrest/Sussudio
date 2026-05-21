@@ -5021,9 +5021,11 @@ owner, fold it back into that owner and update the source-shape tests and
    coordinator for AV1 probing, readiness waiting, and cleanup handoff.
    `CaptureRecordingBackendResources.cs` now owns active recording backend
    resources: LibAv/Flashback sink identity, active recording context/settings,
-   pending LibAv drain task tracking, and pending-drain reentry policy. Keep
-   later recording backend resource mechanics there unless the behavior needs a
-   larger, proven boundary.
+   pending LibAv drain task tracking, and pending-drain reentry policy. Recording
+   start, finalization, rollback, snapshot, and cleanup paths now use that owner
+   directly instead of routing through private root shim properties. Keep later
+   recording backend resource mechanics there unless the behavior needs a larger,
+   proven boundary.
 
 ## Guardrails
 

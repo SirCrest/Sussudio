@@ -27,7 +27,7 @@ public partial class CaptureService
         {
             var counters = CaptureFlashbackRecordingIntegrityCountersSinceBaseline(fbSink, unifiedVideoCapture);
             var audioCounters = GetRecordingAudioCountersSinceBaseline(
-                CaptureRecordingAudioCounters(_wasapiAudioCapture, fbSink, _activeRecordingSettings));
+                CaptureRecordingAudioCounters(_wasapiAudioCapture, fbSink, _recordingBackend.SettingsSnapshot));
             return BuildRecordingIntegritySummary(
                 backend: "Flashback",
                 recordingActive: true,
@@ -44,7 +44,7 @@ public partial class CaptureService
         {
             var counters = GetRecordingIntegrityCountersSinceBaseline(CaptureRecordingIntegrityCounters(sink));
             var audioCounters = GetRecordingAudioCountersSinceBaseline(
-                CaptureRecordingAudioCounters(_wasapiAudioCapture, sink, _activeRecordingSettings));
+                CaptureRecordingAudioCounters(_wasapiAudioCapture, sink, _recordingBackend.SettingsSnapshot));
             return BuildRecordingIntegritySummary(
                 backend: "LibAv",
                 recordingActive: true,

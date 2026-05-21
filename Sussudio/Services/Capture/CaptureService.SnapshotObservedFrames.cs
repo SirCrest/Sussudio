@@ -9,7 +9,7 @@ public partial class CaptureService
 {
     private ObservedFrameSnapshotFields ResolveObservedFrameTelemetry()
     {
-        var expectedFormat = _recordingContext?.HdrPipelineActive == true ? "P010" : _recordingContext != null ? "NV12" : null;
+        var expectedFormat = _recordingBackend.Context?.HdrPipelineActive == true ? "P010" : _recordingBackend.Context != null ? "NV12" : null;
         var firstObserved = _firstObservedFramePixelFormat ?? expectedFormat;
         var latestObserved = _latestObservedFramePixelFormat ?? expectedFormat;
         var latestSurface = _latestObservedSurfaceFormat ?? latestObserved;

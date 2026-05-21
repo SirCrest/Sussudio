@@ -12,9 +12,9 @@ public partial class CaptureService
     {
         try
         {
-            if (_isRecording && _libavSink != null)
+            if (_isRecording && _recordingBackend.LibAvSink != null)
             {
-                return new RecordingStats(_libavSink.OutputBytes, 0);
+                return new RecordingStats(_recordingBackend.LibAvSink.OutputBytes, 0);
             }
 
             // Flashback recording: the output file doesn't exist until export-on-stop.
@@ -28,7 +28,7 @@ public partial class CaptureService
                 }
             }
 
-            var path = _recordingContext?.VideoOutputPath ?? _lastOutputPath;
+            var path = _recordingBackend.Context?.VideoOutputPath ?? _lastOutputPath;
             if (string.IsNullOrWhiteSpace(path))
             {
                 return new RecordingStats(0, 0);

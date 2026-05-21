@@ -31,9 +31,9 @@ public partial class CaptureService
                 Logger.Log($"PREVIEW_PIPELINE_VIDEO_DETACH_WARN type={ex.GetType().Name} msg='{ex.Message}'");
             }
 
-            if (_pendingLibAvDrainTask is { IsCompleted: false } pendingLibAvDrainTask)
+            if (_recordingBackend.PendingLibAvDrainTask is { IsCompleted: false } pendingLibAvDrainTask)
             {
-                _pendingLibAvDrainTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
+                _recordingBackend.PendingLibAvDrainTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
                     pendingLibAvDrainTask,
                     unifiedVideoCapture,
                     reason: "dispose_preview_pipeline_after_deferred_recording");

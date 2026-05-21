@@ -12,7 +12,7 @@ public partial class CaptureService
     {
         if (IsFlashbackRecordingBackendOwnedByRecording())
             return "Flashback";
-        return _isRecording && _libavSink != null ? "LibAv" : "None";
+        return _isRecording && _recordingBackend.LibAvSink != null ? "LibAv" : "None";
     }
 
     public CaptureDiagnosticsSnapshot GetDiagnosticsSnapshot()
