@@ -222,6 +222,8 @@ static partial class Program
             "tools/Common/DiagnosticSessionRunContext.Lifetime.cs",
             "tools/Common/DiagnosticSessionRunContext.PhaseContexts.cs",
             "tools/Common/DiagnosticSessionRunExecution.Completion.cs",
+            "tools/Common/DiagnosticSessionRunExecution.CompletionContext.cs",
+            "tools/Common/DiagnosticSessionRunExecution.ResultBuildRequest.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseRunner.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseRunner.Models.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseRunner.Sampling.cs",
@@ -260,7 +262,19 @@ static partial class Program
             "tools/Common/DiagnosticSessionScenarioPhaseCompletion.cs");
 
     private static string ReadDiagnosticSessionRunExecutionCompletionSource()
+        => ReadNormalizedSourceFiles(
+            "tools/Common/DiagnosticSessionRunExecution.Completion.cs",
+            "tools/Common/DiagnosticSessionRunExecution.CompletionContext.cs",
+            "tools/Common/DiagnosticSessionRunExecution.ResultBuildRequest.cs");
+
+    private static string ReadDiagnosticSessionRunExecutionCompletionRootSource()
         => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunExecution.Completion.cs");
+
+    private static string ReadDiagnosticSessionRunExecutionCompletionContextSource()
+        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunExecution.CompletionContext.cs");
+
+    private static string ReadDiagnosticSessionRunExecutionResultBuildRequestSource()
+        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunExecution.ResultBuildRequest.cs");
 
     private static string ReadDiagnosticSessionScenarioStartupSource()
         => ReadNormalizedSourceFiles(

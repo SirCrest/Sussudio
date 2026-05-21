@@ -3580,7 +3580,11 @@ scenario/completion context construction and the callback/token handoffs passed
 into those phases.
 `DiagnosticSessionRunExecution.Completion.cs` owns the
 post-cleanup evidence/result sequence for recording checks, post-run timeline
-and final snapshot capture, result-build handoff, and terminal live-state write.
+and final snapshot capture, result-build invocation, and terminal live-state
+write. `DiagnosticSessionRunExecution.CompletionContext.cs` owns the completion
+context handoff consumed by the post-cleanup phase, while
+`DiagnosticSessionRunExecution.ResultBuildRequest.cs` owns result-build request
+mapping from completion evidence and run bootstrap metadata.
 `DiagnosticSessionRunExecution.cs` hands scenario execution directly to
 `DiagnosticSessionScenarioPhaseRunner.cs`, which owns the main scenario phase
 for setup/startup, sampling/completion delegation, and fault drain delegation.
@@ -3592,7 +3596,7 @@ live-state sampling setup, sample-loop invocation, and handoff to completion.
 order and fault-drain delegation: registered background work before
 rejected-export handling, rejected-export handling before PresentMon
 completion, and interrupted drain handoff.
-`DiagnosticSessionRunExecution.Completion.cs` owns the final result-build
+`DiagnosticSessionRunExecution.ResultBuildRequest.cs` owns the final result-build
 request mapping consumed by the completion phase.
 The public options/result/sample contracts are separated from runner behavior. The result
 DTO root owns core session metadata, terminal state, artifacts, actions, and
@@ -4376,6 +4380,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRunner.cs`
 - `DiagnosticSessionRunExecution.cs`
 - `DiagnosticSessionRunExecution.Completion.cs`
+- `DiagnosticSessionRunExecution.CompletionContext.cs`
+- `DiagnosticSessionRunExecution.ResultBuildRequest.cs`
 - `DiagnosticSessionScenarioPhaseRunner.cs`
 - `DiagnosticSessionScenarioPhaseRunner.Models.cs`
 - `ToolJsonOptions.cs`
@@ -4406,7 +4412,10 @@ owner, fold it back into that owner and update the source-shape tests and
    live-state, and disposal responsibilities, and
    `tools/Common/DiagnosticSessionRunContext.PhaseContexts.cs` owning explicit
    scenario/completion context construction. `DiagnosticSessionRunExecution.Completion.cs` owns the
-   post-cleanup evidence/result sequence, while
+   post-cleanup evidence/result sequence, with
+   `DiagnosticSessionRunExecution.CompletionContext.cs` owning the completion
+   context handoff and `DiagnosticSessionRunExecution.ResultBuildRequest.cs`
+   owning result-build request mapping, while
    `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario execution
    phase. `DiagnosticSessionScenarioPhaseRunner.Models.cs`
    owns the explicit scenario context/state/result handoff, with
