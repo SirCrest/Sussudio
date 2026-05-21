@@ -982,7 +982,9 @@ Important entry points:
 - `CaptureService.FlashbackBufferCycle.cs` owns buffer-cycle transition
   coordination: backend/export lock ordering, purge-preserve decisions, and
   full rebuild fallbacks. Sink-only resource mechanics live in
-  `FlashbackBackendResources.BufferCycle.cs`.
+  `FlashbackBackendResources.BufferCycle.cs`, while playback disposal, old-sink
+  stop/dispose, replacement sink startup, playback restore, and failed
+  replacement cleanup live in `FlashbackBackendResources.BufferCycle.Lifecycle.cs`.
 - `CaptureService.FlashbackExportDiagnostics.cs` owns Flashback export attempt
   lifecycle, result, rejection, and completion diagnostic state.
 - `CaptureService.FlashbackExportProgress.cs` owns Flashback export progress
@@ -1358,7 +1360,10 @@ Entry points:
   `FlashbackBackendResources.Startup.cs` owns preview backend startup
   construction/install/playback initialization and startup rollback cleanup.
   `FlashbackBackendResources.BufferCycle.cs` owns sink-only buffer-cycle
-  mechanics.
+  orchestration, purge/finalize decisions, and full-rebuild fallback outcomes.
+  `FlashbackBackendResources.BufferCycle.Lifecycle.cs` owns playback disposal,
+  old-sink stop/dispose, replacement sink startup/playback restore, and failed
+  replacement cleanup.
   `FlashbackBackendResources.PreviewDisposal.cs` owns preview-backend teardown,
   sink stop/dispose, and backend clear.
   `FlashbackBackendResources.ArtifactCleanup.cs` owns artifact cleanup

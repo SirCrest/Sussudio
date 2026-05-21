@@ -98,6 +98,7 @@ static partial class Program
         var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.PreviewDisposal.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.Lifecycle.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
 
@@ -148,6 +149,12 @@ static partial class Program
         AssertContains(cleanupPlanText, "CaptureService.FlashbackEncoderSettings.cs");
         AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackControls.cs");
         AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackSettingsControls.cs");
+        AssertContains(agentMapText, "FlashbackBackendResources.BufferCycle.Lifecycle.cs");
+        AssertContains(cleanupPlanText, "FlashbackBackendResources.BufferCycle.Lifecycle.cs");
+        AssertContains(backendResourcesText, "private FlashbackBufferCyclePlaybackState DisposePlaybackForBufferCycle(");
+        AssertContains(backendResourcesText, "private static async Task StopAndDisposeOldSinkForBufferCycleAsync(");
+        AssertContains(backendResourcesText, "private async Task<bool> TryStartReplacementSinkForBufferCycleAsync(");
+        AssertContains(backendResourcesText, "private static async Task CleanupFailedReplacementSinkForBufferCycleAsync(");
         AssertContains(backendResourcesText, "public async Task<FlashbackBufferCycleResult> CycleSinkOnlyAsync(");
         AssertDoesNotContain(flashbackEnableText, "private async Task RestartFlashbackCoreAsync(");
         AssertDoesNotContain(flashbackRestartText, "public Task SetFlashbackEnabledAsync(");

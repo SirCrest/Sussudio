@@ -37,19 +37,20 @@ static partial class Program
         AssertDoesNotContain(cycleFlashbackBuffer, "cancellationToken: cancellationToken");
         AssertOccursBefore(
             backendCycleFlashbackBuffer,
-            "await oldSink.DisposeAsync().ConfigureAwait(false);",
+            "StopAndDisposeOldSinkForBufferCycleAsync(",
             "ClearSinkAndSettings();");
+        AssertContains(backendCycleFlashbackBuffer, "await oldSink.DisposeAsync().ConfigureAwait(false);");
         AssertContains(backendCycleFlashbackBuffer, "var oldPlaybackController = TakePlaybackController();");
         AssertContains(backendCycleFlashbackBuffer, "oldPlaybackController.GoLive();");
         AssertContains(backendCycleFlashbackBuffer, "oldPlaybackController.Dispose();");
         AssertOccursBefore(
             backendCycleFlashbackBuffer,
-            "oldPlaybackController.Dispose();",
+            "DisposePlaybackForBufferCycle(",
             "bufferManager.PurgeCompletedSegments();");
         AssertOccursBefore(
             backendCycleFlashbackBuffer,
-            "oldPlaybackController.Dispose();",
-            "DetachProducers(");
+            "DisposePlaybackForBufferCycle(",
+            "DetachOldSinkProducersForBufferCycle(");
         AssertContains(backendCycleFlashbackBuffer, "DetachProducers(");
         AssertContains(backendCycleFlashbackBuffer, "\"FLASHBACK_CYCLE_DETACH_WARN\"");
         var cycleNewSinkStart = backendCycleFlashbackBuffer;
