@@ -3295,7 +3295,11 @@ Primary current owners:
   `Sussudio/MainWindow.Flashback.Scrub.cs`,
   `Sussudio/MainWindow.Flashback.Settings.cs`,
   `Sussudio/MainWindow.Flashback.Timeline.cs`, and
-  `Sussudio/MainWindow.Flashback.Presentation.cs`. Command semantics live in
+  the presentation adapter family:
+  `Sussudio/MainWindow.Flashback.Presentation.cs`,
+  `Sussudio/MainWindow.Flashback.Presentation.Markers.cs`,
+  `Sussudio/MainWindow.Flashback.Presentation.Playback.cs`, and
+  `Sussudio/MainWindow.Flashback.Presentation.Export.cs`. Command semantics live in
   `FlashbackCommandController`.
 - `Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs` owns active
   Flashback pointer-scrub state, scrub throttling, release/cancel/capture-lost
@@ -3313,11 +3317,13 @@ Primary current owners:
   `Sussudio/MainWindow.Flashback.Playhead.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Flashback/FlashbackMarkerPresentationController.cs` owns
   Flashback marker placement, selection-region layout, and compact duration
-  text formatting. `MainWindow.Flashback.Presentation.cs` is the XAML-facing
-  marker adapter.
+  text formatting. `Sussudio/MainWindow.Flashback.Presentation.cs` is the
+  XAML-facing presentation adapter-family marker, while
+  `Sussudio/MainWindow.Flashback.Presentation.Markers.cs` wires marker
+  presentation callbacks.
 - `Sussudio/Controllers/Flashback/FlashbackPlaybackPresentationController.cs` owns
   Flashback play/pause glyph policy, Go Live enabled state, buffer-duration
-  text, and floating playhead label text. `MainWindow.Flashback.Presentation.cs`
+  text, and floating playhead label text. `Sussudio/MainWindow.Flashback.Presentation.Playback.cs`
   wires the playback presentation controller and playback UI coordinator.
 - `Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs` owns Flashback
   playback UI sequencing: track-resize snap/position/marker/CTI refresh order,
@@ -3330,8 +3336,8 @@ Primary current owners:
   preserves the XAML command event-handler surface.
 - `Sussudio/Controllers/Flashback/FlashbackExportProgressPresentationController.cs` owns
   Flashback export progress-bar value, visibility, and reset-on-complete
-  semantics. `MainWindow.Flashback.Presentation.cs` wires the export progress
-  presentation controller with the rest of the Flashback presentation surface.
+  semantics. `Sussudio/MainWindow.Flashback.Presentation.Export.cs` wires the
+  export progress presentation controller.
 - `Sussudio/Controllers/Flashback/FlashbackSettingsBindingController.cs` owns Flashback
   settings-control initialization, GPU decode toggle binding/sync, buffer
   duration combo selection/sync, and buffer-duration change logging.
