@@ -174,6 +174,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var trackingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricsTracking.cs")
             .Replace("\r\n", "\n");
+        var metricWindowsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricWindows.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(presentCadenceMetricsText, "private readonly object _presentCadenceLock = new();");
         AssertContains(presentCadenceMetricsText, "private double[] _presentIntervalWindowMs = new double[1200];");
@@ -192,8 +194,12 @@ static partial class Program
         AssertContains(trackingText, "private void TrackPipelineLatency(long arrivalTick, long estimatedVisibleTick)");
         AssertContains(trackingText, "private void TrackRenderCpuTiming(");
         AssertContains(trackingText, "private void TrackFrameLatencyWait(uint result, long waitTicks)");
-        AssertContains(trackingText, "public void SetExpectedFrameRate(double fps)");
-        AssertContains(trackingText, "private void ResetPresentCadence()");
+        AssertContains(metricWindowsText, "public void SetExpectedFrameRate(double fps)");
+        AssertContains(metricWindowsText, "private void ResetPresentCadence()");
+        AssertContains(metricWindowsText, "var targetSize = Math.Max(600, (int)Math.Ceiling(fps * CadenceWindowSeconds));");
+        AssertContains(metricWindowsText, "Array.Clear(_slowFrameDiagnostics, 0, _slowFrameDiagnostics.Length);");
+        AssertDoesNotContain(trackingText, "public void SetExpectedFrameRate(double fps)");
+        AssertDoesNotContain(trackingText, "private void ResetPresentCadence()");
         AssertDoesNotContain(metricsText, "private double TrackPresentCadence(");
         AssertDoesNotContain(metricsText, "private void TrackRenderCpuTiming(");
         AssertDoesNotContain(metricsText, "private void ResetPresentCadence()");

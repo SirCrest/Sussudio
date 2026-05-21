@@ -2379,13 +2379,16 @@ in `Sussudio/Services/Flashback/FlashbackExporter.TempFiles.cs`.
 
 D3D preview renderer metrics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.PresentCadenceMetrics.cs` and
-`Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep read-only
+`Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`, with window
+lifecycle and sample tracking in the matching `MetricWindows`/`MetricsTracking`
+partials. Keep read-only
 present cadence state/projection and recent present interval copies in
 `D3D11PreviewRenderer.PresentCadenceMetrics.cs`; keep pipeline latency, render
 CPU timing, frame-latency wait metric snapshots, recent non-present sample
 copies, and timing summaries in `D3D11PreviewRenderer.Metrics.cs`. Render-loop metric
-window updates, expected-frame-rate window resizing, and metric reset logic now
-live in `D3D11PreviewRenderer.MetricsTracking.cs`. Renderer implementation
+window updates live in `D3D11PreviewRenderer.MetricsTracking.cs`; expected-frame-rate
+window resizing and metric reset/clear lifecycle live in
+`D3D11PreviewRenderer.MetricWindows.cs`. Renderer implementation
 fields should live with the partial that mutates or projects them: keep
 slow-frame diagnostic ring/write state in
 `D3D11PreviewRenderer.SlowFrameDiagnostics.cs`, startup/disposal lifecycle state
