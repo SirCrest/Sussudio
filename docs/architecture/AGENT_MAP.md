@@ -4217,10 +4217,12 @@ Primary owners:
   assembly, not in this initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.OverviewResult.cs` owns
   diagnostic-session outcome policy plus overview DTO projection for process
-  CPU, recording verification, and PresentMon fields.
+  CPU end/max-observed aggregation, recording verification, and PresentMon
+  fields.
 - `tools/Common/DiagnosticSessionResultBuilder.Analysis.cs` owns
-  diagnostic-session metric preparation, analysis warning emission, and the
-  handoff into the named analysis-validation owner before summary construction.
+  diagnostic-session metric preparation for validation/result projections,
+  analysis warning emission, and the handoff into the named
+  analysis-validation owner before summary construction.
 - `tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs` owns
   diagnostic-session validation handoff order for Flashback playback, cleanup
   lifecycle restore, preview scheduler analysis, diagnostic health, and

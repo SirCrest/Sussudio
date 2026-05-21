@@ -41,8 +41,7 @@ internal static partial class DiagnosticSessionResultBuilder
         VisualCadenceSessionMetrics VisualCadenceMetrics,
         DiagnosticSessionPreviewSchedulerAnalysis PreviewScheduler,
         bool DiagnosticHealthSucceeded,
-        bool FlashbackWarningsSucceeded,
-        double ProcessCpuMaxPercentObserved);
+        bool FlashbackWarningsSucceeded);
 
     private readonly record struct DiagnosticSessionResultProjectionSet(
         DiagnosticSessionOverviewResultProjection Overview,

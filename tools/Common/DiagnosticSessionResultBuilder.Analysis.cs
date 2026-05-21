@@ -1,4 +1,3 @@
-using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionFlashbackMetrics;
 using static Sussudio.Tools.DiagnosticSessionMetrics;
 
@@ -52,12 +51,6 @@ internal static partial class DiagnosticSessionResultBuilder
             sourceReaderFramesDroppedDelta,
             videoIngestErrorsDelta);
 
-        var processCpuMaxPercentObserved = samples
-            .Select(sample => GetDouble(sample.Snapshot, "ProcessCpuPercent"))
-            .Append(GetDouble(lastSnapshot, "ProcessCpuPercent"))
-            .DefaultIfEmpty(0.0)
-            .Max();
-
         return new DiagnosticSessionResultAnalysis(
             lastSnapshot,
             healthSummary,
@@ -70,8 +63,7 @@ internal static partial class DiagnosticSessionResultBuilder
             visualCadenceMetrics,
             previewScheduler,
             validationOutcome.DiagnosticHealthSucceeded,
-            validationOutcome.FlashbackWarningsSucceeded,
-            processCpuMaxPercentObserved);
+            validationOutcome.FlashbackWarningsSucceeded);
     }
 
 }

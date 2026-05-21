@@ -201,7 +201,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "diagnostic health preview scheduler transition warning tolerated for preview-cycle scenario");
         AssertContains(diagnosticSessionText, "var flashbackWarningsSucceeded = !isFlashbackScenario ||");
         AssertContains(diagnosticSessionText, "IsToleratedFlashbackScenarioWarning(");
-        AssertContains(diagnosticSessionText, "flashbackWarningsSucceeded,");
+        AssertContains(diagnosticSessionText, "FlashbackWarningsSucceeded: flashbackWarningsSucceeded");
         AssertContains(diagnosticScenariosText, "internal static partial class DiagnosticSessionScenarioCatalog");
         AssertContains(diagnosticScenariosText, "internal static IReadOnlyList<DiagnosticSessionScenarioCatalogEntry> Entries { get; }");
         AssertContains(diagnosticScenariosText, "internal const string HelpList =");

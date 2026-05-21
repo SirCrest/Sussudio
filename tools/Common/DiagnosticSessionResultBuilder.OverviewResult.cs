@@ -1,3 +1,4 @@
+using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
 
 namespace Sussudio.Tools;
@@ -22,11 +23,12 @@ internal static partial class DiagnosticSessionResultBuilder
         var verificationSucceeded = request.Verification.HasValue
             ? GetBool(request.Verification.Value, "Succeeded")
             : (bool?)null;
+        var processCpuMaxPercentObserved = GetProcessCpuMaxPercentObserved(request.Samples, lastSnapshot);
 
         return new DiagnosticSessionOverviewResultProjection(
             Success: DetermineDiagnosticSessionSuccess(request, runState, analysis, verificationSucceeded),
             ProcessCpuPercentAtEnd: GetDouble(lastSnapshot, "ProcessCpuPercent"),
-            ProcessCpuMaxPercentObserved: analysis.ProcessCpuMaxPercentObserved,
+            ProcessCpuMaxPercentObserved: processCpuMaxPercentObserved,
             RecordingVerificationRun: request.Verification.HasValue,
             RecordingVerificationSucceeded: verificationSucceeded,
             RecordingVerificationMessage: request.Verification.HasValue
@@ -34,6 +36,15 @@ internal static partial class DiagnosticSessionResultBuilder
                 : null,
             PresentMon: request.PresentMon);
     }
+
+    private static double GetProcessCpuMaxPercentObserved(
+        IReadOnlyList<DiagnosticSessionSample> samples,
+        JsonElement lastSnapshot) =>
+        samples
+            .Select(sample => GetDouble(sample.Snapshot, "ProcessCpuPercent"))
+            .Append(GetDouble(lastSnapshot, "ProcessCpuPercent"))
+            .DefaultIfEmpty(0.0)
+            .Max();
 
     private static bool DetermineDiagnosticSessionSuccess(
         DiagnosticSessionResultBuildRequest request,

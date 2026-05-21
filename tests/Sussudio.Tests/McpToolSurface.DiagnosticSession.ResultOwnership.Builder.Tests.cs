@@ -121,6 +121,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flatteningText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Flattening.cs")
             .Replace("\r\n", "\n");
+        var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
+            .Replace("\r\n", "\n");
         var overviewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.OverviewResult.cs")
             .Replace("\r\n", "\n");
         var captureResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.CaptureResult.cs")
@@ -138,7 +140,11 @@ static partial class Program
         AssertContains(overviewResultText, "var verificationSucceeded = request.Verification.HasValue");
         AssertContains(overviewResultText, "Success: DetermineDiagnosticSessionSuccess(request, runState, analysis, verificationSucceeded)");
         AssertContains(overviewResultText, "ProcessCpuPercentAtEnd: GetDouble(lastSnapshot, \"ProcessCpuPercent\")");
-        AssertContains(overviewResultText, "ProcessCpuMaxPercentObserved: analysis.ProcessCpuMaxPercentObserved");
+        AssertContains(overviewResultText, "var processCpuMaxPercentObserved = GetProcessCpuMaxPercentObserved(request.Samples, lastSnapshot);");
+        AssertContains(overviewResultText, "ProcessCpuMaxPercentObserved: processCpuMaxPercentObserved");
+        AssertContains(overviewResultText, "private static double GetProcessCpuMaxPercentObserved(");
+        AssertContains(overviewResultText, ".Select(sample => GetDouble(sample.Snapshot, \"ProcessCpuPercent\"))");
+        AssertContains(overviewResultText, ".Append(GetDouble(lastSnapshot, \"ProcessCpuPercent\"))");
         AssertContains(overviewResultText, "RecordingVerificationMessage: request.Verification.HasValue");
         AssertContains(overviewResultText, "PresentMon: request.PresentMon");
         AssertContains(overviewResultText, "private static bool DetermineDiagnosticSessionSuccess(");
@@ -151,6 +157,8 @@ static partial class Program
         AssertDoesNotContain(flatteningText, "request.CommandFailureCount == 0 &&");
         AssertDoesNotContain(flatteningText, "ProcessCpuPercentAtEnd = GetDouble(lastSnapshot");
         AssertDoesNotContain(flatteningText, "RecordingVerificationMessage = request.Verification.HasValue");
+        AssertDoesNotContain(analysisText, "ProcessCpuMaxPercentObserved");
+        AssertDoesNotContain(overviewResultText, "analysis.ProcessCpuMaxPercentObserved");
         AssertContains(builderText, "Capture: BuildCaptureResultProjection(analysis)");
         AssertContains(flatteningText, "var captureResult = resultProjections.Capture;");
         AssertContains(captureResultText, "private readonly record struct DiagnosticSessionCaptureResultProjection(");

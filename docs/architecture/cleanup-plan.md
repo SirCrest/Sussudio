@@ -3628,9 +3628,10 @@ owners.
 projection composition outside this initializer. The root owns projection-set
 assembly from overview, capture, Flashback, preview, D3D, and visual-cadence
 projection owners. Overview
-outcome policy plus process CPU, recording verification, and PresentMon DTO
-projection values live in `DiagnosticSessionResultBuilder.OverviewResult.cs`.
-Diagnostic metric gathering and analysis warning emission live in
+outcome policy plus process CPU end/max-observed aggregation, recording
+verification, and PresentMon DTO projection values live in
+`DiagnosticSessionResultBuilder.OverviewResult.cs`. Diagnostic metric gathering
+for validation/result projections and analysis warning emission live in
 `DiagnosticSessionResultBuilder.Analysis.cs`, while named validation handoff
 order and tolerated Flashback scenario warning classification live in
 `DiagnosticSessionResultBuilder.AnalysisValidation.cs`. Flashback playback/export
