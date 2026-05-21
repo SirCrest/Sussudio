@@ -4,9 +4,6 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using Sussudio.Models;
-using Sussudio.Services.Audio;
-using Sussudio.Services.Preview;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Flashback;
@@ -88,58 +85,9 @@ internal sealed partial class FlashbackPlaybackController
                     TrackCommandDequeued(cmd);
                 }
 
-                var commandStarted = Stopwatch.GetTimestamp();
-                Volatile.Write(ref _activeCommandKind, (int)cmd.Kind);
-                Volatile.Write(ref _activeCommandStartedTimestamp, commandStarted);
-                ClearPrebufferedFrames(prebufferedFrames, $"command_{cmd.Kind}");
-                try
+                if (!ExecutePlaybackCommand(ref cmd, commandChannel, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch))
                 {
-                    switch (cmd.Kind)
-                    {
-                        case CommandKind.Stop:
-                            HandleStopCommand(ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref pendingExactResumeTarget);
-                            return;
-
-                        case CommandKind.Seek:
-                            HandleSeekCommand(ref cmd, commandChannel, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch);
-                            break;
-
-                        case CommandKind.BeginScrub:
-                            HandleBeginScrubCommand(ref cmd, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref frozenValidStart, ref pendingExactResumeTarget);
-                            break;
-
-                        case CommandKind.UpdateScrub:
-                            HandleUpdateScrubCommand(ref cmd, commandChannel, cts, ref decoder, ref fileOpen, ref isScrubbing, ref pendingExactResumeTarget, frozenValidStart);
-                            break;
-
-                        case CommandKind.EndScrub:
-                            HandleEndScrubCommand(cmd, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch);
-                            break;
-
-                        case CommandKind.Play:
-                            HandlePlayCommand(cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch);
-                            break;
-
-                        case CommandKind.Pause:
-                            HandlePauseCommand(commandChannel, cts, ref decoder, ref fileOpen, ref isPlaying, ref frozenValidStart, ref pendingExactResumeTarget, pacingStopwatch);
-                            break;
-
-                        case CommandKind.GoLive:
-                            HandleGoLiveCommand(ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref pendingExactResumeTarget);
-                            break;
-
-                        case CommandKind.Nudge:
-                            HandleNudgeCommand(cmd, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, frozenValidStart, ref pendingExactResumeTarget);
-                            break;
-
-                    }
-                }
-                finally
-                {
-                    var commandElapsedMs = Stopwatch.GetElapsedTime(commandStarted).TotalMilliseconds;
-                    Volatile.Write(ref _activeCommandStartedTimestamp, 0);
-                    Volatile.Write(ref _activeCommandKind, -1);
-                    Logger.Log($"FLASHBACK_PLAYBACK_CMD_COMPLETE kind={cmd.Kind} duration_ms={commandElapsedMs:0.###}");
+                    return;
                 }
             }
         }

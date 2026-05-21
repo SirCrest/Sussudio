@@ -3411,8 +3411,12 @@ thread-exit completion, and abandoned-command draining now live in
 Keep queue write/coalescing/drop policy in the command queue partial.
 The playback worker loop now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs`; keep
-`PlaybackThreadEntry` command dispatch there, and do not reintroduce an empty
-thread shell marker. Playback-thread scheduling policy now lives in
+`PlaybackThreadEntry` queue waiting, cancellation exits, and playback pacing
+handoff there. Playback-thread command dispatch and active-command completion
+telemetry now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommandDispatch.cs`;
+keep the command switch and command-complete logging there instead of expanding
+the loop shell. Playback-thread scheduling policy now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadScheduling.cs`;
 keep timer-resolution P/Invoke plus MMCSS task/priority env policy there so
 the worker loop remains focused on command flow.

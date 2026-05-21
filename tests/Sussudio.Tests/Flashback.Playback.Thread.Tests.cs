@@ -10,6 +10,8 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var threadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs")
             .Replace("\r\n", "\n");
+        var threadCommandDispatchText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommandDispatch.cs")
+            .Replace("\r\n", "\n");
         var threadSeekCommandsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekCommands.cs")
             .Replace("\r\n", "\n");
         var threadSeekScrubCommandsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekScrubCommands.cs")
@@ -59,6 +61,7 @@ static partial class Program
         AssertContains(threadSchedulingText, "private static extern uint timeEndPeriod(uint uMilliseconds);");
         AssertDoesNotContain(threadLoopText, "[DllImport(\"winmm.dll\", ExactSpelling = true)]");
         AssertContains(threadLoopText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_ENTER\");");
+        AssertContains(threadCommandDispatchText, "private bool ExecutePlaybackCommand(");
         AssertContains(threadSeekCommandsText, "private void HandleSeekCommand(");
         AssertContains(threadSeekScrubCommandsText, "private void HandleBeginScrubCommand(");
         AssertContains(threadSeekScrubCommandsText, "private void HandleUpdateScrubCommand(");
@@ -80,17 +83,21 @@ static partial class Program
         AssertContains(threadSeekCommandsText, "cmd = ResolveSeekCommandPosition(cmd);");
         AssertContains(threadSeekScrubCommandsText, "SafeSuppressPreviewSubmission(\"begin_scrub\")");
         AssertContains(threadCommandsText, "Logger.Log(\"FLASHBACK_PLAYBACK_GO_LIVE\");");
+        AssertContains(agentMapText, "FlashbackPlaybackController.ThreadCommandDispatch.cs");
         AssertContains(agentMapText, "FlashbackPlaybackController.ThreadPauseCommand.cs");
         AssertContains(agentMapText, "FlashbackPlaybackController.ThreadNudgeCommand.cs");
+        AssertContains(cleanupPlanText, "FlashbackPlaybackController.ThreadCommandDispatch.cs");
         AssertContains(cleanupPlanText, "FlashbackPlaybackController.ThreadPauseCommand.cs");
         AssertContains(cleanupPlanText, "FlashbackPlaybackController.ThreadNudgeCommand.cs");
-        AssertContains(threadLoopText, "HandleSeekCommand(ref cmd, commandChannel, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch);");
-        AssertContains(threadLoopText, "HandleGoLiveCommand(ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref pendingExactResumeTarget);");
+        AssertContains(threadCommandDispatchText, "HandleSeekCommand(ref cmd, commandChannel, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch);");
+        AssertContains(threadCommandDispatchText, "HandleGoLiveCommand(ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref pendingExactResumeTarget);");
+        AssertContains(threadLoopText, "if (!ExecutePlaybackCommand(ref cmd, commandChannel, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch))");
+        AssertDoesNotContain(threadLoopText, "case CommandKind.Seek:");
         AssertDoesNotContain(threadLoopText, "cmd = ResolveSeekCommandPosition(cmd);");
         AssertDoesNotContain(threadLoopText, "SafeSuppressPreviewSubmission(\"begin_scrub\")");
         AssertDoesNotContain(threadLoopText, "Logger.Log(\"FLASHBACK_PLAYBACK_GO_LIVE\");");
         AssertContains(sourceText, "if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })\n            {\n                SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });\n            }");
-        AssertContains(threadLoopText, "case CommandKind.Stop:\n                            HandleStopCommand(ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref pendingExactResumeTarget);\n                            return;");
+        AssertContains(threadCommandDispatchText, "case CommandKind.Stop:\n                    HandleStopCommand(ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref pendingExactResumeTarget);\n                    return false;");
         AssertContains(threadCommandsText, "private void HandleStopCommand(");
         AssertContains(threadCommandsText, "isPlaying = false;\n        isScrubbing = false;\n        pendingExactResumeTarget = null;");
         AssertContains(threadCommandsText, "RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, \"thread_stop\");\n        Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT\");");
@@ -216,7 +223,10 @@ static partial class Program
         AssertContains(sourceText, "Interlocked.Exchange(ref _pendingCommands, 0);\n                ClearQueuedCommandSlotsBarrier();\n                Volatile.Write(ref _playbackThreadStarted, 0);");
         AssertContains(sourceText, "Volatile.Write(ref _activeCommandKind, (int)cmd.Kind);");
         AssertContains(sourceText, "Volatile.Write(ref _activeCommandStartedTimestamp, commandStarted);");
-        AssertContains(sourceText, "FLASHBACK_PLAYBACK_CMD_COMPLETE kind={cmd.Kind} duration_ms={commandElapsedMs:0.###}");
+        AssertContains(threadCommandDispatchText, "Volatile.Write(ref _activeCommandKind, (int)cmd.Kind);");
+        AssertContains(threadCommandDispatchText, "Volatile.Write(ref _activeCommandStartedTimestamp, commandStarted);");
+        AssertContains(threadCommandDispatchText, "FLASHBACK_PLAYBACK_CMD_COMPLETE kind={cmd.Kind} duration_ms={commandElapsedMs:0.###}");
+        AssertDoesNotContain(threadLoopText, "Volatile.Write(ref _activeCommandKind, (int)cmd.Kind);");
         AssertContains(sourceText, "private static string FormatActiveCommandKind(int rawKind)");
         AssertContains(sourceText, "private double GetActiveCommandElapsedMs(long nowTimestamp)");
         AssertContains(sourceText, "if (cts.IsCancellationRequested)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested\");");
