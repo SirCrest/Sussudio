@@ -116,9 +116,9 @@ static partial class Program
         string sourceTimingFamilyName,
         double previousRate)
     {
-        var sourceType = RequireType("Sussudio.ViewModels.MainViewModel+FrameRateAutoSelectionSource");
-        var requestType = RequireType("Sussudio.ViewModels.MainViewModel+FrameRateAutoSelectionRequest");
-        var policyType = RequireType("Sussudio.ViewModels.MainViewModel+FrameRateAutoSelectionPolicy");
+        var sourceType = RequireType("Sussudio.ViewModels.FrameRateAutoSelectionSource");
+        var requestType = RequireType("Sussudio.ViewModels.FrameRateAutoSelectionRequest");
+        var policyType = RequireType("Sussudio.ViewModels.FrameRateAutoSelectionPolicy");
         var timingFamily = ParseEnum("Sussudio.ViewModels.FrameRateTimingFamily", sourceTimingFamilyName);
         var sourceConstructor = FindConstructor(sourceType, parameterCount: 3);
         var source = sourceConstructor.Invoke(new object?[]

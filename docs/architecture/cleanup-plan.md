@@ -4751,7 +4751,7 @@ owner, fold it back into that owner and update the source-shape tests and
    frame-rate option choice, including pending SDR bucket preference,
    Source-rate nearest match with timing-family tie-break, generic auto fallback,
    and previous/manual selection fallback, now lives in
-   `MainViewModel.FrameRateAutoSelectionPolicy.cs`. The ownership checks for
+   `Sussudio/ViewModels/FrameRateAutoSelectionPolicy.cs`. The ownership checks for
    frame-rate source filtering, automatic selection, `ShowAllCaptureOptions`, and
    timing-policy placement live in
    `MainViewModel.Capture.SelectionPolicy.FrameRates.Ownership.Tests.cs`, while
@@ -4765,7 +4765,7 @@ owner, fold it back into that owner and update the source-shape tests and
    projection, and capture-mode reset flags live in
    `MainViewModel.ModeSelectionState.cs`. Source-rate filtering and
    `ShowAllCaptureOptions` unlock policy live in
-   `MainViewModel.FrameRateSourceFilterPolicy.cs`, while `ShowAllCaptureOptions`
+   `Sussudio/ViewModels/FrameRateSourceFilterPolicy.cs`, while `ShowAllCaptureOptions`
    change handling, deferred rebuild behavior, duplicate-reinit suppression,
    and the active capture-mode automation gate live in
    `MainViewModel.CaptureModeTransactions.cs`. Pure frame-rate timing family,
