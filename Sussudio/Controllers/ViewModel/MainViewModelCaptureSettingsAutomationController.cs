@@ -2,161 +2,159 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Sussudio.ViewModels;
 
-namespace Sussudio.ViewModels;
+namespace Sussudio.Controllers;
 
-public partial class MainViewModel
+/// <summary>
+/// Owns automation-driven capture setting mutations and active-preview reinitialization.
+/// </summary>
+internal sealed class MainViewModelCaptureSettingsAutomationController
 {
-    /// <summary>
-    /// Owns automation-driven capture setting mutations and active-preview reinitialization.
-    /// </summary>
-    private sealed class MainViewModelCaptureSettingsAutomationController
+    private readonly MainViewModelCaptureSettingsAutomationControllerContext _context;
+    private readonly SemaphoreSlim _captureModeGate = new(1, 1);
+
+    public MainViewModelCaptureSettingsAutomationController(MainViewModelCaptureSettingsAutomationControllerContext context)
     {
-        private readonly MainViewModelCaptureSettingsAutomationControllerContext _context;
-        private readonly SemaphoreSlim _captureModeGate = new(1, 1);
+        _context = context ?? throw new ArgumentNullException(nameof(context));
+    }
 
-        public MainViewModelCaptureSettingsAutomationController(MainViewModelCaptureSettingsAutomationControllerContext context)
+    public Task SetResolutionAsync(string resolution, CancellationToken cancellationToken = default)
+    {
+        return SetAutomationCaptureModeAsync("resolution", () =>
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-        }
-
-        public Task SetResolutionAsync(string resolution, CancellationToken cancellationToken = default)
-        {
-            return SetAutomationCaptureModeAsync("resolution", () =>
+            var matched = _context.GetAvailableResolutions().FirstOrDefault(r =>
+                string.Equals(r.Value, resolution, StringComparison.OrdinalIgnoreCase));
+            if (matched == null)
             {
-                var matched = _context.GetAvailableResolutions().FirstOrDefault(r =>
-                    string.Equals(r.Value, resolution, StringComparison.OrdinalIgnoreCase));
-                if (matched == null)
-                {
-                    throw new InvalidOperationException($"Resolution '{resolution}' is not available.");
-                }
-                if (!matched.IsEnabled)
-                {
-                    throw new InvalidOperationException(
-                        string.IsNullOrWhiteSpace(matched.DisableReason)
-                            ? $"Resolution '{resolution}' is currently disabled."
-                            : matched.DisableReason);
-                }
-
-                _context.SetSelectedResolution(matched.Value);
-            }, cancellationToken);
-        }
-
-        public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)
-        {
-            return SetAutomationCaptureModeAsync("frame rate", () =>
-            {
-                var availableFrameRates = _context.GetAvailableFrameRates().ToList();
-                if (availableFrameRates.Count == 0)
-                {
-                    throw new InvalidOperationException("No frame rates are available.");
-                }
-
-                var enabledRates = availableFrameRates
-                    .Where(rate => rate.IsEnabled)
-                    .ToList();
-                if (enabledRates.Count == 0)
-                {
-                    throw new InvalidOperationException("No enabled frame rates are available for the current selection.");
-                }
-
-                if (FrameRateTimingPolicy.IsAutoFrameRateValue(frameRate))
-                {
-                    var autoRate = enabledRates.FirstOrDefault(rate => FrameRateTimingPolicy.IsAutoFrameRateValue(rate.Value));
-                    if (autoRate == null)
-                    {
-                        throw new InvalidOperationException("Auto frame rate is not available for the current selection.");
-                    }
-
-                    _context.SelectAutoFrameRate();
-                    return;
-                }
-
-                var requestedFriendly = Math.Round(frameRate);
-                var friendlyMatches = enabledRates
-                    .Where(rate => Math.Round(rate.FriendlyValue) == requestedFriendly)
-                    .OrderBy(rate => Math.Abs(rate.FriendlyValue - frameRate))
-                    .ThenBy(rate => Math.Abs(rate.Value - frameRate))
-                    .ToList();
-
-                var matched = (friendlyMatches.Count > 0 ? friendlyMatches : enabledRates)
-                    .OrderBy(rate => Math.Abs(rate.Value - frameRate))
-                    .First();
-
-                if (friendlyMatches.Count == 0 && !FrameRateTimingPolicy.IsFrameRateMatch(matched.Value, frameRate))
-                {
-                    throw new InvalidOperationException(
-                        $"Frame rate '{frameRate:0.###}' is not available for {_context.GetSelectedResolution() ?? "the current resolution"}.");
-                }
-
-                _context.SetSelectedFrameRate(matched.Value);
-            }, cancellationToken);
-        }
-
-        public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)
-        {
-            return SetAutomationCaptureModeAsync("video format", () =>
-            {
-                if (string.IsNullOrWhiteSpace(videoFormat))
-                {
-                    throw new ArgumentException("Video format is required.", nameof(videoFormat));
-                }
-
-                var match = _context.GetAvailableVideoFormats().FirstOrDefault(
-                    format => string.Equals(format, videoFormat, StringComparison.OrdinalIgnoreCase));
-                if (match == null)
-                {
-                    throw new InvalidOperationException($"Video format '{videoFormat}' is not available.");
-                }
-
-                _context.SetSelectedVideoFormat(match);
-            }, cancellationToken);
-        }
-
-        public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)
-        {
-            return SetAutomationCaptureModeAsync("mjpeg decoder count", () =>
-            {
-                _context.SetMjpegDecoderCount(Math.Clamp(decoderCount, 1, 8));
-            }, cancellationToken);
-        }
-
-        private async Task SetAutomationCaptureModeAsync(
-            string reason,
-            Action apply,
-            CancellationToken cancellationToken)
-        {
-            await _captureModeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try
-            {
-                var shouldReinitialize = await _context.InvokeBooleanOnUiThreadAsync(() =>
-                {
-                    var wasPreviewing = _context.IsPreviewing() && _context.IsInitialized() && _context.GetSelectedDevice() != null;
-                    _context.SetSuppressFormatChangeReinitialize(true);
-                    try
-                    {
-                        apply();
-                    }
-                    finally
-                    {
-                        _context.SetSuppressFormatChangeReinitialize(false);
-                    }
-
-                    return wasPreviewing && _context.GetSelectedFormat() != null;
-                }, cancellationToken).ConfigureAwait(false);
-
-                if (shouldReinitialize)
-                {
-                    await _context.InvokeOnUiThreadAsync(
-                            () => _context.ReinitializeDeviceAsync($"automation {reason}"),
-                            cancellationToken)
-                        .ConfigureAwait(false);
-                }
+                throw new InvalidOperationException($"Resolution '{resolution}' is not available.");
             }
-            finally
+            if (!matched.IsEnabled)
             {
-                _captureModeGate.Release();
+                throw new InvalidOperationException(
+                    string.IsNullOrWhiteSpace(matched.DisableReason)
+                        ? $"Resolution '{resolution}' is currently disabled."
+                        : matched.DisableReason);
             }
+
+            _context.SetSelectedResolution(matched.Value);
+        }, cancellationToken);
+    }
+
+    public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)
+    {
+        return SetAutomationCaptureModeAsync("frame rate", () =>
+        {
+            var availableFrameRates = _context.GetAvailableFrameRates().ToList();
+            if (availableFrameRates.Count == 0)
+            {
+                throw new InvalidOperationException("No frame rates are available.");
+            }
+
+            var enabledRates = availableFrameRates
+                .Where(rate => rate.IsEnabled)
+                .ToList();
+            if (enabledRates.Count == 0)
+            {
+                throw new InvalidOperationException("No enabled frame rates are available for the current selection.");
+            }
+
+            if (FrameRateTimingPolicy.IsAutoFrameRateValue(frameRate))
+            {
+                var autoRate = enabledRates.FirstOrDefault(rate => FrameRateTimingPolicy.IsAutoFrameRateValue(rate.Value));
+                if (autoRate == null)
+                {
+                    throw new InvalidOperationException("Auto frame rate is not available for the current selection.");
+                }
+
+                _context.SelectAutoFrameRate();
+                return;
+            }
+
+            var requestedFriendly = Math.Round(frameRate);
+            var friendlyMatches = enabledRates
+                .Where(rate => Math.Round(rate.FriendlyValue) == requestedFriendly)
+                .OrderBy(rate => Math.Abs(rate.FriendlyValue - frameRate))
+                .ThenBy(rate => Math.Abs(rate.Value - frameRate))
+                .ToList();
+
+            var matched = (friendlyMatches.Count > 0 ? friendlyMatches : enabledRates)
+                .OrderBy(rate => Math.Abs(rate.Value - frameRate))
+                .First();
+
+            if (friendlyMatches.Count == 0 && !FrameRateTimingPolicy.IsFrameRateMatch(matched.Value, frameRate))
+            {
+                throw new InvalidOperationException(
+                    $"Frame rate '{frameRate:0.###}' is not available for {_context.GetSelectedResolution() ?? "the current resolution"}.");
+            }
+
+            _context.SetSelectedFrameRate(matched.Value);
+        }, cancellationToken);
+    }
+
+    public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)
+    {
+        return SetAutomationCaptureModeAsync("video format", () =>
+        {
+            if (string.IsNullOrWhiteSpace(videoFormat))
+            {
+                throw new ArgumentException("Video format is required.", nameof(videoFormat));
+            }
+
+            var match = _context.GetAvailableVideoFormats().FirstOrDefault(
+                format => string.Equals(format, videoFormat, StringComparison.OrdinalIgnoreCase));
+            if (match == null)
+            {
+                throw new InvalidOperationException($"Video format '{videoFormat}' is not available.");
+            }
+
+            _context.SetSelectedVideoFormat(match);
+        }, cancellationToken);
+    }
+
+    public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)
+    {
+        return SetAutomationCaptureModeAsync("mjpeg decoder count", () =>
+        {
+            _context.SetMjpegDecoderCount(Math.Clamp(decoderCount, 1, 8));
+        }, cancellationToken);
+    }
+
+    private async Task SetAutomationCaptureModeAsync(
+        string reason,
+        Action apply,
+        CancellationToken cancellationToken)
+    {
+        await _captureModeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var shouldReinitialize = await _context.InvokeBooleanOnUiThreadAsync(() =>
+            {
+                var wasPreviewing = _context.IsPreviewing() && _context.IsInitialized() && _context.GetSelectedDevice() != null;
+                _context.SetSuppressFormatChangeReinitialize(true);
+                try
+                {
+                    apply();
+                }
+                finally
+                {
+                    _context.SetSuppressFormatChangeReinitialize(false);
+                }
+
+                return wasPreviewing && _context.GetSelectedFormat() != null;
+            }, cancellationToken).ConfigureAwait(false);
+
+            if (shouldReinitialize)
+            {
+                await _context.InvokeOnUiThreadAsync(
+                        () => _context.ReinitializeDeviceAsync($"automation {reason}"),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            _captureModeGate.Release();
         }
     }
 }

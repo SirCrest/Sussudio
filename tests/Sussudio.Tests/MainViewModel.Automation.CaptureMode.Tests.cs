@@ -21,8 +21,10 @@ static partial class Program
         AssertContains(automationSettingsText, "public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)");
         AssertContains(automationSettingsText, "=> _captureSettingsAutomationController.SetMjpegDecoderCountAsync(decoderCount, cancellationToken);");
         AssertDoesNotContain(automationSettingsText, "private async Task SetAutomationCaptureModeAsync(");
-        AssertContains(captureSettingsAutomationControllerText, "private sealed class MainViewModelCaptureSettingsAutomationController");
-        AssertContains(captureSettingsAutomationControllerContextText, "private sealed class MainViewModelCaptureSettingsAutomationControllerContext");
+        AssertContains(captureSettingsAutomationControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(captureSettingsAutomationControllerText, "internal sealed class MainViewModelCaptureSettingsAutomationController");
+        AssertContains(captureSettingsAutomationControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(captureSettingsAutomationControllerContextText, "internal sealed class MainViewModelCaptureSettingsAutomationControllerContext");
         AssertContains(captureSettingsAutomationControllerText, "private readonly MainViewModelCaptureSettingsAutomationControllerContext _context;");
         AssertDoesNotContain(captureSettingsAutomationControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(captureSettingsAutomationControllerText, "_viewModel.");

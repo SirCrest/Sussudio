@@ -5083,12 +5083,12 @@ owner, fold it back into that owner and update the source-shape tests and
    automation entry points now stay in the
    `MainViewModel.AutomationSettings.cs` compatibility facade, while
    UI-thread mutations, validation, MJPEG decoder clamping, and active
-   capture-mode reinitialization routing live in
+   capture-mode reinitialization routing live in the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs`.
    `Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.Context.cs`
-   owns the capture-settings automation graph-port contract for option
-   collections, selected capture-mode state, preview reinitialization checks,
-   UI-thread dispatch, and format-change suppression.
+   owns the top-level capture-settings automation graph-port contract for
+   option collections, selected capture-mode state, preview reinitialization
+   checks, UI-thread dispatch, and format-change suppression.
    Startup FFmpeg capability probes for recording formats and split-encode modes
    plus observable recording-format option rebuilds now live in the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`.

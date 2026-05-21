@@ -89,12 +89,14 @@ static partial class Program
         AssertContains(controllerGraphDeviceAudioText, "ApplyDeviceAudioModeAsync = (reason, targetDevice, cancellationToken) =>");
         AssertContains(controllerGraphDeviceAudioText, "ApplyAnalogAudioGainAsync = (reason, targetDevice, cancellationToken) =>");
 
-        AssertContains(captureSettingsAutomationControllerText, "private sealed class MainViewModelCaptureSettingsAutomationController");
+        AssertContains(captureSettingsAutomationControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(captureSettingsAutomationControllerText, "internal sealed class MainViewModelCaptureSettingsAutomationController");
         AssertEqual(
             true,
             captureSettingsAutomationControllerText.Split('\n').Length >= 100,
             "capture settings automation controller is a substantial ownership file");
-        AssertContains(captureSettingsAutomationControllerContextText, "private sealed class MainViewModelCaptureSettingsAutomationControllerContext");
+        AssertContains(captureSettingsAutomationControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(captureSettingsAutomationControllerContextText, "internal sealed class MainViewModelCaptureSettingsAutomationControllerContext");
         AssertContains(captureSettingsAutomationControllerText, "private readonly MainViewModelCaptureSettingsAutomationControllerContext _context;");
         AssertDoesNotContain(captureSettingsAutomationControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(captureSettingsAutomationControllerText, "_viewModel.");

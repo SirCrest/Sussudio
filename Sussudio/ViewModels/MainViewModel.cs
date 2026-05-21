@@ -91,7 +91,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Automation snapshots and probes: MainViewModel.AutomationSnapshots.cs
     // Automation options projection: MainViewModel.AutomationOptionsSnapshot.cs
     // Device and audio-input selection automation: MainViewModel.AutomationDeviceSelection.cs
-    // Settings automation facade: MainViewModel.AutomationSettings.cs; capture controller: MainViewModelCaptureSettingsAutomationController.cs; recording controller: MainViewModelRecordingSettingsAutomationController.cs; preview automation: MainViewModelPreviewLifecycleController.cs; capture-mode transactions: MainViewModel.CaptureModeTransactions.cs
+    // Settings automation facade: MainViewModel.AutomationSettings.cs; top-level capture controller: MainViewModelCaptureSettingsAutomationController.cs; recording controller: MainViewModelRecordingSettingsAutomationController.cs; preview automation: MainViewModelPreviewLifecycleController.cs; capture-mode transactions: MainViewModel.CaptureModeTransactions.cs
     // UI-only automation: MainViewModel.AutomationUi.cs
     // UI dispatch policy: MainViewModelUiDispatchController.cs; adapter/fan-out: MainViewModel.Dispatching.cs
     // Audio monitoring: MainViewModel.AudioMonitoring.cs
