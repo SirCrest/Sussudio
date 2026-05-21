@@ -1272,8 +1272,8 @@ legacy harness catalog.
 Presentation-preview D3D render-pipeline source-ownership checks now execute
 through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DRenderPipelineOwnershipTests.cs`,
-keeping render passes, shader rendering cache, shader sources, frame-latency
-wait, render thread, present accounting, viewport helpers, and screenshot
+keeping render passes, shader rendering cache, shader compilation/source
+contracts, frame-latency wait, render thread, present accounting, viewport helpers, and screenshot
 encoding contracts in xUnit after their removal from the legacy D3D harness
 catalog. The empty legacy D3D catalog hook was removed after this final group
 moved to xUnit.
@@ -2430,6 +2430,16 @@ interop declarations now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.NativeInterop.cs`. Keep
 `ISwapChainPanelNative`, `ID3DBlob`, `D3DCompileNative`, and `DwmFlush` there;
 leave `WaitForSingleObject` in `D3D11PreviewRenderer.FrameLatency.cs`.
+
+D3D preview renderer shader compilation now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderCompilation.cs`, with
+D3DCompiler blob extraction in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderBlobInterop.cs`. Keep
+shader bytecode creation, sampler creation, viewport constant-buffer creation,
+and compile-fallback logging in the compilation partial; keep
+`D3DCompileNative` invocation, `ID3DBlob` byte extraction, and compile-error
+string extraction in the blob interop partial. HLSL text and renderer mode
+labels stay in `Sussudio/Services/Preview/PreviewShaderSources.cs`.
 
 D3D preview renderer frame submission now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs`. Keep public raw

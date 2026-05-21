@@ -335,8 +335,8 @@ add xUnit alongside, and port incrementally.
   device initialization checks.
 - `XUnit.PresentationPreviewD3DRenderPipelineOwnershipTests.cs` owns the former
   legacy presentation-preview D3D render-pipeline source-ownership group:
-  render passes, shader rendering cache, shader sources, frame-latency wait,
-  render thread, present accounting, viewport helpers, and screenshot encoding
+  render passes, shader rendering cache, shader compilation/source contracts,
+  frame-latency wait, render thread, present accounting, viewport helpers, and screenshot encoding
   checks. The legacy D3D catalog hook was removed after the final group moved
   to xUnit.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
