@@ -4927,8 +4927,16 @@ Primary owners:
   `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs` owns read-only
   recording metric projection.
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs`
-  owns the `FlashbackPlaybackSessionMetrics` handoff shape, and
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs` owns
+  owns the core `FlashbackPlaybackSessionMetrics` handoff identity: observed
+  state, baseline/end snapshots, and end session frame count. Focused
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Commands.Model.cs`,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Cadence.Model.cs`,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.OnePercentLow.Model.cs`,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Decode.Model.cs`,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.AudioMaster.Model.cs`,
+  and `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Stages.Model.cs`
+  own command, cadence, 1% low, decode, audio-master, and stage metric handoff
+  fields. `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs` owns
   playback session metric orchestration plus end-of-session playback counter
   deltas. `tools/Common/DiagnosticSessionFlashbackMetrics.Export.Model.cs`
   owns the `FlashbackExportSessionMetrics` handoff shape,
@@ -4947,7 +4955,14 @@ Primary owners:
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs`
   owns audio-master maxima.
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs`
-  owns the `FlashbackPlaybackResultMetrics` handoff shape, and
+  owns the core `FlashbackPlaybackResultMetrics` handoff identity: end snapshot.
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Commands.Model.cs`,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Cadence.Model.cs`,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.Model.cs`,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.AudioMaster.Model.cs`,
+  and `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Stages.Model.cs`
+  own command, cadence, decode, audio-master, and stage result metric handoff
+  fields, and
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs` owns final
   result metric construction.
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.ObservedReads.cs`

@@ -4527,9 +4527,11 @@ Diagnostic-session Flashback recording metrics keep the
 `FlashbackRecordingSessionMetrics` handoff shape in
 `DiagnosticSessionFlashbackMetrics.Recording.Model.cs`, while
 `DiagnosticSessionFlashbackMetrics.Recording.cs` owns recording metric
-projection. Flashback playback session metrics keep the
-`FlashbackPlaybackSessionMetrics` handoff shape in
-`DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs`, while
+projection. Flashback playback session metrics keep core observed/baseline/end
+snapshot handoff identity in
+`DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs`, while focused
+`PlaybackSession.*.Model.cs` partials own command, cadence, 1% low, decode,
+audio-master, and stage metric handoff fields.
 `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs` owns playback session
 metric orchestration and end-of-session playback counter deltas. Flashback
 export metrics keep the `FlashbackExportSessionMetrics` handoff shape in
@@ -4539,9 +4541,10 @@ snapshot max aggregation in
 force-rotate fallback counters in `DiagnosticSessionFlashbackMetrics.Export.cs`.
 
 Diagnostic-session Flashback playback result metrics now keep the
-`FlashbackPlaybackResultMetrics` handoff shape in
-`tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs` and
-final construction in
+`FlashbackPlaybackResultMetrics` end-snapshot handoff identity in
+`tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs`,
+focused `PlaybackResult.*.Model.cs` partials own command, cadence, decode,
+audio-master, and stage result handoff fields, and final construction lives in
 `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`.
 Observed-gated primitive reads live in
 `DiagnosticSessionFlashbackMetrics.PlaybackResult.ObservedReads.cs`, with
@@ -4687,6 +4690,12 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.Export.cs`
 - `DiagnosticSessionFlashbackMetrics.ExportObservation.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackSession.Commands.Model.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackSession.Cadence.Model.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackSession.OnePercentLow.Model.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackSession.Decode.Model.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackSession.AudioMaster.Model.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackSession.Stages.Model.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.Relevance.cs`
@@ -4694,6 +4703,11 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.FrameDecode.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Commands.Model.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Cadence.Model.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.Model.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackResult.AudioMaster.Model.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Stages.Model.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.ObservedReads.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.Commands.cs`
