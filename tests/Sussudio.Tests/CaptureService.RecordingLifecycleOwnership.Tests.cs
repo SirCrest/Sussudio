@@ -41,6 +41,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var libAvStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
             .Replace("\r\n", "\n");
+        var libAvVideoCaptureText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.VideoCapture.cs")
+            .Replace("\r\n", "\n");
         var libAvAudioInputsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.AudioInputs.cs")
             .Replace("\r\n", "\n");
         var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs")
@@ -125,9 +127,17 @@ static partial class Program
         AssertContains(libAvStartText, "HDR_NEGOTIATION");
         AssertContains(libAvStartText, "await rollback.RecordingSink.StartAsync(rollback.RecordingContext, transitionToken)");
         AssertContains(libAvStartText, "await StartLibAvRecordingAudioInputsAsync(");
+        AssertContains(libAvStartText, "await PrepareLibAvRecordingVideoCaptureAsync(");
         AssertOccursBefore(libAvStartText, "await rollback.RecordingSink.StartAsync(rollback.RecordingContext, transitionToken)", "await StartLibAvRecordingAudioInputsAsync(");
         AssertOccursBefore(libAvStartText, "await StartLibAvRecordingAudioInputsAsync(", "_recordingIntegrityAudioBaseline = CaptureRecordingAudioCounters(");
         AssertOccursBefore(libAvStartText, "await StartLibAvRecordingAudioInputsAsync(", "await unifiedVideoCapture.StartRecordingAsync(");
+        AssertContains(libAvVideoCaptureText, "private async Task<UnifiedVideoCapture> PrepareLibAvRecordingVideoCaptureAsync(");
+        AssertContains(libAvVideoCaptureText, "rollback.OwnedUnifiedVideoCapture = new UnifiedVideoCapture();");
+        AssertContains(libAvVideoCaptureText, "AttachUnifiedVideoCapture(rollback.OwnedUnifiedVideoCapture);");
+        AssertContains(libAvVideoCaptureText, "_videoPipeline.InstallCapture(rollback.OwnedUnifiedVideoCapture);");
+        AssertContains(libAvVideoCaptureText, "TryApplySharedPreviewDevice(unifiedVideoCapture, _isVideoPreviewActive ? _previewFrameSink : null);");
+        AssertContains(libAvVideoCaptureText, "Recording requires {(requireP010 ? \"P010\" : \"NV12\")}, but the active source-reader session negotiated");
+        AssertContains(libAvVideoCaptureText, "Recording requested mjpeg_hfr={useMjpegHighFrameRateMode}, but the active preview session is mjpeg_hfr=");
         AssertContains(libAvAudioInputsText, "private async Task StartLibAvRecordingAudioInputsAsync(");
         AssertContains(libAvAudioInputsText, "rollback.OwnedWasapiAudioCapture = new WasapiAudioCapture();");
         AssertContains(libAvAudioInputsText, "_wasapiAudioCapture.AttachRecordingSink(recordingSink);");
@@ -140,6 +150,9 @@ static partial class Program
         AssertDoesNotContain(libAvStartText, "_wasapiAudioCapture.AttachRecordingSink(recordingSink);");
         AssertDoesNotContain(libAvStartText, "micCapture.SetAudioWriter(samples => micSink.WriteMicrophoneAudioAsync(samples));");
         AssertDoesNotContain(libAvStartText, "MICROPHONE_CAPTURE_START");
+        AssertDoesNotContain(libAvStartText, "rollback.OwnedUnifiedVideoCapture = new UnifiedVideoCapture();");
+        AssertDoesNotContain(libAvStartText, "AttachUnifiedVideoCapture(rollback.OwnedUnifiedVideoCapture);");
+        AssertDoesNotContain(libAvStartText, "_videoPipeline.InstallCapture(rollback.OwnedUnifiedVideoCapture);");
         AssertDoesNotContain(libAvStartText, "FLASHBACK_UNIFIED_RECORDING_START");
         AssertDoesNotContain(lifecycleText, "public Task StopRecordingAsync(");
         AssertDoesNotContain(lifecycleText, "internal Task StopRecordingAsync(bool emergency");

@@ -1724,7 +1724,10 @@ the public recording start transition surface, startup-path routing, the private
 rollback-state holder, and delegation to the recording-start rollback owner.
 `CaptureService.RecordingStartFlashback.cs` owns Flashback recording fast-path
 reuse and backend startup, and
-`CaptureService.RecordingStartLibAv.cs` owns standard LibAv recording startup.
+`CaptureService.RecordingStartLibAv.cs` owns standard LibAv recording startup
+sequencing. `CaptureService.RecordingStartLibAv.VideoCapture.cs` owns standard
+LibAv recording video-capture reuse/creation, source-reader compatibility
+checks, preview sink/shared-device handoff, and video pipeline installation.
 `CaptureService.RecordingStartLibAv.AudioInputs.cs` owns standard LibAv
 recording audio-input startup, including WASAPI sink attachment, preview
 playback preservation, and recording microphone capture wiring.

@@ -54,40 +54,17 @@ public partial class CaptureService
 
         var requireP010 = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase);
         var useMjpegHighFrameRateMode = settings.UseMjpegHighFrameRateMode;
-        var unifiedVideoCapture = _unifiedVideoCapture;
-        if (unifiedVideoCapture == null)
-        {
-            rollback.OwnedUnifiedVideoCapture = new UnifiedVideoCapture();
-            AttachUnifiedVideoCapture(rollback.OwnedUnifiedVideoCapture);
-            await rollback.OwnedUnifiedVideoCapture.InitializeAsync(
-                _currentDevice!.Id,
-                (int)effectiveWidth,
-                (int)effectiveHeight,
+        var unifiedVideoCapture = await PrepareLibAvRecordingVideoCaptureAsync(
+                settings,
+                rollback,
+                effectiveWidth,
+                effectiveHeight,
                 effectiveFrameRate,
                 requireP010,
-                settings.RequestedPixelFormat,
-                useMjpegHighFrameRateMode,
-                settings.MjpegDecoderCount).ConfigureAwait(false);
-            rollback.OwnedUnifiedVideoCapture.SetPreviewSink(_isVideoPreviewActive ? _previewFrameSink : null);
-            TryApplySharedPreviewDevice(rollback.OwnedUnifiedVideoCapture, _isVideoPreviewActive ? _previewFrameSink : null);
-            unifiedVideoCapture = rollback.OwnedUnifiedVideoCapture;
-            _videoPipeline.InstallCapture(rollback.OwnedUnifiedVideoCapture);
-        }
-        else if (unifiedVideoCapture.IsP010 != requireP010)
-        {
-            throw new InvalidOperationException(
-                $"Recording requires {(requireP010 ? "P010" : "NV12")}, but the active source-reader session negotiated {(unifiedVideoCapture.IsP010 ? "P010" : "NV12")}.");
-        }
-        else if (unifiedVideoCapture.IsHighFrameRateMjpegMode != useMjpegHighFrameRateMode)
-        {
-            throw new InvalidOperationException(
-                $"Recording requested mjpeg_hfr={useMjpegHighFrameRateMode}, but the active preview session is mjpeg_hfr={unifiedVideoCapture.IsHighFrameRateMjpegMode}.");
-        }
+                useMjpegHighFrameRateMode)
+            .ConfigureAwait(false);
 
-        rollback.RecordingVideoCapture = unifiedVideoCapture;
-        TryApplySharedPreviewDevice(unifiedVideoCapture, _isVideoPreviewActive ? _previewFrameSink : null);
-
-        var isMjpegMode = rollback.RecordingVideoCapture.IsSoftwareMjpegPipelineActive;
+        var isMjpegMode = unifiedVideoCapture.IsSoftwareMjpegPipelineActive;
         var d3dManager = unifiedVideoCapture.D3DManager;
         var recordingWidth = (uint)Math.Max(1, unifiedVideoCapture.Width);
         var recordingHeight = (uint)Math.Max(1, unifiedVideoCapture.Height);
