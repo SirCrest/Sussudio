@@ -6,6 +6,7 @@ static partial class Program
     internal static Task LaunchEntranceAnimation_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var controllerInitializationText = ReadRepoFile("Sussudio/MainWindow.ControllerInitialization.cs").Replace("\r\n", "\n");
         var startupText = ReadMainWindowShellChromeAdapterSource();
         var adapterText = ReadMainWindowShellChromeAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
@@ -29,7 +30,7 @@ static partial class Program
             true,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShellChrome.LaunchEntrance.cs")),
             "launch entrance adapter lives in the focused shell chrome launch entrance partial");
-        AssertContains(mainWindowText, "InitializeLaunchEntranceAnimationController();");
+        AssertContains(controllerInitializationText, "InitializeLaunchEntranceAnimationController();");
         AssertContains(mainWindowText, "PrepareLaunchEntranceInitialState();");
         AssertContains(startupText, "PlaySplashAndEntrance();");
         AssertContains(controllerText, "internal sealed partial class LaunchEntranceAnimationController");
@@ -72,6 +73,7 @@ static partial class Program
     internal static Task MainWindowStartupHosting_LivesInStartupPartial()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var controllerInitializationText = ReadRepoFile("Sussudio/MainWindow.ControllerInitialization.cs").Replace("\r\n", "\n");
         var startupText = ReadMainWindowShellChromeAdapterSource();
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs").Replace("\r\n", "\n");
         var launchStartupControllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchStartupController.cs").Replace("\r\n", "\n");
@@ -121,33 +123,35 @@ static partial class Program
         AssertContains(automationHostControllerText, "if (_pipeServer.Start())\n        {\n            _diagnosticsHub.Start();");
         AssertContains(automationHostControllerText, "Automation control ready on pipe");
         AssertContains(automationHostControllerText, "Automation control disabled on pipe");
-        AssertContains(mainWindowText, "private void InitializeShellControllers()");
-        AssertContains(mainWindowText, "private void InitializeWindowShellControllers()");
-        AssertContains(mainWindowText, "private void InitializeFlashbackControllers()");
-        AssertContains(mainWindowText, "private void InitializeShellPresentationControllers()");
-        AssertContains(mainWindowText, "private void InitializePreviewControllers()");
-        AssertContains(mainWindowText, "private void InitializeRecordingControllers()");
-        AssertContains(mainWindowText, "private void InitializeLaunchAndStatusControllers()");
-        AssertContains(mainWindowText, "InitializeLaunchStartupController();");
-        AssertContains(mainWindowText, "private void InitializePreviewActionControllers()");
-        AssertContains(mainWindowText, "private void InitializeAudioControllers()");
-        AssertContains(mainWindowText, "private void InitializeCaptureControllers()");
-        AssertContains(mainWindowText, "private void InitializeOutputControllers()");
-        AssertOccursBefore(mainWindowText, "InitializeWindowShellControllers();", "InitializeFlashbackControllers();");
-        AssertOccursBefore(mainWindowText, "InitializeFlashbackControllers();", "InitializeShellPresentationControllers();");
-        AssertOccursBefore(mainWindowText, "InitializeShellPresentationControllers();", "InitializePreviewControllers();");
-        AssertOccursBefore(mainWindowText, "InitializePreviewControllers();", "InitializeRecordingControllers();");
-        AssertOccursBefore(mainWindowText, "InitializeRecordingControllers();", "InitializeLaunchAndStatusControllers();");
-        AssertOccursBefore(mainWindowText, "InitializeLaunchAndStatusControllers();", "InitializePreviewActionControllers();");
-        AssertOccursBefore(mainWindowText, "InitializePreviewActionControllers();", "InitializeAudioControllers();");
-        AssertOccursBefore(mainWindowText, "InitializeAudioControllers();", "InitializeResponsiveShellLayoutController();");
-        AssertOccursBefore(mainWindowText, "InitializeResponsiveShellLayoutController();", "InitializeCaptureControllers();");
-        AssertOccursBefore(mainWindowText, "InitializeCaptureControllers();", "InitializeOutputControllers();");
-        AssertOccursBefore(mainWindowText, "InitializeOutputControllers();", "InitializePreviewScreenshotController();");
-        AssertOccursBefore(mainWindowText, "private void InitializeWindowShellControllers()", "private void InitializeFlashbackControllers()");
-        AssertOccursBefore(mainWindowText, "private void InitializeFlashbackControllers()", "private void InitializeShellPresentationControllers()");
-        AssertOccursBefore(mainWindowText, "private void InitializeShellPresentationControllers()", "private void InitializePreviewControllers()");
-        AssertOccursBefore(mainWindowText, "private void InitializePreviewControllers()", "private void InitializeRecordingControllers()");
+        AssertContains(mainWindowText, "InitializeShellControllers();");
+        AssertDoesNotContain(mainWindowText, "private void InitializePreviewControllers()");
+        AssertContains(controllerInitializationText, "private void InitializeShellControllers()");
+        AssertContains(controllerInitializationText, "private void InitializeWindowShellControllers()");
+        AssertContains(controllerInitializationText, "private void InitializeFlashbackControllers()");
+        AssertContains(controllerInitializationText, "private void InitializeShellPresentationControllers()");
+        AssertContains(controllerInitializationText, "private void InitializePreviewControllers()");
+        AssertContains(controllerInitializationText, "private void InitializeRecordingControllers()");
+        AssertContains(controllerInitializationText, "private void InitializeLaunchAndStatusControllers()");
+        AssertContains(controllerInitializationText, "InitializeLaunchStartupController();");
+        AssertContains(controllerInitializationText, "private void InitializePreviewActionControllers()");
+        AssertContains(controllerInitializationText, "private void InitializeAudioControllers()");
+        AssertContains(controllerInitializationText, "private void InitializeCaptureControllers()");
+        AssertContains(controllerInitializationText, "private void InitializeOutputControllers()");
+        AssertOccursBefore(controllerInitializationText, "InitializeWindowShellControllers();", "InitializeFlashbackControllers();");
+        AssertOccursBefore(controllerInitializationText, "InitializeFlashbackControllers();", "InitializeShellPresentationControllers();");
+        AssertOccursBefore(controllerInitializationText, "InitializeShellPresentationControllers();", "InitializePreviewControllers();");
+        AssertOccursBefore(controllerInitializationText, "InitializePreviewControllers();", "InitializeRecordingControllers();");
+        AssertOccursBefore(controllerInitializationText, "InitializeRecordingControllers();", "InitializeLaunchAndStatusControllers();");
+        AssertOccursBefore(controllerInitializationText, "InitializeLaunchAndStatusControllers();", "InitializePreviewActionControllers();");
+        AssertOccursBefore(controllerInitializationText, "InitializePreviewActionControllers();", "InitializeAudioControllers();");
+        AssertOccursBefore(controllerInitializationText, "InitializeAudioControllers();", "InitializeResponsiveShellLayoutController();");
+        AssertOccursBefore(controllerInitializationText, "InitializeResponsiveShellLayoutController();", "InitializeCaptureControllers();");
+        AssertOccursBefore(controllerInitializationText, "InitializeCaptureControllers();", "InitializeOutputControllers();");
+        AssertOccursBefore(controllerInitializationText, "InitializeOutputControllers();", "InitializePreviewScreenshotController();");
+        AssertOccursBefore(controllerInitializationText, "private void InitializeWindowShellControllers()", "private void InitializeFlashbackControllers()");
+        AssertOccursBefore(controllerInitializationText, "private void InitializeFlashbackControllers()", "private void InitializeShellPresentationControllers()");
+        AssertOccursBefore(controllerInitializationText, "private void InitializeShellPresentationControllers()", "private void InitializePreviewControllers()");
+        AssertOccursBefore(controllerInitializationText, "private void InitializePreviewControllers()", "private void InitializeRecordingControllers()");
         AssertOccursBefore(launchStartupControllerText, "await _context.InitializeViewModelAsync();", "_context.StartAutomationHost();");
         AssertOccursBefore(launchStartupControllerText, "_context.ScheduleNativeShellRevealAfterFirstFrame();", "_ = _context.RunUiEventHandlerAsync(async () =>");
         AssertOccursBefore(launchStartupControllerText, "_context.ScheduleNativeShellRevealAfterFirstFrame();", "await _context.InitializeViewModelAsync();");

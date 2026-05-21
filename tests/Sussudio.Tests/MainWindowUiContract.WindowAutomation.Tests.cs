@@ -57,8 +57,7 @@ static partial class Program
 
     internal static Task MainWindowWindowAutomationCommands_LiveInController()
     {
-        var mainWindowSource = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
-            .Replace("\r\n", "\n");
+        var mainWindowSource = ReadMainWindowCompositionSource();
         var closeLifecycleSource = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs")
             .Replace("\r\n", "\n");
         var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Dispatching.cs")

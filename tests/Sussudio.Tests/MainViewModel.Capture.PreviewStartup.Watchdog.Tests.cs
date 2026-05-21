@@ -10,8 +10,7 @@ static partial class Program
 {
     internal static Task PreviewStartupWatchdogOwnership_LivesInFocusedController()
     {
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
-            .Replace("\r\n", "\n");
+        var mainWindowText = ReadMainWindowCompositionSource();
         var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
         var previewStartupWatchdogText = ReadMainWindowPreviewStartupAdapterSource();
         var previewStartupWatchdogControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs")

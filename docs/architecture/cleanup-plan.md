@@ -4874,10 +4874,11 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainWindow.PreviewTransitions.*.cs` partials so audio fade, button action,
    delayed fade-in, startup overlay, animation, and reinit callback surfaces can
    be audited independently.
-   `MainWindow.xaml.cs` now keeps the controller initialization list grouped
-   into shell, Flashback, presentation, preview, recording, launch/status,
-   preview action, audio, capture, and output phases so the composition root
-   stays navigable as new controllers appear.
+   `MainWindow.xaml.cs` now owns construction and startup event wiring, while
+   `MainWindow.ControllerInitialization.cs` keeps the controller initialization
+   list grouped into shell, Flashback, presentation, preview, recording,
+   launch/status, preview action, audio, capture, and output phases so the
+   composition root stays navigable as new controllers appear.
    Start the next UI cleanup from remaining broad adapters not already covered
    by controller ownership tests. Keep XAML bindings stable.
 

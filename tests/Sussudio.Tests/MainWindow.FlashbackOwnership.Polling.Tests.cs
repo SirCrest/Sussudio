@@ -5,7 +5,7 @@ static partial class Program
     internal static Task FlashbackPollingTimers_LiveInController()
     {
         var flashbackText = ReadMainWindowFlashbackAdapterSource();
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadMainWindowCompositionSource();
         var pollingAdapterText = ReadMainWindowFlashbackAdapterSource();
         var timelineAdapterText = ReadMainWindowFlashbackAdapterSource();
         var shutdownCleanupText = ReadMainWindowShutdownCleanupAdapterSource();

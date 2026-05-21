@@ -4,7 +4,7 @@ static partial class Program
 {
     internal static Task RecordingButtonAction_LivesInController()
     {
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadRepoFile("Sussudio/MainWindow.RecordingActions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/Button/RecordingButtonActionController.cs").Replace("\r\n", "\n");
 
@@ -36,7 +36,7 @@ static partial class Program
 
     internal static Task PreviewAudioFadeState_LivesInController()
     {
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadMainWindowCompositionSource();
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.AudioBindings.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
@@ -112,7 +112,7 @@ static partial class Program
 
     internal static Task PreviewButtonPresentation_LivesInController()
     {
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadMainWindowCompositionSource();
         var previewActionsText = ReadMainWindowPreviewTransitionsAdapterSource();
         var propertyChangedPreviewText = ReadMainWindowPropertyChangedPreviewAdapterSource();
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");

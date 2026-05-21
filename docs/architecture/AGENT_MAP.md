@@ -4155,11 +4155,12 @@ Primary current owners:
 Refactor direction:
 
 - Keep `MainWindow.xaml.cs` as a shell/composition root over time.
-- `MainWindow.xaml.cs` owns only construction and phased controller
+- `MainWindow.xaml.cs` owns construction and startup event wiring, while
+  `MainWindow.ControllerInitialization.cs` owns phased controller
   initialization. Keep the phase methods grouped by runtime surface
   (window/shell, Flashback, presentation, preview, recording, launch/status,
   preview actions, audio, capture, output) so adding a controller does not turn
-  the root back into an undifferentiated list.
+  the composition root back into an undifferentiated list.
 - Keep `MainWindow.*` partials thin as XAML adapters over named controllers.
   Preview startup, preview runtime snapshot dispatch/sampling, MainWindow UI
   dispatching, stats projection, and Flashback playback/export presentation

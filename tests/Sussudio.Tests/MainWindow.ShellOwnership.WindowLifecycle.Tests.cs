@@ -5,7 +5,7 @@ static partial class Program
 {
     internal static Task MainWindowCloseLifecycleAndShutdownCleanup_AreSplit()
     {
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadMainWindowCompositionSource();
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
         var oldWindowManagementPath = Path.Combine(

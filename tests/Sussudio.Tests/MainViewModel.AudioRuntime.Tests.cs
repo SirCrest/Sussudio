@@ -12,7 +12,7 @@ static partial class Program
         var audioMeterControllerRootText = ReadRepoFile("Sussudio/Controllers/Audio/Meter/AudioMeterController.cs").Replace("\r\n", "\n");
         var audioMeterStateText = ReadRepoFile("Sussudio/Controllers/Audio/Meter/AudioMeterController.MeterState.cs").Replace("\r\n", "\n");
         var audioMeterAnimationsText = ReadRepoFile("Sussudio/Controllers/Audio/Meter/AudioMeterController.PresentationAnimations.cs").Replace("\r\n", "\n");
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadMainWindowCompositionSource();
 
         AssertContains(mainViewModelStateText, "IsAudioPreviewActive");
         AssertContains(propertyChangedText, "TryHandleAudio = TryHandleAudioPropertyChanged,");

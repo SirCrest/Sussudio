@@ -22,8 +22,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackSettingsControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackSettingsBindingController.cs")
             .Replace("\r\n", "\n");
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
-            .Replace("\r\n", "\n");
+        var mainWindowText = ReadMainWindowCompositionSource();
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
             .Replace("\r\n", "\n");
         var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs")

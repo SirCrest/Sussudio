@@ -4,7 +4,7 @@ static partial class Program
 {
     internal static Task CaptureDeviceButtonActions_LiveInController()
     {
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadRepoFile("Sussudio/MainWindow.CaptureDeviceActions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureDeviceActionController.cs").Replace("\r\n", "\n");
 

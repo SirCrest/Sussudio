@@ -7,7 +7,8 @@ using Sussudio.ViewModels;
 namespace Sussudio;
 
 // Main window composition root. This partial owns construction and service
-// wiring; feature-specific UI behavior lives in sibling partials/controllers.
+// wiring; phased controller initialization and feature-specific UI behavior
+// live in sibling partials/controllers.
 public sealed partial class MainWindow : Window, IAutomationWindowControl
 {
     public MainViewModel ViewModel { get; }
@@ -73,106 +74,4 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         Closed += MainWindow_Closed;
     }
 
-    private void InitializeShellControllers()
-    {
-        InitializeWindowShellControllers();
-        InitializeFlashbackControllers();
-        InitializeShellPresentationControllers();
-        InitializePreviewControllers();
-        InitializeRecordingControllers();
-        InitializeLaunchAndStatusControllers();
-        InitializePreviewActionControllers();
-        InitializeAudioControllers();
-        InitializeResponsiveShellLayoutController();
-        InitializeCaptureControllers();
-        InitializeOutputControllers();
-        InitializePreviewScreenshotController();
-        InitializeMainWindowPropertyChangedRouter();
-    }
-
-    private void InitializeWindowShellControllers()
-    {
-        InitializeWindowAutomationController();
-        InitializeWindowScreenshotController();
-    }
-
-    private void InitializeFlashbackControllers()
-    {
-        InitializeFlashbackPollingController();
-        InitializeFlashbackScrubInteractionController();
-        InitializeFlashbackPlayheadMotionController();
-        InitializeFlashbackTimelineController();
-        InitializeFlashbackSettingsBindingController();
-        InitializeFlashbackCommandController();
-        InitializeFlashbackMarkerPresentationController();
-        InitializeFlashbackPlaybackPresentationController();
-        InitializeFlashbackPlaybackUiCoordinator();
-        InitializeFlashbackExportProgressPresentationController();
-        InitializeFlashbackPropertyChangedController();
-    }
-
-    private void InitializeShellPresentationControllers()
-    {
-        InitializeSettingsShelfController();
-        InitializeSplashLoadingPhraseController();
-        InitializeControlBarAnimationController();
-        InitializeShellElevationController();
-        InitializeShellPropertyChangedController();
-    }
-
-    private void InitializePreviewControllers()
-    {
-        InitializePreviewResizeTelemetryController();
-        InitializePreviewSurfacePresentationController();
-        InitializePreviewStartupSessionController();
-        InitializePreviewLifecycleEventController();
-        InitializePreviewStartupSignalCoordinator();
-        InitializePreviewStartupWatchdogController();
-        InitializePreviewRuntimeSnapshotSamplingController();
-        InitializePreviewStartupOverlayController();
-        InitializePreviewFadeInController();
-        InitializePreviewTransitionAnimationController();
-        InitializePreviewButtonPresentationController();
-    }
-
-    private void InitializeRecordingControllers()
-    {
-        InitializeRecordingButtonChromeController();
-        InitializeRecordingStatePresentationController();
-        InitializeRecordingButtonActionController();
-    }
-
-    private void InitializeLaunchAndStatusControllers()
-    {
-        InitializeLaunchEntranceAnimationController();
-        InitializeLaunchStartupController();
-        InitializeLiveSignalInfoController();
-        InitializeStatusStripPresentationController();
-    }
-
-    private void InitializePreviewActionControllers()
-    {
-        InitializePreviewAudioFadeController();
-        InitializePreviewButtonActionController();
-    }
-
-    private void InitializeAudioControllers()
-    {
-        InitializeMicrophoneControlsController();
-        InitializeAudioControlBindingController();
-        InitializeAudioControlPresentationController();
-    }
-
-    private void InitializeCaptureControllers()
-    {
-        InitializeCaptureSelectionBindingController();
-        InitializeCaptureDeviceActionController();
-        InitializeCaptureOptionPresentationController();
-        InitializeCaptureOptionBindingController();
-    }
-
-    private void InitializeOutputControllers()
-    {
-        InitializeOutputPathController();
-    }
 }

@@ -8,7 +8,7 @@ static partial class Program
 {
     internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
     {
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadRepoFile("Sussudio/MainWindow.Screenshot.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs").Replace("\r\n", "\n");
         var policyText = ReadRepoFile("Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotPlanPolicy.cs").Replace("\r\n", "\n");

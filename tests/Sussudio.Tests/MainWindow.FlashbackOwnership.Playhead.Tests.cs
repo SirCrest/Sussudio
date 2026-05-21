@@ -5,7 +5,7 @@ static partial class Program
     internal static Task FlashbackPlayheadMotion_LivesInController()
     {
         var flashbackText = ReadMainWindowFlashbackAdapterSource();
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadMainWindowCompositionSource();
         var scrubText = ReadMainWindowFlashbackAdapterSource();
         var scrubControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs").Replace("\r\n", "\n");
         var playheadText = ReadMainWindowFlashbackAdapterSource();

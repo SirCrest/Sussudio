@@ -5,8 +5,7 @@ static partial class Program
 {
     internal static Task PreviewStartupSessionReinitOwnership_LivesInFocusedControllers()
     {
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
-            .Replace("\r\n", "\n");
+        var mainWindowText = ReadMainWindowCompositionSource();
         var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
         var previewStartupSessionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs")
             .Replace("\r\n", "\n");

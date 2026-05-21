@@ -4,8 +4,7 @@ static partial class Program
 {
     internal static Task PreviewStartupLifecycleEventOwnership_LivesInFocusedController()
     {
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
-            .Replace("\r\n", "\n");
+        var mainWindowText = ReadMainWindowCompositionSource();
         var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
         var previewFadeInText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewFadeInController.cs")

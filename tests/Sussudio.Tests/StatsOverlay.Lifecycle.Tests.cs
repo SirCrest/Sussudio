@@ -16,7 +16,7 @@ public class StatsOverlayLifecycleTests
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.Adapters.cs");
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs");
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs");
+        var mainWindowText = MainWindowCompositionSource.Read();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.cs");
         var dockAnimationText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.DockAnimation.cs");
         var frameTimeControllerText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs");
@@ -166,7 +166,7 @@ public class StatsOverlayLifecycleTests
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
         var statsOverlayCompositionGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs");
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs");
+        var mainWindowText = MainWindowCompositionSource.Read();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSectionChromeController.cs");
 
         AssertContains(statsOverlayCompositionText, "private readonly StatsSectionChromeController _statsSectionChromeController;");

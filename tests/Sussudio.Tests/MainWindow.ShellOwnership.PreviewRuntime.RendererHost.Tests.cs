@@ -4,7 +4,7 @@ static partial class Program
 {
     internal static Task PreviewRendererHostController_OwnsRuntimeState()
     {
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadMainWindowCompositionSource();
         var mainWindowFamilyText = string.Join(
                 "\n",
                 Directory.GetFiles(Path.Combine(GetRepoRoot(), "Sussudio"), "MainWindow*.cs")

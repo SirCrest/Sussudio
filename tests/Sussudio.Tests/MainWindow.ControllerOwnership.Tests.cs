@@ -5,7 +5,7 @@ static partial class Program
     internal static Task MainWindowPropertyChangedRouting_DelegatesToFocusedControllers()
     {
         var rootText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadMainWindowCompositionSource();
         var propertyChangedRouterText = ReadRepoFile("Sussudio/Controllers/Shell/MainWindowPropertyChangedRouter.cs").Replace("\r\n", "\n");
         var previewText = ReadMainWindowPropertyChangedPreviewAdapterSource();
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");

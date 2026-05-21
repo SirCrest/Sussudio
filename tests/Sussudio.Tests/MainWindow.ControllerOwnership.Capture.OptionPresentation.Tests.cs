@@ -4,7 +4,7 @@ static partial class Program
 {
     internal static Task CaptureOptionPresentation_LivesInController()
     {
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadMainWindowCompositionSource();
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var captureOptionText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionPresentation.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs").Replace("\r\n", "\n");
@@ -87,7 +87,7 @@ static partial class Program
         AssertDoesNotContain(bindingsText, "private void RefreshHdrHintText()");
         AssertDoesNotContain(bindingsText, "private void ApplyBitrateVisibility()");
         AssertDoesNotContain(bindingsText, "VideoFormatComboBox.ItemsSource = ViewModel.AvailableVideoFormats;");
-        AssertDoesNotContain(ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n"), "private int _selectedDecoderCount = 4;");
+        AssertDoesNotContain(ReadMainWindowCompositionSource(), "private int _selectedDecoderCount = 4;");
         AssertDoesNotContain(captureOptionText, "private int _selectedDecoderCount = 4;");
         AssertDoesNotContain(captureOptionText, "ViewModel.MjpegDecoderCount = count;");
         AssertDoesNotContain(captureOptionText, "ViewModel.SelectedFormat?.PixelFormat");
