@@ -39,11 +39,10 @@ public sealed partial class MainWindow
             FullScreenMenuItem = FullScreenMenuItem,
             GetAppWindow = GetAppWindow,
             HandleFlashbackKeyboardCommand = _flashbackCommandController.HandleFullScreenKeyboardCommand,
-            EndFlashbackScrubForFullScreen = EndFlashbackScrubForFullScreen,
-            ResetFlashbackTimelineAnimation = ResetFlashbackTimelineAnimationForFullScreen,
-            ResetSettingsShelfAnimation = ResetSettingsShelfAnimationForFullScreen,
-            ShouldShowFlashbackTimeline = ShouldShowFlashbackTimeline,
-            SyncFlashbackTimelineToggle = SyncFlashbackTimelineToggle,
+            EndFlashbackScrubForFullScreen = _flashbackScrubInteractionController.EndForFullScreen,
+            ResetFlashbackTimelineAnimation = _flashbackTimelineController.ResetAnimationForFullScreen,
+            ResetSettingsShelfAnimation = _settingsShelfController.ResetAnimationState,
+            SyncFlashbackTimelineToggle = _flashbackTimelineController.SyncToggle,
             HideStatsDockPanelImmediate = () => HideStatsDockPanel(immediate: true),
             ShowStatsDockPanel = ShowStatsDockPanel,
             UpdateVideoContentOverlays = UpdateVideoContentOverlays,
@@ -90,14 +89,6 @@ public sealed partial class MainWindow
 
     private Task ExitFullScreenAsync()
         => _fullScreenController.ExitAsync();
-
-    private bool ShouldShowFlashbackTimeline()
-    {
-        return ViewModel.IsFlashbackEnabled && ViewModel.IsFlashbackTimelineVisible;
-    }
-
-    private void EndFlashbackScrubForFullScreen()
-        => _flashbackScrubInteractionController.EndForFullScreen();
 
     #endregion
 

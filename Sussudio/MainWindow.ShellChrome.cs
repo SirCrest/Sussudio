@@ -162,9 +162,6 @@ public sealed partial class MainWindow
     private void HideSettingsShelf()
         => _settingsShelfController.Hide();
 
-    private void ResetSettingsShelfAnimationForFullScreen()
-        => _settingsShelfController.ResetAnimationState();
-
     private void PrepareLaunchEntranceInitialState()
         => _launchEntranceAnimationController.PrepareInitialState();
 

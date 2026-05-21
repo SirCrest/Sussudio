@@ -17,6 +17,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackTimelineText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
+        var fullScreenText = ReadRepoFile("Sussudio/MainWindow.FullScreen.cs")
+            .Replace("\r\n", "\n");
         var flashbackSettingsText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
         var flashbackTimelineControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineController.cs")
@@ -63,7 +65,9 @@ static partial class Program
         AssertContains(flashbackTimelineText, "ClearScrubInteraction = ClearFlashbackScrubInteractionForLockout,");
         AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.OnToggleChecked();");
         AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.ApplyLockout();");
-        AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.ResetAnimationForFullScreen();");
+        AssertContains(fullScreenText, "ResetFlashbackTimelineAnimation = _flashbackTimelineController.ResetAnimationForFullScreen,");
+        AssertContains(flashbackTimelineControllerText, "public void ResetAnimationForFullScreen()");
+        AssertDoesNotContain(flashbackTimelineText, "ResetFlashbackTimelineAnimationForFullScreen");
         AssertContains(flashbackTimelineText, "=> _flashbackScrubInteractionController.ClearForLockout();");
         AssertContains(flashbackTimelineControllerText, "internal sealed class FlashbackTimelineController");
         AssertContains(flashbackTimelineControllerText, "private readonly FlashbackTimelineAnimationController _animationController;");

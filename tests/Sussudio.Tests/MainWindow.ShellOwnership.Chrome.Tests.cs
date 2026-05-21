@@ -14,13 +14,13 @@ static partial class Program
         AssertContains(settingsShelfText, "private void InitializeSettingsShelfController()");
         AssertContains(settingsShelfText, "=> _settingsShelfController.Toggle();");
         AssertContains(settingsShelfText, "=> _settingsShelfController.ApplyVisibility(visible);");
-        AssertContains(settingsShelfText, "=> _settingsShelfController.ResetAnimationState();");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.SettingsShelf.cs")),
             "settings shelf adapter is consolidated into the shell chrome adapter");
         AssertContains(mainWindowText, "InitializeSettingsShelfController();");
-        AssertContains(fullScreenText, "ResetSettingsShelfAnimation = ResetSettingsShelfAnimationForFullScreen,");
+        AssertContains(fullScreenText, "ResetSettingsShelfAnimation = _settingsShelfController.ResetAnimationState,");
+        AssertDoesNotContain(settingsShelfText, "ResetSettingsShelfAnimationForFullScreen");
         AssertContains(controllerText, "internal sealed class SettingsShelfController");
         AssertContains(controllerText, "private bool _isAnimating;");
         AssertContains(controllerText, "public bool IsAnimating => _isAnimating;");

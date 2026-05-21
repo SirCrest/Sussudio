@@ -34,7 +34,6 @@ internal sealed class FullScreenControllerContext
     public required Action EndFlashbackScrubForFullScreen { get; init; }
     public required Action ResetFlashbackTimelineAnimation { get; init; }
     public required Action ResetSettingsShelfAnimation { get; init; }
-    public required Func<bool> ShouldShowFlashbackTimeline { get; init; }
     public required Action<bool> SyncFlashbackTimelineToggle { get; init; }
     public required Action HideStatsDockPanelImmediate { get; init; }
     public required Action ShowStatsDockPanel { get; init; }

@@ -112,7 +112,7 @@ internal sealed partial class FullScreenController
         overlayVisual.Properties.InsertVector3("Translation", Vector3.Zero);
         overlayVisual.Opacity = 1;
 
-        var timelineVisibleAtExit = _context.ShouldShowFlashbackTimeline();
+        var timelineVisibleAtExit = ShouldShowFlashbackTimeline();
         PrepareChromeForOverlay();
         _context.FullScreenControlsOverlay.Children.Remove(_context.FlashbackTimelinePanel);
         _context.FlashbackTimelinePanel.Visibility = Visibility.Collapsed;

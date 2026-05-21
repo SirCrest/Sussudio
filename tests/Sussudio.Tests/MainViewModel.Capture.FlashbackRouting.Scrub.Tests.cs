@@ -33,6 +33,7 @@ static partial class Program
         var fullScreenControllerText = (
             ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.cs")
             + "\n" + ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Transitions.cs")
+            + "\n" + ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Chrome.cs")
             + "\n" + ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Controls.cs"))
             .Replace("\r\n", "\n");
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml")
@@ -116,10 +117,13 @@ static partial class Program
         AssertContains(fullScreenControllerText, "if (_context.HandleFlashbackKeyboardCommand(e.Key))\n        {\n            e.Handled = true;\n        }");
         AssertDoesNotContain(fullScreenWindowText, "if (!ViewModel.IsFlashbackEnabled || FlashbackTimelinePanel.Visibility != Visibility.Visible)");
         AssertDoesNotContain(fullScreenWindowText, "_flashbackCommandController.HandleFullScreenKeyboardCommand(e.Key)");
-        AssertContains(fullScreenControllerText, "var timelineVisibleAtExit = _context.ShouldShowFlashbackTimeline();");
-        AssertContains(fullScreenWindowText, "private bool ShouldShowFlashbackTimeline()");
-        AssertContains(fullScreenWindowText, "return ViewModel.IsFlashbackEnabled && ViewModel.IsFlashbackTimelineVisible;");
-        AssertContains(fullScreenWindowText, "=> _flashbackScrubInteractionController.EndForFullScreen();");
+        AssertContains(fullScreenWindowText, "EndFlashbackScrubForFullScreen = _flashbackScrubInteractionController.EndForFullScreen,");
+        AssertContains(fullScreenWindowText, "ResetFlashbackTimelineAnimation = _flashbackTimelineController.ResetAnimationForFullScreen,");
+        AssertContains(fullScreenWindowText, "SyncFlashbackTimelineToggle = _flashbackTimelineController.SyncToggle,");
+        AssertContains(fullScreenControllerText, "var timelineVisibleAtExit = ShouldShowFlashbackTimeline();");
+        AssertContains(fullScreenControllerText, "private bool ShouldShowFlashbackTimeline()\n        => _context.ViewModel.IsFlashbackEnabled && _context.ViewModel.IsFlashbackTimelineVisible;");
+        AssertDoesNotContain(fullScreenWindowText, "private bool ShouldShowFlashbackTimeline()");
+        AssertDoesNotContain(fullScreenWindowText, "=> _flashbackScrubInteractionController.EndForFullScreen();");
         AssertContains(flashbackScrubControllerText, "var carriedPosition = _lastPointerPosition;\n        Logger.Log($\"FLASHBACK_SCRUB_END_FULLSCREEN carried_position_ms={(long?)carriedPosition?.TotalMilliseconds}\");");
         AssertContains(flashbackScrubControllerText, "var ended = carriedPosition.HasValue\n            ? _context.ViewModel.FlashbackEndScrubAt(carriedPosition.Value)\n            : _context.ViewModel.FlashbackEndScrub();\n        if (!ended)");
         AssertContains(flashbackScrubControllerText, "ReportFlashbackPlaybackRejection(\"scrub end (fullscreen_enter)\", \"FLASHBACK_UI_SCRUB_END_REJECTED reason=fullscreen_enter\")");

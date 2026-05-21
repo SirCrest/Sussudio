@@ -16,7 +16,7 @@ internal sealed partial class FullScreenController
             controlBarTranslate.Y = 0;
         }
 
-        var showTimeline = _context.ShouldShowFlashbackTimeline();
+        var showTimeline = ShouldShowFlashbackTimeline();
         _context.FlashbackTimelinePanel.Visibility = showTimeline ? Visibility.Visible : Visibility.Collapsed;
         _context.FlashbackTimelinePanel.Height = double.NaN;
         _context.FlashbackTimelinePanel.Opacity = 1;
@@ -49,6 +49,9 @@ internal sealed partial class FullScreenController
             _preFullScreenFlashbackTimelineBackground = null;
         }
     }
+
+    private bool ShouldShowFlashbackTimeline()
+        => _context.ViewModel.IsFlashbackEnabled && _context.ViewModel.IsFlashbackTimelineVisible;
 
     private void UpdateButtonState()
     {

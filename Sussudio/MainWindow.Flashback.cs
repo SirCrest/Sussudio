@@ -251,14 +251,8 @@ public sealed partial class MainWindow
     private void ApplyFlashbackTimelineLockout()
         => _flashbackTimelineController.ApplyLockout();
 
-    private void SyncFlashbackTimelineToggle(bool isVisible)
-        => _flashbackTimelineController.SyncToggle(isVisible);
-
     private void CollapseFlashbackTimelineImmediately()
         => _flashbackTimelineController.CollapseImmediately();
-
-    private void ResetFlashbackTimelineAnimationForFullScreen()
-        => _flashbackTimelineController.ResetAnimationForFullScreen();
 
     private void ClearFlashbackScrubInteractionForLockout()
         => _flashbackScrubInteractionController.ClearForLockout();

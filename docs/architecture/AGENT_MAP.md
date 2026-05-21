@@ -1559,9 +1559,9 @@ Primary current owners:
   enter/exit orchestration, `Sussudio/Controllers/FullScreen/FullScreenController.Animation.cs` owns rect
   animation and size waits, `Sussudio/Controllers/FullScreen/FullScreenController.Chrome.cs` owns chrome/material
   state, and `Sussudio/Controllers/FullScreen/FullScreenController.Controls.cs` owns overlay pointer/auto-hide
-  behavior plus full-screen key routing. Keep `MainWindow.FullScreen.cs` as the XAML-facing adapter, including
-  timeline visibility and scrub-end callbacks routed into the FullScreen and
-  Flashback controllers; Flashback command execution remains in
+  behavior plus full-screen key routing and timeline eligibility. Keep `MainWindow.FullScreen.cs` as the
+  XAML-facing adapter that wires controller callbacks directly into the
+  FullScreen context; Flashback command execution remains in
   `Sussudio/Controllers/Flashback/FlashbackCommandController.cs`.
 - `Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs` owns automation whole-
   window screenshot dispatch, UI-thread enqueue/cancellation, and failure
