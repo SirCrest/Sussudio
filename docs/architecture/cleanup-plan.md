@@ -1813,9 +1813,15 @@ cleanup after LibAv drains now live in
 `Sussudio/Services/Capture/CaptureVideoPipelineResources.cs`.
 
 Preview lifecycle now lives in focused CaptureService partials:
-`Sussudio/Services/Capture/CaptureService.PreviewStart.cs` owns video-preview
-start transitions, retained-backend fast-path reattachment, preview-start
-rollback, and fresh preview backend startup ordering;
+`Sussudio/Services/Capture/CaptureService.PreviewStart.cs` owns the
+video-preview start transition entry point and sequencing;
+`Sussudio/Services/Capture/CaptureService.PreviewStart.Recycle.cs` owns
+preview pipeline and Flashback backend recycle decisions before start;
+`Sussudio/Services/Capture/CaptureService.PreviewStart.FastPath.cs` owns
+retained-backend fast-path reattachment; and
+`Sussudio/Services/Capture/CaptureService.PreviewStart.FreshPipeline.cs` owns
+fresh UVC startup, preview-start rollback, and fresh preview backend startup
+ordering;
 `Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs` owns preview
 WASAPI capture startup, video-only audio fallback logging, preview playback
 attach, preview-time microphone monitor startup, and partially-started audio

@@ -57,8 +57,8 @@ static partial class Program
             "private bool CanReuseVideoCaptureForPreview");
         var retainedPreviewFastPath = ExtractTextBetween(
             startVideoPreview,
-            "(_isRecording || _flashbackEnabled)",
-            "_recordingBackend.ThrowIfPendingLibAvDrainBlocksReentry()");
+            "private async Task<bool> TryStartPreviewFromRetainedPipelineAsync",
+            "private async Task StartFreshPreviewPipelineAsync");
         var ensureFlashbackAudio = ExtractTextBetween(
             captureServiceText,
             "private async Task EnsureFlashbackAudioInputsAsync",
@@ -90,12 +90,12 @@ static partial class Program
             @"if\s*\(\s*_unifiedVideoCapture\s*!=\s*null\s*&&\s*!_isRecording\s*&&\s*_flashbackSink\s*!=\s*null\s*&&\s*flashbackBackendSettingsChanged\s*\)\s*\{[^{}]*DisposeFlashbackPreviewBackendAsync\(transitionToken,\s*purgeSegments:\s*true\)",
             "preview flashback-backend recycle branch");
 
-        AssertContains(retainedPreviewFastPath, "_unifiedVideoCapture.SetPreviewSink(_previewFrameSink)");
-        AssertContains(retainedPreviewFastPath, "await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, settings, transitionToken)");
+        AssertContains(retainedPreviewFastPath, "unifiedVideoCapture.SetPreviewSink(_previewFrameSink)");
+        AssertContains(retainedPreviewFastPath, "await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, transitionToken)");
         AssertContains(retainedPreviewFastPath, "await EnsureFlashbackAudioInputsAsync(settings, transitionToken,");
         AssertOccursBefore(
             retainedPreviewFastPath,
-            "await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, settings, transitionToken)",
+            "await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, transitionToken)",
             "await EnsureFlashbackAudioInputsAsync(settings, transitionToken,");
         AssertOccursBefore(
             retainedPreviewFastPath,
