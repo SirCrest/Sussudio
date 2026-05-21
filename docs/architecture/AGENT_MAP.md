@@ -4340,9 +4340,15 @@ Primary owners:
   exclusive lock that prevents concurrent diagnostic sessions from writing the
   same artifact set.
 - `tools/Common/DiagnosticSessionBackgroundTasks.cs` owns diagnostic-session
-  background task registration, deterministic await order, normal registered
-  scenario/deferred recording-settings completion, normal PresentMon task
-  completion, and the small background-task handoff records.
+  scenario background task registration, deterministic await order, and normal
+  registered scenario completion.
+- `tools/Common/DiagnosticSessionBackgroundTasks.PresentMon.cs` owns
+  diagnostic-session PresentMon task registration and normal completion.
+- `tools/Common/DiagnosticSessionBackgroundTasks.RecordingSettingsDeferred.cs`
+  owns deferred Flashback recording-settings task registration and normal
+  completion.
+- `tools/Common/DiagnosticSessionBackgroundTasks.Models.cs` owns the small
+  background-task registration and drain handoff records.
 - `tools/Common/DiagnosticSessionBackgroundTasks.FaultDrain.cs` owns
   interrupted background-task warning collection and fault drain.
 - `tools/Common/DiagnosticSessionScenarioStartup.cs` owns diagnostic-session

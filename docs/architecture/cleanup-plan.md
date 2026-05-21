@@ -3820,9 +3820,13 @@ acquires and disposes the lock.
 
 Diagnostic-session background task tracking now lives in
 `tools/Common/DiagnosticSessionBackgroundTasks.cs`. The root owns scenario task
-registration, deterministic await order, normal registered scenario/deferred
-recording-settings completion, normal PresentMon completion, and the small
-background-task handoff records.
+registration, deterministic await order, and normal registered scenario
+completion. `DiagnosticSessionBackgroundTasks.PresentMon.cs` owns PresentMon
+task registration/completion,
+`DiagnosticSessionBackgroundTasks.RecordingSettingsDeferred.cs` owns deferred
+Flashback recording-settings registration/completion, and
+`DiagnosticSessionBackgroundTasks.Models.cs` owns the small background-task
+registration and drain handoff records.
 `DiagnosticSessionBackgroundTasks.FaultDrain.cs` owns interrupted-task warning
 collection and fault drain.
 
@@ -4146,6 +4150,9 @@ Remaining `tools/Common` ownership:
 - `AutomationPipeClient/AutomationPipeClient.Commands.cs`
 - `AutomationPipeClient/AutomationCommandTransport.cs`
 - `DiagnosticSessionBackgroundTasks.cs`
+- `DiagnosticSessionBackgroundTasks.PresentMon.cs`
+- `DiagnosticSessionBackgroundTasks.RecordingSettingsDeferred.cs`
+- `DiagnosticSessionBackgroundTasks.Models.cs`
 - `DiagnosticSessionBackgroundTasks.FaultDrain.cs`
 - `DiagnosticSessionCleanupActions.cs`
 - `DiagnosticSessionCleanupActions.Recording.cs`
