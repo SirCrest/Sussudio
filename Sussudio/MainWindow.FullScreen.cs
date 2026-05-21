@@ -9,8 +9,8 @@ using Sussudio.Controllers;
 namespace Sussudio;
 
 // XAML-facing full-screen adapter. FullScreenController owns the transition
-// state and overlay mechanics; Flashback controllers own keyboard commands and
-// scrub state. This partial keeps MainWindow event names stable.
+// state, overlay mechanics, and key routing; Flashback controllers own command
+// execution and scrub state. This partial keeps MainWindow event names stable.
 public sealed partial class MainWindow
 {
     private void InitializeFullScreenController()
@@ -38,6 +38,7 @@ public sealed partial class MainWindow
             FullScreenButtonIcon = FullScreenButtonIcon,
             FullScreenMenuItem = FullScreenMenuItem,
             GetAppWindow = GetAppWindow,
+            HandleFlashbackKeyboardCommand = _flashbackCommandController.HandleFullScreenKeyboardCommand,
             EndFlashbackScrubForFullScreen = EndFlashbackScrubForFullScreen,
             ResetFlashbackTimelineAnimation = ResetFlashbackTimelineAnimationForFullScreen,
             ResetSettingsShelfAnimation = ResetSettingsShelfAnimationForFullScreen,
@@ -53,30 +54,7 @@ public sealed partial class MainWindow
 
     #region Full screen mode
     private void OnContentKeyDown(object sender, KeyRoutedEventArgs e)
-    {
-        if (e.Key == Windows.System.VirtualKey.Escape && _fullScreenController.IsFullScreen)
-        {
-            e.Handled = true;
-            ExitFullScreen();
-            return;
-        }
-
-        HandleFlashbackFullScreenKeyDown(sender, e);
-    }
-
-    private void HandleFlashbackFullScreenKeyDown(object sender, KeyRoutedEventArgs e)
-    {
-        // Flashback keyboard shortcuts (only when timeline is visible).
-        if (!ViewModel.IsFlashbackEnabled || FlashbackTimelinePanel.Visibility != Visibility.Visible)
-        {
-            return;
-        }
-
-        if (_flashbackCommandController.HandleFullScreenKeyboardCommand(e.Key))
-        {
-            e.Handled = true;
-        }
-    }
+        => _fullScreenController.OnKeyDown(e);
 
     private void PreviewBorder_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
     {

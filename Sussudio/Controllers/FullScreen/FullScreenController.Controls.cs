@@ -9,6 +9,18 @@ namespace Sussudio.Controllers;
 
 internal sealed partial class FullScreenController
 {
+    public void OnKeyDown(KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Escape && _isFullScreen)
+        {
+            e.Handled = true;
+            Exit();
+            return;
+        }
+
+        HandleFlashbackKeyDown(e);
+    }
+
     public void OnPointerActivity(PointerRoutedEventArgs e)
     {
         if (_context.IsWindowClosing() || !_isFullScreen || _isTransitioning) return;
@@ -49,6 +61,19 @@ internal sealed partial class FullScreenController
     {
         _autoHideTimer?.Stop();
         _autoHideTimer = null;
+    }
+
+    private void HandleFlashbackKeyDown(KeyRoutedEventArgs e)
+    {
+        if (!_context.ViewModel.IsFlashbackEnabled || _context.FlashbackTimelinePanel.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        if (_context.HandleFlashbackKeyboardCommand(e.Key))
+        {
+            e.Handled = true;
+        }
     }
 
     private void ShowControls()

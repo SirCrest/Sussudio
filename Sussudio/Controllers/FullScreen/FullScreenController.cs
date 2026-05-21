@@ -30,6 +30,7 @@ internal sealed class FullScreenControllerContext
     public required FontIcon FullScreenButtonIcon { get; init; }
     public required MenuFlyoutItem FullScreenMenuItem { get; init; }
     public required Func<AppWindow> GetAppWindow { get; init; }
+    public required Func<Windows.System.VirtualKey, bool> HandleFlashbackKeyboardCommand { get; init; }
     public required Action EndFlashbackScrubForFullScreen { get; init; }
     public required Action ResetFlashbackTimelineAnimation { get; init; }
     public required Action ResetSettingsShelfAnimation { get; init; }

@@ -22,6 +22,7 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(fullScreenSource, "public Task SetFullScreenEnabledAsync(bool enabled, CancellationToken cancellationToken = default)\n        => InvokeOnUiThreadAsync(\n            () => _fullScreenController.SetEnabledAsync(enabled),");
+        AssertContains(fullScreenSource, "private void OnContentKeyDown(object sender, KeyRoutedEventArgs e)\n        => _fullScreenController.OnKeyDown(e);");
         AssertContains(fullScreenSource, "private Task EnterFullScreenAsync()\n        => _fullScreenController.EnterAsync();");
         AssertContains(fullScreenSource, "private Task ExitFullScreenAsync()\n        => _fullScreenController.ExitAsync();");
         AssertContains(fullScreenControllerRootSource, "internal sealed partial class FullScreenController");
@@ -31,6 +32,9 @@ static partial class Program
         AssertContains(fullScreenControllerAnimationSource, "private Task AnimateFullScreenRectAsync(");
         AssertContains(fullScreenControllerAnimationSource, "return completion.Task;");
         AssertContains(fullScreenControllerChromeSource, "private void PrepareChromeForOverlay()");
+        AssertContains(fullScreenControllerControlsSource, "public void OnKeyDown(KeyRoutedEventArgs e)");
+        AssertContains(fullScreenControllerControlsSource, "if (e.Key == Windows.System.VirtualKey.Escape && _isFullScreen)");
+        AssertContains(fullScreenControllerControlsSource, "Exit();");
         AssertContains(fullScreenControllerControlsSource, "public void OnPointerActivity(PointerRoutedEventArgs e)");
         AssertContains(fullScreenControllerControlsSource, "private void ShowControls()");
         AssertDoesNotContain(fullScreenControllerRootSource, "public async Task EnterAsync()");
@@ -38,6 +42,8 @@ static partial class Program
         AssertDoesNotContain(fullScreenControllerRootSource, "private void ShowControls()");
         AssertDoesNotContain(fullScreenSource, "private async void EnterFullScreen");
         AssertDoesNotContain(fullScreenSource, "private async void ExitFullScreen");
+        AssertDoesNotContain(fullScreenSource, "Windows.System.VirtualKey.Escape");
+        AssertDoesNotContain(fullScreenSource, "HandleFlashbackFullScreenKeyDown");
         AssertDoesNotContain(fullScreenControllerRootSource, "async void");
         AssertDoesNotContain(fullScreenControllerTransitionSource, "async void");
         AssertDoesNotContain(fullScreenControllerAnimationSource, "async void");

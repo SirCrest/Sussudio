@@ -32,7 +32,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var fullScreenControllerText = (
             ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.cs")
-            + "\n" + ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Transitions.cs"))
+            + "\n" + ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Transitions.cs")
+            + "\n" + ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Controls.cs"))
             .Replace("\r\n", "\n");
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml")
             .Replace("\r\n", "\n");
@@ -108,9 +109,13 @@ static partial class Program
         AssertDoesNotContain(flashbackScrubText, "private static bool TryComputeFlashbackTimelineFraction(double x, double width, out double fraction)");
         AssertDoesNotContain(flashbackScrubText, "private static bool IsUsableFlashbackTrackDimension(double value)");
         AssertDoesNotContain(flashbackScrubText, "private static bool IsUsableFlashbackDuration(TimeSpan value)");
-        AssertContains(fullScreenWindowText, "HandleFlashbackFullScreenKeyDown(sender, e);");
-        AssertContains(fullScreenWindowText, "if (!ViewModel.IsFlashbackEnabled || FlashbackTimelinePanel.Visibility != Visibility.Visible)");
-        AssertContains(fullScreenWindowText, "if (_flashbackCommandController.HandleFullScreenKeyboardCommand(e.Key))\n        {\n            e.Handled = true;\n        }");
+        AssertContains(fullScreenWindowText, "HandleFlashbackKeyboardCommand = _flashbackCommandController.HandleFullScreenKeyboardCommand,");
+        AssertContains(fullScreenWindowText, "private void OnContentKeyDown(object sender, KeyRoutedEventArgs e)\n        => _fullScreenController.OnKeyDown(e);");
+        AssertContains(fullScreenControllerText, "private void HandleFlashbackKeyDown(KeyRoutedEventArgs e)");
+        AssertContains(fullScreenControllerText, "if (!_context.ViewModel.IsFlashbackEnabled || _context.FlashbackTimelinePanel.Visibility != Visibility.Visible)");
+        AssertContains(fullScreenControllerText, "if (_context.HandleFlashbackKeyboardCommand(e.Key))\n        {\n            e.Handled = true;\n        }");
+        AssertDoesNotContain(fullScreenWindowText, "if (!ViewModel.IsFlashbackEnabled || FlashbackTimelinePanel.Visibility != Visibility.Visible)");
+        AssertDoesNotContain(fullScreenWindowText, "_flashbackCommandController.HandleFullScreenKeyboardCommand(e.Key)");
         AssertContains(fullScreenControllerText, "var timelineVisibleAtExit = _context.ShouldShowFlashbackTimeline();");
         AssertContains(fullScreenWindowText, "private bool ShouldShowFlashbackTimeline()");
         AssertContains(fullScreenWindowText, "return ViewModel.IsFlashbackEnabled && ViewModel.IsFlashbackTimelineVisible;");
