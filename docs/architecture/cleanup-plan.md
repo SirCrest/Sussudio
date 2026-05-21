@@ -2402,9 +2402,11 @@ Flashback buffer segment completion now lives in
 `Sussudio/Services/Flashback/FlashbackBufferManager.SegmentCompletion.cs`. Keep
 completion registration, duplicate-path rejection, and same-path segment
 extension there.
-Flashback buffer initialization, segment-extension setup, recovery-preserve
-markers, disposal, and disposed-state guards now live in
+Flashback buffer initialization, segment-extension setup, disposal, and
+disposed-state guards now live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs`.
+Recovery-preserve state and marker files now live in
+`Sussudio/Services/Flashback/FlashbackBufferManager.RecoveryPreserve.cs`.
 Flashback buffer segment file lookup, range selection, and start-PTS lookup now
 live in `Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs`.
 Segment counts, active-path projection, active segment start PTS calculation,
