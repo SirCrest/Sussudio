@@ -136,20 +136,68 @@ static partial class Program
             .Replace("\r\n", "\n");
         var videoQueueSubmissionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.cs")
             .Replace("\r\n", "\n");
+        var videoQueueGuardsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.Guards.cs")
+            .Replace("\r\n", "\n");
+        var videoQueueWritersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.Writers.cs")
+            .Replace("\r\n", "\n");
+        var videoQueueRejectionsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.Rejections.cs")
+            .Replace("\r\n", "\n");
         var queueCleanupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.QueueCleanup.cs")
             .Replace("\r\n", "\n");
+        var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
+            .Replace("\r\n", "\n") + "\n" +
+            ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
 
         AssertContains(videoQueueSubmissionText, "private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
         AssertContains(videoQueueSubmissionText, "private VideoEnqueueResult TryEnqueueGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
-        AssertContains(videoQueueSubmissionText, "private string? GetVideoEnqueueRejectReason(bool isGpu)");
-        AssertContains(videoQueueSubmissionText, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
-        AssertContains(videoQueueSubmissionText, "private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
+        AssertContains(videoQueueSubmissionText, "TryWriteVideoPacket(queue, packet)");
+        AssertContains(videoQueueSubmissionText, "TryWriteGpuPacket(queue, packet)");
         AssertContains(videoQueueSubmissionText, "TrackVideoQueueRejected(\"queue_full\");");
         AssertContains(videoQueueSubmissionText, "TrackGpuQueueRejected(\"queue_full\");");
+        AssertDoesNotContain(videoQueueSubmissionText, "private string? GetVideoEnqueueRejectReason(bool isGpu)");
+        AssertDoesNotContain(videoQueueSubmissionText, "private string? GetVideoInputRejectReason(");
+        AssertDoesNotContain(videoQueueSubmissionText, "private string? GetGpuInputRejectReason(");
+        AssertDoesNotContain(videoQueueSubmissionText, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
+        AssertDoesNotContain(videoQueueSubmissionText, "private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
+        AssertDoesNotContain(videoQueueSubmissionText, "private void TrackVideoQueueRejected(string reason)");
+        AssertDoesNotContain(videoQueueSubmissionText, "private void TrackGpuQueueRejected(string reason)");
+
+        AssertContains(videoQueueGuardsText, "private string? GetVideoEnqueueRejectReason(bool isGpu)");
+        AssertContains(videoQueueGuardsText, "private string? GetVideoInputRejectReason(Channel<VideoFramePacket>? queue, int expectedSize, bool dataIsEmpty)");
+        AssertContains(videoQueueGuardsText, "private string? GetGpuInputRejectReason(Channel<GpuFramePacket>? queue, IntPtr texture)");
+        AssertContains(videoQueueGuardsText, "return \"force_rotate_draining\";");
+        AssertContains(videoQueueGuardsText, "? $\"encoding_failed:{failure.GetType().Name}\"");
+        AssertContains(videoQueueGuardsText, "return dataIsEmpty ? \"data_empty\" : null;");
+        AssertContains(videoQueueGuardsText, "return texture == IntPtr.Zero ? \"null_texture\" : null;");
+        AssertDoesNotContain(videoQueueGuardsText, "private bool TryWriteVideoPacket(");
+        AssertDoesNotContain(videoQueueGuardsText, "private void TrackVideoQueueRejected(");
+
+        AssertContains(videoQueueWritersText, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
+        AssertContains(videoQueueWritersText, "private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
+        AssertContains(videoQueueWritersText, "AtomicMax.Update(ref _videoQueueMaxDepth, depth);");
+        AssertContains(videoQueueWritersText, "AtomicMax.Update(ref _gpuQueueMaxDepth, depth);");
+        AssertContains(videoQueueWritersText, "DecrementQueueDepth(ref _videoQueueDepth, \"video_write_failed\");");
+        AssertContains(videoQueueWritersText, "DecrementQueueDepth(ref _gpuQueueDepth, \"gpu_write_failed\");");
+        AssertDoesNotContain(videoQueueWritersText, "private string? GetVideoEnqueueRejectReason(");
+        AssertDoesNotContain(videoQueueWritersText, "private void TrackVideoQueueRejected(");
+
+        AssertContains(videoQueueRejectionsText, "private void TrackVideoQueueRejected(string reason)");
+        AssertContains(videoQueueRejectionsText, "private void TrackGpuQueueRejected(string reason)");
+        AssertContains(videoQueueRejectionsText, "FLASHBACK_SINK_VIDEO_QUEUE_REJECT");
+        AssertContains(videoQueueRejectionsText, "FLASHBACK_SINK_GPU_QUEUE_REJECT");
+        AssertContains(videoQueueRejectionsText, "total == 1 || total % 30 == 0");
+        AssertDoesNotContain(videoQueueRejectionsText, "private bool TryWriteVideoPacket(");
+        AssertDoesNotContain(videoQueueRejectionsText, "private string? GetVideoEnqueueRejectReason(");
+
         AssertDoesNotContain(queuesText, "private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
         AssertDoesNotContain(queuesText, "private VideoEnqueueResult TryEnqueueGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
+        AssertDoesNotContain(queuesText, "private string? GetVideoEnqueueRejectReason(bool isGpu)");
+        AssertDoesNotContain(queuesText, "private string? GetVideoInputRejectReason(");
+        AssertDoesNotContain(queuesText, "private string? GetGpuInputRejectReason(");
         AssertDoesNotContain(queuesText, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
         AssertDoesNotContain(queuesText, "private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
+        AssertDoesNotContain(queuesText, "private void TrackVideoQueueRejected(string reason)");
+        AssertDoesNotContain(queuesText, "private void TrackGpuQueueRejected(string reason)");
 
         AssertContains(queueCleanupText, "private void ReturnAllRemainingQueuedBuffers()");
         AssertContains(queueCleanupText, "private void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue, ref int queueDepth)");
@@ -171,6 +219,9 @@ static partial class Program
         AssertContains(queuesText, "private void FailEncoding(Exception ex)");
         AssertContains(queuesText, "private bool TryEnqueueAudioPacket(");
         AssertContains(queuesText, "private static bool TryWriteAudioPacket(");
+        AssertContains(docsText, "FlashbackEncoderSink.VideoQueueSubmission.Guards.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.VideoQueueSubmission.Writers.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.VideoQueueSubmission.Rejections.cs");
 
         return Task.CompletedTask;
     }

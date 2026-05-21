@@ -2221,8 +2221,18 @@ completion/signaling, shared queue-depth accounting, force-rotate audio queue
 guard policy, failure notification, and hot audio packet enqueue there.
 Flashback encoder video/GPU queue admission now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.cs`.
-Keep video/GPU enqueue acceptance/rejection, TryWrite depth accounting, queue
-full classification, and rejection telemetry there.
+Keep accepted/rejected/overloaded enqueue transactions, queue-full
+classification, and producer wakeup signaling there. Lifecycle and input
+rejection guards now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.Guards.cs`.
+Keep disposed/not-started/cancelled/force-rotate/failure rejection reasons and
+video/GPU input validation there. TryWrite depth accounting now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.Writers.cs`.
+Keep video/GPU channel writes, queue-depth increments, max-depth updates, and
+failed-write depth rollback there. Rejection telemetry now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.Rejections.cs`.
+Keep last-reason state, rejection counters, and throttled video/GPU queue
+rejection logs there.
 
 Flashback encoder queued-buffer cleanup now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.QueueCleanup.cs`. Keep
