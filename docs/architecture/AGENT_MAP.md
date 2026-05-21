@@ -3443,7 +3443,12 @@ Primary current owners:
   signal-window predicates, snapshot missing-signal refresh gates, and reset
   orchestration. `Sussudio/MainWindow.PreviewStartup.cs` is the
   XAML/MainWindow-facing adapter-family marker. `Sussudio/MainWindow.PreviewStartup.Session.cs`
-  supplies UI/runtime callbacks for startup session state.
+  is the startup session adapter-family marker,
+  `Sussudio/MainWindow.PreviewStartup.Session.Composition.cs` wires UI/runtime
+  callbacks into the session controller, `Sussudio/MainWindow.PreviewStartup.Session.State.cs`
+  owns stable state projections, and
+  `Sussudio/MainWindow.PreviewStartup.Session.Lifecycle.cs` owns startup state,
+  renderer-attached, first-visual, begin-attempt, and reset adapters.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs` owns
   watchdog/telemetry timers, timeout configuration, timeout recovery, and
   failure-stop scheduling. `Sussudio/MainWindow.PreviewStartup.Watchdog.cs` wires

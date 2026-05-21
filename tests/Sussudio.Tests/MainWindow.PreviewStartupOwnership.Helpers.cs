@@ -9,6 +9,9 @@ static partial class Program
             {
                 "Sussudio/MainWindow.PreviewStartup.cs",
                 "Sussudio/MainWindow.PreviewStartup.Session.cs",
+                "Sussudio/MainWindow.PreviewStartup.Session.Composition.cs",
+                "Sussudio/MainWindow.PreviewStartup.Session.State.cs",
+                "Sussudio/MainWindow.PreviewStartup.Session.Lifecycle.cs",
                 "Sussudio/MainWindow.PreviewStartup.Signals.cs",
                 "Sussudio/MainWindow.PreviewStartup.Signals.Composition.cs",
                 "Sussudio/MainWindow.PreviewStartup.Signals.State.cs",
