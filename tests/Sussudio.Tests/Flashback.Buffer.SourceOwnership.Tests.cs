@@ -77,18 +77,31 @@ static partial class Program
             .Replace("\r\n", "\n");
         var queryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs")
             .Replace("\r\n", "\n");
+        var pathSafetyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.SegmentPathSafety.cs")
+            .Replace("\r\n", "\n");
         var statusText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.SegmentStatus.cs")
             .Replace("\r\n", "\n");
+        var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
+            .Replace("\r\n", "\n") + "\n" +
+            ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
 
         AssertContains(statusText, "public int SegmentCount");
         AssertContains(statusText, "public string? ActiveFilePath");
         AssertContains(queryText, "public string? GetSegmentFileForPosition(TimeSpan absolutePts)");
         AssertContains(queryText, "public string? GetValidSegmentFileForPosition(TimeSpan absolutePts)");
         AssertContains(queryText, "private string? GetOldestExistingSegmentPath()");
-        AssertContains(queryText, "private bool IsPathInSessionDirectory(string path)");
         AssertContains(queryText, "public string? GetNextSegmentFile(string currentPath)");
         AssertContains(queryText, "public TimeSpan? GetSegmentStartPts(string path)");
         AssertContains(queryText, "public IReadOnlyList<string> GetValidSegmentPaths(TimeSpan inPoint, TimeSpan outPoint)");
+        AssertDoesNotContain(queryText, "private bool IsPathInSessionDirectory(string path)");
+
+        AssertContains(pathSafetyText, "private bool IsPathInSessionDirectory(string path)");
+        AssertContains(pathSafetyText, "FlashbackSessionRecoveryScanner.EnsureTrailingDirectorySeparator");
+        AssertContains(pathSafetyText, "FlashbackSessionRecoveryScanner.IsPathUnderDirectory(fullPath, sessionRoot)");
+        AssertContains(pathSafetyText, "FLASHBACK_BUFFER_SEGMENT_PATH_WARN");
+        AssertDoesNotContain(pathSafetyText, "public string? GetSegmentFileForPosition");
+        AssertDoesNotContain(pathSafetyText, "public IReadOnlyList<string> GetValidSegmentPaths");
+
         AssertContains(statusText, "private TimeSpan GetActiveSegmentStartPts()");
         AssertContains(statusText, "private TimeSpan GetDefaultActiveSegmentStartPts()");
         AssertContains(statusText, "public IReadOnlyList<FlashbackSegmentInfo> GetSegmentInfoList()");
@@ -99,6 +112,7 @@ static partial class Program
         AssertDoesNotContain(rootText, "public string? ActiveFilePath");
         AssertDoesNotContain(rootText, "public string? GetSegmentFileForPosition(TimeSpan absolutePts)");
         AssertDoesNotContain(rootText, "public IReadOnlyList<FlashbackSegmentInfo> GetSegmentInfoList()");
+        AssertContains(docsText, "FlashbackBufferManager.SegmentPathSafety.cs");
 
         return Task.CompletedTask;
     }
