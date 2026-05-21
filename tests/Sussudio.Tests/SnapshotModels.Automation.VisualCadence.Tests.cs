@@ -8,6 +8,7 @@ public partial class SnapshotModelsTests
     public void AutomationSnapshot_ExposesVisualCadenceMetrics()
     {
         var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
+        var visualCadenceText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.VisualCadence.cs");
 
         AssertAutomationSnapshotProperties(
             snapshotType,
@@ -21,5 +22,8 @@ public partial class SnapshotModelsTests
             "VisualCenterCadenceRepeatFramePercent",
             "VisualCenterCadenceMotionConfidence",
             "VisualCenterCadenceRecentChangeIntervalsMs");
+        AssertContains(visualCadenceText, "public int VisualCadenceSampleCount { get; init; }");
+        AssertContains(visualCadenceText, "public double[] VisualCenterCadenceRecentChangeIntervalsMs { get; init; } = Array.Empty<double>();");
+        AssertDoesNotContain(visualCadenceText, "public MjpegDecoderAutomationSnapshot[] MjpegPerDecoder");
     }
 }

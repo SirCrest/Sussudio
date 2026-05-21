@@ -86,9 +86,15 @@ static partial class Program
             "Sussudio/Models/Automation/AutomationSnapshot.CaptureFormat.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.SourceTelemetry.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.Preview.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.Mjpeg.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.CaptureCadence.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.MjpegTiming.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.MjpegPreviewJitter.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.MjpegPacketHash.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.VisualCadence.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.SystemHealth.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.Flashback.cs"
+            "Sussudio/Models/Automation/AutomationSnapshot.FlashbackRecording.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.FlashbackPlayback.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.FlashbackExport.cs"
         };
 
         var parts = new List<string>();

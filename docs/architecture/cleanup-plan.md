@@ -940,9 +940,23 @@ SourceSignalTelemetrySnapshot, SourceTelemetryDetailEntry, and source telemetry
 automation projection owner files. AutomationSnapshot CPU MJPEG and
 AutomationOptions DTO checks are ported into the same partial family, with
 shared reflection/spec helpers kept there. AutomationSnapshot metric-shape
-checks are split by DTO surface across CPU/MJPEG, MJPEG preview and packet hash,
-preview diagnostics, capture commands, recording, Flashback recording,
-Flashback playback, Flashback export, and visual cadence owner files.
+checks are split by DTO surface across capture cadence, CPU/MJPEG timing,
+MJPEG preview jitter, MJPEG packet hash, preview diagnostics, capture commands,
+recording, Flashback recording/backend, Flashback playback, Flashback export,
+and visual cadence owner files.
+
+`Sussudio/Models/Automation/AutomationSnapshot.CaptureCadence.cs`,
+`AutomationSnapshot.MjpegTiming.cs`,
+`AutomationSnapshot.MjpegPreviewJitter.cs`,
+`AutomationSnapshot.MjpegPacketHash.cs`,
+`AutomationSnapshot.VisualCadence.cs`,
+`AutomationSnapshot.FlashbackRecording.cs`,
+`AutomationSnapshot.FlashbackPlayback.cs`, and
+`AutomationSnapshot.FlashbackExport.cs` own the flattened automation snapshot
+DTO properties for those domains. Keep broad model buckets from regrowing:
+new evidence fields should land beside the closest runtime or diagnostic
+surface and get a matching source-ownership assertion in the snapshot-model
+tests.
 
 `Sussudio/Models/Capture/CaptureHealthSnapshot.FlashbackBackend.cs`,
 `CaptureHealthSnapshot.FlashbackPlayback.cs`, and
