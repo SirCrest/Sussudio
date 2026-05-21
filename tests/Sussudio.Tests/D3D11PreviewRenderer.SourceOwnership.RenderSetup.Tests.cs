@@ -45,6 +45,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var swapChainInitializationText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.SwapChainInitialization.cs")
             .Replace("\r\n", "\n");
+        var videoProcessorPipelineText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.VideoProcessorPipeline.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(resourcesText, "private ID3D11Device? _device;");
         AssertContains(resourcesText, "private IDXGISwapChain1? _swapChain;");
@@ -63,13 +65,22 @@ static partial class Program
         AssertContains(swapChainInitializationText, "private void RecreateSdrCompositionSwapChain(");
         AssertContains(swapChainInitializationText, "Format.B8G8R8A8_UNorm");
         AssertContains(swapChainInitializationText, "_configuredOutputWidth = pixelWidth;");
-        AssertContains(resourcesText, "private void EnsurePipeline(int width, int height, bool isHdr, bool useExternalTexture)");
-        AssertContains(resourcesText, "private void DisposeProcessorResources()");
+        AssertContains(videoProcessorPipelineText, "private void EnsurePipeline(int width, int height, bool isHdr, bool useExternalTexture)");
+        AssertContains(videoProcessorPipelineText, "private void EnsureSwapChainRTV()");
+        AssertContains(videoProcessorPipelineText, "private void RecreateOutputView()");
+        AssertContains(videoProcessorPipelineText, "private void ApplyColorSpaces(bool isHdr)");
+        AssertContains(videoProcessorPipelineText, "private void DisposeProcessorResources()");
+        AssertContains(videoProcessorPipelineText, "DisposeProcessorInputResources();");
+        AssertContains(videoProcessorPipelineText, "DisposeNv12ShaderResourceViews();");
+        AssertContains(videoProcessorPipelineText, "new VideoProcessorContentDescription");
+        AssertContains(videoProcessorPipelineText, "_videoContext1.VideoProcessorSetStreamColorSpace1(");
         AssertContains(resourcesText, "private void CleanupD3DResources()");
-        AssertContains(resourcesText, "DisposeProcessorInputResources();");
-        AssertContains(resourcesText, "DisposeNv12ShaderResourceViews();");
         AssertContains(resourcesText, "DisposeInputTextureResources();");
         AssertContains(resourcesText, "DisposeShaderPipelineResources();");
+        AssertDoesNotContain(resourcesText, "private void EnsurePipeline(int width, int height, bool isHdr, bool useExternalTexture)");
+        AssertDoesNotContain(resourcesText, "private void EnsureSwapChainRTV()");
+        AssertDoesNotContain(resourcesText, "private void RecreateOutputView()");
+        AssertDoesNotContain(resourcesText, "private void ApplyColorSpaces(bool isHdr)");
         AssertDoesNotContain(resourcesText, "private void InitializeD3D()");
         AssertDoesNotContain(resourcesText, "private bool TryInitializeWithSharedDevice(");
         AssertDoesNotContain(deviceInitializationText, "private bool TryInitializeWithSharedDevice(");
