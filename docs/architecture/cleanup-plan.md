@@ -1732,8 +1732,12 @@ forwarding, and recording topology validation now live in
 `Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs`. Flashback
 recording session-context policy now lives in
 `Sussudio/Services/Capture/CaptureService.FlashbackRecording.SessionContext.cs`;
-keep codec/HDR guardrails, frame-rate rational inference, and compatibility
-snapshot fields there. Preview-backend producer wiring now belongs to
+keep codec selection, GPU handle handoff, and HDR guardrails there.
+`Sussudio/Services/Capture/CaptureService.FlashbackRecording.FrameRate.cs`
+owns delivered-cadence frame-rate rational preservation/inference, and
+`Sussudio/Services/Capture/CaptureService.FlashbackRecording.SnapshotCompatibility.cs`
+owns legacy Flashback export verification/downgrade snapshot fields.
+Preview-backend producer wiring now belongs to
 `Sussudio/Services/Flashback/FlashbackBackendResources.cs`, which owns the
 video/audio/microphone attach and detach request shapes used by preview startup,
 buffer cycling, and teardown. `Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs`
