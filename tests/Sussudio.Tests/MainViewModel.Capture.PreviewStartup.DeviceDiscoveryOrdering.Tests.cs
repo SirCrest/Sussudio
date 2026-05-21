@@ -6,6 +6,8 @@ static partial class Program
     {
         var settingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs")
             .Replace("\r\n", "\n");
+        var recordingCapabilityFacadeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingCapability.cs")
+            .Replace("\r\n", "\n");
         var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs")
             .Replace("\r\n", "\n");
         var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
@@ -28,8 +30,9 @@ static partial class Program
         AssertContains(startupRefresh, "TrackStartupRefreshTask(RefreshRecordingFormatCapabilitiesAsync(), \"recording formats\");");
         AssertContains(startupRefresh, "TrackStartupRefreshTask(RefreshSplitEncodeCapabilitiesAsync(), \"split encode modes\");");
         AssertDoesNotContain(settingsText, "private void StartRecordingCapabilityRefresh()");
-        AssertContains(recordingCapabilityControllerText, "private void StartRecordingCapabilityRefresh()");
-        AssertContains(recordingCapabilityControllerText, "=> _recordingCapabilityController.Start();");
+        AssertDoesNotContain(recordingCapabilityControllerText, "private void StartRecordingCapabilityRefresh()");
+        AssertContains(recordingCapabilityFacadeText, "private void StartRecordingCapabilityRefresh()");
+        AssertContains(recordingCapabilityFacadeText, "=> _recordingCapabilityController.Start();");
 
         var recordingFormatRefresh = ExtractMemberCode(recordingCapabilityControllerText, "RefreshRecordingFormatCapabilitiesAsync");
         AssertContains(recordingFormatRefresh, "support.HasH264Nvenc");

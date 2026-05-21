@@ -109,9 +109,11 @@ static partial class Program
         AssertContains(controllerGraphCaptureSettingsAutomationText, "SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,");
         AssertContains(controllerGraphCaptureSettingsAutomationText, "ReinitializeDeviceAsync = viewModel.ReinitializeDeviceAsync,");
 
-        AssertContains(recordingSettingsAutomationControllerText, "private sealed class MainViewModelRecordingSettingsAutomationController");
+        AssertContains(recordingSettingsAutomationControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(recordingSettingsAutomationControllerText, "internal sealed class MainViewModelRecordingSettingsAutomationController");
         AssertContains(recordingSettingsAutomationControllerText, "public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
-        AssertContains(recordingSettingsAutomationControllerContextText, "private sealed class MainViewModelRecordingSettingsAutomationControllerContext");
+        AssertContains(recordingSettingsAutomationControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(recordingSettingsAutomationControllerContextText, "internal sealed class MainViewModelRecordingSettingsAutomationControllerContext");
         AssertContains(recordingSettingsAutomationControllerText, "private readonly MainViewModelRecordingSettingsAutomationControllerContext _context;");
         AssertDoesNotContain(recordingSettingsAutomationControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(recordingSettingsAutomationControllerText, "_viewModel.");
@@ -119,8 +121,10 @@ static partial class Program
         AssertContains(controllerGraphRecordingSettingsAutomationText, "private static MainViewModelRecordingSettingsAutomationController CreateRecordingSettingsAutomationController(MainViewModel viewModel)");
         AssertContains(controllerGraphRecordingSettingsAutomationText, "new MainViewModelRecordingSettingsAutomationControllerContext");
 
-        AssertContains(recordingCapabilityControllerText, "private sealed class MainViewModelRecordingCapabilityController");
-        AssertContains(recordingCapabilityControllerContextText, "private sealed class MainViewModelRecordingCapabilityControllerContext");
+        AssertContains(recordingCapabilityControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(recordingCapabilityControllerText, "internal sealed class MainViewModelRecordingCapabilityController");
+        AssertContains(recordingCapabilityControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(recordingCapabilityControllerContextText, "internal sealed class MainViewModelRecordingCapabilityControllerContext");
         AssertContains(recordingCapabilityControllerText, "private readonly MainViewModelRecordingCapabilityControllerContext _context;");
         AssertDoesNotContain(recordingCapabilityControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(recordingCapabilityControllerText, "_viewModel.");

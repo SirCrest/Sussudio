@@ -3849,9 +3849,10 @@ Primary current owners:
   `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs`
   owns pure selected capture-format choice and mode-tuple video-format filtering.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`
-  owns startup FFmpeg capability probes for recording formats and split-encode
-  modes through graph-built context ports, UI enqueue failure logging, and
-  recording-format policy application to observable state.
+  is a top-level `Sussudio.Controllers` owner for startup FFmpeg capability
+  probes for recording formats and split-encode modes through graph-built
+  context ports, UI enqueue failure logging, and recording-format policy
+  application to observable state.
   `MainViewModel.CaptureModeTransactions.cs`
   owns HDR toggle side effects: recording-time revert/status, mode option
   rebuilds, immediate reinitialize scheduling, and settings persistence.
@@ -3974,20 +3975,27 @@ Primary current owners:
   property-change side effects outside the capture-settings automation
   controller.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs`
-  owns the UI-thread setting mutations, HDR compatibility enforcement,
-  Flashback cycle suppression, coordinator side effects, bitrate clamp policy,
-  encoder preset, and output-path directory creation.
+  is a top-level `Sussudio.Controllers` owner for UI-thread setting mutations,
+  HDR compatibility enforcement, Flashback cycle suppression, coordinator side
+  effects, bitrate clamp policy, encoder preset, and output-path directory
+  creation.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.Context.cs`
-  owns the recording-settings automation graph-port contract for UI dispatch,
-  option collections, suppression flags, selected encoder/output state,
-  recording-format coordinator updates, and Flashback encoder setting cycles.
+  owns the top-level recording-settings automation graph-port contract for UI
+  dispatch, option collections, suppression flags, selected encoder/output
+  state, recording-format coordinator updates, and Flashback encoder setting
+  cycles.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`
-  owns startup FFmpeg capability probes for recording formats and split-encode
-  modes plus observable recording-format option rebuilds.
+  is a top-level `Sussudio.Controllers` owner for startup FFmpeg capability
+  probes for recording formats and split-encode modes plus observable
+  recording-format option rebuilds.
+  `Sussudio/ViewModels/MainViewModel.RecordingCapability.cs` keeps only the
+  stable compatibility facade methods used by settings initialization and HDR
+  mode-change rebuild callers.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.Context.cs`
-  owns the recording-capability graph-port contract for default encoder names,
-  observable recording/split-encode option collections, selected recording
-  format state, HDR/status state, FFmpeg-missing state, and UI dispatch.
+  owns the top-level recording-capability graph-port contract for default
+  encoder names, observable recording/split-encode option collections,
+  selected recording format state, HDR/status state, FFmpeg-missing state, and
+  UI dispatch.
 
 Refactor direction:
 

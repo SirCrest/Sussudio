@@ -4919,7 +4919,8 @@ owner, fold it back into that owner and update the source-shape tests and
    format/quality parsing, and custom bitrate clamp policy now live in
    `Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs`, while startup
    FFmpeg capability probes and observable recording-format option mutation through graph-built context ports live
-   in `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`. `MainViewModel.CaptureModeTransactions.cs`
+   in the top-level
+   `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`. `MainViewModel.CaptureModeTransactions.cs`
    keeps selected-format and video-format rebuild compatibility adapters, while
    `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
    is now a top-level `Sussudio.Controllers` owner for selected-format
@@ -5062,11 +5063,13 @@ owner, fold it back into that owner and update the source-shape tests and
    while UI-thread mutations, HDR compatibility enforcement, Flashback cycle
    suppression, coordinator side effects, custom bitrate clamping, encoder
    preset, and output-path directory creation live in
+   the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs`.
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.Context.cs`
-   owns the recording-settings automation graph-port contract for UI dispatch,
-   option collections, suppression flags, selected encoder/output state,
-   recording-format coordinator updates, and Flashback encoder setting cycles.
+   owns the top-level recording-settings automation graph-port contract for UI
+   dispatch, option collections, suppression flags, selected encoder/output
+   state, recording-format coordinator updates, and Flashback encoder setting
+   cycles.
    The automation recording desired-state bridge enters through
    `MainViewModel.RecordingState.cs` and is serialized by
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`,
@@ -5087,12 +5090,16 @@ owner, fold it back into that owner and update the source-shape tests and
    collections, selected capture-mode state, preview reinitialization checks,
    UI-thread dispatch, and format-change suppression.
    Startup FFmpeg capability probes for recording formats and split-encode modes
-   plus observable recording-format option rebuilds now live in
+   plus observable recording-format option rebuilds now live in the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`.
+   `Sussudio/ViewModels/MainViewModel.RecordingCapability.cs` keeps only the
+   stable compatibility facade methods used by settings initialization and HDR
+   mode-change rebuild callers.
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.Context.cs`
-   owns the recording-capability graph-port contract for default encoder names,
-   observable recording/split-encode option collections, selected recording
-   format state, HDR/status state, FFmpeg-missing state, and UI dispatch.
+   owns the top-level recording-capability graph-port contract for default
+   encoder names, observable recording/split-encode option collections,
+   selected recording format state, HDR/status state, FFmpeg-missing state, and
+   UI dispatch.
    The old `MainViewModel.Automation.cs` catch-all has been retired.
 
 5. Extract capture resource owners behind the transition policy.

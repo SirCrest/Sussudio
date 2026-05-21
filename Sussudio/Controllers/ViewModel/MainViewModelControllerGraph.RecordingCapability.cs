@@ -1,3 +1,5 @@
+using Sussudio.Controllers;
+
 namespace Sussudio.ViewModels;
 
 public partial class MainViewModel

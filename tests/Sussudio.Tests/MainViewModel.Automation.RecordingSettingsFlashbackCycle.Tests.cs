@@ -21,7 +21,8 @@ static partial class Program
         AssertContains(rawFlashbackEncoderSettingsText, "TrackPendingFlashbackCycleTask(\n                _sessionCoordinator.UpdateRecordingFormatAsync(format),\n                \"recording format\");");
         AssertContains(viewModelFlashbackStateText, "private bool _suppressFlashbackFormatCycle;");
         AssertMemberContains(automationSettingsText, "SetRecordingFormatAsync", "_recordingSettingsAutomationController.SetRecordingFormatAsync(format, cancellationToken)");
-        AssertContains(recordingSettingsAutomationControllerContextText, "private sealed class MainViewModelRecordingSettingsAutomationControllerContext");
+        AssertContains(recordingSettingsAutomationControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(recordingSettingsAutomationControllerContextText, "internal sealed class MainViewModelRecordingSettingsAutomationControllerContext");
         AssertContains(recordingSettingsAutomationControllerText, "private readonly MainViewModelRecordingSettingsAutomationControllerContext _context;");
         AssertDoesNotContain(recordingSettingsAutomationControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(recordingSettingsAutomationControllerText, "_viewModel.");
