@@ -3874,7 +3874,10 @@ Primary current owners:
   `AutomationOptionsSnapshotBuilder.cs` owns the pure selected-control-state DTO
   construction.
   `MainViewModel.FlashbackPlaybackCommands.cs` owns Flashback playback, scrub,
-  nudge, marker, and automation action command routing. `MainViewModel.FlashbackPlayback.cs`
+  and nudge command routing. `MainViewModel.FlashbackPlaybackAutomation.cs`
+  owns automation-facing Flashback playback action dispatch.
+  `MainViewModel.FlashbackMarkers.cs` owns in/out marker command routing.
+  `MainViewModel.FlashbackPlayback.cs`
   owns read-only Flashback playback snapshot access plus rejection status
   projection, buffer, bitrate, playback-state, in/out marker, and gap-from-live UI projection. `MainViewModel.FlashbackExport.cs` owns
   Flashback UI export commands, save-picker flow, active-export guard, and
