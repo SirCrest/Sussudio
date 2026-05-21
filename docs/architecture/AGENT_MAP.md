@@ -4780,20 +4780,30 @@ Primary owners:
   launch, correlation snapshot capture, and `presentmon.csv` output selection
   for diagnostic sessions.
 - `tools/Common/DiagnosticSessionScenarioSetup.cs` owns diagnostic-session
-  initial state mutations before sampling: enabling or disabling Flashback for
-  scenarios, starting preview, starting recording, and waiting for the
-  associated readiness conditions. Keep fixed setup mutations on
-  `DiagnosticSessionCommandChannel` typed `AutomationCommandKind` sends.
+  initial setup ordering and result handoff before sampling.
+  `tools/Common/DiagnosticSessionScenarioSetup.Flashback.cs` owns enabling or
+  disabling Flashback for scenario requirements.
+  `tools/Common/DiagnosticSessionScenarioSetup.Preview.cs` owns preview start
+  and video-flow readiness wait.
+  `tools/Common/DiagnosticSessionScenarioSetup.Recording.cs` owns recording
+  start and Flashback recording-readiness wait.
+  `tools/Common/DiagnosticSessionScenarioSetup.Results.cs` owns setup result
+  records. Keep fixed setup mutations on `DiagnosticSessionCommandChannel`
+  typed `AutomationCommandKind` sends.
 - `tools/Common/DiagnosticSessionCleanupActions.cs` owns diagnostic-session
   cleanup flow, ordering, stage/action naming, and the cleanup result handoff
   record.
 - `tools/Common/DiagnosticSessionCleanupActions.Recording.cs` owns
   diagnostic-session recording stop for verification through typed
   `AutomationCommandKind.SetRecordingEnabled`.
-- `tools/Common/DiagnosticSessionCleanupActions.StateRestore.cs` owns
-  Flashback playback go-live restore, preview stop, and Flashback enable-state
-  restore through typed `AutomationCommandKind.FlashbackAction`,
-  `SetPreviewEnabled`, and `SetFlashbackEnabled` sends.
+- `tools/Common/DiagnosticSessionCleanupActions.FlashbackPlayback.cs` owns
+  Flashback playback go-live restore through typed
+  `AutomationCommandKind.FlashbackAction`.
+  `tools/Common/DiagnosticSessionCleanupActions.Preview.cs` owns preview stop
+  through typed `AutomationCommandKind.SetPreviewEnabled`.
+  `tools/Common/DiagnosticSessionCleanupActions.FlashbackState.cs` owns
+  Flashback enable-state restore through typed
+  `AutomationCommandKind.SetFlashbackEnabled`.
 - `tools/Common/DiagnosticSessionRecordingChecks.cs` owns post-cleanup
   diagnostic-session recording checks: deferred Flashback recording-settings
   restore, verification handoff, and Flashback recording validation. Keep the

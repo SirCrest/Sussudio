@@ -5,8 +5,7 @@ static partial class Program
     internal static Task DiagnosticSessionFlashbackWaits_OwnsSnapshotPollingWaits()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
-        var setupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioSetup.cs")
-            .Replace("\r\n", "\n");
+        var setupText = ReadDiagnosticSessionScenarioSetupSource();
         var waitsText = ReadDiagnosticSessionFlashbackWaitsSource();
         var activeWaitsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackWaits.cs")
             .Replace("\r\n", "\n");

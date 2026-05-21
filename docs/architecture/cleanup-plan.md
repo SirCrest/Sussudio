@@ -4273,19 +4273,21 @@ selection while delegating option/correlation policy to
 scenario task registration.
 
 Diagnostic-session scenario setup now lives in
-`tools/Common/DiagnosticSessionScenarioSetup.cs`. It owns initial state
-mutations before sampling: Flashback enable/disable for scenario requirements,
-preview start, recording start, and readiness waits. Fixed setup mutations
-should use `DiagnosticSessionCommandChannel` typed `AutomationCommandKind`
-sends.
+`tools/Common/DiagnosticSessionScenarioSetup.cs`. The root owns initial setup
+ordering and result handoff. Flashback enable/disable for scenario requirements
+lives in `.Flashback.cs`, preview start and video-flow wait live in
+`.Preview.cs`, recording start and Flashback recording-readiness wait live in
+`.Recording.cs`, and result records live in `.Results.cs`. Fixed setup
+mutations should use `DiagnosticSessionCommandChannel` typed
+`AutomationCommandKind` sends.
 
 Diagnostic-session cleanup mutations now live in
 `tools/Common/DiagnosticSessionCleanupActions.cs`. The root owns the public
 cleanup flow and ordering. Recording stop for verification lives in
 `DiagnosticSessionCleanupActions.Recording.cs` through typed
-`AutomationCommandKind.SetRecordingEnabled`. Flashback playback go-live restore,
-preview stop, and Flashback enable-state restore live beside it in
-`DiagnosticSessionCleanupActions.StateRestore.cs` through typed
+`AutomationCommandKind.SetRecordingEnabled`. Flashback playback go-live restore
+lives in `.FlashbackPlayback.cs`, preview stop lives in `.Preview.cs`, and
+Flashback enable-state restore lives in `.FlashbackState.cs` through typed
 `AutomationCommandKind.FlashbackAction`, `SetPreviewEnabled`, and
 `SetFlashbackEnabled` sends. The cleanup result record lives with the public
 cleanup flow in `DiagnosticSessionCleanupActions.cs`, while
@@ -4614,7 +4616,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionBackgroundTasks.FaultDrain.cs`
 - `DiagnosticSessionCleanupActions.cs`
 - `DiagnosticSessionCleanupActions.Recording.cs`
-- `DiagnosticSessionCleanupActions.StateRestore.cs`
+- `DiagnosticSessionCleanupActions.FlashbackPlayback.cs`
+- `DiagnosticSessionCleanupActions.Preview.cs`
+- `DiagnosticSessionCleanupActions.FlashbackState.cs`
 - `DiagnosticSessionCleanupPolicy.cs`
 - `DiagnosticSessionRecordingChecks.cs`
 - `DiagnosticSessionRecordingVerification.cs`
@@ -4820,6 +4824,10 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioPlan.cs`
 - `DiagnosticSessionScenarioPlan.Policies.cs`
 - `DiagnosticSessionScenarioSetup.cs`
+- `DiagnosticSessionScenarioSetup.Flashback.cs`
+- `DiagnosticSessionScenarioSetup.Preview.cs`
+- `DiagnosticSessionScenarioSetup.Recording.cs`
+- `DiagnosticSessionScenarioSetup.Results.cs`
 - `DiagnosticSessionScenarioStartup.cs`
 - `DiagnosticSessionScenarioStartup.Registrations.cs`
 - `DiagnosticSessionScenarioStartup.Playback.cs`

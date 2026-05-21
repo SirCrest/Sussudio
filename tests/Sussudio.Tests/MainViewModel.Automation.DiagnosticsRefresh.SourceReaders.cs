@@ -102,7 +102,7 @@ static partial class Program
     {
         return new DiagnosticSessionSourceFamily(
             ReadDiagnosticSessionRunnerSource()
-                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioSetup.cs")
+                + "\n" + ReadDiagnosticSessionScenarioSetupSource()
                 + "\n" + ReadDiagnosticSessionScenarioStartupSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionPresentMonStartup.cs")
                 + "\n" + ReadDiagnosticSessionCleanupActionsSource()

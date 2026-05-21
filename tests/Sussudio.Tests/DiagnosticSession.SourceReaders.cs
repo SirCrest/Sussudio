@@ -11,7 +11,17 @@ static partial class Program
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionCleanupActions.cs",
             "tools/Common/DiagnosticSessionCleanupActions.Recording.cs",
-            "tools/Common/DiagnosticSessionCleanupActions.StateRestore.cs");
+            "tools/Common/DiagnosticSessionCleanupActions.FlashbackPlayback.cs",
+            "tools/Common/DiagnosticSessionCleanupActions.Preview.cs",
+            "tools/Common/DiagnosticSessionCleanupActions.FlashbackState.cs");
+
+    private static string ReadDiagnosticSessionScenarioSetupSource()
+        => ReadNormalizedSourceFiles(
+            "tools/Common/DiagnosticSessionScenarioSetup.cs",
+            "tools/Common/DiagnosticSessionScenarioSetup.Flashback.cs",
+            "tools/Common/DiagnosticSessionScenarioSetup.Preview.cs",
+            "tools/Common/DiagnosticSessionScenarioSetup.Recording.cs",
+            "tools/Common/DiagnosticSessionScenarioSetup.Results.cs");
 
     private static string ReadDiagnosticSessionFlashbackCycleScenariosSource()
         => ReadNormalizedSourceFiles(
