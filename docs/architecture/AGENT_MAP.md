@@ -1538,8 +1538,14 @@ Entry points:
 - `FlashbackExporter.SingleFilePacketWriting.cs` owns single-file packet
   read-loop dispatch, drift logging, and no-packet validation.
 - `FlashbackExporter.SingleFilePacketReadLoop.cs` owns the single-file active
-  input packet pump, timestamp-base discovery/buffering, inline remux writes,
-  writer throttling, and EOF partial-base rescue/freeing.
+  input packet pump, stream filtering, per-read packet unref, progress
+  heartbeat, and final packet cleanup.
+- `FlashbackExporter.SingleFilePacketWriteState.cs` owns single-file packet
+  write state, timestamp-base discovery, early-packet buffering, and EOF
+  partial-base rescue.
+- `FlashbackExporter.SingleFilePacketRebasing.cs` owns single-file out-point
+  clipping, timestamp rebasing, native interleaved writes, and writer
+  throttling.
 - `FlashbackExporter.Segments.cs` owns multi-segment export validation
   dispatch, temp-output preparation, final output replacement, and export-lock
   release.

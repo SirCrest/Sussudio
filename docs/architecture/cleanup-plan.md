@@ -2336,9 +2336,14 @@ validation now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketWriting.cs`.
 The single-file active input packet pump lives in
 `Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketReadLoop.cs`;
-keep native frame reads, per-read packet unref, stream filtering, timestamp-base
-discovery, buffered packet transition, inline remux writes, writer throttling,
-and EOF partial-base rescue/freeing there.
+keep native frame reads, per-read packet unref, stream filtering, progress
+heartbeat, and final packet cleanup there. Single-file packet write state,
+timestamp-base discovery, buffered packet transition, and EOF partial-base
+rescue live in
+`Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketWriteState.cs`.
+Single-file out-point clipping, timestamp rebasing, inline remux writes, and
+writer throttling live in
+`Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketRebasing.cs`.
 
 Flashback exporter multi-segment packet-copy/remux behavior now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Segments.cs`. Keep segment
