@@ -35,6 +35,14 @@ static partial class Program
         AssertContains(diagnostics.HdrText, "private static PreviewHdrState BuildPreviewHdrState(");
         AssertContains(diagnostics.HdrText, "private readonly record struct PreviewHdrState(");
         AssertContains(diagnostics.HdrText, "private static bool IsHdrSubtype(string? subtype)");
+        AssertContains(diagnostics.HdrCoreText, "private static bool IsHdrSubtype(string? subtype)");
+        AssertDoesNotContain(diagnostics.HdrCoreText, "private static HdrTruthVerdict BuildHdrTruthVerdict(");
+        AssertContains(diagnostics.HdrTruthText, "private static HdrTruthVerdict BuildHdrTruthVerdict(");
+        AssertContains(diagnostics.HdrTruthText, "static string NormalizeFormatToken(string? text)");
+        AssertDoesNotContain(diagnostics.HdrTruthText, "private static PreviewHdrState BuildPreviewHdrState(");
+        AssertContains(diagnostics.HdrPreviewText, "private static PreviewHdrState BuildPreviewHdrState(");
+        AssertContains(diagnostics.HdrPreviewText, "private readonly record struct PreviewHdrState(");
+        AssertDoesNotContain(diagnostics.HdrPreviewText, "private static HdrTruthVerdict BuildHdrTruthVerdict(");
         AssertDoesNotContain(diagnostics.HubText, "private static HdrTruthVerdict BuildHdrTruthVerdict(");
         AssertContains(diagnostics.SnapshotsText, "var previewHdrState = BuildPreviewHdrState(captureRuntime, viewModelSnapshot, previewRuntime);");
         AssertDoesNotContain(diagnostics.SnapshotsText, "var previewHdrInputDetected =");
