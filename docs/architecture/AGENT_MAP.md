@@ -4504,25 +4504,22 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.Validation.cs`
   owns post-disable playback-thread/queue health checks and post-re-enable
   active-state validation.
-- `tools/Common/DiagnosticSessionFlashbackMetrics.Models.Recording.cs`,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.Models.PlaybackSession.cs`,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.Models.PlaybackResult.cs`, and
-  `tools/Common/DiagnosticSessionFlashbackMetrics.Models.Export.cs` own
-  diagnostic-session Flashback metric DTO shapes. `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs`,
+- `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs`,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs`,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`, and
   `tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs` own read-only
   recording, playback session orchestration, playback snapshot observation,
-  result-copy orchestration, and export metric projections. Playback observation root owns
+  result-copy orchestration, export metric projections, and their public
+  metric handoff shapes. Playback observation root owns
   active/relevant snapshot gating and dispatches to focused observation helpers:
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.OnePercentLow.cs`
   owns 1% low window capture,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.FrameDecode.cs`
   owns frame/decode maxima, and
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs`
-  owns audio-master maxima. Playback result-copy root keeps the final
-  `FlashbackPlaybackResultMetrics` initializer while focused helpers own
+  owns audio-master maxima. Playback result-copy root keeps the
+  `FlashbackPlaybackResultMetrics` handoff shape and final initializer while focused helpers own
   end-snapshot command, cadence, decode, audio-master, and stage metric reads:
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Commands.cs`,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Cadence.cs`,
