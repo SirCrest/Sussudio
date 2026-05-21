@@ -102,7 +102,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Watcher-driven audio endpoint discovery: MainViewModel.AudioDeviceDiscovery.cs
     // Audio capture/preview property changes: MainViewModel.AudioPropertyChanges.cs
     // Audio input/microphone property changes: focused partials
-    // Device refresh facade: this file; refresh owner: MainViewModelDeviceRefreshController.cs
+    // Device refresh facade: this file; top-level refresh owner: MainViewModelDeviceRefreshController.cs
     // Device selection reactions: MainViewModel.DeviceSelection.cs
     // Device format probe reconciliation: top-level MainViewModelDeviceFormatProbeController.cs; pure retarget policy: DeviceFormatProbeRetargetPolicy.cs
     // Capture mode transactions: MainViewModel.CaptureModeTransactions.cs

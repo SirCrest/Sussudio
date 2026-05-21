@@ -3863,14 +3863,15 @@ Primary current owners:
   parsing, and custom bitrate clamp policy shared by UI and automation.
   the root `MainViewModel.cs` keeps the public capture-device refresh facade,
   while `Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs`
-  owns startup refresh orchestration: requesting the combined discovery result,
-  applying audio-device startup selection, replacing the capture-device collection,
+  is a top-level `Sussudio.Controllers` owner for startup refresh
+  orchestration: requesting the combined discovery result, applying
+  audio-device startup selection, replacing the capture-device collection,
   starting background format probes, restoring saved capture-device selection,
   and directly auto-starting preview through the preview lifecycle owner.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.Context.cs`
-  owns the device-refresh graph-port contract for discovery, startup audio
-  selection, device collection mutation, background format probes, selection
-  restore, and scan status projection. The shallow `MainViewModel.DeviceManagement.cs`
+  owns the top-level device-refresh graph-port contract for discovery, startup
+  audio selection, device collection mutation, background format probes,
+  selection restore, and scan status projection. The shallow `MainViewModel.DeviceManagement.cs`
   partial was retired instead of keeping another sub-100-line facade. Selected
   capture-device reactions, capability projection, source telemetry reset, and
   device-native audio-control refresh handoff live in `MainViewModel.DeviceSelection.cs`; capture-mode property-change hooks live

@@ -26,8 +26,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceManagement.cs")),
             "shallow MainViewModel device-management partial");
-        AssertContains(deviceRefreshControllerText, "private sealed class MainViewModelDeviceRefreshController");
-        AssertContains(deviceRefreshControllerContextText, "private sealed class MainViewModelDeviceRefreshControllerContext");
+        AssertContains(deviceRefreshControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshController");
+        AssertContains(deviceRefreshControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(deviceRefreshControllerContextText, "internal sealed class MainViewModelDeviceRefreshControllerContext");
         AssertContains(deviceRefreshControllerText, "private readonly MainViewModelDeviceRefreshControllerContext _context;");
         AssertDoesNotContain(deviceRefreshControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");

@@ -60,8 +60,11 @@ static partial class Program
         AssertContains(controllerGraphCaptureModesText, "ApplyResolvedFrameRateSelection = viewModel.ApplyResolvedFrameRateSelection,");
         AssertContains(controllerGraphCaptureModesText, "SetSelectedFormat = value => viewModel.SelectedFormat = value,");
 
+        AssertContains(deviceRefreshControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshController");
         AssertContains(deviceRefreshControllerText, "private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;");
-        AssertContains(deviceRefreshControllerContextText, "private sealed class MainViewModelDeviceRefreshControllerContext");
+        AssertContains(deviceRefreshControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(deviceRefreshControllerContextText, "internal sealed class MainViewModelDeviceRefreshControllerContext");
         AssertContains(deviceRefreshControllerText, "private readonly MainViewModelDeviceRefreshControllerContext _context;");
         AssertDoesNotContain(deviceRefreshControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");
