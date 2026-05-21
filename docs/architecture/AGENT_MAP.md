@@ -4638,13 +4638,19 @@ Primary owners:
   Preserve its ordering: append the cloned sample before running checkpoint
   callbacks.
 - `tools/Common/DiagnosticSessionResultFormatter.cs` owns the public
-  human-readable diagnostic-session text flow used by ssctl and MCP, including
-  the simple capture-mode, recording-verification, PresentMon, and
-  process-performance summary rows plus small result text helpers such as
-  frame-rate formatting. Keep `DiagnosticSessionRunner.Format(...)` as the
-  stable compatibility wrapper.
+  human-readable diagnostic-session text flow used by ssctl and MCP plus
+  section ordering. Keep `DiagnosticSessionRunner.Format(...)` as the stable
+  compatibility wrapper.
 - `tools/Common/DiagnosticSessionResultFormatter.Overview.cs` owns the
   diagnostic-session header, summary, and evidence section.
+- `tools/Common/DiagnosticSessionResultFormatter.CaptureMode.cs` owns the
+  capture-mode summary row and frame-rate text formatting.
+- `tools/Common/DiagnosticSessionResultFormatter.RecordingVerification.cs`
+  owns the recording-verification summary row.
+- `tools/Common/DiagnosticSessionResultFormatter.PresentMon.cs` owns the
+  diagnostic-session PresentMon summary row.
+- `tools/Common/DiagnosticSessionResultFormatter.ProcessPerformance.cs` owns
+  the process-performance summary row.
 - `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs` owns Flashback
   diagnostic-session text section ordering plus playback command and playback
   stage/seek-cap lines.

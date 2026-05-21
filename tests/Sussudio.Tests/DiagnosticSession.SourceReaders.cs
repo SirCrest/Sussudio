@@ -195,6 +195,10 @@ static partial class Program
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionResultFormatter.cs",
             "tools/Common/DiagnosticSessionResultFormatter.Overview.cs",
+            "tools/Common/DiagnosticSessionResultFormatter.CaptureMode.cs",
+            "tools/Common/DiagnosticSessionResultFormatter.RecordingVerification.cs",
+            "tools/Common/DiagnosticSessionResultFormatter.PresentMon.cs",
+            "tools/Common/DiagnosticSessionResultFormatter.ProcessPerformance.cs",
             "tools/Common/DiagnosticSessionResultFormatter.Flashback.cs",
             "tools/Common/DiagnosticSessionResultFormatter.FlashbackRecording.cs",
             "tools/Common/DiagnosticSessionResultFormatter.FlashbackExport.cs",

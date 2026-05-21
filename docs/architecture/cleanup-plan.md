@@ -3599,10 +3599,13 @@ visual cadence, process, recording verification, and PresentMon fields.
 
 Diagnostic-session result text now lives in a focused partial family rooted at
 `tools/Common/DiagnosticSessionResultFormatter.cs`. The root owns the public
-`Format(...)` flow plus the simple capture-mode, recording-verification,
-PresentMon, and process-performance summary rows. `.Overview.cs` owns the
-header/summary/evidence section, `.Flashback.cs` owns Flashback section ordering
-plus simple playback command and playback stage/seek-cap rows,
+`Format(...)` flow and section ordering. `.Overview.cs` owns the
+header/summary/evidence section, `.CaptureMode.cs` owns the capture-mode row and
+frame-rate text formatting, `.RecordingVerification.cs` owns recording
+verification text, `.PresentMon.cs` owns PresentMon text, and
+`.ProcessPerformance.cs` owns process-performance text. `.Flashback.cs` owns
+Flashback section ordering plus simple playback command and playback
+stage/seek-cap rows,
 `.FlashbackRecording.cs` owns Flashback recording summary text,
 `.FlashbackExport.cs` owns Flashback export summary text, and
 `.FlashbackPlayback.Performance.cs` owns playback cadence/audio-master
@@ -4309,6 +4312,10 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.Models.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionResultFormatter.Overview.cs`
+- `DiagnosticSessionResultFormatter.CaptureMode.cs`
+- `DiagnosticSessionResultFormatter.RecordingVerification.cs`
+- `DiagnosticSessionResultFormatter.PresentMon.cs`
+- `DiagnosticSessionResultFormatter.ProcessPerformance.cs`
 - `DiagnosticSessionResultFormatter.Flashback.cs`
 - `DiagnosticSessionResultFormatter.FlashbackRecording.cs`
 - `DiagnosticSessionResultFormatter.FlashbackExport.cs`
