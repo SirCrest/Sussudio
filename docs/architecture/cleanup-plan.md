@@ -1557,11 +1557,12 @@ Capture session transition legality now lives in
 session state and transition generation now live in
 `Sussudio/Services/Capture/CaptureSessionStateMachine.cs`, which applies the
 policy before entering a transition and delegates steady-state resolution to the
-same pure policy. `CaptureService.Coordination.cs` owns transition
-serialization, steady-state input sampling, and state-machine delegation, so
-cleanup, disposal, and fatal cleanup keep their flow ownership without writing
-session state directly. The policy/state-machine pair is a transition-entry
-gate plus steady-state resolver, not a full workflow graph: in-place serialized
+same pure policy. `CaptureService.TransitionExecution.cs` owns serialized
+transition execution, transition-state entry, steady-state resolution, fault
+publication, and lock release. `CaptureService.Coordination.cs` owns steady-state
+input sampling plus cleanup/disposal/current-state helpers, so cleanup, disposal,
+and fatal cleanup keep their flow ownership without writing session state
+directly. The policy/state-machine pair is a transition-entry gate plus steady-state resolver, not a full workflow graph: in-place serialized
 mutations may pass the current state to the transition lock, while
 lifecycle-changing operations should pass an explicit target
 `CaptureSessionState`. Active recording backend resource ownership now lives in
@@ -1661,13 +1662,17 @@ segment preservation, deferred LibAv/unified-video cleanup handoff, WASAPI
 capture disposal, mic teardown, telemetry stop, and the call to Coordination's
 final session-state reset helper.
 
-Capture transition coordination now lives in
-`Sussudio/Services/Capture/CaptureService.Coordination.cs`. That file owns
-`RunTransitionAsync`, steady-state input sampling, state-machine delegation, and
-initialization/disposal guards. Mutable session state and transition generation
-live in `Sussudio/Services/Capture/CaptureSessionStateMachine.cs`. Cleanup,
-disposal, and fatal cleanup paths call those helpers while preserving their
-special teardown order.
+Capture transition execution now lives in
+`Sussudio/Services/Capture/CaptureService.TransitionExecution.cs`. That file
+owns `RunTransitionAsync`, transition-state entry, steady-state resolution,
+fault publication, and transition-lock release. Capture transition coordination
+now lives in `Sussudio/Services/Capture/CaptureService.Coordination.cs`; that
+file owns steady-state input sampling, current-state/generation projection,
+cleanup/disposal state helpers, and initialization/disposal guards. Mutable
+session state and transition generation live in
+`Sussudio/Services/Capture/CaptureSessionStateMachine.cs`. Cleanup, disposal,
+and fatal cleanup paths call those helpers while preserving their special
+teardown order.
 Best-effort resource release helpers are delegated to
 `Sussudio/Services/Capture/CaptureService.ResourceRelease.cs`.
 

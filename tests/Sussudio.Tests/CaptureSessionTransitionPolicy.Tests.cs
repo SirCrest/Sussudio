@@ -116,12 +116,18 @@ static partial class Program
 
     internal static Task CaptureService_RunTransition_UsesTransitionPolicy()
     {
-        var serviceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Coordination.cs");
+        var transitionExecutionText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.TransitionExecution.cs");
         var stateMachineText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionStateMachine.cs");
 
         AssertContains(
-            serviceText,
+            transitionExecutionText,
+            "private async Task RunTransitionAsync(");
+        AssertContains(
+            transitionExecutionText,
             "_sessionStateMachine.EnterTransition(transitionState);");
+        AssertContains(
+            transitionExecutionText,
+            "_sessionStateMachine.ResolveSteadyState(BuildSteadyStateInputs());");
         AssertContains(
             stateMachineText,
             "CaptureSessionTransitionPolicy.ThrowIfDisallowed(_state, transitionState);");
