@@ -75,14 +75,17 @@ static partial class Program
         AssertContains(controllerGraphDeviceText, "viewModel._deviceService.EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)");
         AssertContains(controllerGraphDeviceText, "BeginBackgroundFormatProbe = (device, scanGeneration) =>");
 
-        AssertContains(deviceAudioRequestControllerText, "private sealed partial class MainViewModelDeviceAudioRequestController");
-        AssertContains(deviceAudioRequestControllerContextText, "private sealed class MainViewModelDeviceAudioRequestControllerContext");
+        AssertContains(deviceAudioRequestControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(deviceAudioRequestControllerText, "internal sealed partial class MainViewModelDeviceAudioRequestController");
+        AssertContains(deviceAudioRequestControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(deviceAudioRequestControllerContextText, "internal sealed class MainViewModelDeviceAudioRequestControllerContext");
         AssertContains(deviceAudioRequestControllerText, "private readonly MainViewModelDeviceAudioRequestControllerContext _context;");
         AssertDoesNotContain(deviceAudioRequestControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceAudioRequestControllerText, "_viewModel.");
         AssertContains(deviceAudioRequestControllerText, "public void HandleSelectedDeviceAudioModeChanged(string value)");
         AssertDoesNotContain(deviceAudioRequestControllerText, "public void HandleAnalogAudioGainPercentChanged(double value)");
-        AssertContains(deviceAudioRequestControllerGainText, "private sealed partial class MainViewModelDeviceAudioRequestController");
+        AssertContains(deviceAudioRequestControllerGainText, "namespace Sussudio.Controllers;");
+        AssertContains(deviceAudioRequestControllerGainText, "internal sealed partial class MainViewModelDeviceAudioRequestController");
         AssertContains(deviceAudioRequestControllerGainText, "public void HandleAnalogAudioGainPercentChanged(double value)");
         AssertContains(deviceAudioRequestControllerGainText, "public void ScheduleAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
         AssertDoesNotContain(deviceAudioRequestControllerGainText, "_viewModel.");

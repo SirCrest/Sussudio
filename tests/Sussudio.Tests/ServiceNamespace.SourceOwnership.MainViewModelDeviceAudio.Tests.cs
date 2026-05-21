@@ -16,6 +16,9 @@ static partial class Program
         AssertContains(deviceAudioStateText, "public partial bool IsDeviceAudioControlSupported");
         AssertContains(deviceAudioStateText, "public partial string SelectedDeviceAudioMode");
         AssertContains(deviceAudioStateText, "public partial double AnalogAudioGainPercent");
+        AssertContains(deviceAudioStateText, "partial void OnSelectedDeviceAudioModeChanged(string value)");
+        AssertContains(deviceAudioStateText, "partial void OnAnalogAudioGainPercentChanged(double value)");
+        AssertContains(deviceAudioStateText, "private void RequestAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
         AssertDoesNotContain(audioStateText, "SelectedDeviceAudioMode");
         AssertDoesNotContain(audioStateText, "AnalogAudioGainPercent");
         AssertContains(deviceAudioRefreshText, "RefreshDeviceAudioControlsAsync(");
@@ -29,6 +32,12 @@ static partial class Program
         AssertContains(deviceAudioModeText, "CaptureDevice? targetDevice = null");
         AssertContains(analogAudioGainText, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertContains(analogAudioGainText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: false, cancellationToken)");
+        AssertContains(deviceAudioRequestControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(deviceAudioRequestControllerText, "internal sealed partial class MainViewModelDeviceAudioRequestController");
+        AssertContains(deviceAudioRequestControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(deviceAudioRequestControllerContextText, "internal sealed class MainViewModelDeviceAudioRequestControllerContext");
+        AssertContains(deviceAudioRequestControllerGainText, "namespace Sussudio.Controllers;");
+        AssertContains(deviceAudioRequestControllerGainText, "internal sealed partial class MainViewModelDeviceAudioRequestController");
         AssertDoesNotContain(deviceAudioRequestControllerText, "public void ScheduleAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
         AssertContains(deviceAudioRequestControllerGainText, "public void ScheduleAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
         AssertContains(deviceAudioRequestControllerGainText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token)");

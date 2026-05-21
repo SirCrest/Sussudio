@@ -3661,15 +3661,17 @@ Primary current owners:
   `MainViewModel.MicrophoneVolume.cs` owns microphone endpoint volume
   synchronization and persistence.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs`
-  owns device-native audio request lifetime: selected-device refresh
-  scheduling, mode property-change adapters, shared debounce CTS fields, UI
-  enqueue lifetime, and cancellation cleanup.
+  is a top-level `Sussudio.Controllers` owner for device-native audio request
+  lifetime: selected-device refresh scheduling, mode-change scheduling, shared
+  debounce CTS fields, UI enqueue lifetime, and cancellation cleanup. The
+  compatibility property-change adapters stay with the observable device-audio
+  state in `MainViewModel.DeviceAudioState.cs`.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.Context.cs`
-  owns the device-native audio request graph-port contract for UI scheduling,
+  is a top-level `Sussudio.Controllers` owner for the device-native audio request graph-port contract for UI scheduling,
   selected device/audio state, save persistence, native refresh/apply calls,
   recording/dispose guards, and current-device checks.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.Gain.cs`
-  owns analog-gain property-change scheduling, UI/XU request debounce, and
+  is a top-level `Sussudio.Controllers` owner for analog-gain property-change scheduling, UI/XU request debounce, and
   flash-persist debounce.
   `MainViewModel.DeviceAudioRefresh.cs` owns device-native audio-control support
   probing, readback, and pending saved-state reconciliation.
@@ -3783,13 +3785,14 @@ Primary current owners:
   failure/cancellation state repair through graph-built context ports,
   including direct use of the preview lifecycle owner for recording startup
   initialization.
-  `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs` owns
-  bounded teardown, dispose timeout policy, watcher disposal, coordinator
+  `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs` is a
+  top-level `Sussudio.Controllers` owner for bounded teardown, dispose timeout policy, watcher disposal, coordinator
   cleanup/dispose, capture-service async-dispose fallback, and disposal-step
   logging through graph-built context ports. `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.Context.cs`
-  owns the disposal graph-port contract for one-shot disposal entry, teardown
+  is a top-level `Sussudio.Controllers` owner for the disposal graph-port contract for one-shot disposal entry, teardown
   cancellations, runtime stop, coordinator cleanup/dispose, and capture-service
-  async/sync disposal fallback. `MainViewModel.Disposal.cs` is the public dispose adapter and owns
+  async/sync disposal fallback, plus the bounded wait helper port that keeps
+  timeout behavior explicit. `MainViewModel.Disposal.cs` is the public dispose adapter and owns
   active Flashback export cancellation during teardown.
   `MainViewModel.AutomationSnapshots.cs` owns automation-facing capture runtime,
   health, and recording snapshot projection. `MainViewModel.AutomationSnapshots.cs`

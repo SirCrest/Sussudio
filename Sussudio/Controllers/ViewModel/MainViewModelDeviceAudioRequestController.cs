@@ -3,71 +3,44 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 
-namespace Sussudio.ViewModels;
+namespace Sussudio.Controllers;
 
-public partial class MainViewModel
+/// <summary>
+/// Owns device-native audio request scheduling, debounce lifetimes, and
+/// cancellation cleanup for the compatibility ViewModel facade.
+/// </summary>
+internal sealed partial class MainViewModelDeviceAudioRequestController
 {
-    partial void OnSelectedDeviceAudioModeChanged(string value)
-        => _deviceAudioRequestController.HandleSelectedDeviceAudioModeChanged(value);
+    private readonly MainViewModelDeviceAudioRequestControllerContext _context;
+    private CancellationTokenSource? _gainFlashDebounceCts;
+    private CancellationTokenSource? _gainXuDebounceCts;
+    private CancellationTokenSource? _deviceAudioModeCts;
+    private CancellationTokenSource? _deviceAudioRefreshCts;
 
-    partial void OnAnalogAudioGainPercentChanged(double value)
-        => _deviceAudioRequestController.HandleAnalogAudioGainPercentChanged(value);
-
-    private void RequestDeviceAudioControlsRefresh(CaptureDevice? targetDevice)
-        => _deviceAudioRequestController.RequestDeviceAudioControlsRefresh(targetDevice);
-
-    private void RequestAnalogGainFlashPersist(CaptureDevice device, byte gainByte)
-        => _deviceAudioRequestController.ScheduleAnalogGainFlashPersist(device, gainByte);
-
-    private void CancelPendingAudioControlWork()
-        => _deviceAudioRequestController.CancelPendingAudioControlWork();
-
-    /// <summary>
-    /// Owns device-native audio request scheduling, debounce lifetimes, and
-    /// cancellation cleanup for the compatibility ViewModel facade.
-    /// </summary>
-    private sealed partial class MainViewModelDeviceAudioRequestController
+    public MainViewModelDeviceAudioRequestController(MainViewModelDeviceAudioRequestControllerContext context)
     {
-        private readonly MainViewModelDeviceAudioRequestControllerContext _context;
-        private CancellationTokenSource? _gainFlashDebounceCts;
-        private CancellationTokenSource? _gainXuDebounceCts;
-        private CancellationTokenSource? _deviceAudioModeCts;
-        private CancellationTokenSource? _deviceAudioRefreshCts;
+        _context = context ?? throw new ArgumentNullException(nameof(context));
+    }
 
-        public MainViewModelDeviceAudioRequestController(MainViewModelDeviceAudioRequestControllerContext context)
+    public void RequestDeviceAudioControlsRefresh(CaptureDevice? targetDevice)
+    {
+        var refreshCts = new CancellationTokenSource();
+        var refreshToken = refreshCts.Token;
+        _deviceAudioRefreshCts = refreshCts;
+        var enqueued = _context.EnqueueUiOperation(async () =>
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-        }
-
-        public void RequestDeviceAudioControlsRefresh(CaptureDevice? targetDevice)
-        {
-            var refreshCts = new CancellationTokenSource();
-            var refreshToken = refreshCts.Token;
-            _deviceAudioRefreshCts = refreshCts;
-            var enqueued = _context.EnqueueUiOperation(async () =>
+            try
             {
-                try
+                if (!_context.IsDisposing())
                 {
-                    if (!_context.IsDisposing())
-                    {
-                        await _context.RefreshDeviceAudioControlsAsync(targetDevice, true, refreshToken).ConfigureAwait(false);
-                    }
+                    await _context.RefreshDeviceAudioControlsAsync(targetDevice, true, refreshToken).ConfigureAwait(false);
                 }
-                catch (OperationCanceledException)
-                {
-                    Logger.Log("Device audio controls refresh canceled because selected device changed");
-                }
-                finally
-                {
-                    if (ReferenceEquals(_deviceAudioRefreshCts, refreshCts))
-                    {
-                        _deviceAudioRefreshCts = null;
-                    }
-
-                    refreshCts.Dispose();
-                }
-            }, "device audio controls refresh", true);
-            if (!enqueued)
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.Log("Device audio controls refresh canceled because selected device changed");
+            }
+            finally
             {
                 if (ReferenceEquals(_deviceAudioRefreshCts, refreshCts))
                 {
@@ -76,51 +49,51 @@ public partial class MainViewModel
 
                 refreshCts.Dispose();
             }
+        }, "device audio controls refresh", true);
+        if (!enqueued)
+        {
+            if (ReferenceEquals(_deviceAudioRefreshCts, refreshCts))
+            {
+                _deviceAudioRefreshCts = null;
+            }
+
+            refreshCts.Dispose();
+        }
+    }
+
+    public void HandleSelectedDeviceAudioModeChanged(string value)
+    {
+        if (_context.IsLoadingSettings() || _context.IsRefreshingDeviceAudioControls() || !_context.IsDeviceAudioControlSupported())
+        {
+            return;
         }
 
-        public void HandleSelectedDeviceAudioModeChanged(string value)
+        if (_context.IsRecording())
         {
-            if (_context.IsLoadingSettings() || _context.IsRefreshingDeviceAudioControls() || !_context.IsDeviceAudioControlSupported())
+            Logger.Log("Device audio mode change ignored while recording");
+            return;
+        }
+
+        var oldCts = _deviceAudioModeCts;
+        oldCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        var token = cts.Token;
+        var targetDevice = _context.GetSelectedDevice();
+        _deviceAudioModeCts = cts;
+        var enqueued = _context.EnqueueUiOperation(async () =>
+        {
+            try
             {
-                return;
+                if (!_context.IsDisposing())
+                {
+                    await _context.ApplyDeviceAudioModeAsync("device audio mode change", targetDevice, token).ConfigureAwait(false);
+                }
             }
-
-            if (_context.IsRecording())
+            catch (OperationCanceledException)
             {
-                Logger.Log("Device audio mode change ignored while recording");
-                return;
+                Logger.Log("Device audio mode change canceled because selected device changed");
             }
-
-            var oldCts = _deviceAudioModeCts;
-            oldCts?.Cancel();
-            var cts = new CancellationTokenSource();
-            var token = cts.Token;
-            var targetDevice = _context.GetSelectedDevice();
-            _deviceAudioModeCts = cts;
-            var enqueued = _context.EnqueueUiOperation(async () =>
-            {
-                try
-                {
-                    if (!_context.IsDisposing())
-                    {
-                        await _context.ApplyDeviceAudioModeAsync("device audio mode change", targetDevice, token).ConfigureAwait(false);
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    Logger.Log("Device audio mode change canceled because selected device changed");
-                }
-                finally
-                {
-                    if (ReferenceEquals(_deviceAudioModeCts, cts))
-                    {
-                        _deviceAudioModeCts = null;
-                    }
-
-                    cts.Dispose();
-                }
-            }, "device audio mode change", true);
-            if (!enqueued)
+            finally
             {
                 if (ReferenceEquals(_deviceAudioModeCts, cts))
                 {
@@ -129,27 +102,36 @@ public partial class MainViewModel
 
                 cts.Dispose();
             }
-
-            _context.SaveSettings();
-        }
-
-        public void CancelPendingAudioControlWork()
+        }, "device audio mode change", true);
+        if (!enqueued)
         {
-            var flashCts = _gainFlashDebounceCts;
-            _gainFlashDebounceCts = null;
-            flashCts?.Cancel();
+            if (ReferenceEquals(_deviceAudioModeCts, cts))
+            {
+                _deviceAudioModeCts = null;
+            }
 
-            var xuCts = _gainXuDebounceCts;
-            _gainXuDebounceCts = null;
-            xuCts?.Cancel();
-
-            var modeCts = _deviceAudioModeCts;
-            _deviceAudioModeCts = null;
-            modeCts?.Cancel();
-
-            var refreshCts = _deviceAudioRefreshCts;
-            _deviceAudioRefreshCts = null;
-            refreshCts?.Cancel();
+            cts.Dispose();
         }
+
+        _context.SaveSettings();
+    }
+
+    public void CancelPendingAudioControlWork()
+    {
+        var flashCts = _gainFlashDebounceCts;
+        _gainFlashDebounceCts = null;
+        flashCts?.Cancel();
+
+        var xuCts = _gainXuDebounceCts;
+        _gainXuDebounceCts = null;
+        xuCts?.Cancel();
+
+        var modeCts = _deviceAudioModeCts;
+        _deviceAudioModeCts = null;
+        modeCts?.Cancel();
+
+        var refreshCts = _deviceAudioRefreshCts;
+        _deviceAudioRefreshCts = null;
+        refreshCts?.Cancel();
     }
 }

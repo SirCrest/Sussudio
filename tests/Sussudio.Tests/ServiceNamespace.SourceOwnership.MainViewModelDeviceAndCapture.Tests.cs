@@ -55,12 +55,14 @@ static partial class Program
         AssertDoesNotContain(mainViewModelText, "partial void OnSelectedFormatChanged");
         AssertDoesNotContain(mainViewModelText, "partial void OnSelectedVideoFormatChanged");
         AssertDoesNotContain(mainViewModelText, "partial void OnMjpegDecoderCountChanged");
-        AssertContains(deviceAudioRequestControllerText, "private void CancelPendingAudioControlWork()");
+        AssertContains(deviceAudioRequestControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(deviceAudioRequestControllerText, "public void CancelPendingAudioControlWork()");
         AssertContains(deviceAudioRequestControllerText, "_gainFlashDebounceCts");
         AssertContains(deviceAudioRequestControllerText, "_gainXuDebounceCts");
         AssertContains(deviceAudioRequestControllerText, "_deviceAudioModeCts");
         AssertContains(deviceAudioRequestControllerText, "_deviceAudioRefreshCts");
-        AssertContains(deviceAudioRequestControllerContextText, "private sealed class MainViewModelDeviceAudioRequestControllerContext");
+        AssertContains(deviceAudioRequestControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(deviceAudioRequestControllerContextText, "internal sealed class MainViewModelDeviceAudioRequestControllerContext");
         AssertContains(deviceAudioRequestControllerText, "private readonly MainViewModelDeviceAudioRequestControllerContext _context;");
         AssertDoesNotContain(deviceAudioRequestControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceAudioRequestControllerText, "_viewModel.");

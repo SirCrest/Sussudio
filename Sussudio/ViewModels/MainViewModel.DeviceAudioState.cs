@@ -25,4 +25,19 @@ public partial class MainViewModel
 
     [ObservableProperty]
     public partial double AnalogAudioGainPercent { get; set; } = 50;
+
+    partial void OnSelectedDeviceAudioModeChanged(string value)
+        => _deviceAudioRequestController.HandleSelectedDeviceAudioModeChanged(value);
+
+    partial void OnAnalogAudioGainPercentChanged(double value)
+        => _deviceAudioRequestController.HandleAnalogAudioGainPercentChanged(value);
+
+    private void RequestDeviceAudioControlsRefresh(CaptureDevice? targetDevice)
+        => _deviceAudioRequestController.RequestDeviceAudioControlsRefresh(targetDevice);
+
+    private void RequestAnalogGainFlashPersist(CaptureDevice device, byte gainByte)
+        => _deviceAudioRequestController.ScheduleAnalogGainFlashPersist(device, gainByte);
+
+    private void CancelPendingAudioControlWork()
+        => _deviceAudioRequestController.CancelPendingAudioControlWork();
 }

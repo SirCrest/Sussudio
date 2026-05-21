@@ -115,14 +115,18 @@ static partial class Program
         AssertContains(controllerGraphRuntimeDisposalText, "new MainViewModelDisposalController(\n                new MainViewModelDisposalControllerContext");
         AssertContains(controllerGraphRuntimeDisposalText, "TryBeginDispose = () => Interlocked.Exchange(ref viewModel._disposeState, 1) == 0,");
         AssertContains(controllerGraphRuntimeDisposalText, "CleanupSessionCoordinatorAsync = () => viewModel._sessionCoordinator.CleanupAsync(),");
+        AssertContains(controllerGraphRuntimeDisposalText, "AwaitWithTimeoutAsync = AwaitWithTimeoutAsync,");
         AssertContains(controllerGraphText, "public MainViewModelDisposalController DisposalController { get; }");
 
         AssertContains(disposalText, "private void CancelActiveFlashbackExportForDispose()");
         AssertContains(disposalText, "=> _disposalController.Dispose();");
         AssertContains(disposalText, "=> await _disposalController.DisposeAsync().ConfigureAwait(false);");
-        AssertContains(disposalControllerText, "private sealed class MainViewModelDisposalController");
-        AssertContains(disposalControllerContextText, "private sealed class MainViewModelDisposalControllerContext");
+        AssertContains(disposalControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(disposalControllerText, "internal sealed class MainViewModelDisposalController");
+        AssertContains(disposalControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(disposalControllerContextText, "internal sealed class MainViewModelDisposalControllerContext");
         AssertContains(disposalControllerText, "private readonly MainViewModelDisposalControllerContext _context;");
+        AssertContains(disposalControllerContextText, "public required Func<Task, int, string, Task> AwaitWithTimeoutAsync { get; init; }");
         AssertDoesNotContain(disposalControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(disposalControllerText, "_viewModel.");
         AssertEqual(
@@ -131,6 +135,7 @@ static partial class Program
             "view-model disposal controller is a substantial ownership file");
         AssertContains(disposalControllerText, "private const int DefaultDisposeTimeoutMs = 30000;");
         AssertContains(disposalControllerText, "private async Task DisposeCoreAsync()");
+        AssertContains(disposalControllerText, "await _context.AwaitWithTimeoutAsync(");
         AssertContains(disposalControllerText, "_context.CancelActiveFlashbackExport();");
         AssertContains(disposalControllerText, "_context.CancelPendingAudioControlWork();");
         AssertContains(disposalControllerText, "_context.StopRuntimeForDispose();");

@@ -60,11 +60,18 @@ static partial class Program
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioRequests.cs")),
             "MainViewModel device audio request adapter partial");
-        AssertContains(mainViewModelDeviceAudioRequestControllerText, "partial void OnSelectedDeviceAudioModeChanged(string value)");
-        AssertContains(mainViewModelDeviceAudioRequestControllerText, "partial void OnAnalogAudioGainPercentChanged(double value)");
-        AssertContains(mainViewModelDeviceAudioRequestControllerText, "private void RequestDeviceAudioControlsRefresh(CaptureDevice? targetDevice)");
+        AssertContains(
+            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioState.cs")),
+            "partial void OnSelectedDeviceAudioModeChanged(string value)");
+        AssertContains(
+            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioState.cs")),
+            "partial void OnAnalogAudioGainPercentChanged(double value)");
+        AssertContains(mainViewModelDeviceAudioRequestControllerText, "public void RequestDeviceAudioControlsRefresh(CaptureDevice? targetDevice)");
         AssertContains(mainViewModelDeviceAudioRequestControllerText, "\"device audio controls refresh\", true");
-        AssertContains(mainViewModelDeviceAudioRequestControllerContextText, "private sealed class MainViewModelDeviceAudioRequestControllerContext");
+        AssertContains(mainViewModelDeviceAudioRequestControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(mainViewModelDeviceAudioRequestControllerText, "internal sealed partial class MainViewModelDeviceAudioRequestController");
+        AssertContains(mainViewModelDeviceAudioRequestControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(mainViewModelDeviceAudioRequestControllerContextText, "internal sealed class MainViewModelDeviceAudioRequestControllerContext");
         AssertContains(mainViewModelDeviceAudioRequestControllerText, "private readonly MainViewModelDeviceAudioRequestControllerContext _context;");
         AssertDoesNotContain(mainViewModelDeviceAudioRequestControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(mainViewModelDeviceAudioRequestControllerText, "_viewModel.");
@@ -159,9 +166,13 @@ static partial class Program
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_context.DisposeAudioDeviceWatcher();");
         AssertContains(mainViewModelDisposalText, "private void CancelActiveFlashbackExportForDispose()");
         AssertContains(mainViewModelDisposalText, "_disposalController.Dispose();");
-        AssertContains(mainViewModelDisposalControllerText, "private sealed class MainViewModelDisposalController");
-        AssertContains(mainViewModelDisposalControllerContextText, "private sealed class MainViewModelDisposalControllerContext");
+        AssertContains(mainViewModelDisposalControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(mainViewModelDisposalControllerText, "internal sealed class MainViewModelDisposalController");
+        AssertContains(mainViewModelDisposalControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(mainViewModelDisposalControllerContextText, "internal sealed class MainViewModelDisposalControllerContext");
         AssertContains(mainViewModelDisposalControllerText, "private readonly MainViewModelDisposalControllerContext _context;");
+        AssertContains(mainViewModelDisposalControllerText, "await _context.AwaitWithTimeoutAsync(");
+        AssertContains(mainViewModelDisposalControllerContextText, "public required Func<Task, int, string, Task> AwaitWithTimeoutAsync { get; init; }");
         AssertDoesNotContain(mainViewModelDisposalControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(mainViewModelDisposalControllerText, "_viewModel.");
         AssertContains(mainViewModelDisposalControllerText, "_context.CancelActiveFlashbackExport();");

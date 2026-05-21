@@ -1,4 +1,5 @@
 using System.Threading;
+using Sussudio.Controllers;
 
 namespace Sussudio.ViewModels;
 
@@ -19,6 +20,7 @@ public partial class MainViewModel
                     DisposeSessionCoordinatorAsync = () => viewModel._sessionCoordinator.DisposeAsync().AsTask(),
                     DisposeCaptureServiceAsync = () => viewModel._captureService.DisposeAsync().AsTask(),
                     DisposeCaptureService = viewModel._captureService.Dispose,
+                    AwaitWithTimeoutAsync = AwaitWithTimeoutAsync,
                 });
         }
     }
