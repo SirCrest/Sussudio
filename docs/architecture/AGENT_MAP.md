@@ -4225,11 +4225,11 @@ Primary owners:
   analysis-validation owner before summary construction.
 - `tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs` owns
   diagnostic-session validation handoff order for Flashback playback, cleanup
-  lifecycle restore, preview scheduler analysis, diagnostic health, and
-  tolerated Flashback scenario warning classification.
+  lifecycle restore, preview scheduler analysis, and diagnostic health.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs` owns
-  Flashback playback/export analysis warning text and threshold guards emitted
-  during result construction.
+  Flashback playback/export analysis warning text, threshold guards emitted
+  during result construction, and tolerated Flashback scenario warning
+  classification.
 - `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs` owns
   diagnostic-session health summary snapshot selection, health summary text
   projection, source-reader/ingest warning deltas for sparse source-capture

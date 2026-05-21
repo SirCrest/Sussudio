@@ -83,6 +83,13 @@ static partial class Program
         AssertDoesNotContain(analysisText, "private static void AddFlashbackExportAnalysisWarnings(");
         AssertContains(flashbackWarningsText, "private static void AddFlashbackPlaybackAnalysisWarnings(");
         AssertContains(flashbackWarningsText, "private static void AddFlashbackExportAnalysisWarnings(");
+        AssertContains(analysisValidationText, "EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
+        AssertDoesNotContain(analysisValidationText, "IsToleratedFlashbackScenarioWarning(");
+        AssertContains(flashbackWarningsText, "private static bool EvaluateFlashbackWarningsSucceeded(");
+        AssertContains(flashbackWarningsText, "scenarioPlan.UsesFlashbackScenarioWarningPolicy");
+        AssertContains(flashbackWarningsText, "IsToleratedFlashbackScenarioWarning(");
+        AssertContains(flashbackWarningsText, "scenarioPlan.ToleratesSourceSignalHealthWarning");
+        AssertContains(flashbackWarningsText, "scenarioPlan.ToleratesFlashbackForceRotateDrainWarning");
         AssertContains(flashbackWarningsText, "flashback playback seek forward-decode cap hit during session");
         AssertContains(flashbackWarningsText, "flashback export used force-rotate partial fallback");
         AssertContains(flashbackWarningsText, "playbackResultMetrics.SeekForwardDecodeCapHitsDelta <= 0");

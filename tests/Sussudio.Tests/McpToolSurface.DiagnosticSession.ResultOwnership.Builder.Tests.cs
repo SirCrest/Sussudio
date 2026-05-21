@@ -25,6 +25,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var analysisValidationText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs")
             .Replace("\r\n", "\n");
+        var flashbackWarningsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs")
+            .Replace("\r\n", "\n");
         var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs")
             .Replace("\r\n", "\n");
         var modelsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Models.cs")
@@ -56,9 +58,12 @@ static partial class Program
         AssertContains(analysisValidationText, "ValidateCleanupLifecycleRestored(");
         AssertContains(analysisValidationText, "ValidateFlashbackPreviewSchedulerAnalysis(");
         AssertContains(analysisValidationText, "AnalyzeDiagnosticHealth(");
-        AssertContains(analysisValidationText, "IsToleratedFlashbackScenarioWarning(");
+        AssertContains(analysisValidationText, "EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
+        AssertContains(flashbackWarningsText, "private static bool EvaluateFlashbackWarningsSucceeded(");
+        AssertContains(flashbackWarningsText, "IsToleratedFlashbackScenarioWarning(");
         AssertDoesNotContain(analysisText, "MfSourceReaderFramesDropped");
         AssertDoesNotContain(analysisText, "VideoIngestErrorCount");
+        AssertDoesNotContain(analysisValidationText, "IsToleratedFlashbackScenarioWarning(");
         AssertDoesNotContain(flatteningText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
         AssertDoesNotContain(builderText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
         AssertDoesNotContain(builderText, "return new DiagnosticSessionResult\n        {");

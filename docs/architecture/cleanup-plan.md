@@ -3633,9 +3633,9 @@ verification, and PresentMon DTO projection values live in
 `DiagnosticSessionResultBuilder.OverviewResult.cs`. Diagnostic metric gathering
 for validation/result projections and analysis warning emission live in
 `DiagnosticSessionResultBuilder.Analysis.cs`, while named validation handoff
-order and tolerated Flashback scenario warning classification live in
-`DiagnosticSessionResultBuilder.AnalysisValidation.cs`. Flashback playback/export
-analysis warning text and thresholds live in
+order lives in `DiagnosticSessionResultBuilder.AnalysisValidation.cs`.
+Flashback playback/export analysis warning text, thresholds, and tolerated
+Flashback scenario warning classification live in
 `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`; result-build request,
 analysis, and projection-set handoff models live in
 `DiagnosticSessionResultBuilder.Models.cs`. Diagnostic health summary snapshot

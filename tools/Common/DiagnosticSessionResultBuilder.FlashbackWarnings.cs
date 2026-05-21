@@ -1,3 +1,5 @@
+using static Sussudio.Tools.DiagnosticSessionHealthTolerances;
+
 namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionResultBuilder
@@ -32,5 +34,21 @@ internal static partial class DiagnosticSessionResultBuilder
             "flashback export used force-rotate partial fallback " +
             $"delta={flashbackExportForceRotateFallbacksDelta} total={flashbackExportForceRotateFallbacksAtEnd} " +
             $"segments={flashbackExportLastForceRotateFallbackSegmentsAtEnd}");
+    }
+
+    private static bool EvaluateFlashbackWarningsSucceeded(
+        DiagnosticSessionScenarioPlan scenarioPlan,
+        List<string> warnings)
+    {
+        if (!scenarioPlan.UsesFlashbackScenarioWarningPolicy)
+        {
+            return true;
+        }
+
+        return warnings.All(warning => IsToleratedFlashbackScenarioWarning(
+            warning,
+            scenarioPlan.ToleratesSourceSignalHealthWarning,
+            scenarioPlan.ToleratesFlashbackForceRotateDrainWarning,
+            scenarioPlan.IsPreviewCycleScenario));
     }
 }

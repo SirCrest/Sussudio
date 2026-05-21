@@ -182,7 +182,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var sparseSourceCaptureCadenceWarning =");
         AssertContains(diagnosticSessionText, "IsSparseSourceCaptureCadenceWarningRun(");
         AssertContains(diagnosticSessionText, "internal static bool IsSparseSourceCaptureCadenceWarningRun(");
-        AssertContains(diagnosticSessionText, "var toleratesFlashbackForceRotateDrainWarning =");
+        AssertContains(diagnosticSessionText, "scenarioPlan.ToleratesFlashbackForceRotateDrainWarning");
         AssertContains(diagnosticSessionText, "IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)");
         AssertContains(diagnosticSessionText, "flashback force-rotate drain warning tolerated for flashback scenario");
         AssertContains(diagnosticSessionText, "internal static bool IsFlashbackForceRotateDrainDiagnosticHealthObservation(");
@@ -194,15 +194,15 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackDiagnosticMaxWarmupMs");
         AssertContains(diagnosticSessionText, "private static DiagnosticHealthObservation BuildWorstDiagnosticHealthObservationAfterOffset(");
         AssertContains(diagnosticSessionText, "diagnosticHealthSucceeded &&");
-        AssertContains(diagnosticSessionText, "var toleratesSourceSignalHealthWarning =");
         AssertContains(diagnosticSessionText, "scenarioPlan.ToleratesSourceSignalHealthWarning");
         AssertContains(diagnosticSessionText, "IsSourceSignalDiagnosticHealthObservation(diagnosticHealthObservation)");
         AssertContains(diagnosticSessionText, "diagnostic health source-signal warning tolerated for export reliability scenario");
         AssertContains(diagnosticSessionText, "IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)");
         AssertContains(diagnosticSessionText, "diagnostic health preview scheduler transition warning tolerated for preview-cycle scenario");
-        AssertContains(diagnosticSessionText, "var flashbackWarningsSucceeded = !isFlashbackScenario ||");
+        AssertContains(diagnosticSessionText, "EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
+        AssertContains(diagnosticSessionText, "private static bool EvaluateFlashbackWarningsSucceeded(");
         AssertContains(diagnosticSessionText, "IsToleratedFlashbackScenarioWarning(");
-        AssertContains(diagnosticSessionText, "FlashbackWarningsSucceeded: flashbackWarningsSucceeded");
+        AssertContains(diagnosticSessionText, "FlashbackWarningsSucceeded: EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
         AssertContains(diagnosticScenariosText, "internal static partial class DiagnosticSessionScenarioCatalog");
         AssertContains(diagnosticScenariosText, "internal static IReadOnlyList<DiagnosticSessionScenarioCatalogEntry> Entries { get; }");
         AssertContains(diagnosticScenariosText, "internal const string HelpList =");
