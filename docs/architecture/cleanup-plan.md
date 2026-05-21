@@ -5093,11 +5093,19 @@ owner, fold it back into that owner and update the source-shape tests and
    `Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.Context.cs`.
    Settings initialization, simple persistence reactions, and the impure
    settings load/save adapter stay in `MainViewModel.SettingsPersistence.cs`.
-   `MainViewModel.SettingsLoadApplication.cs` owns applying validated load plans
-   to ViewModel state and deferred device/audio/microphone selections, while
+   `MainViewModel.SettingsLoadApplication.cs` owns the validated load-plan
+   application order, while `MainViewModel.SettingsLoadApplication.Recording.cs`,
+   `MainViewModel.SettingsLoadApplication.Audio.cs`,
+   `MainViewModel.SettingsLoadApplication.Ui.cs`,
+   `MainViewModel.SettingsLoadApplication.DeviceAudio.cs`,
+   `MainViewModel.SettingsLoadApplication.Flashback.cs`, and
+   `MainViewModel.SettingsLoadApplication.PendingDevices.cs` own feature-specific
+   state assignment and deferred device/audio/microphone selection staging.
    `MainViewModelSettingsPersistenceProjection.Load.cs` owns persisted-settings
-   validation, clamping, and deferred-selection handoff, and
-   `MainViewModelSettingsPersistenceProjection.Save.cs` owns save DTO projection;
+   validation, clamping, and deferred-selection projection,
+   `MainViewModelSettingsPersistenceProjection.Save.cs` owns save DTO projection,
+   and `MainViewModelSettingsPersistenceProjection.Models.cs` owns load/save
+   projection contracts;
    active Flashback reactions to recording format
    and encoder quality/preset/split/bitrate now live in
    `MainViewModel.FlashbackEncoderSettings.cs`; buffer/GPU decode reactions stay

@@ -33,27 +33,3 @@ internal static partial class MainViewModelSettingsPersistenceProjection
         };
     }
 }
-
-internal readonly record struct MainViewModelSettingsSaveInput(
-    string? SelectedDeviceId,
-    string OutputPath,
-    string SelectedRecordingFormat,
-    string SelectedQuality,
-    string SelectedPreset,
-    string SelectedSplitEncodeMode,
-    double CustomBitrateMbps,
-    bool IsHdrEnabled,
-    bool IsAudioEnabled,
-    bool IsAudioPreviewEnabled,
-    bool IsCustomAudioInputEnabled,
-    string? SelectedAudioInputDeviceId,
-    bool IsMicrophoneEnabled,
-    string? SelectedMicrophoneDeviceId,
-    double MicrophoneVolume,
-    double PreviewVolume,
-    bool ShowAllCaptureOptions,
-    bool IsStatsVisible,
-    string SelectedDeviceAudioMode,
-    double AnalogAudioGainPercent,
-    bool FlashbackGpuDecode,
-    int FlashbackBufferMinutes);

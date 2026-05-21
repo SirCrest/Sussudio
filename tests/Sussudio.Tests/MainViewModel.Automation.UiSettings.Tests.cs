@@ -28,10 +28,20 @@ static partial class Program
     internal static Task AutomationUiSettings_PersistThroughSettingsPath()
     {
         var settingsPersistenceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs").Replace("\r\n", "\n");
-        var settingsLoadApplicationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.cs").Replace("\r\n", "\n");
+        var settingsLoadApplicationRootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.cs").Replace("\r\n", "\n");
+        var settingsLoadApplicationText = string.Join(
+            "\n",
+            settingsLoadApplicationRootText,
+            ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.Recording.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.Audio.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.Ui.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.DeviceAudio.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.Flashback.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.PendingDevices.cs").Replace("\r\n", "\n"));
         var settingsLoadProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.Load.cs").Replace("\r\n", "\n");
         var settingsSaveProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.Save.cs").Replace("\r\n", "\n");
-        var settingsProjectionText = settingsLoadProjectionText + "\n" + settingsSaveProjectionText;
+        var settingsProjectionModelsText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.Models.cs").Replace("\r\n", "\n");
+        var settingsProjectionText = settingsLoadProjectionText + "\n" + settingsSaveProjectionText + "\n" + settingsProjectionModelsText;
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/SettingsService.cs").Replace("\r\n", "\n");
 
@@ -47,13 +57,35 @@ static partial class Program
         AssertContains(settingsPersistenceText, "MainViewModelSettingsPersistenceProjection.BuildLoadPlan(");
         AssertContains(settingsPersistenceText, "MainViewModelSettingsPersistenceProjection.BuildSaveSettings(");
         AssertDoesNotContain(settingsPersistenceText, "private void ApplySettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
-        AssertContains(settingsLoadApplicationText, "private void ApplySettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
+        AssertContains(settingsLoadApplicationRootText, "private void ApplySettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
+        AssertContains(settingsLoadApplicationRootText, "ApplyRecordingSettingsLoadPlan(loadPlan);");
+        AssertContains(settingsLoadApplicationRootText, "ApplyAudioSettingsLoadPlan(loadPlan);");
+        AssertContains(settingsLoadApplicationRootText, "ApplyUiSettingsLoadPlan(loadPlan);");
+        AssertContains(settingsLoadApplicationRootText, "ApplyDeviceAudioSettingsLoadPlan(loadPlan);");
+        AssertContains(settingsLoadApplicationRootText, "ApplyFlashbackSettingsLoadPlan(loadPlan);");
+        AssertContains(settingsLoadApplicationRootText, "StageDeferredDeviceSettingsLoadPlan(loadPlan);");
+        AssertOccursBefore(settingsLoadApplicationRootText, "ApplyRecordingSettingsLoadPlan(loadPlan);", "ApplyAudioSettingsLoadPlan(loadPlan);");
+        AssertOccursBefore(settingsLoadApplicationRootText, "ApplyAudioSettingsLoadPlan(loadPlan);", "ApplyUiSettingsLoadPlan(loadPlan);");
+        AssertOccursBefore(settingsLoadApplicationRootText, "ApplyUiSettingsLoadPlan(loadPlan);", "ApplyDeviceAudioSettingsLoadPlan(loadPlan);");
+        AssertOccursBefore(settingsLoadApplicationRootText, "ApplyDeviceAudioSettingsLoadPlan(loadPlan);", "ApplyFlashbackSettingsLoadPlan(loadPlan);");
+        AssertOccursBefore(settingsLoadApplicationRootText, "ApplyFlashbackSettingsLoadPlan(loadPlan);", "StageDeferredDeviceSettingsLoadPlan(loadPlan);");
+        AssertContains(settingsLoadApplicationText, "private void ApplyRecordingSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
+        AssertContains(settingsLoadApplicationText, "private void ApplyAudioSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
+        AssertContains(settingsLoadApplicationText, "private void ApplyUiSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
+        AssertContains(settingsLoadApplicationText, "private void ApplyDeviceAudioSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
+        AssertContains(settingsLoadApplicationText, "private void ApplyFlashbackSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
+        AssertContains(settingsLoadApplicationText, "private void StageDeferredDeviceSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
         AssertContains(settingsLoadApplicationText, "_pendingSavedDeviceId = loadPlan.PendingDeviceId;");
         AssertContains(settingsLoadApplicationText, "_pendingSavedAudioDeviceId = loadPlan.PendingAudioDeviceId;");
         AssertContains(settingsLoadApplicationText, "_pendingSavedMicrophoneDeviceId = loadPlan.PendingMicrophoneDeviceId;");
         AssertContains(settingsLoadProjectionText, "internal static partial class MainViewModelSettingsPersistenceProjection");
         AssertContains(settingsLoadProjectionText, "internal static MainViewModelSettingsLoadPlan BuildLoadPlan(");
         AssertContains(settingsSaveProjectionText, "internal static UserSettings BuildSaveSettings(");
+        AssertContains(settingsProjectionModelsText, "internal readonly record struct MainViewModelSettingsLoadInput(");
+        AssertContains(settingsProjectionModelsText, "internal readonly record struct MainViewModelSettingsLoadPlan(");
+        AssertContains(settingsProjectionModelsText, "internal readonly record struct MainViewModelSettingsSaveInput(");
+        AssertDoesNotContain(settingsLoadProjectionText, "internal readonly record struct MainViewModelSettingsLoadInput(");
+        AssertDoesNotContain(settingsSaveProjectionText, "internal readonly record struct MainViewModelSettingsSaveInput(");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModelSettingsPersistenceProjection.cs")),
