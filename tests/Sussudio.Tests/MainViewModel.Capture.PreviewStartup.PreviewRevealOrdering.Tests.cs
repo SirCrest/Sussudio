@@ -34,7 +34,7 @@ static partial class Program
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml")
             .Replace("\r\n", "\n");
 
-        AssertContains(propertyChangedText, "await TryHandlePreviewPropertyChangedAsync(propertyName)");
+        AssertContains(propertyChangedText, "TryHandlePreviewAsync = TryHandlePreviewPropertyChangedAsync,");
         AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
         AssertContains(previewLifecycleControllerText, "await HandlePreviewingChangedAsync();");
 

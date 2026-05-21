@@ -22,7 +22,7 @@ static partial class Program
         AssertContains(adapterText, "=> _outputPathController.UpdateDisplay();");
         AssertContains(mainWindowText, "InitializeOutputPathController();");
         AssertContains(bindingsText, "AttachOutputPathDisplay();");
-        AssertContains(propertyChangedText, "TryHandleOutputPropertyChanged(propertyName)");
+        AssertContains(propertyChangedText, "TryHandleOutput = TryHandleOutputPropertyChanged,");
         AssertContains(adapterText, "private bool TryHandleOutputPropertyChanged(string propertyName)");
         AssertContains(adapterText, "=> _outputPathController.TryHandlePropertyChanged(propertyName);");
         AssertDoesNotContain(adapterText, "case nameof(MainViewModel.OutputPath):");

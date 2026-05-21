@@ -87,7 +87,7 @@ static partial class Program
         AssertContains(audioBindingsText, "ApplyInitialMicrophoneControlsVisibility = ApplyInitialMicrophoneControlsVisibility,");
         AssertContains(audioControlBindingControllerText, "_context.SetupMicrophoneVolumeBindings();");
         AssertContains(audioControlBindingControllerText, "_context.ApplyInitialMicrophoneControlsVisibility();");
-        AssertContains(propertyChangedText, "TryHandleAudioPropertyChanged(propertyName)");
+        AssertContains(propertyChangedText, "TryHandleAudio = TryHandleAudioPropertyChanged,");
         AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.TryHandlePropertyChanged(propertyName);");
         AssertContains(audioControlPresentationControllerText, "case nameof(MainViewModel.IsMicrophoneEnabled):");
         AssertContains(audioControlPresentationControllerText, "case nameof(MainViewModel.MicrophoneVolume):");

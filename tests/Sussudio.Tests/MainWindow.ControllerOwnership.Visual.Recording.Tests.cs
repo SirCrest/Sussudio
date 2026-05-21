@@ -22,7 +22,7 @@ static partial class Program
         AssertContains(recordingPropertyChangedText, "RecordButtonStartingContent = RecordButtonStartingContent,");
         AssertContains(recordingPropertyChangedText, "RecordButtonRecordingContent = RecordButtonRecordingContent,");
         AssertContains(mainWindowText, "InitializeRecordingButtonChromeController();");
-        AssertContains(propertyChangedText, "TryHandleRecordingPropertyChanged(propertyName)");
+        AssertContains(propertyChangedText, "TryHandleRecording = TryHandleRecordingPropertyChanged,");
         AssertContains(recordingPropertyChangedText, "=> _recordingStatePresentationController.TryHandlePropertyChanged(propertyName);");
         AssertContains(recordingPropertyChangedText, "RecordingButtonChrome = _recordingButtonChromeController,");
         AssertContains(recordingPresentationText, "case nameof(MainViewModel.IsRecording):");

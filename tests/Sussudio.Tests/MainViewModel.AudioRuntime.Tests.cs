@@ -15,7 +15,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
 
         AssertContains(mainViewModelStateText, "IsAudioPreviewActive");
-        AssertContains(propertyChangedText, "TryHandleAudioPropertyChanged(propertyName)");
+        AssertContains(propertyChangedText, "TryHandleAudio = TryHandleAudioPropertyChanged,");
         AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.TryHandlePropertyChanged(propertyName);");
         AssertContains(audioControlPresentationControllerText, "case nameof(MainViewModel.IsAudioPreviewActive):");
         AssertContains(audioControlPresentationControllerText, "HandleAudioPreviewActiveChanged();");

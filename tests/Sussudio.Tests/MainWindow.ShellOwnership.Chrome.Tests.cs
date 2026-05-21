@@ -65,7 +65,7 @@ static partial class Program
         AssertContains(controllerText, "=> isRecording ? $\"{baseTitle} - REC {recordingTime}\" : baseTitle;");
         AssertContains(mainWindowText, "InitializeWindowTitleController();");
         AssertContains(mainWindowText, "ApplyWindowTitle();");
-        AssertContains(propertyChangedText, "TryHandleStatusStripPropertyChanged(propertyName)");
+        AssertContains(propertyChangedText, "TryHandleStatusStrip = TryHandleStatusStripPropertyChanged,");
         AssertContains(statusStripText, "ApplyWindowTitle);");
         AssertDoesNotContain(mainWindowText, "private static string BuildWindowTitleBase()");
         AssertDoesNotContain(mainWindowText, "private void ApplyWindowTitle()");
@@ -158,7 +158,7 @@ static partial class Program
         AssertContains(adapterText, "ApplyWindowTitle);");
         AssertContains(mainWindowText, "InitializeStatusStripPresentationController();");
         AssertContains(bindingsText, "ApplyInitialStatusStripPresentation();");
-        AssertContains(propertyChangedText, "if (TryHandleStatusStripPropertyChanged(propertyName))");
+        AssertContains(propertyChangedText, "TryHandleStatusStrip = TryHandleStatusStripPropertyChanged,");
         AssertDoesNotContain(flashbackPropertyChangedText, "UpdateBitrate = UpdateFlashbackBitratePresentation,");
         AssertDoesNotContain(flashbackPropertyChangedControllerText, "_context.UpdateBitrate();");
         AssertDoesNotContain(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackBitrateInfo):");

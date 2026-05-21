@@ -1780,9 +1780,11 @@ Primary current owners:
   capture-device, recording, output-path, and preview-screenshot buttons live in
   their feature adapter partials beside the owning controllers.
 - `Sussudio/MainWindow.PropertyChanged.cs` owns only the root ViewModel
-  PropertyChanged event envelope, property-name normalization, and route order.
-  Capture-selection and status-strip adapters are still considered first through
-  the `Sussudio/MainWindow.CaptureSelectionBindings.*.cs` adapter family and
+  PropertyChanged event envelope and router composition.
+  `Sussudio/Controllers/Shell/MainWindowPropertyChangedRouter.cs` owns
+  property-name normalization and route order. Capture-selection and
+  status-strip adapters are still considered first through the
+  `Sussudio/MainWindow.CaptureSelectionBindings.*.cs` adapter family and
   `MainWindow.StatusStripPresentation.cs`; broad domain property-name switches
   and status-strip routing logic live in focused controllers/partials.
 - `Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs` owns shared

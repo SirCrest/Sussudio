@@ -6,6 +6,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var propertyChangedRouterText = ReadRepoFile("Sussudio/Controllers/Shell/MainWindowPropertyChangedRouter.cs").Replace("\r\n", "\n");
         var previewText = ReadMainWindowPropertyChangedPreviewAdapterSource();
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
         var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
@@ -27,29 +28,48 @@ static partial class Program
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
         var flashbackControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs").Replace("\r\n", "\n");
 
-        AssertContains(rootText, "var propertyName = e.PropertyName ?? string.Empty;");
-        AssertContains(rootText, "TryHandleCaptureSelectionPropertyChanged(propertyName)");
-        AssertContains(rootText, "TryHandleStatusStripPropertyChanged(propertyName)");
-        AssertContains(rootText, "await TryHandlePreviewPropertyChangedAsync(propertyName)");
-        AssertContains(rootText, "TryHandleRecordingPropertyChanged(propertyName)");
-        AssertContains(rootText, "TryHandleOutputPropertyChanged(propertyName)");
-        AssertContains(rootText, "TryHandleCaptureOptionPropertyChanged(propertyName)");
-        AssertContains(rootText, "TryHandleAudioPropertyChanged(propertyName)");
-        AssertContains(rootText, "TryHandleShellPropertyChanged(propertyName)");
-        AssertContains(rootText, "TryHandleLiveSignalPropertyChanged(propertyName)");
-        AssertContains(rootText, "TryHandleFlashbackPropertyChanged(propertyName)");
+        AssertContains(rootText, "private MainWindowPropertyChangedRouter _propertyChangedRouter = null!;");
+        AssertContains(rootText, "private void InitializeMainWindowPropertyChangedRouter()");
+        AssertContains(mainWindowText, "InitializeMainWindowPropertyChangedRouter();");
+        AssertContains(rootText, "=> _propertyChangedRouter.RouteAsync(e.PropertyName);");
+        AssertContains(rootText, "TryHandleCaptureSelection = TryHandleCaptureSelectionPropertyChanged,");
+        AssertContains(rootText, "TryHandleStatusStrip = TryHandleStatusStripPropertyChanged,");
+        AssertContains(rootText, "TryHandlePreviewAsync = TryHandlePreviewPropertyChangedAsync,");
+        AssertContains(rootText, "TryHandleRecording = TryHandleRecordingPropertyChanged,");
+        AssertContains(rootText, "TryHandleOutput = TryHandleOutputPropertyChanged,");
+        AssertContains(rootText, "TryHandleCaptureOption = TryHandleCaptureOptionPropertyChanged,");
+        AssertContains(rootText, "TryHandleAudio = TryHandleAudioPropertyChanged,");
+        AssertContains(rootText, "TryHandleShell = TryHandleShellPropertyChanged,");
+        AssertContains(rootText, "TryHandleLiveSignal = TryHandleLiveSignalPropertyChanged,");
+        AssertContains(rootText, "TryHandleFlashback = TryHandleFlashbackPropertyChanged");
 
-        AssertOccursBefore(rootText, "TryHandleCaptureSelectionPropertyChanged(propertyName)", "TryHandleStatusStripPropertyChanged(propertyName)");
-        AssertOccursBefore(rootText, "TryHandleStatusStripPropertyChanged(propertyName)", "await TryHandlePreviewPropertyChangedAsync(propertyName)");
-        AssertOccursBefore(rootText, "await TryHandlePreviewPropertyChangedAsync(propertyName)", "TryHandleRecordingPropertyChanged(propertyName)");
-        AssertOccursBefore(rootText, "TryHandleRecordingPropertyChanged(propertyName)", "TryHandleOutputPropertyChanged(propertyName)");
-        AssertOccursBefore(rootText, "TryHandleOutputPropertyChanged(propertyName)", "TryHandleCaptureOptionPropertyChanged(propertyName)");
-        AssertOccursBefore(rootText, "TryHandleCaptureOptionPropertyChanged(propertyName)", "TryHandleAudioPropertyChanged(propertyName)");
-        AssertOccursBefore(rootText, "TryHandleAudioPropertyChanged(propertyName)", "TryHandleShellPropertyChanged(propertyName)");
-        AssertOccursBefore(rootText, "TryHandleShellPropertyChanged(propertyName)", "TryHandleLiveSignalPropertyChanged(propertyName)");
-        AssertOccursBefore(rootText, "TryHandleLiveSignalPropertyChanged(propertyName)", "TryHandleFlashbackPropertyChanged(propertyName)");
+        AssertContains(propertyChangedRouterText, "internal sealed class MainWindowPropertyChangedRouterContext");
+        AssertContains(propertyChangedRouterText, "internal sealed class MainWindowPropertyChangedRouter");
+        AssertContains(propertyChangedRouterText, "var propertyName = propertyNameValue ?? string.Empty;");
+        AssertContains(propertyChangedRouterText, "_context.TryHandleCaptureSelection(propertyName)");
+        AssertContains(propertyChangedRouterText, "_context.TryHandleStatusStrip(propertyName)");
+        AssertContains(propertyChangedRouterText, "await _context.TryHandlePreviewAsync(propertyName)");
+        AssertContains(propertyChangedRouterText, "_context.TryHandleRecording(propertyName)");
+        AssertContains(propertyChangedRouterText, "_context.TryHandleOutput(propertyName)");
+        AssertContains(propertyChangedRouterText, "_context.TryHandleCaptureOption(propertyName)");
+        AssertContains(propertyChangedRouterText, "_context.TryHandleAudio(propertyName)");
+        AssertContains(propertyChangedRouterText, "_context.TryHandleShell(propertyName)");
+        AssertContains(propertyChangedRouterText, "_context.TryHandleLiveSignal(propertyName)");
+        AssertContains(propertyChangedRouterText, "_context.TryHandleFlashback(propertyName)");
+
+        AssertOccursBefore(propertyChangedRouterText, "_context.TryHandleCaptureSelection(propertyName)", "_context.TryHandleStatusStrip(propertyName)");
+        AssertOccursBefore(propertyChangedRouterText, "_context.TryHandleStatusStrip(propertyName)", "await _context.TryHandlePreviewAsync(propertyName)");
+        AssertOccursBefore(propertyChangedRouterText, "await _context.TryHandlePreviewAsync(propertyName)", "_context.TryHandleRecording(propertyName)");
+        AssertOccursBefore(propertyChangedRouterText, "_context.TryHandleRecording(propertyName)", "_context.TryHandleOutput(propertyName)");
+        AssertOccursBefore(propertyChangedRouterText, "_context.TryHandleOutput(propertyName)", "_context.TryHandleCaptureOption(propertyName)");
+        AssertOccursBefore(propertyChangedRouterText, "_context.TryHandleCaptureOption(propertyName)", "_context.TryHandleAudio(propertyName)");
+        AssertOccursBefore(propertyChangedRouterText, "_context.TryHandleAudio(propertyName)", "_context.TryHandleShell(propertyName)");
+        AssertOccursBefore(propertyChangedRouterText, "_context.TryHandleShell(propertyName)", "_context.TryHandleLiveSignal(propertyName)");
+        AssertOccursBefore(propertyChangedRouterText, "_context.TryHandleLiveSignal(propertyName)", "_context.TryHandleFlashback(propertyName)");
 
         AssertDoesNotContain(rootText, "case nameof(MainViewModel.");
+        AssertDoesNotContain(rootText, "var propertyName = e.PropertyName ?? string.Empty;");
+        AssertDoesNotContain(propertyChangedRouterText, "case nameof(MainViewModel.");
         AssertDoesNotContain(rootText, "HandlePreviewingChangedAsync();");
         AssertDoesNotContain(rootText, "HandleRecordingChanged();");
         AssertDoesNotContain(rootText, "HandleFlashbackTimelineVisibleChanged();");

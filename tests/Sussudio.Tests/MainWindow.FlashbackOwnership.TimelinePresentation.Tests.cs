@@ -93,7 +93,7 @@ static partial class Program
         AssertContains(controllerText, "Canvas.SetLeft(_context.SelectionRegion, selLeft);");
         AssertContains(flashbackText, "UpdateMarkers = UpdateFlashbackMarkers,");
         AssertContains(playbackCoordinatorText, "_context.UpdateMarkers();");
-        AssertContains(propertyChangedText, "TryHandleFlashbackPropertyChanged(propertyName)");
+        AssertContains(propertyChangedText, "TryHandleFlashback = TryHandleFlashbackPropertyChanged");
         AssertContains(flashbackPropertyChangedText, "UpdateRangeMarkers = UpdateFlashbackMarkers,");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackInPoint):");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackOutPoint):");
@@ -122,7 +122,7 @@ static partial class Program
         AssertContains(flashbackText, "=> _flashbackExportProgressPresentationController.UpdateExporting(isExporting);");
         AssertContains(mainWindowText, "InitializeFlashbackExportProgressPresentationController();");
         AssertContains(mainWindowText, "InitializeFlashbackPropertyChangedController();");
-        AssertContains(propertyChangedText, "TryHandleFlashbackPropertyChanged(propertyName)");
+        AssertContains(propertyChangedText, "TryHandleFlashback = TryHandleFlashbackPropertyChanged");
         AssertContains(flashbackPropertyChangedText, "UpdateExportProgress = UpdateFlashbackExportProgress,");
         AssertContains(flashbackPropertyChangedText, "UpdateExportingPresentation = UpdateFlashbackExportingPresentation,");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackExportProgress):");

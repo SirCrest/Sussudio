@@ -26,7 +26,7 @@ static partial class Program
         AssertContains(previewFadeInControllerText, "private DispatcherQueueTimer? _timer;");
         AssertContains(previewFadeInControllerText, "public void Schedule()");
         AssertContains(previewFadeInControllerText, "public void Stop()");
-        AssertContains(propertyChangedText, "await TryHandlePreviewPropertyChangedAsync(propertyName)");
+        AssertContains(propertyChangedText, "TryHandlePreviewAsync = TryHandlePreviewPropertyChangedAsync,");
         AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
         AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.HandlePreviewStartRequested();");
         AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.HandlePreviewStopRequested();");

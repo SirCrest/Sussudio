@@ -86,8 +86,8 @@ static partial class Program
         AssertContains(audioControlBindingBindingsText, "public void AttachDeviceAudioGainAndMeterBindings()");
         AssertDoesNotContain(audioControlBindingControllerText, "public void AttachAudioSelectionBindings()");
         AssertContains(audioControlBindingFamilyText, "_context.PrimePreviewAudioFadeIn();");
-        AssertContains(propertyChangedText, "await TryHandlePreviewPropertyChangedAsync(propertyName)");
-        AssertContains(propertyChangedText, "TryHandleAudioPropertyChanged(propertyName)");
+        AssertContains(propertyChangedText, "TryHandlePreviewAsync = TryHandlePreviewPropertyChangedAsync,");
+        AssertContains(propertyChangedText, "TryHandleAudio = TryHandleAudioPropertyChanged,");
         AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
         AssertContains(previewLifecycleControllerText, "await HandlePreviewingChangedAsync();");
         AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.TryHandlePropertyChanged(propertyName);");

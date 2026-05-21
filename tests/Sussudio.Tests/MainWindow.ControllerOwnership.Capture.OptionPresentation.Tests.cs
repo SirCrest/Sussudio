@@ -72,8 +72,8 @@ static partial class Program
         AssertContains(controllerText, "_context.ViewModel.SourceTelemetrySummaryText");
         AssertContains(controllerText, "_context.ViewModel.SourceTargetSummaryText");
         AssertContains(mainWindowText, "InitializeCaptureOptionPresentationController();");
-        AssertContains(propertyChangedText, "TryHandleOutputPropertyChanged(propertyName)");
-        AssertContains(propertyChangedText, "TryHandleCaptureOptionPropertyChanged(propertyName)");
+        AssertContains(propertyChangedText, "TryHandleOutput = TryHandleOutputPropertyChanged,");
+        AssertContains(propertyChangedText, "TryHandleCaptureOption = TryHandleCaptureOptionPropertyChanged,");
         AssertContains(outputPathDisplayText, "=> _outputPathController.TryHandlePropertyChanged(propertyName);");
         AssertContains(captureOptionBindingsText, "private bool TryHandleCaptureOptionPropertyChanged(string propertyName)");
         AssertContains(captureOptionPropertyChangedMethod, "=> _captureOptionBindingController.TryHandlePropertyChanged(propertyName);");

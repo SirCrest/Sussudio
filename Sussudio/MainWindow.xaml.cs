@@ -87,6 +87,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeCaptureControllers();
         InitializeOutputControllers();
         InitializePreviewScreenshotController();
+        InitializeMainWindowPropertyChangedRouter();
     }
 
     private void InitializeWindowShellControllers()

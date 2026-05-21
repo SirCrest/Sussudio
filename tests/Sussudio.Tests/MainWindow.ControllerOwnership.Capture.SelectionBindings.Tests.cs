@@ -35,7 +35,7 @@ static partial class Program
         AssertContains(mainWindowText, "InitializeCaptureSelectionBindingController();");
         AssertContains(bindingsText, "AttachCaptureSelectionBindings();");
         AssertContains(bindingsText, "AttachDeviceSelectionChangedBinding();");
-        AssertContains(propertyChangedText, "if (TryHandleCaptureSelectionPropertyChanged(propertyName))");
+        AssertContains(propertyChangedText, "TryHandleCaptureSelection = TryHandleCaptureSelectionPropertyChanged,");
 
         AssertContains(controllerText, "internal sealed partial class CaptureSelectionBindingController");
         AssertContains(controllerText, "private readonly CaptureSelectionBindingControllerContext _context;");

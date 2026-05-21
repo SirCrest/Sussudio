@@ -59,7 +59,7 @@ static partial class Program
         AssertContains(controllerText, "int.TryParse(tag, out var minutes)");
         AssertContains(controllerText, "_context.ViewModel.FlashbackBufferMinutes = minutes;");
         AssertContains(controllerText, "FLASHBACK_UI_BUFFER_DURATION_CHANGED");
-        AssertContains(propertyChangedText, "TryHandleFlashbackPropertyChanged(propertyName)");
+        AssertContains(propertyChangedText, "TryHandleFlashback = TryHandleFlashbackPropertyChanged");
         AssertContains(flashbackPropertyChangedText, "SyncGpuDecodeSetting = SyncFlashbackGpuDecodeSetting,");
         AssertContains(flashbackPropertyChangedText, "SyncBufferDurationSetting = SyncFlashbackBufferDurationSetting");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackGpuDecode):");
