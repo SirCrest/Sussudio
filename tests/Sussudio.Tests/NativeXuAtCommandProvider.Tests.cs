@@ -17,12 +17,19 @@ static partial class Program
             .Replace("\r\n", "\n");
         var snapshotAssemblyText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs")
             .Replace("\r\n", "\n");
+        var snapshotCommandResultsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.CommandResults.cs")
+            .Replace("\r\n", "\n");
+        var snapshotTimingText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.Timing.cs")
+            .Replace("\r\n", "\n");
+        var audioInputText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs")
+            .Replace("\r\n", "\n");
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
 
         AssertContains(rootText, "public async Task<SourceSignalTelemetrySnapshot> ReadAsync(");
         AssertContains(rootText, "var attempt = TryReadInterface(ksInterface, cancellationToken);");
         AssertDoesNotContain(rootText, "using var handle = KsExtensionUnitNative.TryOpen(");
         AssertDoesNotContain(rootText, "KsExtensionUnitNative.TryReadTopologyNodes(");
+        AssertDoesNotContain(rootText, "private readonly record struct VicTiming(");
         AssertContains(interfaceReadText, "private NodeReadAttempt TryReadInterface(");
         AssertContains(interfaceReadText, "using var handle = KsExtensionUnitNative.TryOpen(");
         AssertContains(interfaceReadText, "KsExtensionUnitNative.TryReadTopologyNodes(");
@@ -57,20 +64,31 @@ static partial class Program
         AssertContains(rollingCommandGroupsText, "private void RefreshRollingGroup(");
         AssertContains(rollingCommandGroupsText, "case 5: // Diagnostics");
         AssertDoesNotContain(rollingCommandGroupsText, "private static bool IsUnsupportedNodeFailure(");
-        AssertContains(snapshotAssemblyText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
-        AssertContains(snapshotAssemblyText, "private static readonly double[] CanonicalFrameRates");
-        AssertContains(snapshotAssemblyText, "private readonly record struct NativeXuSnapshotCommandResults(");
+        AssertDoesNotContain(snapshotAssemblyText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
+        AssertDoesNotContain(snapshotAssemblyText, "private static readonly double[] CanonicalFrameRates");
+        AssertDoesNotContain(snapshotAssemblyText, "private readonly record struct NativeXuSnapshotCommandResults(");
         AssertContains(snapshotAssemblyText, "private static NodeReadAttempt BuildSnapshotFromCommandResults(");
         AssertContains(snapshotAssemblyText, "BuildDetailEntries(");
         AssertContains(snapshotAssemblyText, "AppendFlashAudioAnalogGainDetail(detailEntries, results.FlashAudio)");
         AssertContains(snapshotAssemblyText, "new SourceSignalTelemetrySnapshot");
-        AssertContains(snapshotAssemblyText, "ResolveSnapshotAudioInputOrigin(");
+        AssertDoesNotContain(snapshotAssemblyText, "private static string ResolveSnapshotAudioInputOrigin(");
+        AssertContains(snapshotTimingText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
+        AssertContains(snapshotTimingText, "private static readonly double[] CanonicalFrameRates");
+        AssertContains(snapshotTimingText, "private readonly record struct VicTiming(");
+        AssertDoesNotContain(snapshotTimingText, "BuildSnapshotFromCommandResults(");
+        AssertContains(snapshotCommandResultsText, "private readonly record struct NativeXuSnapshotCommandResults(");
+        AssertContains(snapshotCommandResultsText, "AtCommandResult RawTiming");
+        AssertDoesNotContain(snapshotCommandResultsText, "BuildSnapshotFromCommandResults(");
+        AssertContains(audioInputText, "private static string ResolveSnapshotAudioInputOrigin(");
+        AssertContains(audioInputText, "\"nativexu-flash-audio\"");
         AssertDoesNotContain(snapshotAssemblyText, "TelemetryLabels.AnalogGain");
         AssertDoesNotContain(snapshotAssemblyText, "Math.Exp(4.0 * y)");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.InterfaceRead.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.RollingCommandGroups.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.cs");
+        AssertContains(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.CommandResults.cs");
+        AssertContains(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.Timing.cs");
 
         return Task.CompletedTask;
     }

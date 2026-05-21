@@ -180,8 +180,6 @@ public sealed partial class NativeXuAtCommandProvider : ISourceSignalTelemetryPr
         int? Win32Code,
         string? FailureStage);
 
-    private readonly record struct VicTiming(int Width, int Height, double NominalFrameRate, bool IsInterlaced);
-
     private readonly record struct HdrMetadataInfo(bool HasMetadata, byte? Eotf, bool? IsHdr);
 
     private readonly record struct AviInfoFrameInfo(

@@ -47,6 +47,25 @@ public sealed partial class NativeXuAtCommandProvider
         return null;
     }
 
+    private static string ResolveSnapshotAudioInputOrigin(
+        AtCommandResult flashAudioResult,
+        AtCommandResult inputSourceResult,
+        bool useDetailedAudioInputOrigin)
+    {
+        if (useDetailedAudioInputOrigin)
+        {
+            return flashAudioResult.Success && flashAudioResult.Response.Length >= 5
+                ? $"NativeXu:Flash=0x{flashAudioResult.Response[0]:X2}"
+                : (inputSourceResult.Success && inputSourceResult.Response.Length >= 1
+                    ? $"NativeXu:InputSource={inputSourceResult.Response[0]}"
+                    : "not-implemented");
+        }
+
+        return flashAudioResult.Success && flashAudioResult.Response.Length >= 5
+            ? "nativexu-flash-audio"
+            : (inputSourceResult.Success ? "nativexu-input-source" : "unknown");
+    }
+
     private static int? ResolveAnalogGainByte(AtCommandResult flashResult)
         => IsValidFlashAudioData(flashResult)
             ? flashResult.Response[2]

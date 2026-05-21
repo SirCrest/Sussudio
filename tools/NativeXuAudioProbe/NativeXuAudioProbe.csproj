@@ -36,6 +36,8 @@
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.RollingCommandGroups.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.RollingCommandGroups.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.RollingPoll.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.RollingPoll.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.SnapshotAssembly.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.SnapshotAssembly.cs" />
+    <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.SnapshotAssembly.CommandResults.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.SnapshotAssembly.CommandResults.cs" />
+    <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.SnapshotAssembly.Timing.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.SnapshotAssembly.Timing.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.Selector4.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.Selector4.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.Build.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.Build.cs" />
