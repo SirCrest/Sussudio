@@ -2859,9 +2859,11 @@ Automation snapshot contracts now live in named model files under
 `AutomationSnapshot*.cs` partial family by domain: root lifecycle/diagnostics,
 user settings, HDR, audio/ingest, recording, capture format, source telemetry,
 preview, MJPEG/cadence, system health, and Flashback. Other snapshot contracts
-remain in `CaptureRuntimeSnapshot.cs`, `PreviewRuntimeSnapshot.cs`,
-`PerformanceTimelineEntry*.cs`, `FlashbackSegmentInfo.cs`, and
-`ViewModelRuntimeSnapshot.cs`. The performance timeline DTO is split by
+remain in `CaptureRuntimeSnapshot.cs`, `PerformanceTimelineEntry*.cs`,
+`FlashbackSegmentInfo.cs`, and `ViewModelRuntimeSnapshot.cs`.
+The `PreviewRuntimeSnapshot*.cs` partial family is split by diagnostics surface:
+root surface/frame health, startup, display cadence, D3D renderer diagnostics,
+and GPU playback. The performance timeline DTO is split by
 diagnostics surface: root capture/preview cadence, preview/MJPEG/D3D,
 Flashback playback, Flashback export, and process/system health. Do not
 recreate a broad `AutomationRuntimeSnapshots.cs` catch-all; add new DTO fields
