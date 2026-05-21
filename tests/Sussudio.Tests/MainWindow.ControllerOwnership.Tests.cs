@@ -8,7 +8,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var previewText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
-        var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
+        var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs").Replace("\r\n", "\n");
         var previewRendererHostReinitText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Reinit.cs").Replace("\r\n", "\n");
         var recordingText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedRecording.cs").Replace("\r\n", "\n");
@@ -81,9 +81,9 @@ static partial class Program
         AssertDoesNotContain(previewText, "await HandlePreviewingChangedAsync();");
         AssertContains(previewReinitText, "private PreviewReinitTransitionController _previewReinitTransitionController = null!;");
         AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewReinit.cs")),
-            "preview reinit adapter is consolidated into the transition adapter");
+            true,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewTransitions.Reinit.cs")),
+            "preview reinit adapter lives in the focused preview transition reinit partial");
         AssertContains(previewReinitText, "private bool IsPreviewReinitAnimating");
         AssertContains(previewReinitText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
         AssertContains(previewReinitText, "private Task ViewModel_PreviewRendererStopRequested()");

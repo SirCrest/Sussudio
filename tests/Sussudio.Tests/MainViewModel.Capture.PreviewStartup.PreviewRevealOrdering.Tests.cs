@@ -10,19 +10,15 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.Bindings.cs")
             .Replace("\r\n", "\n");
-        var previewActionsText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
-            .Replace("\r\n", "\n");
+        var previewActionsText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
-        var previewFadeInText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
-            .Replace("\r\n", "\n");
+        var previewFadeInText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewFadeInController.cs")
             .Replace("\r\n", "\n");
-        var previewAudioFadeText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
-            .Replace("\r\n", "\n");
+        var previewAudioFadeText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewAudioFadeControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewAudioFadeController.cs")
             .Replace("\r\n", "\n");
-        var previewTransitionText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
-            .Replace("\r\n", "\n");
+        var previewTransitionText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs")
             .Replace("\r\n", "\n");
         var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs")

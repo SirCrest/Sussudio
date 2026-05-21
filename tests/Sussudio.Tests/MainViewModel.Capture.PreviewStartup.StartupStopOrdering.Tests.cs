@@ -7,8 +7,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
-        var previewFadeInText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
-            .Replace("\r\n", "\n");
+        var previewFadeInText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewFadeInController.cs")
             .Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
@@ -17,8 +16,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs")
             .Replace("\r\n", "\n");
-        var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
-            .Replace("\r\n", "\n");
+        var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
 
         AssertContains(mainWindowText, "InitializePreviewLifecycleEventController();");
         AssertContains(previewFadeInText, "private PreviewFadeInController _previewFadeInController = null!;");

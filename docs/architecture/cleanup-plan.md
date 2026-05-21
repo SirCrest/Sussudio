@@ -3333,10 +3333,11 @@ button now live in `Sussudio/Controllers/Shell/ShellElevationController.cs`.
 Preview shell/content fade and scale transitions, video-shadow fade timing, and
 unavailable-placeholder presentation now live in
 `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`.
-`MainWindow.PreviewTransitions.cs` is the XAML-facing adapter for transition,
-delayed fade-in, and startup overlay presentation; video-shadow fade callbacks
-route through `PreviewSurfaceShadowController` and shared compositor shadow
-opacity fades live in `Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs`.
+`MainWindow.PreviewTransitions.cs` is the XAML-facing preview-transition
+adapter-family marker. `Sussudio/MainWindow.PreviewTransitions.Animation.cs`
+wires transition animation callbacks; video-shadow fade callbacks route through
+`PreviewSurfaceShadowController` and shared compositor shadow opacity fades live
+in `Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs`.
 
 Preview button glyph/tooltip presentation for Start Preview and Stop Preview
 now lives in `Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs`.
@@ -3344,8 +3345,8 @@ now lives in `Sussudio/Controllers/Preview/PreviewButtonPresentationController.c
 preview lifecycle property/event routing. Preview
 button command choreography now lives in
 `Sussudio/Controllers/Preview/PreviewButtonActionController.cs`, while
-`MainWindow.PreviewTransitions.cs` keeps the XAML event name stable as part of
-the preview transition/presentation adapter.
+`Sussudio/MainWindow.PreviewTransitions.ButtonActions.cs` keeps the XAML event
+name stable as part of the preview transition/presentation adapter.
 
 Demo-visible record-button chrome now lives in
 `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs`: recording glow,
@@ -3373,7 +3374,7 @@ auto-resolution display text live together in
 Preview-volume fade-in/fade-out state, saved target volume, storyboard lifetime,
 and volume save suppression now live in
 `Sussudio/Controllers/Preview/PreviewAudioFadeController.cs`.
-`MainWindow.PreviewTransitions.cs` is the XAML-facing adapter.
+`Sussudio/MainWindow.PreviewTransitions.AudioFade.cs` is the XAML-facing adapter.
 Preview-audio volume transition mechanics now live in the
 `Sussudio/ViewModels/PreviewAudioVolumeTransitionController*.cs` family.
 `PreviewAudioVolumeTransitionController.cs` owns save suppression/override
@@ -3389,8 +3390,9 @@ Preview reinit animation active state, first-visual transition clears,
 startup-reset preservation, completion presentation decisions, and
 `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs now live in
 `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs`.
-`MainWindow.PreviewTransitions.cs` is the XAML/MainWindow adapter that supplies
-renderer-stop-before-teardown and UI callback endpoints for reinit completion.
+`Sussudio/MainWindow.PreviewTransitions.Reinit.cs` is the XAML/MainWindow
+adapter that supplies renderer-stop-before-teardown and UI callback endpoints
+for reinit completion.
 
 Preview startup attempt/state bookkeeping, timestamps, cached failure/
 missing-signal details, state/log transitions, first-visual confirmation
@@ -3420,12 +3422,12 @@ timeout status, and failure-stop status text live inside
 and failure-stop decisions are made. This keeps the root shell focused on wiring
 while leaving the existing startup state machine behavior unchanged.
 Delayed preview reveal after first visual now lives in
-`Sussudio/Controllers/Preview/PreviewFadeInController.cs`; the adapter remains
-`Sussudio/MainWindow.PreviewTransitions.cs`. Watchdog/timeout recovery remains in
+`Sussudio/Controllers/Preview/PreviewFadeInController.cs`; the adapter is
+`Sussudio/MainWindow.PreviewTransitions.FadeIn.cs`. Watchdog/timeout recovery remains in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`.
 Preview startup loading overlay presentation now lives in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupOverlayController.cs`.
-`MainWindow.PreviewTransitions.cs` is the XAML-facing adapter; watchdog and
+`Sussudio/MainWindow.PreviewTransitions.Overlay.cs` is the XAML-facing adapter; watchdog and
 timeout recovery stay in `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`.
 Top-level preview resize telemetry throttling now lives in
 `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs`.
@@ -3443,7 +3445,7 @@ controller. The broad `MainWindow.PropertyChanged.cs` dispatcher now owns only
 the `PropertyChanged` event envelope, property-name normalization, and visible
 route order. Preview reinit transition state and log ownership now live in
 `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs`, while
-`Sussudio/MainWindow.PreviewTransitions.cs` keeps the renderer-stop-before-teardown
+`Sussudio/MainWindow.PreviewTransitions.Reinit.cs` keeps the renderer-stop-before-teardown
 handoff and XAML callback endpoints for completion presentation.
 
 Bottom status-strip projection now lives in
@@ -4573,6 +4575,10 @@ owner, fold it back into that owner and update the source-shape tests and
    The preview-startup XAML-facing adapter family is now split into focused
    `MainWindow.PreviewStartup.*.cs` partials so session, signal, and watchdog
    callback surfaces can be audited independently.
+   The preview-transition XAML-facing adapter family is now split into focused
+   `MainWindow.PreviewTransitions.*.cs` partials so audio fade, button action,
+   delayed fade-in, startup overlay, animation, and reinit callback surfaces can
+   be audited independently.
    `MainWindow.xaml.cs` now keeps the controller initialization list grouped
    into shell, Flashback, presentation, preview, recording, launch/status,
    preview action, audio, capture, and output phases so the composition root

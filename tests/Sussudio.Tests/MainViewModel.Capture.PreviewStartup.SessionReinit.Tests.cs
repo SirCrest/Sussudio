@@ -10,8 +10,7 @@ static partial class Program
         var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
         var previewStartupSessionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs")
             .Replace("\r\n", "\n");
-        var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
-            .Replace("\r\n", "\n");
+        var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs")
             .Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs")
@@ -22,9 +21,9 @@ static partial class Program
         AssertContains(mainWindowText, "InitializePreviewStartupSessionController();");
         AssertContains(mainWindowText, "InitializePreviewReinitTransitionController();");
         AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewReinit.cs")),
-            "preview reinit adapter is consolidated into the transition adapter");
+            true,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewTransitions.Reinit.cs")),
+            "preview reinit adapter lives in the focused preview transition reinit partial");
         AssertContains(previewStartupText, "private PreviewStartupSessionController _previewStartupSessionController = null!;");
         AssertContains(previewStartupText, "private void InitializePreviewStartupSessionController()");
         AssertContains(previewStartupText, "private PreviewStartupState CurrentPreviewStartupState");

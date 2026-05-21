@@ -6,10 +6,8 @@ static partial class Program
     {
         var previewAudioFadeControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewAudioFadeController.cs")
             .Replace("\r\n", "\n");
-        var previewActionsText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
-            .Replace("\r\n", "\n");
-        var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
-            .Replace("\r\n", "\n");
+        var previewActionsText = ReadMainWindowPreviewTransitionsAdapterSource();
+        var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs")
             .Replace("\r\n", "\n");
         var audioMonitoringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs")

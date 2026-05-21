@@ -43,7 +43,7 @@ static partial class Program
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
+        var adapterText = ReadMainWindowPreviewTransitionsAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewAudioFadeController.cs").Replace("\r\n", "\n");
         var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
         var audioControlBindingBindingsText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.Bindings.cs").Replace("\r\n", "\n");
@@ -65,9 +65,9 @@ static partial class Program
         AssertContains(adapterText, "=> _previewAudioFadeController.CancelFadeInForUser();");
         AssertContains(mainWindowText, "InitializePreviewAudioFadeController();");
         AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewAudioFade.cs")),
-            "preview audio fade adapter is consolidated into the transition adapter");
+            true,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewTransitions.AudioFade.cs")),
+            "preview audio fade adapter lives in the focused preview transition audio fade partial");
         AssertContains(mainWindowText, "InitializeAudioControlBindingController();");
         AssertContains(bindingsText, "ApplyInitialAudioControlBindings();");
         AssertContains(audioControlBindingControllerText, "internal sealed class AudioControlBindingControllerContext");
@@ -113,10 +113,10 @@ static partial class Program
     internal static Task PreviewButtonPresentation_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var previewActionsText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
+        var previewActionsText = ReadMainWindowPreviewTransitionsAdapterSource();
         var propertyChangedPreviewText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
-        var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
+        var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs").Replace("\r\n", "\n");
         var actionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewButtonActionController.cs").Replace("\r\n", "\n");
         var reinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs").Replace("\r\n", "\n");
@@ -148,9 +148,9 @@ static partial class Program
         AssertContains(previewActionsText, "_ = RunUiEventHandlerAsync(() => TogglePreviewFromButtonAsync(), nameof(PreviewButton_Click));");
         AssertContains(mainWindowText, "InitializePreviewButtonActionController();");
         AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewActions.cs")),
-            "preview button action adapter is consolidated into the transition adapter");
+            true,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewTransitions.ButtonActions.cs")),
+            "preview button action adapter lives in the focused preview transition button action partial");
         AssertContains(actionControllerText, "internal sealed class PreviewButtonActionController");
         AssertContains(actionControllerText, "public async Task TogglePreviewAsync(string operationName)");
         AssertContains(actionControllerText, "viewModel.CancelPendingPreviewRestart();");
