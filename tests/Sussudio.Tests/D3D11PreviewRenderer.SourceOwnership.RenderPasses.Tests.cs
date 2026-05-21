@@ -50,6 +50,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs")
             .Replace("\r\n", "\n");
+        var stopLifecycleText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.StopLifecycle.cs")
+            .Replace("\r\n", "\n");
         var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
         var shaderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderPasses.cs")
@@ -80,10 +82,12 @@ static partial class Program
         AssertContains(shaderPassesText, "TryEnsureNv12ShaderResources(frame)");
         AssertContains(renderPassesText, "TryResolveInputView(frame, out var inputView, out var disposeInputView)");
         AssertContains(renderPassesText, "D3D11_PREVIEW_HDR_SHADER_FALLBACK");
-        AssertContains(lifecycleText, "private bool TryEnterNativeRenderCall()");
-        AssertContains(lifecycleText, "private void ExitNativeRenderCall()");
-        AssertContains(lifecycleText, "Interlocked.Exchange(ref _inNativeCall, 1);");
-        AssertContains(lifecycleText, "Interlocked.Exchange(ref _inNativeCall, 0);");
+        AssertContains(stopLifecycleText, "private bool TryEnterNativeRenderCall()");
+        AssertContains(stopLifecycleText, "private void ExitNativeRenderCall()");
+        AssertContains(stopLifecycleText, "Interlocked.Exchange(ref _inNativeCall, 1);");
+        AssertContains(stopLifecycleText, "Interlocked.Exchange(ref _inNativeCall, 0);");
+        AssertDoesNotContain(lifecycleText, "private bool TryEnterNativeRenderCall()");
+        AssertDoesNotContain(lifecycleText, "private void ExitNativeRenderCall()");
         AssertContains(renderThreadText, "RenderFrame(frame);");
         AssertDoesNotContain(rootText, "private void RenderFrame(PendingFrame frame)");
         AssertDoesNotContain(renderPassesText, "private void RenderNv12WithShader(PendingFrame frame)");

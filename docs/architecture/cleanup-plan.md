@@ -2388,9 +2388,10 @@ window updates, expected-frame-rate window resizing, and metric reset logic now
 live in `D3D11PreviewRenderer.MetricsTracking.cs`. Renderer implementation
 fields should live with the partial that mutates or projects them: keep
 slow-frame diagnostic ring/write state in
-`D3D11PreviewRenderer.SlowFrameDiagnostics.cs`, lifecycle state in
-`D3D11PreviewRenderer.Lifecycle.cs`, render-thread failure and first-frame state
-in `D3D11PreviewRenderer.RenderThread.cs`, queue state and signaling in
+`D3D11PreviewRenderer.SlowFrameDiagnostics.cs`, startup/disposal lifecycle state
+in `D3D11PreviewRenderer.Lifecycle.cs`, stop/unbind/native-call fence state in
+`D3D11PreviewRenderer.StopLifecycle.cs`, render-thread failure and first-frame
+state in `D3D11PreviewRenderer.RenderThread.cs`, queue state and signaling in
 `D3D11PreviewRenderer.PendingFrames.cs`, D3D device/swap-chain resources in
 `D3D11PreviewRenderer.Resources.cs`, input texture resources in
 `D3D11PreviewRenderer.InputResources.cs`, swap-chain panel binding state in
@@ -2425,14 +2426,17 @@ frame, lease, and single shared-texture submission entry points there. The
 dual-plane NV12 submission guard, HDR transition logging, COM AddRef/release,
 and pending-frame adapter live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Nv12Submission.cs`; keep
-render-thread start/stop and disposal in `D3D11PreviewRenderer.Lifecycle.cs`
-and panel sizing in the root renderer.
+render-thread start/disposal in `D3D11PreviewRenderer.Lifecycle.cs`, stop and
+reinit stop in `D3D11PreviewRenderer.StopLifecycle.cs`, and panel sizing in the
+root renderer.
 
 D3D preview renderer lifecycle now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs`. Keep
-render-thread start/stop, reinit stop, native-call drain fencing, pending-frame
-shutdown cleanup, renderer disposal, and render-pass native-call entry/exit
-guard helpers there.
+render-thread startup state, startup reset, and renderer disposal there.
+`Sussudio/Services/Preview/D3D11PreviewRenderer.StopLifecycle.cs` owns public
+stop, reinit stop, unbind-before-join ordering, native-call drain fencing,
+pending-frame shutdown cleanup, and render-pass native-call entry/exit guard
+helpers.
 
 D3D preview renderer render-thread orchestration now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs`. Keep the

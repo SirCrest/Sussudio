@@ -45,19 +45,26 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs")
             .Replace("\r\n", "\n");
+        var stopLifecycleText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.StopLifecycle.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(lifecycleText, "private readonly object _lifecycleLock = new();");
         AssertContains(lifecycleText, "private Thread? _renderThread;");
         AssertContains(lifecycleText, "private int _disposed;");
-        AssertContains(lifecycleText, "private int _inNativeCall;");
         AssertContains(lifecycleText, "private double _startupFps = 60.0;");
         AssertContains(lifecycleText, "public void Start(int width, int height, double fps, bool isHdr)");
-        AssertContains(lifecycleText, "public void StopRenderThread()");
-        AssertContains(lifecycleText, "public void Stop()");
-        AssertContains(lifecycleText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
         AssertContains(lifecycleText, "public void Dispose()");
-        AssertContains(lifecycleText, "WaitForNativeCallToDrainOrThrow(\"stop\");");
-        AssertContains(lifecycleText, "FailPendingFrameCapture(\"Preview renderer stopped before frame capture completed.\");");
+        AssertContains(stopLifecycleText, "private int _stopRequested;");
+        AssertContains(stopLifecycleText, "private int _inNativeCall;");
+        AssertContains(stopLifecycleText, "public void StopRenderThread()");
+        AssertContains(stopLifecycleText, "public void Stop()");
+        AssertContains(stopLifecycleText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
+        AssertContains(stopLifecycleText, "WaitForNativeCallToDrainOrThrow(\"stop\");");
+        AssertContains(stopLifecycleText, "FailPendingFrameCapture(\"Preview renderer stopped before frame capture completed.\");");
+        AssertContains(stopLifecycleText, "WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel)");
+        AssertDoesNotContain(lifecycleText, "public void StopRenderThread()");
+        AssertDoesNotContain(lifecycleText, "public void Stop()");
+        AssertDoesNotContain(lifecycleText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
         AssertDoesNotContain(rootText, "public void Start(int width, int height, double fps, bool isHdr)");
         AssertDoesNotContain(rootText, "public void StopRenderThread()");
         AssertDoesNotContain(rootText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
