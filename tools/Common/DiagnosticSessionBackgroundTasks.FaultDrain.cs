@@ -26,12 +26,12 @@ internal sealed partial class DiagnosticSessionBackgroundTasks
                 .ConfigureAwait(false);
         }
 
-        presentMon = await ObservePresentMonTaskAfterFaultAsync(
+        presentMon = await ObservePresentMonAfterFaultAsync(
                 warnings,
                 recordTerminalException,
                 presentMon)
             .ConfigureAwait(false);
-        recordingSettingsDeferredPresetState = await ObserveRecordingSettingsDeferredTaskAfterFaultAsync(
+        recordingSettingsDeferredPresetState = await ObserveRecordingSettingsDeferredAfterFaultAsync(
                 warnings,
                 recordTerminalException,
                 recordingSettingsDeferredPresetState)
@@ -68,82 +68,6 @@ internal sealed partial class DiagnosticSessionBackgroundTasks
         catch (Exception ex)
         {
             recordTerminalException(ex, stage);
-        }
-    }
-
-    private async Task<PresentMonProbeResult?> ObservePresentMonTaskAfterFaultAsync(
-        List<string> warnings,
-        Action<Exception, string> recordTerminalException,
-        PresentMonProbeResult? presentMon)
-    {
-        if (_presentMonTask is null || _presentMonTask.IsCompletedSuccessfully)
-        {
-            if (_presentMonTask is { IsCompletedSuccessfully: true } && presentMon is null)
-            {
-                presentMon = await _presentMonTask.ConfigureAwait(false);
-            }
-
-            return presentMon;
-        }
-
-        try
-        {
-            var completedTask = _presentMonTask.IsCompleted
-                ? _presentMonTask
-                : await Task.WhenAny(_presentMonTask, Task.Delay(TimeSpan.FromSeconds(2))).ConfigureAwait(false);
-            if (!ReferenceEquals(completedTask, _presentMonTask))
-            {
-                warnings.Add("presentmon-task: task still running after diagnostic interruption");
-                return presentMon;
-            }
-
-            presentMon = await _presentMonTask.ConfigureAwait(false);
-            if (!presentMon.Success)
-            {
-                warnings.Add($"PresentMon failed: {presentMon.Message}");
-            }
-
-            return presentMon;
-        }
-        catch (Exception ex)
-        {
-            recordTerminalException(ex, "presentmon-task");
-            return presentMon;
-        }
-    }
-
-    private async Task<FlashbackRecordingSettingsDeferredPresetState> ObserveRecordingSettingsDeferredTaskAfterFaultAsync(
-        List<string> warnings,
-        Action<Exception, string> recordTerminalException,
-        FlashbackRecordingSettingsDeferredPresetState recordingSettingsDeferredPresetState)
-    {
-        if (_recordingSettingsDeferredTask is null || _recordingSettingsDeferredTask.IsCompletedSuccessfully)
-        {
-            if (_recordingSettingsDeferredTask is { IsCompletedSuccessfully: true })
-            {
-                recordingSettingsDeferredPresetState = await _recordingSettingsDeferredTask.ConfigureAwait(false);
-            }
-
-            return recordingSettingsDeferredPresetState;
-        }
-
-        try
-        {
-            var completedTask = _recordingSettingsDeferredTask.IsCompleted
-                ? _recordingSettingsDeferredTask
-                : await Task.WhenAny(_recordingSettingsDeferredTask, Task.Delay(TimeSpan.FromSeconds(2))).ConfigureAwait(false);
-            if (!ReferenceEquals(completedTask, _recordingSettingsDeferredTask))
-            {
-                warnings.Add("flashback-recording-settings-deferred-task: task still running after diagnostic interruption");
-                return recordingSettingsDeferredPresetState;
-            }
-
-            return await _recordingSettingsDeferredTask.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            recordTerminalException(ex, "flashback-recording-settings-deferred-task");
-            return recordingSettingsDeferredPresetState;
         }
     }
 }

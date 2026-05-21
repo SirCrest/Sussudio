@@ -3822,13 +3822,14 @@ Diagnostic-session background task tracking now lives in
 `tools/Common/DiagnosticSessionBackgroundTasks.cs`. The root owns scenario task
 registration, deterministic await order, and normal registered scenario
 completion. `DiagnosticSessionBackgroundTasks.PresentMon.cs` owns PresentMon
-task registration/completion,
+task registration, normal completion, and interrupted-session observation,
 `DiagnosticSessionBackgroundTasks.RecordingSettingsDeferred.cs` owns deferred
-Flashback recording-settings registration/completion, and
+Flashback recording-settings registration, normal completion, and
+interrupted-session observation, and
 `DiagnosticSessionBackgroundTasks.Models.cs` owns the small background-task
 registration and drain handoff records.
-`DiagnosticSessionBackgroundTasks.FaultDrain.cs` owns interrupted-task warning
-collection and fault drain.
+`DiagnosticSessionBackgroundTasks.FaultDrain.cs` owns interrupted drain
+orchestration and generic scenario-task warning collection.
 
 Diagnostic-session scenario startup now lives in a focused partial family.
 `tools/Common/DiagnosticSessionScenarioStartup.cs` owns the public startup

@@ -4343,14 +4343,16 @@ Primary owners:
   scenario background task registration, deterministic await order, and normal
   registered scenario completion.
 - `tools/Common/DiagnosticSessionBackgroundTasks.PresentMon.cs` owns
-  diagnostic-session PresentMon task registration and normal completion.
+  diagnostic-session PresentMon task registration, normal completion, and
+  interrupted-session PresentMon task observation.
 - `tools/Common/DiagnosticSessionBackgroundTasks.RecordingSettingsDeferred.cs`
   owns deferred Flashback recording-settings task registration and normal
-  completion.
+  completion plus interrupted-session observation.
 - `tools/Common/DiagnosticSessionBackgroundTasks.Models.cs` owns the small
   background-task registration and drain handoff records.
 - `tools/Common/DiagnosticSessionBackgroundTasks.FaultDrain.cs` owns
-  interrupted background-task warning collection and fault drain.
+  interrupted background-task drain orchestration and generic scenario-task
+  warning collection.
 - `tools/Common/DiagnosticSessionScenarioStartup.cs` owns diagnostic-session
   optional background startup orchestration.
 - `tools/Common/DiagnosticSessionScenarioStartup.Registrations.cs` owns
