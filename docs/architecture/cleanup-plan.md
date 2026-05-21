@@ -2507,11 +2507,13 @@ timing in `D3D11PreviewRenderer.PresentCadenceMetrics.cs`,
 `D3D11PreviewRenderer.Metrics.cs`, and `D3D11PreviewRenderer.DxgiFrameStatistics.cs`,
 with slow-frame diagnostic projection in `D3D11PreviewRenderer.SlowFrameDiagnostics.cs`.
 
-D3D preview renderer DXGI frame statistics and display-clock projection now
-live in `Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs`.
-Keep `GetFrameStatistics`, optional `DwmFlush`, visible-frame tick estimation,
-and `IPreviewDisplayClock` snapshot construction there; keep slow-frame
-diagnostic consumption of the latest DXGI counters in
+D3D preview renderer DXGI frame statistics now live in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs`.
+Keep `GetFrameStatistics`, optional `DwmFlush`, DXGI counter deltas, and missed
+refresh accounting there. Display-clock projection now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.DisplayClock.cs`; keep
+visible-frame tick estimation and `IPreviewDisplayClock` snapshot construction
+there. Keep slow-frame diagnostic consumption of the latest DXGI counters in
 `D3D11PreviewRenderer.SlowFrameDiagnostics.cs`.
 
 D3D preview renderer frame-latency waitable swap-chain setup now lives in

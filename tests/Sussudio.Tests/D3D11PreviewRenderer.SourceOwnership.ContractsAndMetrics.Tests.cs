@@ -126,6 +126,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var dxgiText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs")
             .Replace("\r\n", "\n");
+        var displayClockText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DisplayClock.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(dxgiText, "private readonly object _dxgiFrameStatisticsLock = new();");
         AssertContains(dxgiText, "private long _dxgiFrameStatisticsSampleCount;");
@@ -135,17 +137,19 @@ static partial class Program
         AssertContains(dxgiText, "private bool _dxgiFrameStatisticsHasBaseline;");
         AssertContains(dxgiText, "public DxgiFrameStatisticsMetrics GetDxgiFrameStatisticsMetrics()");
         AssertContains(dxgiText, "private void TrackDxgiFrameStatistics()");
-        AssertContains(dxgiText, "private long EstimateVisibleTick(long presentReturnTick)");
-        AssertContains(dxgiText, "private long GetEstimatedDisplayFrameIntervalTicks()");
-        AssertContains(dxgiText, "public bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot)");
         AssertContains(dxgiText, "_ = DwmFlush();");
         AssertContains(dxgiText, "_swapChain.GetFrameStatistics(out var stats)");
+        AssertContains(displayClockText, "private long EstimateVisibleTick(long presentReturnTick)");
+        AssertContains(displayClockText, "private long GetEstimatedDisplayFrameIntervalTicks()");
+        AssertContains(displayClockText, "public bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot)");
+        AssertContains(displayClockText, "new PreviewDisplayClockSnapshot(");
         AssertDoesNotContain(rootText, "private readonly object _dxgiFrameStatisticsLock = new();");
         AssertDoesNotContain(rootText, "private long _dxgiFrameStatisticsPresentCount = -1;");
         AssertDoesNotContain(metricsText, "public DxgiFrameStatisticsMetrics GetDxgiFrameStatisticsMetrics()");
         AssertDoesNotContain(metricsText, "private void TrackDxgiFrameStatistics()");
         AssertDoesNotContain(metricsText, "private long EstimateVisibleTick(long presentReturnTick)");
         AssertDoesNotContain(metricsText, "public bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot)");
+        AssertDoesNotContain(dxgiText, "public bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot)");
 
         return Task.CompletedTask;
     }
