@@ -10,6 +10,9 @@ static partial class Program
         "Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs",
         "Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs",
         "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs",
+        "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Update.cs",
+        "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Disposal.cs",
+        "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Restart.cs",
         "Sussudio/Services/Capture/PreviewAudioGraphResources.cs"
     };
 
@@ -30,6 +33,9 @@ static partial class Program
         var audioPreviewText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs");
         var audioInputSwitchingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs");
         var microphoneText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs");
+        var microphoneUpdateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Update.cs");
+        var microphoneDisposalText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Disposal.cs");
+        var microphoneRestartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Restart.cs");
         var resourceText = ReadRepoFile("Sussudio/Services/Capture/PreviewAudioGraphResources.cs");
 
         AssertContains(rootText, "private readonly PreviewAudioGraphResources _previewAudioGraph = new();");
@@ -77,11 +83,15 @@ static partial class Program
         AssertDoesNotContain(audioInputSwitchingText, "public Task UpdateMicrophoneMonitorAsync(");
         AssertDoesNotContain(audioInputSwitchingText, "private async Task StartWasapiPlaybackAsync(");
 
-        AssertContains(microphoneText, "public Task UpdateMicrophoneMonitorAsync(");
-        AssertContains(microphoneText, "private async Task DisposeMicrophoneCaptureAsync()");
+        AssertContains(microphoneUpdateText, "public Task UpdateMicrophoneMonitorAsync(");
+        AssertContains(microphoneUpdateText, "RunTransitionAsync(CurrentSessionState,");
+        AssertContains(microphoneDisposalText, "private async Task DisposeMicrophoneCaptureAsync()");
         AssertContains(microphoneText, "private void OnMicrophoneAudioLevelUpdated(");
-        AssertContains(microphoneText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
+        AssertContains(microphoneRestartText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
         AssertContains(microphoneText, "private readonly record struct MicrophoneMonitorRestartOptions(");
+        AssertDoesNotContain(microphoneText, "public Task UpdateMicrophoneMonitorAsync(");
+        AssertDoesNotContain(microphoneText, "private async Task DisposeMicrophoneCaptureAsync()");
+        AssertDoesNotContain(microphoneText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
 
         AssertContains(resourceText, "public async Task StartPlaybackAsync(");
         AssertContains(resourceText, "public void StopPlayback(");
@@ -100,10 +110,12 @@ static partial class Program
     {
         var finalizationText = ReadCaptureServiceRecordingFinalizationSource()
             .Replace("\r\n", "\n");
-        var microphoneText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs")
+        var microphoneRootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs")
+            .Replace("\r\n", "\n");
+        var microphoneText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Restart.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(microphoneText, "private readonly record struct MicrophoneMonitorRestartOptions(");
+        AssertContains(microphoneRootText, "private readonly record struct MicrophoneMonitorRestartOptions(");
         AssertContains(microphoneText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
         AssertContains(microphoneText, "new WasapiAudioCapture()");
         AssertContains(microphoneText, "micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");

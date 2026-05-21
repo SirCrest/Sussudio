@@ -1653,7 +1653,14 @@ lifecycle lives in
 audio input switching lives in
 `Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs`. Preview-time
 microphone monitoring lives in
-`Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`.
+`Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs` for shared
+state and mic-level forwarding,
+`Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Update.cs` for the
+public update transaction,
+`Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Disposal.cs` for
+writer-detach/disposal cleanup, and
+`Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Restart.cs` for
+post-recording restart and Flashback writer reattachment.
 `Sussudio/Services/Capture/PreviewAudioGraphResources.cs` owns the live
 program WASAPI capture, microphone capture, playback startup/shutdown,
 audio-monitor attach/detach order, preview volume/mute application, playback
@@ -1814,7 +1821,7 @@ restart, and the `FLASHBACK_ENABLE_AFTER_RECORDING_*` breadcrumbs. Recording
 outcome field publication is delegated to
 `Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs` and
 post-recording microphone monitor restart mechanics to
-`Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`.
+`Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Restart.cs`.
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs` owns
 Flashback recording export finalization plus live-edge boundary snapshots,
 including idempotent `EndFlashbackRecordingAccounting()` calls, source-frame

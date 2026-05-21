@@ -12,7 +12,7 @@ static partial class Program
         var captureHealthSnapshotRootSource = sources.CaptureHealthSnapshotRootSource;
         var captureSnapshotsSource = sources.CaptureSnapshotsSource;
         var unifiedVideoCaptureSource = sources.UnifiedVideoCaptureSource;
-        var microphoneMonitorText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs")
+        var microphoneMonitorText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Restart.cs")
             .Replace("\r\n", "\n");
         var libAvPreviewRestoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs")
             .Replace("\r\n", "\n");
