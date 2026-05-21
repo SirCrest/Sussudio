@@ -45,6 +45,9 @@ static partial class Program
         AssertContains(builderText, "return FlattenResultProjectionSet(");
         AssertContains(flatteningText, "return new DiagnosticSessionResult\n        {");
         AssertContains(builderText, "var resultProjections = BuildResultProjectionSet(request, runState, analysis);");
+        AssertContains(analysisText, "var healthSummary = BuildDiagnosticHealthSummary(request, lastSnapshot);");
+        AssertContains(analysisText, "healthSummary.Snapshot,");
+        AssertContains(analysisText, "healthSummary,");
         AssertContains(analysisText, "var previewScheduler = BuildPreviewSchedulerAnalysis(initialSnapshot, lastSnapshot, samples);");
         AssertContains(analysisText, "var validationOutcome = ValidateAnalysis(");
         AssertContains(analysisValidationText, "private readonly record struct DiagnosticSessionAnalysisValidationOutcome(");

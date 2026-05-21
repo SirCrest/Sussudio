@@ -100,6 +100,10 @@ static partial class Program
 
         AssertContains(analysisText, "var validationOutcome = ValidateAnalysis(");
         AssertContains(analysisValidationText, "var diagnosticHealthSucceeded = AnalyzeDiagnosticHealth(");
+        AssertContains(healthText, "private readonly record struct DiagnosticSessionHealthSummary(");
+        AssertContains(healthText, "private static DiagnosticSessionHealthSummary BuildDiagnosticHealthSummary(");
+        AssertContains(healthText, "request.StoppedRecordingForVerification");
+        AssertContains(healthText, "GetString(diagnosticHealthSnapshot, \"DiagnosticHealthStatus\") ?? \"Unknown\"");
         AssertContains(healthText, "private static bool AnalyzeDiagnosticHealth(");
         AssertContains(healthText, "BuildSessionDiagnosticHealthObservation(");
         AssertContains(healthText, "IsSparseSourceCaptureCadenceWarningRun(");
@@ -109,6 +113,8 @@ static partial class Program
         AssertContains(healthText, "diagnostic health {toleratedReason}:");
         AssertContains(healthText, "flashback force-rotate drain warning tolerated for flashback scenario");
         AssertDoesNotContain(analysisText, "AnalyzeDiagnosticHealth(");
+        AssertDoesNotContain(analysisText, "DiagnosticHealthStatus");
+        AssertDoesNotContain(analysisText, "DiagnosticLikelyStage");
         AssertDoesNotContain(analysisText, "BuildSessionDiagnosticHealthObservation(");
         AssertDoesNotContain(analysisText, "diagnostic health degraded during session");
         AssertDoesNotContain(analysisText, "diagnostic health {toleratedReason}:");

@@ -4229,8 +4229,9 @@ Primary owners:
   Flashback playback/export analysis warning text and threshold guards emitted
   during result construction.
 - `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs` owns
-  diagnostic-session health verdict composition, warning tolerance, and health
-  warning text emitted during result construction.
+  diagnostic-session health summary snapshot selection, health summary text
+  projection, health verdict composition, warning tolerance, and health warning
+  text emitted during result construction.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs` owns
   diagnostic-session preview-scheduler analysis handoff and result projection
   values: MJPEG jitter-buffer counters, deltas, last drop/underflow reasons,

@@ -16,13 +16,7 @@ internal static partial class DiagnosticSessionResultBuilder
         var healthSnapshot = request.HealthSnapshot;
         var warnings = request.Warnings;
 
-        var diagnosticHealthSnapshot = request.StoppedRecordingForVerification
-            ? lastSnapshot
-            : healthSnapshot;
-        var healthStatus = GetString(diagnosticHealthSnapshot, "DiagnosticHealthStatus") ?? "Unknown";
-        var likelyStage = GetString(diagnosticHealthSnapshot, "DiagnosticLikelyStage") ?? "diagnostic_unavailable";
-        var summary = GetString(diagnosticHealthSnapshot, "DiagnosticSummary") ?? string.Empty;
-        var evidence = GetString(diagnosticHealthSnapshot, "DiagnosticEvidence") ?? string.Empty;
+        var healthSummary = BuildDiagnosticHealthSummary(request, lastSnapshot);
         var playbackSessionMetrics = BuildFlashbackPlaybackSessionMetrics(initialSnapshot, samples, lastSnapshot);
         var playbackResultMetrics = BuildFlashbackPlaybackResultMetrics(playbackSessionMetrics);
         AddFlashbackPlaybackAnalysisWarnings(playbackResultMetrics, warnings);
@@ -47,7 +41,7 @@ internal static partial class DiagnosticSessionResultBuilder
             initialSnapshot,
             lastSnapshot,
             healthSnapshot,
-            diagnosticHealthSnapshot,
+            healthSummary.Snapshot,
             playbackSessionMetrics,
             playbackResultMetrics,
             sourceCadenceMetrics,
@@ -66,10 +60,7 @@ internal static partial class DiagnosticSessionResultBuilder
 
         return new DiagnosticSessionResultAnalysis(
             lastSnapshot,
-            healthStatus,
-            likelyStage,
-            summary,
-            evidence,
+            healthSummary,
             playbackSessionMetrics,
             playbackResultMetrics,
             recordingMetrics,

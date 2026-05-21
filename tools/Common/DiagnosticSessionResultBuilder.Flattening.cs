@@ -11,10 +11,11 @@ internal static partial class DiagnosticSessionResultBuilder
         DateTimeOffset completedUtc,
         string terminalState)
     {
-        var healthStatus = analysis.HealthStatus;
-        var likelyStage = analysis.LikelyStage;
-        var summary = analysis.Summary;
-        var evidence = analysis.Evidence;
+        var healthSummary = analysis.HealthSummary;
+        var healthStatus = healthSummary.HealthStatus;
+        var likelyStage = healthSummary.LikelyStage;
+        var summary = healthSummary.Summary;
+        var evidence = healthSummary.Evidence;
         var overviewResult = resultProjections.Overview;
         var captureResult = resultProjections.Capture;
         var flashbackPlaybackResult = resultProjections.FlashbackPlayback;

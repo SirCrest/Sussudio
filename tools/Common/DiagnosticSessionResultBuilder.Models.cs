@@ -31,10 +31,7 @@ internal static partial class DiagnosticSessionResultBuilder
 {
     private sealed record DiagnosticSessionResultAnalysis(
         JsonElement LastSnapshot,
-        string HealthStatus,
-        string LikelyStage,
-        string Summary,
-        string Evidence,
+        DiagnosticSessionHealthSummary HealthSummary,
         FlashbackPlaybackSessionMetrics PlaybackSessionMetrics,
         FlashbackPlaybackResultMetrics PlaybackResultMetrics,
         FlashbackRecordingSessionMetrics RecordingMetrics,
