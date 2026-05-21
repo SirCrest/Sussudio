@@ -11,7 +11,9 @@ static partial class Program
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"),
-                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvResources.cs"),
+                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvVideoBoundary.cs"),
+                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvSink.cs"),
+                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvIdlePreview.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs")
             }).Replace("\r\n", "\n");
@@ -57,7 +59,9 @@ static partial class Program
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"),
-                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvResources.cs"),
+                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvVideoBoundary.cs"),
+                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvSink.cs"),
+                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvIdlePreview.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs")
             }).Replace("\r\n", "\n");

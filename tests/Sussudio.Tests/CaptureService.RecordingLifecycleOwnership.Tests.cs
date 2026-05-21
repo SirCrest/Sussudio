@@ -6,7 +6,9 @@ static partial class Program
     {
         var captureServiceText = (
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvResources.cs"))
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvVideoBoundary.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvSink.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvIdlePreview.cs"))
             .Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "Unified video recording stop failed");
@@ -45,7 +47,15 @@ static partial class Program
             .Replace("\r\n", "\n");
         var libAvFinalizeText = (
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvResources.cs"))
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvVideoBoundary.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvSink.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvIdlePreview.cs"))
+            .Replace("\r\n", "\n");
+        var libAvVideoBoundaryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvVideoBoundary.cs")
+            .Replace("\r\n", "\n");
+        var libAvSinkText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvSink.cs")
+            .Replace("\r\n", "\n");
+        var libAvIdlePreviewText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvIdlePreview.cs")
             .Replace("\r\n", "\n");
         var flashbackFinalizeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs")
             .Replace("\r\n", "\n");
@@ -138,9 +148,30 @@ static partial class Program
         AssertContains(stopLifecycleText, "await StopAndDisposeRecordingBackendAsync(\"Stopped\", emergency, transitionToken)");
         AssertContains(libAvFinalizeText, "var detachedBackend = _recordingBackend.DetachLibAvBackend();");
         AssertContains(libAvFinalizeText, "private async Task<LibAvVideoBoundaryStopResult> StopUnifiedVideoRecordingForLibAvFinalizeAsync(");
+        AssertContains(libAvFinalizeText, "private async Task DetachLibAvRecordingAudioBeforeSinkStopAsync()");
+        AssertContains(libAvFinalizeText, "private async Task<LibAvFinalizeStepResult> StopAndDisposeLibAvSinkForFinalizeAsync(");
         AssertContains(libAvFinalizeText, "private async Task<LibAvFinalizeStepResult> DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(");
         AssertContains(libAvFinalizeText, "private readonly record struct LibAvFinalizeStepResult(");
         AssertContains(libAvFinalizeText, "private readonly record struct LibAvVideoBoundaryStopResult(");
+        AssertContains(libAvVideoBoundaryText, "private async Task<LibAvVideoBoundaryStopResult> StopUnifiedVideoRecordingForLibAvFinalizeAsync(");
+        AssertContains(libAvVideoBoundaryText, "VIDEO_DIAG mf_source_reader ");
+        AssertContains(libAvVideoBoundaryText, "VIDEO_DIAG recording_pipeline ");
+        AssertDoesNotContain(libAvVideoBoundaryText, "StopAndDisposeLibAvSinkForFinalizeAsync(");
+        AssertDoesNotContain(libAvVideoBoundaryText, "DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(");
+        AssertContains(libAvSinkText, "private async Task DetachLibAvRecordingAudioBeforeSinkStopAsync()");
+        AssertContains(libAvSinkText, "private async Task<LibAvFinalizeStepResult> StopAndDisposeLibAvSinkForFinalizeAsync(");
+        AssertContains(libAvSinkText, "var libAvDrainTask = libAvSink.EncodingCompletionTask;");
+        AssertDoesNotContain(libAvSinkText, "StopUnifiedVideoRecordingForLibAvFinalizeAsync(");
+        AssertDoesNotContain(libAvSinkText, "DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(");
+        AssertContains(libAvIdlePreviewText, "private async Task<LibAvFinalizeStepResult> DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(");
+        AssertContains(libAvIdlePreviewText, "reason: \"recording_stop_deferred_drain\"");
+        AssertContains(libAvIdlePreviewText, "_previewAudioGraph.DetachCapture(");
+        AssertDoesNotContain(libAvIdlePreviewText, "StopUnifiedVideoRecordingForLibAvFinalizeAsync(");
+        AssertDoesNotContain(libAvIdlePreviewText, "StopAndDisposeLibAvSinkForFinalizeAsync(");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeLibAvResources.cs")),
+            "old broad LibAv resource finalization partial removed");
         AssertContains(flashbackFinalizeText, "var fbRecordingContext = _recordingBackend.DetachFlashbackBackend();");
         AssertContains(flashbackRecordingText, "_recordingBackend.IsFlashbackBackend(_flashbackSink)");
         AssertContains(flashbackRecordingSessionContextText, "private FlashbackSessionContext CreateFlashbackSessionContext(");

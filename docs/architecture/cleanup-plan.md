@@ -1745,11 +1745,15 @@ owns standard LibAv recording finalization sequencing: audio-fault folding,
 encoder/runtime and recording-integrity summaries, final state completion,
 preview-restore ordering, and the visible final outcome publication before
 delayed cancellation throws.
-`Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvResources.cs`
-owns standard LibAv recording resource finalization: unified-video recording
-stop, WASAPI recording detach/disposal, LibAv sink normal/emergency stop and
-drain tracking, inactive-preview teardown, and LibAv finalization step result
-records.
+`Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvVideoBoundary.cs`
+owns standard LibAv unified-video recording stop, source-reader boundary
+diagnostics, and boundary-stop result capture.
+`Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvSink.cs` owns
+WASAPI recording sink detach, microphone capture disposal before sink stop,
+LibAv sink normal/emergency stop, sink disposal, and LibAv drain task tracking.
+`Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvIdlePreview.cs`
+owns inactive-preview teardown after recording, including deferred unified-video
+cleanup and recording-only WASAPI disposal.
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs`
 owns standard LibAv live-preview restoration after recording: pending Flashback
 enable-after-recording detection, guarded Flashback preview backend restore,
