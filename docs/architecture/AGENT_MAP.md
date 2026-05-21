@@ -972,8 +972,9 @@ Important entry points:
 - `CaptureService.FlashbackPreviewBackend.cs` owns Flashback preview backend
   transition coordination: AV1 encoder support probing, video/audio readiness
   waiting, resource-owner request construction, and deferred cleanup handoff.
-  Startup construction, install, playback initialization, producer attachment,
-  and startup rollback live in `FlashbackBackendResources.Startup.cs`; teardown
+  Startup construction, install, playback initialization, and producer
+  attachment live in `FlashbackBackendResources.Startup.cs`; startup rollback
+  cleanup lives in `FlashbackBackendResources.Startup.Rollback.cs`; teardown
   mechanics live in `FlashbackBackendResources.PreviewDisposal.cs`; backend
   artifact cleanup lives in `FlashbackBackendResources.ArtifactCleanup.cs`.
 - `CaptureService.FlashbackPreviewBackendDisposal.cs` owns Flashback preview
@@ -1358,7 +1359,10 @@ Entry points:
   recovery-preserve state, recording-finalize handoff, and producer attach/detach
   request shaping for video, audio, and microphone feeds.
   `FlashbackBackendResources.Startup.cs` owns preview backend startup
-  construction/install/playback initialization and startup rollback cleanup.
+  construction/install/playback initialization and successful producer attachment.
+  `FlashbackBackendResources.Startup.Rollback.cs` owns startup failure rollback
+  cleanup: producer detach, playback/sink/exporter/buffer cleanup, deferred
+  cleanup scheduling, and final backend clear.
   `FlashbackBackendResources.BufferCycle.cs` owns sink-only buffer-cycle
   orchestration, purge/finalize decisions, and full-rebuild fallback outcomes.
   `FlashbackBackendResources.BufferCycle.Lifecycle.cs` owns playback disposal,

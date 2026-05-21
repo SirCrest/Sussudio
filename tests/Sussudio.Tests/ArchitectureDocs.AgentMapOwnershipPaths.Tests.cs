@@ -171,8 +171,11 @@ static partial class Program
         AssertContains(previewBackendEntry, "video/audio readiness");
         AssertContains(previewBackendEntry, "resource-owner request construction");
         AssertContains(previewBackendEntry, "deferred cleanup handoff");
-        AssertContains(previewBackendEntry, "Startup construction, install, playback initialization, producer attachment");
+        AssertContains(previewBackendEntry, "Startup construction, install, playback initialization");
+        AssertContains(previewBackendEntry, "producer\n  attachment live in `FlashbackBackendResources.Startup.cs`");
+        AssertContains(previewBackendEntry, "startup rollback\n  cleanup lives in `FlashbackBackendResources.Startup.Rollback.cs`");
         AssertContains(previewBackendEntry, "`FlashbackBackendResources.Startup.cs`");
+        AssertContains(previewBackendEntry, "`FlashbackBackendResources.Startup.Rollback.cs`");
         AssertDoesNotContain(previewBackendEntry, "startup: buffer manager, encoder sink, exporter, playback controller, and\n  producer attachment");
 
         return Task.CompletedTask;

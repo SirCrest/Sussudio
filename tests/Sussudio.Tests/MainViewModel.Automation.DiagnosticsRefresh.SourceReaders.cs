@@ -49,6 +49,7 @@ static partial class Program
             + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs")
             + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.Lifecycle.cs")
             + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs")
+            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.Rollback.cs")
             + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
     }
 

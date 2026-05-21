@@ -1767,7 +1767,11 @@ Preview-backend producer wiring now belongs to
 video/audio/microphone attach and detach request shapes used by preview startup,
 buffer cycling, and teardown. `Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs`
 owns preview backend startup construction/install/playback initialization and
-startup rollback cleanup. `Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs`
+successful producer attachment.
+`Sussudio/Services/Flashback/FlashbackBackendResources.Startup.Rollback.cs`
+owns startup failure rollback cleanup: producer detach, playback/sink/exporter/
+buffer cleanup, deferred cleanup scheduling, and final backend clear.
+`Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs`
 owns sink-only buffer-cycle orchestration, purge/finalize decisions, and
 full-rebuild fallback outcomes.
 `Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.Lifecycle.cs`
@@ -5397,7 +5401,10 @@ owner, fold it back into that owner and update the source-shape tests and
    `FlashbackBackendResources.cs` now owns the preview backend resource set and
    producer attach/detach wiring.
    `FlashbackBackendResources.Startup.cs` owns startup construction,
-   install/playback initialization, and startup rollback cleanup.
+   install/playback initialization, and successful producer attachment.
+   `FlashbackBackendResources.Startup.Rollback.cs` owns startup failure
+   rollback cleanup: producer detach, playback/sink/exporter/buffer cleanup,
+   deferred cleanup scheduling, and final backend clear.
    `FlashbackBackendResources.BufferCycle.cs` owns sink-only buffer-cycle
    orchestration, purge/finalize decisions, and full-rebuild fallback outcomes.
    `FlashbackBackendResources.BufferCycle.Lifecycle.cs` owns playback disposal,
