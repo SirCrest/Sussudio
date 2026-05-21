@@ -8,6 +8,7 @@ static partial class Program
         var exportBackendSnapshotText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportBackendSnapshot.cs");
         var exportRangeResolutionText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRangeResolution.cs");
         var exportCoreText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs");
+        var exportForceRotateText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportForceRotate.cs");
         var exportRequestPreparationText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRequestPreparation.cs");
         var exportDiagnosticsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs");
         var exportProgressText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs");
@@ -24,7 +25,10 @@ static partial class Program
         AssertContains(exportCoreText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
         AssertContains(exportCoreText, "bufferManager.PauseEviction();");
         AssertContains(exportRequestPreparationText, "private FlashbackExportPreparationResult PrepareFlashbackExportRequest(");
-        AssertContains(exportRequestPreparationText, "ForceRotateForExport");
+        AssertContains(exportRequestPreparationText, "PrepareFlashbackExportForceRotateSegments(");
+        AssertDoesNotContain(exportRequestPreparationText, "ForceRotateForExport(");
+        AssertContains(exportForceRotateText, "private FlashbackExportForceRotatePreparation PrepareFlashbackExportForceRotateSegments(");
+        AssertContains(exportForceRotateText, "ForceRotateForExport");
         AssertContains(exportRequestPreparationText, "CreateFlashbackExportThrottleDelayProvider");
         AssertContains(exportDiagnosticsText, "private long BeginFlashbackExportDiagnostics(");
         AssertContains(exportDiagnosticsText, "private void RecordRejectedFlashbackExportDiagnostics(");
@@ -72,16 +76,16 @@ static partial class Program
         AssertContains(captureServiceText, "if (forceRotateResult.Status == FlashbackForceRotateStatus.Failed)");
         AssertContains(captureServiceText, "if (forceRotateResult.Status == FlashbackForceRotateStatus.CommittedPending)");
         var forceRotateFailedBlock = ExtractTextBetween(
-            captureServiceText,
+            exportForceRotateText,
             "if (forceRotateResult.Status == FlashbackForceRotateStatus.Failed)",
             "if (forceRotateResult.Status == FlashbackForceRotateStatus.CommittedPending)");
         AssertContains(forceRotateFailedBlock, "Flashback export failed: live-edge segment rotation failed.");
         AssertContains(forceRotateFailedBlock, "preserved_segments={preservedArtifacts.Count}");
-        AssertContains(forceRotateFailedBlock, "return FlashbackExportPreparationResult.Failure(result);");
+        AssertContains(forceRotateFailedBlock, "return FlashbackExportForceRotatePreparation.Failure(result);");
         var forceRotateFallbackBlock = ExtractTextBetween(
-            captureServiceText,
+            exportForceRotateText,
             "if (segmentPaths.Count == 0)",
-            "// Fallback: single-file export if no segments available");
+            "return FlashbackExportForceRotatePreparation.Ready");
         AssertContains(forceRotateFallbackBlock, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
         AssertContains(forceRotateFallbackBlock, "RecordFlashbackExportForceRotateFallback(exportId, segmentPaths.Count, inPoint, outPoint);");
         AssertDoesNotContain(forceRotateFallbackBlock, "force_rotate_failed");

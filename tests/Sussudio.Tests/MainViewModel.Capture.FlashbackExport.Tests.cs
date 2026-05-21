@@ -17,12 +17,15 @@ static partial class Program
             .Replace("\r\n", "\n");
         var exportCoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             .Replace("\r\n", "\n");
+        var exportForceRotateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportForceRotate.cs")
+            .Replace("\r\n", "\n");
         var exportRequestPreparationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRequestPreparation.cs")
             .Replace("\r\n", "\n");
         var captureServiceText = exportOperationsText
             + "\n" + exportBackendSnapshotText
             + "\n" + exportRangeResolutionText
             + "\n" + exportCoreText
+            + "\n" + exportForceRotateText
             + "\n" + exportRequestPreparationText
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
@@ -59,7 +62,10 @@ static partial class Program
         AssertContains(exportCoreText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
         AssertContains(exportCoreText, "bufferManager.PauseEviction();");
         AssertContains(exportRequestPreparationText, "private FlashbackExportPreparationResult PrepareFlashbackExportRequest(");
-        AssertContains(exportRequestPreparationText, "ForceRotateForExport");
+        AssertContains(exportRequestPreparationText, "PrepareFlashbackExportForceRotateSegments(");
+        AssertDoesNotContain(exportRequestPreparationText, "ForceRotateForExport(");
+        AssertContains(exportForceRotateText, "private FlashbackExportForceRotatePreparation PrepareFlashbackExportForceRotateSegments(");
+        AssertContains(exportForceRotateText, "ForceRotateForExport");
         AssertContains(exportRequestPreparationText, "CreateFlashbackExportThrottleDelayProvider");
 
         var rangeExport = ExtractMemberCode(exportOperationsText, "ExportFlashbackRangeAsync");
@@ -109,8 +115,8 @@ static partial class Program
         AssertContains(exportCore, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackExporter ??= new FlashbackExporter();\n            }");
         AssertContains(exportCore, "var preparedExport = PrepareFlashbackExportRequest(");
         AssertContains(exportCore, "if (preparedExport.FailureResult is { } preparationFailure)");
-        AssertContains(exportRequestPreparationText, "var forceRotateFallbackUsed = false;");
-        AssertContains(exportRequestPreparationText, "forceRotateFallbackUsed = true;");
+        AssertContains(exportForceRotateText, "var forceRotateFallbackUsed = false;");
+        AssertContains(exportForceRotateText, "forceRotateFallbackUsed = true;");
         AssertContains(exportCore, "live-edge partial fallback: active segment was not closed before timeout; export may omit the newest frames");
         AssertContains(exportCore, "if (preparedExport.ForceRotateFallbackUsed && result.Succeeded)\n            {\n                result = FinalizeResult.Success(");
         AssertContains(exportCore, "RecordLastFlashbackExportResult(exportId, result);\n            CompleteFlashbackExportDiagnostics(exportId, result);");
