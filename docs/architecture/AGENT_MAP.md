@@ -763,6 +763,11 @@ Automation diagnostics ownership:
   owns final `AutomationSnapshot` to `PerformanceTimelineEntry` assignment.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs`
   owns the Flashback playback snapshot-to-performance-timeline projection group.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackExport.cs`
+  owns the Flashback export progress and force-rotate fallback timeline
+  projection group.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.System.cs`
+  owns process, memory, GC, thread-pool, and pipeline-latency timeline projection.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Verification.cs` owns
   manual recording/file verification commands and explicit verification events.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Verification.Auto.cs`

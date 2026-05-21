@@ -8,7 +8,9 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs");
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackExport.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.System.cs");
         var entryType = RequireType("Sussudio.Models.PerformanceTimelineEntry");
 
         AssertContains(sources.CombinedSource, "PreviewP99Ms = AutomationSnapshotFormatter.GetDouble(item, \"PreviewCadenceP99Ms\")");
@@ -90,7 +92,11 @@ static partial class Program
                      "FlashbackPlaybackScrubUpdatesCoalesced",
                      "FlashbackPlaybackSeekCommandsCoalesced",
                      "FlashbackPlaybackLastCommandQueued",
-                     "FlashbackPlaybackLastCommandProcessed"
+                     "FlashbackPlaybackLastCommandProcessed",
+                     "FlashbackExportPercent",
+                     "FlashbackExportThroughputBytesPerSec",
+                     "ProcessCpuPercent",
+                     "ThreadPoolWorkerAvailable"
                  })
         {
             AssertNotNull(entryType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance), $"PerformanceTimelineEntry.{propertyName}");
@@ -99,6 +105,17 @@ static partial class Program
                 var projectionName = propertyName["FlashbackPlayback".Length..];
                 AssertContains(diagnosticsHubSource, $"{propertyName} = flashbackPlayback.{projectionName}");
                 AssertContains(diagnosticsHubSource, $"{projectionName}: snapshot.{propertyName}");
+            }
+            else if (propertyName.StartsWith("FlashbackExport", StringComparison.Ordinal))
+            {
+                var projectionName = propertyName["FlashbackExport".Length..];
+                AssertContains(diagnosticsHubSource, $"{propertyName} = flashbackExport.{projectionName}");
+                AssertContains(diagnosticsHubSource, $"{projectionName}: snapshot.{propertyName}");
+            }
+            else if (propertyName is "ProcessCpuPercent" or "ThreadPoolWorkerAvailable")
+            {
+                AssertContains(diagnosticsHubSource, $"{propertyName} = system.{propertyName}");
+                AssertContains(diagnosticsHubSource, $"{propertyName}: snapshot.{propertyName}");
             }
             else
             {

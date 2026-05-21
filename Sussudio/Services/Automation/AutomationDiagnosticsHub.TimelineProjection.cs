@@ -7,6 +7,8 @@ public sealed partial class AutomationDiagnosticsHub
     private static PerformanceTimelineEntry BuildPerformanceTimelineEntry(AutomationSnapshot snapshot)
     {
         var flashbackPlayback = BuildPerformanceTimelineFlashbackPlaybackProjection(snapshot);
+        var flashbackExport = BuildPerformanceTimelineFlashbackExportProjection(snapshot);
+        var system = BuildPerformanceTimelineSystemProjection(snapshot);
 
         return new()
         {
@@ -141,34 +143,34 @@ public sealed partial class AutomationDiagnosticsHub
             FlashbackCleanupInProgress = flashbackPlayback.CleanupInProgress,
             FlashbackForceRotateRequested = flashbackPlayback.ForceRotateRequested,
             FlashbackForceRotateDraining = flashbackPlayback.ForceRotateDraining,
-            FlashbackExportActive = snapshot.FlashbackExportActive,
-            FlashbackExportStatus = snapshot.FlashbackExportStatus,
-            FlashbackExportFailureKind = snapshot.FlashbackExportFailureKind,
-            FlashbackExportElapsedMs = snapshot.FlashbackExportElapsedMs,
-            FlashbackExportLastProgressAgeMs = snapshot.FlashbackExportLastProgressAgeMs,
-            FlashbackExportOutputBytes = snapshot.FlashbackExportOutputBytes,
-            FlashbackExportThroughputBytesPerSec = snapshot.FlashbackExportThroughputBytesPerSec,
-            FlashbackExportSegmentsProcessed = snapshot.FlashbackExportSegmentsProcessed,
-            FlashbackExportTotalSegments = snapshot.FlashbackExportTotalSegments,
-            FlashbackExportPercent = snapshot.FlashbackExportPercent,
-            FlashbackExportInPointMs = snapshot.FlashbackExportInPointMs,
-            FlashbackExportOutPointMs = snapshot.FlashbackExportOutPointMs,
-            FlashbackExportMessage = snapshot.FlashbackExportMessage,
-            FlashbackExportForceRotateFallbacks = snapshot.FlashbackExportForceRotateFallbacks,
-            FlashbackExportLastForceRotateFallbackUtcUnixMs = snapshot.FlashbackExportLastForceRotateFallbackUtcUnixMs,
-            FlashbackExportLastForceRotateFallbackSegments = snapshot.FlashbackExportLastForceRotateFallbackSegments,
-            FlashbackExportLastForceRotateFallbackInPointMs = snapshot.FlashbackExportLastForceRotateFallbackInPointMs,
-            FlashbackExportLastForceRotateFallbackOutPointMs = snapshot.FlashbackExportLastForceRotateFallbackOutPointMs,
-            PipelineLatencyMs = snapshot.EstimatedPipelineLatencyMs,
-            ProcessCpuPercent = snapshot.ProcessCpuPercent,
-            MemoryWorkingSetMb = snapshot.MemoryWorkingSetMb,
-            MemoryManagedHeapMb = snapshot.MemoryManagedHeapMb,
-            GcGen0Collections = snapshot.MemoryGcGen0Collections,
-            GcGen1Collections = snapshot.MemoryGcGen1Collections,
-            GcGen2Collections = snapshot.MemoryGcGen2Collections,
-            GcPauseTimePercent = snapshot.MemoryGcPauseTimePercent,
-            ThreadPoolWorkerAvailable = snapshot.ThreadPoolWorkerAvailable,
-            ThreadPoolIoAvailable = snapshot.ThreadPoolIoAvailable
+            FlashbackExportActive = flashbackExport.Active,
+            FlashbackExportStatus = flashbackExport.Status,
+            FlashbackExportFailureKind = flashbackExport.FailureKind,
+            FlashbackExportElapsedMs = flashbackExport.ElapsedMs,
+            FlashbackExportLastProgressAgeMs = flashbackExport.LastProgressAgeMs,
+            FlashbackExportOutputBytes = flashbackExport.OutputBytes,
+            FlashbackExportThroughputBytesPerSec = flashbackExport.ThroughputBytesPerSec,
+            FlashbackExportSegmentsProcessed = flashbackExport.SegmentsProcessed,
+            FlashbackExportTotalSegments = flashbackExport.TotalSegments,
+            FlashbackExportPercent = flashbackExport.Percent,
+            FlashbackExportInPointMs = flashbackExport.InPointMs,
+            FlashbackExportOutPointMs = flashbackExport.OutPointMs,
+            FlashbackExportMessage = flashbackExport.Message,
+            FlashbackExportForceRotateFallbacks = flashbackExport.ForceRotateFallbacks,
+            FlashbackExportLastForceRotateFallbackUtcUnixMs = flashbackExport.LastForceRotateFallbackUtcUnixMs,
+            FlashbackExportLastForceRotateFallbackSegments = flashbackExport.LastForceRotateFallbackSegments,
+            FlashbackExportLastForceRotateFallbackInPointMs = flashbackExport.LastForceRotateFallbackInPointMs,
+            FlashbackExportLastForceRotateFallbackOutPointMs = flashbackExport.LastForceRotateFallbackOutPointMs,
+            PipelineLatencyMs = system.PipelineLatencyMs,
+            ProcessCpuPercent = system.ProcessCpuPercent,
+            MemoryWorkingSetMb = system.MemoryWorkingSetMb,
+            MemoryManagedHeapMb = system.MemoryManagedHeapMb,
+            GcGen0Collections = system.GcGen0Collections,
+            GcGen1Collections = system.GcGen1Collections,
+            GcGen2Collections = system.GcGen2Collections,
+            GcPauseTimePercent = system.GcPauseTimePercent,
+            ThreadPoolWorkerAvailable = system.ThreadPoolWorkerAvailable,
+            ThreadPoolIoAvailable = system.ThreadPoolIoAvailable
         };
     }
 }

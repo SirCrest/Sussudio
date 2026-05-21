@@ -22,9 +22,17 @@ static partial class Program
         AssertDoesNotContain(diagnostics.TimelineText, "new PerformanceTimelineEntry\n        {");
         AssertContains(diagnostics.TimelineProjectionText, "private static PerformanceTimelineEntry BuildPerformanceTimelineEntry(AutomationSnapshot snapshot)");
         AssertContains(diagnostics.TimelineProjectionText, "var flashbackPlayback = BuildPerformanceTimelineFlashbackPlaybackProjection(snapshot);");
+        AssertContains(diagnostics.TimelineProjectionText, "var flashbackExport = BuildPerformanceTimelineFlashbackExportProjection(snapshot);");
+        AssertContains(diagnostics.TimelineProjectionText, "var system = BuildPerformanceTimelineSystemProjection(snapshot);");
         AssertContains(diagnostics.TimelineProjectionText, "FlashbackPlaybackCommandsEnqueued = flashbackPlayback.CommandsEnqueued");
+        AssertContains(diagnostics.TimelineProjectionText, "FlashbackExportPercent = flashbackExport.Percent");
+        AssertContains(diagnostics.TimelineProjectionText, "ProcessCpuPercent = system.ProcessCpuPercent");
         AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "private static PerformanceTimelineFlashbackPlaybackProjection BuildPerformanceTimelineFlashbackPlaybackProjection(");
         AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "CommandsEnqueued: snapshot.FlashbackPlaybackCommandsEnqueued");
+        AssertContains(diagnostics.TimelineProjectionFlashbackExportText, "private static PerformanceTimelineFlashbackExportProjection BuildPerformanceTimelineFlashbackExportProjection(");
+        AssertContains(diagnostics.TimelineProjectionFlashbackExportText, "Percent: snapshot.FlashbackExportPercent");
+        AssertContains(diagnostics.TimelineProjectionSystemText, "private static PerformanceTimelineSystemProjection BuildPerformanceTimelineSystemProjection(");
+        AssertContains(diagnostics.TimelineProjectionSystemText, "ProcessCpuPercent: snapshot.ProcessCpuPercent");
         AssertDoesNotContain(diagnostics.HubText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
         AssertContains(diagnostics.SnapshotsText, "var shouldAutoVerify = ShouldAutoVerifySnapshot(snapshot);");
         AssertContains(diagnostics.SnapshotsText, "var lastVerification = CaptureLastVerificationForSnapshot(recordingStarted);");

@@ -108,6 +108,10 @@ owns performance-timeline ring reads and append mechanics.
 `AutomationSnapshot` to `PerformanceTimelineEntry` assignment.
 `AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs` owns the
 Flashback playback snapshot-to-performance-timeline projection group.
+`AutomationDiagnosticsHub.TimelineProjection.FlashbackExport.cs` owns the
+Flashback export progress and force-rotate fallback timeline projection group.
+`AutomationDiagnosticsHub.TimelineProjection.System.cs` owns process, memory,
+GC, thread-pool, and pipeline-latency timeline projection.
 `AutomationDiagnosticsHub.SnapshotProjection.SnapshotStatus.cs` owns timestamp,
 view-model lifecycle/audio flags, verification-in-progress, session state, and
 status-text projection consumed by the automation snapshot DTO.

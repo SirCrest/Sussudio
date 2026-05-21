@@ -84,8 +84,11 @@ static partial class Program
         AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "DecodeP99Ms: snapshot.FlashbackPlaybackDecodeP99Ms");
         AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "PendingCommands: snapshot.FlashbackPlaybackPendingCommands");
         AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "SubmitFailures: snapshot.FlashbackPlaybackSubmitFailures");
-        AssertContains(diagnostics.SourceFamilyText, "FlashbackExportPercent = snapshot.FlashbackExportPercent");
-        AssertContains(diagnostics.SourceFamilyText, "FlashbackExportThroughputBytesPerSec = snapshot.FlashbackExportThroughputBytesPerSec");
-        AssertContains(diagnostics.SourceFamilyText, "FlashbackExportLastProgressAgeMs = snapshot.FlashbackExportLastProgressAgeMs");
+        AssertContains(diagnostics.TimelineProjectionText, "FlashbackExportPercent = flashbackExport.Percent");
+        AssertContains(diagnostics.TimelineProjectionText, "FlashbackExportThroughputBytesPerSec = flashbackExport.ThroughputBytesPerSec");
+        AssertContains(diagnostics.TimelineProjectionText, "FlashbackExportLastProgressAgeMs = flashbackExport.LastProgressAgeMs");
+        AssertContains(diagnostics.TimelineProjectionFlashbackExportText, "Percent: snapshot.FlashbackExportPercent");
+        AssertContains(diagnostics.TimelineProjectionFlashbackExportText, "ThroughputBytesPerSec: snapshot.FlashbackExportThroughputBytesPerSec");
+        AssertContains(diagnostics.TimelineProjectionFlashbackExportText, "LastProgressAgeMs: snapshot.FlashbackExportLastProgressAgeMs");
     }
 }
