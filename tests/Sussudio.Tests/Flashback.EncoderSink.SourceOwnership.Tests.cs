@@ -92,16 +92,17 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_ForceRotateRequestLivesInFocusedPartial()
+    internal static Task FlashbackEncoderSink_ForceRotateRequestsLiveInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
         var forceRotateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs")
             .Replace("\r\n", "\n");
+        var forceRotateRequestsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateRequests.cs")
+            .Replace("\r\n", "\n");
         var forceRotateExecutionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateExecution.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(forceRotateText, "public FlashbackForceRotateResult ForceRotateForExport(");
         AssertContains(forceRotateText, "public bool IsForceRotateActive =>");
         AssertContains(forceRotateText, "public bool IsForceRotateRequested =>");
         AssertContains(forceRotateText, "public bool IsForceRotateDraining =>");
@@ -111,9 +112,12 @@ static partial class Program
         AssertContains(forceRotateText, "private TimeSpan _forceRotateInPoint;");
         AssertContains(forceRotateText, "private TimeSpan _forceRotateOutPoint;");
         AssertContains(forceRotateText, "private bool _forceRotateDraining;");
-        AssertContains(forceRotateText, "private sealed class ForceRotateRequest");
-        AssertContains(forceRotateText, "private const int ForceRotateCommittedGraceMs = 1_000;");
-        AssertContains(forceRotateText, "private static bool ShouldAbortForceRotateDrain(");
+        AssertContains(forceRotateRequestsText, "public FlashbackForceRotateResult ForceRotateForExport(");
+        AssertContains(forceRotateRequestsText, "private sealed class ForceRotateRequest");
+        AssertContains(forceRotateRequestsText, "private const int ForceRotateCommittedGraceMs = 1_000;");
+        AssertContains(forceRotateRequestsText, "private bool TryCancelForceRotate(ForceRotateRequest request)");
+        AssertContains(forceRotateRequestsText, "private void CompletePendingForceRotateWithEmptyResult()");
+        AssertContains(forceRotateRequestsText, "private static bool ShouldAbortForceRotateDrain(");
         AssertContains(forceRotateExecutionText, "private bool ProcessPendingForceRotate(");
         AssertContains(forceRotateExecutionText, "Volatile.Write(ref _forceRotateDraining, true);");
         AssertContains(forceRotateExecutionText, "while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))");
@@ -132,12 +136,15 @@ static partial class Program
         AssertDoesNotContain(rootText, "private bool _forceRotateDraining;");
         AssertDoesNotContain(rootText, "private sealed class ForceRotateRequest");
         AssertDoesNotContain(rootText, "private const int ForceRotateCommittedGraceMs = 1_000;");
+        AssertDoesNotContain(forceRotateText, "public FlashbackForceRotateResult ForceRotateForExport(");
+        AssertDoesNotContain(forceRotateText, "private sealed class ForceRotateRequest");
+        AssertDoesNotContain(forceRotateText, "private const int ForceRotateCommittedGraceMs = 1_000;");
         AssertDoesNotContain(forceRotateText, "private bool ProcessPendingForceRotate(");
 
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_StopAndDisposeLifecyclesStaySplit()
+    internal static Task FlashbackEncoderSink_StopAndDisposeLifecyclesStaySplit()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");

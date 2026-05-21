@@ -2201,11 +2201,15 @@ Flashback encoder rolling segment rotation now lives in
 active-segment completion/registration, disk-byte refresh after rotation, and
 rotation-failure recovery there.
 
-Flashback encoder export force-rotation now lives in
+Flashback encoder export force-rotation status now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs`. Keep
-force-rotate state/status/idle waits, `ForceRotateForExport`, the
-`ForceRotateRequest` state machine, request timeout/cancellation handling,
-pending-request cleanup, and force-rotate drain abort classification there.
+force-rotate state, status projections, and idle waits there.
+
+Flashback encoder export force-rotation request admission now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateRequests.cs`. Keep
+`ForceRotateForExport`, the `ForceRotateRequest` state machine, request
+timeout/cancellation handling, pending-request cleanup, and force-rotate drain
+abort classification there.
 
 Flashback encoder force-rotate execution now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateExecution.cs`.
