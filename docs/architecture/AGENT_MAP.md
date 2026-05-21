@@ -4809,7 +4809,8 @@ Primary owners:
   warning/correlation helpers.
 - `tools/Common/PresentMon/PresentMonProbe.Csv.Rows.cs` owns PresentMon CSV row ingestion,
   header index construction, schema-presence detection, blank-line skipping,
-  row index assignment, and row projection from header-indexed fields.
+  row index assignment, private parsed CSV row shapes, and row projection from
+  header-indexed fields.
 - `tools/Common/PresentMon/PresentMonProbe.Csv.Fields.cs` owns header/field parsing,
   scalar field/metric reads, and CSV line tokenization.
 - `tools/Common/PresentMon/PresentMonProbe.Csv.SwapChains.cs` owns swap-chain
@@ -4818,8 +4819,6 @@ Primary owners:
   correlation and displayed/not-displayed outcome classification.
 - `tools/Common/PresentMon/PresentMonProbe.Csv.Summary.cs` owns warnings, counted text
   fields, and percentile metric aggregation.
-- `tools/Common/PresentMon/PresentMonProbe.Csv.Models.cs` owns the private parsed CSV
-  handoff and row shapes.
 - `tools/Common/PresentMon/PresentMonProbe.cs` owns PresentMon public run orchestration,
   command-line construction, argument quoting, and probe-result message shaping.
 - `tools/Common/PresentMon/PresentMonProbe.Paths.cs` owns target process, PresentMon

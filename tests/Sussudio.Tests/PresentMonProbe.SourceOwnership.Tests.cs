@@ -17,7 +17,6 @@ static partial class Program
         var swapChainsText = ReadPresentMonProbeFile("PresentMonProbe.Csv.SwapChains.cs");
         var correlationText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Correlation.cs");
         var summaryText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Summary.cs");
-        var csvModelsText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Models.cs");
         var pathsText = ReadPresentMonProbeFile("PresentMonProbe.Paths.cs");
         var processText = ReadPresentMonProbeFile("PresentMonProbe.Process.cs");
 
@@ -70,6 +69,8 @@ static partial class Program
         AssertContains(csvText, "var warnings = BuildWarnings(");
         AssertContains(csvText, "var appCorrelation = BuildAppCorrelation(");
         AssertContains(csvRowsText, "private static PresentMonCsvRows ReadCsvRows(string path)");
+        AssertContains(csvRowsText, "private sealed record PresentMonCsvRows(");
+        AssertContains(csvRowsText, "private sealed record PresentMonRow(");
         AssertContains(csvRowsText, "private static IReadOnlyDictionary<string, int> BuildCsvHeaderIndex(");
         AssertContains(csvRowsText, "private static PresentMonRow ReadRow(");
         AssertContains(csvRowsText, "rows.Add(ReadRow(rowIndex++, fields, index));");
@@ -84,8 +85,6 @@ static partial class Program
         AssertContains(summaryText, "private static IReadOnlyList<string> BuildWarnings(");
         AssertContains(summaryText, "private static PresentMonMetricSummary Summarize(");
         AssertContains(summaryText, "private static double Percentile(");
-        AssertContains(csvModelsText, "private sealed record PresentMonCsvRows(");
-        AssertContains(csvModelsText, "private sealed record PresentMonRow(");
         AssertDoesNotContain(csvText, "new StreamReader(path)");
         AssertDoesNotContain(csvText, "new PresentMonRow(");
         AssertDoesNotContain(fieldsText, "private static bool HasAnyColumn(");
