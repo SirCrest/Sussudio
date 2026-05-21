@@ -6,10 +6,10 @@ using Sussudio.Models;
 
 namespace Sussudio.ViewModels;
 
+// Capture-selection state and option collections.
 public partial class MainViewModel
 {
     private const int PreviewReinitializeDebounceMs = 250;
-    private const string HdrToggleBlockedWhileRecordingMessage = "Stop recording before switching between HDR and SDR pipelines.";
     private const string AutoResolutionValue = "Source";
     private const double AutoFrameRateValue = 0;
 
@@ -69,7 +69,6 @@ public partial class MainViewModel
     private string? _lastKnownResolutionKey;
     private bool _pendingSdrAutoSelectionForDeviceChange;
     private int? _pendingSdrAutoFriendlyFrameRateBucket;
-    private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
     private long _deviceScanGeneration;
 
     // Flag to prevent reinitialization during initial device setup.
@@ -90,33 +89,6 @@ public partial class MainViewModel
     public partial int MjpegDecoderCount { get; set; } = 6;
 
     [ObservableProperty]
-    public partial bool IsHdrEnabled { get; set; }
-
-    [ObservableProperty]
-    public partial bool IsHdrAvailable { get; set; }
-
-    [ObservableProperty]
-    public partial bool IsTrueHdrPreviewEnabled { get; set; }
-
-    [ObservableProperty]
-    public partial string HdrResolutionSupportHint { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial string HdrRuntimeState { get; set; } = "Inactive";
-
-    [ObservableProperty]
-    public partial string HdrReadinessReason { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial double? DetectedSourceFrameRate { get; set; }
-
-    [ObservableProperty]
-    public partial string? DetectedSourceFrameRateArg { get; set; }
-
-    [ObservableProperty]
-    public partial string SourceFrameRateOrigin { get; set; } = "Unknown";
-
-    [ObservableProperty]
     public partial double? SelectedFriendlyFrameRate { get; set; }
 
     [ObservableProperty]
@@ -130,34 +102,4 @@ public partial class MainViewModel
 
     [ObservableProperty]
     public partial string DisabledFrameRateReason { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial int? SourceWidth { get; set; }
-
-    [ObservableProperty]
-    public partial int? SourceHeight { get; set; }
-
-    [ObservableProperty]
-    public partial bool? SourceIsHdr { get; set; }
-
-    [ObservableProperty]
-    public partial string SourceTelemetryAvailability { get; set; } = "Unknown";
-
-    [ObservableProperty]
-    public partial string SourceTelemetryOriginDetail { get; set; } = "Unknown";
-
-    [ObservableProperty]
-    public partial string SourceTelemetryConfidence { get; set; } = "Unknown";
-
-    [ObservableProperty]
-    public partial string? SourceTelemetryDiagnosticSummary { get; set; }
-
-    [ObservableProperty]
-    public partial DateTimeOffset? SourceTelemetryTimestampUtc { get; set; }
-
-    [ObservableProperty]
-    public partial string SourceTelemetrySummaryText { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial string SourceTargetSummaryText { get; set; } = string.Empty;
 }
