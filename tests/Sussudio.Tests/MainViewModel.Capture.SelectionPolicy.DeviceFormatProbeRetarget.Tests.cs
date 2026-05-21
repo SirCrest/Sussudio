@@ -10,8 +10,10 @@ static partial class Program
         var retargetApplierContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.Context.cs").Replace("\r\n", "\n");
         var retargetPolicyText = ReadRepoFile("Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs").Replace("\r\n", "\n");
 
-        AssertContains(probeControllerText, "private sealed class MainViewModelDeviceFormatProbeController");
-        AssertContains(probeControllerContextText, "private sealed class MainViewModelDeviceFormatProbeControllerContext");
+        AssertContains(probeControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(probeControllerText, "internal sealed class MainViewModelDeviceFormatProbeController");
+        AssertContains(probeControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(probeControllerContextText, "internal sealed class MainViewModelDeviceFormatProbeControllerContext");
         AssertContains(probeControllerText, "private readonly MainViewModelDeviceFormatProbeControllerContext _context;");
         AssertDoesNotContain(probeControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(probeControllerText, "_viewModel.");
@@ -25,8 +27,10 @@ static partial class Program
         AssertDoesNotContain(probeControllerText, "DeviceFormatProbeRetargetPolicy.Decide(new DeviceFormatProbeRetargetRequest(");
         AssertDoesNotContain(probeControllerText, "RebuildFrameRateOptions();");
         AssertDoesNotContain(probeControllerText, "EnqueueUiOperation(");
-        AssertContains(retargetApplierText, "private sealed class MainViewModelDeviceFormatProbeRetargetApplier");
-        AssertContains(retargetApplierContextText, "private sealed class MainViewModelDeviceFormatProbeRetargetApplierContext");
+        AssertContains(retargetApplierText, "namespace Sussudio.Controllers;");
+        AssertContains(retargetApplierText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplier");
+        AssertContains(retargetApplierContextText, "namespace Sussudio.Controllers;");
+        AssertContains(retargetApplierContextText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext");
         AssertContains(retargetApplierText, "private readonly MainViewModelDeviceFormatProbeRetargetApplierContext _context;");
         AssertDoesNotContain(retargetApplierText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(retargetApplierText, "_viewModel.");

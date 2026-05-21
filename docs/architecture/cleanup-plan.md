@@ -4938,14 +4938,14 @@ owner, fold it back into that owner and update the source-shape tests and
    scheduling, and settings persistence.
     Late-arriving device format probe reconciliation, collection mutation,
     selected-device capability refresh, enqueue/failure logging, and retarget
-    handoff live in
+    handoff live in the top-level
     `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`;
-    its graph-port contract now lives in
+    its top-level graph-port contract now lives in
     `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.Context.cs`;
     UI-side late-probe retarget application, session mismatch checks, and
-    active-capture restore live in
+    active-capture restore live in the top-level
     `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs`;
-    its graph-port contract now lives in
+    its top-level graph-port contract now lives in
     `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.Context.cs`, while
     pure late-probe retarget decisions live in
     `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`.

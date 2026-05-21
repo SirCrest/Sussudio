@@ -104,7 +104,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Audio input/microphone property changes: focused partials
     // Device refresh facade: this file; refresh owner: MainViewModelDeviceRefreshController.cs
     // Device selection reactions: MainViewModel.DeviceSelection.cs
-    // Device format probe reconciliation: MainViewModelDeviceFormatProbeController.cs; pure retarget policy: DeviceFormatProbeRetargetPolicy.cs
+    // Device format probe reconciliation: top-level MainViewModelDeviceFormatProbeController.cs; pure retarget policy: DeviceFormatProbeRetargetPolicy.cs
     // Capture mode transactions: MainViewModel.CaptureModeTransactions.cs
     // Frame-rate selection: MainViewModel.FrameRateOptions.cs; pure policies: FrameRateAutoSelectionPolicy.cs and FrameRateSourceFilterPolicy.cs; capture option rebuild adapters: MainViewModel.CaptureModeTransactions.cs; rebuild owner: MainViewModelCaptureModeOptionRebuildController.cs
     // Controller graph construction: MainViewModelControllerGraph.cs
