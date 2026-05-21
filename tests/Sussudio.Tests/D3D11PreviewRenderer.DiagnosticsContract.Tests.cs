@@ -64,7 +64,7 @@ static partial class Program
         AssertDoesNotContain(renderSource, "_pendingFrames.TryDequeue");
         AssertContains(renderSource, "var framesRenderedBefore = Interlocked.Read(ref _framesRendered);");
         AssertContains(renderSource, "frame.SubmissionGeneration != Interlocked.Read(ref _submissionGeneration)");
-        AssertContains(renderSource, "if (Interlocked.Read(ref _framesRendered) == framesRenderedBefore)\n                    {\n                        TrackFrameDropped(frame, \"render-skipped\");\n                    }");
+        AssertContains(renderSource, "if (Interlocked.Read(ref _framesRendered) == framesRenderedBefore)\n            {\n                TrackFrameDropped(frame, \"render-skipped\");\n            }");
         AssertContains(captureSource, "DropPendingPreviewFrames(\"live-preview-suppressed\")");
         AssertContains(captureSource, "DropPendingPreviewFrames(\"live-preview-resumed\")");
         AssertContains(captureSource, "queueControl.DropPendingFrames(reason)");
@@ -102,6 +102,10 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.SlowFrameReasons.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs");
         var renderSource = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.SharedDeviceReset.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.Composition.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.FrameDispatch.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.Shutdown.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThreadFailures.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FirstFrameNotifications.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")

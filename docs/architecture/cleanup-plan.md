@@ -2557,9 +2557,14 @@ slow-frame diagnostic ring/write state in
 in `D3D11PreviewRenderer.Lifecycle.cs`, stop/unbind/native-call fence state in
 `D3D11PreviewRenderer.StopLifecycle.cs`, render-thread failure state in
 `D3D11PreviewRenderer.RenderThreadFailures.cs`, first-frame notification state in
-`D3D11PreviewRenderer.FirstFrameNotifications.cs`, render-loop orchestration in
-`D3D11PreviewRenderer.RenderThread.cs`, queue state and signaling in
-`D3D11PreviewRenderer.PendingFrames.cs`, D3D device/swap-chain resources in
+`D3D11PreviewRenderer.FirstFrameNotifications.cs`, render-loop shell orchestration in
+`D3D11PreviewRenderer.RenderThread.cs`, shared-device reset/rebind consumption in
+`D3D11PreviewRenderer.RenderThread.SharedDeviceReset.cs`, composition-transform
+wake handling in `D3D11PreviewRenderer.RenderThread.Composition.cs`,
+pending-frame render dispatch in
+`D3D11PreviewRenderer.RenderThread.FrameDispatch.cs`, final render-thread drain
+and renderer-mode reset in `D3D11PreviewRenderer.RenderThread.Shutdown.cs`,
+queue state and signaling in `D3D11PreviewRenderer.PendingFrames.cs`, D3D device/swap-chain resources in
 `D3D11PreviewRenderer.Resources.cs`, input texture resources in
 `D3D11PreviewRenderer.InputResources.cs`, HDR shader input resources in
 `D3D11PreviewRenderer.HdrInputResources.cs`, swap-chain panel binding state in
@@ -2621,12 +2626,17 @@ stop, reinit stop, unbind-before-join ordering, native-call drain fencing,
 pending-frame shutdown cleanup, and render-pass native-call entry/exit guard
 helpers.
 
-D3D preview renderer render-thread orchestration now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs`. Keep the
-MMCSS registration, frame-ready wait loop, shared-device reset consumption,
-composition-transform wake handling, pending-frame consumption, stale-generation
-drops, device-lost handoff, final pending-frame drain, frame-capture failure,
-and failure notification handoff there; keep render-thread failure telemetry in
+D3D preview renderer render-thread orchestration is now split between the loop
+shell in `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs` and
+focused render-thread helpers. Keep MMCSS registration, frame-ready wait-loop
+ordering, and failure notification handoff in `D3D11PreviewRenderer.RenderThread.cs`;
+keep shared-device reset consumption/rebind in
+`D3D11PreviewRenderer.RenderThread.SharedDeviceReset.cs`, composition-transform
+wake handling in `D3D11PreviewRenderer.RenderThread.Composition.cs`,
+pending-frame consumption, stale-generation drops, frame-latency wait, render
+dispatch, and device-lost handoff in `D3D11PreviewRenderer.RenderThread.FrameDispatch.cs`,
+and final pending-frame drain/frame-capture failure/renderer-mode reset in
+`D3D11PreviewRenderer.RenderThread.Shutdown.cs`; keep render-thread failure telemetry in
 `D3D11PreviewRenderer.RenderThreadFailures.cs`, first-frame notification reset
 and UI enqueue in `D3D11PreviewRenderer.FirstFrameNotifications.cs`, render-pass
 selection and VideoProcessor execution in `D3D11PreviewRenderer.RenderPasses.cs`, shader draw
