@@ -1562,9 +1562,13 @@ Primary current owners:
   enter/exit orchestration, `Sussudio/Controllers/FullScreen/FullScreenController.Animation.cs` owns rect
   animation and size waits, `Sussudio/Controllers/FullScreen/FullScreenController.Chrome.cs` owns chrome/material
   state, and `Sussudio/Controllers/FullScreen/FullScreenController.Controls.cs` owns overlay pointer/auto-hide
-  behavior plus full-screen key routing and timeline eligibility. Keep `MainWindow.FullScreen.cs` as the
-  XAML-facing adapter that wires controller callbacks directly into the
-  FullScreen context; Flashback command execution remains in
+  behavior plus full-screen key routing and timeline eligibility.
+  `Sussudio/MainWindow.FullScreen.cs` is the marker for the XAML-facing adapter
+  family: `Sussudio/MainWindow.FullScreen.Composition.cs` wires the controller
+  context, `Sussudio/MainWindow.FullScreen.Commands.cs` owns button/menu/double-tap
+  and automation command adapters, `Sussudio/MainWindow.FullScreen.Input.cs` owns
+  key routing, and `Sussudio/MainWindow.FullScreen.Overlay.cs` owns pointer and
+  auto-hide adapters. Flashback command execution remains in
   `Sussudio/Controllers/Flashback/FlashbackCommandController.cs`.
 - `Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs` owns automation whole-
   window screenshot dispatch, UI-thread enqueue/cancellation, and failure
@@ -2318,6 +2322,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.CaptureSelectionBindingsOwnership.Helpers.cs`
   owns the shared source reader for the split
   `MainWindow.CaptureSelectionBindings.*.cs` adapter family.
+- `tests/Sussudio.Tests/MainWindow.FullScreenOwnership.Helpers.cs` owns the
+  shared source reader for the split `MainWindow.FullScreen.*.cs` adapter
+  family.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
   Flashback export backend-lease, export-operation lock, ViewModel export
   routing, and export CTS lifecycle assertions.

@@ -5,7 +5,7 @@ static partial class Program
 {
     internal static Task SettingsShelfLifecycle_LivesInController()
     {
-        var fullScreenText = ReadRepoFile("Sussudio/MainWindow.FullScreen.cs").Replace("\r\n", "\n");
+        var fullScreenText = ReadMainWindowFullScreenAdapterSource();
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var settingsShelfText = ReadMainWindowShellChromeAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/SettingsShelfController.cs").Replace("\r\n", "\n");

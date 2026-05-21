@@ -1286,9 +1286,12 @@ root controller to the public toggle/state surface,
 `FullScreenController.Chrome.cs` to chrome/material state, and
 `FullScreenController.Controls.cs` to overlay pointer/auto-hide behavior plus
 full-screen key routing, while timeline eligibility lives inside the controller
-family. `MainWindow.FullScreen.cs` remains the XAML event adapter and wires
-controller callbacks directly into the FullScreen context; Flashback command
-execution remains in `Sussudio/Controllers/Flashback/FlashbackCommandController.cs`.
+family. `MainWindow.FullScreen.cs` is now the XAML adapter family marker,
+`.Composition.cs` wires controller callbacks directly into the FullScreen
+context, `.Commands.cs` owns button/menu/double-tap and automation command
+adapters, `.Input.cs` owns key routing, and `.Overlay.cs` owns pointer and
+auto-hide adapters. Flashback command execution remains in
+`Sussudio/Controllers/Flashback/FlashbackCommandController.cs`.
 
 Automation whole-window screenshot capture now lives in
 `Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs`, which now only owns
