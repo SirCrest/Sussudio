@@ -1,9 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.Storage;
 using Sussudio.Models;
-using Sussudio.Services.Gpu;
 using Sussudio.Services.Recording;
 
 namespace Sussudio.Services.Capture;
@@ -21,15 +19,7 @@ public partial class CaptureService
         libAvSink.FrameEncoded += (s, count) => FrameCaptured?.Invoke(this, unchecked((ulong)Math.Max(0L, count)));
         rollback.RecordingSink = libAvSink;
 
-        StorageFolder outputFolder;
-        try
-        {
-            outputFolder = await StorageFolder.GetFolderFromPathAsync(settings.OutputPath);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"Output folder is unavailable: {settings.OutputPath}", ex);
-        }
+        var outputFolder = await OpenRecordingOutputFolderAsync(settings).ConfigureAwait(false);
 
         transitionToken.ThrowIfCancellationRequested();
 
@@ -65,34 +55,15 @@ public partial class CaptureService
             .ConfigureAwait(false);
 
         var isMjpegMode = unifiedVideoCapture.IsSoftwareMjpegPipelineActive;
-        var d3dManager = unifiedVideoCapture.D3DManager;
-        var recordingWidth = (uint)Math.Max(1, unifiedVideoCapture.Width);
-        var recordingHeight = (uint)Math.Max(1, unifiedVideoCapture.Height);
         var recordingFrameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : effectiveFrameRate;
-        var frameRateArg = ResolveFrameRateArg(settings, recordingFrameRate);
-        IntPtr cudaHwDeviceCtxPtr = IntPtr.Zero;
-        IntPtr cudaHwFramesCtxPtr = IntPtr.Zero;
-
-        rollback.RecordingContext = await _artifactManager.CreateContextAsync(
+        rollback.RecordingContext = await CreateLibAvRecordingContextAsync(
+            settings,
             outputFolder,
-            new RecordingContextRequest
-            {
-                Settings = settings,
-                UsePostMuxAudio = false,
-                AudioDeviceName = audioDeviceName,
-                MicrophoneDeviceName = settings.MicrophoneEnabled ? settings.MicrophoneDeviceName : null,
-                EffectiveFrameRate = recordingFrameRate,
-                FrameRateArg = frameRateArg,
-                EffectiveWidth = recordingWidth,
-                EffectiveHeight = recordingHeight,
-                VideoInputPixelFormat = videoInputPixelFormat,
-                IsFullRangeInput = isMjpegMode,
-                GpuHandles = new GpuPipelineHandles(
-                    isMjpegMode ? IntPtr.Zero : (d3dManager?.Device.NativePointer ?? IntPtr.Zero),
-                    isMjpegMode ? IntPtr.Zero : (d3dManager?.ImmediateContext.NativePointer ?? IntPtr.Zero),
-                    cudaHwDeviceCtxPtr,
-                    cudaHwFramesCtxPtr)
-            }).ConfigureAwait(false);
+            unifiedVideoCapture,
+            audioDeviceName,
+            recordingFrameRate,
+            videoInputPixelFormat,
+            isMjpegMode).ConfigureAwait(false);
 
         transitionToken.ThrowIfCancellationRequested();
         _mfConvertersDisabled = requireP010 || isMjpegMode;

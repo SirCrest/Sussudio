@@ -37,6 +37,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
+        var recordingStartContextText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartContext.cs")
+            .Replace("\r\n", "\n");
         var flashbackStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartFlashback.cs")
             .Replace("\r\n", "\n");
         var libAvStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
@@ -113,16 +115,29 @@ static partial class Program
         AssertContains(lifecycleText, "private sealed class RecordingStartRollbackState");
         AssertContains(lifecycleText, "public RecordingContext? RecordingContext { get; set; }");
         AssertContains(lifecycleText, "public FlashbackEncoderSink? FlashbackRecordingStartedSink { get; set; }");
+        AssertContains(recordingStartContextText, "private static async Task<StorageFolder> OpenRecordingOutputFolderAsync(");
+        AssertContains(recordingStartContextText, "Output folder is unavailable: {settings.OutputPath}");
+        AssertContains(recordingStartContextText, "private async Task<RecordingContext> CreateLibAvRecordingContextAsync(");
+        AssertContains(recordingStartContextText, "private async Task<RecordingContext> CreateFlashbackRecordingContextAsync(");
+        AssertContains(recordingStartContextText, "new RecordingContextRequest");
+        AssertContains(recordingStartContextText, "GpuHandles = new GpuPipelineHandles(");
+        AssertContains(recordingStartContextText, "GpuHandles = GpuPipelineHandles.None");
         AssertContains(flashbackStartText, "private async Task DisposeUnusableFlashbackRecordingBackendAsync(");
         AssertContains(flashbackStartText, "private async Task StartFlashbackRecordingAsync(");
+        AssertContains(flashbackStartText, "await OpenRecordingOutputFolderAsync(settings)");
+        AssertContains(flashbackStartText, "await CreateFlashbackRecordingContextAsync(");
         AssertContains(flashbackStartText, "FLASHBACK_UNIFIED_RECORDING_START");
         AssertContains(flashbackStartText, "_recordingBackend.InstallFlashback(activeFlashbackSink, fbRecordingContext, settings);");
         AssertContains(flashbackStartText, "FLASHBACK_RECORDING_TOPOLOGY_MISMATCH_REJECT");
         AssertContains(flashbackStartText, "WaitForForceRotateIdle(TimeSpan.FromSeconds(10))");
         AssertContains(flashbackStartText, "_unifiedVideoCapture?.BeginFlashbackRecordingAccounting();");
+        AssertDoesNotContain(flashbackStartText, "StorageFolder.GetFolderFromPathAsync");
+        AssertDoesNotContain(flashbackStartText, "new RecordingContextRequest");
         AssertDoesNotContain(flashbackStartText, "HDR_NEGOTIATION");
         AssertContains(libAvStartText, "private async Task StartLibAvRecordingAsync(");
         AssertContains(libAvStartText, "_recordingBackend.InstallLibAv(");
+        AssertContains(libAvStartText, "await OpenRecordingOutputFolderAsync(settings)");
+        AssertContains(libAvStartText, "await CreateLibAvRecordingContextAsync(");
         AssertContains(libAvStartText, "await RefreshSourceTelemetryAsync(transitionToken)");
         AssertContains(libAvStartText, "HDR_NEGOTIATION");
         AssertContains(libAvStartText, "await rollback.RecordingSink.StartAsync(rollback.RecordingContext, transitionToken)");
@@ -153,6 +168,8 @@ static partial class Program
         AssertDoesNotContain(libAvStartText, "rollback.OwnedUnifiedVideoCapture = new UnifiedVideoCapture();");
         AssertDoesNotContain(libAvStartText, "AttachUnifiedVideoCapture(rollback.OwnedUnifiedVideoCapture);");
         AssertDoesNotContain(libAvStartText, "_videoPipeline.InstallCapture(rollback.OwnedUnifiedVideoCapture);");
+        AssertDoesNotContain(libAvStartText, "StorageFolder.GetFolderFromPathAsync");
+        AssertDoesNotContain(libAvStartText, "new RecordingContextRequest");
         AssertDoesNotContain(libAvStartText, "FLASHBACK_UNIFIED_RECORDING_START");
         AssertDoesNotContain(lifecycleText, "public Task StopRecordingAsync(");
         AssertDoesNotContain(lifecycleText, "internal Task StopRecordingAsync(bool emergency");

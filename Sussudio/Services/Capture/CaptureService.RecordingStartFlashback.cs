@@ -1,9 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.Storage;
 using Sussudio.Models;
-using Sussudio.Services.Flashback;
 
 namespace Sussudio.Services.Capture;
 
@@ -48,37 +46,15 @@ public partial class CaptureService
                 "Rebuild the flashback backend with the correct format.");
         }
 
-        StorageFolder fbOutputFolder;
-        try
-        {
-            fbOutputFolder = await StorageFolder.GetFolderFromPathAsync(settings.OutputPath);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"Output folder is unavailable: {settings.OutputPath}", ex);
-        }
+        var fbOutputFolder = await OpenRecordingOutputFolderAsync(settings).ConfigureAwait(false);
 
         transitionToken.ThrowIfCancellationRequested();
 
         var fbEffectiveFrameRate = _unifiedVideoCapture?.Fps > 0 ? _unifiedVideoCapture.Fps : settings.FrameRate;
-        var fbRecordingContext = await _artifactManager.CreateContextAsync(
+        var fbRecordingContext = await CreateFlashbackRecordingContextAsync(
+            settings,
             fbOutputFolder,
-            new RecordingContextRequest
-            {
-                Settings = settings,
-                UsePostMuxAudio = false,
-                AudioDeviceName = settings.AudioEnabled
-                    ? (settings.UseCustomAudioInput ? settings.AudioDeviceName : (_audioDeviceName ?? _currentDevice?.AudioDeviceName))
-                    : null,
-                MicrophoneDeviceName = settings.MicrophoneEnabled ? settings.MicrophoneDeviceName : null,
-                EffectiveFrameRate = fbEffectiveFrameRate,
-                FrameRateArg = ResolveFrameRateArg(settings, fbEffectiveFrameRate),
-                EffectiveWidth = _actualWidth ?? settings.Width,
-                EffectiveHeight = _actualHeight ?? settings.Height,
-                VideoInputPixelFormat = _unifiedVideoCapture?.IsP010 == true ? "p010le" : "nv12",
-                IsFullRangeInput = _unifiedVideoCapture?.IsSoftwareMjpegPipelineActive == true,
-                GpuHandles = GpuPipelineHandles.None
-            }).ConfigureAwait(false);
+            fbEffectiveFrameRate).ConfigureAwait(false);
         rollback.RecordingContext = fbRecordingContext;
 
         // If flashback settings changed while preview was stopped, rebuild

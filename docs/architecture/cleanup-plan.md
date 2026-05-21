@@ -1722,8 +1722,10 @@ Recording start lifecycle now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`. That file owns
 the public recording start transition surface, startup-path routing, the private
 rollback-state holder, and delegation to the recording-start rollback owner.
-`CaptureService.RecordingStartFlashback.cs` owns Flashback recording fast-path
-reuse and backend startup, and
+`CaptureService.RecordingStartContext.cs` owns recording output-folder
+resolution plus the LibAv and Flashback `RecordingContextRequest` assembly
+used by the recording start paths. `CaptureService.RecordingStartFlashback.cs`
+owns Flashback recording fast-path reuse and backend startup, and
 `CaptureService.RecordingStartLibAv.cs` owns standard LibAv recording startup
 sequencing. `CaptureService.RecordingStartLibAv.VideoCapture.cs` owns standard
 LibAv recording video-capture reuse/creation, source-reader compatibility
