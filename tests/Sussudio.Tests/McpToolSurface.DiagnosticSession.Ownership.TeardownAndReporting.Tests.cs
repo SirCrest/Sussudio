@@ -136,12 +136,19 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var metricsText = ReadDiagnosticSessionMetricsSource();
+        var cadenceText = ReadRepoFile("tools/Common/DiagnosticSessionMetrics.Cadence.cs")
+            .Replace("\r\n", "\n");
+        var previewD3DText = ReadRepoFile("tools/Common/DiagnosticSessionMetrics.PreviewD3D.cs")
+            .Replace("\r\n", "\n");
+        var playbackCommandsText = ReadRepoFile("tools/Common/DiagnosticSessionMetrics.PlaybackCommands.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(metricsText, "internal static partial class DiagnosticSessionMetrics");
-        AssertContains(metricsText, "internal sealed class SourceCadenceSessionMetrics");
-        AssertContains(metricsText, "internal sealed class PreviewCadenceSessionMetrics");
-        AssertContains(metricsText, "internal sealed class VisualCadenceSessionMetrics");
-        AssertContains(metricsText, "internal sealed class PreviewD3DMetrics");
+        AssertContains(cadenceText, "internal sealed class SourceCadenceSessionMetrics");
+        AssertContains(cadenceText, "internal sealed class PreviewCadenceSessionMetrics");
+        AssertContains(cadenceText, "internal sealed class VisualCadenceSessionMetrics");
+        AssertContains(previewD3DText, "internal sealed class PreviewD3DMetrics");
+        AssertContains(playbackCommandsText, "internal readonly record struct PlaybackCommandHealth(");
         AssertContains(metricsText, "internal static SourceCadenceSessionMetrics BuildSourceCadenceSessionMetrics(");
         AssertContains(metricsText, "internal static PreviewCadenceSessionMetrics BuildPreviewCadenceSessionMetrics(");
         AssertContains(metricsText, "internal static VisualCadenceSessionMetrics BuildVisualCadenceSessionMetrics(");
@@ -149,6 +156,9 @@ static partial class Program
         AssertContains(metricsText, "internal static PlaybackCommandHealth BuildPlaybackCommandHealth(");
         AssertContains(metricsText, "internal static long GetResetAwareCounterDelta(");
         AssertContains(metricsText, "internal static bool IsVisualCadenceSessionHealthy(");
+        AssertDoesNotContain(cadenceText, "internal sealed class PreviewD3DMetrics");
+        AssertDoesNotContain(previewD3DText, "internal sealed class SourceCadenceSessionMetrics");
+        AssertDoesNotContain(playbackCommandsText, "internal sealed class PreviewD3DMetrics");
         AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionMetrics;");
         AssertDoesNotContain(runnerText, "private sealed class SourceCadenceSessionMetrics");
         AssertDoesNotContain(runnerText, "private sealed class PreviewD3DMetrics");

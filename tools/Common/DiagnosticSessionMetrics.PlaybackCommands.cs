@@ -2,6 +2,14 @@ using System.Text.Json;
 
 namespace Sussudio.Tools;
 
+internal readonly record struct PlaybackCommandHealth(
+    long Dropped,
+    long Skipped,
+    long SubmitFailures,
+    long CoalescedScrub,
+    long CoalescedSeek,
+    long NonCoalescedDropped);
+
 internal static partial class DiagnosticSessionMetrics
 {
     internal static PlaybackCommandHealth BuildPlaybackCommandHealth(JsonElement snapshot, JsonElement baselineSnapshot)

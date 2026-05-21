@@ -3944,11 +3944,13 @@ optional checkpoint callback so checkpoint failures cannot orphan an unseen
 sample.
 
 Diagnostic-session metric projection now lives in named partial owners.
-`DiagnosticSessionMetrics.Models.cs` owns metric DTOs, `.Cadence.cs` owns
-source, preview, and visual cadence projection plus visual-cadence health
-classification, `.PreviewD3D.cs` owns D3D slow-frame and CPU timing summaries,
-`.PlaybackCommands.cs` owns playback command-health deltas, and `.Counters.cs`
-owns shared counter-delta helpers. Do not reintroduce an empty family root.
+`DiagnosticSessionMetrics.Cadence.cs` owns source, preview, and visual cadence
+DTOs plus projection and visual-cadence health classification.
+`DiagnosticSessionMetrics.PreviewD3D.cs` owns the D3D metric DTO plus slow-frame
+and CPU timing summaries. `DiagnosticSessionMetrics.PlaybackCommands.cs` owns
+the playback command-health DTO and deltas, while `.Counters.cs` owns shared
+counter-delta helpers. Do not reintroduce an empty family root or a generic
+metric DTO bag.
 
 Diagnostic-session Flashback export helpers now live in
 `tools/Common/DiagnosticSessionFlashbackExports.cs`, which owns strict export
@@ -4293,7 +4295,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionJsonArtifacts.cs`
 - `DiagnosticSessionInitialSnapshot.cs`
 - `DiagnosticSessionMetrics.Cadence.cs`
-- `DiagnosticSessionMetrics.Models.cs`
 - `DiagnosticSessionMetrics.PreviewD3D.cs`
 - `DiagnosticSessionMetrics.PlaybackCommands.cs`
 - `DiagnosticSessionMetrics.Counters.cs`
