@@ -845,7 +845,8 @@ Important entry points:
 - `PreviewAudioGraphResources.cs` owns live program WASAPI capture, microphone
   capture, playback startup/shutdown, audio-monitor attach/detach order, preview
   volume/mute application, playback best-effort cleanup helpers, and
-  capture-fault telemetry.
+  capture-fault telemetry. CaptureService callers use this aggregate directly
+  instead of private root shims for audio preview resources.
 - `CaptureRecordingBackendResources.cs` owns active recording backend resources:
   LibAv/Flashback sink identity, recording context/settings snapshot, pending
   LibAv drain task tracking/reentry policy, and explicit install/detach/clear

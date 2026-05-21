@@ -17,7 +17,7 @@ public partial class CaptureService
         IRecordingSink recordingSink,
         string? audioDeviceId)
     {
-        if (_wasapiAudioCapture == null && settings.AudioEnabled)
+        if (_previewAudioGraph.ProgramCapture == null && settings.AudioEnabled)
         {
             var resolvedAudioDeviceId = audioDeviceId
                 ?? throw new InvalidOperationException("Recording requires an audio capture device.");
@@ -26,12 +26,12 @@ public partial class CaptureService
             rollback.OwnedWasapiAudioCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
             rollback.OwnedWasapiAudioCapture.CaptureFailed += OnWasapiCaptureFailed;
             rollback.OwnedWasapiAudioCapture.Start();
-            _wasapiAudioCapture = rollback.OwnedWasapiAudioCapture;
+            _previewAudioGraph.ProgramCapture = rollback.OwnedWasapiAudioCapture;
         }
 
-        if (_wasapiAudioCapture != null && settings.AudioEnabled)
+        if (_previewAudioGraph.ProgramCapture != null && settings.AudioEnabled)
         {
-            _wasapiAudioCapture.AttachRecordingSink(recordingSink);
+            _previewAudioGraph.ProgramCapture.AttachRecordingSink(recordingSink);
             rollback.SinkAttachedForAudioOnly = true;
             if (_isAudioPreviewActive)
             {
@@ -53,7 +53,7 @@ public partial class CaptureService
             micCapture.CaptureFailed += OnWasapiCaptureFailed;
             micCapture.SetAudioWriter(samples => micSink.WriteMicrophoneAudioAsync(samples));
             micCapture.Start();
-            _microphoneCapture = micCapture;
+            _previewAudioGraph.MicrophoneCapture = micCapture;
             Logger.Log("MICROPHONE_CAPTURE_START device='" + settings.MicrophoneDeviceName + "'");
         }
     }

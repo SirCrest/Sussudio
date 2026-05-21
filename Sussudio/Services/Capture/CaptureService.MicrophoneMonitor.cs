@@ -22,8 +22,8 @@ public partial class CaptureService
 
     private async Task DisposeMicrophoneCaptureAsync()
     {
-        var mic = _microphoneCapture;
-        _microphoneCapture = null;
+        var mic = _previewAudioGraph.MicrophoneCapture;
+        _previewAudioGraph.MicrophoneCapture = null;
         if (mic != null)
         {
             try
@@ -87,10 +87,10 @@ public partial class CaptureService
                 _micMonitorEnabled = enabled;
                 _micMonitorDeviceId = deviceId;
                 _micMonitorDeviceName = deviceName;
-                _microphoneCapture = nextMicCapture;
+                _previewAudioGraph.MicrophoneCapture = nextMicCapture;
                 nextMicCapture = null;
 
-                if (_microphoneCapture != null)
+                if (_previewAudioGraph.MicrophoneCapture != null)
                 {
                     Logger.Log("MIC_MONITOR_START device='" + (deviceName ?? "?") + "'");
                 }
@@ -132,7 +132,7 @@ public partial class CaptureService
             return;
         }
 
-        if (options.OnlyWhenMissing && _microphoneCapture != null)
+        if (options.OnlyWhenMissing && _previewAudioGraph.MicrophoneCapture != null)
         {
             return;
         }
@@ -154,7 +154,7 @@ public partial class CaptureService
                 }
             }
 
-            _microphoneCapture = micCapture;
+            _previewAudioGraph.MicrophoneCapture = micCapture;
             micCapture = null;
             if (!string.IsNullOrWhiteSpace(options.RestartLogEvent))
             {

@@ -11,8 +11,8 @@ public partial class CaptureService
     {
         var sink = _recordingBackend.LibAvSink;
         var unifiedVideoCapture = _videoPipeline.Capture;
-        var wasapiCapture = _wasapiAudioCapture;
-        var wasapiPlayback = _wasapiAudioPlayback;
+        var wasapiCapture = _previewAudioGraph.ProgramCapture;
+        var wasapiPlayback = _previewAudioGraph.Playback;
         var ingestAudio = CaptureRuntimeIngestAudioSnapshotFields(
             unifiedVideoCapture,
             sink,

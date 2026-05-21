@@ -118,7 +118,7 @@ public partial class CaptureService
 
         _recordingIntegrityCounterBaseline = CaptureRecordingIntegrityCounters(activeLibAvSink);
         _recordingIntegrityAudioBaseline = CaptureRecordingAudioCounters(
-            _wasapiAudioCapture,
+            _previewAudioGraph.ProgramCapture,
             activeLibAvSink,
             settings);
         await unifiedVideoCapture.StartRecordingAsync(rollback.RecordingSink, activeLibAvSink, gpuEncoder).ConfigureAwait(false);

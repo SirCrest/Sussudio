@@ -43,9 +43,14 @@ static partial class Program
         AssertContains(resourceText, "private string? _captureFaultMessage;");
         AssertContains(resourceText, "public void RecordCaptureFault(");
         AssertContains(resourceText, "public PreviewAudioCaptureFaultSnapshot ConsumeCaptureFault()");
-        AssertContains(rootText, "get => _previewAudioGraph.ProgramCapture;");
-        AssertContains(rootText, "get => _previewAudioGraph.MicrophoneCapture;");
-        AssertContains(rootText, "get => _previewAudioGraph.Playback;");
+        AssertDoesNotContain(rootText, "get => _previewAudioGraph.ProgramCapture;");
+        AssertDoesNotContain(rootText, "get => _previewAudioGraph.MicrophoneCapture;");
+        AssertDoesNotContain(rootText, "get => _previewAudioGraph.Playback;");
+        AssertDoesNotContain(rootText, "private WasapiAudioCapture? _wasapiAudioCapture");
+        AssertDoesNotContain(rootText, "private WasapiAudioCapture? _microphoneCapture");
+        AssertDoesNotContain(rootText, "private WasapiAudioPlayback? _wasapiAudioPlayback");
+        AssertDoesNotContain(rootText, "private float _previewVolume");
+        AssertDoesNotContain(rootText, "private bool _isMonitoringMuted");
         AssertDoesNotContain(rootText, "private bool _wasapiAudioCaptureFaulted;");
         AssertDoesNotContain(rootText, "private string? _wasapiAudioCaptureFaultMessage;");
         AssertContains(audioText, "public void SetPreviewVolume(");
@@ -110,7 +115,7 @@ static partial class Program
         AssertOccursBefore(
             microphoneText,
             "micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));",
-            "_microphoneCapture = micCapture;");
+            "_previewAudioGraph.MicrophoneCapture = micCapture;");
 
         AssertContains(finalizationText, "await RestartMicrophoneMonitorAfterRecordingAsync(");
         AssertContains(finalizationText, "OnlyWhenMissing: true,");

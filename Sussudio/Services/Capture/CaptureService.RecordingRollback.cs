@@ -38,9 +38,9 @@ public partial class CaptureService
             ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, "flashback_recording_start_fail");
         }
 
-        if (rollback.SinkAttachedForAudioOnly && _wasapiAudioCapture != null)
+        if (rollback.SinkAttachedForAudioOnly && _previewAudioGraph.ProgramCapture != null)
         {
-            _wasapiAudioCapture.DetachRecordingSink();
+            _previewAudioGraph.ProgramCapture.DetachRecordingSink();
         }
 
         await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
@@ -71,14 +71,14 @@ public partial class CaptureService
             Logger.Log($"Transient recording backend cleanup failed during start rollback: {disposeEx.Message}");
         }
 
-        if (rollback.OwnedWasapiAudioCapture != null && ReferenceEquals(_wasapiAudioCapture, rollback.OwnedWasapiAudioCapture))
+        if (rollback.OwnedWasapiAudioCapture != null && ReferenceEquals(_previewAudioGraph.ProgramCapture, rollback.OwnedWasapiAudioCapture))
         {
             _previewAudioGraph.DetachCapture(
                 rollback.OwnedWasapiAudioCapture,
                 OnWasapiAudioLevelUpdated,
                 OnWasapiCaptureFailed,
                 _flashbackBackend.PlaybackController);
-            _wasapiAudioCapture = null;
+            _previewAudioGraph.ProgramCapture = null;
         }
 
         if (rollback.OwnedUnifiedVideoCapture != null && ReferenceEquals(_videoPipeline.Capture, rollback.OwnedUnifiedVideoCapture))

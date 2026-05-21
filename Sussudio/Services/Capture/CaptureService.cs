@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Windows.Storage;
-using Sussudio.Services.Audio;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Recording;
@@ -50,35 +49,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private bool _pendingFlashbackEnableAfterRecording;
     private long _flashbackRecordingStartBytes;
     private readonly PreviewAudioGraphResources _previewAudioGraph = new();
-    private WasapiAudioCapture? _wasapiAudioCapture
-    {
-        get => _previewAudioGraph.ProgramCapture;
-        set => _previewAudioGraph.ProgramCapture = value;
-    }
-
-    private WasapiAudioCapture? _microphoneCapture
-    {
-        get => _previewAudioGraph.MicrophoneCapture;
-        set => _previewAudioGraph.MicrophoneCapture = value;
-    }
-
-    private WasapiAudioPlayback? _wasapiAudioPlayback
-    {
-        get => _previewAudioGraph.Playback;
-        set => _previewAudioGraph.Playback = value;
-    }
-
-    private float _previewVolume
-    {
-        get => _previewAudioGraph.PreviewVolume;
-        set => _previewAudioGraph.PreviewVolume = value;
-    }
-
-    private bool _isMonitoringMuted
-    {
-        get => _previewAudioGraph.IsMonitoringMuted;
-        set => _previewAudioGraph.IsMonitoringMuted = value;
-    }
 
     private string? _micMonitorDeviceId;
     private string? _micMonitorDeviceName;

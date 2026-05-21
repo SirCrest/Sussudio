@@ -124,13 +124,13 @@ static partial class Program
         AssertDoesNotContain(flashbackMicMonitorRestart, "WasapiAudioCapture? micCapture = null;");
         AssertDoesNotContain(flashbackMicMonitorRestart, "micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
         AssertContains(microphoneMonitorText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
-        AssertContains(microphoneMonitorText, "if (options.OnlyWhenMissing && _microphoneCapture != null)");
+        AssertContains(microphoneMonitorText, "if (options.OnlyWhenMissing && _previewAudioGraph.MicrophoneCapture != null)");
         AssertContains(microphoneMonitorText, "FLASHBACK_MIC_ATTACH_OK reason='{options.FlashbackAttachReason}'");
         AssertContains(microphoneMonitorText, "Logger.Log($\"{options.DisposeWarningEvent} type={disposeEx.GetType().Name} msg={disposeEx.Message}\");");
         AssertOccursBefore(
             microphoneMonitorText,
             "micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));",
-            "_microphoneCapture = micCapture;");
+            "_previewAudioGraph.MicrophoneCapture = micCapture;");
 
         AssertContains(libAvPreviewRestoreText, "private async Task<OperationCanceledException?> RestorePendingFlashbackEnableAfterLibAvRecordingAsync(");
         AssertContains(libAvPreviewRestoreText, "if (!_pendingFlashbackEnableAfterRecording)");

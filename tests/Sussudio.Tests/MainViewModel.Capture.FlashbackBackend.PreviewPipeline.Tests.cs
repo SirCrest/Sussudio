@@ -124,19 +124,19 @@ static partial class Program
         AssertContains(previewMicMonitorStart, "WasapiAudioCapture? micCapture = null;");
         AssertContains(previewMicMonitorStart, "catch (OperationCanceledException) when (transitionToken.IsCancellationRequested)");
         AssertContains(previewMicMonitorStart, "MIC_MONITOR_PREVIEW_START_DISPOSE_WARN");
-        AssertContains(previewMicMonitorStart, "_microphoneCapture = micCapture;");
+        AssertContains(previewMicMonitorStart, "_previewAudioGraph.MicrophoneCapture = micCapture;");
         AssertContains(previewMicMonitorStart, "micCapture = null;");
-        AssertContains(previewMicMonitorStart, "_microphoneCapture = micCapture;\n            micCapture = null;");
+        AssertContains(previewMicMonitorStart, "_previewAudioGraph.MicrophoneCapture = micCapture;\n            micCapture = null;");
 
-        AssertContains(ensureFlashbackAudio, "if (settings.AudioEnabled && _wasapiAudioCapture == null)");
-        AssertContains(ensureFlashbackAudio, "AttachFlashbackAudioIfSupported(_wasapiAudioCapture, reason)");
-        AssertContains(ensureFlashbackAudio, "if (_micMonitorEnabled && _microphoneCapture == null && !string.IsNullOrWhiteSpace(_micMonitorDeviceId))");
-        AssertContains(ensureFlashbackAudio, "_microphoneCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples))");
+        AssertContains(ensureFlashbackAudio, "if (settings.AudioEnabled && _previewAudioGraph.ProgramCapture == null)");
+        AssertContains(ensureFlashbackAudio, "AttachFlashbackAudioIfSupported(_previewAudioGraph.ProgramCapture, reason)");
+        AssertContains(ensureFlashbackAudio, "if (_micMonitorEnabled && _previewAudioGraph.MicrophoneCapture == null && !string.IsNullOrWhiteSpace(_micMonitorDeviceId))");
+        AssertContains(ensureFlashbackAudio, "_previewAudioGraph.MicrophoneCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples))");
 
-        AssertContains(startAudioPreview, "AttachFlashbackAudioIfSupported(_wasapiAudioCapture,");
+        AssertContains(startAudioPreview, "AttachFlashbackAudioIfSupported(_previewAudioGraph.ProgramCapture,");
         AssertOccursBefore(
             startAudioPreview,
-            "AttachFlashbackAudioIfSupported(_wasapiAudioCapture,",
+            "AttachFlashbackAudioIfSupported(_previewAudioGraph.ProgramCapture,",
             "await _previewAudioGraph.StartPlaybackAsync(");
         AssertContains(startAudioPreview, "var createdCaptureForAudioPreview = false;");
         AssertContains(startAudioPreview, "createdCaptureForAudioPreview = true;");

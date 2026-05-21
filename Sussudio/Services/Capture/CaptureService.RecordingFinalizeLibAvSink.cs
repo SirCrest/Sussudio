@@ -10,11 +10,11 @@ public partial class CaptureService
 {
     private async Task DetachLibAvRecordingAudioBeforeSinkStopAsync()
     {
-        if (_wasapiAudioCapture != null)
+        if (_previewAudioGraph.ProgramCapture != null)
         {
             try
             {
-                _wasapiAudioCapture.DetachRecordingSink();
+                _previewAudioGraph.ProgramCapture.DetachRecordingSink();
             }
             catch (Exception ex)
             {

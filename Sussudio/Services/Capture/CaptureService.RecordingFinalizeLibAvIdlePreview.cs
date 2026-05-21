@@ -46,8 +46,8 @@ public partial class CaptureService
             }
         }
 
-        var capture = _wasapiAudioCapture;
-        _wasapiAudioCapture = null;
+        var capture = _previewAudioGraph.ProgramCapture;
+        _previewAudioGraph.ProgramCapture = null;
         _previewAudioGraph.DetachCapture(
             capture,
             OnWasapiAudioLevelUpdated,

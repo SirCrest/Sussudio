@@ -43,7 +43,7 @@ public partial class CaptureService
 
         var libAvFinalAudioCounters = libAvSink != null
             ? GetRecordingAudioCountersSinceBaseline(
-                CaptureRecordingAudioCounters(_wasapiAudioCapture, libAvSink, _recordingBackend.SettingsSnapshot))
+                CaptureRecordingAudioCounters(_previewAudioGraph.ProgramCapture, libAvSink, _recordingBackend.SettingsSnapshot))
             : RecordingAudioIntegrityCounterSnapshot.Disabled;
 
         var idlePreviewDisposal = await DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(

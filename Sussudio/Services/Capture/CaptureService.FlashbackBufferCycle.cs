@@ -75,9 +75,9 @@ public partial class CaptureService
             var cycleResult = await _flashbackBackend.CycleSinkOnlyAsync(
                     new FlashbackBufferCycleRequest(
                         unifiedVideoCapture,
-                        _wasapiAudioCapture,
-                        _microphoneCapture,
-                        _wasapiAudioPlayback,
+                        _previewAudioGraph.ProgramCapture,
+                        _previewAudioGraph.MicrophoneCapture,
+                        _previewAudioGraph.Playback,
                         _videoPipeline.PreviewFrameSink,
                         currentSettings,
                         CloneCaptureSettings(currentSettings),

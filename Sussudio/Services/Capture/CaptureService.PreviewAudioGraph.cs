@@ -23,14 +23,14 @@ public partial class CaptureService
                 wasapiCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
                 wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
                 wasapiCapture.Start();
-                _wasapiAudioCapture = wasapiCapture;
+                _previewAudioGraph.ProgramCapture = wasapiCapture;
             }
             else if (settings.AudioEnabled)
             {
                 Logger.Log("Audio preview requested but no audio capture device is available; continuing with video-only preview.");
             }
 
-            if (_isAudioPreviewActive && _wasapiAudioCapture != null)
+            if (_isAudioPreviewActive && _previewAudioGraph.ProgramCapture != null)
             {
                 await _previewAudioGraph.StartPlaybackAsync(
                     transitionToken,
@@ -38,7 +38,7 @@ public partial class CaptureService
             }
 
             Logger.Log(
-                _wasapiAudioCapture != null
+                _previewAudioGraph.ProgramCapture != null
                     ? "Preview backend active: IMFSourceReader video + WASAPI audio ingest."
                     : "Preview backend active: IMFSourceReader video only (no audio capture endpoint).");
 
@@ -75,7 +75,7 @@ public partial class CaptureService
                 Logger.Log("FLASHBACK_MIC_ATTACH_OK reason='preview_mic_monitor_start'");
             }
 
-            _microphoneCapture = micCapture;
+            _previewAudioGraph.MicrophoneCapture = micCapture;
             micCapture = null;
             Logger.Log("MIC_MONITOR_START device='" + (_micMonitorDeviceName ?? "?") + "'");
         }
@@ -113,8 +113,8 @@ public partial class CaptureService
             wasapiCapture.CaptureFailed -= OnWasapiCaptureFailed;
         }
 
-        var capture = _wasapiAudioCapture ?? wasapiCapture;
-        _wasapiAudioCapture = null;
+        var capture = _previewAudioGraph.ProgramCapture ?? wasapiCapture;
+        _previewAudioGraph.ProgramCapture = null;
         if (capture != null)
         {
             _previewAudioGraph.DetachCapture(

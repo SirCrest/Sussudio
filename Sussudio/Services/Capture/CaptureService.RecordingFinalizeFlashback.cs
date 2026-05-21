@@ -94,7 +94,7 @@ public partial class CaptureService
 
         recordingBoundary.Counters = CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, flashbackVideoCapture);
         recordingBoundary.AudioCounters = GetRecordingAudioCountersSinceBaseline(
-            CaptureRecordingAudioCounters(_wasapiAudioCapture, flashbackSink, _recordingBackend.SettingsSnapshot));
+            CaptureRecordingAudioCounters(_previewAudioGraph.ProgramCapture, flashbackSink, _recordingBackend.SettingsSnapshot));
         recordingBoundary.Captured = true;
     }
 }

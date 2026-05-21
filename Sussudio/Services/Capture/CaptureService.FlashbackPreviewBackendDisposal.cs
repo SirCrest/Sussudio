@@ -52,8 +52,8 @@ public partial class CaptureService
         CancellationToken cancellationToken)
         => new FlashbackPreviewBackendDisposalRequest(
             _videoPipeline.Capture,
-            _wasapiAudioCapture,
-            _microphoneCapture,
+            _previewAudioGraph.ProgramCapture,
+            _previewAudioGraph.MicrophoneCapture,
             OnFlashbackFrameEncoded,
             WaitForFlashbackBackendCleanupExportLockAsync,
             ReleaseFlashbackBackendCleanupExportLock,

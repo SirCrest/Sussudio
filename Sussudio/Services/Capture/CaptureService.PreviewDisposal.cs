@@ -58,8 +58,8 @@ public partial class CaptureService
             await unifiedVideoCapture.DisposeForPreviewReinitAsync().ConfigureAwait(false);
         }
 
-        var capture = _wasapiAudioCapture;
-        _wasapiAudioCapture = null;
+        var capture = _previewAudioGraph.ProgramCapture;
+        _previewAudioGraph.ProgramCapture = null;
         _previewAudioGraph.DetachCapture(
             capture,
             OnWasapiAudioLevelUpdated,

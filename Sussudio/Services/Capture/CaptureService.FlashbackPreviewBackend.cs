@@ -43,21 +43,21 @@ public partial class CaptureService
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var videoReady = unifiedVideoCapture.VideoFramesArrived > 0;
-                var audioReady = _wasapiAudioCapture == null || _wasapiAudioCapture.CaptureCallbackCount > 0;
+                var audioReady = _previewAudioGraph.ProgramCapture == null || _previewAudioGraph.ProgramCapture.CaptureCallbackCount > 0;
                 if (videoReady && audioReady)
                     break;
                 await Task.Delay(100, cancellationToken).ConfigureAwait(false);
             }
             Logger.Log(
                 $"FLASHBACK_PREVIEW_READINESS video_frames={unifiedVideoCapture.VideoFramesArrived} " +
-                $"audio_callbacks={_wasapiAudioCapture?.CaptureCallbackCount ?? -1}");
+                $"audio_callbacks={_previewAudioGraph.ProgramCapture?.CaptureCallbackCount ?? -1}");
 
             await _flashbackBackend.StartPreviewBackendAsync(
                     new FlashbackPreviewBackendStartRequest(
                         unifiedVideoCapture,
-                        _wasapiAudioCapture,
-                        _microphoneCapture,
-                        _wasapiAudioPlayback,
+                        _previewAudioGraph.ProgramCapture,
+                        _previewAudioGraph.MicrophoneCapture,
+                        _previewAudioGraph.Playback,
                         _videoPipeline.PreviewFrameSink,
                         settings,
                         CloneCaptureSettings(settings),

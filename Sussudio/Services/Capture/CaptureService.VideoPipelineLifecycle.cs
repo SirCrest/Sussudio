@@ -24,7 +24,7 @@ public partial class CaptureService
         // Late-initialize playback controller if it was created before the renderer
         if (controller is { IsDisposed: false, IsInitialized: false } && sink != null && unifiedVideoCapture != null)
         {
-            controller.Initialize(sink, unifiedVideoCapture, _wasapiAudioPlayback, _wasapiAudioCapture);
+            controller.Initialize(sink, unifiedVideoCapture, _previewAudioGraph.Playback, _previewAudioGraph.ProgramCapture);
             Logger.Log("FLASHBACK_PLAYBACK_LATE_INIT via SetPreviewFrameSink");
         }
         else if (controller is { IsDisposed: false, IsInitialized: true })

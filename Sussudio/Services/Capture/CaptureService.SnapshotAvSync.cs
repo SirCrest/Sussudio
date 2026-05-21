@@ -18,7 +18,7 @@ public partial class CaptureService
     private (double? DriftMs, double? RateMsPerSec) ComputeAvSyncDrift()
     {
         var unifiedVideoCapture = _videoPipeline.Capture;
-        var wasapiCapture = _wasapiAudioCapture;
+        var wasapiCapture = _previewAudioGraph.ProgramCapture;
         if (unifiedVideoCapture == null || wasapiCapture == null)
         {
             return (null, null);

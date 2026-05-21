@@ -152,14 +152,14 @@ static partial class Program
         AssertContains(libAvVideoCaptureText, "Recording requested mjpeg_hfr={useMjpegHighFrameRateMode}, but the active preview session is mjpeg_hfr=");
         AssertContains(libAvAudioInputsText, "private async Task StartLibAvRecordingAudioInputsAsync(");
         AssertContains(libAvAudioInputsText, "rollback.OwnedWasapiAudioCapture = new WasapiAudioCapture();");
-        AssertContains(libAvAudioInputsText, "_wasapiAudioCapture.AttachRecordingSink(recordingSink);");
+        AssertContains(libAvAudioInputsText, "_previewAudioGraph.ProgramCapture.AttachRecordingSink(recordingSink);");
         AssertContains(libAvAudioInputsText, "rollback.SinkAttachedForAudioOnly = true;");
         AssertContains(libAvAudioInputsText, "await _previewAudioGraph.StartPlaybackAsync(");
         AssertContains(libAvAudioInputsText, "await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);");
         AssertContains(libAvAudioInputsText, "micCapture.SetAudioWriter(samples => micSink.WriteMicrophoneAudioAsync(samples));");
         AssertContains(libAvAudioInputsText, "MICROPHONE_CAPTURE_START");
         AssertDoesNotContain(libAvStartText, "rollback.OwnedWasapiAudioCapture = new WasapiAudioCapture();");
-        AssertDoesNotContain(libAvStartText, "_wasapiAudioCapture.AttachRecordingSink(recordingSink);");
+        AssertDoesNotContain(libAvStartText, "_previewAudioGraph.ProgramCapture.AttachRecordingSink(recordingSink);");
         AssertDoesNotContain(libAvStartText, "micCapture.SetAudioWriter(samples => micSink.WriteMicrophoneAudioAsync(samples));");
         AssertDoesNotContain(libAvStartText, "MICROPHONE_CAPTURE_START");
         AssertDoesNotContain(libAvStartText, "rollback.OwnedUnifiedVideoCapture = new UnifiedVideoCapture();");

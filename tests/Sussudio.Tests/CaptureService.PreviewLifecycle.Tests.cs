@@ -247,7 +247,7 @@ static partial class Program
     {
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs").Replace("\r\n", "\n");
 
-        AssertContains(captureServiceText, "_wasapiAudioCapture != null");
+        AssertContains(captureServiceText, "_previewAudioGraph.ProgramCapture != null");
         AssertContains(captureServiceText, "\"Preview backend active: IMFSourceReader video + WASAPI audio ingest.\"");
         AssertContains(captureServiceText, "\"Preview backend active: IMFSourceReader video only (no audio capture endpoint).\"");
 

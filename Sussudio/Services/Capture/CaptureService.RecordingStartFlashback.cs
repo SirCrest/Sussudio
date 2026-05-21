@@ -119,7 +119,7 @@ public partial class CaptureService
             rollback.FlashbackRecordingStartedSink = activeFlashbackSink;
             _recordingIntegrityCounterBaseline = CaptureRecordingIntegrityCounters(activeFlashbackSink);
             _recordingIntegrityAudioBaseline = CaptureRecordingAudioCounters(
-                _wasapiAudioCapture,
+                _previewAudioGraph.ProgramCapture,
                 activeFlashbackSink,
                 settings);
             activeFlashbackSink.BeginRecording(fbRecordingContext.FinalOutputPath);

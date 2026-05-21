@@ -18,7 +18,7 @@ public partial class CaptureService
             ? (settings.UseCustomAudioInput ? settings.AudioDeviceId : (_audioDeviceId ?? _currentDevice?.AudioDeviceId))
             : null;
 
-        if (settings.AudioEnabled && _wasapiAudioCapture == null)
+        if (settings.AudioEnabled && _previewAudioGraph.ProgramCapture == null)
         {
             if (!string.IsNullOrWhiteSpace(audioDeviceId))
             {
@@ -29,7 +29,7 @@ public partial class CaptureService
                     wasapiCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
                     wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
                     wasapiCapture.Start();
-                    _wasapiAudioCapture = wasapiCapture;
+                    _previewAudioGraph.ProgramCapture = wasapiCapture;
                     wasapiCapture = null;
                     ResetAvSyncDriftBaseline();
                     _previewAudioGraph.ResetCaptureFault();
@@ -52,9 +52,9 @@ public partial class CaptureService
             }
         }
 
-        AttachFlashbackAudioIfSupported(_wasapiAudioCapture, reason);
+        AttachFlashbackAudioIfSupported(_previewAudioGraph.ProgramCapture, reason);
 
-        if (_micMonitorEnabled && _microphoneCapture == null && !string.IsNullOrWhiteSpace(_micMonitorDeviceId))
+        if (_micMonitorEnabled && _previewAudioGraph.MicrophoneCapture == null && !string.IsNullOrWhiteSpace(_micMonitorDeviceId))
         {
             WasapiAudioCapture? micCapture = new();
             try
@@ -63,7 +63,7 @@ public partial class CaptureService
                 micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
                 micCapture.CaptureFailed += OnWasapiCaptureFailed;
                 micCapture.Start();
-                _microphoneCapture = micCapture;
+                _previewAudioGraph.MicrophoneCapture = micCapture;
                 micCapture = null;
                 Logger.Log("MIC_MONITOR_START device='" + (_micMonitorDeviceName ?? "?") + "'");
             }
@@ -87,9 +87,9 @@ public partial class CaptureService
             }
         }
 
-        if (_microphoneCapture != null && _flashbackBackend.Sink is { MicrophoneEnabled: true } fbSink)
+        if (_previewAudioGraph.MicrophoneCapture != null && _flashbackBackend.Sink is { MicrophoneEnabled: true } fbSink)
         {
-            _microphoneCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));
+            _previewAudioGraph.MicrophoneCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));
             Logger.Log($"FLASHBACK_MIC_ATTACH_OK reason='{reason}'");
         }
     }

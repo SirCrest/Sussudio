@@ -124,7 +124,7 @@ static partial class Program
         AssertContains(captureServiceSource, "if (ReferenceEquals(Playback, newPlayback))");
         AssertContains(captureServiceSource, "private static void StopPlaybackBestEffort(WasapiAudioPlayback playback, string operation)");
         AssertContains(captureServiceSource, "WASAPI audio playback dispose warning");
-        AssertDoesNotContain(captureServiceSource, "_wasapiAudioCapture?.SetPlayback(null);");
+        AssertDoesNotContain(captureServiceSource, "_previewAudioGraph.ProgramCapture?.SetPlayback(null);");
         AssertDoesNotContain(captureServiceSource, "capture.SetPlayback(null);\n        StopWasapiPlayback();");
         AssertContains(captureServiceSource, "CAPTURE_RECORDING_START_FAIL");
         var startRecordingFailure = ExtractSourceBlock(

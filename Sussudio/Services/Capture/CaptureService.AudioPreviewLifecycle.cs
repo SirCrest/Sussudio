@@ -19,7 +19,7 @@ public partial class CaptureService
 
             var createdCaptureForAudioPreview = false;
             // Create WASAPI capture if it wasn't started with the preview (audio was disabled at start)
-            if (_wasapiAudioCapture == null && _currentDevice != null)
+            if (_previewAudioGraph.ProgramCapture == null && _currentDevice != null)
             {
                 var audioId = _audioDeviceId ?? _currentDevice.AudioDeviceId;
                 if (!string.IsNullOrEmpty(audioId))
@@ -30,7 +30,7 @@ public partial class CaptureService
                     wasapiCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
                     wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
                     wasapiCapture.Start();
-                    _wasapiAudioCapture = wasapiCapture;
+                    _previewAudioGraph.ProgramCapture = wasapiCapture;
                     createdCaptureForAudioPreview = true;
                     ResetAvSyncDriftBaseline();
                     _previewAudioGraph.ResetCaptureFault();
@@ -41,7 +41,7 @@ public partial class CaptureService
                 }
             }
 
-            if (_wasapiAudioCapture == null)
+            if (_previewAudioGraph.ProgramCapture == null)
             {
                 _isAudioPreviewActive = false;
                 StatusChanged?.Invoke(this, "Audio preview unavailable");
@@ -51,7 +51,7 @@ public partial class CaptureService
             _isAudioPreviewActive = true;
             try
             {
-                AttachFlashbackAudioIfSupported(_wasapiAudioCapture, "audio_preview_start");
+                AttachFlashbackAudioIfSupported(_previewAudioGraph.ProgramCapture, "audio_preview_start");
                 await _previewAudioGraph.StartPlaybackAsync(
                     transitionToken,
                     _flashbackBackend.PlaybackController).ConfigureAwait(false);
@@ -61,8 +61,8 @@ public partial class CaptureService
                 _isAudioPreviewActive = false;
                 if (createdCaptureForAudioPreview)
                 {
-                    var capture = _wasapiAudioCapture;
-                    _wasapiAudioCapture = null;
+                    var capture = _previewAudioGraph.ProgramCapture;
+                    _previewAudioGraph.ProgramCapture = null;
                     _previewAudioGraph.DetachCapture(
                         capture,
                         OnWasapiAudioLevelUpdated,
@@ -102,8 +102,8 @@ public partial class CaptureService
 
             if (teardownCapture && !_isRecording)
             {
-                var capture = _wasapiAudioCapture;
-                _wasapiAudioCapture = null;
+                var capture = _previewAudioGraph.ProgramCapture;
+                _previewAudioGraph.ProgramCapture = null;
                 _previewAudioGraph.DetachCapture(
                     capture,
                     OnWasapiAudioLevelUpdated,

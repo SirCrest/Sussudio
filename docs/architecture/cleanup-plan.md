@@ -1627,10 +1627,11 @@ microphone monitoring lives in
 `Sussudio/Services/Capture/PreviewAudioGraphResources.cs` owns the live
 program WASAPI capture, microphone capture, playback startup/shutdown,
 audio-monitor attach/detach order, preview volume/mute application, playback
-cleanup helpers, and capture-fault telemetry. These files preserve the root
-service transition lock while keeping preview lifecycle, input switching, mic
-cleanup, post-recording mic monitor restart, and playback routing from
-collapsing back into a general audio partial.
+cleanup helpers, and capture-fault telemetry. CaptureService callers use this
+aggregate directly instead of private root resource shims. These files preserve
+the root service transition lock while keeping preview lifecycle, input
+switching, mic cleanup, post-recording mic monitor restart, and playback routing
+from collapsing back into a general audio partial.
 
 Explicit capture cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.Cleanup.cs`. That file owns the

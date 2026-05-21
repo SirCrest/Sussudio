@@ -65,7 +65,7 @@ public partial class CaptureService
             acceptedFrames: recordingBoundary.RecordingFramesEnqueued,
             counters: recordingBoundary.Counters ?? CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, _videoPipeline.Capture),
             audioCounters: recordingBoundary.AudioCounters ?? GetRecordingAudioCountersSinceBaseline(
-                CaptureRecordingAudioCounters(_wasapiAudioCapture, flashbackSink, _recordingBackend.SettingsSnapshot)));
+                CaptureRecordingAudioCounters(_previewAudioGraph.ProgramCapture, flashbackSink, _recordingBackend.SettingsSnapshot)));
         _recordingIntegrityCounterBaseline = null;
         _recordingIntegrityAudioBaseline = null;
         LogRecordingIntegritySummary(_lastRecordingIntegrity);

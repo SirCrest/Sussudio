@@ -24,7 +24,7 @@ public partial class CaptureService
                 return;
             }
 
-            if (_wasapiAudioCapture == null)
+            if (_previewAudioGraph.ProgramCapture == null)
             {
                 _audioDeviceId = audioDeviceId;
                 _audioDeviceName = audioDeviceName;
@@ -34,7 +34,7 @@ public partial class CaptureService
             Logger.Log($"Live audio input switch: {audioDeviceName ?? "(card default)"}");
 
             var activeSink = _isRecording ? _recordingBackend.Sink : null;
-            var oldCapture = _wasapiAudioCapture;
+            var oldCapture = _previewAudioGraph.ProgramCapture;
             var committedSwitchToken = CancellationToken.None;
 
             var resolvedId = audioDeviceId ?? _currentDevice?.AudioDeviceId;
@@ -71,7 +71,7 @@ public partial class CaptureService
                     OnWasapiAudioLevelUpdated,
                     OnWasapiCaptureFailed,
                     _flashbackBackend.PlaybackController);
-                _wasapiAudioCapture = newCapture;
+                _previewAudioGraph.ProgramCapture = newCapture;
                 _audioDeviceId = audioDeviceId;
                 _audioDeviceName = audioDeviceName;
                 _previewAudioGraph.ResetCaptureFault();
@@ -111,7 +111,7 @@ public partial class CaptureService
                 _audioDeviceId = audioDeviceId;
                 _audioDeviceName = audioDeviceName;
                 _isAudioPreviewActive = false;
-                _wasapiAudioCapture = null;
+                _previewAudioGraph.ProgramCapture = null;
                 _previewAudioGraph.DetachCapture(
                     oldCapture,
                     OnWasapiAudioLevelUpdated,
