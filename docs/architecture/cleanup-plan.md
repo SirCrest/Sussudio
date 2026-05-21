@@ -3569,10 +3569,15 @@ partials.
 `DiagnosticSessionRunner.cs` owns the
 public compatibility entry points; `DiagnosticSessionRunExecution.cs` owns the
 visible run phase sequence around context creation, initial snapshot, scenario
-execution, cleanup, and completion handoff. `DiagnosticSessionRunContext.cs` owns mutable per-run infrastructure: bootstrap, actions, warnings, samples,
-run state, live-state writer, command channel, scenario cancellation source,
-initial snapshot state, and disposal. `DiagnosticSessionRunContext.PhaseContexts.cs` owns scenario/completion context construction and the callback/token
-handoffs passed into those phases.
+execution, cleanup, and completion handoff. `DiagnosticSessionRunContext.cs`
+owns core mutable per-run infrastructure: bootstrap, actions, warnings,
+samples, run state, command channel, and scenario cancellation source.
+`DiagnosticSessionRunContext.InitialSnapshot.cs` owns initial snapshot state and
+capture, `DiagnosticSessionRunContext.LiveState.cs` owns live-state writer
+handoff, and `DiagnosticSessionRunContext.Lifetime.cs` owns run-context
+disposal. `DiagnosticSessionRunContext.PhaseContexts.cs` owns
+scenario/completion context construction and the callback/token handoffs passed
+into those phases.
 `DiagnosticSessionRunExecution.Completion.cs` owns the
 post-cleanup evidence/result sequence for recording checks, post-run timeline
 and final snapshot capture, result-build handoff, and terminal live-state write.
@@ -3794,10 +3799,15 @@ warning, and initial-snapshot exception recording while the runner keeps phase
 ordering.
 
 Diagnostic-session run context now lives in
-`tools/Common/DiagnosticSessionRunContext.cs`. `DiagnosticSessionRunContext.cs` owns mutable per-run infrastructure: bootstrap, actions, warnings, samples,
-run state, live-state writer, command channel, scenario cancellation source,
-initial snapshot state, and disposal. `DiagnosticSessionRunContext.PhaseContexts.cs` owns scenario/completion context construction and the explicit
-callback/token handoffs consumed by scenario and completion phases.
+`tools/Common/DiagnosticSessionRunContext.cs`. `DiagnosticSessionRunContext.cs`
+owns core mutable per-run infrastructure: bootstrap, actions, warnings,
+samples, run state, command channel, and scenario cancellation source.
+`DiagnosticSessionRunContext.InitialSnapshot.cs` owns initial snapshot state and
+capture, `DiagnosticSessionRunContext.LiveState.cs` owns live-state writer
+handoff, and `DiagnosticSessionRunContext.Lifetime.cs` owns run-context
+disposal. `DiagnosticSessionRunContext.PhaseContexts.cs` owns
+scenario/completion context construction and the explicit callback/token
+handoffs consumed by scenario and completion phases.
 
 Diagnostic-session run state now lives in
 `tools/Common/DiagnosticSessionRunState.cs`. It owns last-stage tracking,
@@ -4343,6 +4353,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionLiveStateWriter.cs`
 - `DiagnosticSessionLiveStateWriter.Sampling.cs`
 - `DiagnosticSessionRunBootstrap.cs`
+- `DiagnosticSessionRunContext.InitialSnapshot.cs`
+- `DiagnosticSessionRunContext.LiveState.cs`
+- `DiagnosticSessionRunContext.Lifetime.cs`
 - `DiagnosticSessionRunContext.PhaseContexts.cs`
 - `DiagnosticSessionSampler.cs`
 - `DiagnosticSessionScenarioCatalog.cs`
@@ -4386,7 +4399,11 @@ owner, fold it back into that owner and update the source-shape tests and
    `tools/Common/DiagnosticSessionRunner.cs` is now the small public wrapper,
    while `tools/Common/DiagnosticSessionRunExecution.cs` owns the visible run
    phase sequence and `tools/Common/DiagnosticSessionRunContext.cs` owns the
-   mutable per-run infrastructure, with
+   core mutable per-run infrastructure, with
+   `tools/Common/DiagnosticSessionRunContext.InitialSnapshot.cs`,
+   `tools/Common/DiagnosticSessionRunContext.LiveState.cs`, and
+   `tools/Common/DiagnosticSessionRunContext.Lifetime.cs` owning snapshot,
+   live-state, and disposal responsibilities, and
    `tools/Common/DiagnosticSessionRunContext.PhaseContexts.cs` owning explicit
    scenario/completion context construction. `DiagnosticSessionRunExecution.Completion.cs` owns the
    post-cleanup evidence/result sequence, while

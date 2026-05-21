@@ -65,6 +65,9 @@ static partial class Program
         var executionText = ReadDiagnosticSessionRunExecutionRootSource();
         var contextText = ReadDiagnosticSessionRunContextSource();
         var contextRootText = ReadDiagnosticSessionRunContextRootSource();
+        var contextInitialSnapshotText = ReadDiagnosticSessionRunContextInitialSnapshotSource();
+        var contextLiveStateText = ReadDiagnosticSessionRunContextLiveStateSource();
+        var contextLifetimeText = ReadDiagnosticSessionRunContextLifetimeSource();
         var contextPhaseText = ReadDiagnosticSessionRunContextPhaseContextsSource();
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
             .Replace("\r\n", "\n");
@@ -78,14 +81,28 @@ static partial class Program
         AssertContains(contextText, "Samples = [];");
         AssertContains(contextText, "ScenarioCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(runCancellationToken);");
         AssertContains(contextText, "CommandChannel = new DiagnosticSessionCommandChannel(sendCommandAsync, ScenarioCancellationToken, Warnings);");
-        AssertContains(contextText, "InitialSnapshot = unknownSnapshot.Snapshot;");
+        AssertContains(contextRootText, "InitializeUnknownSnapshotState();");
+        AssertContains(contextInitialSnapshotText, "internal JsonElement InitialSnapshot { get; private set; }");
+        AssertContains(contextInitialSnapshotText, "private void InitializeUnknownSnapshotState()");
+        AssertContains(contextInitialSnapshotText, "InitialSnapshot = unknownSnapshot.Snapshot;");
+        AssertContains(contextInitialSnapshotText, "internal async Task CaptureInitialSnapshotAsync()");
+        AssertContains(contextLiveStateText, "private readonly DiagnosticSessionLiveStateWriter _liveStateWriter;");
+        AssertContains(contextLiveStateText, "internal string LivePath { get; }");
+        AssertContains(contextLiveStateText, "internal async Task WriteLiveStateBestEffortAsync(");
+        AssertContains(contextLiveStateText, "internal async Task WriteSamplingLiveStateBestEffortAsync()");
+        AssertContains(contextLifetimeText, "public void Dispose()");
         AssertContains(contextPhaseText, "internal DiagnosticSessionScenarioPhaseContext CreateScenarioPhaseContext(");
         AssertContains(contextPhaseText, "internal DiagnosticSessionCompletionContext CreateCompletionContext(");
         AssertContains(contextPhaseText, "GetLastStage = () => RunState.LastStage,");
+        AssertDoesNotContain(contextRootText, "DiagnosticSessionInitialSnapshot.CreateUnknown()");
+        AssertDoesNotContain(contextRootText, "internal async Task CaptureInitialSnapshotAsync()");
+        AssertDoesNotContain(contextRootText, "internal async Task WriteLiveStateBestEffortAsync(");
+        AssertDoesNotContain(contextRootText, "internal async Task WriteSamplingLiveStateBestEffortAsync()");
+        AssertDoesNotContain(contextRootText, "public void Dispose()");
         AssertDoesNotContain(contextRootText, "internal DiagnosticSessionScenarioPhaseContext CreateScenarioPhaseContext(");
         AssertDoesNotContain(contextRootText, "internal DiagnosticSessionCompletionContext CreateCompletionContext(");
-        AssertContains(contextText, "CommandChannel.Dispose();");
-        AssertContains(contextText, "ScenarioCancellationSource.Dispose();");
+        AssertContains(contextLifetimeText, "CommandChannel.Dispose();");
+        AssertContains(contextLifetimeText, "ScenarioCancellationSource.Dispose();");
 
         AssertContains(executionText, "using var runContext = new DiagnosticSessionRunContext(options, sendCommandAsync, cancellationToken);");
         AssertContains(executionText, "using var sessionLock = DiagnosticSessionOutputLock.Acquire(runContext.OutputDirectory);");
@@ -96,10 +113,21 @@ static partial class Program
         AssertDoesNotContain(executionText, "new DiagnosticSessionCommandChannel(");
         AssertDoesNotContain(executionText, "new DiagnosticSessionLiveStateWriter(");
 
-        AssertContains(agentMapText, "`tools/Common/DiagnosticSessionRunContext.cs` owns diagnostic-session mutable run infrastructure");
+        AssertContains(agentMapText, "`tools/Common/DiagnosticSessionRunContext.cs` owns diagnostic-session core mutable run infrastructure");
+        AssertContains(agentMapText, "`tools/Common/DiagnosticSessionRunContext.InitialSnapshot.cs` owns diagnostic-session initial snapshot state");
+        AssertContains(agentMapText, "`tools/Common/DiagnosticSessionRunContext.LiveState.cs` owns diagnostic-session live-state handoff");
+        AssertContains(agentMapText, "`tools/Common/DiagnosticSessionRunContext.Lifetime.cs` owns diagnostic-session run context disposal");
         AssertContains(agentMapText, "`tools/Common/DiagnosticSessionRunContext.PhaseContexts.cs` owns diagnostic-session scenario/completion context construction");
-        AssertContains(cleanupPlanText, "`DiagnosticSessionRunContext.cs` owns mutable per-run infrastructure");
-        AssertContains(cleanupPlanText, "`DiagnosticSessionRunContext.PhaseContexts.cs` owns scenario/completion context construction");
+        AssertContains(cleanupPlanText, "`DiagnosticSessionRunContext.cs`");
+        AssertContains(cleanupPlanText, "owns core mutable per-run infrastructure");
+        AssertContains(cleanupPlanText, "`DiagnosticSessionRunContext.InitialSnapshot.cs`");
+        AssertContains(cleanupPlanText, "owns initial snapshot state");
+        AssertContains(cleanupPlanText, "`DiagnosticSessionRunContext.LiveState.cs`");
+        AssertContains(cleanupPlanText, "owns live-state writer");
+        AssertContains(cleanupPlanText, "`DiagnosticSessionRunContext.Lifetime.cs`");
+        AssertContains(cleanupPlanText, "owns run-context");
+        AssertContains(cleanupPlanText, "`DiagnosticSessionRunContext.PhaseContexts.cs`");
+        AssertContains(cleanupPlanText, "scenario/completion context construction");
 
         return Task.CompletedTask;
     }

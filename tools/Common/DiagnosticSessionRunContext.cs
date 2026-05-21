@@ -4,9 +4,6 @@ namespace Sussudio.Tools;
 
 internal sealed partial class DiagnosticSessionRunContext : IDisposable
 {
-    private readonly DiagnosticSessionLiveStateWriter _liveStateWriter;
-    private bool _disposed;
-
     internal DiagnosticSessionRunContext(
         DiagnosticSessionOptions options,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
@@ -30,9 +27,7 @@ internal sealed partial class DiagnosticSessionRunContext : IDisposable
         ScenarioCancellationToken = ScenarioCancellationSource.Token;
         CommandChannel = new DiagnosticSessionCommandChannel(sendCommandAsync, ScenarioCancellationToken, Warnings);
 
-        var unknownSnapshot = DiagnosticSessionInitialSnapshot.CreateUnknown();
-        InitialSnapshot = unknownSnapshot.Snapshot;
-        InitialSnapshotKnown = unknownSnapshot.Known;
+        InitializeUnknownSnapshotState();
     }
 
     internal DiagnosticSessionRunBootstrap RunBootstrap { get; }
@@ -61,25 +56,6 @@ internal sealed partial class DiagnosticSessionRunContext : IDisposable
 
     internal CancellationToken ScenarioCancellationToken { get; }
 
-    internal JsonElement InitialSnapshot { get; private set; }
-
-    internal bool InitialSnapshotKnown { get; private set; }
-
-    internal string LivePath { get; }
-
-    internal async Task CaptureInitialSnapshotAsync()
-    {
-        await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
-        var initialSnapshotResult = await DiagnosticSessionInitialSnapshot.CaptureAsync(
-                CommandChannel,
-                SetStage,
-                RecordTerminalException,
-                () => WriteLiveStateBestEffortAsync())
-            .ConfigureAwait(false);
-        InitialSnapshot = initialSnapshotResult.Snapshot;
-        InitialSnapshotKnown = initialSnapshotResult.Known;
-    }
-
     internal void SetStage(string stage)
     {
         RunState.SetStage(stage);
@@ -88,39 +64,5 @@ internal sealed partial class DiagnosticSessionRunContext : IDisposable
     internal void RecordTerminalException(Exception ex, string stage)
     {
         RunState.RecordTerminalException(ex, stage);
-    }
-
-    internal async Task WriteLiveStateBestEffortAsync(
-        DateTimeOffset? completedUtcOverride = null,
-        string? terminalStateOverride = null)
-    {
-        await _liveStateWriter.WriteLiveStateBestEffortAsync(
-                Samples,
-                InitialSnapshot,
-                CommandChannel.FailureCount,
-                completedUtcOverride,
-                terminalStateOverride)
-            .ConfigureAwait(false);
-    }
-
-    internal async Task WriteSamplingLiveStateBestEffortAsync()
-    {
-        await _liveStateWriter.WriteSamplingLiveStateBestEffortAsync(
-                Samples,
-                InitialSnapshot,
-                CommandChannel.FailureCount)
-            .ConfigureAwait(false);
-    }
-
-    public void Dispose()
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        CommandChannel.Dispose();
-        ScenarioCancellationSource.Dispose();
-        _disposed = true;
     }
 }
