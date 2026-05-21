@@ -1404,7 +1404,10 @@ telemetry, stop tick accounting, fresh SwapChainPanel replacement, and
 retired-renderer handoff during D3D renderer mode switches.
 `MainWindow.PreviewRenderer.cs` is the XAML-facing host adapter-family marker.
 `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the stable automation
-preview snapshot UI-dispatch adapter and UI-thread-only preview state sampling.
+preview snapshot adapter and context wiring.
+`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotSamplingController.cs`
+owns the UI-dispatch handoff, UI-thread-only preview runtime field sampling,
+startup missing-signal refresh, and sampled-input assembly.
 Read-only preview runtime snapshot construction now lives in
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`,
 which owns preview-state orchestration.

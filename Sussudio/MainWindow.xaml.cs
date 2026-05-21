@@ -128,6 +128,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializePreviewLifecycleEventController();
         InitializePreviewStartupSignalCoordinator();
         InitializePreviewStartupWatchdogController();
+        InitializePreviewRuntimeSnapshotSamplingController();
         InitializePreviewStartupOverlayController();
         InitializePreviewFadeInController();
         InitializePreviewTransitionAnimationController();

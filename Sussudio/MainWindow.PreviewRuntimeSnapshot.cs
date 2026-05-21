@@ -9,50 +9,24 @@ namespace Sussudio;
 // UI-thread automation/runtime snapshot sampling for diagnostics and MCP/CLI callers.
 public sealed partial class MainWindow
 {
-    private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
-        => await WindowUiDispatchController.InvokeWithRetryAsync(
-            GetPreviewRuntimeSnapshot,
-            "Failed to enqueue preview snapshot operation.",
-            cancellationToken).ConfigureAwait(false);
+    private PreviewRuntimeSnapshotSamplingController _previewRuntimeSnapshotSamplingController = null!;
 
-    private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()
+    private void InitializePreviewRuntimeSnapshotSamplingController()
     {
-        var startupMissingSignals = PreviewStartupMissingSignals;
-        if (string.IsNullOrWhiteSpace(startupMissingSignals) &&
-            _previewStartupSessionController.ShouldRefreshMissingSignalsForSnapshot)
+        _previewRuntimeSnapshotSamplingController = new PreviewRuntimeSnapshotSamplingController(new PreviewRuntimeSnapshotSamplingControllerContext
         {
-            startupMissingSignals = BuildPreviewStartupMissingSignals();
-        }
-
-        return PreviewRuntimeSnapshotController.Build(new PreviewRuntimeSnapshotInput
-        {
-            D3DRenderer = _previewRendererHostController.Renderer,
-            IsPreviewing = ViewModel.IsPreviewing,
-            PreviewSourceAttached = _previewRendererHostController.IsCpuPreviewSourceAttached,
-            GpuElementVisible = PreviewSwapChainPanel.Visibility == Visibility.Visible,
-            CpuElementVisible = PreviewImage.Visibility == Visibility.Visible,
-            PlaceholderVisible = NoDevicePlaceholder.Visibility == Visibility.Visible,
-            FramesArrived = _previewRendererHostController.FramesArrived,
-            FramesDisplayed = _previewRendererHostController.FramesDisplayed,
-            FramesDropped = _previewRendererHostController.FramesDropped,
-            LastPresentedTick = _previewRendererHostController.LastPresentedTick,
-            PreviewMinPresentationIntervalMs = _previewRendererHostController.PreviewMinPresentationIntervalMs,
-            StartupState = CurrentPreviewStartupState.ToString(),
-            IsStartupWaitingForFirstVisual = _previewStartupSessionController.IsWaitingForFirstVisual,
-            StartupAttemptId = PreviewStartupAttemptId,
-            StartupRequestedUtc = PreviewStartupRequestedUtc,
-            StartupTimeoutMs = PreviewStartupVisualTimeoutMs,
-            StartupGpuSignalMediaOpened = _previewGpuSignalMediaOpened,
-            StartupGpuSignalFirstFrame = _previewGpuSignalFirstFrame,
-            StartupGpuSignalPlaybackAdvancing = _previewGpuSignalPlaybackAdvancing,
-            StartupRequiredSignals = _previewStartupRequiredSignals,
-            StartupReceivedSignals = _previewStartupReceivedSignals,
-            StartupStrategy = _previewStartupStrategy,
-            StartupMissingSignals = startupMissingSignals,
-            StartupRecoveryAttemptCount = PreviewStartupRecoveryAttemptCount,
-            StartupLastFailureReason = PreviewStartupLastFailureReason,
-            FirstVisualConfirmed = IsPreviewFirstVisualConfirmed,
-            GpuPositionEventCount = PreviewStartupGpuPositionEventCount
+            UiDispatchController = WindowUiDispatchController,
+            ViewModel = ViewModel,
+            RendererHostController = _previewRendererHostController,
+            StartupSessionController = _previewStartupSessionController,
+            StartupSignalCoordinator = _previewStartupSignalCoordinator,
+            IsGpuElementVisible = () => PreviewSwapChainPanel.Visibility == Visibility.Visible,
+            IsCpuElementVisible = () => PreviewImage.Visibility == Visibility.Visible,
+            IsPlaceholderVisible = () => NoDevicePlaceholder.Visibility == Visibility.Visible,
+            GetStartupVisualTimeoutMs = () => PreviewStartupVisualTimeoutMs
         });
     }
+
+    private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
+        => await _previewRuntimeSnapshotSamplingController.GetSnapshotAsync(cancellationToken).ConfigureAwait(false);
 }

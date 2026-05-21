@@ -16,6 +16,8 @@ static partial class Program
         var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
         var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs")
             .Replace("\r\n", "\n");
+        var previewRuntimeSnapshotSamplingControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotSamplingController.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "InitializePreviewStartupSessionController();");
         AssertContains(mainWindowText, "InitializePreviewReinitTransitionController();");
@@ -63,7 +65,8 @@ static partial class Program
         AssertContains(previewStartupSessionControllerText, "public void MarkRendererAttached(DateTimeOffset attachedUtc)");
         AssertContains(previewStartupSessionControllerText, "public bool MarkFirstVisualConfirmed(DateTimeOffset firstVisualUtc)");
         AssertContains(previewStartupSessionControllerText, "public void SetMissingSignals(string? missingSignals)");
-        AssertContains(previewRuntimeSnapshotText, "StartupState = CurrentPreviewStartupState.ToString(),");
+        AssertContains(previewRuntimeSnapshotText, "StartupSessionController = _previewStartupSessionController,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "StartupState = startupSession.State.ToString(),");
         AssertContains(previewReinitText, "private PreviewReinitTransitionController _previewReinitTransitionController = null!;");
         AssertContains(previewReinitText, "private bool IsPreviewReinitAnimating");
         AssertContains(previewReinitText, "=> _previewReinitTransitionController.IsAnimating;");
