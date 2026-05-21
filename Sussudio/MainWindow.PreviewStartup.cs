@@ -163,7 +163,7 @@ public sealed partial class MainWindow
             GetMissingSignals = () => PreviewStartupMissingSignals,
             SetMissingSignals = value => PreviewStartupMissingSignals = value,
             MarkStartupFailed = reason => SetPreviewStartupState(PreviewStartupState.Failed, reason),
-            BuildTimeoutDiagnosticPayload = BuildPreviewStartupTimeoutDiagnosticPayload,
+            GetTimeoutDiagnosticSnapshot = GetPreviewStartupTimeoutDiagnosticSnapshot,
             LogPlaybackSnapshot = LogPreviewStartupPlaybackSnapshot,
             StopStartupOverlay = StopPreviewStartupOverlay,
             SetStatusText = value => ViewModel.StatusText = value,
@@ -183,10 +183,13 @@ public sealed partial class MainWindow
     private void ResetPreviewStartupFailureStopSchedule()
         => _previewStartupWatchdogController.ResetFailureStopSchedule();
 
-    private string BuildPreviewStartupTimeoutDiagnosticPayload()
-        => $"placeholder={NoDevicePlaceholder.Visibility} " +
-            $"gpuVisible={PreviewSwapChainPanel.Visibility} cpuVisible={PreviewImage.Visibility} " +
-            $"strategy={_previewStartupStrategy} required={PreviewStartupSignalFormatter.FormatSignalList(_previewStartupRequiredSignals)} " +
-            $"received={PreviewStartupSignalFormatter.FormatSignalList(_previewStartupReceivedSignals)} " +
-            $"missing={PreviewStartupMissingSignals ?? "-"}";
+    private PreviewStartupTimeoutDiagnosticSnapshot GetPreviewStartupTimeoutDiagnosticSnapshot()
+        => new(
+            NoDevicePlaceholder.Visibility.ToString(),
+            PreviewSwapChainPanel.Visibility.ToString(),
+            PreviewImage.Visibility.ToString(),
+            _previewStartupStrategy,
+            _previewStartupRequiredSignals,
+            _previewStartupReceivedSignals,
+            PreviewStartupMissingSignals);
 }

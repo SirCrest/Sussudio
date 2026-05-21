@@ -3393,7 +3393,7 @@ session state, watchdog/timeout payloads, and readiness-signal handoff.
 Watchdog/telemetry timers, timeout configuration, timeout recovery, and failure-stop scheduling live in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`;
 `Sussudio/MainWindow.PreviewStartup.cs` wires the MainWindow/XAML-facing
-adapter and timeout diagnostic payload. Readiness-signal coordination now lives
+adapter and raw timeout diagnostic snapshot. Readiness-signal coordination now lives
 in `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs`: missing-signal
 updates, playback-progress diagnostics, startup signal log strings, GPU
 position counter state, and first-visual confirmation decisions. The
@@ -3402,8 +3402,8 @@ adapter that supplies live preview state, renderer visibility details, logging,
 and confirmation callbacks. Readiness-signal required/received state,
 missing-signal calculation, playback-advance threshold checks, and readiness
 result snapshots live in
-`Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs`. Missing-signal
-and signal-list string formatting lives in
+`Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs`. Missing-signal,
+signal-list, and timeout diagnostic payload formatting lives in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalFormatter.cs`. Timeout reason,
 timeout status, and failure-stop status text live inside
 `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`, where the timeout

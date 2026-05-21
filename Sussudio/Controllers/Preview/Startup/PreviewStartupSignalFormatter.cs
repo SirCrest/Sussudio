@@ -3,8 +3,24 @@ using Sussudio.Models;
 
 namespace Sussudio.Controllers;
 
+internal readonly record struct PreviewStartupTimeoutDiagnosticSnapshot(
+    string PlaceholderVisibility,
+    string GpuVisibility,
+    string CpuVisibility,
+    PreviewStartupStrategy Strategy,
+    PreviewStartupSignalFlags RequiredSignals,
+    PreviewStartupSignalFlags ReceivedSignals,
+    string? MissingSignals);
+
 internal static class PreviewStartupSignalFormatter
 {
+    public static string FormatTimeoutDiagnosticPayload(PreviewStartupTimeoutDiagnosticSnapshot snapshot)
+        => $"placeholder={snapshot.PlaceholderVisibility} " +
+            $"gpuVisible={snapshot.GpuVisibility} cpuVisible={snapshot.CpuVisibility} " +
+            $"strategy={snapshot.Strategy} required={FormatSignalList(snapshot.RequiredSignals)} " +
+            $"received={FormatSignalList(snapshot.ReceivedSignals)} " +
+            $"missing={snapshot.MissingSignals ?? "-"}";
+
     public static string FormatMissingSignals(
         PreviewStartupSignalFlags requiredSignals,
         PreviewStartupSignalFlags receivedSignals,

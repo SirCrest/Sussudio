@@ -20,7 +20,7 @@ internal sealed class PreviewStartupWatchdogControllerContext
     public required Func<string?> GetMissingSignals { get; init; }
     public required Action<string?> SetMissingSignals { get; init; }
     public required Action<string> MarkStartupFailed { get; init; }
-    public required Func<string> BuildTimeoutDiagnosticPayload { get; init; }
+    public required Func<PreviewStartupTimeoutDiagnosticSnapshot> GetTimeoutDiagnosticSnapshot { get; init; }
     public required Action<string> LogPlaybackSnapshot { get; init; }
     public required Action StopStartupOverlay { get; init; }
     public required Action<string> SetStatusText { get; init; }
@@ -170,9 +170,11 @@ internal sealed class PreviewStartupWatchdogController
             VisualTimeoutMs,
             _context.GetMissingSignals());
         _context.MarkStartupFailed(timeoutReason);
+        var timeoutDiagnosticPayload = PreviewStartupSignalFormatter.FormatTimeoutDiagnosticPayload(
+            _context.GetTimeoutDiagnosticSnapshot());
         Logger.Log(
             $"PREVIEW_START_TIMEOUT attempt={_context.GetAttemptLabel()} " +
-            $"elapsedMs={elapsedMs:0} {_context.BuildTimeoutDiagnosticPayload()}");
+            $"elapsedMs={elapsedMs:0} {timeoutDiagnosticPayload}");
         _context.LogPlaybackSnapshot("timeout");
 
         _context.StopStartupOverlay();

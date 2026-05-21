@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
@@ -17,6 +18,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewStartupWatchdogControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs")
             .Replace("\r\n", "\n");
+        var previewStartupSignalFormatterText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupSignalFormatter.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "InitializePreviewStartupWatchdogController();");
         AssertEqual(
@@ -33,7 +36,8 @@ static partial class Program
         AssertContains(previewStartupWatchdogText, "=> _previewStartupWatchdogController.ScheduleFailureStop(reason);");
         AssertContains(previewStartupWatchdogText, "private void ResetPreviewStartupFailureStopSchedule()");
         AssertContains(previewStartupWatchdogText, "=> _previewStartupWatchdogController.ResetFailureStopSchedule();");
-        AssertContains(previewStartupWatchdogText, "private string BuildPreviewStartupTimeoutDiagnosticPayload()");
+        AssertContains(previewStartupWatchdogText, "GetTimeoutDiagnosticSnapshot = GetPreviewStartupTimeoutDiagnosticSnapshot,");
+        AssertContains(previewStartupWatchdogText, "private PreviewStartupTimeoutDiagnosticSnapshot GetPreviewStartupTimeoutDiagnosticSnapshot()");
         AssertContains(previewStartupWatchdogControllerText, "internal sealed class PreviewStartupWatchdogControllerContext");
         AssertContains(previewStartupWatchdogControllerText, "internal sealed class PreviewStartupWatchdogController");
         AssertContains(previewStartupWatchdogControllerText, "private const int PreviewStartupDefaultVisualTimeoutMs = 10000;");
@@ -55,8 +59,13 @@ static partial class Program
         AssertContains(previewStartupWatchdogControllerText, "private static string FormatTimeoutStatusText(string? missingSignals)");
         AssertContains(previewStartupWatchdogControllerText, "private static string FormatFailureStopStatusText(string reason)");
         AssertContains(previewStartupWatchdogControllerText, "var timeoutReason = FormatTimeoutReason(");
+        AssertContains(previewStartupWatchdogControllerText, "PreviewStartupSignalFormatter.FormatTimeoutDiagnosticPayload(");
+        AssertContains(previewStartupWatchdogControllerText, "_context.GetTimeoutDiagnosticSnapshot()");
         AssertContains(previewStartupWatchdogControllerText, "FormatTimeoutStatusText(_context.GetMissingSignals())");
         AssertContains(previewStartupWatchdogControllerText, "FormatFailureStopStatusText(reason)");
+        AssertContains(previewStartupSignalFormatterText, "internal readonly record struct PreviewStartupTimeoutDiagnosticSnapshot");
+        AssertContains(previewStartupSignalFormatterText, "public static string FormatTimeoutDiagnosticPayload(PreviewStartupTimeoutDiagnosticSnapshot snapshot)");
+        AssertContains(previewStartupSignalFormatterText, "required={FormatSignalList(snapshot.RequiredSignals)}");
         AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_WATCHDOG_STARTED");
         AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_TIMEOUT_IGNORED reason=user-or-shutdown-stop-requested");
         AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_TIMEOUT attempt={_context.GetAttemptLabel()}");
@@ -83,6 +92,8 @@ static partial class Program
         AssertDoesNotContain(previewStartupWatchdogText, "private DispatcherQueueTimer? _previewStartupTelemetryTimer;");
         AssertDoesNotContain(previewStartupWatchdogText, "private int _previewStartupFailureStopScheduled;");
         AssertDoesNotContain(previewStartupWatchdogText, "private Task HandlePreviewStartupTimeoutAsync()");
+        AssertDoesNotContain(previewStartupWatchdogText, "placeholder={NoDevicePlaceholder.Visibility}");
+        AssertDoesNotContain(previewStartupWatchdogText, "PreviewStartupSignalFormatter.FormatSignalList(_previewStartupRequiredSignals)");
         AssertDoesNotContain(previewStartupText, "_previewStartupFailureStopScheduled");
         AssertEqual(
             true,
@@ -101,6 +112,15 @@ static partial class Program
     internal static async Task PreviewStartupWatchdogController_PreservesTimeoutContracts()
     {
         var controllerType = RequireType("Sussudio.Controllers.PreviewStartupWatchdogController");
+        var formatterType = RequireType("Sussudio.Controllers.PreviewStartupSignalFormatter");
+        var formatTimeoutDiagnosticPayload = formatterType.GetMethod("FormatTimeoutDiagnosticPayload", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("PreviewStartupSignalFormatter.FormatTimeoutDiagnosticPayload was not found.");
+        var timeoutDiagnosticSnapshot = CreatePreviewStartupTimeoutDiagnosticSnapshot();
+        AssertEqual(
+            "placeholder=False gpuVisible=True cpuVisible=False strategy=D3D11VideoProcessor required=FirstCaptureFrame+FirstVisual received=None missing=FirstCaptureFrame+FirstVisual",
+            formatTimeoutDiagnosticPayload.Invoke(null, new[] { timeoutDiagnosticSnapshot }),
+            "timeout diagnostic payload formatting");
+
         var context = CreatePreviewStartupWatchdogContext(
             isWaitingForFirstVisual: () => true,
             isWindowClosing: () => false,
@@ -108,7 +128,6 @@ static partial class Program
             isPreviewing: () => true,
             getElapsedMilliseconds: () => 1234.0,
             buildMissingSignals: () => "FirstCaptureFrame+FirstVisual",
-            buildTimeoutDiagnosticPayload: () => "placeholder=False gpuVisible=True cpuVisible=False strategy=D3D11VideoProcessor required=FirstCaptureFrame+FirstVisual received=None missing=FirstCaptureFrame+FirstVisual",
             out var recorder);
         var controller = Activator.CreateInstance(controllerType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, binder: null, args: new[] { context }, culture: null)!;
 
@@ -137,7 +156,6 @@ static partial class Program
             isPreviewing: () => true,
             getElapsedMilliseconds: () => 1.0,
             buildMissingSignals: () => "FirstVisual",
-            buildTimeoutDiagnosticPayload: () => "ignored=true",
             out var ignoredRecorder);
         var ignoredController = Activator.CreateInstance(controllerType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, binder: null, args: new[] { ignoredContext }, culture: null)!;
         var ignoredTask = InvokeNonPublicInstanceMethod(ignoredController, "HandleTimeoutAsync", null) as Task
@@ -160,7 +178,6 @@ static partial class Program
             isPreviewing: () => true,
             getElapsedMilliseconds: () => 1.0,
             buildMissingSignals: () => "FirstVisual",
-            buildTimeoutDiagnosticPayload: () => "singleFlight=true",
             out _,
             runUiEventHandlerAsync: (operation, name) =>
             {
@@ -192,7 +209,6 @@ static partial class Program
         Func<bool> isPreviewing,
         Func<double> getElapsedMilliseconds,
         Func<string> buildMissingSignals,
-        Func<string> buildTimeoutDiagnosticPayload,
         out PreviewStartupWatchdogTestRecorder recorder,
         Func<Func<Task>, string, Task>? runUiEventHandlerAsync = null)
     {
@@ -213,7 +229,7 @@ static partial class Program
         SetPropertyOrBackingField(context, "GetMissingSignals", new Func<string?>(() => localRecorder.MissingSignals));
         SetPropertyOrBackingField(context, "SetMissingSignals", new Action<string?>(value => localRecorder.MissingSignals = value));
         SetPropertyOrBackingField(context, "MarkStartupFailed", new Action<string>(reason => localRecorder.FailureReason = reason));
-        SetPropertyOrBackingField(context, "BuildTimeoutDiagnosticPayload", buildTimeoutDiagnosticPayload);
+        SetPropertyOrBackingField(context, "GetTimeoutDiagnosticSnapshot", CreatePreviewStartupTimeoutDiagnosticSnapshotFactory());
         SetPropertyOrBackingField(context, "LogPlaybackSnapshot", new Action<string>(reason => localRecorder.PlaybackSnapshotReasons.Add(reason)));
         SetPropertyOrBackingField(context, "StopStartupOverlay", new Action(() => localRecorder.OverlayStopped = true));
         SetPropertyOrBackingField(context, "SetStatusText", new Action<string>(value => localRecorder.StatusTexts.Add(value)));
@@ -227,6 +243,36 @@ static partial class Program
             "RunUiEventHandlerAsync",
             runUiEventHandlerAsync ?? new Func<Func<Task>, string, Task>((operation, _) => operation()));
         return context;
+    }
+
+    private static object CreatePreviewStartupTimeoutDiagnosticSnapshot()
+    {
+        var snapshotType = RequireType("Sussudio.Controllers.PreviewStartupTimeoutDiagnosticSnapshot");
+        var strategyType = RequireType("Sussudio.Models.PreviewStartupStrategy");
+        var signalsType = RequireType("Sussudio.Models.PreviewStartupSignalFlags");
+        return Activator.CreateInstance(
+            snapshotType,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            args: new[]
+            {
+                "False",
+                "True",
+                "False",
+                Enum.Parse(strategyType, "D3D11VideoProcessor"),
+                Enum.Parse(signalsType, "FirstCaptureFrame, FirstVisual"),
+                Enum.Parse(signalsType, "None"),
+                "FirstCaptureFrame+FirstVisual",
+            },
+            culture: null)!;
+    }
+
+    private static Delegate CreatePreviewStartupTimeoutDiagnosticSnapshotFactory()
+    {
+        var snapshot = CreatePreviewStartupTimeoutDiagnosticSnapshot();
+        var snapshotType = snapshot.GetType();
+        var delegateType = typeof(Func<>).MakeGenericType(snapshotType);
+        return Expression.Lambda(delegateType, Expression.Constant(snapshot, snapshotType)).Compile();
     }
 
     private sealed class PreviewStartupWatchdogTestRecorder
