@@ -24,7 +24,10 @@ static partial class Program
         AssertContains(controllerGraphPresentationText, "new MainViewModelPreviewReinitializeControllerContext");
         AssertContains(controllerGraphPresentationText, "IncrementReinitializeGeneration = () => Interlocked.Increment(ref viewModel._previewReinitializeGeneration),");
         AssertContains(controllerGraphPresentationText, "ReadReinitializeGeneration = () => Volatile.Read(ref viewModel._previewReinitializeGeneration),");
+        AssertContains(controllerGraphPresentationText, "PreviewReinitializeDebounceMs = PreviewReinitializeDebounceMs,");
         AssertContains(controllerGraphPresentationText, "ClearPendingFlashbackCycleIfSameAndCompleted = task =>");
+        AssertContains(controllerGraphPresentationText, "FlashbackCycleBeforeReinitializeTimeoutMs = FlashbackCycleBeforeReinitializeTimeoutMs,");
+        AssertContains(controllerGraphPresentationText, "AwaitWithTimeoutAsync = AwaitWithTimeoutAsync,");
         AssertContains(controllerGraphPresentationText, "SelectedDevice = () => viewModel.SelectedDevice,");
         AssertContains(controllerGraphPresentationText, "SetSelectedDevice = device => viewModel.SelectedDevice = device,");
         AssertContains(controllerGraphPresentationText, "IsInitialized = () => viewModel.IsInitialized,");
@@ -58,8 +61,10 @@ static partial class Program
         AssertContains(previewStateText, "public event Func<string, Task>? PreviewReinitRequested;");
         AssertContains(previewStateText, "public event Func<Task>? PreviewRendererStopRequested;");
 
-        AssertContains(previewLifecycleControllerText, "private sealed class MainViewModelPreviewLifecycleController");
-        AssertContains(previewLifecycleControllerContextText, "private sealed class MainViewModelPreviewLifecycleControllerContext");
+        AssertContains(previewLifecycleControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(previewLifecycleControllerText, "internal sealed class MainViewModelPreviewLifecycleController");
+        AssertContains(previewLifecycleControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(previewLifecycleControllerContextText, "internal sealed class MainViewModelPreviewLifecycleControllerContext");
         AssertContains(previewLifecycleControllerText, "private readonly MainViewModelPreviewLifecycleControllerContext _context;");
         AssertDoesNotContain(previewLifecycleControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(previewLifecycleControllerText, "_viewModel.");
@@ -87,14 +92,19 @@ static partial class Program
         AssertContains(previewLifecycleControllerText, "_previewReinitializeController = _context.CreateReinitializeController(this);");
         AssertContains(previewLifecycleControllerText, "public Task ReinitializeDeviceAsync(string reason)");
 
-        AssertContains(previewReinitializeControllerText, "private sealed class MainViewModelPreviewReinitializeController");
-        AssertContains(previewReinitializeControllerContextText, "private sealed class MainViewModelPreviewReinitializeControllerContext");
+        AssertContains(previewReinitializeControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(previewReinitializeControllerText, "internal sealed class MainViewModelPreviewReinitializeController");
+        AssertContains(previewReinitializeControllerContextText, "namespace Sussudio.Controllers;");
+        AssertContains(previewReinitializeControllerContextText, "internal sealed class MainViewModelPreviewReinitializeControllerContext");
         AssertContains(previewReinitializeControllerText, "private readonly MainViewModelPreviewReinitializeControllerContext _context;");
         AssertDoesNotContain(previewReinitializeControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(previewReinitializeControllerText, "_viewModel.");
         AssertContains(previewReinitializeControllerText, "public async Task ReinitializeDeviceAsync(string reason)");
         AssertContains(previewReinitializeControllerText, "public void CancelPendingPreviewRestart()");
         AssertContains(previewReinitializeControllerText, "public void ResetPendingPreviewRestartCancellation()");
+        AssertContains(previewReinitializeControllerContextText, "public required int PreviewReinitializeDebounceMs { get; init; }");
+        AssertContains(previewReinitializeControllerContextText, "public required int FlashbackCycleBeforeReinitializeTimeoutMs { get; init; }");
+        AssertContains(previewReinitializeControllerContextText, "public required Func<Task, int, string, Task> AwaitWithTimeoutAsync { get; init; }");
 
         return Task.CompletedTask;
     }

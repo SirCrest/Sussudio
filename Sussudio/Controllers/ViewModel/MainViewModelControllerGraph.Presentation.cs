@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using Sussudio.Controllers;
 
 namespace Sussudio.ViewModels;
 
@@ -32,7 +33,10 @@ public partial class MainViewModel
                             SetCancelPreviewRestartAfterReinitialize = value => viewModel._cancelPreviewRestartAfterReinitialize = value,
                             IncrementReinitializeGeneration = () => Interlocked.Increment(ref viewModel._previewReinitializeGeneration),
                             ReadReinitializeGeneration = () => Volatile.Read(ref viewModel._previewReinitializeGeneration),
+                            PreviewReinitializeDebounceMs = PreviewReinitializeDebounceMs,
                             PendingFlashbackCycleTask = () => viewModel._pendingFlashbackCycleTask,
+                            FlashbackCycleBeforeReinitializeTimeoutMs = FlashbackCycleBeforeReinitializeTimeoutMs,
+                            AwaitWithTimeoutAsync = AwaitWithTimeoutAsync,
                             ClearPendingFlashbackCycleIfSameAndCompleted = task =>
                             {
                                 if (ReferenceEquals(viewModel._pendingFlashbackCycleTask, task) && task.IsCompleted)

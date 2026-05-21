@@ -3747,23 +3747,25 @@ Primary current owners:
   `MainViewModel.PreviewState.cs` keeps the compatibility facade entry points
   for device initialization, preview start/stop, selected-device apply, and
   preview reinitialization. `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`
-  owns the underlying preview lifecycle operations: device initialization,
-  preview start/stop, selected-device apply, and the reinitialize facade.
+  is a top-level `Sussudio.Controllers` owner for the underlying preview
+  lifecycle operations: device initialization, preview start/stop,
+  selected-device apply, and the reinitialize facade.
   `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.Context.cs`
-  owns the preview lifecycle graph-port contract for preview state/events,
-  capture/session operations, source telemetry refresh, UI dispatch,
-  audio-preview activity, and preview-volume ramp-down.
+  owns the top-level preview lifecycle graph-port contract for preview
+  state/events, capture/session operations, source telemetry refresh, UI
+  dispatch, audio-preview activity, and preview-volume ramp-down.
   Sibling ViewModel controllers receive that preview lifecycle owner directly
   from `MainViewModelControllerGraph` instead of routing controller-to-controller
   calls back through the root facade.
   `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`
-  owns debounced reinitialization, restart-cancellation state,
-  Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
-  and reinit gate release.
+  is a top-level `Sussudio.Controllers` owner for debounced reinitialization,
+  restart-cancellation state, Flashback-cycle wait-before-reinit,
+  renderer-stop handoff, teardown restart, and reinit gate release.
   `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.Context.cs`
-  owns the graph-built reinitialization port contract for selected
+  owns the top-level graph-built reinitialization port contract for selected
   device/format state, generation coalescing, pending Flashback-cycle waits,
-  renderer notifications, restart cancellation, and reinit gate access.
+  debounce/timeout policy, renderer notifications, restart cancellation, and
+  reinit gate access.
   `MainViewModel.RecordingState.cs` owns the stable recording facade:
   toggle, desired-state, graceful-stop, the direct emergency-stop coordinator
   bridge, recording option selections, output path, counters, and observable
@@ -3951,7 +3953,7 @@ Primary current owners:
   enablement, preview-volume clamp/persist, device-native mode/gain
   application, and microphone enablement with recording-time refusal and
   idempotent handling.
-  `MainViewModelPreviewLifecycleController.cs` owns automation preview
+  `MainViewModelPreviewLifecycleController.cs` owns top-level automation preview
   enable/disable idempotence, pending-reinit cancellation, and start/stop
   routing behind the `MainViewModel.cs` compatibility facade.
   `MainViewModel.CaptureModeTransactions.cs` owns automation HDR and true-HDR

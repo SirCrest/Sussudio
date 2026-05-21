@@ -39,7 +39,10 @@ static partial class Program
         AssertContains(previewLifecycleControllerText, "private readonly MainViewModelPreviewReinitializeController _previewReinitializeController;");
         AssertContains(previewLifecycleControllerText, "public Task ReinitializeDeviceAsync(string reason)");
         AssertContains(previewLifecycleControllerText, "=> _previewReinitializeController.ReinitializeDeviceAsync(reason);");
-        AssertContains(previewReinitializeControllerText, "private sealed class MainViewModelPreviewReinitializeController");
+        AssertContains(previewLifecycleControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(previewLifecycleControllerText, "internal sealed class MainViewModelPreviewLifecycleController");
+        AssertContains(previewReinitializeControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(previewReinitializeControllerText, "internal sealed class MainViewModelPreviewReinitializeController");
         AssertContains(previewReinitializeControllerText, "public void CancelPendingPreviewRestart()");
         AssertContains(previewReinitializeControllerText, "public void ResetPendingPreviewRestartCancellation()");
         AssertContains(previewReinitializeControllerText, "public async Task ReinitializeDeviceAsync(string reason)");
@@ -47,9 +50,9 @@ static partial class Program
         AssertDoesNotContain(previewReinitializeControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(previewReinitializeControllerText, "_viewModel.");
         AssertContains(previewReinitializeControllerText, "var reinitializeGeneration = _context.IncrementReinitializeGeneration();");
-        AssertContains(previewReinitializeControllerText, "await Task.Delay(PreviewReinitializeDebounceMs).ConfigureAwait(true);");
+        AssertContains(previewReinitializeControllerText, "await Task.Delay(_context.PreviewReinitializeDebounceMs).ConfigureAwait(true);");
         AssertContains(previewReinitializeControllerText, "_context.ReadReinitializeGeneration() != reinitializeGeneration");
-        AssertContains(previewReinitializeControllerText, "await AwaitWithTimeoutAsync(");
+        AssertContains(previewReinitializeControllerText, "await _context.AwaitWithTimeoutAsync(");
         AssertContains(previewReinitializeControllerText, "FlashbackCycleBeforeReinitializeTimeoutMs");
         AssertContains(previewReinitializeControllerText, "await _context.WaitReinitializeGateAsync();");
         AssertContains(previewReinitializeControllerText, "await _context.NotifyPreviewReinitRequestedAsync(reason);");

@@ -82,7 +82,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // -- Automation methods are split across MainViewModel.Automation*.cs ---------
 
     // -- Partial class references ----
-    // Preview lifecycle facade/state/events: MainViewModel.PreviewState.cs; preview lifecycle owner: MainViewModelPreviewLifecycleController.cs; preview reinitialize transaction: MainViewModelPreviewReinitializeController.cs
+    // Preview lifecycle facade/state/events: MainViewModel.PreviewState.cs; top-level preview lifecycle owner: MainViewModelPreviewLifecycleController.cs; preview reinitialize transaction: MainViewModelPreviewReinitializeController.cs
     // Recording lifecycle facade/state: MainViewModel.RecordingState.cs; transition owner: MainViewModelRecordingTransitionController.cs
     // Capture settings projection: MainViewModel.CaptureSettings.cs and CaptureSettingsProjectionBuilder.cs
     // Flashback automation and buffer/GPU reactions: MainViewModel.FlashbackSettings.cs
@@ -91,7 +91,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Automation snapshots and probes: MainViewModel.AutomationSnapshots.cs
     // Automation options projection: MainViewModel.AutomationOptionsSnapshot.cs
     // Device and audio-input selection automation: MainViewModel.AutomationDeviceSelection.cs
-    // Settings automation facade: MainViewModel.AutomationSettings.cs; top-level capture controller: MainViewModelCaptureSettingsAutomationController.cs; recording controller: MainViewModelRecordingSettingsAutomationController.cs; preview automation: MainViewModelPreviewLifecycleController.cs; capture-mode transactions: MainViewModel.CaptureModeTransactions.cs
+    // Settings automation facade: MainViewModel.AutomationSettings.cs; top-level capture controller: MainViewModelCaptureSettingsAutomationController.cs; recording controller: MainViewModelRecordingSettingsAutomationController.cs; top-level preview automation: MainViewModelPreviewLifecycleController.cs; capture-mode transactions: MainViewModel.CaptureModeTransactions.cs
     // UI-only automation: MainViewModel.AutomationUi.cs
     // UI dispatch policy: MainViewModelUiDispatchController.cs; adapter/fan-out: MainViewModel.Dispatching.cs
     // Audio monitoring: MainViewModel.AudioMonitoring.cs

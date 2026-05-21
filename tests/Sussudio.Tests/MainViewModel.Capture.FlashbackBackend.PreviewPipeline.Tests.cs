@@ -234,7 +234,7 @@ static partial class Program
             "\n}\n");
         AssertContains(stopPreviewBlock, "var commitStoppedState = false;");
         AssertContains(stopPreviewBlock, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
-        AssertContains(stopPreviewBlock, "if (commitStoppedState)\n                {\n                    _context.SetIsPreviewing(false);\n                }");
+        AssertContains(stopPreviewBlock, "if (commitStoppedState)\n            {\n                _context.SetIsPreviewing(false);\n            }");
         AssertOccursBefore(
             ExtractTextBetween(
                 captureServiceText,

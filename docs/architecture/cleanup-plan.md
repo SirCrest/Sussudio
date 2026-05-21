@@ -4793,10 +4793,10 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.PreviewState.cs` keeps the stable compatibility facade entry
    points for device initialization, preview start/stop, selected-device apply,
    and preview reinitialization. Preview lifecycle
-   implementation now lives in
+   implementation now lives in the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`:
    device initialization, preview start/stop, selected-device apply, and the
-   reinitialize facade. The preview lifecycle graph-port contract now lives in
+   reinitialize facade. The top-level preview lifecycle graph-port contract now lives in
    `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.Context.cs`
    for preview state/events, capture/session operations, source telemetry
    refresh, UI dispatch, audio-preview activity, and preview-volume ramp-down.
@@ -4804,13 +4804,14 @@ owner, fold it back into that owner and update the source-shape tests and
    lifecycle owner directly from `MainViewModelControllerGraph` instead of
    routing controller-to-controller calls back through the root facade.
    `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`
-   owns debounced reinitialization, restart-cancellation state,
+   is a top-level `Sussudio.Controllers` owner for debounced reinitialization, restart-cancellation state,
    Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
    and gate release.
    `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.Context.cs`
-   owns the graph-built reinitialization port contract for selected
+   owns the top-level graph-built reinitialization port contract for selected
    device/format state, generation coalescing, pending Flashback-cycle waits,
-   renderer notifications, restart cancellation, and reinit gate access.
+   debounce/timeout policy, renderer notifications, restart cancellation, and
+   reinit gate access.
    Output folder display plus browse/open-recordings button workflows now live in
    `Sussudio/Controllers/Recording/Output/OutputPathController.cs`.
    Recording facade entry points, including the direct emergency-stop
@@ -5046,8 +5047,8 @@ owner, fold it back into that owner and update the source-shape tests and
    refusal/idempotent handling now live in `MainViewModel.AutomationAudio.cs`.
    Automation preview enable/disable idempotence, pending-reinit cancellation,
    and preview start/stop routing now live in
-   `MainViewModelPreviewLifecycleController.cs` plus
-   graph-built `MainViewModelPreviewReinitializeController.cs` context ports, with the stable
+   top-level `MainViewModelPreviewLifecycleController.cs` plus graph-built
+   `MainViewModelPreviewReinitializeController.cs` context ports, with the stable
    `MainViewModel.PreviewState.cs` compatibility facade preserving the automation surface.
    Automation HDR and true-HDR preview recording-time guard enforcement and HDR
    availability checks now live in `MainViewModel.CaptureModeTransactions.cs`
