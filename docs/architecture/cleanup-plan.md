@@ -4344,8 +4344,11 @@ optional checkpoint callback so checkpoint failures cannot orphan an unseen
 sample.
 
 Diagnostic-session metric projection now lives in named partial owners.
-`DiagnosticSessionMetrics.Cadence.cs` owns source, preview, and visual cadence
-DTOs plus projection and visual-cadence health classification.
+`DiagnosticSessionMetrics.Cadence.Model.cs` owns source, preview, and visual
+cadence DTOs. `DiagnosticSessionMetrics.Cadence.Source.cs` owns source-cadence
+sample aggregation, `.Cadence.Preview.cs` owns preview 1% low aggregation, and
+`.Cadence.Visual.cs` owns visual-cadence aggregation plus visual-cadence health
+classification.
 `DiagnosticSessionMetrics.PreviewD3D.Model.cs` owns the D3D metric DTO.
 `DiagnosticSessionMetrics.PreviewD3D.cs` owns D3D metric orchestration plus
 frame-stat counter deltas and end-of-run p99 CPU timing reads.
@@ -4698,7 +4701,10 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionHealthTolerances.cs`
 - `DiagnosticSessionJsonArtifacts.cs`
 - `DiagnosticSessionInitialSnapshot.cs`
-- `DiagnosticSessionMetrics.Cadence.cs`
+- `DiagnosticSessionMetrics.Cadence.Model.cs`
+- `DiagnosticSessionMetrics.Cadence.Source.cs`
+- `DiagnosticSessionMetrics.Cadence.Preview.cs`
+- `DiagnosticSessionMetrics.Cadence.Visual.cs`
 - `DiagnosticSessionMetrics.PreviewD3D.Model.cs`
 - `DiagnosticSessionMetrics.PreviewD3D.cs`
 - `DiagnosticSessionMetrics.PreviewD3D.CpuTiming.cs`

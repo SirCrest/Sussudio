@@ -137,7 +137,10 @@ static partial class Program
 
     private static string ReadDiagnosticSessionMetricsSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionMetrics.Cadence.cs",
+            "tools/Common/DiagnosticSessionMetrics.Cadence.Model.cs",
+            "tools/Common/DiagnosticSessionMetrics.Cadence.Source.cs",
+            "tools/Common/DiagnosticSessionMetrics.Cadence.Preview.cs",
+            "tools/Common/DiagnosticSessionMetrics.Cadence.Visual.cs",
             "tools/Common/DiagnosticSessionMetrics.PreviewD3D.Model.cs",
             "tools/Common/DiagnosticSessionMetrics.PreviewD3D.cs",
             "tools/Common/DiagnosticSessionMetrics.PreviewD3D.CpuTiming.cs",
