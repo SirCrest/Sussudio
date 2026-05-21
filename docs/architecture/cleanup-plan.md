@@ -1364,16 +1364,22 @@ Automation host composition, once-only
 startup, ready/disabled logging, and pipe-before-hub shutdown disposal now live
 in `Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs`.
 `Sussudio/Controllers/Launch/LaunchStartupController.cs` starts that
-controller after initial device refresh, and `Sussudio/MainWindow.ShutdownCleanup.cs`
-passes its async dispose delegate into the shutdown controller. Window close
+controller after initial device refresh, and
+`Sussudio/MainWindow.ShutdownCleanup.Composition.cs` passes its async dispose
+delegate into the shutdown controller. Window close
 completion lives in `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`;
 recording-aware close finalization now lives in
 `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs`.
 
 Top-level shell resize telemetry throttling for preview compositor transforms
 now lives in `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs`.
-`Sussudio/MainWindow.PreviewRenderer.cs` owns the `SizeChanged` adapter and
-renderer-host reset handoff. Preview surface sizing and GPU panel visibility now live in
+`Sussudio/MainWindow.PreviewRenderer.cs` is the XAML-facing preview renderer
+adapter-family marker. `Sussudio/MainWindow.PreviewRenderer.Composition.cs`
+wires renderer-host context callbacks,
+`Sussudio/MainWindow.PreviewRenderer.ResizeTelemetry.cs` owns the `SizeChanged`
+adapter and renderer-host reset handoff, and
+`Sussudio/MainWindow.PreviewRenderer.Lifecycle.cs` owns the stable start/stop,
+shutdown, and reinit-unsafe-window automation adapters. Preview surface sizing and GPU panel visibility now live in
 `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs`, while
 video/control-bar composition shadow visuals, bounds alignment, clear behavior,
 and fade routing live in
@@ -1391,7 +1397,7 @@ startup and event/failure handling.
 owns D3D reinit renderer-stop/timeout policy, disposal, unsafe-window
 telemetry, stop tick accounting, fresh SwapChainPanel replacement, and
 retired-renderer handoff during D3D renderer mode switches.
-`MainWindow.PreviewRenderer.cs` is the XAML-facing host adapter surface.
+`MainWindow.PreviewRenderer.cs` is the XAML-facing host adapter-family marker.
 `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the stable automation
 preview snapshot UI-dispatch adapter and UI-thread-only preview state sampling.
 Read-only preview runtime snapshot construction now lives in
@@ -1487,8 +1493,13 @@ keeps `RegisterCloseLifecycle`, `CloseAsync`, and `RequestWindowClose()` stable.
 cleanup order: cleanup latch, close completion, closing-state mark, timer stops,
 event detaches, preview shutdown, post-close recording finalization handoff,
 automation diagnostics disposal, NVML disposal, and ViewModel disposal.
-`Sussudio/MainWindow.ShutdownCleanup.cs` is the XAML-facing `Closed` adapter and
-wires MainWindow cleanup delegates into the controller.
+`Sussudio/MainWindow.ShutdownCleanup.cs` is the XAML-facing shutdown cleanup
+adapter-family marker. `Sussudio/MainWindow.ShutdownCleanup.Composition.cs`
+wires MainWindow cleanup delegates into the controller,
+`Sussudio/MainWindow.ShutdownCleanup.Event.cs` owns the stable `Closed` event
+adapter, and `Sussudio/MainWindow.ShutdownCleanup.Adapters.cs` owns the timer,
+event-detach, stats, recording-visual, and preview-size cleanup delegate
+adapters.
 Native `AppWindow` lookup, ViewModel window handle handoff, minimum-size
 subclassing, DWM cloak/dark-mode setup, first-composed-frame shell reveal
 scheduling/cancellation, initial shell size, icon, and uncloaking now live in
@@ -3451,8 +3462,12 @@ Preview startup loading overlay presentation now lives in
 timeout recovery stay in `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`.
 Top-level preview resize telemetry throttling now lives in
 `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs`.
-`MainWindow.PreviewRenderer.cs` owns the `SizeChanged` adapter and renderer-host
-reset handoff; reinit renderer-stop/timeout policy lives with
+`Sussudio/MainWindow.PreviewRenderer.cs` is the preview renderer adapter-family
+marker, `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires renderer-host
+context callbacks, `Sussudio/MainWindow.PreviewRenderer.ResizeTelemetry.cs`
+owns the `SizeChanged` adapter and renderer-host reset handoff, and
+`Sussudio/MainWindow.PreviewRenderer.Lifecycle.cs` owns renderer start, stop,
+shutdown, and reinit-unsafe-window adapters; reinit renderer-stop/timeout policy lives with
 `PreviewRendererHostController.Reinit.cs`; preview surface presentation lives with
 `PreviewSurfacePresentationController`, and preview shadow visuals live with
 `PreviewSurfaceShadowController`.

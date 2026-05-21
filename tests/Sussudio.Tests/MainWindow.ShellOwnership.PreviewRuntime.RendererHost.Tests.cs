@@ -10,7 +10,7 @@ static partial class Program
                 Directory.GetFiles(Path.Combine(GetRepoRoot(), "Sussudio"), "MainWindow*.cs")
                     .Select(File.ReadAllText))
             .Replace("\r\n", "\n");
-        var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs").Replace("\r\n", "\n");
+        var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
         var previewRendererHostControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs").Replace("\r\n", "\n");
         var previewRendererHostLifecycleText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Lifecycle.cs").Replace("\r\n", "\n");
         var previewRendererHostD3dText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.D3D.cs").Replace("\r\n", "\n");
