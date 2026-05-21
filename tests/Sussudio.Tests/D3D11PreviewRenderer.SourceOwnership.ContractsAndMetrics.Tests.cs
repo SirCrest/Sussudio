@@ -56,20 +56,32 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var frameTypesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameTypes.cs")
+        var pendingFrameText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrame.cs")
+            .Replace("\r\n", "\n");
+        var metricTypesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricTypes.cs")
+            .Replace("\r\n", "\n");
+        var metricSampleHelpersText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricSampleHelpers.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(frameTypesText, "private sealed class PendingFrame : IDisposable");
-        AssertContains(frameTypesText, "public readonly record struct PresentCadenceMetrics(");
-        AssertContains(frameTypesText, "public readonly record struct CpuStageTimingMetrics(");
-        AssertContains(frameTypesText, "public readonly record struct RenderCpuTimingMetrics(");
-        AssertContains(frameTypesText, "public readonly record struct PipelineLatencyMetrics(");
-        AssertContains(frameTypesText, "public readonly record struct FrameLatencyWaitMetrics(");
-        AssertContains(frameTypesText, "public readonly record struct FrameOwnershipMetrics(");
-        AssertContains(frameTypesText, "public readonly record struct DxgiFrameStatisticsMetrics(");
+        AssertContains(pendingFrameText, "private sealed class PendingFrame : IDisposable");
+        AssertContains(pendingFrameText, "ArrayPool<byte>.Shared.Return(RawData);");
+        AssertContains(pendingFrameText, "FrameLease?.Dispose();");
+        AssertContains(metricTypesText, "public readonly record struct PresentCadenceMetrics(");
+        AssertContains(metricTypesText, "public readonly record struct CpuStageTimingMetrics(");
+        AssertContains(metricTypesText, "public readonly record struct RenderCpuTimingMetrics(");
+        AssertContains(metricTypesText, "public readonly record struct PipelineLatencyMetrics(");
+        AssertContains(metricTypesText, "public readonly record struct FrameLatencyWaitMetrics(");
+        AssertContains(metricTypesText, "public readonly record struct FrameOwnershipMetrics(");
+        AssertContains(metricTypesText, "public readonly record struct DxgiFrameStatisticsMetrics(");
+        AssertContains(metricSampleHelpersText, "private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)");
+        AssertContains(metricSampleHelpersText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
+        AssertContains(metricSampleHelpersText, "private static double TicksToMs(long ticks)");
+        AssertContains(metricSampleHelpersText, "private static bool IsValidRenderCpuStageMs(double value)");
         AssertDoesNotContain(rootText, "private sealed class PendingFrame : IDisposable");
         AssertDoesNotContain(rootText, "public readonly record struct PresentCadenceMetrics(");
         AssertDoesNotContain(rootText, "public readonly record struct DxgiFrameStatisticsMetrics(");
+        AssertDoesNotContain(pendingFrameText, "public readonly record struct PresentCadenceMetrics(");
+        AssertDoesNotContain(metricTypesText, "private sealed class PendingFrame : IDisposable");
 
         return Task.CompletedTask;
     }
@@ -176,6 +188,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var metricWindowsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricWindows.cs")
             .Replace("\r\n", "\n");
+        var metricSampleHelpersText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricSampleHelpers.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(presentCadenceMetricsText, "private readonly object _presentCadenceLock = new();");
         AssertContains(presentCadenceMetricsText, "private double[] _presentIntervalWindowMs = new double[1200];");
@@ -198,11 +212,19 @@ static partial class Program
         AssertContains(metricWindowsText, "private void ResetPresentCadence()");
         AssertContains(metricWindowsText, "var targetSize = Math.Max(600, (int)Math.Ceiling(fps * CadenceWindowSeconds));");
         AssertContains(metricWindowsText, "Array.Clear(_slowFrameDiagnostics, 0, _slowFrameDiagnostics.Length);");
+        AssertContains(metricSampleHelpersText, "private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)");
+        AssertContains(metricSampleHelpersText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
+        AssertContains(metricSampleHelpersText, "private static double TicksToMs(long ticks)");
+        AssertContains(metricSampleHelpersText, "private static bool IsValidRenderCpuStageMs(double value)");
         AssertDoesNotContain(trackingText, "public void SetExpectedFrameRate(double fps)");
         AssertDoesNotContain(trackingText, "private void ResetPresentCadence()");
+        AssertDoesNotContain(trackingText, "private static double TicksToMs(long ticks)");
+        AssertDoesNotContain(trackingText, "private static bool IsValidRenderCpuStageMs(double value)");
         AssertDoesNotContain(metricsText, "private double TrackPresentCadence(");
         AssertDoesNotContain(metricsText, "private void TrackRenderCpuTiming(");
         AssertDoesNotContain(metricsText, "private void ResetPresentCadence()");
+        AssertDoesNotContain(metricsText, "private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)");
+        AssertDoesNotContain(metricsText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
         AssertDoesNotContain(metricsText, "public PresentCadenceMetrics GetPresentCadenceMetrics(double expectedIntervalMs)");
         AssertDoesNotContain(rootText, "private readonly object _presentCadenceLock = new();");
         AssertDoesNotContain(rootText, "private long _lastPresentTick;");

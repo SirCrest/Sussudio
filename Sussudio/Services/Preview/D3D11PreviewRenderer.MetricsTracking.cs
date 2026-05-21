@@ -136,11 +136,4 @@ internal sealed partial class D3D11PreviewRenderer
             }
         }
     }
-
-    private static double TicksToMs(long ticks)
-        => ticks <= 0 ? 0 : ticks * 1000.0 / Stopwatch.Frequency;
-
-    private static bool IsValidRenderCpuStageMs(double value)
-        => value >= 0 && value <= 5000 && !double.IsNaN(value) && !double.IsInfinity(value);
-
 }
