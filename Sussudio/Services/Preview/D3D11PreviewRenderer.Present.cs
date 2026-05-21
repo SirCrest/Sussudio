@@ -28,14 +28,7 @@ internal sealed partial class D3D11PreviewRenderer
             throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
         }
 
-        if (Interlocked.Exchange(ref _firstFrameRaised, 1) == 0)
-        {
-            Logger.Log(firstFrameMessage);
-            if (!_dispatcherQueue.TryEnqueue(() => FirstFrameRendered?.Invoke()))
-            {
-                Logger.Log("D3D_FIRST_FRAME_UI_ENQUEUE_FAILED");
-            }
-        }
+        NotifyFirstFrameRendered(firstFrameMessage);
 
         Interlocked.Increment(ref _framesRendered);
         var presentIntervalMs = TrackPresentCadence(frame.CountForPresentCadence);

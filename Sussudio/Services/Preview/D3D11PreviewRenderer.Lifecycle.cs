@@ -45,7 +45,7 @@ internal sealed partial class D3D11PreviewRenderer
 
             Interlocked.Exchange(ref _stopRequested, 0);
             Interlocked.Exchange(ref _compositionTransformDirty, 1);
-            Interlocked.Exchange(ref _firstFrameRaised, 0);
+            ResetFirstFrameNotification();
             Interlocked.Exchange(ref _sharedDeviceResetPending, 0);
             ResetFrameReady("start");
 

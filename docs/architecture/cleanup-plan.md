@@ -2395,8 +2395,10 @@ fields should live with the partial that mutates or projects them: keep
 slow-frame diagnostic ring/write state in
 `D3D11PreviewRenderer.SlowFrameDiagnostics.cs`, startup/disposal lifecycle state
 in `D3D11PreviewRenderer.Lifecycle.cs`, stop/unbind/native-call fence state in
-`D3D11PreviewRenderer.StopLifecycle.cs`, render-thread failure and first-frame
-state in `D3D11PreviewRenderer.RenderThread.cs`, queue state and signaling in
+`D3D11PreviewRenderer.StopLifecycle.cs`, render-thread failure state in
+`D3D11PreviewRenderer.RenderThreadFailures.cs`, first-frame notification state in
+`D3D11PreviewRenderer.FirstFrameNotifications.cs`, render-loop orchestration in
+`D3D11PreviewRenderer.RenderThread.cs`, queue state and signaling in
 `D3D11PreviewRenderer.PendingFrames.cs`, D3D device/swap-chain resources in
 `D3D11PreviewRenderer.Resources.cs`, input texture resources in
 `D3D11PreviewRenderer.InputResources.cs`, HDR shader input resources in
@@ -2464,8 +2466,10 @@ D3D preview renderer render-thread orchestration now lives in
 MMCSS registration, frame-ready wait loop, shared-device reset consumption,
 composition-transform wake handling, pending-frame consumption, stale-generation
 drops, device-lost handoff, final pending-frame drain, frame-capture failure,
-and render-thread failure telemetry there; keep render-pass selection and
-VideoProcessor execution in `D3D11PreviewRenderer.RenderPasses.cs`, shader draw
+and failure notification handoff there; keep render-thread failure telemetry in
+`D3D11PreviewRenderer.RenderThreadFailures.cs`, first-frame notification reset
+and UI enqueue in `D3D11PreviewRenderer.FirstFrameNotifications.cs`, render-pass
+selection and VideoProcessor execution in `D3D11PreviewRenderer.RenderPasses.cs`, shader draw
 execution in `D3D11PreviewRenderer.Nv12ShaderPass.cs` and
 `D3D11PreviewRenderer.HdrShaderPass.cs`, shared present accounting in
 `D3D11PreviewRenderer.Present.cs`, and shader resource/cache state in
