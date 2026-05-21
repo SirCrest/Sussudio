@@ -1,4 +1,3 @@
-using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -7,8 +6,6 @@ namespace Sussudio.Controllers;
 internal sealed class PreviewStartupOverlayControllerContext
 {
     public required Panel PreviewLoadingOverlay { get; init; }
-    public required Action<UIElement> FadeInElement { get; init; }
-    public required Action<UIElement> FadeOutElement { get; init; }
 }
 
 internal sealed class PreviewStartupOverlayController
@@ -24,7 +21,7 @@ internal sealed class PreviewStartupOverlayController
     {
         var ring = (ProgressRing)_context.PreviewLoadingOverlay.Children[0];
         ring.IsActive = true;
-        _context.FadeInElement(_context.PreviewLoadingOverlay);
+        PreviewTransitionAnimationController.FadeInElement(_context.PreviewLoadingOverlay);
     }
 
     public void Stop(bool isPreviewReinitAnimating)
@@ -43,6 +40,6 @@ internal sealed class PreviewStartupOverlayController
             return;
         }
 
-        _context.FadeOutElement(_context.PreviewLoadingOverlay);
+        PreviewTransitionAnimationController.FadeOutElement(_context.PreviewLoadingOverlay);
     }
 }

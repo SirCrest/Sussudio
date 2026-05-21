@@ -3321,13 +3321,13 @@ Static shell ThemeShadow and translation setup for the control bar and record
 button now live in `Sussudio/Controllers/Shell/ShellElevationController.cs`.
 `MainWindow.ShellChrome.cs` is the XAML-facing adapter.
 
-Preview shell/content fade and scale transitions plus unavailable-placeholder
-presentation now live in
+Preview shell/content fade and scale transitions, video-shadow fade timing, and
+unavailable-placeholder presentation now live in
 `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`.
 `MainWindow.PreviewTransitions.cs` is the XAML-facing adapter for transition,
-delayed fade-in, and startup overlay presentation; shared compositor
-shadow opacity fades live in
-`Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs`.
+delayed fade-in, and startup overlay presentation; video-shadow fade callbacks
+route through `PreviewSurfaceShadowController` and shared compositor shadow
+opacity fades live in `Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs`.
 
 Preview button glyph/tooltip presentation for Start Preview and Stop Preview
 now lives in `Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs`.

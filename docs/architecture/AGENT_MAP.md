@@ -1759,8 +1759,8 @@ Primary current owners:
   `MainWindow.StatusStripPresentation.cs`; broad domain property-name switches
   and status-strip routing logic live in focused controllers/partials.
 - `Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs` owns shared
-  compositor opacity fade helpers for preview shadow visuals. XAML-facing
-  adapters call it without adding state or dispatcher hops.
+  compositor opacity fade helpers for preview shadow visuals.
+  `PreviewSurfaceShadowController` calls it without adding dispatcher hops.
 - `Sussudio/Controllers/Audio/Meter/AudioMeterController.cs` owns audio/microphone meter
   setup, the XAML/view-model dependency bag, and shared runtime fields.
   `Sussudio/Controllers/Audio/Meter/AudioMeterController.MeterState.cs`
@@ -3297,10 +3297,11 @@ Primary current owners:
   ThemeShadow and translation setup for the control bar and record button.
   `MainWindow.ShellChrome.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
-  shell/content fade and scale transitions, unavailable-placeholder fades, and
-  startup/unavailable presentation prep. `MainWindow.PreviewTransitions.cs` is
-  the XAML-facing adapter for transition, delayed fade-in, and startup overlay
-  presentation; shared video-shadow fades route through `PreviewShadowFadeAnimator`.
+  shell/content fade and scale transitions, video-shadow fade timing,
+  unavailable-placeholder fades, and startup/unavailable presentation prep.
+  `MainWindow.PreviewTransitions.cs` is the XAML-facing adapter for transition,
+  delayed fade-in, and startup overlay presentation; video-shadow fade callbacks
+  route through `PreviewSurfaceShadowController` and `PreviewShadowFadeAnimator`.
 - `Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs` owns preview
   button glyph and tooltip presentation for Start Preview and Stop Preview.
   `MainWindow.PropertyChangedPreview.cs` wires preview button presentation into

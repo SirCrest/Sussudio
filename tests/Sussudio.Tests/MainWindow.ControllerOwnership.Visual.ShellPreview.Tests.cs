@@ -69,18 +69,21 @@ static partial class Program
         AssertContains(adapterText, "PreviewBorder = PreviewBorder,");
         AssertContains(adapterText, "PreviewContentGrid = PreviewContentGrid,");
         AssertContains(adapterText, "StopPreviewFadeInTimer = StopPreviewFadeInTimer,");
+        AssertContains(adapterText, "FadeOutVideoFrameShadow = FadeOutVideoFrameShadow,");
+        AssertContains(adapterText, "FadeInVideoFrameShadow = FadeInVideoFrameShadow,");
         AssertContains(adapterText, "=> _previewTransitionAnimationController.AddPreviewShellEntranceAnimations(storyboard, easing, beginMs, durationMs);");
         AssertContains(adapterText, "=> _previewTransitionAnimationController.ResetPreviewContentTransform();");
-        AssertContains(adapterText, "FadeOutVideoFrameShadow(durationMs: 150);");
-        AssertContains(adapterText, "FadeInVideoFrameShadow(delayMs: 0, durationMs: 400);");
+        AssertContains(adapterText, "=> _previewTransitionAnimationController.AnimatePreviewOutAsync();");
+        AssertContains(adapterText, "=> _previewTransitionAnimationController.AnimatePreviewInAsync();");
         AssertContains(adapterText, "=> _previewTransitionAnimationController.PrepareStartupPresentation();");
-        AssertContains(adapterText, "=> PreviewTransitionAnimationController.FadeInElement(element);");
         AssertContains(mainWindowText, "InitializePreviewTransitionAnimationController();");
         AssertContains(launchEntranceShellText, "_context.AddPreviewShellEntranceAnimations(storyboard, easing, 900, 400);");
         AssertContains(controllerText, "internal sealed class PreviewTransitionAnimationController");
         AssertContains(controllerText, "public void AddPreviewShellEntranceAnimations(Storyboard storyboard, EasingFunctionBase easing, int beginMs, int durationMs)");
         AssertContains(controllerText, "public Task AnimatePreviewOutAsync()");
         AssertContains(controllerText, "public Task AnimatePreviewInAsync()");
+        AssertContains(controllerText, "_context.FadeOutVideoFrameShadow(150);");
+        AssertContains(controllerText, "_context.FadeInVideoFrameShadow(0, 400);");
         AssertContains(controllerText, "public void PrepareStartupPresentation()");
         AssertContains(controllerText, "public void RevealUnavailablePlaceholder()");
         AssertContains(controllerText, "public static void FadeOutElement(UIElement element)");
@@ -100,6 +103,8 @@ static partial class Program
         AssertContains(shadowControllerText, "PreviewShadowFadeAnimator.FadeOut(_videoShadowVisual, durationMs);");
         AssertContains(shadowControllerText, "PreviewShadowFadeAnimator.FadeIn(_controlBarShadowVisual, delayMs, durationMs);");
         AssertDoesNotContain(controllerText, "PreviewShadowFadeAnimator.");
+        AssertDoesNotContain(adapterText, "FadeOutVideoFrameShadow(durationMs: 150);");
+        AssertDoesNotContain(adapterText, "FadeInVideoFrameShadow(delayMs: 0, durationMs: 400);");
         AssertDoesNotContain(adapterText, "private Task AnimatePreviewTransitionAsync(");
         AssertDoesNotContain(adapterText, "private static Task BeginStoryboardAsync(");
 
@@ -115,8 +120,6 @@ static partial class Program
         AssertContains(adapterText, "private PreviewStartupOverlayController _previewStartupOverlayController = null!;");
         AssertContains(adapterText, "private void InitializePreviewStartupOverlayController()");
         AssertContains(adapterText, "PreviewLoadingOverlay = PreviewLoadingOverlay,");
-        AssertContains(adapterText, "FadeInElement = FadeInElement,");
-        AssertContains(adapterText, "FadeOutElement = FadeOutElement,");
         AssertContains(adapterText, "=> _previewStartupOverlayController.Start();");
         AssertContains(adapterText, "=> _previewStartupOverlayController.Stop(IsPreviewReinitAnimating);");
         AssertContains(mainWindowText, "InitializePreviewStartupOverlayController();");
@@ -128,7 +131,10 @@ static partial class Program
         AssertContains(controllerText, "ring.IsActive = false;");
         AssertContains(controllerText, "_context.PreviewLoadingOverlay.Visibility = Visibility.Collapsed;");
         AssertContains(controllerText, "_context.PreviewLoadingOverlay.Opacity = 1.0;");
-        AssertContains(controllerText, "_context.FadeOutElement(_context.PreviewLoadingOverlay);");
+        AssertContains(controllerText, "PreviewTransitionAnimationController.FadeInElement(_context.PreviewLoadingOverlay);");
+        AssertContains(controllerText, "PreviewTransitionAnimationController.FadeOutElement(_context.PreviewLoadingOverlay);");
+        AssertDoesNotContain(adapterText, "FadeInElement = FadeInElement,");
+        AssertDoesNotContain(adapterText, "FadeOutElement = FadeOutElement,");
         AssertDoesNotContain(adapterText, "var ring = (ProgressRing)");
         AssertDoesNotContain(adapterText, "PreviewLoadingOverlay.Visibility = Visibility.Collapsed;");
 

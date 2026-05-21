@@ -57,12 +57,13 @@ static partial class Program
         AssertDoesNotContain(playEntranceAnimation, "Storyboard.SetTarget(volumeAnim, PreviewVolumeSlider);");
 
         var animatePreviewInAdapter = ExtractMemberCode(previewTransitionText, "AnimatePreviewInAsync");
-        AssertContains(animatePreviewInAdapter, "FadeInVideoFrameShadow(delayMs: 0, durationMs: 400);");
         AssertContains(animatePreviewInAdapter, "_previewTransitionAnimationController.AnimatePreviewInAsync();");
 
         var animatePreviewIn = ExtractMemberCode(previewTransitionControllerText, "AnimatePreviewInAsync");
+        AssertContains(animatePreviewIn, "_context.FadeInVideoFrameShadow(0, 400);");
         AssertContains(animatePreviewIn, "AnimatePreviewShellInAsync(350)");
         AssertContains(animatePreviewIn, "AnimatePreviewTransitionAsync(1.0, 1.0, 250, EasingMode.EaseOut)");
+        AssertOccursBefore(animatePreviewIn, "_context.FadeInVideoFrameShadow(0, 400);", "AnimatePreviewShellInAsync(350)");
 
         var preparePresentation = ExtractMemberCode(previewTransitionControllerText, "PrepareStartupPresentation");
         AssertContains(preparePresentation, "FadeOutElement(_context.NoDevicePlaceholder);");

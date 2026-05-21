@@ -62,8 +62,6 @@ public sealed partial class MainWindow
         _previewStartupOverlayController = new PreviewStartupOverlayController(new PreviewStartupOverlayControllerContext
         {
             PreviewLoadingOverlay = PreviewLoadingOverlay,
-            FadeInElement = FadeInElement,
-            FadeOutElement = FadeOutElement,
         });
     }
 
@@ -79,6 +77,8 @@ public sealed partial class MainWindow
             StopPreviewFadeInTimer = StopPreviewFadeInTimer,
             StartPreviewStartupOverlay = StartPreviewStartupOverlay,
             StopPreviewStartupOverlay = StopPreviewStartupOverlay,
+            FadeOutVideoFrameShadow = FadeOutVideoFrameShadow,
+            FadeInVideoFrameShadow = FadeInVideoFrameShadow,
         });
     }
 
@@ -123,16 +123,10 @@ public sealed partial class MainWindow
         => _previewStartupOverlayController.Stop(IsPreviewReinitAnimating);
 
     private Task AnimatePreviewOutAsync()
-    {
-        FadeOutVideoFrameShadow(durationMs: 150);
-        return _previewTransitionAnimationController.AnimatePreviewOutAsync();
-    }
+        => _previewTransitionAnimationController.AnimatePreviewOutAsync();
 
     private Task AnimatePreviewInAsync()
-    {
-        FadeInVideoFrameShadow(delayMs: 0, durationMs: 400);
-        return _previewTransitionAnimationController.AnimatePreviewInAsync();
-    }
+        => _previewTransitionAnimationController.AnimatePreviewInAsync();
 
     private Task TogglePreviewFromButtonAsync()
         => _previewButtonActionController.TogglePreviewAsync(nameof(PreviewButton_Click));
@@ -178,9 +172,4 @@ public sealed partial class MainWindow
                 ShowStartPreviewButtonPresentation = ShowStartPreviewButtonPresentation,
             });
 
-    private static void FadeOutElement(UIElement element)
-        => PreviewTransitionAnimationController.FadeOutElement(element);
-
-    private static void FadeInElement(UIElement element)
-        => PreviewTransitionAnimationController.FadeInElement(element);
 }

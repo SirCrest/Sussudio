@@ -16,6 +16,8 @@ internal sealed class PreviewTransitionAnimationControllerContext
     public required Action StopPreviewFadeInTimer { get; init; }
     public required Action StartPreviewStartupOverlay { get; init; }
     public required Action StopPreviewStartupOverlay { get; init; }
+    public required Action<int> FadeOutVideoFrameShadow { get; init; }
+    public required Action<int, int> FadeInVideoFrameShadow { get; init; }
 }
 
 internal sealed class PreviewTransitionAnimationController
@@ -76,12 +78,18 @@ internal sealed class PreviewTransitionAnimationController
     }
 
     public Task AnimatePreviewOutAsync()
-        => AnimatePreviewTransitionAsync(0.0, 0.97, 200, EasingMode.EaseIn);
+    {
+        _context.FadeOutVideoFrameShadow(150);
+        return AnimatePreviewTransitionAsync(0.0, 0.97, 200, EasingMode.EaseIn);
+    }
 
     public Task AnimatePreviewInAsync()
-        => Task.WhenAll(
+    {
+        _context.FadeInVideoFrameShadow(0, 400);
+        return Task.WhenAll(
             AnimatePreviewShellInAsync(350),
             AnimatePreviewTransitionAsync(1.0, 1.0, 250, EasingMode.EaseOut));
+    }
 
     public Task AnimatePreviewShellInAsync(int durationMs)
     {
