@@ -2909,9 +2909,12 @@ fields; do not split it into post-construction mutators or shallow fragment
 records just to reduce line count.
 source telemetry, backend, suppression, and circuit-state projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotSourceTelemetry.cs`;
-Flashback buffer, startup-cache, backend-staleness reason policy, encoder
-summary, live queue, force-rotate, backpressure, and GPU queue projection lives
-in `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.cs`;
+Flashback buffer, startup-cache, backend-staleness reason policy, and encoder
+summary projection lives in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.cs`;
+live Flashback audio/video queue, force-rotate, backpressure, and GPU queue
+projection lives in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.Queues.cs`;
 recording health orchestration and LibAv-only CUDA queue projection live in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs`, while
 active recording backend selection, LibAv-vs-Flashback fallback, and

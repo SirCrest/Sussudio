@@ -57,6 +57,7 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(flashbackBufferText, "bufMgr?.StartupCacheOverBudget ?? false");
         AssertContains(flashbackBufferText, "fbSink?.EncoderFrameRateDenominator");
         AssertContains(flashbackBufferText, "private readonly record struct FlashbackBufferHealthSnapshotFields");
+        AssertDoesNotContain(flashbackBufferText, "private static FlashbackQueueHealthSnapshotFields CaptureFlashbackQueueHealthSnapshotFields(");
 
     }
 
@@ -69,6 +70,8 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
             .Replace("\r\n", "\n");
         var flashbackBufferText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.cs")
             .Replace("\r\n", "\n");
+        var flashbackQueueText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.Queues.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var flashbackQueues = CaptureFlashbackQueueHealthSnapshotFields(");
         AssertContains(healthSnapshotAssemblerText, "FlashbackVideoQueueDepth = flashbackQueues.VideoQueueDepth,");
@@ -79,11 +82,12 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
         AssertDoesNotContain(healthSnapshotText, "FlashbackForceRotateActive = fbSink?.IsForceRotateActive");
         AssertDoesNotContain(healthSnapshotText, "FlashbackGpuQueueLastRejectReason = fbSink?.LastGpuQueueRejectReason");
 
-        AssertContains(flashbackBufferText, "private static FlashbackQueueHealthSnapshotFields CaptureFlashbackQueueHealthSnapshotFields(");
-        AssertContains(flashbackBufferText, "fbSink?.VideoQueueOldestFrameAgeMs ?? 0");
-        AssertContains(flashbackBufferText, "fbSink?.IsForceRotateActive ?? false");
-        AssertContains(flashbackBufferText, "fbSink?.LastGpuQueueRejectReason ?? string.Empty");
-        AssertContains(flashbackBufferText, "private readonly record struct FlashbackQueueHealthSnapshotFields");
+        AssertDoesNotContain(flashbackBufferText, "private readonly record struct FlashbackQueueHealthSnapshotFields");
+        AssertContains(flashbackQueueText, "private static FlashbackQueueHealthSnapshotFields CaptureFlashbackQueueHealthSnapshotFields(");
+        AssertContains(flashbackQueueText, "fbSink?.VideoQueueOldestFrameAgeMs ?? 0");
+        AssertContains(flashbackQueueText, "fbSink?.IsForceRotateActive ?? false");
+        AssertContains(flashbackQueueText, "fbSink?.LastGpuQueueRejectReason ?? string.Empty");
+        AssertContains(flashbackQueueText, "private readonly record struct FlashbackQueueHealthSnapshotFields");
 
     }
 
