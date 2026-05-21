@@ -93,4 +93,8 @@ public sealed class FlashbackEncoderSinkContractsTests
     [Fact]
     public Task FlashbackEncoderSinkStopAndDisposeLifecyclesStaySplit()
         => global::Program.FlashbackEncoderSink_StopAndDisposeLifecyclesStaySplit();
+
+    [Fact]
+    public Task FlashbackEncoderSinkProducerInputsLiveInFocusedPartials()
+        => global::Program.FlashbackEncoderSink_ProducerInputsLiveInFocusedPartials();
 }

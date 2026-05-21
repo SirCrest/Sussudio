@@ -2217,10 +2217,15 @@ Keep encoding-thread force-rotate request capture, queue drain-to-rotate
 ordering, commit/rotation execution, result completion, failure logging, and
 draining-gate cleanup there.
 
-Flashback encoder producer entry points now live in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.cs`. Keep raw/lease/GPU
-video enqueue entry points, audio/microphone enqueue entry points, force-rotate
-input rejection guards, and hot WASAPI writer adapters there.
+Flashback encoder video producer entry points now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.Video.cs`. Keep raw,
+lease, and GPU video enqueue entry points, frame-size validation, video/GPU
+input rejection guards, and texture AddRef ownership there.
+
+Flashback encoder audio producer entry points now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.Audio.cs`. Keep
+audio/microphone enqueue entry points, force-rotate input rejection guards, and
+hot WASAPI writer adapters there.
 
 Flashback encoder stop/dispose ownership now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Lifetime.cs` and
