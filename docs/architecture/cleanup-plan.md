@@ -944,16 +944,20 @@ checks are split by DTO surface across CPU/MJPEG, MJPEG preview and packet hash,
 preview diagnostics, capture commands, recording, Flashback recording,
 Flashback playback, Flashback export, and visual cadence owner files.
 
-`Sussudio/Models/Capture/CaptureHealthSnapshot.Flashback.cs` now owns the
-Flashback playback, Flashback encoder/backend, and Flashback export health DTO
-properties. Keep source-signal, queue-age, and A/V sync extension fields in the
-root `CaptureHealthSnapshot.cs` compatibility partial.
-`Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.Mjpeg.cs` owns the base
-diagnostics DTO's MJPEG decode, jitter, packet-hash, visual-cadence, and
-per-decoder telemetry properties. Keep session state, source telemetry,
-recording queue, Flashback queue, and audio-drop fields in the root
-`CaptureDiagnosticsSnapshot.cs` compatibility partial until those families are
-large enough to justify their own owner.
+`Sussudio/Models/Capture/CaptureHealthSnapshot.FlashbackBackend.cs`,
+`CaptureHealthSnapshot.FlashbackPlayback.cs`, and
+`CaptureHealthSnapshot.FlashbackExport.cs` now own the Flashback encoder/backend,
+playback, and export health DTO properties. Keep source-signal, queue-age, and
+A/V sync extension fields in the root `CaptureHealthSnapshot.cs` compatibility
+partial.
+`Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.SourceTelemetry.cs`,
+`CaptureDiagnosticsSnapshot.CaptureCadence.cs`,
+`CaptureDiagnosticsSnapshot.Recording.cs`, `CaptureDiagnosticsSnapshot.Flashback.cs`,
+and `CaptureDiagnosticsSnapshot.Mjpeg.cs` own the base diagnostics DTO's source
+telemetry, capture-cadence, recording/audio queue, Flashback queue, and MJPEG
+diagnostics properties. Keep session state, negotiated format, observed frame,
+and HDR auto-downgrade fields in the root `CaptureDiagnosticsSnapshot.cs`
+compatibility partial.
 
 `tests/Sussudio.Tests/RecordingQueue.Tests.cs` is now the shared recording
 queue source-reader helper shell. Capture health snapshot ownership coverage is

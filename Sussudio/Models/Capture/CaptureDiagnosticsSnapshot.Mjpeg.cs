@@ -2,6 +2,13 @@ using System;
 
 namespace Sussudio.Models;
 
+public sealed record MjpegDecoderHealthSnapshot(
+    int WorkerIndex,
+    int SampleCount,
+    double AvgMs,
+    double P95Ms,
+    double MaxMs);
+
 public partial class CaptureDiagnosticsSnapshot
 {
     public int MjpegDecodeSampleCount { get; init; }

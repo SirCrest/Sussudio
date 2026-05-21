@@ -3,13 +3,6 @@ using System.Collections.Generic;
 
 namespace Sussudio.Models;
 
-public sealed record MjpegDecoderHealthSnapshot(
-    int WorkerIndex,
-    int SampleCount,
-    double AvgMs,
-    double P95Ms,
-    double MaxMs);
-
 /// <summary>
 /// Full health snapshot extending <see cref="CaptureDiagnosticsSnapshot"/> with
 /// flashback playback/encoder detail, source signal metadata, and AV-sync data.

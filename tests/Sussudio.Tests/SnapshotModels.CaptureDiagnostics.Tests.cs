@@ -14,11 +14,29 @@ public partial class SnapshotModelsTests
     public void CaptureDiagnosticsSnapshot_DefaultsAndRoundTripsCoreTelemetry()
     {
         var diagnosticsRootText = ReadRepoFile("Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.cs");
+        var diagnosticsSourceTelemetryText = ReadRepoFile("Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.SourceTelemetry.cs");
+        var diagnosticsCaptureCadenceText = ReadRepoFile("Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.CaptureCadence.cs");
+        var diagnosticsRecordingText = ReadRepoFile("Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.Recording.cs");
+        var diagnosticsFlashbackText = ReadRepoFile("Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.Flashback.cs");
         var diagnosticsMjpegText = ReadRepoFile("Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.Mjpeg.cs");
         AssertContains(diagnosticsRootText, "public partial class CaptureDiagnosticsSnapshot");
+        AssertContains(diagnosticsSourceTelemetryText, "public partial class CaptureDiagnosticsSnapshot");
+        AssertContains(diagnosticsSourceTelemetryText, "public SourceTelemetryAvailability SourceTelemetryAvailability { get; init; } = SourceTelemetryAvailability.Unknown;");
+        AssertContains(diagnosticsSourceTelemetryText, "public bool? SourceIsHdr { get; init; }");
+        AssertContains(diagnosticsCaptureCadenceText, "public int CaptureCadenceSampleCount { get; init; }");
+        AssertContains(diagnosticsCaptureCadenceText, "public double[] CaptureCadenceRecentIntervalsMs { get; init; } = Array.Empty<double>();");
+        AssertContains(diagnosticsRecordingText, "public int RecordingVideoQueueCapacity { get; init; }");
+        AssertContains(diagnosticsRecordingText, "public long AudioChunksDropped { get; init; }");
+        AssertContains(diagnosticsFlashbackText, "public bool FlashbackActive { get; init; }");
+        AssertContains(diagnosticsFlashbackText, "public bool FlashbackForceRotateActive { get; init; }");
         AssertContains(diagnosticsMjpegText, "public partial class CaptureDiagnosticsSnapshot");
+        AssertContains(diagnosticsMjpegText, "public sealed record MjpegDecoderHealthSnapshot(");
         AssertContains(diagnosticsMjpegText, "public int MjpegDecodeSampleCount { get; init; }");
         AssertContains(diagnosticsMjpegText, "public double[] VisualCenterCadenceRecentChangeIntervalsMs { get; init; } = Array.Empty<double>();");
+        AssertDoesNotContain(diagnosticsRootText, "public SourceTelemetryAvailability SourceTelemetryAvailability { get; init; }");
+        AssertDoesNotContain(diagnosticsRootText, "public int CaptureCadenceSampleCount { get; init; }");
+        AssertDoesNotContain(diagnosticsRootText, "public int RecordingVideoQueueCapacity { get; init; }");
+        AssertDoesNotContain(diagnosticsRootText, "public bool FlashbackForceRotateActive { get; init; }");
         AssertDoesNotContain(diagnosticsRootText, "public int MjpegDecodeSampleCount { get; init; }");
 
         var snapshotType = RequireType("Sussudio.Models.CaptureDiagnosticsSnapshot");
