@@ -5,6 +5,7 @@ static partial class Program
         var captureServiceText = ReadCaptureServiceDiagnosticsRefreshSource();
         var flashbackBackendText = ReadFlashbackBackendResourcesSource();
         var exportOperationsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs");
+        var exportBackendSnapshotText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportBackendSnapshot.cs");
         var exportCoreText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs");
         var exportRequestPreparationText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRequestPreparation.cs");
         var exportDiagnosticsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs");
@@ -12,7 +13,8 @@ static partial class Program
         AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
-        AssertContains(exportOperationsText, "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync(");
+        AssertDoesNotContain(exportOperationsText, "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync(");
+        AssertContains(exportBackendSnapshotText, "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync(");
         AssertContains(exportOperationsText, "return await ExportFlashbackCoreAsync(");
         AssertDoesNotContain(exportOperationsText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
         AssertContains(exportCoreText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
@@ -42,21 +44,15 @@ static partial class Program
         AssertContains(captureServiceText, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
         AssertContains(captureServiceText, "private void ReleaseFlashbackBackendLeaseIfHeld(ref bool backendLeaseHeld)");
         AssertContains(captureServiceText, "backendLeaseHeld = false;\n        ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, \"flashback_backend_lease\");");
-        var exportRangeMethod = ExtractTextBetween(
-            captureServiceText,
-            "internal async Task<FinalizeResult> ExportFlashbackRangeAsync",
-            "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
-        var exportLastNMethod = ExtractTextBetween(
-            exportOperationsText,
-            "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync",
-            "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync");
+        var exportRangeMethod = ExtractMemberCode(exportOperationsText, "ExportFlashbackRangeAsync");
+        var exportLastNMethod = ExtractMemberCode(exportOperationsText, "ExportFlashbackLastNSecondsAsync");
         AssertContains(exportRangeMethod, "SnapshotFlashbackExportBackendAsync(");
         AssertContains(exportRangeMethod, "operationName: \"range\",");
         AssertContains(exportRangeMethod, "snapshotExporter: snapshot.Exporter,");
         AssertContains(exportLastNMethod, "SnapshotFlashbackExportBackendAsync(");
         AssertContains(exportLastNMethod, "operationName: \"last_n\",");
         AssertContains(exportLastNMethod, "snapshotExporter: snapshot.Exporter,");
-        var backendSnapshotMethod = ExtractMemberCode(exportOperationsText, "SnapshotFlashbackExportBackendAsync");
+        var backendSnapshotMethod = ExtractMemberCode(exportBackendSnapshotText, "SnapshotFlashbackExportBackendAsync");
         AssertContains(backendSnapshotMethod, "new FlashbackExporter()");
         AssertContains(backendSnapshotMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
         AssertOccursBefore(backendSnapshotMethod, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);", "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");

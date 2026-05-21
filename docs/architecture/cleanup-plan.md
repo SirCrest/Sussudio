@@ -1787,10 +1787,13 @@ capture diagnostics both consume it.
 
 Flashback export entry points now live in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs`.
-Keep range export, last-N export, the shared backend snapshot helper, and
-session-lock release before native export there. The shared export lifetime now
-lives in `Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`;
-keep export-operation locking, eviction pause/resume, diagnostics completion,
+Keep range export, last-N export, and operation-specific range resolution there.
+Flashback export backend snapshotting now lives in
+`Sussudio/Services/Capture/CaptureService.FlashbackExportBackendSnapshot.cs`.
+Keep lock-scoped backend reference capture plus session/backend lock release
+before native export there. The shared export lifetime now lives in
+`Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`; keep
+export-operation locking, eviction pause/resume, diagnostics completion,
 exporter execution, and cleanup there. Shared request preparation now lives in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportRequestPreparation.cs`;
 keep force-rotate outcomes, fallback segment discovery, active-file fallback,

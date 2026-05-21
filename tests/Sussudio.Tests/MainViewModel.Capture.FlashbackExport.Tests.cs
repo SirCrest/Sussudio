@@ -11,11 +11,14 @@ static partial class Program
     {
         var exportOperationsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
             .Replace("\r\n", "\n");
+        var exportBackendSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportBackendSnapshot.cs")
+            .Replace("\r\n", "\n");
         var exportCoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             .Replace("\r\n", "\n");
         var exportRequestPreparationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRequestPreparation.cs")
             .Replace("\r\n", "\n");
         var captureServiceText = exportOperationsText
+            + "\n" + exportBackendSnapshotText
             + "\n" + exportCoreText
             + "\n" + exportRequestPreparationText
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
@@ -40,8 +43,10 @@ static partial class Program
 
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
-        AssertContains(exportOperationsText, "private readonly record struct FlashbackExportBackendSnapshot(");
-        AssertContains(exportOperationsText, "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync(");
+        AssertDoesNotContain(exportOperationsText, "private readonly record struct FlashbackExportBackendSnapshot(");
+        AssertDoesNotContain(exportOperationsText, "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync(");
+        AssertContains(exportBackendSnapshotText, "private readonly record struct FlashbackExportBackendSnapshot(");
+        AssertContains(exportBackendSnapshotText, "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync(");
         AssertContains(exportOperationsText, "return await ExportFlashbackCoreAsync(");
         AssertDoesNotContain(exportOperationsText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
         AssertContains(exportCoreText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
@@ -50,10 +55,7 @@ static partial class Program
         AssertContains(exportRequestPreparationText, "ForceRotateForExport");
         AssertContains(exportRequestPreparationText, "CreateFlashbackExportThrottleDelayProvider");
 
-        var rangeExport = ExtractTextBetween(
-            captureServiceText,
-            "internal async Task<FinalizeResult> ExportFlashbackRangeAsync",
-            "    internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
+        var rangeExport = ExtractMemberCode(exportOperationsText, "ExportFlashbackRangeAsync");
         AssertContains(rangeExport, "SnapshotFlashbackExportBackendAsync(");
         AssertContains(rangeExport, "operationName: \"range\",");
         AssertContains(rangeExport, "sessionReleaseOperation: \"flashback_export_snapshot_session\",");
@@ -63,10 +65,7 @@ static partial class Program
         AssertContains(rangeExport, "snapshotExporter: snapshot.Exporter,");
         AssertContains(rangeExport, "exportOperationLockAlreadyHeld: true,");
 
-        var lastNExport = ExtractTextBetween(
-            exportOperationsText,
-            "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync",
-            "    private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync");
+        var lastNExport = ExtractMemberCode(exportOperationsText, "ExportFlashbackLastNSecondsAsync");
         AssertContains(lastNExport, "SnapshotFlashbackExportBackendAsync(");
         AssertContains(lastNExport, "operationName: \"last_n\",");
         AssertContains(lastNExport, "sessionReleaseOperation: \"flashback_export_last_n_snapshot_session\",");
@@ -76,7 +75,7 @@ static partial class Program
         AssertContains(lastNExport, "snapshotExporter: snapshot.Exporter,");
         AssertContains(lastNExport, "exportOperationLockAlreadyHeld: true,");
 
-        var backendSnapshot = ExtractMemberCode(exportOperationsText, "SnapshotFlashbackExportBackendAsync");
+        var backendSnapshot = ExtractMemberCode(exportBackendSnapshotText, "SnapshotFlashbackExportBackendAsync");
         AssertContains(backendSnapshot, "var bufferManager = _flashbackBufferManager;");
         AssertContains(backendSnapshot, "var flashbackSink = _flashbackSink;");
         AssertContains(backendSnapshot, "var flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
