@@ -29,6 +29,8 @@ static partial class Program
         var captureModeOptionRebuildControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.Context.cs").Replace("\r\n", "\n");
         var captureModeOptionFrameRateRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.FrameRate.cs").Replace("\r\n", "\n");
         var captureModeOptionResolutionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.Resolution.cs").Replace("\r\n", "\n");
+        var frameRateTimingResolverText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.cs").Replace("\r\n", "\n");
+        var frameRateTimingResolverContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.Context.cs").Replace("\r\n", "\n");
         var deviceFormatProbeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
         var deviceFormatProbeControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.Context.cs").Replace("\r\n", "\n");
         var deviceFormatProbeRetargetApplierText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs").Replace("\r\n", "\n");
@@ -54,6 +56,10 @@ static partial class Program
 
         AssertContains(controllerGraphCaptureModesText, "private sealed partial class MainViewModelControllerGraph");
         AssertContains(controllerGraphDeviceText, "private sealed partial class MainViewModelControllerGraph");
+        AssertContains(controllerGraphCaptureModesText, "internal static MainViewModelFrameRateTimingResolver CreateFrameRateTimingResolver(MainViewModel viewModel)");
+        AssertContains(controllerGraphCaptureModesText, "new MainViewModelFrameRateTimingResolverContext");
+        AssertContains(controllerGraphCaptureModesText, "GetRuntimeSnapshot = () => viewModel._captureService.GetRuntimeSnapshot(),");
+        AssertContains(controllerGraphCaptureModesText, "viewModel._frameRateTimingResolver);");
         AssertContains(controllerGraphCaptureModesText, "private static MainViewModelCaptureModeOptionRebuildController CreateCaptureModeOptionRebuildController(MainViewModel viewModel)");
         AssertContains(controllerGraphCaptureModesText, "new MainViewModelCaptureModeOptionRebuildController(\n                new MainViewModelCaptureModeOptionRebuildControllerContext");
         AssertContains(controllerGraphCaptureModesText, "TryGetEffectiveResolutionSelection = viewModel.TryGetEffectiveResolutionSelection,");
@@ -146,6 +152,16 @@ static partial class Program
         AssertContains(captureModeOptionRebuildControllerContextText, "namespace Sussudio.Controllers;");
         AssertContains(captureModeOptionRebuildControllerContextText, "internal sealed class MainViewModelCaptureModeOptionRebuildControllerContext");
         AssertContains(captureModeOptionRebuildControllerText, "private readonly MainViewModelCaptureModeOptionRebuildControllerContext _context;");
+        AssertContains(captureModeOptionRebuildControllerText, "private readonly MainViewModelFrameRateTimingResolver _frameRateTimingResolver;");
+        AssertDoesNotContain(captureModeOptionRebuildControllerContextText, "ResolvePreferredTimingFamily");
+        AssertDoesNotContain(captureModeOptionRebuildControllerContextText, "ResolveDetectedSourceFrameRate");
+        AssertDoesNotContain(captureModeOptionRebuildControllerContextText, "BuildFrameRateTimingVariants");
+        AssertContains(frameRateTimingResolverText, "namespace Sussudio.Controllers;");
+        AssertContains(frameRateTimingResolverText, "internal sealed class MainViewModelFrameRateTimingResolver");
+        AssertContains(frameRateTimingResolverText, "public FrameRateTimingFamily ResolvePreferredTimingFamily(");
+        AssertContains(frameRateTimingResolverText, "public (double? Rate, string? Arg, string Origin) ResolveDetectedSourceFrameRate(");
+        AssertContains(frameRateTimingResolverText, "public IReadOnlyList<FrameRateTimingVariant> BuildFrameRateTimingVariants(string? resolutionKey)");
+        AssertContains(frameRateTimingResolverContextText, "internal sealed class MainViewModelFrameRateTimingResolverContext");
         AssertContains(captureModeOptionRebuildControllerContextText, "public required string AutoResolutionValue { get; init; }");
         AssertContains(captureModeOptionRebuildControllerContextText, "public required double AutoFrameRateValue { get; init; }");
         AssertContains(controllerGraphCaptureModesText, "AutoResolutionValue = AutoResolutionValue,");
@@ -159,6 +175,7 @@ static partial class Program
             true,
             captureModeOptionFrameRateRebuildControllerText.Split('\n').Length >= 100,
             "capture mode option frame-rate rebuild partial is a substantial ownership file");
+        AssertContains(captureModeOptionFrameRateRebuildControllerText, "_frameRateTimingResolver.ResolveDetectedSourceFrameRate(");
         AssertDoesNotContain(captureModeOptionRebuildControllerText, "public void RebuildFrameRateOptions()");
         AssertContains(captureModeOptionFrameRateRebuildControllerText, "public void RebuildFrameRateOptions()");
         AssertContains(captureModeOptionRebuildControllerText, "public void RebuildVideoFormatOptions()");

@@ -12,7 +12,7 @@ internal sealed partial class MainViewModelCaptureModeOptionRebuildController
         var previousRate = _context.GetSelectedFrameRate();
         var options = new List<FrameRateOption>();
         var selectedResolutionKey = _context.GetEffectiveResolutionKey(_context.GetSelectedResolution());
-        var timingFamily = _context.ResolvePreferredTimingFamily(selectedResolutionKey, previousRate);
+        var timingFamily = _frameRateTimingResolver.ResolvePreferredTimingFamily(selectedResolutionKey, previousRate);
         var sourceTelemetry = _context.GetLatestSourceTelemetry();
         if (sourceTelemetry.HasFrameRate &&
             FrameRateTimingPolicy.TryInferFrameRateTimingFamily(sourceTelemetry.FrameRateArg, sourceTelemetry.FrameRateExact, out var sourceFamilyHint))
@@ -62,12 +62,12 @@ internal sealed partial class MainViewModelCaptureModeOptionRebuildController
                 .ToList();
         }
 
-        var sourceRate = _context.ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);
+        var sourceRate = _frameRateTimingResolver.ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);
         var sourceFilter = FrameRateSourceFilterPolicy.Apply(
             options,
             sourceRate.Rate,
             sourceRate.Arg,
-            _context.BuildFrameRateTimingVariants(selectedResolutionKey),
+            _frameRateTimingResolver.BuildFrameRateTimingVariants(selectedResolutionKey),
             _context.ShowAllCaptureOptions());
         var sourceTimingFamilyKnown = sourceFilter.SourceTimingFamilyKnown;
         var sourceTimingFamily = sourceFilter.SourceTimingFamily;

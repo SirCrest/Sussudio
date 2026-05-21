@@ -60,7 +60,7 @@ static partial class Program
         AssertContains(frameRateRebuildControllerText, "namespace Sussudio.Controllers;");
         AssertContains(frameRateRebuildControllerText, "internal sealed partial class MainViewModelCaptureModeOptionRebuildController");
         AssertContains(frameRateRebuildControllerText, "public void RebuildFrameRateOptions()");
-        AssertContains(frameRateRebuildControllerText, "var sourceRate = _context.ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);");
+        AssertContains(frameRateRebuildControllerText, "var sourceRate = _frameRateTimingResolver.ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);");
         AssertContains(frameRateRebuildControllerText, "_context.AvailableFrameRates.Clear();");
         AssertContains(frameRateRebuildControllerText, "_context.ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
         AssertDoesNotContain(captureModeOptionsControllerText, "private readonly MainViewModel _viewModel;");
@@ -131,7 +131,10 @@ static partial class Program
     {
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
-        var timingText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateTiming.cs").Replace("\r\n", "\n");
+        var timingResolverText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.cs").Replace("\r\n", "\n");
+        var timingResolverContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.Context.cs").Replace("\r\n", "\n");
+        var controllerGraphCaptureModesText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureModes.cs").Replace("\r\n", "\n");
+        var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var timingPolicyText = ReadRepoFile("Sussudio/ViewModels/FrameRateTimingPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(captureModeTransactionsText, "private void UpdateSelectedFormat()");
@@ -148,16 +151,29 @@ static partial class Program
         AssertContains(
             ReadRepoFile("Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs").Replace("\r\n", "\n"),
             "FrameRateTimingPolicy.SelectPreferredFrameRateFormat(");
-        AssertContains(timingText, "private FrameRateTimingFamily ResolvePreferredTimingFamily(");
-        AssertContains(timingText, "private (double? Rate, string? Arg, string Origin) ResolveDetectedSourceFrameRate(");
-        AssertContains(timingText, "private IReadOnlyList<FrameRateTimingVariant> BuildFrameRateTimingVariants(string? resolutionKey)");
-        AssertContains(timingText, "FrameRateTimingPolicy.BuildTimingVariants(formats)");
-        AssertContains(timingText, "FrameRateTimingPolicy.TryInferFrameRateTimingFamily(");
-        AssertDoesNotContain(timingText, "private readonly record struct FrameRateTimingVariant(");
-        AssertDoesNotContain(timingText, "private static MediaFormat SelectPreferredFrameRateFormat(");
-        AssertDoesNotContain(timingText, "private static bool TryInferFrameRateTimingFamily(");
-        AssertDoesNotContain(timingText, "private static bool TryParseFrameRateRational(");
-        AssertDoesNotContain(timingText, "private static int GetFriendlyFrameRateBucket(");
+        AssertContains(rootText, "private readonly MainViewModelFrameRateTimingResolver _frameRateTimingResolver;");
+        AssertContains(controllerGraphCaptureModesText, "internal static MainViewModelFrameRateTimingResolver CreateFrameRateTimingResolver(MainViewModel viewModel)");
+        AssertContains(controllerGraphCaptureModesText, "new MainViewModelFrameRateTimingResolverContext");
+        AssertContains(timingResolverContextText, "internal sealed class MainViewModelFrameRateTimingResolverContext");
+        AssertContains(timingResolverContextText, "public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }");
+        AssertContains(timingResolverContextText, "public required Func<SourceSignalTelemetrySnapshot> GetLatestSourceTelemetry { get; init; }");
+        AssertContains(timingResolverText, "namespace Sussudio.Controllers;");
+        AssertContains(timingResolverText, "internal sealed class MainViewModelFrameRateTimingResolver");
+        AssertContains(timingResolverText, "public FrameRateTimingFamily ResolvePreferredTimingFamily(");
+        AssertContains(timingResolverText, "public (double? Rate, string? Arg, string Origin) ResolveDetectedSourceFrameRate(");
+        AssertContains(timingResolverText, "public IReadOnlyList<FrameRateTimingVariant> BuildFrameRateTimingVariants(string? resolutionKey)");
+        AssertContains(timingResolverText, "FrameRateTimingPolicy.BuildTimingVariants(formats)");
+        AssertContains(timingResolverText, "FrameRateTimingPolicy.TryInferFrameRateTimingFamily(");
+        AssertContains(timingResolverText, "CaptureResolutionSelectionPolicy.TryParseResolutionKey(");
+        AssertDoesNotContain(timingResolverText, "private readonly record struct FrameRateTimingVariant(");
+        AssertDoesNotContain(timingResolverText, "private static MediaFormat SelectPreferredFrameRateFormat(");
+        AssertDoesNotContain(timingResolverText, "private static bool TryInferFrameRateTimingFamily(");
+        AssertDoesNotContain(timingResolverText, "private static bool TryParseFrameRateRational(");
+        AssertDoesNotContain(timingResolverText, "private static int GetFriendlyFrameRateBucket(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FrameRateTiming.cs")),
+            "old MainViewModel frame-rate timing partial removed");
         AssertContains(timingPolicyText, "internal enum FrameRateTimingFamily");
         AssertContains(timingPolicyText, "internal readonly record struct FrameRateTimingVariant(int FriendlyBucket, FrameRateTimingFamily Family);");
         AssertContains(timingPolicyText, "internal static IReadOnlyList<FrameRateTimingVariant> BuildTimingVariants(IEnumerable<MediaFormat> formats)");

@@ -60,7 +60,7 @@ public partial class MainViewModel
             .Where(option => !FrameRateTimingPolicy.IsAutoFrameRateValue(option.FriendlyValue))
             .ToList();
         var selectedResolutionKey = GetEffectiveResolutionKey(SelectedResolution);
-        var sourceRate = ResolveDetectedSourceFrameRate(selectedResolutionKey, currentOptions, SelectedFrameRate);
+        var sourceRate = _frameRateTimingResolver.ResolveDetectedSourceFrameRate(selectedResolutionKey, currentOptions, SelectedFrameRate);
         var sourceTimingFamilyKnown = FrameRateTimingPolicy.TryInferFrameRateTimingFamily(sourceRate.Arg, sourceRate.Rate, out var sourceTimingFamily);
         var selection = FrameRateAutoSelectionPolicy.Select(new FrameRateAutoSelectionRequest(
             currentOptions,

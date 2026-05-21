@@ -6,6 +6,19 @@ public partial class MainViewModel
 {
     private sealed partial class MainViewModelControllerGraph
     {
+        internal static MainViewModelFrameRateTimingResolver CreateFrameRateTimingResolver(MainViewModel viewModel)
+        {
+            return new MainViewModelFrameRateTimingResolver(
+                new MainViewModelFrameRateTimingResolverContext
+                {
+                    GetResolutionToFormats = () => viewModel._resolutionToFormats,
+                    GetRuntimeSnapshot = () => viewModel._captureService.GetRuntimeSnapshot(),
+                    GetLatestSourceTelemetry = () => viewModel._latestSourceTelemetry,
+                    GetSelectedFormat = () => viewModel.SelectedFormat,
+                    AvailableFrameRates = viewModel.AvailableFrameRates,
+                });
+        }
+
         private static MainViewModelCaptureModeOptionRebuildController CreateCaptureModeOptionRebuildController(MainViewModel viewModel)
         {
             return new MainViewModelCaptureModeOptionRebuildController(
@@ -22,9 +35,6 @@ public partial class MainViewModel
                     TryGetEffectiveResolutionSelection = viewModel.TryGetEffectiveResolutionSelection,
                     TryResolveResolutionKey = viewModel.TryResolveResolutionKey,
                     GetEffectiveResolutionKey = viewModel.GetEffectiveResolutionKey,
-                    ResolvePreferredTimingFamily = viewModel.ResolvePreferredTimingFamily,
-                    ResolveDetectedSourceFrameRate = viewModel.ResolveDetectedSourceFrameRate,
-                    BuildFrameRateTimingVariants = viewModel.BuildFrameRateTimingVariants,
                     ApplyResolvedFrameRateSelection = viewModel.ApplyResolvedFrameRateSelection,
                     GetSelectedResolutionDisplayText = viewModel.GetSelectedResolutionDisplayText,
                     BuildHdrSupportHintForResolution = viewModel.BuildHdrSupportHintForResolution,
@@ -66,7 +76,8 @@ public partial class MainViewModel
                     SetHdrResolutionSupportHint = value => viewModel.HdrResolutionSupportHint = value,
                     SetDisabledResolutionReason = value => viewModel.DisabledResolutionReason = value,
                     SetStatusText = value => viewModel.StatusText = value,
-                });
+                },
+                viewModel._frameRateTimingResolver);
         }
     }
 }

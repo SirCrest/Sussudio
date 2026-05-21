@@ -67,6 +67,9 @@ public partial class MainViewModel
     private static bool TryParseResolutionKey(string? resolutionKey, out uint width, out uint height)
         => CaptureResolutionSelectionPolicy.TryParseResolutionKey(resolutionKey, out width, out height);
 
+    private static string GetResolutionKey(uint width, uint height)
+        => $"{width}x{height}";
+
     private bool ResolutionSupportsFrameRate(string resolutionKey, double frameRate, bool hdrOnly)
         => CaptureResolutionSelectionPolicy.ResolutionSupportsFrameRate(
             _resolutionToFormats,

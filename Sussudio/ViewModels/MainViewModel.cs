@@ -36,6 +36,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly MainViewModelRecordingCapabilityController _recordingCapabilityController;
     private readonly MainViewModelCaptureSettingsAutomationController _captureSettingsAutomationController;
     private readonly MainViewModelRecordingSettingsAutomationController _recordingSettingsAutomationController;
+    private readonly MainViewModelFrameRateTimingResolver _frameRateTimingResolver;
     private readonly MainViewModelCaptureModeOptionRebuildController _captureModeOptionRebuildController;
     private readonly MainViewModelDisposalController _disposalController;
 
@@ -57,6 +58,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _deviceAudioControlService = dependencies.DeviceAudioControlService;
         _dispatcherQueue = dependencies.DispatcherQueue;
         _audioDeviceWatcher = dependencies.AudioDeviceWatcher;
+        _frameRateTimingResolver = MainViewModelControllerGraph.CreateFrameRateTimingResolver(this);
 
         var controllerGraph = MainViewModelControllerGraph.Create(this);
         _uiDispatchController = controllerGraph.UiDispatchController;
@@ -109,12 +111,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Device selection reactions: MainViewModel.DeviceSelection.cs
     // Device format probe reconciliation: top-level MainViewModelDeviceFormatProbeController.cs; pure retarget policy: DeviceFormatProbeRetargetPolicy.cs
     // Capture mode transactions: MainViewModel.CaptureModeTransactions.cs
-    // Frame-rate selection: MainViewModel.FrameRateOptions.cs; pure policies: FrameRateAutoSelectionPolicy.cs and FrameRateSourceFilterPolicy.cs; capture option rebuild adapters: MainViewModel.CaptureModeTransactions.cs; rebuild owner: MainViewModelCaptureModeOptionRebuildController.cs
+    // Frame-rate selection: MainViewModel.FrameRateOptions.cs; pure policies: FrameRateAutoSelectionPolicy.cs and FrameRateSourceFilterPolicy.cs; timing/source-rate resolver: MainViewModelFrameRateTimingResolver.cs; capture option rebuild adapters: MainViewModel.CaptureModeTransactions.cs; rebuild owner: MainViewModelCaptureModeOptionRebuildController.cs
     // Controller graph construction: MainViewModelControllerGraph.cs
     // Runtime bootstrap/timer: MainViewModelRuntimeLifecycleController.cs; capture-event ingress: MainViewModelRuntimeEventIngressController.cs
     // Automatic frame-rate selection policy: FrameRateAutoSelectionPolicy.cs
     // Frame-rate/mode selection state: MainViewModel.ModeSelectionState.cs
-    // Frame-rate timing state wrappers: MainViewModel.FrameRateTiming.cs; pure timing policy: FrameRateTimingPolicy.cs
+    // Frame-rate timing state resolver: MainViewModelFrameRateTimingResolver.cs; pure timing policy: FrameRateTimingPolicy.cs
     // Resolution option rebuild adapter: MainViewModel.CaptureModeTransactions.cs; rebuild owner: MainViewModelCaptureModeOptionRebuildController.Resolution.cs; effective resolution state-backed policy delegates: MainViewModel.ResolutionOptions.cs
     // Disposal / teardown: MainViewModel.Disposal.cs; bounded policy owner: MainViewModelDisposalController.cs
     // Recording runtime status and output drive presentation: MainViewModel.RecordingRuntime.cs

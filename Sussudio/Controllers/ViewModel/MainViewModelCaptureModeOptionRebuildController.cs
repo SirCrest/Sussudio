@@ -12,10 +12,14 @@ namespace Sussudio.Controllers;
 internal sealed partial class MainViewModelCaptureModeOptionRebuildController
 {
     private readonly MainViewModelCaptureModeOptionRebuildControllerContext _context;
+    private readonly MainViewModelFrameRateTimingResolver _frameRateTimingResolver;
 
-    public MainViewModelCaptureModeOptionRebuildController(MainViewModelCaptureModeOptionRebuildControllerContext context)
+    public MainViewModelCaptureModeOptionRebuildController(
+        MainViewModelCaptureModeOptionRebuildControllerContext context,
+        MainViewModelFrameRateTimingResolver frameRateTimingResolver)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _frameRateTimingResolver = frameRateTimingResolver ?? throw new ArgumentNullException(nameof(frameRateTimingResolver));
     }
 
     public void UpdateSelectedFormat()
@@ -83,5 +87,5 @@ internal sealed partial class MainViewModelCaptureModeOptionRebuildController
             _context.GetSelectedFrameRate(),
             _context.GetSelectedVideoFormat(),
             _context.IsHdrEnabled(),
-            _context.ResolvePreferredTimingFamily(resolutionKey, _context.GetSelectedFrameRate()));
+            _frameRateTimingResolver.ResolvePreferredTimingFamily(resolutionKey, _context.GetSelectedFrameRate()));
 }

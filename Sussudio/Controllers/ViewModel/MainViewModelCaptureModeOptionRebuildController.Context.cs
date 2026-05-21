@@ -22,9 +22,6 @@ internal sealed class MainViewModelCaptureModeOptionRebuildControllerContext
     public required TryGetEffectiveResolutionSelectionDelegate TryGetEffectiveResolutionSelection { get; init; }
     public required TryResolveResolutionKeyDelegate TryResolveResolutionKey { get; init; }
     public required Func<string?, string?> GetEffectiveResolutionKey { get; init; }
-    public required Func<string?, double, FrameRateTimingFamily> ResolvePreferredTimingFamily { get; init; }
-    public required Func<string?, IReadOnlyList<FrameRateOption>, double, (double? Rate, string? Arg, string Origin)> ResolveDetectedSourceFrameRate { get; init; }
-    public required Func<string?, IReadOnlyList<FrameRateTimingVariant>> BuildFrameRateTimingVariants { get; init; }
     public required Action<FrameRateOption?, double> ApplyResolvedFrameRateSelection { get; init; }
     public required Func<string> GetSelectedResolutionDisplayText { get; init; }
     public required Func<string?, string> BuildHdrSupportHintForResolution { get; init; }

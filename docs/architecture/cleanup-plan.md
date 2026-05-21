@@ -5120,9 +5120,10 @@ owner, fold it back into that owner and update the source-shape tests and
    timing-variant projection, rational parsing, friendly/exact frame-rate
    matching, and preferred-format ranking now live in
    `Sussudio/ViewModels/FrameRateTimingPolicy.cs`, while
-   `MainViewModel.FrameRateTiming.cs` keeps the stateful wrappers over
-   resolution capabilities, runtime snapshots, source telemetry, selected
-   formats, and UI selection state;
+   `Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.cs`
+   owns the stateful resolver over resolution capabilities, runtime snapshots,
+   source telemetry, selected formats, and UI selection state through
+   `Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.Context.cs`;
    the root `MainViewModel.cs` keeps the public capture-device refresh
    compatibility facade, while the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs`

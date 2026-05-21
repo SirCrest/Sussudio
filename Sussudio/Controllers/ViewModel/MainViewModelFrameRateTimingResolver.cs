@@ -2,20 +2,27 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Sussudio.Models;
-using Sussudio.Services.Telemetry;
+using Sussudio.ViewModels;
 
-namespace Sussudio.ViewModels;
+namespace Sussudio.Controllers;
 
 /// <summary>
-/// Shared frame-rate timing, rational parsing, and source-rate preference policy
-/// used by capture mode, resolution, and automation option selection.
+/// Resolves stateful frame-rate timing preferences and detected source rates
+/// for the MainViewModel compatibility facade.
 /// </summary>
-public partial class MainViewModel
+internal sealed class MainViewModelFrameRateTimingResolver
 {
-    private IReadOnlyList<FrameRateTimingVariant> BuildFrameRateTimingVariants(string? resolutionKey)
+    private readonly MainViewModelFrameRateTimingResolverContext _context;
+
+    public MainViewModelFrameRateTimingResolver(MainViewModelFrameRateTimingResolverContext context)
+    {
+        _context = context ?? throw new ArgumentNullException(nameof(context));
+    }
+
+    public IReadOnlyList<FrameRateTimingVariant> BuildFrameRateTimingVariants(string? resolutionKey)
     {
         if (string.IsNullOrWhiteSpace(resolutionKey) ||
-            !_resolutionToFormats.TryGetValue(resolutionKey, out var formats))
+            !_context.GetResolutionToFormats().TryGetValue(resolutionKey, out var formats))
         {
             return Array.Empty<FrameRateTimingVariant>();
         }
@@ -23,10 +30,10 @@ public partial class MainViewModel
         return FrameRateTimingPolicy.BuildTimingVariants(formats);
     }
 
-    private FrameRateTimingFamily ResolvePreferredTimingFamily(string? resolutionKey, double previousRate)
+    public FrameRateTimingFamily ResolvePreferredTimingFamily(string? resolutionKey, double previousRate)
     {
-        var runtime = _captureService.GetRuntimeSnapshot();
-        if (TryParseResolutionKey(resolutionKey, out var selectedWidth, out var selectedHeight))
+        var runtime = _context.GetRuntimeSnapshot();
+        if (CaptureResolutionSelectionPolicy.TryParseResolutionKey(resolutionKey, out var selectedWidth, out var selectedHeight))
         {
             if (runtime.ActualWidth == selectedWidth &&
                 runtime.ActualHeight == selectedHeight &&
@@ -49,12 +56,13 @@ public partial class MainViewModel
             }
         }
 
-        if (FrameRateTimingPolicy.TryInferFrameRateTimingFamily(SelectedFormat?.FrameRateRational, SelectedFormat?.FrameRateExact, out var selectedFamily))
+        var selectedFormat = _context.GetSelectedFormat();
+        if (FrameRateTimingPolicy.TryInferFrameRateTimingFamily(selectedFormat?.FrameRateRational, selectedFormat?.FrameRateExact, out var selectedFamily))
         {
             return selectedFamily;
         }
 
-        var selectedOption = AvailableFrameRates.FirstOrDefault(option => FrameRateTimingPolicy.IsFrameRateMatch(option.Value, previousRate));
+        var selectedOption = _context.AvailableFrameRates.FirstOrDefault(option => FrameRateTimingPolicy.IsFrameRateMatch(option.Value, previousRate));
         if (selectedOption != null &&
             FrameRateTimingPolicy.TryInferFrameRateTimingFamily(selectedOption.Rational, selectedOption.Value, out var optionFamily))
         {
@@ -69,23 +77,24 @@ public partial class MainViewModel
         return FrameRateTimingFamily.Unknown;
     }
 
-    private (double? Rate, string? Arg, string Origin) ResolveDetectedSourceFrameRate(
+    public (double? Rate, string? Arg, string Origin) ResolveDetectedSourceFrameRate(
         string? resolutionKey,
         IReadOnlyList<FrameRateOption> options,
         double previousRate)
     {
-        if (_latestSourceTelemetry.HasFrameRate)
+        var latestSourceTelemetry = _context.GetLatestSourceTelemetry();
+        if (latestSourceTelemetry.HasFrameRate)
         {
             return (
-                _latestSourceTelemetry.FrameRateExact,
-                _latestSourceTelemetry.FrameRateArg,
-                _latestSourceTelemetry.Origin != SourceTelemetryOrigin.Unknown
-                    ? _latestSourceTelemetry.Origin.ToString()
+                latestSourceTelemetry.FrameRateExact,
+                latestSourceTelemetry.FrameRateArg,
+                latestSourceTelemetry.Origin != SourceTelemetryOrigin.Unknown
+                    ? latestSourceTelemetry.Origin.ToString()
                     : "SourceTelemetry");
         }
 
-        var runtime = _captureService.GetRuntimeSnapshot();
-        if (TryParseResolutionKey(resolutionKey, out var selectedWidth, out var selectedHeight))
+        var runtime = _context.GetRuntimeSnapshot();
+        if (CaptureResolutionSelectionPolicy.TryParseResolutionKey(resolutionKey, out var selectedWidth, out var selectedHeight))
         {
             if (runtime.ActualFrameRate.HasValue &&
                 runtime.ActualWidth == selectedWidth &&
@@ -109,14 +118,15 @@ public partial class MainViewModel
             }
         }
 
-        if (SelectedFormat != null &&
-            options.Any(option => FrameRateTimingPolicy.IsFriendlyFrameRateMatch(option.FriendlyValue, SelectedFormat.FrameRateExact)))
+        var selectedFormat = _context.GetSelectedFormat();
+        if (selectedFormat != null &&
+            options.Any(option => FrameRateTimingPolicy.IsFriendlyFrameRateMatch(option.FriendlyValue, selectedFormat.FrameRateExact)))
         {
             return (
-                SelectedFormat.FrameRateExact,
-                string.IsNullOrWhiteSpace(SelectedFormat.FrameRateRational)
+                selectedFormat.FrameRateExact,
+                string.IsNullOrWhiteSpace(selectedFormat.FrameRateRational)
                     ? null
-                    : SelectedFormat.FrameRateRational,
+                    : selectedFormat.FrameRateRational,
                 "SelectedMode");
         }
 
@@ -128,7 +138,4 @@ public partial class MainViewModel
 
         return (null, null, "Unknown");
     }
-
-    private static string GetResolutionKey(uint width, uint height)
-        => $"{width}x{height}";
 }
