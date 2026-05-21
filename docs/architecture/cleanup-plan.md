@@ -3437,7 +3437,13 @@ resume ordering there.
 Playback-thread play command execution now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadPlayCommand.cs`.
 Keep exact resume, file-open/reopen, audio prebuffer, and rendering resume
-ordering there. Pause/go-live/stop/nudge command execution remains in
+ordering there. Pause command execution now lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadPauseCommand.cs`;
+keep pause-from-live freeze/display ordering, exact resume targets, and
+audio/preview suppression there. Nudge command execution now lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadNudgeCommand.cs`;
+keep frame-step decode, no-file recovery, and seek-display failure recovery
+there. Go-live/stop command execution remains in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`.
 Playback-thread live-restore cleanup now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCleanup.cs`.

@@ -197,7 +197,7 @@ static partial class Program
         var pauseFromLiveBlock = ExtractTextBetween(
             sourceText,
             "else if (State == FlashbackPlaybackState.Live)",
-            "    private void HandleGoLiveCommand(");
+            "    private void HandleNudgeCommand(");
 
         AssertContains(publicPauseBlock, "return SendCommand(new PlaybackCommand { Kind = CommandKind.Pause });");
         AssertDoesNotContain(publicPauseBlock, "SeekAndDisplay");
