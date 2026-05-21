@@ -4623,9 +4623,11 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSourceWarnings.cs`
   owns source-reader/ingest warning deltas for sparse source-capture tolerance.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs` owns
-  diagnostic-session preview-scheduler analysis handoff and result projection
-  values: MJPEG jitter-buffer counters, deltas, last drop/underflow reasons,
-  underflow ages, and max schedule-late aggregation.
+  diagnostic-session preview-scheduler analysis handoff values: MJPEG
+  jitter-buffer counters, deltas, last drop/underflow reasons, underflow ages,
+  and max schedule-late aggregation.
+- `tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerResult.cs` owns
+  preview-scheduler result DTO value mapping from the analysis handoff.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`
   owns Flashback preview-scheduler validation orchestration during result
   analysis: target-FPS fallback, visual-cadence tolerance checks, sparse

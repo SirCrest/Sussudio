@@ -4059,7 +4059,8 @@ ingest warning deltas for sparse source-capture tolerance live in
 Preview-scheduler analysis handoff values live in
 `DiagnosticSessionResultBuilder.PreviewScheduler.cs`: MJPEG jitter-buffer
 counter/delta reads, last drop/underflow reason and age reads,
-max/schedule-late aggregation, and preview-scheduler result projection values.
+and max/schedule-late aggregation. Preview-scheduler result DTO value mapping
+from that handoff lives in `DiagnosticSessionResultBuilder.PreviewSchedulerResult.cs`.
 `DiagnosticSessionResultAnalysis.PreviewScheduler` is the single record
 property that carries those values into the scheduler result projection without
 rereading MJPEG jitter-buffer snapshot keys. Flashback preview-scheduler validation orchestration
@@ -4731,6 +4732,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`
 - `DiagnosticSessionResultBuilder.CaptureResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
+- `DiagnosticSessionResultBuilder.PreviewSchedulerResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`
 - `DiagnosticSessionResultBuilder.PreviewResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs`
