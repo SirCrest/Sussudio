@@ -6,6 +6,7 @@ public sealed partial class AutomationDiagnosticsHub
 {
     private static PerformanceTimelineEntry BuildPerformanceTimelineEntry(AutomationSnapshot snapshot)
     {
+        var core = BuildPerformanceTimelineCoreProjection(snapshot);
         var preview = BuildPerformanceTimelinePreviewProjection(snapshot);
         var flashbackPlayback = BuildPerformanceTimelineFlashbackPlaybackProjection(snapshot);
         var flashbackExport = BuildPerformanceTimelineFlashbackExportProjection(snapshot);
@@ -13,17 +14,17 @@ public sealed partial class AutomationDiagnosticsHub
 
         return new()
         {
-            TimestampUtc = snapshot.TimestampUtc,
-            CaptureFps = snapshot.CaptureCadenceObservedFps,
-            PreviewFps = snapshot.PreviewCadenceObservedFps,
-            VideoQueueDepth = snapshot.FfmpegVideoQueueDepth,
-            VideoDrops = snapshot.VideoDropsQueueSaturated,
-            CaptureCadenceAverageMs = snapshot.CaptureCadenceAverageIntervalMs,
-            CaptureCadenceP95Ms = snapshot.CaptureCadenceP95IntervalMs,
-            CaptureCadenceP99Ms = snapshot.CaptureCadenceP99IntervalMs,
-            CaptureCadenceMaxMs = snapshot.CaptureCadenceMaxIntervalMs,
-            CaptureCadenceOnePercentLowFps = snapshot.CaptureCadenceOnePercentLowFps,
-            CaptureCadenceFivePercentLowFps = snapshot.CaptureCadenceFivePercentLowFps,
+            TimestampUtc = core.TimestampUtc,
+            CaptureFps = core.CaptureFps,
+            PreviewFps = core.PreviewFps,
+            VideoQueueDepth = core.VideoQueueDepth,
+            VideoDrops = core.VideoDrops,
+            CaptureCadenceAverageMs = core.CaptureCadenceAverageMs,
+            CaptureCadenceP95Ms = core.CaptureCadenceP95Ms,
+            CaptureCadenceP99Ms = core.CaptureCadenceP99Ms,
+            CaptureCadenceMaxMs = core.CaptureCadenceMaxMs,
+            CaptureCadenceOnePercentLowFps = core.CaptureCadenceOnePercentLowFps,
+            CaptureCadenceFivePercentLowFps = core.CaptureCadenceFivePercentLowFps,
             PreviewCadenceAverageMs = preview.CadenceAverageMs,
             PreviewCadenceP95Ms = preview.CadenceP95Ms,
             PreviewCadenceP99Ms = preview.CadenceP99Ms,

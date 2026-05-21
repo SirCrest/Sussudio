@@ -198,6 +198,7 @@ static partial class Program
                 ProcessMetricsText,
                 TimelineText,
                 TimelineProjectionText,
+                TimelineProjectionCoreText,
                 TimelineProjectionPreviewText,
                 TimelineProjectionFlashbackPlaybackText,
                 TimelineProjectionFlashbackExportText,

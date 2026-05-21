@@ -8,6 +8,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.Core.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.Preview.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackExport.cs")
@@ -123,6 +124,11 @@ static partial class Program
                 var projectionName = propertyName["Preview".Length..];
                 AssertContains(diagnosticsHubSource, $"{propertyName} = preview.{projectionName}");
                 AssertContains(diagnosticsHubSource, $"{projectionName}: snapshot.{propertyName.Replace("Ms", "IntervalMs", StringComparison.Ordinal)}");
+            }
+            else if (propertyName.StartsWith("CaptureCadence", StringComparison.Ordinal))
+            {
+                AssertContains(diagnosticsHubSource, $"{propertyName} = core.{propertyName}");
+                AssertContains(diagnosticsHubSource, $"{propertyName}: snapshot.{propertyName}");
             }
             else if (propertyName.StartsWith("PreviewPacing", StringComparison.Ordinal))
             {
