@@ -4084,9 +4084,10 @@ command queue and command failure fields, `.PlaybackResult.Cadence.cs` owns
 frame cadence and dropped-frame fields, `.PlaybackResult.Decode.cs` owns decode
 timing and max-phase fields, `.PlaybackResult.AudioMaster.cs` owns audio-master
 fallback fields, `.PlaybackResult.Stages.cs` owns playback stage counters and
-seek-forward decode-cap deltas, and `.PlaybackResult.Projections.cs` owns the
-private grouped handoff records. Preserve the final `init` DTO construction in
-the root unless a broader construction pattern replaces it deliberately.
+seek-forward decode-cap deltas. Each focused playback-result metric owner keeps
+its private grouped handoff record next to the end-snapshot reads that fill it.
+Preserve the final `init` DTO construction in the root unless a broader
+construction pattern replaces it deliberately.
 
 Diagnostic-session Flashback stress orchestration now lives in a focused
 partial family. `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns
@@ -4229,7 +4230,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.AudioMaster.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.Stages.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Projections.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
 - `DiagnosticSessionFlashbackMetrics.Recording.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`

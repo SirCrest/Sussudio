@@ -39,8 +39,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackResultStagesText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Stages.cs")
             .Replace("\r\n", "\n");
-        var playbackResultProjectionsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Projections.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(metricsText, "internal static partial class DiagnosticSessionFlashbackMetrics");
         AssertContains(recordingModelsText, "internal sealed class FlashbackRecordingSessionMetrics");
@@ -80,11 +78,11 @@ static partial class Program
         AssertContains(playbackResultAudioMasterText, "AudioMasterFallbacksAtEnd: GetObservedLong(observed, endSnapshot, \"FlashbackPlaybackAudioMasterFallbacks\")");
         AssertContains(playbackResultStagesText, "private static FlashbackPlaybackResultStageMetrics BuildFlashbackPlaybackResultStageMetrics(");
         AssertContains(playbackResultStagesText, "GetCounterDelta(endSnapshot, metrics.BaselineSnapshot, \"FlashbackPlaybackSeekForwardDecodeCapHits\")");
-        AssertContains(playbackResultProjectionsText, "private readonly record struct FlashbackPlaybackResultCommandMetrics(");
-        AssertContains(playbackResultProjectionsText, "private readonly record struct FlashbackPlaybackResultCadenceMetrics(");
-        AssertContains(playbackResultProjectionsText, "private readonly record struct FlashbackPlaybackResultDecodeMetrics(");
-        AssertContains(playbackResultProjectionsText, "private readonly record struct FlashbackPlaybackResultAudioMasterMetrics(");
-        AssertContains(playbackResultProjectionsText, "private readonly record struct FlashbackPlaybackResultStageMetrics(");
+        AssertContains(playbackResultCommandsText, "private readonly record struct FlashbackPlaybackResultCommandMetrics(");
+        AssertContains(playbackResultCadenceText, "private readonly record struct FlashbackPlaybackResultCadenceMetrics(");
+        AssertContains(playbackResultDecodeText, "private readonly record struct FlashbackPlaybackResultDecodeMetrics(");
+        AssertContains(playbackResultAudioMasterText, "private readonly record struct FlashbackPlaybackResultAudioMasterMetrics(");
+        AssertContains(playbackResultStagesText, "private readonly record struct FlashbackPlaybackResultStageMetrics(");
         AssertDoesNotContain(playbackResultText, "GetObservedLong(observed, endSnapshot, \"FlashbackPlaybackCommandsDropped\")");
         AssertDoesNotContain(playbackResultText, "GetObservedDouble(observed, endSnapshot, \"FlashbackPlaybackDecodeMaxMs\")");
         AssertDoesNotContain(playbackResultText, "GetObservedLong(observed, endSnapshot, \"FlashbackPlaybackAudioMasterFallbacks\")");

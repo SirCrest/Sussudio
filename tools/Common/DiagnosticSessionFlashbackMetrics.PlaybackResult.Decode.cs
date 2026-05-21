@@ -5,6 +5,21 @@ namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionFlashbackMetrics
 {
+    private readonly record struct FlashbackPlaybackResultDecodeMetrics(
+        double DecodeAvgMsAtEnd,
+        double DecodeP95MsAtEnd,
+        double DecodeP99MsAtEnd,
+        double DecodeMaxMsAtEnd,
+        string MaxDecodePhaseAtEnd,
+        double MaxDecodeReceiveMsAtEnd,
+        double MaxDecodeFeedMsAtEnd,
+        double MaxDecodeReadMsAtEnd,
+        double MaxDecodeSendMsAtEnd,
+        double MaxDecodeAudioMsAtEnd,
+        double MaxDecodeConvertMsAtEnd,
+        long MaxDecodeUtcUnixMsAtEnd,
+        long MaxDecodePositionMsAtEnd);
+
     private static FlashbackPlaybackResultDecodeMetrics BuildFlashbackPlaybackResultDecodeMetrics(
         bool observed,
         JsonElement endSnapshot) =>

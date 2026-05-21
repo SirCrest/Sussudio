@@ -4,6 +4,18 @@ namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionFlashbackMetrics
 {
+    private readonly record struct FlashbackPlaybackResultCadenceMetrics(
+        double ObservedFpsAtEnd,
+        double AvgFrameMsAtEnd,
+        double P99FrameMsAtEnd,
+        double MaxFrameMsAtEnd,
+        double OnePercentLowFpsAtEnd,
+        long FrameCountAtEnd,
+        long LateFramesAtEnd,
+        long SlowFramesAtEnd,
+        double SlowFramePercentAtEnd,
+        long DroppedFramesAtEnd);
+
     private static FlashbackPlaybackResultCadenceMetrics BuildFlashbackPlaybackResultCadenceMetrics(
         bool observed,
         JsonElement endSnapshot) =>

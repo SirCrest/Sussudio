@@ -4523,8 +4523,8 @@ Primary owners:
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.cs`,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.AudioMaster.cs`,
   and `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Stages.cs`.
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Projections.cs`
-  owns the private grouped handoff records used only by that result-copy family.
+  Each focused playback-result metric owner keeps its private grouped handoff
+  record beside the snapshot reads that fill it.
   Export metrics include force-rotate fallback total, delta, and last fallback
   segment count; keep those counters derived outside export-observed relevance gating.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`

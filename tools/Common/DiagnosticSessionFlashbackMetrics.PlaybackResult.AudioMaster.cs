@@ -5,6 +5,16 @@ namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionFlashbackMetrics
 {
+    private readonly record struct FlashbackPlaybackResultAudioMasterMetrics(
+        long AudioMasterDelayDoublesAtEnd,
+        long AudioMasterDelayShrinksAtEnd,
+        long AudioMasterFallbacksAtEnd,
+        long AudioMasterUnavailableFallbacksAtEnd,
+        long AudioMasterStaleFallbacksAtEnd,
+        long AudioMasterDriftOutlierFallbacksAtEnd,
+        string AudioMasterLastFallbackReasonAtEnd,
+        double AudioMasterLastFallbackClockAgeMsAtEnd);
+
     private static FlashbackPlaybackResultAudioMasterMetrics BuildFlashbackPlaybackResultAudioMasterMetrics(
         bool observed,
         JsonElement endSnapshot) =>

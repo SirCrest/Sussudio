@@ -70,7 +70,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.AudioMaster.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Stages.cs",
-            "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Projections.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs");
 
     private static string ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource()
