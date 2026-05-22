@@ -3325,16 +3325,11 @@ Primary current owners:
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs`
   is a top-level `Sussudio.Controllers` owner for device-native audio request
   lifetime: selected-device refresh scheduling, mode-change scheduling, shared
-  debounce CTS fields, UI enqueue lifetime, and cancellation cleanup. The
-  compatibility property-change adapters stay with the observable device-audio
-  state in `MainViewModel.DeviceAudioState.cs`.
-  `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.Context.cs`
-  is a top-level `Sussudio.Controllers` owner for the device-native audio request graph-port contract for UI scheduling,
-  selected device/audio state, save persistence, native refresh/apply calls,
-  recording/dispose guards, and current-device checks.
-  `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.Gain.cs`
-  is a top-level `Sussudio.Controllers` owner for analog-gain property-change scheduling, UI/XU request debounce, and
-  flash-persist debounce.
+  debounce CTS fields, UI enqueue lifetime, graph-port context contract,
+  analog-gain property-change scheduling, UI/XU request debounce,
+  flash-persist debounce, and cancellation cleanup. The compatibility
+  property-change adapters stay with the observable device-audio state in
+  `MainViewModel.DeviceAudioState.cs`.
   `MainViewModel.DeviceAudioRefresh.cs` owns device-native audio-control support
   probing, readback, and pending saved-state reconciliation.
   `MainViewModel.DeviceAudioMode.cs` owns device-native audio mode switching

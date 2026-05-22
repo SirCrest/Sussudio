@@ -17,7 +17,6 @@ static partial class Program
         var deviceAudioRefreshCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.DeviceAudioRefresh.cs");
         var analogAudioGainCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AnalogAudioGain.cs");
         var deviceAudioRequestControllerCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs");
-        var deviceAudioRequestControllerContextCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.Context.cs");
         var deviceAudioStateCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs");
         var microphoneVolumeCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.MicrophoneVolume.cs");
         var audioCode = audioControlsCode + "\n" + deviceAudioModeCode + "\n" + deviceAudioRefreshCode + "\n" + analogAudioGainCode + "\n" + deviceAudioRequestControllerCode + "\n" + deviceAudioStateCode + "\n" + microphoneVolumeCode;
@@ -42,8 +41,9 @@ static partial class Program
         AssertContains(deviceAudioModeText, "Device-native audio mode switching and failure readback.");
         AssertDoesNotContain(audioControlsCode, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertContains(analogAudioGainCode, "private async Task<bool> ApplyAnalogAudioGainAsync");
-        AssertContains(deviceAudioRequestControllerCode, "internal sealed partial class MainViewModelDeviceAudioRequestController");
-        AssertContains(deviceAudioRequestControllerContextCode, "internal sealed class MainViewModelDeviceAudioRequestControllerContext");
+        AssertContains(deviceAudioRequestControllerCode, "internal sealed class MainViewModelDeviceAudioRequestController");
+        AssertDoesNotContain(deviceAudioRequestControllerCode, "partial class MainViewModelDeviceAudioRequestController");
+        AssertContains(deviceAudioRequestControllerCode, "internal sealed class MainViewModelDeviceAudioRequestControllerContext");
         AssertContains(deviceAudioRequestControllerCode, "private readonly MainViewModelDeviceAudioRequestControllerContext _context;");
         AssertDoesNotContain(deviceAudioRequestControllerCode, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceAudioRequestControllerCode, "_viewModel.");
@@ -128,27 +128,18 @@ static partial class Program
     {
         var deviceAudioRequestControllerCode = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs")
             .Replace("\r\n", "\n");
-        var deviceAudioRequestControllerContextCode = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.Context.cs")
-            .Replace("\r\n", "\n");
-        var deviceAudioGainRequestControllerCode = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.Gain.cs")
-            .Replace("\r\n", "\n");
         var deviceAudioStateCode = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs")
             .Replace("\r\n", "\n");
         var controllerStart = deviceAudioRequestControllerCode.IndexOf(
-            "internal sealed partial class MainViewModelDeviceAudioRequestController",
+            "internal sealed class MainViewModelDeviceAudioRequestController",
             StringComparison.Ordinal);
         AssertEqual(true, controllerStart >= 0, "device audio request controller class marker");
         var controllerBody = deviceAudioRequestControllerCode[controllerStart..];
         var handleModeChange = ExtractMemberCode(controllerBody, "HandleSelectedDeviceAudioModeChanged");
         var refreshControls = ExtractMemberCode(controllerBody, "RequestDeviceAudioControlsRefresh");
         var cancelWork = ExtractMemberCode(controllerBody, "CancelPendingAudioControlWork");
-        var gainControllerStart = deviceAudioGainRequestControllerCode.IndexOf(
-            "internal sealed partial class MainViewModelDeviceAudioRequestController",
-            StringComparison.Ordinal);
-        AssertEqual(true, gainControllerStart >= 0, "device audio gain request controller class marker");
-        var gainControllerBody = deviceAudioGainRequestControllerCode[gainControllerStart..];
-        var handleGainChange = ExtractMemberCode(gainControllerBody, "HandleAnalogAudioGainPercentChanged");
-        var flashPersist = ExtractMemberCode(gainControllerBody, "ScheduleAnalogGainFlashPersist");
+        var handleGainChange = ExtractMemberCode(controllerBody, "HandleAnalogAudioGainPercentChanged");
+        var flashPersist = ExtractMemberCode(controllerBody, "ScheduleAnalogGainFlashPersist");
 
         AssertContains(deviceAudioRequestControllerCode, "private CancellationTokenSource? _gainFlashDebounceCts;");
         AssertContains(deviceAudioRequestControllerCode, "private CancellationTokenSource? _gainXuDebounceCts;");
@@ -157,14 +148,12 @@ static partial class Program
         AssertContains(deviceAudioStateCode, "partial void OnSelectedDeviceAudioModeChanged(string value)");
         AssertContains(deviceAudioStateCode, "partial void OnAnalogAudioGainPercentChanged(double value)");
         AssertContains(deviceAudioStateCode, "=> _deviceAudioRequestController.ScheduleAnalogGainFlashPersist(device, gainByte);");
-        AssertContains(deviceAudioRequestControllerContextCode, "internal sealed class MainViewModelDeviceAudioRequestControllerContext");
+        AssertContains(deviceAudioRequestControllerCode, "internal sealed class MainViewModelDeviceAudioRequestControllerContext");
         AssertContains(deviceAudioRequestControllerCode, "private readonly MainViewModelDeviceAudioRequestControllerContext _context;");
         AssertDoesNotContain(deviceAudioRequestControllerCode, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceAudioRequestControllerCode, "_viewModel.");
-        AssertDoesNotContain(deviceAudioRequestControllerCode, "public void HandleAnalogAudioGainPercentChanged(double value)");
-        AssertDoesNotContain(deviceAudioRequestControllerCode, "public void ScheduleAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
-        AssertContains(deviceAudioGainRequestControllerCode, "public void HandleAnalogAudioGainPercentChanged(double value)");
-        AssertContains(deviceAudioGainRequestControllerCode, "public void ScheduleAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
+        AssertContains(deviceAudioRequestControllerCode, "public void HandleAnalogAudioGainPercentChanged(double value)");
+        AssertContains(deviceAudioRequestControllerCode, "public void ScheduleAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
 
         AssertContains(refreshControls, "_deviceAudioRefreshCts = refreshCts;");
         AssertContains(refreshControls, "_context.RefreshDeviceAudioControlsAsync(targetDevice, true, refreshToken)");
