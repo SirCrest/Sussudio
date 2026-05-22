@@ -103,7 +103,8 @@ static partial class Program
         AssertContains(counters.RealtimePreviewText, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
         AssertContains(counters.RealtimePreviewText, "private long _lastD3DFramesSubmitted;");
         AssertContains(counters.RealtimePreviewText, "Interlocked.Exchange(ref _lastD3DFramesSubmitted, submitted)");
-        AssertDoesNotContain(counters.RealtimePreviewText, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
+        AssertContains(counters.RealtimePreviewText, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
+        AssertContains(counters.RealtimePreviewText, "Interlocked.Exchange(ref _lastMjpegCompressedDropsQueueFull, compressedQueueDrops)");
         AssertDoesNotContain(counters.RealtimePreviewText, "private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(");
         AssertDoesNotContain(diagnostics.HubText, "private long _lastPreviewJitterTotalDropped;");
         AssertDoesNotContain(diagnostics.HubText, "private long _lastD3DFramesSubmitted;");
@@ -155,10 +156,6 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "repeatFramePercent <= 1.0");
         AssertContains(diagnostics.SourceFamilyText, "longestRepeatRun <= 1");
         AssertContains(diagnostics.SourceFamilyText, "\"Present/display 1% low is below target.\"");
-        AssertContains(counters.MjpegText, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
-        AssertContains(counters.MjpegText, "Interlocked.Exchange(ref _lastMjpegCompressedDropsQueueFull, compressedQueueDrops)");
-        AssertDoesNotContain(counters.MjpegText, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
-        AssertDoesNotContain(counters.MjpegText, "private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(");
         AssertContains(diagnostics.SourceFamilyText, "var recentMjpeg = UpdateMjpegRecentCounters(health, nowTick);");
         AssertContains(diagnostics.SourceFamilyText, "recentDropped={recentMjpeg.TotalDropped} recentFailures={recentMjpeg.Failures}");
         AssertContains(diagnostics.SourceFamilyText, "recentMjpeg.TotalDropped <= 0");

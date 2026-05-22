@@ -205,6 +205,18 @@ Behavior preserved: A/V sync capture drift, drift rate, encoder drift, and encod
 Notes for future agents: keep tiny top-level system projection leaves with `SnapshotProjection.cs` unless they grow independent policy or belong to a named runtime domain owner
 
 Date: 2026-05-21
+Area: Automation diagnostics realtime counters
+Problem: MJPEG recent-counter baselines lived in a tiny partial separate from the realtime preview counter owner that already tracks preview jitter and D3D deltas for the same snapshot refresh loop.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.Mjpeg.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics counter ownership tests, preview pacing ownership tests, and runtime snapshot regression tests
+Behavior preserved: MJPEG recent dropped, decode failure, emit failure, and compressed queue drop deltas still use the same interlocked baselines and reset semantics
+Notes for future agents: keep realtime snapshot-loop counter baselines with `Counters.RealtimePreview.cs` unless a counter family grows independent lifecycle policy
+
+Date: 2026-05-21
 Area: Automation diagnostics HDR pipeline projection
 Problem: HDR pipeline policy projection and final flattened DTO field projection lived in separate partials even though the flattening is a direct one-to-one projection of HDR runtime, warmup, pipeline-mode, telemetry-alignment, and truth-verdict fields.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.HdrPipeline.cs`

@@ -74,10 +74,8 @@ public sealed class PreviewPacingOwnershipTests
         var diagnosticsSnapshotProjectionCaptureCadenceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs");
         var diagnosticsPreviewPacingText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.PreviewPacing.cs");
         var diagnosticsRealtimePreviewCountersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.RealtimePreview.cs");
-        var diagnosticsMjpegCountersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.Mjpeg.cs");
         var diagnosticsFlashbackRecordingCountersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.FlashbackRecording.cs");
         var diagnosticsCountersText = diagnosticsRealtimePreviewCountersText
-            + "\n" + diagnosticsMjpegCountersText
             + "\n" + diagnosticsFlashbackRecordingCountersText;
         var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             + "\n" + diagnosticsSnapshotsText
@@ -112,7 +110,6 @@ public sealed class PreviewPacingOwnershipTests
         Assert.Contains("RecentD3DFrameLatencyWaitTimeoutCount = recentD3DFrameLatencyWaitTimeouts", diagnosticsHubText);
         Assert.Contains("UpdateD3DFrameLatencyWaitRecentCounters", diagnosticsHubText);
         Assert.Contains("private long UpdateD3DFrameLatencyWaitRecentCounters(", diagnosticsRealtimePreviewCountersText);
-        Assert.DoesNotContain("private long UpdateD3DFrameLatencyWaitRecentCounters(", diagnosticsMjpegCountersText);
         Assert.DoesNotContain("private long UpdateD3DFrameLatencyWaitRecentCounters(", diagnosticsFlashbackRecordingCountersText);
         Assert.DoesNotContain("private long UpdateD3DFrameLatencyWaitRecentCounters(", ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs"));
         Assert.Contains("PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage", diagnosticsHubText);

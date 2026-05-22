@@ -3,19 +3,16 @@ static partial class Program
     private static AutomationDiagnosticsHubCountersSourceFamily ReadAutomationDiagnosticsHubCountersSource()
     {
         var realtimePreviewText = ReadNormalizedRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.RealtimePreview.cs");
-        var mjpegText = ReadNormalizedRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.Mjpeg.cs");
         var flashbackRecordingText = ReadNormalizedRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.FlashbackRecording.cs");
 
         return new AutomationDiagnosticsHubCountersSourceFamily(
             realtimePreviewText,
-            mjpegText,
             flashbackRecordingText,
             string.Join(
                 "\n",
                 new[]
                 {
                     realtimePreviewText,
-                    mjpegText,
                     flashbackRecordingText,
                 }));
     }
@@ -237,7 +234,6 @@ static partial class Program
 
     private readonly record struct AutomationDiagnosticsHubCountersSourceFamily(
         string RealtimePreviewText,
-        string MjpegText,
         string FlashbackRecordingText,
         string SourceFamilyText);
 }
