@@ -539,14 +539,12 @@ recording path degradation alerts.
 `AutomationDiagnosticsHub.FlashbackPlaybackAlerts.Commands.cs` owns playback
 command queue and command failure alerts.
 `AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.cs` owns Flashback
-playback performance alert orchestration.
+playback performance alert orchestration and frame-submission failure alerts.
 `AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Audio.cs` owns
 audio-master fallback and audio-queue backlog alerts.
 `AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Cadence.cs` owns
 playback target-rate, present-cadence, slow-playback, and frametime alert
 rules.
-`AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Submit.cs` owns
-frame-submission failure alerts.
 `AutomationDiagnosticsHub.DiagnosticEvents.cs` owns diagnostics event
 publication, event throttling, Flashback export completion events, and recent
 event storage.

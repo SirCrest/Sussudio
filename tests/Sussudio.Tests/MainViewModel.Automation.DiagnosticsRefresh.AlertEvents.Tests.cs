@@ -68,13 +68,13 @@ static partial class Program
         AssertContains(diagnostics.FlashbackPlaybackPerformanceAlertsText, "UpdateFlashbackPlaybackCadenceAlerts(");
         AssertContains(diagnostics.FlashbackPlaybackPerformanceAlertsText, "UpdateFlashbackPlaybackAudioAlerts(snapshot, playbackActive);");
         AssertContains(diagnostics.FlashbackPlaybackPerformanceAlertsText, "UpdateFlashbackPlaybackSubmitFailureAlert(snapshot);");
+        AssertContains(diagnostics.FlashbackPlaybackPerformanceAlertsText, "private void UpdateFlashbackPlaybackSubmitFailureAlert(");
+        AssertContains(diagnostics.FlashbackPlaybackPerformanceAlertsText, "\"flashback-playback-submit-failures\"");
         AssertContains(diagnostics.FlashbackPlaybackPerformanceAlertsCadenceText, "private void UpdateFlashbackPlaybackCadenceAlerts(");
         AssertContains(diagnostics.FlashbackPlaybackPerformanceAlertsCadenceText, "\"flashback-playback-slow\"");
         AssertContains(diagnostics.FlashbackPlaybackPerformanceAlertsAudioText, "private void UpdateFlashbackPlaybackAudioAlerts(");
         AssertContains(diagnostics.FlashbackPlaybackPerformanceAlertsAudioText, "\"flashback-playback-audio-master-fallback\"");
         AssertContains(diagnostics.FlashbackPlaybackPerformanceAlertsAudioText, "\"flashback-playback-audio-queue-backlog\"");
-        AssertContains(diagnostics.FlashbackPlaybackPerformanceAlertsSubmitText, "private void UpdateFlashbackPlaybackSubmitFailureAlert(");
-        AssertContains(diagnostics.FlashbackPlaybackPerformanceAlertsSubmitText, "\"flashback-playback-submit-failures\"");
         AssertDoesNotContain(diagnostics.AlertsText, "\"flashback-playback-slow\"");
         AssertDoesNotContain(diagnostics.FlashbackPlaybackPerformanceAlertsCadenceText, "\"flashback-playback-audio-master-fallback\"");
         AssertDoesNotContain(diagnostics.FlashbackPlaybackPerformanceAlertsAudioText, "\"flashback-playback-submit-failures\"");
