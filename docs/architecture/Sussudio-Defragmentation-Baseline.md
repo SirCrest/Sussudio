@@ -134,6 +134,18 @@ Notes for future agents: keep helper-only text builders with their owning format
 
 Date: 2026-05-21
 Area: Diagnostic session result formatting
+Problem: Preview D3D diagnostic-session text split performance/slow-frame output and CPU-timing output across separate tiny files even though both rows describe the same Preview D3D report concern.
+Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.PreviewD3D.CpuTiming.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `DiagnosticSessionResultFormatter` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by diagnostic-session formatter ownership and runtime formatter tests
+Behavior preserved: Preview D3D performance and CPU-timing report rows remain in the same order with unchanged field text
+Notes for future agents: keep tightly coupled report rows together when they describe the same runtime subsystem
+
+Date: 2026-05-21
+Area: Diagnostic session result formatting
 Problem: Flashback diagnostic-session section ordering lived in a one-method router file separate from the formatter orchestration.
 Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs`
 Files added: none

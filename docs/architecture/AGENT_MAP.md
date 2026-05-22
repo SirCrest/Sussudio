@@ -5135,9 +5135,7 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultFormatter.PreviewScheduler.cs` owns preview
   scheduler lines.
   `DiagnosticSessionResultFormatter.PreviewD3D.Performance.cs` owns D3D
-  performance and slow-frame lines.
-  `DiagnosticSessionResultFormatter.PreviewD3D.CpuTiming.cs` owns D3D
-  CPU-timing lines.
+  performance, slow-frame, and CPU-timing lines.
   `DiagnosticSessionResultFormatter.PreviewVisualCadence.cs` owns visual-cadence
   lines.
 - `tools/Common/DiagnosticSessionResultFormatter.Artifacts.cs` owns artifact,

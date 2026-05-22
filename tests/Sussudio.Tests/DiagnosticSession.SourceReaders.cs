@@ -237,7 +237,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Stages.cs",
             "tools/Common/DiagnosticSessionResultFormatter.PreviewScheduler.cs",
             "tools/Common/DiagnosticSessionResultFormatter.PreviewD3D.Performance.cs",
-            "tools/Common/DiagnosticSessionResultFormatter.PreviewD3D.CpuTiming.cs",
             "tools/Common/DiagnosticSessionResultFormatter.PreviewVisualCadence.cs",
             "tools/Common/DiagnosticSessionResultFormatter.Artifacts.cs");
 
