@@ -586,16 +586,9 @@ Automation diagnostics ownership:
   `AutomationSnapshot`, plus final process resource
   projection-to-`AutomationSnapshot` field flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs`
-  owns recording-integrity projection routing and final flattening consumed by
-  `AutomationSnapshot`. Its focused owners split status/reason, video-frame
-  counters, queue/backpressure, audio integrity, and A/V sync projection inputs
-  plus final field flattening:
-  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Summary.cs`,
-  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Video.cs`,
-  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Backpressure.cs`,
-  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Audio.cs`,
-  and
-  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.AvSync.cs`.
+  owns recording-integrity projection routing, status/reason, video-frame
+  counters, queue/backpressure, audio integrity, A/V sync projection inputs, and
+  final flattening consumed by `AutomationSnapshot`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs`
   owns recording-pipeline projection routing, encoder queue age/count/failure
   health, conversion/ffmpeg/video ingest queue health, recording video queue

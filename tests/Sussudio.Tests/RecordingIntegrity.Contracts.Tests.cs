@@ -78,17 +78,6 @@ static partial class Program
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
         var recordingProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs")
             .Replace("\r\n", "\n");
-        var recordingSummaryProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Summary.cs")
-            .Replace("\r\n", "\n");
-        var recordingVideoProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Video.cs")
-            .Replace("\r\n", "\n");
-        var recordingBackpressureProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Backpressure.cs")
-            .Replace("\r\n", "\n");
-        var recordingAudioProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Audio.cs")
-            .Replace("\r\n", "\n");
-        var recordingAvSyncProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.AvSync.cs")
-            .Replace("\r\n", "\n");
-
         AssertContains(snapshotProjectionText, "var recordingIntegrity = BuildRecordingIntegrityProjection(captureRuntime);");
         AssertContains(snapshotFlatteningText, "var recordingIntegrityFlattening = BuildRecordingIntegrityFlattenedProjection(recordingIntegrity);");
         AssertContains(snapshotFlatteningText, "RecordingIntegrityStatus = recordingIntegrityFlattening.Summary.Status,");
@@ -115,21 +104,21 @@ static partial class Program
         AssertContains(recordingProjectionText, "Audio = BuildRecordingIntegrityAudioFlattenedProjection(recordingIntegrity.Audio),");
         AssertContains(recordingProjectionText, "AvSync = BuildRecordingIntegrityAvSyncFlattenedProjection(recordingIntegrity.AvSync)");
         AssertContains(recordingProjectionText, "private readonly record struct RecordingIntegrityFlattenedProjection");
-        AssertContains(recordingSummaryProjectionText, "private static RecordingIntegritySummaryFlattenedProjection BuildRecordingIntegritySummaryFlattenedProjection(");
-        AssertContains(recordingSummaryProjectionText, "Status = summary.Status,");
-        AssertContains(recordingSummaryProjectionText, "Reason = summary.Reason");
-        AssertContains(recordingVideoProjectionText, "private static RecordingIntegrityVideoFlattenedProjection BuildRecordingIntegrityVideoFlattenedProjection(");
-        AssertContains(recordingVideoProjectionText, "EncodedFrames = video.EncodedFrames,");
-        AssertContains(recordingVideoProjectionText, "SequenceGaps = video.SequenceGaps");
-        AssertContains(recordingBackpressureProjectionText, "private static RecordingIntegrityBackpressureFlattenedProjection BuildRecordingIntegrityBackpressureFlattenedProjection(");
-        AssertContains(recordingBackpressureProjectionText, "QueueMaxDepth = backpressure.QueueMaxDepth,");
-        AssertContains(recordingBackpressureProjectionText, "BackpressureMaxWaitMs = backpressure.BackpressureMaxWaitMs");
-        AssertContains(recordingAudioProjectionText, "private static RecordingIntegrityAudioFlattenedProjection BuildRecordingIntegrityAudioFlattenedProjection(");
-        AssertContains(recordingAudioProjectionText, "AudioFramesWrittenToSink = audio.AudioFramesWrittenToSink,");
-        AssertContains(recordingAudioProjectionText, "AudioCallbackGaps = audio.AudioCallbackGaps");
-        AssertContains(recordingAvSyncProjectionText, "private static RecordingIntegrityAvSyncFlattenedProjection BuildRecordingIntegrityAvSyncFlattenedProjection(");
-        AssertContains(recordingAvSyncProjectionText, "EncoderAvSyncDriftMs = avSync.EncoderAvSyncDriftMs,");
-        AssertContains(recordingAvSyncProjectionText, "EncoderAvSyncCorrectionSamples = avSync.EncoderAvSyncCorrectionSamples");
+        AssertContains(recordingProjectionText, "private static RecordingIntegritySummaryFlattenedProjection BuildRecordingIntegritySummaryFlattenedProjection(");
+        AssertContains(recordingProjectionText, "Status = summary.Status,");
+        AssertContains(recordingProjectionText, "Reason = summary.Reason");
+        AssertContains(recordingProjectionText, "private static RecordingIntegrityVideoFlattenedProjection BuildRecordingIntegrityVideoFlattenedProjection(");
+        AssertContains(recordingProjectionText, "EncodedFrames = video.EncodedFrames,");
+        AssertContains(recordingProjectionText, "SequenceGaps = video.SequenceGaps");
+        AssertContains(recordingProjectionText, "private static RecordingIntegrityBackpressureFlattenedProjection BuildRecordingIntegrityBackpressureFlattenedProjection(");
+        AssertContains(recordingProjectionText, "QueueMaxDepth = backpressure.QueueMaxDepth,");
+        AssertContains(recordingProjectionText, "BackpressureMaxWaitMs = backpressure.BackpressureMaxWaitMs");
+        AssertContains(recordingProjectionText, "private static RecordingIntegrityAudioFlattenedProjection BuildRecordingIntegrityAudioFlattenedProjection(");
+        AssertContains(recordingProjectionText, "AudioFramesWrittenToSink = audio.AudioFramesWrittenToSink,");
+        AssertContains(recordingProjectionText, "AudioCallbackGaps = audio.AudioCallbackGaps");
+        AssertContains(recordingProjectionText, "private static RecordingIntegrityAvSyncFlattenedProjection BuildRecordingIntegrityAvSyncFlattenedProjection(");
+        AssertContains(recordingProjectionText, "EncoderAvSyncDriftMs = avSync.EncoderAvSyncDriftMs,");
+        AssertContains(recordingProjectionText, "EncoderAvSyncCorrectionSamples = avSync.EncoderAvSyncCorrectionSamples");
 
         AssertContains(recordingProjectionText, "private static RecordingIntegrityProjection BuildRecordingIntegrityProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(recordingProjectionText, "private readonly record struct RecordingIntegrityProjection");
@@ -138,21 +127,21 @@ static partial class Program
         AssertContains(recordingProjectionText, "Backpressure = BuildRecordingIntegrityBackpressureProjection(captureRuntime),");
         AssertContains(recordingProjectionText, "Audio = BuildRecordingIntegrityAudioProjection(captureRuntime),");
         AssertContains(recordingProjectionText, "AvSync = BuildRecordingIntegrityAvSyncProjection(captureRuntime)");
-        AssertContains(recordingSummaryProjectionText, "private static RecordingIntegritySummaryProjection BuildRecordingIntegritySummaryProjection(");
-        AssertContains(recordingSummaryProjectionText, "Status = captureRuntime.RecordingIntegrityStatus,");
-        AssertContains(recordingSummaryProjectionText, "Reason = captureRuntime.RecordingIntegrityReason");
-        AssertContains(recordingVideoProjectionText, "private static RecordingIntegrityVideoProjection BuildRecordingIntegrityVideoProjection(");
-        AssertContains(recordingVideoProjectionText, "EncodedFrames = captureRuntime.RecordingIntegrityEncodedFrames,");
-        AssertContains(recordingVideoProjectionText, "SequenceGaps = captureRuntime.RecordingIntegritySequenceGaps");
-        AssertContains(recordingBackpressureProjectionText, "private static RecordingIntegrityBackpressureProjection BuildRecordingIntegrityBackpressureProjection(");
-        AssertContains(recordingBackpressureProjectionText, "QueueMaxDepth = captureRuntime.RecordingIntegrityQueueMaxDepth,");
-        AssertContains(recordingBackpressureProjectionText, "BackpressureMaxWaitMs = captureRuntime.RecordingIntegrityBackpressureMaxWaitMs");
-        AssertContains(recordingAudioProjectionText, "private static RecordingIntegrityAudioProjection BuildRecordingIntegrityAudioProjection(");
-        AssertContains(recordingAudioProjectionText, "AudioFramesWrittenToSink = captureRuntime.RecordingIntegrityAudioFramesWrittenToSink,");
-        AssertContains(recordingAudioProjectionText, "AudioCallbackGaps = captureRuntime.RecordingIntegrityAudioCallbackGaps");
-        AssertContains(recordingAvSyncProjectionText, "private static RecordingIntegrityAvSyncProjection BuildRecordingIntegrityAvSyncProjection(");
-        AssertContains(recordingAvSyncProjectionText, "EncoderAvSyncDriftMs = captureRuntime.RecordingIntegrityEncoderAvSyncDriftMs,");
-        AssertContains(recordingAvSyncProjectionText, "EncoderAvSyncCorrectionSamples = captureRuntime.RecordingIntegrityEncoderAvSyncCorrectionSamples");
+        AssertContains(recordingProjectionText, "private static RecordingIntegritySummaryProjection BuildRecordingIntegritySummaryProjection(");
+        AssertContains(recordingProjectionText, "Status = captureRuntime.RecordingIntegrityStatus,");
+        AssertContains(recordingProjectionText, "Reason = captureRuntime.RecordingIntegrityReason");
+        AssertContains(recordingProjectionText, "private static RecordingIntegrityVideoProjection BuildRecordingIntegrityVideoProjection(");
+        AssertContains(recordingProjectionText, "EncodedFrames = captureRuntime.RecordingIntegrityEncodedFrames,");
+        AssertContains(recordingProjectionText, "SequenceGaps = captureRuntime.RecordingIntegritySequenceGaps");
+        AssertContains(recordingProjectionText, "private static RecordingIntegrityBackpressureProjection BuildRecordingIntegrityBackpressureProjection(");
+        AssertContains(recordingProjectionText, "QueueMaxDepth = captureRuntime.RecordingIntegrityQueueMaxDepth,");
+        AssertContains(recordingProjectionText, "BackpressureMaxWaitMs = captureRuntime.RecordingIntegrityBackpressureMaxWaitMs");
+        AssertContains(recordingProjectionText, "private static RecordingIntegrityAudioProjection BuildRecordingIntegrityAudioProjection(");
+        AssertContains(recordingProjectionText, "AudioFramesWrittenToSink = captureRuntime.RecordingIntegrityAudioFramesWrittenToSink,");
+        AssertContains(recordingProjectionText, "AudioCallbackGaps = captureRuntime.RecordingIntegrityAudioCallbackGaps");
+        AssertContains(recordingProjectionText, "private static RecordingIntegrityAvSyncProjection BuildRecordingIntegrityAvSyncProjection(");
+        AssertContains(recordingProjectionText, "EncoderAvSyncDriftMs = captureRuntime.RecordingIntegrityEncoderAvSyncDriftMs,");
+        AssertContains(recordingProjectionText, "EncoderAvSyncCorrectionSamples = captureRuntime.RecordingIntegrityEncoderAvSyncCorrectionSamples");
 
         return Task.CompletedTask;
     }
