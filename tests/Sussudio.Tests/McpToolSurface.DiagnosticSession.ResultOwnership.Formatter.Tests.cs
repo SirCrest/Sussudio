@@ -13,8 +13,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var captureModeText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.CaptureMode.cs")
             .Replace("\r\n", "\n");
-        var flashbackRootText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Flashback.cs")
-            .Replace("\r\n", "\n");
         var flashbackPlaybackCommandsText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackCadenceText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Cadence.cs")
@@ -57,6 +55,19 @@ static partial class Program
         AssertContains(formatterRootText, "\"PresentMon: ");
         AssertContains(formatterRootText, "private static void AppendProcessPerformance(");
         AssertContains(formatterRootText, "\"Process Perf: \"");
+        AssertContains(formatterRootText, "private static void AppendFlashbackSections(");
+        AssertContains(formatterRootText, "AppendFlashbackPlaybackCommands(builder, result);");
+        AssertContains(formatterRootText, "AppendFlashbackRecording(builder, result);");
+        AssertContains(formatterRootText, "AppendFlashbackExport(builder, result);");
+        AssertDoesNotContain(formatterRootText, "private static void AppendFlashbackPlaybackCommands(");
+        AssertDoesNotContain(formatterRootText, "\"Flashback Playback Commands: \"");
+        AssertDoesNotContain(formatterRootText, "private static void AppendFlashbackPlaybackStages(");
+        AssertDoesNotContain(formatterRootText, "\"Flashback Playback Stages: \"");
+        AssertDoesNotContain(formatterRootText, "private static void AppendFlashbackRecording(");
+        AssertDoesNotContain(formatterRootText, "\"Flashback Recording: \"");
+        AssertDoesNotContain(formatterRootText, "private static void AppendFlashbackExport(");
+        AssertDoesNotContain(formatterRootText, "\"Flashback Export: \"");
+        AssertDoesNotContain(formatterRootText, "\"Flashback Playback Perf: \"");
         AssertContains(formatterRootText, "private static void AppendPreviewSections(");
         AssertContains(formatterRootText, "AppendPreviewScheduler(builder, result);");
         AssertContains(formatterRootText, "AppendPreviewD3DPerformance(builder, result);");
@@ -89,19 +100,6 @@ static partial class Program
         AssertContains(formatterText, "private static void AppendPreviewSections(");
         AssertContains(formatterText, "private static void AppendArtifacts(");
         AssertContains(formatterText, "\"Flashback Playback Perf: \"");
-        AssertContains(flashbackRootText, "private static void AppendFlashbackSections(");
-        AssertContains(flashbackRootText, "AppendFlashbackPlaybackCommands(builder, result);");
-        AssertContains(flashbackRootText, "AppendFlashbackRecording(builder, result);");
-        AssertContains(flashbackRootText, "AppendFlashbackExport(builder, result);");
-        AssertDoesNotContain(flashbackRootText, "private static void AppendFlashbackPlaybackCommands(");
-        AssertDoesNotContain(flashbackRootText, "\"Flashback Playback Commands: \"");
-        AssertDoesNotContain(flashbackRootText, "private static void AppendFlashbackPlaybackStages(");
-        AssertDoesNotContain(flashbackRootText, "\"Flashback Playback Stages: \"");
-        AssertDoesNotContain(flashbackRootText, "private static void AppendFlashbackRecording(");
-        AssertDoesNotContain(flashbackRootText, "\"Flashback Recording: \"");
-        AssertDoesNotContain(flashbackRootText, "private static void AppendFlashbackExport(");
-        AssertDoesNotContain(flashbackRootText, "\"Flashback Export: \"");
-        AssertDoesNotContain(flashbackRootText, "\"Flashback Playback Perf: \"");
         AssertContains(flashbackPlaybackCommandsText, "private static void AppendFlashbackPlaybackCommands(");
         AssertContains(flashbackPlaybackCommandsText, "\"Flashback Playback Commands: \"");
         AssertContains(flashbackPlaybackCommandsText, "FormatOptional(result.FlashbackPlaybackMaxCommandQueueLatencyCommandObserved)");

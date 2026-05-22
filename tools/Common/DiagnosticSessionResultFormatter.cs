@@ -44,6 +44,16 @@ public static partial class DiagnosticSessionResultFormatter
             $"cpuPercentMaxObserved={result.ProcessCpuMaxPercentObserved:0.##}");
     }
 
+    private static void AppendFlashbackSections(StringBuilder builder, DiagnosticSessionResult result)
+    {
+        AppendFlashbackPlaybackCommands(builder, result);
+        AppendFlashbackPlaybackPerformance(builder, result);
+        AppendFlashbackPlaybackDecode(builder, result);
+        AppendFlashbackPlaybackStages(builder, result);
+        AppendFlashbackRecording(builder, result);
+        AppendFlashbackExport(builder, result);
+    }
+
     private static void AppendPreviewSections(StringBuilder builder, DiagnosticSessionResult result)
     {
         AppendPreviewScheduler(builder, result);

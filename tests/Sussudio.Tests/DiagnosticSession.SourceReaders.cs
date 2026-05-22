@@ -229,7 +229,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultFormatter.cs",
             "tools/Common/DiagnosticSessionResultFormatter.Overview.cs",
             "tools/Common/DiagnosticSessionResultFormatter.CaptureMode.cs",
-            "tools/Common/DiagnosticSessionResultFormatter.Flashback.cs",
             "tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs",
             "tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Cadence.cs",
             "tools/Common/DiagnosticSessionResultFormatter.FlashbackRecording.cs",
