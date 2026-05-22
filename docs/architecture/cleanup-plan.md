@@ -523,8 +523,8 @@ by the automation snapshot DTO.
 final HDR pipeline projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation, active-alert
 transitions, Flashback alert group routing, and Flashback playback alert
-orchestration. `AutomationDiagnosticsHub.SignalAlerts.cs` owns signal alert
-orchestration. `AutomationDiagnosticsHub.SignalAlerts.Preview.cs` owns preview
+orchestration, plus signal alert orchestration.
+`AutomationDiagnosticsHub.SignalAlerts.Preview.cs` owns preview
 blank, stall, startup, cadence, and display 1% low signal alert rules.
 `AutomationDiagnosticsHub.SignalAlerts.Capture.cs` owns capture cadence drop and
 1% low signal alert rules.

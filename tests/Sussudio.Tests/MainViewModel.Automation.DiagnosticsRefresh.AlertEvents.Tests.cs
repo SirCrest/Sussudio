@@ -10,14 +10,11 @@ static partial class Program
         AssertContains(diagnostics.EventsText, "private void SetAlertState(");
         AssertContains(diagnostics.EventsText, "public IReadOnlyList<DiagnosticsEvent> GetRecentEvents");
         AssertContains(diagnostics.AlertsText, "UpdateSignalAlerts(");
-        AssertContains(diagnostics.SignalAlertsText, "private void UpdateSignalAlerts(");
-        AssertContains(diagnostics.SignalAlertsText, "UpdatePreviewSignalAlerts(");
-        AssertContains(diagnostics.SignalAlertsText, "UpdateAudioSignalAlerts(snapshot);");
-        AssertContains(diagnostics.SignalAlertsText, "UpdateRecordingGrowthAlerts(snapshot);");
-        AssertContains(diagnostics.SignalAlertsText, "UpdateCaptureSignalAlerts(");
-        AssertDoesNotContain(diagnostics.SignalAlertsText, "\"preview-blank\"");
-        AssertDoesNotContain(diagnostics.SignalAlertsText, "\"capture-cadence-drop\"");
-        AssertDoesNotContain(diagnostics.SignalAlertsText, "\"audio-muted-suspect\"");
+        AssertContains(diagnostics.AlertsText, "private void UpdateSignalAlerts(");
+        AssertContains(diagnostics.AlertsText, "UpdatePreviewSignalAlerts(");
+        AssertContains(diagnostics.AlertsText, "UpdateAudioSignalAlerts(snapshot);");
+        AssertContains(diagnostics.AlertsText, "UpdateRecordingGrowthAlerts(snapshot);");
+        AssertContains(diagnostics.AlertsText, "UpdateCaptureSignalAlerts(");
         AssertContains(diagnostics.SignalAlertsPreviewText, "private void UpdatePreviewSignalAlerts(");
         AssertContains(diagnostics.SignalAlertsPreviewText, "\"preview-blank\"");
         AssertContains(diagnostics.SignalAlertsPreviewText, "\"preview-stall\"");
@@ -36,6 +33,8 @@ static partial class Program
         AssertDoesNotContain(diagnostics.SignalAlertsCaptureText, "\"preview-blank\"");
         AssertDoesNotContain(diagnostics.SignalAlertsAudioRecordingText, "\"preview-blank\"");
         AssertDoesNotContain(diagnostics.AlertsText, "\"preview-blank\"");
+        AssertDoesNotContain(diagnostics.AlertsText, "\"capture-cadence-drop\"");
+        AssertDoesNotContain(diagnostics.AlertsText, "\"audio-muted-suspect\"");
         AssertContains(diagnostics.AlertsText, "var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");
         AssertContains(diagnostics.AlertsText, "UpdateFlashbackRecordingAlerts(snapshot, flashbackRecordingRecent);");
         AssertContains(diagnostics.AlertsText, "UpdateFlashbackPlaybackAlerts(snapshot, nowUnixMs);");

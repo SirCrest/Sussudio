@@ -79,4 +79,17 @@ public sealed partial class AutomationDiagnosticsHub
         UpdateFlashbackPlaybackCommandAlerts(snapshot, nowUnixMs);
         UpdateFlashbackPlaybackPerformanceAlerts(snapshot);
     }
+
+    private void UpdateSignalAlerts(
+        AutomationSnapshot snapshot,
+        bool captureOnePercentLowDegraded,
+        bool previewOnePercentLowDegraded,
+        bool visualCadenceHealthy,
+        string previewSlowFrameDetail)
+    {
+        UpdatePreviewSignalAlerts(snapshot, previewOnePercentLowDegraded, visualCadenceHealthy, previewSlowFrameDetail);
+        UpdateAudioSignalAlerts(snapshot);
+        UpdateRecordingGrowthAlerts(snapshot);
+        UpdateCaptureSignalAlerts(snapshot, captureOnePercentLowDegraded);
+    }
 }
