@@ -133,6 +133,18 @@ Behavior preserved: preview frame counters, estimated pipeline latency, HDR inpu
 Notes for future agents: keep tiny preview runtime projection groups with `PreviewRuntime.cs` unless a group grows independent policy or a reusable collaborator boundary
 
 Date: 2026-05-21
+Area: Automation diagnostics recording pipeline projection
+Problem: Recording pipeline encoder, ingest, video queue, and hardware queue projection mappings lived in four tiny partials even though the recording pipeline projection owner immediately composes and flattens all four groups.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.Encoder.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.Ingest.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.VideoQueue.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.HardwareQueues.cs`
+Files added: none
+Net production .cs delta: -4
+Partial clusters reduced: `AutomationDiagnosticsHub` -4 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics recording pipeline projection ownership tests and runtime snapshot regression tests
+Behavior preserved: recording encoder, ingest, video queue, GPU, and CUDA health fields still map into the same flattened automation snapshot fields
+Notes for future agents: keep recording pipeline DTO mapping groups with `RecordingPipeline.cs` unless a group grows independent policy or a reusable collaborator boundary
+
+Date: 2026-05-21
 Area: Automation diagnostics signal alerts
 Problem: Capture cadence, audio muted, and recording growth signal alert rules lived in tiny partials separate from the signal alert owner even though they all update alert state from the same automation snapshot surface.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.Capture.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.AudioRecording.cs`

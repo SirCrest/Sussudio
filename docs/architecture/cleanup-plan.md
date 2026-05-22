@@ -324,21 +324,10 @@ plus final field flattening:
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Audio.cs`, and
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.AvSync.cs`.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs` owns
-recording-pipeline projection routing and groups encoder, ingest, video-queue,
-and GPU/CUDA health modules consumed by the automation snapshot DTO, plus final
-recording-pipeline flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.Encoder.cs` owns
-encoder queue age/count/failure health input projection and final field
-flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.Ingest.cs` owns
-conversion, ffmpeg, and video ingest queue health input projection and final
-field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.VideoQueue.cs`
-owns recording video queue latency, backpressure, and encoder-output health
-input projection and final field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.HardwareQueues.cs`
-owns recording GPU and CUDA queue health input projection and final field
-flattening.
+recording-pipeline projection routing, encoder queue age/count/failure health,
+conversion/ffmpeg/video ingest queue health, recording video queue latency,
+backpressure, encoder-output health, GPU/CUDA queue health, and final
+recording-pipeline flattening consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingOutput.cs` owns recording
 backend/audio-path/mux-result projection, UI output text, accumulated recording
 bytes, file-growth state, last finalized output metadata, and last verification

@@ -33,39 +33,31 @@ static partial class Program
         AssertContains(recordingPipelineProjectionText, "HardwareQueues = BuildRecordingPipelineHardwareQueuesFlattenedProjection(recordingPipeline)");
         AssertContains(recordingPipelineProjectionText, "private readonly record struct RecordingPipelineFlattenedProjection");
 
-        var recordingPipelineEncoderProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.Encoder.cs")
-            .Replace("\r\n", "\n");
-        var recordingPipelineIngestProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.Ingest.cs")
-            .Replace("\r\n", "\n");
-        var recordingPipelineVideoQueueProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.VideoQueue.cs")
-            .Replace("\r\n", "\n");
-        var recordingPipelineHardwareQueuesProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.HardwareQueues.cs")
-            .Replace("\r\n", "\n");
-        AssertContains(recordingPipelineEncoderProjectionText, "private static RecordingPipelineEncoderProjection BuildRecordingPipelineEncoderProjection(");
-        AssertContains(recordingPipelineEncoderProjectionText, "VideoFramesEnqueued = health.VideoFramesEnqueued,");
-        AssertContains(recordingPipelineEncoderProjectionText, "EncodingFailed = health.RecordingEncodingFailed,");
-        AssertContains(recordingPipelineIngestProjectionText, "private static RecordingPipelineIngestProjection BuildRecordingPipelineIngestProjection(");
-        AssertContains(recordingPipelineIngestProjectionText, "ConversionQueueDepth = health.ConversionQueueDepth,");
-        AssertContains(recordingPipelineIngestProjectionText, "VideoDropsBacklogEviction = health.VideoDropsBacklogEviction");
-        AssertContains(recordingPipelineVideoQueueProjectionText, "private static RecordingPipelineVideoQueueProjection BuildRecordingPipelineVideoQueueProjection(");
-        AssertContains(recordingPipelineVideoQueueProjectionText, "Capacity = health.RecordingVideoQueueCapacity,");
-        AssertContains(recordingPipelineVideoQueueProjectionText, "BackpressureMaxWaitMs = health.RecordingVideoBackpressureMaxWaitMs");
-        AssertContains(recordingPipelineHardwareQueuesProjectionText, "private static RecordingPipelineHardwareQueuesProjection BuildRecordingPipelineHardwareQueuesProjection(");
-        AssertContains(recordingPipelineHardwareQueuesProjectionText, "GpuFramesEnqueued = health.RecordingGpuFramesEnqueued,");
-        AssertContains(recordingPipelineHardwareQueuesProjectionText, "CudaFramesDropped = health.RecordingCudaFramesDropped");
+        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineEncoderProjection BuildRecordingPipelineEncoderProjection(");
+        AssertContains(recordingPipelineProjectionText, "VideoFramesEnqueued = health.VideoFramesEnqueued,");
+        AssertContains(recordingPipelineProjectionText, "EncodingFailed = health.RecordingEncodingFailed,");
+        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineIngestProjection BuildRecordingPipelineIngestProjection(");
+        AssertContains(recordingPipelineProjectionText, "ConversionQueueDepth = health.ConversionQueueDepth,");
+        AssertContains(recordingPipelineProjectionText, "VideoDropsBacklogEviction = health.VideoDropsBacklogEviction");
+        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineVideoQueueProjection BuildRecordingPipelineVideoQueueProjection(");
+        AssertContains(recordingPipelineProjectionText, "Capacity = health.RecordingVideoQueueCapacity,");
+        AssertContains(recordingPipelineProjectionText, "BackpressureMaxWaitMs = health.RecordingVideoBackpressureMaxWaitMs");
+        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineHardwareQueuesProjection BuildRecordingPipelineHardwareQueuesProjection(");
+        AssertContains(recordingPipelineProjectionText, "GpuFramesEnqueued = health.RecordingGpuFramesEnqueued,");
+        AssertContains(recordingPipelineProjectionText, "CudaFramesDropped = health.RecordingCudaFramesDropped");
 
-        AssertContains(recordingPipelineEncoderProjectionText, "private static RecordingPipelineEncoderFlattenedProjection BuildRecordingPipelineEncoderFlattenedProjection(");
-        AssertContains(recordingPipelineEncoderProjectionText, "VideoFramesEnqueued = recordingPipeline.Encoder.VideoFramesEnqueued,");
-        AssertContains(recordingPipelineEncoderProjectionText, "EncodingFailed = recordingPipeline.Encoder.EncodingFailed,");
-        AssertContains(recordingPipelineIngestProjectionText, "private static RecordingPipelineIngestFlattenedProjection BuildRecordingPipelineIngestFlattenedProjection(");
-        AssertContains(recordingPipelineIngestProjectionText, "ConversionQueueDepth = recordingPipeline.Ingest.ConversionQueueDepth,");
-        AssertContains(recordingPipelineIngestProjectionText, "VideoDropsBacklogEviction = recordingPipeline.Ingest.VideoDropsBacklogEviction");
-        AssertContains(recordingPipelineVideoQueueProjectionText, "private static RecordingPipelineVideoQueueFlattenedProjection BuildRecordingPipelineVideoQueueFlattenedProjection(");
-        AssertContains(recordingPipelineVideoQueueProjectionText, "Capacity = recordingPipeline.VideoQueue.Capacity,");
-        AssertContains(recordingPipelineVideoQueueProjectionText, "BackpressureMaxWaitMs = recordingPipeline.VideoQueue.BackpressureMaxWaitMs");
-        AssertContains(recordingPipelineHardwareQueuesProjectionText, "private static RecordingPipelineHardwareQueuesFlattenedProjection BuildRecordingPipelineHardwareQueuesFlattenedProjection(");
-        AssertContains(recordingPipelineHardwareQueuesProjectionText, "GpuFramesEnqueued = recordingPipeline.HardwareQueues.GpuFramesEnqueued,");
-        AssertContains(recordingPipelineHardwareQueuesProjectionText, "CudaFramesDropped = recordingPipeline.HardwareQueues.CudaFramesDropped");
+        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineEncoderFlattenedProjection BuildRecordingPipelineEncoderFlattenedProjection(");
+        AssertContains(recordingPipelineProjectionText, "VideoFramesEnqueued = recordingPipeline.Encoder.VideoFramesEnqueued,");
+        AssertContains(recordingPipelineProjectionText, "EncodingFailed = recordingPipeline.Encoder.EncodingFailed,");
+        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineIngestFlattenedProjection BuildRecordingPipelineIngestFlattenedProjection(");
+        AssertContains(recordingPipelineProjectionText, "ConversionQueueDepth = recordingPipeline.Ingest.ConversionQueueDepth,");
+        AssertContains(recordingPipelineProjectionText, "VideoDropsBacklogEviction = recordingPipeline.Ingest.VideoDropsBacklogEviction");
+        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineVideoQueueFlattenedProjection BuildRecordingPipelineVideoQueueFlattenedProjection(");
+        AssertContains(recordingPipelineProjectionText, "Capacity = recordingPipeline.VideoQueue.Capacity,");
+        AssertContains(recordingPipelineProjectionText, "BackpressureMaxWaitMs = recordingPipeline.VideoQueue.BackpressureMaxWaitMs");
+        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineHardwareQueuesFlattenedProjection BuildRecordingPipelineHardwareQueuesFlattenedProjection(");
+        AssertContains(recordingPipelineProjectionText, "GpuFramesEnqueued = recordingPipeline.HardwareQueues.GpuFramesEnqueued,");
+        AssertContains(recordingPipelineProjectionText, "CudaFramesDropped = recordingPipeline.HardwareQueues.CudaFramesDropped");
 
         AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineProjection BuildRecordingPipelineProjection(CaptureHealthSnapshot health)");
         AssertContains(recordingPipelineProjectionText, "private readonly record struct RecordingPipelineProjection");
