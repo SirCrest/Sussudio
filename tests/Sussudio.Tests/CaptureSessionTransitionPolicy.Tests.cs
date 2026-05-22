@@ -148,7 +148,7 @@ static partial class Program
             "Sussudio/Services/Capture/CaptureService.FlashbackRestart.cs",
             "Sussudio/Services/Capture/CaptureService.FlashbackRecordingFormat.cs",
             "Sussudio/Services/Capture/CaptureService.FlashbackEncoderSettings.cs",
-            "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Update.cs"
+            "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs"
         };
 
         foreach (var owner in currentStateTransitionOwners)

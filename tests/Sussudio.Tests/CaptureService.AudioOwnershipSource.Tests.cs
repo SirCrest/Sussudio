@@ -10,8 +10,6 @@ static partial class Program
         "Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs",
         "Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs",
         "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs",
-        "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Update.cs",
-        "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Restart.cs",
         "Sussudio/Services/Capture/PreviewAudioGraphResources.cs"
     };
 
@@ -32,8 +30,6 @@ static partial class Program
         var audioPreviewText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs");
         var audioInputSwitchingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs");
         var microphoneText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs");
-        var microphoneUpdateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Update.cs");
-        var microphoneRestartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Restart.cs");
         var resourceText = ReadRepoFile("Sussudio/Services/Capture/PreviewAudioGraphResources.cs");
 
         AssertContains(rootText, "private readonly PreviewAudioGraphResources _previewAudioGraph = new();");
@@ -81,14 +77,20 @@ static partial class Program
         AssertDoesNotContain(audioInputSwitchingText, "public Task UpdateMicrophoneMonitorAsync(");
         AssertDoesNotContain(audioInputSwitchingText, "private async Task StartWasapiPlaybackAsync(");
 
-        AssertContains(microphoneUpdateText, "public Task UpdateMicrophoneMonitorAsync(");
-        AssertContains(microphoneUpdateText, "RunTransitionAsync(CurrentSessionState,");
+        AssertContains(microphoneText, "public Task UpdateMicrophoneMonitorAsync(");
+        AssertContains(microphoneText, "RunTransitionAsync(CurrentSessionState,");
         AssertContains(microphoneText, "private async Task DisposeMicrophoneCaptureAsync()");
         AssertContains(microphoneText, "private void OnMicrophoneAudioLevelUpdated(");
-        AssertContains(microphoneRestartText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
+        AssertContains(microphoneText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
         AssertContains(microphoneText, "private readonly record struct MicrophoneMonitorRestartOptions(");
-        AssertDoesNotContain(microphoneText, "public Task UpdateMicrophoneMonitorAsync(");
-        AssertDoesNotContain(microphoneText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.MicrophoneMonitor.Update.cs")),
+            "old microphone monitor update partial removed after monitor consolidation");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.MicrophoneMonitor.Restart.cs")),
+            "old microphone monitor restart partial removed after monitor consolidation");
 
         AssertContains(resourceText, "public async Task StartPlaybackAsync(");
         AssertContains(resourceText, "public void StopPlayback(");
@@ -109,20 +111,18 @@ static partial class Program
             .Replace("\r\n", "\n");
         var microphoneRootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs")
             .Replace("\r\n", "\n");
-        var microphoneText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Restart.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(microphoneRootText, "private readonly record struct MicrophoneMonitorRestartOptions(");
-        AssertContains(microphoneText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
-        AssertContains(microphoneText, "new WasapiAudioCapture()");
-        AssertContains(microphoneText, "micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
-        AssertContains(microphoneText, "micCapture.CaptureFailed += OnWasapiCaptureFailed;");
-        AssertContains(microphoneText, "micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));");
-        AssertContains(microphoneText, "FLASHBACK_MIC_ATTACH_OK reason='{options.FlashbackAttachReason}'");
-        AssertContains(microphoneText, "Logger.Log($\"{options.RestartLogEvent} device='\" + (_micMonitorDeviceName ?? \"?\") + \"'\");");
-        AssertContains(microphoneText, "Logger.Log($\"{options.DisposeWarningEvent} type={disposeEx.GetType().Name} msg={disposeEx.Message}\");");
+        AssertContains(microphoneRootText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
+        AssertContains(microphoneRootText, "new WasapiAudioCapture()");
+        AssertContains(microphoneRootText, "micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
+        AssertContains(microphoneRootText, "micCapture.CaptureFailed += OnWasapiCaptureFailed;");
+        AssertContains(microphoneRootText, "micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));");
+        AssertContains(microphoneRootText, "FLASHBACK_MIC_ATTACH_OK reason='{options.FlashbackAttachReason}'");
+        AssertContains(microphoneRootText, "Logger.Log($\"{options.RestartLogEvent} device='\" + (_micMonitorDeviceName ?? \"?\") + \"'\");");
+        AssertContains(microphoneRootText, "Logger.Log($\"{options.DisposeWarningEvent} type={disposeEx.GetType().Name} msg={disposeEx.Message}\");");
         AssertOccursBefore(
-            microphoneText,
+            microphoneRootText,
             "micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));",
             "_previewAudioGraph.MicrophoneCapture = micCapture;");
 
