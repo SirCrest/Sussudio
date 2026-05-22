@@ -356,30 +356,23 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var lifecycleText = ReadDiagnosticSessionFlashbackLifecycleScenariosSource();
-        var lifecycleRootText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs")
-            .Replace("\r\n", "\n");
-        var lifecycleRegistrationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.Registrations.cs")
-            .Replace("\r\n", "\n");
-        var lifecycleValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.Validation.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(lifecycleText, "internal static partial class DiagnosticSessionFlashbackLifecycleScenarios");
-        AssertContains(lifecycleRegistrationText, "internal static void RegisterSelectedFlashbackLifecycleScenarioTask(");
-        AssertContains(lifecycleRegistrationText, "scenarioPlan.RunFlashbackLifecycle");
-        AssertContains(lifecycleRegistrationText, "backgroundTasks.AddScenario(");
-        AssertContains(lifecycleRegistrationText, "2,\n            \"flashback-lifecycle-task\",");
-        AssertContains(lifecycleRegistrationText, "actions.Add(\"flashback lifecycle started\")");
-        AssertContains(lifecycleRootText, "internal static async Task RunFlashbackLifecycleAsync(");
-        AssertContains(lifecycleRootText, "flashback lifecycle pause requested");
-        AssertContains(lifecycleRootText, "flashback lifecycle disabled during playback");
-        AssertContains(lifecycleRootText, "ValidateFlashbackLifecycleDisabledAsync(");
-        AssertContains(lifecycleRootText, "flashback lifecycle re-enabled");
-        AssertContains(lifecycleRootText, "ValidateFlashbackLifecycleReenabledAsync(");
-        AssertDoesNotContain(lifecycleRootText, "FlashbackPlaybackThreadAlive");
-        AssertContains(lifecycleValidationText, "private static async Task ValidateFlashbackLifecycleDisabledAsync(");
-        AssertContains(lifecycleValidationText, "flashback lifecycle: playback worker still alive after disable");
-        AssertContains(lifecycleValidationText, "flashback lifecycle: pending commands remained after disable");
-        AssertContains(lifecycleValidationText, "private static async Task ValidateFlashbackLifecycleReenabledAsync(");
+        AssertContains(lifecycleText, "internal static class DiagnosticSessionFlashbackLifecycleScenarios");
+        AssertContains(lifecycleText, "internal static void RegisterSelectedFlashbackLifecycleScenarioTask(");
+        AssertContains(lifecycleText, "scenarioPlan.RunFlashbackLifecycle");
+        AssertContains(lifecycleText, "backgroundTasks.AddScenario(");
+        AssertContains(lifecycleText, "2,\n            \"flashback-lifecycle-task\",");
+        AssertContains(lifecycleText, "actions.Add(\"flashback lifecycle started\")");
+        AssertContains(lifecycleText, "internal static async Task RunFlashbackLifecycleAsync(");
+        AssertContains(lifecycleText, "flashback lifecycle pause requested");
+        AssertContains(lifecycleText, "flashback lifecycle disabled during playback");
+        AssertContains(lifecycleText, "ValidateFlashbackLifecycleDisabledAsync(");
+        AssertContains(lifecycleText, "flashback lifecycle re-enabled");
+        AssertContains(lifecycleText, "ValidateFlashbackLifecycleReenabledAsync(");
+        AssertContains(lifecycleText, "private static async Task ValidateFlashbackLifecycleDisabledAsync(");
+        AssertContains(lifecycleText, "flashback lifecycle: playback worker still alive after disable");
+        AssertContains(lifecycleText, "flashback lifecycle: pending commands remained after disable");
+        AssertContains(lifecycleText, "private static async Task ValidateFlashbackLifecycleReenabledAsync(");
         AssertContains(startupText, "DiagnosticSessionFlashbackLifecycleScenarios.RegisterSelectedFlashbackLifecycleScenarioTask(");
         AssertDoesNotContain(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackLifecycleScenarios;");
         AssertDoesNotContain(startupText, "RunFlashbackLifecycleAsync(");

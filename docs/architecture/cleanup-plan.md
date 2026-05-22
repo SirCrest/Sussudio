@@ -3789,11 +3789,11 @@ registration lives in `.Registrations.Coordination.cs`. Do not reintroduce an
 empty family root.
 
 Diagnostic-session Flashback lifecycle checks now live in
-`tools/Common/DiagnosticSessionFlashbackLifecycleScenarios*.cs`. The root owns
-pause/seek/play disable-and-re-enable command flow, `.Registrations.cs` owns
-task registration, priority, label, and started action, and `.Validation.cs`
-owns post-disable playback-thread/queue health plus post-re-enable active-state
-validation while startup only delegates to the lifecycle owner.
+`tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs`. It owns
+pause/seek/play disable-and-re-enable command flow, task registration, priority,
+label, started action, post-disable playback-thread/queue health, and
+post-re-enable active-state validation while startup only delegates to the
+lifecycle owner.
 
 Diagnostic-session Flashback metric projection now lives in a focused partial
 family of named owners. Recording, playback-session, playback-result, and
@@ -4034,8 +4034,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExportScenarios.Registrations.Coordination.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Rotated.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.cs`
-- `DiagnosticSessionFlashbackLifecycleScenarios.Registrations.cs`
-- `DiagnosticSessionFlashbackLifecycleScenarios.Validation.cs`
 - `DiagnosticSessionFlashbackMetrics.Recording.cs`
 - `DiagnosticSessionFlashbackMetrics.Export.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`

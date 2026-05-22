@@ -50,10 +50,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs");
 
     private static string ReadDiagnosticSessionFlashbackLifecycleScenariosSource()
-        => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs",
-            "tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.Registrations.cs",
-            "tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.Validation.cs");
+        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs");
 
     private static string ReadDiagnosticSessionFlashbackMetricsSource()
         => ReadNormalizedSourceFiles(

@@ -4201,13 +4201,10 @@ Primary owners:
   owns concurrent, disable-during-export, and rotated export task priorities,
   labels, send-channel selection, and started actions.
 - `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs` owns
-  Flashback playback disable/re-enable lifecycle diagnostic command flow.
-- `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.Registrations.cs`
-  owns lifecycle scenario registration, priority, task label, and started
-  action.
-- `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.Validation.cs`
-  owns post-disable playback-thread/queue health checks and post-re-enable
-  active-state validation.
+  Flashback playback disable/re-enable lifecycle diagnostic command flow,
+  scenario registration, priority, task label, started action, post-disable
+  playback-thread/queue health checks, and post-re-enable active-state
+  validation.
 - `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs` owns the
   `FlashbackRecordingSessionMetrics` handoff shape and read-only recording
   metric projection.
