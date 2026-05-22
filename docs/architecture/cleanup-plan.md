@@ -97,8 +97,7 @@ composition/flattening, plus live A/V sync drift and encoder correction
 projection and final A/V sync projection-to-`AutomationSnapshot` field
 flattening. `AutomationDiagnosticsHub.SnapshotProjection.Composition.cs`
 owns projection-set composition from runtime/view-model snapshots and diagnostic
-classifiers. `AutomationDiagnosticsHub.SnapshotProjection.Flattening.Set.cs`
-owns the projection-to-flattened-set dispatch root, invocation of every focused
+classifiers, projection-to-flattened-set dispatch, invocation of every focused
 final-domain flattener, and the private flattened projection set handoff.
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs`
 owns the final `AutomationSnapshot` DTO initializer that flattens the named
