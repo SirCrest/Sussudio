@@ -37,9 +37,7 @@ static partial class Program
             VerificationAutoText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Verification.Auto.cs"),
             VerificationProfileText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Verification.Profile.cs"),
             LifecycleText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Lifecycle.cs"),
-            HdrText = ReadAutomationDiagnosticsHubHdrSource(),
-            HdrTruthText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Hdr.Truth.cs"),
-            HdrPreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Hdr.Preview.cs"),
+            HdrText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Hdr.cs"),
             SnapshotsText = ReadAutomationDiagnosticsHubSnapshotsSource(),
             SnapshotsCoreText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
             SnapshotsAccessText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.Access.cs"),
@@ -148,17 +146,6 @@ static partial class Program
             });
     }
 
-    private static string ReadAutomationDiagnosticsHubHdrSource()
-    {
-        return string.Join(
-            "\n",
-            new[]
-            {
-                ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Hdr.Truth.cs"),
-                ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Hdr.Preview.cs"),
-            });
-    }
-
     private static string ReadAutomationDiagnosticsHubSnapshotsSource()
     {
         return string.Join(
@@ -194,8 +181,6 @@ static partial class Program
         public string VerificationProfileText { get; init; } = string.Empty;
         public string LifecycleText { get; init; } = string.Empty;
         public string HdrText { get; init; } = string.Empty;
-        public string HdrTruthText { get; init; } = string.Empty;
-        public string HdrPreviewText { get; init; } = string.Empty;
         public string SnapshotsText { get; init; } = string.Empty;
         public string SnapshotsCoreText { get; init; } = string.Empty;
         public string SnapshotsAccessText { get; init; } = string.Empty;

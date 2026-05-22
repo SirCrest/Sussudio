@@ -390,12 +390,10 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.EvaluationPolicy.cs`
   owns shared alert-detail formatting and health classifiers used by alerts
   and diagnostic evaluation.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Hdr.Truth.cs` owns HDR
-  truth classification from capture pipeline, source-HDR, and verification
-  metadata evidence.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Hdr.Preview.cs` owns
-  preview HDR input detection, HDR pixel-format helpers used by preview state,
-  and tone-map state projection.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Hdr.cs` owns HDR truth
+  classification from capture pipeline, source-HDR, and verification metadata
+  evidence, plus preview HDR input detection, HDR pixel-format helpers used by
+  preview state, and tone-map state projection.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Lifecycle.cs` owns
   diagnostics hub start/stop/dispose behavior and the polling loop.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.OutputFiles.cs` owns
