@@ -14,8 +14,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var recordingTransitionControllerText =
             ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs")
                 .Replace("\r\n", "\n");
         var captureSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSettings.cs")
             .Replace("\r\n", "\n");

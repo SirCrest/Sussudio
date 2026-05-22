@@ -4723,15 +4723,12 @@ owner, fold it back into that owner and update the source-shape tests and
    recording toggle serialization,
    desired-state routing, graceful stop, transition gating, and in-flight
    transition wait/error propagation now live in the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`;
-   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Context.cs`
-   owns the top-level recording transition graph-port contract for UI dispatch,
-   recording/session state, capture settings construction, coordinator start/stop
-   calls, recording timer state, and status/count presentation updates;
-   concrete top-level start/stop operation execution plus failure/cancellation state
-   repair through graph-built context ports, including direct use of the preview
-   lifecycle owner for recording startup initialization, live in
-   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`.
+   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`,
+   along with the graph-port contract for UI dispatch, recording/session state,
+   capture settings construction, coordinator start/stop calls, recording timer
+   state, status/count presentation updates, concrete start/stop execution,
+   failure/cancellation state repair, and direct use of the preview lifecycle
+   owner for recording startup initialization.
    Recording option selections, output path, counters, and transition flags also
    live in `MainViewModel.RecordingState.cs`. Bounded teardown, dispose timeout policy,
    watcher disposal, coordinator cleanup/dispose, and capture-service
@@ -4994,8 +4991,7 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.RecordingState.cs` and is serialized by
    the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`,
-   with graph-built context ports and start/stop execution in
-   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`.
+   with graph-built context ports and start/stop execution in the same owner.
    The emergency recording-stop bridge also enters through
    `MainViewModel.RecordingState.cs` but routes directly to
    `CaptureSessionCoordinator.StopRecordingForEmergencyAsync`

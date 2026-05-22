@@ -3433,16 +3433,10 @@ Primary current owners:
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`
   is a top-level `Sussudio.Controllers` owner for recording toggle
   serialization, desired-state routing, graceful stop, transition gating, and
-  in-flight transition wait/error propagation.
-  `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Context.cs`
-  owns the top-level recording transition graph-port contract for UI dispatch,
-  recording/session state, capture settings construction, coordinator start/stop
-  calls, recording timer state, and status/count presentation updates.
-  `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`
-  owns concrete top-level start/stop operation execution plus
-  failure/cancellation state repair through graph-built context ports,
-  including direct use of the preview lifecycle owner for recording startup
-  initialization.
+  in-flight transition wait/error propagation, graph-port context contract,
+  concrete start/stop operation execution, failure/cancellation state repair,
+  recording timer state, status/count presentation updates, and direct use of
+  the preview lifecycle owner for recording startup initialization.
   `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs` is a
   top-level `Sussudio.Controllers` owner for bounded teardown, dispose timeout policy, watcher disposal, coordinator
   cleanup/dispose, capture-service async-dispose fallback, and disposal-step

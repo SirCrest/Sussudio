@@ -6,10 +6,7 @@ static partial class Program
     {
         var recordingTransitionControllerRootText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
             .Replace("\r\n", "\n");
-        var recordingTransitionControllerOperationsText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs")
-            .Replace("\r\n", "\n");
-        var recordingTransitionControllerText = recordingTransitionControllerRootText
-            + "\n" + recordingTransitionControllerOperationsText;
+        var recordingTransitionControllerText = recordingTransitionControllerRootText;
 
         AssertContains(recordingTransitionControllerText, "Logger.LogException(ex);");
         AssertContains(recordingTransitionControllerText, "_context.SetIsRecording(_context.GetSessionIsRecording());");
