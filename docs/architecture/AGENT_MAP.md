@@ -3205,9 +3205,7 @@ Primary current owners:
   signal-window predicates, snapshot missing-signal refresh gates, and reset
   orchestration.
   `Sussudio/MainWindow.PreviewStartup.Session.Composition.cs` wires UI/runtime
-  callbacks into the session controller, `Sussudio/MainWindow.PreviewStartup.Session.State.cs`
-  owns stable state projections, and
-  `Sussudio/MainWindow.PreviewStartup.Session.Lifecycle.cs` owns startup state,
+  callbacks into the session controller, stable state projections, startup state,
   renderer-attached, first-visual, begin-attempt, and reset adapters.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs` owns
   watchdog/telemetry timers, timeout configuration, timeout recovery, and
@@ -3218,10 +3216,8 @@ Primary current owners:
   playback-progress diagnostics, startup signal log strings, GPU position
   counter state, and first-visual confirmation decisions.
   `Sussudio/MainWindow.PreviewStartup.Signals.Composition.cs` wires the
-  coordinator context, `Sussudio/MainWindow.PreviewStartup.Signals.State.cs`
-  owns the stable signal snapshot properties used by automation, and
-  `Sussudio/MainWindow.PreviewStartup.Signals.Events.cs` owns GPU signal,
-  missing-signal, playback-snapshot, and first-visual adapter callbacks.
+  coordinator context, stable signal snapshot properties used by automation,
+  GPU signal, missing-signal, playback-snapshot, and first-visual adapter callbacks.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs` owns
   readiness-signal required/received state, missing-signal calculation,
   playback-advance threshold checks, and readiness result snapshots.

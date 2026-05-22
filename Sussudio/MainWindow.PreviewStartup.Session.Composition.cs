@@ -28,4 +28,49 @@ public sealed partial class MainWindow
             CreateAttemptId = () => Guid.NewGuid().ToString("N"),
             GetUtcNow = () => DateTimeOffset.UtcNow
         });
+
+    private PreviewStartupState CurrentPreviewStartupState
+        => _previewStartupSessionController.State;
+
+    private string PreviewStartupAttemptLabel
+        => _previewStartupSessionController.AttemptLabel;
+
+    private string? PreviewStartupAttemptId
+        => _previewStartupSessionController.AttemptId;
+
+    private DateTimeOffset? PreviewStartupRequestedUtc
+        => _previewStartupSessionController.RequestedUtc;
+
+    private string? PreviewStartupMissingSignals
+    {
+        get => _previewStartupSessionController.MissingSignals;
+        set => _previewStartupSessionController.SetMissingSignals(value);
+    }
+
+    private int PreviewStartupRecoveryAttemptCount
+        => _previewStartupSessionController.RecoveryAttemptCount;
+
+    private string? PreviewStartupLastFailureReason
+        => _previewStartupSessionController.LastFailureReason;
+
+    private bool IsPreviewFirstVisualConfirmed
+        => _previewStartupSessionController.FirstVisualConfirmed;
+
+    private bool ShouldBeginPreviewStartupAttempt
+        => _previewStartupSessionController.ShouldBeginAttempt;
+
+    private void SetPreviewStartupState(PreviewStartupState state, string? reason = null)
+        => _previewStartupSessionController.SetStartupState(state, reason);
+
+    private void MarkPreviewRendererAttached()
+        => _previewStartupSessionController.MarkRendererAttached(DateTimeOffset.UtcNow);
+
+    private void BeginPreviewStartupAttempt()
+        => _previewStartupSessionController.BeginStartupAttempt();
+
+    private void ConfirmPreviewFirstVisual(string source)
+        => _previewStartupSessionController.ConfirmFirstVisual(source);
+
+    private void ResetPreviewStartupTracking(bool keepRecoveryCount = false, bool preserveReinitAnimation = false)
+        => _previewStartupSessionController.ResetStartupTracking(keepRecoveryCount, preserveReinitAnimation);
 }
