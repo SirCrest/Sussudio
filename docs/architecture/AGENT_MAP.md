@@ -4252,12 +4252,8 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingRestartValidation.cs`
   owns recording-backed preview restart and frame-flow validation.
 - `tools/Common/DiagnosticSessionFlashbackRejectedExports.cs` owns Flashback
-  rejected-export diagnostic scenario dispatch.
-- `tools/Common/DiagnosticSessionFlashbackRejectedExports.Inactive.cs` owns
-  inactive-buffer rejected-export failure-kind and last-result assertions.
-- `tools/Common/DiagnosticSessionFlashbackRejectedExports.Recording.cs` owns
-  active-Flashback-recording rejected-export failure-kind and backend-stability
-  assertions.
+  rejected-export diagnostic scenario dispatch, inactive-buffer failure-kind
+  assertions, and active-Flashback-recording backend-stability assertions.
 - `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DeferredPresetState.cs`
   owns deferred recording-settings preset state.
 - `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`

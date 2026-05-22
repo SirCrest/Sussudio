@@ -78,13 +78,13 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback recording settings deferred post-stop buffer verified");
         AssertContains(diagnosticSessionText, "flashback recording settings deferred preset restored to");
         AssertContains(diagnosticSessionText, "RestartFlashback unexpectedly succeeded during recording");
-        AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackRecordingExportRejectedAsync(");
+        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRecordingExportRejectedAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-recording-rejected-export.mp4\"");
         AssertContains(diagnosticSessionText, "Flashback export is unavailable while Flashback is the active recording backend");
         AssertContains(diagnosticSessionText, "flashback lifecycle disabled during playback");
         AssertContains(diagnosticSessionText, "flashback lifecycle: playback worker still alive after disable");
         AssertContains(diagnosticSessionText, "flashback lifecycle: pending commands remained after disable");
-        AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackExportRejectedAsync(");
+        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackExportRejectedAsync(");
         AssertContains(diagnosticSessionText, "internal static async Task<bool> WaitForFlashbackStressBufferReadyAsync(");
         AssertContains(diagnosticSessionText, "internal static void ValidateFlashbackRecordingSession(");
         AssertContains(diagnosticSessionText, "\"flashback recording: RecordingBackend never reported Flashback\"");

@@ -176,9 +176,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionFlashbackRejectedExportsSource()
     {
-        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.cs")
-            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.Inactive.cs")
-            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.Recording.cs");
+        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.cs");
     }
 
     private static string ReadNormalizedRepoFile(string path)

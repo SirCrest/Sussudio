@@ -194,28 +194,20 @@ static partial class Program
     internal static Task DiagnosticSessionFlashbackRejectedExports_OwnRejectionFlows()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
-        var rejectedRootText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.cs")
-            .Replace("\r\n", "\n");
-        var inactiveRejectedText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.Inactive.cs")
-            .Replace("\r\n", "\n");
-        var recordingRejectedText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.Recording.cs")
+        var rejectedExportsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(rejectedRootText, "internal static partial class DiagnosticSessionFlashbackRejectedExports");
-        AssertContains(rejectedRootText, "internal static async Task RunSelectedRejectedExportScenariosAsync(");
-        AssertDoesNotContain(rejectedRootText, "internal static async Task RunFlashbackExportRejectedAsync(");
-        AssertDoesNotContain(rejectedRootText, "internal static async Task RunFlashbackRecordingExportRejectedAsync(");
-        AssertContains(inactiveRejectedText, "internal static partial class DiagnosticSessionFlashbackRejectedExports");
-        AssertContains(inactiveRejectedText, "internal static async Task RunFlashbackExportRejectedAsync(");
-        AssertContains(inactiveRejectedText, "\"flashback-rejected-export.mp4\"");
-        AssertContains(inactiveRejectedText, "BufferInactive");
-        AssertContains(inactiveRejectedText, "Flashback buffer not active");
-        AssertContains(recordingRejectedText, "internal static partial class DiagnosticSessionFlashbackRejectedExports");
-        AssertContains(recordingRejectedText, "internal static async Task RunFlashbackRecordingExportRejectedAsync(");
-        AssertContains(recordingRejectedText, "\"flashback-recording-rejected-export.mp4\"");
-        AssertContains(recordingRejectedText, "UnavailableDuringRecording");
-        AssertContains(recordingRejectedText, "recording backend changed after rejected export");
-        var dispatchText = ExtractMemberCode(rejectedRootText, "RunSelectedRejectedExportScenariosAsync");
+        AssertContains(rejectedExportsText, "internal static class DiagnosticSessionFlashbackRejectedExports");
+        AssertContains(rejectedExportsText, "internal static async Task RunSelectedRejectedExportScenariosAsync(");
+        AssertContains(rejectedExportsText, "private static async Task RunFlashbackExportRejectedAsync(");
+        AssertContains(rejectedExportsText, "\"flashback-rejected-export.mp4\"");
+        AssertContains(rejectedExportsText, "BufferInactive");
+        AssertContains(rejectedExportsText, "Flashback buffer not active");
+        AssertContains(rejectedExportsText, "private static async Task RunFlashbackRecordingExportRejectedAsync(");
+        AssertContains(rejectedExportsText, "\"flashback-recording-rejected-export.mp4\"");
+        AssertContains(rejectedExportsText, "UnavailableDuringRecording");
+        AssertContains(rejectedExportsText, "recording backend changed after rejected export");
+        var dispatchText = ExtractMemberCode(rejectedExportsText, "RunSelectedRejectedExportScenariosAsync");
         AssertContains(dispatchText, "scenarioPlan.RunFlashbackExportRejected");
         AssertContains(dispatchText, "scenarioPlan.RunFlashbackRecordingExportRejected");
         AssertOccursBefore(dispatchText, "RunFlashbackExportRejectedAsync(", "RunFlashbackRecordingExportRejectedAsync(");

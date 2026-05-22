@@ -4048,8 +4048,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingValidation.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingRestartValidation.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
-- `DiagnosticSessionFlashbackRejectedExports.Inactive.cs`
-- `DiagnosticSessionFlashbackRejectedExports.Recording.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.DeferredPresetState.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingRejections.cs`
