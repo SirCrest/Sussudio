@@ -3285,16 +3285,13 @@ Primary current owners:
   and FPS telemetry tooltip text policy.
   `MainWindow.CaptureOptionPresentation.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Capture/CaptureOptionBindingController.cs` owns the
-  capture option binding adapter context and constructor.
-- `Sussudio/Controllers/Capture/CaptureOptionBindingController.Bindings.cs`
-  owns setup and UI event attachment: initialization, resolution/frame-rate
-  selection, recording option event bindings, show-all binding, HDR/true-HDR
-  click binding, and `CaptureComboBoxSelectionNormalizer` use for shared
-  frame-rate auto/exact matching.
-- `Sussudio/Controllers/Capture/CaptureOptionBindingController.PropertyChanges.cs`
-  owns capture-option/source-signal property-change routing, custom-bitrate
-  control sync, HDR/true-HDR ViewModel-to-control sync, preview HDR
-  passthrough forwarding, and delegated presentation callbacks for option
+  capture option binding adapter context, setup, UI event attachment,
+  initialization, resolution/frame-rate selection, recording option event
+  bindings, show-all binding, HDR/true-HDR click binding,
+  `CaptureComboBoxSelectionNormalizer` use for shared frame-rate auto/exact
+  matching, capture-option/source-signal property-change routing,
+  custom-bitrate control sync, HDR/true-HDR ViewModel-to-control sync, preview
+  HDR passthrough forwarding, and delegated presentation callbacks for option
   affordances, telemetry tooltips, and source overlay refreshes.
   `MainWindow.CaptureOptionBindings.cs` is the XAML-facing capture and
   recording option adapter, including the small property-change forwarding
