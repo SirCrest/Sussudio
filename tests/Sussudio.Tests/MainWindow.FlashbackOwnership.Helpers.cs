@@ -13,8 +13,6 @@ static partial class Program
                 "Sussudio/MainWindow.Flashback.Scrub.cs",
                 "Sussudio/MainWindow.Flashback.Settings.cs",
                 "Sussudio/MainWindow.Flashback.Timeline.cs",
-                "Sussudio/MainWindow.Flashback.Presentation.Markers.cs",
-                "Sussudio/MainWindow.Flashback.Presentation.Playback.cs",
-                "Sussudio/MainWindow.Flashback.Presentation.Export.cs",
+                "Sussudio/MainWindow.Flashback.Presentation.cs",
             }.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
 }

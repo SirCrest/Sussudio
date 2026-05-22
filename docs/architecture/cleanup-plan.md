@@ -2969,10 +2969,8 @@ storyboard state, immediate collapse, and fullscreen animation reset live in
 `Sussudio/Controllers/Flashback/FlashbackTimelineAnimationController.cs`.
 The `MainWindow.Flashback.*.cs` partials own the focused XAML adapter
 surfaces for commands, polling, playhead motion, scrub input, settings,
-timeline visibility, and presentation. The presentation surface is split across
-`Sussudio/MainWindow.Flashback.Presentation.Markers.cs`,
-`Sussudio/MainWindow.Flashback.Presentation.Playback.cs`, and
-`Sussudio/MainWindow.Flashback.Presentation.Export.cs`. Command semantics live in
+timeline visibility, and presentation. The presentation surface lives in
+`Sussudio/MainWindow.Flashback.Presentation.cs`. Command semantics live in
 `Sussudio/Controllers/Flashback/FlashbackCommandController.cs`.
 
 Active Flashback pointer-scrub state now lives in
@@ -2999,13 +2997,13 @@ controller.
 Flashback marker placement and compact duration text now live in
 `Sussudio/Controllers/Flashback/FlashbackMarkerPresentationController.cs`, including
 in/out marker visibility, selection-region layout, and `m:ss` formatting.
-`Sussudio/MainWindow.Flashback.Presentation.Markers.cs`
+`Sussudio/MainWindow.Flashback.Presentation.cs`
 wires marker presentation callbacks.
 
 Flashback playback presentation now lives in
 `Sussudio/Controllers/Flashback/FlashbackPlaybackPresentationController.cs`: play/pause
 glyph policy, Go Live enabled state, buffer-duration text, and floating
-playhead label text. `Sussudio/MainWindow.Flashback.Presentation.Playback.cs` wires the playback
+playhead label text. `Sussudio/MainWindow.Flashback.Presentation.cs` wires the playback
 presentation controller and playback UI coordinator.
 
 Flashback playback UI sequencing now lives in
@@ -3017,7 +3015,7 @@ re-anchor gating.
 Flashback export progress presentation now lives in
 `Sussudio/Controllers/Flashback/FlashbackExportProgressPresentationController.cs`:
 progress-bar value, visibility, and reset-on-complete semantics.
-`Sussudio/MainWindow.Flashback.Presentation.Export.cs` wires the export progress
+`Sussudio/MainWindow.Flashback.Presentation.cs` wires the export progress
 presentation controller.
 
 Flashback command semantics now live in

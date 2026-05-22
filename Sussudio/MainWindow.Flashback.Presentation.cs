@@ -5,8 +5,27 @@ namespace Sussudio;
 
 public sealed partial class MainWindow
 {
+    private FlashbackMarkerPresentationController _flashbackMarkerPresentationController = null!;
     private FlashbackPlaybackPresentationController _flashbackPlaybackPresentationController = null!;
     private FlashbackPlaybackUiCoordinator _flashbackPlaybackUiCoordinator = null!;
+    private FlashbackExportProgressPresentationController _flashbackExportProgressPresentationController = null!;
+
+    private void InitializeFlashbackMarkerPresentationController()
+    {
+        _flashbackMarkerPresentationController = new FlashbackMarkerPresentationController(new FlashbackMarkerPresentationControllerContext
+        {
+            ScrubArea = FlashbackScrubArea,
+            InPointMarker = FlashbackInPointMarker,
+            OutPointMarker = FlashbackOutPointMarker,
+            SelectionRegion = FlashbackSelectionRegion,
+        });
+    }
+
+    private void UpdateFlashbackMarkers()
+        => _flashbackMarkerPresentationController.UpdateMarkers(
+            ViewModel.FlashbackBufferFilledDuration,
+            ViewModel.FlashbackInPoint,
+            ViewModel.FlashbackOutPoint);
 
     private void InitializeFlashbackPlaybackPresentationController()
     {
@@ -49,4 +68,19 @@ public sealed partial class MainWindow
 
     private void UpdateFlashbackBufferPresentation()
         => _flashbackPlaybackUiCoordinator.UpdateBufferPresentation();
+
+    private void InitializeFlashbackExportProgressPresentationController()
+    {
+        _flashbackExportProgressPresentationController = new FlashbackExportProgressPresentationController(
+            new FlashbackExportProgressPresentationControllerContext
+            {
+                FlashbackExportProgressBar = FlashbackExportProgressBar,
+            });
+    }
+
+    private void UpdateFlashbackExportProgress(double progress)
+        => _flashbackExportProgressPresentationController.UpdateProgress(progress);
+
+    private void UpdateFlashbackExportingPresentation(bool isExporting)
+        => _flashbackExportProgressPresentationController.UpdateExporting(isExporting);
 }
