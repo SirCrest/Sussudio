@@ -145,6 +145,18 @@ Behavior preserved: Preview D3D performance and CPU-timing report rows remain in
 Notes for future agents: keep tightly coupled report rows together when they describe the same runtime subsystem
 
 Date: 2026-05-21
+Area: Diagnostic session result models
+Problem: Flashback playback result fields kept 1% low and audio-master performance properties in separate tiny DTO partials from the cadence/frame-delivery properties that consume the same playback performance projection.
+Files consolidated: `tools/Common/DiagnosticSessionResult.FlashbackPlayback.OnePercentLow.cs`; `tools/Common/DiagnosticSessionResult.FlashbackPlayback.AudioMaster.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `DiagnosticSessionResult` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by diagnostic-session model ownership and runtime snapshot regression tests
+Behavior preserved: Diagnostic-session JSON property names, initialization semantics, and formatter output remain unchanged
+Notes for future agents: keep property-only result partials grouped by the projection/report concern they model
+
+Date: 2026-05-21
 Area: Diagnostic session result formatting
 Problem: Flashback diagnostic-session section ordering lived in a one-method router file separate from the formatter orchestration.
 Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs`
