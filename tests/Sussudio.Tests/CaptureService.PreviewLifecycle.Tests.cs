@@ -93,9 +93,6 @@ static partial class Program
     internal static Task CaptureService_PreviewLifecycleLivesInFocusedPartials()
     {
         var startText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStart.cs").Replace("\r\n", "\n");
-        var startRecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStart.Recycle.cs").Replace("\r\n", "\n");
-        var startFastPathText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStart.FastPath.cs").Replace("\r\n", "\n");
-        var startFreshPipelineText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStart.FreshPipeline.cs").Replace("\r\n", "\n");
         var audioGraphText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs").Replace("\r\n", "\n");
         var stopText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStop.cs").Replace("\r\n", "\n");
         var reuseText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewReuse.cs").Replace("\r\n", "\n");
@@ -117,16 +114,28 @@ static partial class Program
         AssertContains(startText, "await RecyclePreviewPipelineForStartAsync(");
         AssertContains(startText, "if (await TryStartPreviewFromRetainedPipelineAsync(settings, transitionToken).ConfigureAwait(false))");
         AssertContains(startText, "await StartFreshPreviewPipelineAsync(");
-        AssertContains(startRecycleText, "private async Task RecyclePreviewPipelineForStartAsync(");
-        AssertContains(startRecycleText, "PREVIEW_START recycle_pipeline=1 reason=settings_changed");
-        AssertContains(startRecycleText, "PREVIEW_START recycle_pipeline=1 reason=flashback_disabled");
-        AssertContains(startRecycleText, "PREVIEW_START recycle_flashback=1 reason=flashback_settings_changed");
-        AssertContains(startFastPathText, "private async Task<bool> TryStartPreviewFromRetainedPipelineAsync(");
-        AssertContains(startFastPathText, "FLASHBACK_FAST_PATH_FORMAT_MISMATCH");
-        AssertContains(startFastPathText, "await EnsureFlashbackAudioInputsAsync(settings, transitionToken, \"preview_fast_path\")");
-        AssertContains(startFreshPipelineText, "private async Task StartFreshPreviewPipelineAsync(");
-        AssertContains(startFreshPipelineText, "await StartPreviewAudioGraphAsync(settings, audioDeviceId, transitionToken)");
-        AssertContains(startFreshPipelineText, "var previewStartRollbackToken = CancellationToken.None;");
+        AssertContains(startText, "private async Task RecyclePreviewPipelineForStartAsync(");
+        AssertContains(startText, "PREVIEW_START recycle_pipeline=1 reason=settings_changed");
+        AssertContains(startText, "PREVIEW_START recycle_pipeline=1 reason=flashback_disabled");
+        AssertContains(startText, "PREVIEW_START recycle_flashback=1 reason=flashback_settings_changed");
+        AssertContains(startText, "private async Task<bool> TryStartPreviewFromRetainedPipelineAsync(");
+        AssertContains(startText, "FLASHBACK_FAST_PATH_FORMAT_MISMATCH");
+        AssertContains(startText, "await EnsureFlashbackAudioInputsAsync(settings, transitionToken, \"preview_fast_path\")");
+        AssertContains(startText, "private async Task StartFreshPreviewPipelineAsync(");
+        AssertContains(startText, "await StartPreviewAudioGraphAsync(settings, audioDeviceId, transitionToken)");
+        AssertContains(startText, "var previewStartRollbackToken = CancellationToken.None;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewStart.Recycle.cs")),
+            "old preview-start recycle partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewStart.FastPath.cs")),
+            "old preview-start fast-path partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewStart.FreshPipeline.cs")),
+            "old preview-start fresh-pipeline partial removed");
         AssertContains(audioGraphText, "private async Task<WasapiAudioCapture?> StartPreviewAudioGraphAsync(");
         AssertContains(audioGraphText, "private async Task StartPreviewMicrophoneMonitorAsync(");
         AssertContains(audioGraphText, "private async Task RollbackPreviewAudioCaptureStartupAsync(");
@@ -177,10 +186,6 @@ static partial class Program
         AssertDoesNotContain(startText, "private Task StopVideoPreviewCoreAsync(");
         AssertDoesNotContain(startText, "private async Task DisposePreviewPipelineAsync(");
         AssertDoesNotContain(startText, "private void AttachUnifiedVideoCapture(");
-        AssertDoesNotContain(startText, "new UnifiedVideoCapture()");
-        AssertDoesNotContain(startText, "SetSkipCpuReadback");
-        AssertDoesNotContain(startText, "FLASHBACK_FAST_PATH_FORMAT_MISMATCH");
-        AssertDoesNotContain(startText, "PREVIEW_START recycle_pipeline=1");
         AssertDoesNotContain(startText, "new WasapiAudioCapture()");
         AssertDoesNotContain(startText, "micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
         AssertDoesNotContain(stopText, "public Task StartVideoPreviewAsync(");
