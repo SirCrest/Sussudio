@@ -2812,11 +2812,10 @@ Capture health snapshot sampling now lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`. That file
 captures current service references, invokes the focused field builders, and
 populates the final service-state/scalar handoff passed to the assembler.
-Source-cadence metric projection lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotCaptureCadence.cs`.
-MJPEG timing, preview jitter, visual cadence, packet hash, and per-decoder
-projection lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs`; pure
+Source-cadence metric projection, MJPEG timing, preview jitter, visual cadence,
+packet hash, per-decoder projection, and their health field records live with
+the read-only sampler in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`; pure
 diagnostics/automation DTO construction lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs`.
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotAssemblyFields.cs`
