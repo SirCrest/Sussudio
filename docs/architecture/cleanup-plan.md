@@ -4877,17 +4877,12 @@ owner, fold it back into that owner and update the source-shape tests and
    `tests/Sussudio.Tests/XUnit.PresentationPreviewResolutionSelectionContractsTests.cs`
    owns xUnit execution for the resolution-selection ownership and behavior
    checks after their removal from the legacy presentation-preview capture catalog.
-   Pure resolution selection policy now lives in the
-   `Sussudio/ViewModels/CaptureResolutionSelectionPolicy*.cs` family:
-   `CaptureResolutionSelectionPolicy.cs` owns the facade,
-   `CaptureResolutionSelectionPolicy.Support.cs` owns parsing and frame-rate
-   support checks, `CaptureResolutionSelectionPolicy.Ranking.cs` owns
-   nearest-resolution ranking, `CaptureResolutionSelectionPolicy.Source.cs`
-   owns source-aware selection,
-   `CaptureResolutionSelectionPolicy.Hdr.cs` owns HDR retarget/support-hint
-   selection, `CaptureResolutionSelectionPolicy.Sdr.cs` owns SDR auto/fallback
-   selection, and `CaptureResolutionSelectionPolicy.Models.cs` owns the
-   request/result records.
+   Pure resolution selection policy now lives in
+   `Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs`: source-aware
+   matching, HDR retarget/support-hint selection, SDR auto/fallback selection,
+   parsing, frame-rate support checks, nearest-resolution ranking, and the
+   request/result records stay together because callers need that cohesive
+   policy to understand resolution retargeting behavior.
    Resolution-selection harness coverage is split along the same boundary:
    `MainViewModel.Capture.SelectionPolicy.Resolution.Ownership.Tests.cs`
    owns source-shape placement assertions, while

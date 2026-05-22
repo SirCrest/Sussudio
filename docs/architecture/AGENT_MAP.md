@@ -3574,15 +3574,10 @@ Primary current owners:
   `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs` owns automatic resolution
   ranking and source-aware frame-rate selection.
   `Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs` owns the pure
-  resolution selection facade. `CaptureResolutionSelectionPolicy.Support.cs`
-  owns parsing and frame-rate support checks. `CaptureResolutionSelectionPolicy.Ranking.cs`
-  owns nearest-resolution ranking.
-  `CaptureResolutionSelectionPolicy.Source.cs` owns source-telemetry-aware
-  resolution matching, `CaptureResolutionSelectionPolicy.Hdr.cs` owns HDR
-  frame-rate-preserving retarget and support-hint selection,
-  `CaptureResolutionSelectionPolicy.Sdr.cs` owns SDR auto/fallback resolution
-  selection, and `CaptureResolutionSelectionPolicy.Models.cs` owns the policy
-  request/result records.
+  resolution selection policy: source-telemetry-aware resolution matching, HDR
+  frame-rate-preserving retarget and support-hint selection, SDR auto/fallback
+  resolution selection, parsing, frame-rate support checks, nearest-resolution
+  ranking, and the policy request/result records.
   State-backed capability queries for callers that live across the ViewModel
   partial family stay in `MainViewModel.ResolutionOptions.cs`; observable
   resolution dropdown mutation routes through the top-level
