@@ -2860,18 +2860,12 @@ Flashback export diagnostic and derived progress/throughput projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs`.
 Flashback playback health snapshot orchestration now lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs`
-with the aggregate playback field record;
+with the aggregate playback field record, playback cadence metric sampling,
+decode timing and max-phase metric sampling, audio-master pacing/fallback
+sampling, playback command telemetry sampling, and each matching private field
+record;
 state/frame/segment/PTS/seek-cap/submit-failure/A/V drift sampling lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.State.cs`;
-playback cadence metric sampling lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.Cadence.cs`;
-decode timing and max-phase metric sampling lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.Decode.cs`;
-audio-master pacing/fallback sampling lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.AudioMaster.cs`;
-and playback command telemetry sampling lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.Commands.cs`.
-Each focused playback sampler owns the matching private field record.
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.State.cs`.
 The general snapshot partial is now the diagnostics-snapshot compatibility
 entry point plus shared tick-age snapshot helper policy. Flashback
 backend-staleness reason policy now stays with the buffer health partial, while

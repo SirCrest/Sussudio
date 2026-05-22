@@ -179,4 +179,136 @@ public partial class CaptureService
             commands.LastCommandFailureUtcUnixMs,
             commands.LastCommandFailure);
     }
+
+    private readonly record struct FlashbackPlaybackCadenceHealthSnapshotFields(
+        int SampleCount,
+        double P95FrameMs,
+        double P99FrameMs,
+        double MaxFrameMs,
+        long SlowFrames,
+        double SlowFramePercent,
+        double OnePercentLowFps,
+        double FivePercentLowFps,
+        double SampleDurationMs,
+        double[] RecentFrameIntervalsMs);
+
+    private static FlashbackPlaybackCadenceHealthSnapshotFields CaptureFlashbackPlaybackCadenceHealthSnapshotFields(
+        FlashbackPlaybackController? fbPlayback)
+    {
+        var playbackCadence = fbPlayback?.GetPlaybackCadenceMetrics() ?? default;
+        return new FlashbackPlaybackCadenceHealthSnapshotFields(
+            playbackCadence.SampleCount,
+            playbackCadence.P95FrameMs,
+            playbackCadence.P99FrameMs,
+            playbackCadence.MaxFrameMs,
+            playbackCadence.SlowFrameCount,
+            playbackCadence.SlowFramePercent,
+            playbackCadence.OnePercentLowFps,
+            playbackCadence.FivePercentLowFps,
+            playbackCadence.SampleDurationMs,
+            playbackCadence.RecentFrameIntervalsMs);
+    }
+
+    private readonly record struct FlashbackPlaybackDecodeHealthSnapshotFields(
+        int SampleCount,
+        double AvgMs,
+        double P95Ms,
+        double P99Ms,
+        double MaxMs,
+        string MaxPhase,
+        double MaxReceiveMs,
+        double MaxFeedMs,
+        double MaxReadMs,
+        double MaxSendMs,
+        double MaxAudioMs,
+        double MaxConvertMs,
+        long MaxUtcUnixMs,
+        long MaxPositionMs);
+
+    private static FlashbackPlaybackDecodeHealthSnapshotFields CaptureFlashbackPlaybackDecodeHealthSnapshotFields(
+        FlashbackPlaybackController? fbPlayback)
+    {
+        var playbackDecode = fbPlayback?.GetPlaybackDecodeMetrics() ?? default;
+        return new FlashbackPlaybackDecodeHealthSnapshotFields(
+            playbackDecode.SampleCount,
+            playbackDecode.AvgMs,
+            playbackDecode.P95Ms,
+            playbackDecode.P99Ms,
+            playbackDecode.MaxMs,
+            fbPlayback?.PlaybackMaxDecodePhase ?? string.Empty,
+            fbPlayback?.PlaybackMaxDecodeReceiveMs ?? 0,
+            fbPlayback?.PlaybackMaxDecodeFeedMs ?? 0,
+            fbPlayback?.PlaybackMaxDecodeReadMs ?? 0,
+            fbPlayback?.PlaybackMaxDecodeSendMs ?? 0,
+            fbPlayback?.PlaybackMaxDecodeAudioMs ?? 0,
+            fbPlayback?.PlaybackMaxDecodeConvertMs ?? 0,
+            fbPlayback?.PlaybackMaxDecodeUtcUnixMs ?? 0,
+            fbPlayback?.PlaybackMaxDecodePositionMs ?? 0);
+    }
+
+    private readonly record struct FlashbackPlaybackAudioMasterHealthSnapshotFields(
+        long DelayDoubles,
+        long DelayShrinks,
+        long Fallbacks,
+        long UnavailableFallbacks,
+        long StaleFallbacks,
+        long DriftOutlierFallbacks,
+        string LastFallbackReason,
+        double LastFallbackDriftMs,
+        double LastFallbackClockAgeMs);
+
+    private static FlashbackPlaybackAudioMasterHealthSnapshotFields CaptureFlashbackPlaybackAudioMasterHealthSnapshotFields(
+        FlashbackPlaybackController? fbPlayback)
+        => new(
+            fbPlayback?.PlaybackAudioMasterDelayDoubles ?? 0,
+            fbPlayback?.PlaybackAudioMasterDelayShrinks ?? 0,
+            fbPlayback?.PlaybackAudioMasterFallbacks ?? 0,
+            fbPlayback?.PlaybackAudioMasterUnavailableFallbacks ?? 0,
+            fbPlayback?.PlaybackAudioMasterStaleFallbacks ?? 0,
+            fbPlayback?.PlaybackAudioMasterDriftOutlierFallbacks ?? 0,
+            fbPlayback?.PlaybackAudioMasterLastFallbackReason ?? string.Empty,
+            fbPlayback?.PlaybackAudioMasterLastFallbackDriftMs ?? 0,
+            fbPlayback?.PlaybackAudioMasterLastFallbackClockAgeMs ?? 0);
+
+    private readonly record struct FlashbackPlaybackCommandHealthSnapshotFields(
+        long CommandsEnqueued,
+        long CommandsProcessed,
+        long CommandsDropped,
+        long CommandsSkippedNotReady,
+        long ScrubUpdatesCoalesced,
+        long SeekCommandsCoalesced,
+        int CommandQueueCapacity,
+        int PendingCommands,
+        int MaxPendingCommands,
+        long LastCommandQueueLatencyMs,
+        long MaxCommandQueueLatencyMs,
+        string MaxCommandQueueLatencyCommand,
+        string LastCommandQueued,
+        string LastCommandProcessed,
+        long LastCommandQueuedUtcUnixMs,
+        long LastCommandProcessedUtcUnixMs,
+        long LastCommandFailureUtcUnixMs,
+        string LastCommandFailure);
+
+    private static FlashbackPlaybackCommandHealthSnapshotFields CaptureFlashbackPlaybackCommandHealthSnapshotFields(
+        FlashbackPlaybackController? fbPlayback)
+        => new(
+            fbPlayback?.CommandsEnqueued ?? 0,
+            fbPlayback?.CommandsProcessed ?? 0,
+            fbPlayback?.CommandsDropped ?? 0,
+            fbPlayback?.CommandsSkippedNotReady ?? 0,
+            fbPlayback?.ScrubUpdatesCoalesced ?? 0,
+            fbPlayback?.SeekCommandsCoalesced ?? 0,
+            fbPlayback?.CommandQueueCapacityCommands ?? 0,
+            fbPlayback?.PendingCommands ?? 0,
+            fbPlayback?.MaxPendingCommands ?? 0,
+            fbPlayback?.LastCommandQueueLatencyMs ?? 0,
+            fbPlayback?.MaxCommandQueueLatencyMs ?? 0,
+            fbPlayback?.MaxCommandQueueLatencyCommand ?? "None",
+            fbPlayback?.LastCommandQueued ?? "None",
+            fbPlayback?.LastCommandProcessed ?? "None",
+            fbPlayback?.LastCommandQueuedUtcUnixMs ?? 0,
+            fbPlayback?.LastCommandProcessedUtcUnixMs ?? 0,
+            fbPlayback?.LastCommandFailureUtcUnixMs ?? 0,
+            fbPlayback?.LastCommandFailure ?? string.Empty);
 }
