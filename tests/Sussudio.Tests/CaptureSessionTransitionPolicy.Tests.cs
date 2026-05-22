@@ -143,11 +143,9 @@ static partial class Program
         var currentStateTransitionOwners = new[]
         {
             "Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs",
-            "Sussudio/Services/Capture/CaptureService.FlashbackBufferSettings.cs",
+            "Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs",
             "Sussudio/Services/Capture/CaptureService.FlashbackEnable.cs",
             "Sussudio/Services/Capture/CaptureService.FlashbackRestart.cs",
-            "Sussudio/Services/Capture/CaptureService.FlashbackRecordingFormat.cs",
-            "Sussudio/Services/Capture/CaptureService.FlashbackEncoderSettings.cs",
             "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs"
         };
 

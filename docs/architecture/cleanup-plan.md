@@ -1496,13 +1496,10 @@ Flashback state and segment access.
 enable/disable transition gating.
 `Sussudio/Services/Capture/CaptureService.FlashbackRestart.cs` owns restart
 entry points and committed restart orchestration after preview backend teardown.
-`Sussudio/Services/Capture/CaptureService.FlashbackBufferSettings.cs`
-owns buffer/GPU settings updates and live playback-controller GPU decode
-propagation. `Sussudio/Services/Capture/CaptureService.FlashbackEncoderSettings.cs`
-owns active encoding-setting application, encoder-setting cycles, and rollback
-after failed Flashback buffer cycles.
-`Sussudio/Services/Capture/CaptureService.FlashbackRecordingFormat.cs` owns
-recording-format changes and rollback after failed Flashback buffer cycles
+`Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs` owns
+buffer/GPU settings updates, live playback-controller GPU decode propagation,
+recording-format changes, active encoding-setting application, encoder-setting
+cycles, and rollback after failed Flashback buffer cycles
 while backend resource construction stays in the Flashback preview backend
 partials.
 
