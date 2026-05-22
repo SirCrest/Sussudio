@@ -2831,15 +2831,12 @@ the dock graph context contract in
 `Sussudio/MainWindow.StatsOverlay.Composition.cs` owns the XAML-facing stats
 overlay adapter surface: binding setup, stats dock visibility, refresh hooks,
 snapshot inputs, frame-time targets, section commands, and polling commands.
-Stats toggle
-event hookup and checked/unchecked behavior,
-initial/property-changed visibility sync, polling, visibility state, dock
-refresh ordering, dynamic diagnostic row pools, dock metric value/brush
-application, and dock animations are out of the event adapter.
-Stats dock show/hide animation mechanics now live in
-`Sussudio/Controllers/Stats/StatsOverlayController.DockAnimation.cs`, keeping
-storyboards, dock visibility mutations, dock width/fade targets, and animation
-completion state out of the polling/visibility orchestration controller root.
+Stats toggle event hookup and checked/unchecked behavior, initial/property-changed
+visibility sync, polling, visibility state, dock refresh ordering, dynamic
+diagnostic row pools, dock metric value/brush application, and dock animations
+are out of the event adapter. Stats dock show/hide animation mechanics now live
+in `Sussudio/Controllers/Stats/StatsOverlayController.cs` with the
+polling/visibility orchestration they mutate.
 Stats dock refresh orchestration now lives in
 `Sussudio/Controllers/Stats/StatsDockRefreshController.cs`: snapshot acquisition,
 dock presentation build/apply, diagnostics visibility gating, and decode/GPU

@@ -17,7 +17,6 @@ public class StatsOverlayLifecycleTests
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs");
         var mainWindowText = MainWindowCompositionSource.Read();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.cs");
-        var dockAnimationText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.DockAnimation.cs");
         var frameTimeControllerText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs");
         var frameTimeGeometryText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs");
 
@@ -87,7 +86,7 @@ public class StatsOverlayLifecycleTests
         AssertDoesNotContain(mainWindowText, "InitializeStatsSectionChromeController();");
         AssertDoesNotContain(mainWindowText, "private DispatcherQueueTimer? _statsPollTimer;");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _statsDockStoryboard;");
-        AssertContains(controllerText, "internal sealed partial class StatsOverlayController");
+        AssertContains(controllerText, "internal sealed class StatsOverlayController");
         AssertContains(controllerText, "private DispatcherQueueTimer? _statsPollTimer;");
         AssertContains(controllerText, "public required ToggleButton StatsToggle { get; init; }");
         AssertContains(controllerText, "public required Func<bool> IsWindowClosing { get; init; }");
@@ -123,12 +122,11 @@ public class StatsOverlayLifecycleTests
         AssertContains(controllerText, "private void FrameTimeOverlayToggle_Checked(object sender, RoutedEventArgs e)");
         AssertContains(controllerText, "private void FrameTimeOverlayToggle_Unchecked(object sender, RoutedEventArgs e)");
         AssertContains(controllerText, "STATS_POLL_TIMER_FAIL");
-        AssertContains(dockAnimationText, "internal sealed partial class StatsOverlayController");
-        AssertContains(dockAnimationText, "private Storyboard? _statsDockStoryboard;");
-        AssertContains(dockAnimationText, "public void ShowDockPanel()");
-        AssertContains(dockAnimationText, "public void HideDockPanel(bool immediate = false)");
-        AssertContains(dockAnimationText, "private Storyboard CreateStatsDockStoryboard(bool showing)");
-        AssertContains(dockAnimationText, "EnableDependentAnimation = true");
+        AssertContains(controllerText, "private Storyboard? _statsDockStoryboard;");
+        AssertContains(controllerText, "public void ShowDockPanel()");
+        AssertContains(controllerText, "public void HideDockPanel(bool immediate = false)");
+        AssertContains(controllerText, "private Storyboard CreateStatsDockStoryboard(bool showing)");
+        AssertContains(controllerText, "EnableDependentAnimation = true");
         AssertContains(frameTimeControllerText, "internal sealed class FrameTimeOverlayPresentationController");
         AssertContains(frameTimeControllerText, "public void Apply(StatsSnapshot snapshot)");
         AssertContains(frameTimeGeometryText, "internal static class FrameTimeOverlayGeometry");
@@ -147,8 +145,6 @@ public class StatsOverlayLifecycleTests
         AssertDoesNotContain(bindingsText, "StatsToggle.Unchecked +=");
         AssertDoesNotContain(bindingsText, "FrameTimeOverlayToggle.Checked +=");
         AssertDoesNotContain(bindingsText, "FrameTimeOverlayToggle.Unchecked +=");
-        AssertDoesNotContain(controllerText, "private Storyboard? _statsDockStoryboard;");
-        AssertDoesNotContain(controllerText, "private Storyboard CreateStatsDockStoryboard(");
         AssertDoesNotContain(statsOverlayText, "line.Points.Clear();");
         AssertDoesNotContain(statsOverlayCompositionText, "line.Points.Clear();");
         AssertDoesNotContain(statsOverlayText, "new StatsOverlayControllerContext");
