@@ -18,4 +18,29 @@ public static partial class DiagnosticSessionResultFormatter
         AppendActionsAndWarnings(builder, result);
         return builder.ToString().TrimEnd();
     }
+
+    private static void AppendRecordingVerification(StringBuilder builder, DiagnosticSessionResult result)
+    {
+        if (result.RecordingVerificationRun)
+        {
+            var status = result.RecordingVerificationSucceeded == true ? "PASS" : "FAIL";
+            builder.AppendLine($"Recording Verification: {status} | {result.RecordingVerificationMessage}");
+        }
+    }
+
+    private static void AppendPresentMon(StringBuilder builder, DiagnosticSessionResult result)
+    {
+        if (result.PresentMon is not null)
+        {
+            builder.AppendLine($"PresentMon: {(result.PresentMon.Success ? "PASS" : "FAIL")} | {result.PresentMon.Message}");
+        }
+    }
+
+    private static void AppendProcessPerformance(StringBuilder builder, DiagnosticSessionResult result)
+    {
+        builder.AppendLine(
+            "Process Perf: " +
+            $"cpuPercentEnd={result.ProcessCpuPercentAtEnd:0.##} " +
+            $"cpuPercentMaxObserved={result.ProcessCpuMaxPercentObserved:0.##}");
+    }
 }

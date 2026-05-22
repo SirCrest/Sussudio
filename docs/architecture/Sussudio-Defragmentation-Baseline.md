@@ -83,3 +83,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: covered by shared formatter contracts and MCP/ssctl tool formatter tests
 Behavior preserved: `AutomationSnapshotFormatter.IsSuccess` signature and semantics stay unchanged
 Notes for future agents: keep generic JSON response/value helpers together unless response handling becomes a named policy object
+
+Date: 2026-05-21
+Area: Diagnostic session result formatting
+Problem: Three small diagnostic-session summary rows lived in separate partial files from the formatter orchestration, forcing a reader to open four files to understand the top-level report flow.
+Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.RecordingVerification.cs`; `tools/Common/DiagnosticSessionResultFormatter.PresentMon.cs`; `tools/Common/DiagnosticSessionResultFormatter.ProcessPerformance.cs`
+Files added: none
+Net production .cs delta: -3
+Partial clusters reduced: `DiagnosticSessionResultFormatter` -3 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by diagnostic-session formatter ownership tests and runtime formatter tests
+Behavior preserved: diagnostic-session report order and row text remain unchanged
+Notes for future agents: keep short scalar summary rows with the formatter root unless they grow separate formatting policy

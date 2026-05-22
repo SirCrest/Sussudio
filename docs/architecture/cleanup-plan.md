@@ -4838,9 +4838,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionResultFormatter.Overview.cs`
 - `DiagnosticSessionResultFormatter.CaptureMode.cs`
-- `DiagnosticSessionResultFormatter.RecordingVerification.cs`
-- `DiagnosticSessionResultFormatter.PresentMon.cs`
-- `DiagnosticSessionResultFormatter.ProcessPerformance.cs`
 - `DiagnosticSessionResultFormatter.Flashback.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Cadence.cs`
