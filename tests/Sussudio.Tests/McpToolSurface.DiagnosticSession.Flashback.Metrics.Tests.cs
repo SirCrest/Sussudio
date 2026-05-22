@@ -17,14 +17,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackObservationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs")
             .Replace("\r\n", "\n");
-        var playbackObservationRelevanceText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.Relevance.cs")
-            .Replace("\r\n", "\n");
-        var playbackObservationOnePercentLowText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.OnePercentLow.cs")
-            .Replace("\r\n", "\n");
-        var playbackObservationFrameDecodeText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.FrameDecode.cs")
-            .Replace("\r\n", "\n");
-        var playbackObservationAudioMasterText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs")
-            .Replace("\r\n", "\n");
         var playbackResultModelText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs")
             .Replace("\r\n", "\n");
         var playbackResultText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs")
@@ -60,19 +52,19 @@ static partial class Program
         AssertContains(playbackSessionText, "internal static FlashbackPlaybackSessionMetrics BuildFlashbackPlaybackSessionMetrics(");
         AssertContains(playbackObservationText, "private static void ObservePlaybackSnapshot(");
         AssertContains(playbackObservationText, "var relevance = BuildPlaybackSnapshotRelevance(");
-        AssertContains(playbackObservationRelevanceText, "private readonly record struct FlashbackPlaybackSnapshotRelevance(");
-        AssertContains(playbackObservationRelevanceText, "private static FlashbackPlaybackSnapshotRelevance BuildPlaybackSnapshotRelevance(");
-        AssertContains(playbackObservationRelevanceText, "private static bool IsPlaybackSnapshotActive(");
-        AssertContains(playbackObservationRelevanceText, "GetInt(snapshot, \"FlashbackPlaybackPendingCommands\") > 0");
+        AssertContains(playbackObservationText, "private readonly record struct FlashbackPlaybackSnapshotRelevance(");
+        AssertContains(playbackObservationText, "private static FlashbackPlaybackSnapshotRelevance BuildPlaybackSnapshotRelevance(");
+        AssertContains(playbackObservationText, "private static bool IsPlaybackSnapshotActive(");
+        AssertContains(playbackObservationText, "GetInt(snapshot, \"FlashbackPlaybackPendingCommands\") > 0");
         AssertContains(playbackObservationText, "ObservePlaybackOnePercentLow(");
         AssertContains(playbackObservationText, "ObservePlaybackFrameAndDecodeMetrics(metrics, snapshot);");
         AssertContains(playbackObservationText, "ObservePlaybackAudioMasterMetrics(metrics, snapshot);");
-        AssertContains(playbackObservationOnePercentLowText, "private static void ObservePlaybackOnePercentLow(");
-        AssertContains(playbackObservationOnePercentLowText, "metrics.OnePercentLowSampleWindowObserved = true;");
-        AssertContains(playbackObservationFrameDecodeText, "private static void ObservePlaybackFrameAndDecodeMetrics(");
-        AssertContains(playbackObservationFrameDecodeText, "metrics.MaxDecodePhaseObserved = GetString(snapshot, \"FlashbackPlaybackMaxDecodePhase\") ?? string.Empty;");
-        AssertContains(playbackObservationAudioMasterText, "private static void ObservePlaybackAudioMasterMetrics(");
-        AssertContains(playbackObservationAudioMasterText, "GetResetAwareCounterDelta(snapshot, metrics.BaselineSnapshot, \"FlashbackPlaybackAudioMasterFallbacks\")");
+        AssertContains(playbackObservationText, "private static void ObservePlaybackOnePercentLow(");
+        AssertContains(playbackObservationText, "metrics.OnePercentLowSampleWindowObserved = true;");
+        AssertContains(playbackObservationText, "private static void ObservePlaybackFrameAndDecodeMetrics(");
+        AssertContains(playbackObservationText, "metrics.MaxDecodePhaseObserved = GetString(snapshot, \"FlashbackPlaybackMaxDecodePhase\") ?? string.Empty;");
+        AssertContains(playbackObservationText, "private static void ObservePlaybackAudioMasterMetrics(");
+        AssertContains(playbackObservationText, "GetResetAwareCounterDelta(snapshot, metrics.BaselineSnapshot, \"FlashbackPlaybackAudioMasterFallbacks\")");
         AssertContains(playbackResultText, "internal static FlashbackPlaybackResultMetrics BuildFlashbackPlaybackResultMetrics(");
         AssertContains(playbackResultText, "var commands = BuildFlashbackPlaybackResultCommandMetrics(observed, endSnapshot, metrics);");
         AssertContains(playbackResultText, "PendingCommandsAtEnd = commands.PendingCommandsAtEnd,");
@@ -101,11 +93,6 @@ static partial class Program
         AssertContains(exportText, "private static void ObserveExportSnapshot(");
         AssertContains(exportText, "var relevantToSession =");
         AssertContains(exportText, "metrics.MaxThroughputBytesPerSecObserved = Math.Max(");
-        AssertDoesNotContain(playbackObservationText, "private static bool IsPlaybackSnapshotActive(");
-        AssertDoesNotContain(playbackObservationText, "GetInt(snapshot, \"FlashbackPlaybackPendingCommands\") > 0");
-        AssertDoesNotContain(playbackObservationText, "private static void ObservePlaybackOnePercentLow(");
-        AssertDoesNotContain(playbackObservationText, "private static void ObservePlaybackFrameAndDecodeMetrics(");
-        AssertDoesNotContain(playbackObservationText, "private static void ObservePlaybackAudioMasterMetrics(");
         AssertDoesNotContain(playbackSessionText, "private static void ObservePlaybackOnePercentLow(");
         AssertDoesNotContain(playbackSessionText, "private static void ObservePlaybackFrameAndDecodeMetrics(");
         AssertDoesNotContain(playbackSessionText, "private static void ObservePlaybackAudioMasterMetrics(");

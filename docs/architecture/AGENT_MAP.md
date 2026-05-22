@@ -4240,15 +4240,9 @@ Primary owners:
   max aggregation, export metric orchestration, and final force-rotate fallback
   counters.
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs` owns
-  playback snapshot observation dispatch.
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.Relevance.cs`
-  owns active/relevant snapshot gating plus session frame-count projection:
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.OnePercentLow.cs`
-  owns 1% low window capture,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.FrameDecode.cs`
-  owns frame/decode maxima, and
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs`
-  owns audio-master maxima.
+  playback snapshot observation dispatch, active/relevant snapshot gating,
+  session frame-count projection, 1% low window capture, frame/decode maxima,
+  and audio-master maxima.
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs`
   owns the `FlashbackPlaybackResultMetrics` handoff shape: end snapshot plus
   command, cadence, decode, audio-master, and stage result fields.

@@ -3816,11 +3816,11 @@ family of named owners. Recording, playback-session, playback-result, and
 export DTO shapes have separate model owner files. Recording metrics, playback
 session aggregation, playback result copying, and export metrics each have
 named behavior owner files.
-Playback observation dispatch stays in
-`DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs`, active/relevant
-snapshot gating lives in `.PlaybackObservation.Relevance.cs`, and 1% low
-capture, frame/decode maxima, and audio-master maxima live in focused
-observation partials. Export metrics also own force-rotate fallback total,
+Playback observation lives in
+`DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs`: observation
+dispatch, active/relevant snapshot gating, session frame-count projection, 1%
+low capture, frame/decode maxima, and audio-master maxima. Export metrics also
+own force-rotate fallback total,
 delta, and last fallback segment count, derived outside export-observed
 relevance gating. These helpers remain snapshot-only projections and must not
 send automation commands. Do not reintroduce an empty family root.
@@ -4061,10 +4061,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackObservation.Relevance.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackObservation.OnePercentLow.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackObservation.FrameDecode.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
