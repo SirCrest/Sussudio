@@ -68,6 +68,23 @@ public sealed partial class AutomationDiagnosticsHub
             renderLane.RecentDropPercent);
     }
 
+    private static string BuildDecodeLane(
+        CaptureHealthSnapshot health,
+        MjpegRecentCounters recentMjpeg)
+    {
+        return $"decode p95={health.MjpegDecodeP95Ms:0.##}ms callbackP95={health.MjpegCallbackP95Ms:0.##}ms dropped={health.MjpegTotalDropped} failures={health.MjpegDecodeFailures + health.MjpegEmitFailures} recentDropped={recentMjpeg.TotalDropped} recentFailures={recentMjpeg.Failures}";
+    }
+
+    private static string BuildRecordingLane(CaptureRuntimeSnapshot captureRuntime)
+    {
+        return $"recording integrity={captureRuntime.RecordingIntegrityStatus} complete={captureRuntime.RecordingIntegrityComplete} seqGaps={captureRuntime.RecordingIntegritySequenceGaps} queueDrops={captureRuntime.RecordingIntegrityQueueDroppedFrames}";
+    }
+
+    private static string BuildAudioLane(CaptureRuntimeSnapshot captureRuntime)
+    {
+        return $"audio integrity={captureRuntime.RecordingIntegrityAudioStatus} drops={captureRuntime.RecordingIntegrityAudioDropEvents} disc={captureRuntime.RecordingIntegrityAudioDiscontinuities} gaps={captureRuntime.RecordingIntegrityAudioCallbackGaps}";
+    }
+
     private readonly record struct DiagnosticEvaluationLanes(
         string Source,
         string Decode,

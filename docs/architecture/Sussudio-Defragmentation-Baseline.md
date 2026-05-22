@@ -121,6 +121,18 @@ Behavior preserved: preview diagnostic-session section order and subsection text
 Notes for future agents: keep one-method formatter routers with the report orchestration unless the router grows real policy
 
 Date: 2026-05-21
+Area: Automation diagnostics evaluation lanes
+Problem: Realtime decode and recording/audio lane text lived in tiny partials separate from the lane orchestration that consumes them.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Realtime.Mjpeg.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Realtime.Recording.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `AutomationDiagnosticsHub` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics evaluation ownership and runtime snapshot regression tests
+Behavior preserved: Diagnostic lane text still reports the same decode, recording integrity, and audio integrity details
+Notes for future agents: keep trivial realtime lane text helpers with `DiagnosticEvaluationLanes.cs` unless they grow lane-specific policy
+
+Date: 2026-05-21
 Area: Diagnostic session result formatting
 Problem: Flashback playback performance text was split across separate cadence, 1% low, audio-master, and row-assembly fragments even though those helpers only compose the single `Flashback Playback Perf` row.
 Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Cadence.cs`; `tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.OnePercentLow.cs`; `tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.AudioMaster.cs`
