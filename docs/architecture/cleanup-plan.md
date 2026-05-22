@@ -187,10 +187,11 @@ and retrying the shared native transport gate from `NativeXuDeviceSupport.cs`.
 capture/playback callback, queue, gap, glitch, and latency projection plus
 flattened WASAPI capture/playback fields consumed by the automation snapshot
 DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.CaptureCommands.cs` owns capture
-session command queue counters, latency, last-command, and last-error
-projection inputs consumed by the automation snapshot DTO, plus final
-capture-command projection-to-`AutomationSnapshot` field flattening.
+`AutomationDiagnosticsHub.SnapshotProjection.cs` owns snapshot construction
+routing, AV-sync projection/flattening, capture session command queue counters,
+latency, last-command, last-error projection inputs consumed by the automation
+snapshot DTO, and final capture-command projection-to-`AutomationSnapshot`
+field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns
 capture-format projection routing and groups requested, HDR-request, actual,
 negotiated, reader-observation, and encoder format modules consumed by the

@@ -36,7 +36,6 @@ static partial class Program
                 SnapshotProjectionAudioText,
                 SnapshotProjectionCaptureIngestText,
                 SnapshotProjectionWasapiAudioText,
-                SnapshotProjectionCaptureCommandsText,
                 SnapshotProjectionCaptureFormatText,
                 SnapshotProjectionCaptureCadenceText,
                 SnapshotProjectionMjpegText,

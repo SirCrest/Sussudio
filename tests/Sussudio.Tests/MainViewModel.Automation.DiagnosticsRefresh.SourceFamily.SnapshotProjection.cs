@@ -12,7 +12,6 @@ static partial class Program
         public string SnapshotProjectionAudioText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureIngestText { get; init; } = string.Empty;
         public string SnapshotProjectionWasapiAudioText { get; init; } = string.Empty;
-        public string SnapshotProjectionCaptureCommandsText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureFormatText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureCadenceText { get; init; } = string.Empty;
         public string SnapshotProjectionVisualCadenceText { get; init; } = string.Empty;
