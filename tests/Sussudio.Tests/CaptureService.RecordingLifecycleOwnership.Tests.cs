@@ -49,10 +49,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackRecordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
             .Replace("\r\n", "\n");
-        var flashbackRecordingSessionContextText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.SessionContext.cs")
-            .Replace("\r\n", "\n");
-        var flashbackRecordingFrameRateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.FrameRate.cs")
-            .Replace("\r\n", "\n");
 
         AssertDoesNotContain(rootText, "public Task StartRecordingAsync(");
         AssertDoesNotContain(rootText, "public Task StopRecordingAsync(");
@@ -190,14 +186,20 @@ static partial class Program
             "old LibAv idle-preview finalization partial removed");
         AssertContains(flashbackFinalizeText, "var fbRecordingContext = _recordingBackend.DetachFlashbackBackend();");
         AssertContains(flashbackRecordingText, "_recordingBackend.IsFlashbackBackend(_flashbackBackend.Sink)");
-        AssertContains(flashbackRecordingSessionContextText, "private FlashbackSessionContext CreateFlashbackSessionContext(");
-        AssertContains(flashbackRecordingSessionContextText, "var frameRateParts = ResolveFlashbackSessionFrameRateParts(settings, frameRate);");
-        AssertDoesNotContain(flashbackRecordingSessionContextText, "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveFlashbackSessionFrameRateParts(");
-        AssertContains(flashbackRecordingFrameRateText, "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveFlashbackSessionFrameRateParts(");
-        AssertContains(flashbackRecordingFrameRateText, "private static readonly (int Numerator, int Denominator)[] CommonFlashbackFrameRateParts");
+        AssertContains(flashbackRecordingText, "private FlashbackSessionContext CreateFlashbackSessionContext(");
+        AssertContains(flashbackRecordingText, "var frameRateParts = ResolveFlashbackSessionFrameRateParts(settings, frameRate);");
+        AssertContains(flashbackRecordingText, "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveFlashbackSessionFrameRateParts(");
+        AssertContains(flashbackRecordingText, "private static readonly (int Numerator, int Denominator)[] CommonFlashbackFrameRateParts");
         AssertContains(flashbackRecordingText, "private static string? ResolveFlashbackExportVerificationFormat(");
         AssertContains(flashbackRecordingText, "private static string? ResolveFlashbackCodecDowngradeReason(");
-        AssertDoesNotContain(flashbackRecordingText, "private FlashbackSessionContext CreateFlashbackSessionContext(");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackRecording.SessionContext.cs")),
+            "old Flashback recording session-context partial removed");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackRecording.FrameRate.cs")),
+            "old Flashback recording frame-rate partial removed");
 
         return Task.CompletedTask;
     }

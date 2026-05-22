@@ -1511,13 +1511,10 @@ partials.
 Flashback recording backend ownership, audio attachment, encoded-frame
 forwarding, and recording topology validation now live in
 `Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs`. Flashback
-recording session-context policy now lives in
-`Sussudio/Services/Capture/CaptureService.FlashbackRecording.SessionContext.cs`;
-keep codec selection, GPU handle handoff, and HDR guardrails there.
-`Sussudio/Services/Capture/CaptureService.FlashbackRecording.FrameRate.cs`
-owns delivered-cadence frame-rate rational preservation/inference, and
-`Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs` also owns
-legacy Flashback export verification/downgrade snapshot fields.
+recording session-context policy, codec selection, GPU handle handoff, HDR
+guardrails, delivered-cadence frame-rate rational preservation/inference, and
+legacy Flashback export verification/downgrade snapshot fields stay with that
+same Flashback recording owner.
 Preview-backend resource state now belongs to
 `Sussudio/Services/Flashback/FlashbackBackendResources.cs`, which owns the
 preview backend resource grouping, install/take/clear state, and
