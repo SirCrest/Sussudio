@@ -112,6 +112,85 @@ public sealed partial class AutomationDiagnosticsHub
         public string AdapterColorMetadata { get; init; }
     }
 
+    private static PreviewRuntimeSurfaceProjection BuildPreviewRuntimeSurfaceProjection(PreviewRuntimeSnapshot previewRuntime)
+        => new()
+        {
+            GpuActive = previewRuntime.GpuActive,
+            PlaceholderVisible = previewRuntime.PlaceholderVisible,
+            GpuElementVisible = previewRuntime.GpuElementVisible,
+            CpuElementVisible = previewRuntime.CpuElementVisible,
+            RendererAttached = previewRuntime.RendererAttached
+        };
+
+    private static PreviewRuntimeSurfaceFlattenedProjection BuildPreviewRuntimeSurfaceFlattenedProjection(
+        PreviewRuntimeSurfaceProjection surface)
+        => new()
+        {
+            GpuActive = surface.GpuActive,
+            PlaceholderVisible = surface.PlaceholderVisible,
+            GpuElementVisible = surface.GpuElementVisible,
+            CpuElementVisible = surface.CpuElementVisible,
+            RendererAttached = surface.RendererAttached
+        };
+
+    private readonly record struct PreviewRuntimeSurfaceProjection
+    {
+        public bool GpuActive { get; init; }
+        public bool PlaceholderVisible { get; init; }
+        public bool GpuElementVisible { get; init; }
+        public bool CpuElementVisible { get; init; }
+        public bool RendererAttached { get; init; }
+    }
+
+    private readonly record struct PreviewRuntimeSurfaceFlattenedProjection
+    {
+        public bool GpuActive { get; init; }
+        public bool PlaceholderVisible { get; init; }
+        public bool GpuElementVisible { get; init; }
+        public bool CpuElementVisible { get; init; }
+        public bool RendererAttached { get; init; }
+    }
+
+    private static PreviewRuntimeGpuPlaybackProjection BuildPreviewRuntimeGpuPlaybackProjection(
+        PreviewRuntimeSnapshot previewRuntime)
+        => new()
+        {
+            PlaybackState = previewRuntime.GpuPlaybackState,
+            NaturalVideoWidth = previewRuntime.GpuNaturalVideoWidth,
+            NaturalVideoHeight = previewRuntime.GpuNaturalVideoHeight,
+            PositionMs = previewRuntime.GpuPositionMs,
+            PositionEventCount = previewRuntime.GpuPositionEventCount
+        };
+
+    private static PreviewRuntimeGpuPlaybackFlattenedProjection BuildPreviewRuntimeGpuPlaybackFlattenedProjection(
+        PreviewRuntimeGpuPlaybackProjection gpuPlayback)
+        => new()
+        {
+            PlaybackState = gpuPlayback.PlaybackState,
+            NaturalVideoWidth = gpuPlayback.NaturalVideoWidth,
+            NaturalVideoHeight = gpuPlayback.NaturalVideoHeight,
+            PositionMs = gpuPlayback.PositionMs,
+            PositionEventCount = gpuPlayback.PositionEventCount
+        };
+
+    private readonly record struct PreviewRuntimeGpuPlaybackProjection
+    {
+        public string PlaybackState { get; init; }
+        public int NaturalVideoWidth { get; init; }
+        public int NaturalVideoHeight { get; init; }
+        public double PositionMs { get; init; }
+        public long PositionEventCount { get; init; }
+    }
+
+    private readonly record struct PreviewRuntimeGpuPlaybackFlattenedProjection
+    {
+        public string PlaybackState { get; init; }
+        public int NaturalVideoWidth { get; init; }
+        public int NaturalVideoHeight { get; init; }
+        public double PositionMs { get; init; }
+        public long PositionEventCount { get; init; }
+    }
+
     private readonly record struct PreviewRuntimeFlattenedProjection
     {
         public PreviewRuntimeFrameFlattenedProjection Frame { get; init; }

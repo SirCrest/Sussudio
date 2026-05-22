@@ -181,6 +181,18 @@ Behavior preserved: Flashback recording startup-cache, runtime, backend, codec d
 Notes for future agents: keep smaller Flashback recording DTO mapping groups with `FlashbackRecording.cs`; keep queue/backpressure mapping separate unless it can be folded without making the owner hard to scan
 
 Date: 2026-05-21
+Area: Automation diagnostics preview runtime projection
+Problem: Preview runtime surface visibility and GPU playback projection mappings lived in tiny partials even though the preview runtime projection owner immediately composes and flattens both groups with the rest of the preview runtime DTO.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Surface.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.GpuPlayback.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `AutomationDiagnosticsHub` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics preview runtime projection ownership tests and runtime snapshot regression tests
+Behavior preserved: preview surface visibility, renderer attachment, GPU playback state, natural size, position, and position-event fields still map into the same flattened automation snapshot fields
+Notes for future agents: keep tiny preview runtime DTO mapping groups with `PreviewRuntime.cs`; keep cadence/startup separate while they remain more semantic scan units
+
+Date: 2026-05-21
 Area: Automation diagnostics signal alerts
 Problem: Capture cadence, audio muted, and recording growth signal alert rules lived in tiny partials separate from the signal alert owner even though they all update alert state from the same automation snapshot surface.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.Capture.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.AudioRecording.cs`
