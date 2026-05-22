@@ -43,10 +43,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var libAvStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
             .Replace("\r\n", "\n");
-        var libAvVideoCaptureText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.VideoCapture.cs")
-            .Replace("\r\n", "\n");
-        var libAvAudioInputsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.AudioInputs.cs")
-            .Replace("\r\n", "\n");
         var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs")
             .Replace("\r\n", "\n");
         var libAvFinalizeText = (
@@ -145,28 +141,29 @@ static partial class Program
         AssertOccursBefore(libAvStartText, "await rollback.RecordingSink.StartAsync(rollback.RecordingContext, transitionToken)", "await StartLibAvRecordingAudioInputsAsync(");
         AssertOccursBefore(libAvStartText, "await StartLibAvRecordingAudioInputsAsync(", "_recordingIntegrityAudioBaseline = CaptureRecordingAudioCounters(");
         AssertOccursBefore(libAvStartText, "await StartLibAvRecordingAudioInputsAsync(", "await unifiedVideoCapture.StartRecordingAsync(");
-        AssertContains(libAvVideoCaptureText, "private async Task<UnifiedVideoCapture> PrepareLibAvRecordingVideoCaptureAsync(");
-        AssertContains(libAvVideoCaptureText, "rollback.OwnedUnifiedVideoCapture = new UnifiedVideoCapture();");
-        AssertContains(libAvVideoCaptureText, "AttachUnifiedVideoCapture(rollback.OwnedUnifiedVideoCapture);");
-        AssertContains(libAvVideoCaptureText, "_videoPipeline.InstallCapture(rollback.OwnedUnifiedVideoCapture);");
-        AssertContains(libAvVideoCaptureText, "TryApplySharedPreviewDevice(unifiedVideoCapture, _isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);");
-        AssertContains(libAvVideoCaptureText, "Recording requires {(requireP010 ? \"P010\" : \"NV12\")}, but the active source-reader session negotiated");
-        AssertContains(libAvVideoCaptureText, "Recording requested mjpeg_hfr={useMjpegHighFrameRateMode}, but the active preview session is mjpeg_hfr=");
-        AssertContains(libAvAudioInputsText, "private async Task StartLibAvRecordingAudioInputsAsync(");
-        AssertContains(libAvAudioInputsText, "rollback.OwnedWasapiAudioCapture = new WasapiAudioCapture();");
-        AssertContains(libAvAudioInputsText, "_previewAudioGraph.ProgramCapture.AttachRecordingSink(recordingSink);");
-        AssertContains(libAvAudioInputsText, "rollback.SinkAttachedForAudioOnly = true;");
-        AssertContains(libAvAudioInputsText, "await _previewAudioGraph.StartPlaybackAsync(");
-        AssertContains(libAvAudioInputsText, "await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);");
-        AssertContains(libAvAudioInputsText, "micCapture.SetAudioWriter(samples => micSink.WriteMicrophoneAudioAsync(samples));");
-        AssertContains(libAvAudioInputsText, "MICROPHONE_CAPTURE_START");
-        AssertDoesNotContain(libAvStartText, "rollback.OwnedWasapiAudioCapture = new WasapiAudioCapture();");
-        AssertDoesNotContain(libAvStartText, "_previewAudioGraph.ProgramCapture.AttachRecordingSink(recordingSink);");
-        AssertDoesNotContain(libAvStartText, "micCapture.SetAudioWriter(samples => micSink.WriteMicrophoneAudioAsync(samples));");
-        AssertDoesNotContain(libAvStartText, "MICROPHONE_CAPTURE_START");
-        AssertDoesNotContain(libAvStartText, "rollback.OwnedUnifiedVideoCapture = new UnifiedVideoCapture();");
-        AssertDoesNotContain(libAvStartText, "AttachUnifiedVideoCapture(rollback.OwnedUnifiedVideoCapture);");
-        AssertDoesNotContain(libAvStartText, "_videoPipeline.InstallCapture(rollback.OwnedUnifiedVideoCapture);");
+        AssertContains(libAvStartText, "private async Task<UnifiedVideoCapture> PrepareLibAvRecordingVideoCaptureAsync(");
+        AssertContains(libAvStartText, "rollback.OwnedUnifiedVideoCapture = new UnifiedVideoCapture();");
+        AssertContains(libAvStartText, "AttachUnifiedVideoCapture(rollback.OwnedUnifiedVideoCapture);");
+        AssertContains(libAvStartText, "_videoPipeline.InstallCapture(rollback.OwnedUnifiedVideoCapture);");
+        AssertContains(libAvStartText, "TryApplySharedPreviewDevice(unifiedVideoCapture, _isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);");
+        AssertContains(libAvStartText, "Recording requires {(requireP010 ? \"P010\" : \"NV12\")}, but the active source-reader session negotiated");
+        AssertContains(libAvStartText, "Recording requested mjpeg_hfr={useMjpegHighFrameRateMode}, but the active preview session is mjpeg_hfr=");
+        AssertContains(libAvStartText, "private async Task StartLibAvRecordingAudioInputsAsync(");
+        AssertContains(libAvStartText, "rollback.OwnedWasapiAudioCapture = new WasapiAudioCapture();");
+        AssertContains(libAvStartText, "_previewAudioGraph.ProgramCapture.AttachRecordingSink(recordingSink);");
+        AssertContains(libAvStartText, "rollback.SinkAttachedForAudioOnly = true;");
+        AssertContains(libAvStartText, "await _previewAudioGraph.StartPlaybackAsync(");
+        AssertContains(libAvStartText, "await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);");
+        AssertContains(libAvStartText, "micCapture.SetAudioWriter(samples => micSink.WriteMicrophoneAudioAsync(samples));");
+        AssertContains(libAvStartText, "MICROPHONE_CAPTURE_START");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingStartLibAv.VideoCapture.cs")),
+            "old LibAv recording video-capture startup partial removed");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingStartLibAv.AudioInputs.cs")),
+            "old LibAv recording audio-input startup partial removed");
         AssertDoesNotContain(libAvStartText, "StorageFolder.GetFolderFromPathAsync");
         AssertDoesNotContain(libAvStartText, "new RecordingContextRequest");
         AssertDoesNotContain(libAvStartText, "FLASHBACK_UNIFIED_RECORDING_START");

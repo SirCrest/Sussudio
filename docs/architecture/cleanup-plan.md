@@ -1555,12 +1555,10 @@ resolution plus the LibAv and Flashback `RecordingContextRequest` assembly
 used by the recording start paths. `CaptureService.RecordingStartFlashback.cs`
 owns Flashback recording fast-path reuse and backend startup, and
 `CaptureService.RecordingStartLibAv.cs` owns standard LibAv recording startup
-sequencing. `CaptureService.RecordingStartLibAv.VideoCapture.cs` owns standard
-LibAv recording video-capture reuse/creation, source-reader compatibility
-checks, preview sink/shared-device handoff, and video pipeline installation.
-`CaptureService.RecordingStartLibAv.AudioInputs.cs` owns standard LibAv
-recording audio-input startup, including WASAPI sink attachment, preview
-playback preservation, and recording microphone capture wiring.
+sequencing, video-capture reuse/creation, source-reader compatibility checks,
+preview sink/shared-device handoff, video pipeline installation, audio-input
+startup, WASAPI sink attachment, preview playback preservation, and recording
+microphone capture wiring.
 Recording
 stop lifecycle now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs`, including

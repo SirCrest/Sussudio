@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
+using Sussudio.Services.Audio;
 using Sussudio.Services.Recording;
 
 namespace Sussudio.Services.Capture;
@@ -151,5 +152,98 @@ public partial class CaptureService
         rollback.RecordingSink = null;
         rollback.OwnedWasapiAudioCapture = null;
         rollback.OwnedUnifiedVideoCapture = null;
+    }
+
+    private async Task<UnifiedVideoCapture> PrepareLibAvRecordingVideoCaptureAsync(
+        CaptureSettings settings,
+        RecordingStartRollbackState rollback,
+        uint effectiveWidth,
+        uint effectiveHeight,
+        double effectiveFrameRate,
+        bool requireP010,
+        bool useMjpegHighFrameRateMode)
+    {
+        var unifiedVideoCapture = _videoPipeline.Capture;
+        if (unifiedVideoCapture == null)
+        {
+            rollback.OwnedUnifiedVideoCapture = new UnifiedVideoCapture();
+            AttachUnifiedVideoCapture(rollback.OwnedUnifiedVideoCapture);
+            await rollback.OwnedUnifiedVideoCapture.InitializeAsync(
+                _currentDevice!.Id,
+                (int)effectiveWidth,
+                (int)effectiveHeight,
+                effectiveFrameRate,
+                requireP010,
+                settings.RequestedPixelFormat,
+                useMjpegHighFrameRateMode,
+                settings.MjpegDecoderCount).ConfigureAwait(false);
+            rollback.OwnedUnifiedVideoCapture.SetPreviewSink(_isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);
+            TryApplySharedPreviewDevice(rollback.OwnedUnifiedVideoCapture, _isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);
+            unifiedVideoCapture = rollback.OwnedUnifiedVideoCapture;
+            _videoPipeline.InstallCapture(rollback.OwnedUnifiedVideoCapture);
+        }
+        else if (unifiedVideoCapture.IsP010 != requireP010)
+        {
+            throw new InvalidOperationException(
+                $"Recording requires {(requireP010 ? "P010" : "NV12")}, but the active source-reader session negotiated {(unifiedVideoCapture.IsP010 ? "P010" : "NV12")}.");
+        }
+        else if (unifiedVideoCapture.IsHighFrameRateMjpegMode != useMjpegHighFrameRateMode)
+        {
+            throw new InvalidOperationException(
+                $"Recording requested mjpeg_hfr={useMjpegHighFrameRateMode}, but the active preview session is mjpeg_hfr={unifiedVideoCapture.IsHighFrameRateMjpegMode}.");
+        }
+
+        rollback.RecordingVideoCapture = unifiedVideoCapture;
+        TryApplySharedPreviewDevice(unifiedVideoCapture, _isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);
+        return unifiedVideoCapture;
+    }
+
+    private async Task StartLibAvRecordingAudioInputsAsync(
+        CaptureSettings settings,
+        CancellationToken transitionToken,
+        RecordingStartRollbackState rollback,
+        LibAvRecordingSink activeLibAvSink,
+        IRecordingSink recordingSink,
+        string? audioDeviceId)
+    {
+        if (_previewAudioGraph.ProgramCapture == null && settings.AudioEnabled)
+        {
+            var resolvedAudioDeviceId = audioDeviceId
+                ?? throw new InvalidOperationException("Recording requires an audio capture device.");
+            rollback.OwnedWasapiAudioCapture = new WasapiAudioCapture();
+            await rollback.OwnedWasapiAudioCapture.InitializeAsync(resolvedAudioDeviceId, transitionToken).ConfigureAwait(false);
+            rollback.OwnedWasapiAudioCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
+            rollback.OwnedWasapiAudioCapture.CaptureFailed += OnWasapiCaptureFailed;
+            rollback.OwnedWasapiAudioCapture.Start();
+            _previewAudioGraph.ProgramCapture = rollback.OwnedWasapiAudioCapture;
+        }
+
+        if (_previewAudioGraph.ProgramCapture != null && settings.AudioEnabled)
+        {
+            _previewAudioGraph.ProgramCapture.AttachRecordingSink(recordingSink);
+            rollback.SinkAttachedForAudioOnly = true;
+            if (_isAudioPreviewActive)
+            {
+                await _previewAudioGraph.StartPlaybackAsync(
+                    transitionToken,
+                    _flashbackBackend.PlaybackController).ConfigureAwait(false);
+            }
+        }
+
+        // Dispose preview-time mic monitor; recording creates its own capture wired to the active sink.
+        await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
+
+        if (settings.MicrophoneEnabled && !string.IsNullOrWhiteSpace(settings.MicrophoneDeviceId))
+        {
+            var micSink = activeLibAvSink; // capture stable reference - LibAv sink is nulled on success path
+            var micCapture = new WasapiAudioCapture();
+            await micCapture.InitializeAsync(settings.MicrophoneDeviceId, transitionToken).ConfigureAwait(false);
+            micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
+            micCapture.CaptureFailed += OnWasapiCaptureFailed;
+            micCapture.SetAudioWriter(samples => micSink.WriteMicrophoneAudioAsync(samples));
+            micCapture.Start();
+            _previewAudioGraph.MicrophoneCapture = micCapture;
+            Logger.Log("MICROPHONE_CAPTURE_START device='" + settings.MicrophoneDeviceName + "'");
+        }
     }
 }
