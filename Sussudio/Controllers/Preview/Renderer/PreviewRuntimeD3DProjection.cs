@@ -1,5 +1,6 @@
 using System;
 using Sussudio.Models;
+using Sussudio.Services.Preview;
 
 namespace Sussudio.Controllers;
 
@@ -270,5 +271,313 @@ internal sealed class PreviewRuntimeD3DProjection
         D3DFrameLatencyWaitP95Ms = frameLatencyWait.P95Ms;
         D3DFrameLatencyWaitP99Ms = frameLatencyWait.P99Ms;
         D3DFrameLatencyWaitMaxMs = frameLatencyWait.MaxMs;
+    }
+}
+
+internal readonly record struct PreviewRuntimeD3DFrameCounters(
+    bool GpuActive,
+    bool RendererAttached,
+    long FramesArrived,
+    long FramesDisplayed,
+    long FramesDropped,
+    long D3DFramesSubmitted,
+    long D3DFramesRendered,
+    long D3DFramesDropped);
+
+internal static class PreviewRuntimeD3DFrameCounterPolicy
+{
+    public static PreviewRuntimeD3DFrameCounters Evaluate(PreviewRuntimeSnapshotInput input)
+    {
+        var d3d = input.D3DRenderer;
+        var gpuActive = d3d != null;
+        var d3dFramesSubmitted = d3d?.FramesSubmitted ?? 0;
+        var d3dFramesRendered = d3d?.FramesRendered ?? 0;
+        var d3dFramesDropped = d3d?.FramesDropped ?? 0;
+
+        return new PreviewRuntimeD3DFrameCounters(
+            GpuActive: gpuActive,
+            RendererAttached: d3d != null || input.PreviewSourceAttached,
+            FramesArrived: gpuActive ? d3dFramesSubmitted : input.FramesArrived,
+            FramesDisplayed: gpuActive ? d3dFramesRendered : input.FramesDisplayed,
+            FramesDropped: gpuActive ? d3dFramesDropped : input.FramesDropped,
+            D3DFramesSubmitted: d3dFramesSubmitted,
+            D3DFramesRendered: d3dFramesRendered,
+            D3DFramesDropped: d3dFramesDropped);
+    }
+}
+
+internal readonly record struct PreviewRuntimeD3DRendererState(
+    string RendererMode,
+    int PresentSyncInterval,
+    int MaxFrameLatency,
+    int SwapChainBufferCount,
+    string SwapChainAddress,
+    long RenderThreadFailureCount,
+    string LastRenderThreadFailureType,
+    string LastRenderThreadFailureMessage,
+    int LastRenderThreadFailureHResult,
+    int PendingFrameCount,
+    string InputColorSpace,
+    string OutputColorSpace,
+    PreviewSlowFrameDiagnostic[] RecentSlowFrames,
+    string GpuPlaybackState,
+    int NaturalVideoWidth,
+    int NaturalVideoHeight,
+    double PositionMs);
+
+internal static class PreviewRuntimeD3DRendererStatePolicy
+{
+    public static PreviewRuntimeD3DRendererState Evaluate(D3D11PreviewRenderer? d3d, bool isPreviewing)
+        => new(
+            RendererMode: d3d?.RendererMode ?? (isPreviewing ? "CpuSoftwareBitmap" : "None"),
+            PresentSyncInterval: d3d?.PresentSyncInterval ?? 0,
+            MaxFrameLatency: d3d?.DxgiMaxFrameLatency ?? 0,
+            SwapChainBufferCount: d3d?.SwapChainBufferCount ?? 0,
+            SwapChainAddress: d3d?.SwapChainAddress ?? string.Empty,
+            RenderThreadFailureCount: d3d?.RenderThreadFailureCount ?? 0,
+            LastRenderThreadFailureType: d3d?.LastRenderThreadFailureType ?? string.Empty,
+            LastRenderThreadFailureMessage: d3d?.LastRenderThreadFailureMessage ?? string.Empty,
+            LastRenderThreadFailureHResult: d3d?.LastRenderThreadFailureHResult ?? 0,
+            PendingFrameCount: d3d?.PendingFrameCount ?? 0,
+            InputColorSpace: d3d?.InputColorSpaceLabel ?? "None",
+            OutputColorSpace: d3d?.OutputColorSpaceLabel ?? "None",
+            RecentSlowFrames: d3d?.GetRecentSlowFrameDiagnostics() ?? Array.Empty<PreviewSlowFrameDiagnostic>(),
+            GpuPlaybackState: d3d == null ? "None" : (d3d.IsRendering ? "Rendering" : "Idle"),
+            NaturalVideoWidth: d3d?.NaturalWidth ?? 0,
+            NaturalVideoHeight: d3d?.NaturalHeight ?? 0,
+            PositionMs: 0);
+}
+
+internal readonly record struct PreviewRuntimeD3DDisplayCadence(
+    int SampleCount,
+    double ObservedFps,
+    double ExpectedIntervalMs,
+    double AverageIntervalMs,
+    double P95IntervalMs,
+    double P99IntervalMs,
+    double MaxIntervalMs,
+    double OnePercentLowFps,
+    double FivePercentLowFps,
+    double SampleDurationMs,
+    double[] RecentIntervalsMs,
+    double JitterStdDevMs,
+    long SlowFrameCount,
+    double SlowFramePercent);
+
+internal static class PreviewRuntimeD3DDisplayCadencePolicy
+{
+    public static PreviewRuntimeD3DDisplayCadence Evaluate(
+        D3D11PreviewRenderer? d3d,
+        double previewMinPresentationIntervalMs)
+    {
+        var displayCadence = d3d?.GetPresentCadenceMetrics(previewMinPresentationIntervalMs);
+
+        return new PreviewRuntimeD3DDisplayCadence(
+            SampleCount: displayCadence?.SampleCount ?? 0,
+            ObservedFps: displayCadence?.ObservedFps ?? 0,
+            ExpectedIntervalMs: displayCadence?.ExpectedIntervalMs ?? 0,
+            AverageIntervalMs: displayCadence?.AverageIntervalMs ?? 0,
+            P95IntervalMs: displayCadence?.P95IntervalMs ?? 0,
+            P99IntervalMs: displayCadence?.P99IntervalMs ?? 0,
+            MaxIntervalMs: displayCadence?.MaxIntervalMs ?? 0,
+            OnePercentLowFps: displayCadence?.OnePercentLowFps ?? 0,
+            FivePercentLowFps: displayCadence?.FivePercentLowFps ?? 0,
+            SampleDurationMs: displayCadence?.SampleDurationMs ?? 0,
+            RecentIntervalsMs: displayCadence?.RecentIntervalsMs ?? Array.Empty<double>(),
+            JitterStdDevMs: displayCadence?.JitterStdDevMs ?? 0,
+            SlowFrameCount: displayCadence?.SlowFrameCount ?? 0,
+            SlowFramePercent: displayCadence?.SlowFramePercent ?? 0);
+    }
+}
+
+internal readonly record struct PreviewRuntimeD3DRenderCpuTiming(
+    int SampleCount,
+    double InputUploadAverageMs,
+    double InputUploadP95Ms,
+    double InputUploadP99Ms,
+    double InputUploadMaxMs,
+    double RenderSubmitAverageMs,
+    double RenderSubmitP95Ms,
+    double RenderSubmitP99Ms,
+    double RenderSubmitMaxMs,
+    double PresentCallAverageMs,
+    double PresentCallP95Ms,
+    double PresentCallP99Ms,
+    double PresentCallMaxMs,
+    double TotalFrameAverageMs,
+    double TotalFrameP95Ms,
+    double TotalFrameP99Ms,
+    double TotalFrameMaxMs);
+
+internal static class PreviewRuntimeD3DRenderCpuTimingPolicy
+{
+    public static PreviewRuntimeD3DRenderCpuTiming Evaluate(D3D11PreviewRenderer? d3d)
+    {
+        var renderCpuTiming = d3d?.GetRenderCpuTimingMetrics();
+
+        return new PreviewRuntimeD3DRenderCpuTiming(
+            SampleCount: renderCpuTiming?.TotalFrame.SampleCount ?? 0,
+            InputUploadAverageMs: renderCpuTiming?.InputUpload.AverageMs ?? 0,
+            InputUploadP95Ms: renderCpuTiming?.InputUpload.P95Ms ?? 0,
+            InputUploadP99Ms: renderCpuTiming?.InputUpload.P99Ms ?? 0,
+            InputUploadMaxMs: renderCpuTiming?.InputUpload.MaxMs ?? 0,
+            RenderSubmitAverageMs: renderCpuTiming?.RenderSubmit.AverageMs ?? 0,
+            RenderSubmitP95Ms: renderCpuTiming?.RenderSubmit.P95Ms ?? 0,
+            RenderSubmitP99Ms: renderCpuTiming?.RenderSubmit.P99Ms ?? 0,
+            RenderSubmitMaxMs: renderCpuTiming?.RenderSubmit.MaxMs ?? 0,
+            PresentCallAverageMs: renderCpuTiming?.PresentCall.AverageMs ?? 0,
+            PresentCallP95Ms: renderCpuTiming?.PresentCall.P95Ms ?? 0,
+            PresentCallP99Ms: renderCpuTiming?.PresentCall.P99Ms ?? 0,
+            PresentCallMaxMs: renderCpuTiming?.PresentCall.MaxMs ?? 0,
+            TotalFrameAverageMs: renderCpuTiming?.TotalFrame.AverageMs ?? 0,
+            TotalFrameP95Ms: renderCpuTiming?.TotalFrame.P95Ms ?? 0,
+            TotalFrameP99Ms: renderCpuTiming?.TotalFrame.P99Ms ?? 0,
+            TotalFrameMaxMs: renderCpuTiming?.TotalFrame.MaxMs ?? 0);
+    }
+}
+
+internal readonly record struct PreviewRuntimeD3DPipelineLatency(
+    int SampleCount,
+    double AverageMs,
+    double P95Ms,
+    double P99Ms,
+    double MaxMs,
+    double EstimatedPipelineLatencyMs);
+
+internal static class PreviewRuntimeD3DPipelineLatencyPolicy
+{
+    public static PreviewRuntimeD3DPipelineLatency Evaluate(D3D11PreviewRenderer? d3d)
+    {
+        var pipelineLatency = d3d?.GetPipelineLatencyMetrics();
+
+        return new PreviewRuntimeD3DPipelineLatency(
+            SampleCount: pipelineLatency?.SampleCount ?? 0,
+            AverageMs: pipelineLatency?.AverageMs ?? 0,
+            P95Ms: pipelineLatency?.P95Ms ?? 0,
+            P99Ms: pipelineLatency?.P99Ms ?? 0,
+            MaxMs: pipelineLatency?.MaxMs ?? 0,
+            EstimatedPipelineLatencyMs: pipelineLatency?.AverageMs ?? 0);
+    }
+}
+
+internal readonly record struct PreviewRuntimeD3DFrameOwnership(
+    long LastSubmittedPreviewPresentId,
+    long LastSubmittedSourceSequenceNumber,
+    long LastSubmittedSourcePtsTicks,
+    long LastSubmittedQpc,
+    long LastSubmittedUtcUnixMs,
+    long LastRenderedPreviewPresentId,
+    long LastRenderedSourceSequenceNumber,
+    long LastRenderedSourcePtsTicks,
+    long LastRenderedQpc,
+    long LastRenderedUtcUnixMs,
+    double LastRenderedSchedulerToPresentMs,
+    double LastRenderedPipelineLatencyMs,
+    long LastDroppedPreviewPresentId,
+    long LastDroppedSourceSequenceNumber,
+    long LastDroppedSourcePtsTicks,
+    long LastDroppedQpc,
+    long LastDroppedUtcUnixMs,
+    string LastDropReason);
+
+internal static class PreviewRuntimeD3DFrameOwnershipPolicy
+{
+    public static PreviewRuntimeD3DFrameOwnership Evaluate(D3D11PreviewRenderer? d3d)
+    {
+        var frameOwnership = d3d?.GetFrameOwnershipMetrics();
+
+        return new PreviewRuntimeD3DFrameOwnership(
+            LastSubmittedPreviewPresentId: frameOwnership?.LastSubmittedPreviewPresentId ?? 0,
+            LastSubmittedSourceSequenceNumber: frameOwnership?.LastSubmittedSourceSequenceNumber ?? -1,
+            LastSubmittedSourcePtsTicks: frameOwnership?.LastSubmittedSourcePtsTicks ?? 0,
+            LastSubmittedQpc: frameOwnership?.LastSubmittedQpc ?? 0,
+            LastSubmittedUtcUnixMs: frameOwnership?.LastSubmittedUtcUnixMs ?? 0,
+            LastRenderedPreviewPresentId: frameOwnership?.LastRenderedPreviewPresentId ?? 0,
+            LastRenderedSourceSequenceNumber: frameOwnership?.LastRenderedSourceSequenceNumber ?? -1,
+            LastRenderedSourcePtsTicks: frameOwnership?.LastRenderedSourcePtsTicks ?? 0,
+            LastRenderedQpc: frameOwnership?.LastRenderedQpc ?? 0,
+            LastRenderedUtcUnixMs: frameOwnership?.LastRenderedUtcUnixMs ?? 0,
+            LastRenderedSchedulerToPresentMs: frameOwnership?.LastRenderedSchedulerToPresentMs ?? 0,
+            LastRenderedPipelineLatencyMs: frameOwnership?.LastRenderedPipelineLatencyMs ?? 0,
+            LastDroppedPreviewPresentId: frameOwnership?.LastDroppedPreviewPresentId ?? 0,
+            LastDroppedSourceSequenceNumber: frameOwnership?.LastDroppedSourceSequenceNumber ?? -1,
+            LastDroppedSourcePtsTicks: frameOwnership?.LastDroppedSourcePtsTicks ?? 0,
+            LastDroppedQpc: frameOwnership?.LastDroppedQpc ?? 0,
+            LastDroppedUtcUnixMs: frameOwnership?.LastDroppedUtcUnixMs ?? 0,
+            LastDropReason: frameOwnership?.LastDropReason ?? string.Empty);
+    }
+}
+
+internal readonly record struct PreviewRuntimeD3DFrameStatistics(
+    long SampleCount,
+    long SuccessCount,
+    long FailureCount,
+    string LastError,
+    long PresentCount,
+    long PresentRefreshCount,
+    long SyncRefreshCount,
+    long SyncQpcTime,
+    long LastPresentDelta,
+    long LastPresentRefreshDelta,
+    long LastSyncRefreshDelta,
+    long MissedRefreshCount);
+
+internal static class PreviewRuntimeD3DFrameStatisticsPolicy
+{
+    public static PreviewRuntimeD3DFrameStatistics Evaluate(D3D11PreviewRenderer? d3d)
+    {
+        var frameStats = d3d?.GetDxgiFrameStatisticsMetrics();
+
+        return new PreviewRuntimeD3DFrameStatistics(
+            SampleCount: frameStats?.SampleCount ?? 0,
+            SuccessCount: frameStats?.SuccessCount ?? 0,
+            FailureCount: frameStats?.FailureCount ?? 0,
+            LastError: frameStats?.LastError ?? string.Empty,
+            PresentCount: frameStats?.PresentCount ?? -1,
+            PresentRefreshCount: frameStats?.PresentRefreshCount ?? -1,
+            SyncRefreshCount: frameStats?.SyncRefreshCount ?? -1,
+            SyncQpcTime: frameStats?.SyncQpcTime ?? 0,
+            LastPresentDelta: frameStats?.LastPresentDelta ?? 0,
+            LastPresentRefreshDelta: frameStats?.LastPresentRefreshDelta ?? 0,
+            LastSyncRefreshDelta: frameStats?.LastSyncRefreshDelta ?? 0,
+            MissedRefreshCount: frameStats?.MissedRefreshCount ?? 0);
+    }
+}
+
+internal readonly record struct PreviewRuntimeD3DFrameLatencyWait(
+    bool Enabled,
+    bool HandleActive,
+    long CallCount,
+    long SignaledCount,
+    long TimeoutCount,
+    long UnexpectedResultCount,
+    uint LastResult,
+    double LastWaitMs,
+    int SampleCount,
+    double AverageMs,
+    double P95Ms,
+    double P99Ms,
+    double MaxMs);
+
+internal static class PreviewRuntimeD3DFrameLatencyWaitPolicy
+{
+    public static PreviewRuntimeD3DFrameLatencyWait Evaluate(D3D11PreviewRenderer? d3d)
+    {
+        var frameLatencyWait = d3d?.GetFrameLatencyWaitMetrics();
+
+        return new PreviewRuntimeD3DFrameLatencyWait(
+            Enabled: frameLatencyWait?.Enabled ?? false,
+            HandleActive: frameLatencyWait?.HandleActive ?? false,
+            CallCount: frameLatencyWait?.CallCount ?? 0,
+            SignaledCount: frameLatencyWait?.SignaledCount ?? 0,
+            TimeoutCount: frameLatencyWait?.TimeoutCount ?? 0,
+            UnexpectedResultCount: frameLatencyWait?.UnexpectedResultCount ?? 0,
+            LastResult: frameLatencyWait?.LastResult ?? 0,
+            LastWaitMs: frameLatencyWait?.LastWaitMs ?? 0,
+            SampleCount: frameLatencyWait?.Timing.SampleCount ?? 0,
+            AverageMs: frameLatencyWait?.Timing.AverageMs ?? 0,
+            P95Ms: frameLatencyWait?.Timing.P95Ms ?? 0,
+            P99Ms: frameLatencyWait?.Timing.P99Ms ?? 0,
+            MaxMs: frameLatencyWait?.Timing.MaxMs ?? 0);
     }
 }

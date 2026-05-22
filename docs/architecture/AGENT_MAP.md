@@ -1389,36 +1389,12 @@ Primary current owners:
   projection, and controller-provided clock/tick values.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthPolicy.cs`
   owns preview startup elapsed timing plus blank/stall suspicion policy.
-  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameCounterPolicy.cs`
-  owns the D3D-vs-CPU frame-counter fallback rules used by preview diagnostics.
-  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DRendererStatePolicy.cs`
-  owns renderer state projection defaults, including renderer mode fallback,
-  swap-chain details, render-thread failure fields, color spaces, recent slow
-  frames, and GPU playback state.
-  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DDisplayCadencePolicy.cs`
-  owns D3D display cadence projection defaults, including recent present intervals,
-  low-FPS summaries, jitter, and slow-frame percentages.
-  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DRenderCpuTimingPolicy.cs`
-  owns D3D render CPU timing projection defaults for input upload, render submit,
-  present call, and total-frame timing metrics.
-  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DPipelineLatencyPolicy.cs`
-  owns D3D pipeline latency projection defaults and the estimated preview pipeline
-  latency value.
-  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameOwnershipPolicy.cs`
-  owns D3D submitted/rendered/dropped frame-identity projection defaults,
-  including null-renderer source sequence sentinels and last-drop reason.
-  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameStatisticsPolicy.cs`
-  owns DXGI frame-statistics projection defaults, including the null-renderer
-  present-count sentinels used by preview diagnostics.
-  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameLatencyWaitPolicy.cs`
-  owns D3D frame-latency wait projection defaults, including null-renderer wait
-  handle state, wait counters, last result, and wait timing metrics.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs`
-  owns the renderer projection data contract, policy evaluation order, and
-  assignment from evaluated policy records. Its projection properties keep
-  public getters with private setters so callers see a read-only projection
-  while policy classes remain the deterministic seams for deriving each metric
-  group.
+  owns the renderer projection data contract, D3D policy records, policy
+  evaluation order, and assignment from evaluated policy records. It keeps the
+  named policy classes for D3D-vs-CPU frame counters, renderer state, display
+  cadence, render CPU timing, pipeline latency, frame ownership, DXGI frame
+  statistics, and frame-latency wait defaults in one cohesive projection owner.
   Window close routing/finalization ownership is detailed in the window close
   section below:
   `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`,
