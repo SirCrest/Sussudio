@@ -3398,9 +3398,7 @@ missing-signal details, state/log transitions, first-visual confirmation
 sequencing, signal-window predicates, snapshot missing-signal refresh gates,
 and reset orchestration now live in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs` instead of a
-MainWindow field bundle. `Sussudio/MainWindow.PreviewStartup.cs` is the
-XAML/MainWindow-facing adapter-family marker; `Sussudio/MainWindow.PreviewStartup.Session.cs`
-is the startup session adapter-family marker,
+MainWindow field bundle.
 `Sussudio/MainWindow.PreviewStartup.Session.Composition.cs` wires UI/runtime
 callbacks into the session controller,
 `Sussudio/MainWindow.PreviewStartup.Session.State.cs` owns stable state
@@ -3413,9 +3411,8 @@ Watchdog/telemetry timers, timeout configuration, timeout recovery, and failure-
 adapter and raw timeout diagnostic snapshot. Readiness-signal coordination now lives
 in `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs`: missing-signal
 updates, playback-progress diagnostics, startup signal log strings, GPU
-position counter state, and first-visual confirmation decisions. The
-`Sussudio/MainWindow.PreviewStartup.Signals.cs` partial is the XAML/MainWindow
-adapter-family marker, `Sussudio/MainWindow.PreviewStartup.Signals.Composition.cs`
+position counter state, and first-visual confirmation decisions.
+`Sussudio/MainWindow.PreviewStartup.Signals.Composition.cs`
 wires coordinator context, `Sussudio/MainWindow.PreviewStartup.Signals.State.cs`
 supplies live preview signal state, and
 `Sussudio/MainWindow.PreviewStartup.Signals.Events.cs` supplies renderer visibility

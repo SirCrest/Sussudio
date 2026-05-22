@@ -18,11 +18,11 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "InitializePreviewStartupSignalCoordinator();");
-        AssertContains(previewStartupSignalsText, "XAML-facing preview startup signal adapter");
+        AssertContains(previewStartupSignalsText, "private PreviewStartupSignalCoordinator _previewStartupSignalCoordinator = null!;");
         AssertEqual(
-            true,
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewStartup.Signals.cs")),
-            "preview startup signal adapter lives in the focused startup signal partial");
+            "old marker-only preview startup signal partial removed");
         AssertContains(previewStartupSignalsText, "private PreviewStartupSignalCoordinator _previewStartupSignalCoordinator = null!;");
         AssertContains(previewStartupSignalsText, "private void InitializePreviewStartupSignalCoordinator()");
         AssertContains(previewStartupSignalsText, "IsSignalWindowActive = IsPreviewStartupSignalWindowActive,");

@@ -3237,9 +3237,7 @@ Primary current owners:
   startup attempt/state bookkeeping, timestamps, cached failure/missing-signal
   details, state/log transitions, first-visual confirmation sequencing,
   signal-window predicates, snapshot missing-signal refresh gates, and reset
-  orchestration. `Sussudio/MainWindow.PreviewStartup.cs` is the
-  XAML/MainWindow-facing adapter-family marker. `Sussudio/MainWindow.PreviewStartup.Session.cs`
-  is the startup session adapter-family marker,
+  orchestration.
   `Sussudio/MainWindow.PreviewStartup.Session.Composition.cs` wires UI/runtime
   callbacks into the session controller, `Sussudio/MainWindow.PreviewStartup.Session.State.cs`
   owns stable state projections, and
@@ -3252,8 +3250,7 @@ Primary current owners:
   `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs` owns readiness-
   signal coordination: readiness-signal state handoff, missing-signal updates,
   playback-progress diagnostics, startup signal log strings, GPU position
-  counter state, and first-visual confirmation decisions. `Sussudio/MainWindow.PreviewStartup.Signals.cs`
-  is the XAML/MainWindow-facing adapter-family marker,
+  counter state, and first-visual confirmation decisions.
   `Sussudio/MainWindow.PreviewStartup.Signals.Composition.cs` wires the
   coordinator context, `Sussudio/MainWindow.PreviewStartup.Signals.State.cs`
   owns the stable signal snapshot properties used by automation, and
