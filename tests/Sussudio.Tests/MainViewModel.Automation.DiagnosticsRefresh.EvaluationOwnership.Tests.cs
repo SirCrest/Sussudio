@@ -25,7 +25,7 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "TryBuildFlashbackExportRotationDiagnosticEvaluation(conditions, lanes)");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "TryBuildFlashbackBackendSettingsDiagnosticEvaluation(conditions, lanes)");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "TryBuildFlashbackRecordingDegradationDiagnosticEvaluation(conditions, lanes)");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingConditionsText, "private static FlashbackRecordingDiagnosticConditions BuildFlashbackRecordingDiagnosticConditions(");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "private static FlashbackRecordingDiagnosticConditions BuildFlashbackRecordingDiagnosticConditions(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "private static DiagnosticEvaluation? TryBuildFlashbackEncoderFailureDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "\"Flashback encoder has failed.\"");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "private static DiagnosticEvaluation? TryBuildFlashbackExportRotationDiagnosticEvaluation(");

@@ -327,9 +327,8 @@ diagnostic verdict ordering plus Flashback storage pressure and active/stalled
 export diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Recording.cs` owns
 Flashback recording diagnostic verdict ordering plus encoder failure,
-export-rotation gap, backend staleness, and recording degradation verdicts.
-`AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.RecordingConditions.cs`
-owns Flashback recording diagnostic condition assembly.
+export-rotation gap, backend staleness, recording degradation verdicts, and
+Flashback recording diagnostic condition assembly.
 `AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Playback.cs` owns
 Flashback playback command, performance, frametime, and submission diagnostic
 verdicts.
