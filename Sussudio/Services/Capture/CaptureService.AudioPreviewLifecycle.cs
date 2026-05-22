@@ -6,11 +6,20 @@ using Sussudio.Services.Audio;
 
 namespace Sussudio.Services.Capture;
 
-// Audio-preview start/stop lifecycle for the capture session. This partial owns
-// late WASAPI capture startup, playback start, preview rollback, and optional
-// capture teardown while preserving root transition serialization.
+// Audio-preview start/stop lifecycle, preview volume/mute, and WASAPI
+// audio-level/failure event projection for the capture session.
 public partial class CaptureService
 {
+    public void SetPreviewVolume(float volume)
+    {
+        _previewAudioGraph.SetPreviewVolume(volume);
+    }
+
+    public void SetMonitoringMuted(bool muted)
+    {
+        _previewAudioGraph.SetMonitoringMuted(muted);
+    }
+
     public Task StartAudioPreviewAsync(CancellationToken cancellationToken = default)
         => RunTransitionAsync(CaptureSessionState.Previewing, async transitionToken =>
         {
@@ -119,4 +128,24 @@ public partial class CaptureService
             AudioLevelUpdated?.Invoke(this, new AudioLevelEventArgs(0, 0, false));
             StatusChanged?.Invoke(this, "Audio preview stopped");
         }, cancellationToken);
+
+    private void OnWasapiAudioLevelUpdated(object? sender, AudioLevelEventArgs e)
+    {
+        AudioLevelUpdated?.Invoke(this, e);
+    }
+
+    private void OnWasapiCaptureFailed(object? sender, Exception ex)
+    {
+        var source = _previewAudioGraph.ClassifyCaptureFailureSource(sender);
+
+        if (_isRecording)
+        {
+            _previewAudioGraph.RecordCaptureFault(source, ex);
+        }
+
+        Logger.Log($"WASAPI_CAPTURE_FAILED source={source} type={ex.GetType().Name} hr=0x{ex.HResult:X8} message={ex.Message} recording={_isRecording}");
+        var statusPrefix = source == "microphone" ? "Microphone capture error" : "Audio capture error";
+        StatusChanged?.Invoke(this, $"{statusPrefix}: {ex.Message}");
+        ErrorOccurred?.Invoke(this, ex);
+    }
 }

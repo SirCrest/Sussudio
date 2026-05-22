@@ -1410,9 +1410,8 @@ negotiated-format seeding, the initial observed-pixel telemetry reset call,
 fallback source telemetry, source telemetry refresh, NTSC frame-rate correction,
 and initialized status event.
 
-WASAPI audio-level/failure event projection now lives in
-`Sussudio/Services/Capture/CaptureService.Audio.cs`. Audio-preview start/stop
-lifecycle lives in
+WASAPI audio-level/failure event projection and audio-preview start/stop
+lifecycle now live in
 `Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs`, and live
 audio input switching lives in
 `Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs`. Preview-time
