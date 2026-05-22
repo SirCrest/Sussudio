@@ -307,37 +307,24 @@ projection consumed by the automation snapshot DTO.
 owns final Flashback export projection-to-`AutomationSnapshot` field
 flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs` owns
-Flashback recording failure, cleanup, force-rotate, and focused projection
-routing consumed by the automation snapshot DTO.
+Flashback recording failure, cleanup, force-rotate, focused projection routing,
+and final projection-to-`AutomationSnapshot` flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.StartupCache.cs`
-owns Flashback temp-drive and startup-cache policy projection consumed by the
-automation snapshot DTO.
+owns Flashback temp-drive/startup-cache policy projection and flattened
+startup-cache storage fields consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecordingQueues.cs` owns
-Flashback video, GPU, and audio queue/backpressure projection consumed by the
-automation snapshot DTO.
+Flashback video, GPU, and audio queue/backpressure projection plus flattened
+queue/backpressure fields consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.Runtime.cs`
-owns Flashback active recording output/runtime projection consumed by the
-automation snapshot DTO.
+owns Flashback active recording output/runtime projection and flattened runtime
+fields consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.Backend.cs`
 owns Flashback backend settings drift, export-verification, and codec downgrade
-projection consumed by the automation snapshot DTO.
+projection plus flattened backend fields consumed by the automation snapshot
+DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.Encoder.cs`
 owns Flashback encoder identity, bitrate, dimension, and frame-rate projection
-consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.cs`
-owns final Flashback recording projection-to-`AutomationSnapshot` field
-flattening plus failure, cleanup, and force-rotate fields.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.StartupCache.cs`
-owns flattened Flashback startup-cache storage fields.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.Queues.cs`
-owns flattened Flashback video, GPU, and audio queue/backpressure fields.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.Runtime.cs`
-owns flattened active recording output/runtime fields.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.Backend.cs`
-owns flattened backend settings drift, export-verification, and codec downgrade
-fields.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.Encoder.cs`
-owns flattened encoder identity, bitrate, dimension, and frame-rate fields.
+plus flattened encoder fields consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs` owns
 Flashback playback state/frame summary and routing to the playback leaf
 projections consumed by the automation snapshot DTO.

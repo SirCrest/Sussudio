@@ -28,12 +28,6 @@ static partial class Program
         public string SnapshotProjectionFlatteningPreviewD3DLatencyAndStatsText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningPreviewD3DFrameFlowText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningFlashbackExportText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningFlashbackRecordingText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningFlashbackRecordingStartupCacheText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningFlashbackRecordingQueuesText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningFlashbackRecordingRuntimeText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningFlashbackRecordingBackendText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningFlashbackRecordingEncoderText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningFlashbackPlaybackText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningFlashbackPlaybackAudioMasterText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningFlashbackPlaybackTimingText { get; init; } = string.Empty;
