@@ -181,6 +181,18 @@ Behavior preserved: `GetLatestSnapshot`, `RefreshSnapshotNowAsync`, and refresh 
 Notes for future agents: keep public snapshot refresh entry points with `Snapshots.cs` unless refresh coordination becomes a named service boundary
 
 Date: 2026-05-21
+Area: Automation diagnostics Flashback playback alerts
+Problem: Flashback playback performance alert routing and frame-submission failure alert logic lived in a tiny router partial separate from the alert orchestration root that calls it.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics alert ownership tests and runtime snapshot regression tests
+Behavior preserved: Flashback playback cadence/audio performance routing and `flashback-playback-submit-failures` alert state still use the same active-state, target FPS, severity, category, message, recovery text, and throttle
+Notes for future agents: keep one-method Flashback playback performance routers with `Alerts.cs` unless the routing becomes independent policy
+
+Date: 2026-05-21
 Area: Automation diagnostics HDR pipeline projection
 Problem: HDR pipeline policy projection and final flattened DTO field projection lived in separate partials even though the flattening is a direct one-to-one projection of HDR runtime, warmup, pipeline-mode, telemetry-alignment, and truth-verdict fields.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.HdrPipeline.cs`

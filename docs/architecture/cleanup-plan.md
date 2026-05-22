@@ -380,7 +380,8 @@ by the automation snapshot DTO plus final HDR pipeline projection-to-
 `AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation, active-alert
 transitions, Flashback alert group routing, and Flashback playback alert
-orchestration, plus signal alert orchestration.
+orchestration, Flashback playback performance alert routing, frame-submission
+failure alerts, plus signal alert orchestration.
 `AutomationDiagnosticsHub.SignalAlerts.Preview.cs` owns preview
 blank, stall, startup, cadence, display 1% low, capture cadence drop, capture
 1% low, audio muted signal, and recording output-growth signal alert rules.
@@ -392,8 +393,6 @@ failure alerts.
 recording path degradation alerts.
 `AutomationDiagnosticsHub.FlashbackPlaybackAlerts.Commands.cs` owns playback
 command queue and command failure alerts.
-`AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.cs` owns Flashback
-playback performance alert orchestration and frame-submission failure alerts.
 `AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Audio.cs` owns
 audio-master fallback and audio-queue backlog alerts.
 `AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Cadence.cs` owns
