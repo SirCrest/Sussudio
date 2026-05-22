@@ -44,8 +44,8 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimeSourceDiagnosticEvaluation(health, isPreviewing, visualCadenceHealthy, lanes)");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimeMjpegDiagnosticEvaluation(health, recentMjpeg, lanes)");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimePreviewDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeStateText, "private static DiagnosticEvaluation? TryBuildRealtimeStateDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeStateText, "\"diagnostic_unavailable\"");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimeStateDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"diagnostic_unavailable\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeRecordingText, "private static DiagnosticEvaluation? TryBuildRealtimeRecordingDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeRecordingText, "\"recording\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeRecordingText, "\"audio\"");

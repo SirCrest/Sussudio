@@ -357,9 +357,8 @@ Automation diagnostics ownership:
   owns Flashback playback command, performance, frametime, and submission
   diagnostic verdicts.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs`
-  owns realtime diagnostic verdict ordering.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.State.cs`
-  owns idle and warmup diagnostic verdicts.
+  owns realtime diagnostic verdict ordering plus idle and warmup diagnostic
+  verdicts.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Recording.cs`
   owns recording integrity and audio integrity diagnostic verdicts.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Source.cs`

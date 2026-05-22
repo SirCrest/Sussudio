@@ -217,6 +217,18 @@ Behavior preserved: MJPEG recent dropped, decode failure, emit failure, and comp
 Notes for future agents: keep realtime snapshot-loop counter baselines with `Counters.RealtimePreview.cs` unless a counter family grows independent lifecycle policy
 
 Date: 2026-05-21
+Area: Automation diagnostics realtime evaluation
+Problem: Idle and warmup diagnostic verdicts lived in a tiny partial separate from the realtime diagnostic verdict ordering that always evaluates them first.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.State.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics evaluation ownership tests and runtime snapshot regression tests
+Behavior preserved: idle and warming-up `diagnostic_unavailable` verdicts keep the same severities, messages, details, and lane mappings
+Notes for future agents: keep first-branch realtime state verdicts with `DiagnosticEvaluationRealtime.cs` unless they grow independent policy
+
+Date: 2026-05-21
 Area: Automation diagnostics HDR pipeline projection
 Problem: HDR pipeline policy projection and final flattened DTO field projection lived in separate partials even though the flattening is a direct one-to-one projection of HDR runtime, warmup, pipeline-mode, telemetry-alignment, and truth-verdict fields.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.HdrPipeline.cs`
