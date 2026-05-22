@@ -169,6 +169,18 @@ Behavior preserved: MJPEG preview jitter queue, timing, adaptive, and scheduler 
 Notes for future agents: keep MJPEG preview jitter DTO mapping groups with `MjpegPreviewJitter.cs` unless a group grows independent policy or a reusable collaborator boundary
 
 Date: 2026-05-21
+Area: Automation diagnostics Flashback recording projection
+Problem: Flashback recording startup-cache, runtime, backend, and encoder projection mappings lived in four tiny partials even though the Flashback recording projection owner immediately composes and flattens those groups; the larger queue/backpressure mapping remains its own focused owner.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.StartupCache.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.Runtime.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.Backend.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.Encoder.cs`
+Files added: none
+Net production .cs delta: -4
+Partial clusters reduced: `AutomationDiagnosticsHub` -4 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics Flashback recording projection ownership tests and runtime snapshot regression tests
+Behavior preserved: Flashback recording startup-cache, runtime, backend, codec downgrade, export verification, and encoder fields still map into the same flattened automation snapshot fields
+Notes for future agents: keep smaller Flashback recording DTO mapping groups with `FlashbackRecording.cs`; keep queue/backpressure mapping separate unless it can be folded without making the owner hard to scan
+
+Date: 2026-05-21
 Area: Automation diagnostics signal alerts
 Problem: Capture cadence, audio muted, and recording growth signal alert rules lived in tiny partials separate from the signal alert owner even though they all update alert state from the same automation snapshot surface.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.Capture.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.AudioRecording.cs`

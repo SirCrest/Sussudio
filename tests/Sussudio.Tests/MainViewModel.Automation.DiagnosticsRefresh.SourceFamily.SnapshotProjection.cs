@@ -31,11 +31,7 @@ static partial class Program
         public string SnapshotProjectionFlashbackPlaybackText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackPlaybackTimingText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackRecordingText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlashbackRecordingStartupCacheText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackRecordingQueuesText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlashbackRecordingRuntimeText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlashbackRecordingBackendText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlashbackRecordingEncoderText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewD3DText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewD3DFrameFlowText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewD3DFrameLatencyWaitText { get; init; } = string.Empty;

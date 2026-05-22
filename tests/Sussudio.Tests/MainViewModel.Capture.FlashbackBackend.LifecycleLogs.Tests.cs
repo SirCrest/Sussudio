@@ -230,8 +230,6 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadAutomationSnapshotFlatteningFamilyText()
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.Backend.cs")
                 .Replace("\r\n", "\n");
         AssertContains(automationDiagnosticsHubText, "FlashbackExportVerificationFormat = flashbackRecordingFlattening.Backend.ExportVerificationFormat,");
         AssertContains(automationDiagnosticsHubText, "ExportVerificationFormat = backend.ExportVerificationFormat,");
