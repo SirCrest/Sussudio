@@ -2578,14 +2578,11 @@ there; keep recording and Flashback enqueue paths in
 
 Decoded visual-cadence frame ingestion now lives in
 `Sussudio/Services/Capture/VisualCadenceTracker.cs`. Keep state, reset, frame
-validation, output/change ingestion, and repeat-run bookkeeping there. Luma
-sampling now lives in
-`Sussudio/Services/Capture/VisualCadenceTracker.Sampling.cs`. Keep crop
-selection, one-pass current-vs-previous comparison, sample-buffer promotion,
-rolling sample writes, and elapsed-time conversion there; keep metrics DTO
+validation, output/change ingestion, repeat-run bookkeeping, luma sampling,
+crop selection, one-pass current-vs-previous comparison, sample-buffer
+promotion, rolling sample writes, elapsed-time conversion, metrics DTO
 construction, ring-buffer snapshot copying, delta/output/change statistics, and
-motion-confidence labels in
-`Sussudio/Services/Capture/VisualCadenceTracker.Metrics.cs`.
+motion-confidence labels there.
 
 Source-packet fingerprint cadence ingestion now lives in
 `Sussudio/Services/Capture/FrameFingerprintCadenceTracker.cs`. Keep frame

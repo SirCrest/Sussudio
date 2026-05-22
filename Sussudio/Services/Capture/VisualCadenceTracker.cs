@@ -1,12 +1,13 @@
 using System;
 using System.Diagnostics;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture;
 
 // Samples luma from rendered frames to estimate what the viewer actually sees.
 // This detects repeated visual output even when source frames keep arriving,
 // which is why it complements source-reader and renderer-submit counters.
-internal sealed partial class VisualCadenceTracker
+internal sealed class VisualCadenceTracker
 {
     private const int DefaultSampleColumns = 640;
     private const int DefaultSampleRows = 360;
@@ -43,6 +44,40 @@ internal sealed partial class VisualCadenceTracker
     private double _lastDelta;
     private int _lastSampleLength;
     private int _lastBytesPerLuma;
+
+    public readonly record struct Metrics(
+        int SampleCount,
+        long ChangedFrameCount,
+        long RepeatFrameCount,
+        long LongestRepeatRun,
+        double OutputObservedFps,
+        double ChangeObservedFps,
+        double RepeatFramePercent,
+        double LastDelta,
+        double AverageDelta,
+        double P95Delta,
+        double MotionScore,
+        string MotionConfidence,
+        double[] RecentOutputIntervalsMs,
+        double[] RecentChangeIntervalsMs);
+
+    public static Metrics Empty { get; } = new(
+        SampleCount: 0,
+        ChangedFrameCount: 0,
+        RepeatFrameCount: 0,
+        LongestRepeatRun: 0,
+        OutputObservedFps: 0,
+        ChangeObservedFps: 0,
+        RepeatFramePercent: 0,
+        LastDelta: 0,
+        AverageDelta: 0,
+        P95Delta: 0,
+        MotionScore: 0,
+        MotionConfidence: "NoSamples",
+        RecentOutputIntervalsMs: Array.Empty<double>(),
+        RecentChangeIntervalsMs: Array.Empty<double>());
+
+    private readonly record struct LumaSample(int Length, double ChangedPixels);
 
     public VisualCadenceTracker(
         int sampleColumns = DefaultSampleColumns,
@@ -178,4 +213,172 @@ internal sealed partial class VisualCadenceTracker
         }
     }
 
+    public Metrics GetMetrics(int maxRecentIntervals = 180)
+    {
+        lock (_sync)
+        {
+            if (_sampleCount <= 0)
+            {
+                return Empty;
+            }
+
+            var outputIntervals = RingBufferHelpers.Copy(_outputIntervalsMs, _outputIntervalCount, _outputIntervalIndex, maxRecentIntervals);
+            var changeIntervals = RingBufferHelpers.Copy(_changeIntervalsMs, _changeIntervalCount, _changeIntervalIndex, maxRecentIntervals);
+            var deltas = RingBufferHelpers.Copy(_deltaWindow, _deltaCount, _deltaIndex, WindowSize);
+            var deltaStats = ComputeStats(deltas);
+            var outputStats = ComputeStats(outputIntervals);
+            var changeStats = ComputeStats(changeIntervals);
+            var repeatPercent = _sampleCount > 1
+                ? _repeatFrameCount * 100.0 / Math.Max(1, _sampleCount - 1)
+                : 0;
+            var motionScore = Math.Clamp(deltaStats.Average / Math.Max(1, _sampleSize) * 100.0, 0.0, 100.0);
+            var motionConfidence = ResolveMotionConfidence(_sampleCount, deltaStats.Average, repeatPercent, changeIntervals.Length);
+
+            return new Metrics(
+                SampleCount: (int)Math.Min(int.MaxValue, _sampleCount),
+                ChangedFrameCount: _changedFrameCount,
+                RepeatFrameCount: _repeatFrameCount,
+                LongestRepeatRun: _longestRepeatRun,
+                OutputObservedFps: outputStats.Average > 0 ? 1000.0 / outputStats.Average : 0,
+                ChangeObservedFps: changeStats.Average > 0 ? 1000.0 / changeStats.Average : 0,
+                RepeatFramePercent: repeatPercent,
+                LastDelta: _lastDelta,
+                AverageDelta: deltaStats.Average,
+                P95Delta: deltaStats.P95,
+                MotionScore: motionScore,
+                MotionConfidence: motionConfidence,
+                RecentOutputIntervalsMs: outputIntervals,
+                RecentChangeIntervalsMs: changeIntervals);
+        }
+    }
+
+    private LumaSample SampleLumaAndCompare(
+        ReadOnlySpan<byte> frame,
+        int width,
+        int height,
+        int bytesPerLuma,
+        byte[] destination,
+        byte[]? previous)
+    {
+        var cropX = Math.Clamp((int)Math.Round(width * _cropLeft), 0, Math.Max(0, width - 1));
+        var cropY = Math.Clamp((int)Math.Round(height * _cropTop), 0, Math.Max(0, height - 1));
+        var cropWidth = Math.Clamp((int)Math.Round(width * _cropWidth), 1, width - cropX);
+        var cropHeight = Math.Clamp((int)Math.Round(height * _cropHeight), 1, height - cropY);
+        var sampleWidth = Math.Min(_sampleColumns, cropWidth);
+        var sampleHeight = Math.Min(_sampleRows, cropHeight);
+        var sampleX = cropX + Math.Max(0, (cropWidth - sampleWidth) / 2);
+        var sampleY = cropY + Math.Max(0, (cropHeight - sampleHeight) / 2);
+        var index = 0;
+        var changed = 0;
+        for (var row = 0; row < sampleHeight; row++)
+        {
+            var y = sampleY + row;
+            var rowOffset = y * width * bytesPerLuma;
+            for (var col = 0; col < sampleWidth; col++)
+            {
+                var x = sampleX + col;
+                var lumaOffset = rowOffset + x * bytesPerLuma;
+                var changedPixel = false;
+                var luma = frame[lumaOffset];
+                destination[index] = luma;
+                if (previous != null && previous[index] != luma)
+                {
+                    changedPixel = true;
+                }
+
+                index++;
+                if (bytesPerLuma == 2)
+                {
+                    var secondLuma = lumaOffset + 1 < frame.Length
+                        ? frame[lumaOffset + 1]
+                        : (byte)0;
+                    destination[index] = secondLuma;
+                    if (previous != null && previous[index] != secondLuma)
+                    {
+                        changedPixel = true;
+                    }
+
+                    index++;
+                }
+
+                if (changedPixel)
+                {
+                    changed++;
+                }
+            }
+        }
+
+        return new LumaSample(index, changed);
+    }
+
+    private void PromoteCurrentSample(int sampleLength, int bytesPerLuma)
+    {
+        var oldLast = _lastSample;
+        _lastSample = _currentSample;
+        _currentSample = oldLast;
+        _lastSampleLength = sampleLength;
+        _lastBytesPerLuma = bytesPerLuma;
+    }
+
+    private static void AddTimingSample(double[] window, ref int count, ref int index, double value)
+    {
+        if (!double.IsFinite(value) || value < 0 || value > 5000)
+        {
+            return;
+        }
+
+        RingBufferHelpers.Add(window, ref count, ref index, value);
+    }
+
+    private static void AddValueSample(double[] window, ref int count, ref int index, double value)
+    {
+        if (!double.IsFinite(value) || value < 0)
+        {
+            return;
+        }
+
+        RingBufferHelpers.Add(window, ref count, ref index, value);
+    }
+
+    private static (double Average, double P95) ComputeStats(double[] values)
+    {
+        if (values.Length == 0)
+        {
+            return (0, 0);
+        }
+
+        var sum = 0.0;
+        for (var i = 0; i < values.Length; i++)
+        {
+            sum += values[i];
+        }
+
+        var sorted = (double[])values.Clone();
+        Array.Sort(sorted);
+        var p95Index = Math.Clamp((int)Math.Ceiling((sorted.Length - 1) * 0.95), 0, sorted.Length - 1);
+        return (sum / values.Length, sorted[p95Index]);
+    }
+
+    private static string ResolveMotionConfidence(long samples, double averageDelta, double repeatPercent, int changeIntervalCount)
+    {
+        if (samples < 8)
+        {
+            return "WarmingUp";
+        }
+
+        if (changeIntervalCount < 4 || averageDelta <= 0 || repeatPercent > 90)
+        {
+            return "LowMotion";
+        }
+
+        if (averageDelta >= 1024 && repeatPercent < 35)
+        {
+            return "HighMotion";
+        }
+
+        return "ModerateMotion";
+    }
+
+    private static double ElapsedMs(long startTick, long endTick)
+        => (endTick - startTick) * 1000.0 / Stopwatch.Frequency;
 }
