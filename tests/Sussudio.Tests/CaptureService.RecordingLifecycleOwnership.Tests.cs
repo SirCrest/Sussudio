@@ -34,8 +34,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
-        var recordingStartContextText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartContext.cs")
-            .Replace("\r\n", "\n");
         var flashbackStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartFlashback.cs")
             .Replace("\r\n", "\n");
         var libAvStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
@@ -94,13 +92,17 @@ static partial class Program
         AssertContains(lifecycleText, "private sealed class RecordingStartRollbackState");
         AssertContains(lifecycleText, "public RecordingContext? RecordingContext { get; set; }");
         AssertContains(lifecycleText, "public FlashbackEncoderSink? FlashbackRecordingStartedSink { get; set; }");
-        AssertContains(recordingStartContextText, "private static async Task<StorageFolder> OpenRecordingOutputFolderAsync(");
-        AssertContains(recordingStartContextText, "Output folder is unavailable: {settings.OutputPath}");
-        AssertContains(recordingStartContextText, "private async Task<RecordingContext> CreateLibAvRecordingContextAsync(");
-        AssertContains(recordingStartContextText, "private async Task<RecordingContext> CreateFlashbackRecordingContextAsync(");
-        AssertContains(recordingStartContextText, "new RecordingContextRequest");
-        AssertContains(recordingStartContextText, "GpuHandles = new GpuPipelineHandles(");
-        AssertContains(recordingStartContextText, "GpuHandles = GpuPipelineHandles.None");
+        AssertContains(lifecycleText, "private static async Task<StorageFolder> OpenRecordingOutputFolderAsync(");
+        AssertContains(lifecycleText, "Output folder is unavailable: {settings.OutputPath}");
+        AssertContains(lifecycleText, "private async Task<RecordingContext> CreateLibAvRecordingContextAsync(");
+        AssertContains(lifecycleText, "private async Task<RecordingContext> CreateFlashbackRecordingContextAsync(");
+        AssertContains(lifecycleText, "new RecordingContextRequest");
+        AssertContains(lifecycleText, "GpuHandles = new GpuPipelineHandles(");
+        AssertContains(lifecycleText, "GpuHandles = GpuPipelineHandles.None");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingStartContext.cs")),
+            "old recording start context partial removed");
         AssertContains(flashbackStartText, "private async Task DisposeUnusableFlashbackRecordingBackendAsync(");
         AssertContains(flashbackStartText, "private async Task StartFlashbackRecordingAsync(");
         AssertContains(flashbackStartText, "await OpenRecordingOutputFolderAsync(settings)");
