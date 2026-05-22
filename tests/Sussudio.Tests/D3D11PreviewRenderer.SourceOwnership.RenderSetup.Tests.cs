@@ -111,8 +111,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
             .Replace("\r\n", "\n");
-        var renderThreadSharedDeviceResetText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.SharedDeviceReset.cs")
-            .Replace("\r\n", "\n");
         var sharedDeviceText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.SharedDevice.cs")
             .Replace("\r\n", "\n");
 
@@ -129,10 +127,10 @@ static partial class Program
         AssertContains(deviceInitializationText, "var sharedDeviceActive = TryInitializeWithSharedDevice(out var featureLevel);");
         AssertContains(renderThreadText, "Interlocked.CompareExchange(ref _sharedDeviceResetPending, 0, 1)");
         AssertContains(renderThreadText, "HandlePendingSharedDeviceResetOnRenderThread();");
-        AssertContains(renderThreadSharedDeviceResetText, "private void HandlePendingSharedDeviceResetOnRenderThread()");
-        AssertContains(renderThreadSharedDeviceResetText, "TrackFrameDropped(stale, \"shared-device-reset\");");
-        AssertContains(renderThreadSharedDeviceResetText, "CleanupD3DResources();");
-        AssertContains(renderThreadSharedDeviceResetText, "InitializeD3D();");
+        AssertContains(renderThreadText, "private void HandlePendingSharedDeviceResetOnRenderThread()");
+        AssertContains(renderThreadText, "TrackFrameDropped(stale, \"shared-device-reset\");");
+        AssertContains(renderThreadText, "CleanupD3DResources();");
+        AssertContains(renderThreadText, "InitializeD3D();");
         AssertDoesNotContain(rootText, "public void SetSharedDevice(ID3D11Device sharedDevice)");
         AssertDoesNotContain(rootText, "public void RetireSharedDeviceReferenceForReinit()");
         AssertDoesNotContain(deviceInitializationText, "private bool TryInitializeWithSharedDevice(out FeatureLevel featureLevel)");
