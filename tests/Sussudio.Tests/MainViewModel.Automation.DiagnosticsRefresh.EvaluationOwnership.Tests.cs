@@ -16,6 +16,9 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "TryBuildFlashbackPlaybackDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "private static DiagnosticEvaluation? TryBuildFlashbackStorageDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "\"flashback_storage\"");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "private static DiagnosticEvaluation? TryBuildFlashbackExportDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "\"Flashback export progress is stalled.\"");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "\"Flashback export is running.\"");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "private static DiagnosticEvaluation? TryBuildFlashbackRecordingDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "BuildFlashbackRecordingDiagnosticConditions(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "TryBuildFlashbackEncoderFailureDiagnosticEvaluation(health, lanes)");
@@ -31,9 +34,6 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "\"Flashback backend settings differ from requested settings.\"");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "private static DiagnosticEvaluation? TryBuildFlashbackRecordingDegradationDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "\"Flashback recording path is dropping or backing up.\"");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackExportText, "private static DiagnosticEvaluation? TryBuildFlashbackExportDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackExportText, "\"Flashback export progress is stalled.\"");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackExportText, "\"Flashback export is running.\"");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackPlaybackText, "private static DiagnosticEvaluation? TryBuildFlashbackPlaybackDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackPlaybackText, "\"flashback_playback\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationFlashbackText, "\"flashback_recording\"");
