@@ -4349,12 +4349,9 @@ Primary owners:
   Flashback warmed-playback frame-count/FPS polling.
 - `tools/Common/DiagnosticSessionFlashbackWaits.PlaybackPosition.cs` owns
   Flashback playback position convergence polling.
-- `tools/Common/DiagnosticSessionFlashbackValidation.Recording.cs` owns
-  Flashback recording warning policy over projected recording metrics.
-- `tools/Common/DiagnosticSessionFlashbackValidation.Playback.cs` owns Flashback
-  playback warning policy over projected playback and visual cadence metrics.
-- `tools/Common/DiagnosticSessionFlashbackValidation.Preview.cs` owns Flashback
-  preview scheduler warning policy over scheduler, cadence, and D3D metrics.
+- `tools/Common/DiagnosticSessionFlashbackValidation.cs` owns Flashback
+  recording, playback, and preview scheduler warning policy over already
+  projected metrics.
 - `tools/Common/DiagnosticSessionHealthPolicy.cs` owns diagnostic-session health
   observation, severity, and Flashback warmup filtering.
 - `tools/Common/DiagnosticSessionHealthTolerances.cs` owns diagnostic-session

@@ -147,9 +147,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionFlashbackValidationSource()
     {
-        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.Recording.cs")
-            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.Playback.cs")
-            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.Preview.cs");
+        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs");
     }
 
     private static string ReadDiagnosticSessionScenarioCatalogSource()

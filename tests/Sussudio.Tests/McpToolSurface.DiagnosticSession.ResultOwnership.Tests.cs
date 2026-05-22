@@ -61,7 +61,7 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var formatterText = ReadDiagnosticSessionResultFormatterSource();
-        var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.Preview.cs")
+        var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
             .Replace("\r\n", "\n");
         var textHelpersText = ReadRepoFile("tools/Common/DiagnosticSessionOptionalTextFormatter.cs")
             .Replace("\r\n", "\n");

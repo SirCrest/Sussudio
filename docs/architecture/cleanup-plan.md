@@ -3927,11 +3927,10 @@ command-health/latency/final-state warning policy, and `.AudioMaster.cs` owns
 warmed-playback audio-master fallback classification while the runner only
 starts the scenario tasks.
 
-Diagnostic-session Flashback validation now lives in concrete
-`tools/Common/DiagnosticSessionFlashbackValidation*.cs` partial owners.
-`.Recording.cs`, `.Playback.cs`, and `.Preview.cs` own their respective warning
-thresholds over already projected metrics while the runner retains scenario
-orchestration. Do not reintroduce an empty family root.
+Diagnostic-session Flashback validation now lives in
+`tools/Common/DiagnosticSessionFlashbackValidation.cs`. It owns recording,
+playback, and preview scheduler warning thresholds over already projected
+metrics while the runner retains scenario orchestration.
 
 Diagnostic-session health policy now lives in
 `tools/Common/DiagnosticSessionHealthPolicy.cs`. It owns health severity,
@@ -4094,9 +4093,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackWaits.PlaybackBoundary.cs`
 - `DiagnosticSessionFlashbackWaits.PlaybackWarmSample.cs`
 - `DiagnosticSessionFlashbackWaits.PlaybackPosition.cs`
-- `DiagnosticSessionFlashbackValidation.Recording.cs`
-- `DiagnosticSessionFlashbackValidation.Playback.cs`
-- `DiagnosticSessionFlashbackValidation.Preview.cs`
+- `DiagnosticSessionFlashbackValidation.cs`
 - `DiagnosticSessionHealthPolicy.cs`
 - `DiagnosticSessionHealthTolerances.cs`
 - `DiagnosticSessionJsonArtifacts.cs`
