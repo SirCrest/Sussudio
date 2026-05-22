@@ -214,21 +214,14 @@ visual cadence and center-crop visual cadence projection inputs consumed by the
 automation snapshot DTO, plus final visual cadence and center-crop visual
 cadence projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs` owns CPU MJPEG totals,
-compressed queue, and failure projection inputs consumed by the automation
-snapshot DTO, plus final CPU MJPEG totals, compressed queue, and failure
-projection-to-`AutomationSnapshot` field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.MjpegTiming.cs` owns CPU MJPEG
-decode, interop-copy, callback, reorder, pipeline timing, decoder count, and
-per-decoder projection inputs consumed by the automation snapshot DTO, plus
-final CPU MJPEG timing projection-to-`AutomationSnapshot` field flattening.
+compressed queue, failure, decode/interop-copy/callback/reorder/pipeline
+timing, decoder count, per-decoder, and packet duplicate-run / unique-frame
+projection inputs consumed by the automation snapshot DTO, plus final CPU MJPEG
+totals, compressed queue, timing, and packet-hash field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.cs` owns MJPEG
 preview jitter projection routing, queue counters, timing samples, adaptive
 drop/depth counters, last scheduler event projection, and final
 projection-to-`AutomationSnapshot` flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.MjpegPacketHash.cs` owns MJPEG
-packet duplicate-run / unique-frame projection inputs consumed by the automation
-snapshot DTO, plus final MJPEG packet duplicate-run / unique-frame
-projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs` owns active
 Flashback export progress, failure, force-rotate fallback, and last-result
 projection consumed by the automation snapshot DTO, plus final Flashback export

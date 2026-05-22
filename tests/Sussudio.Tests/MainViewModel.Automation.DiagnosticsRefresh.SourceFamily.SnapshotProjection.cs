@@ -19,9 +19,7 @@ static partial class Program
         public string SnapshotProjectionCaptureCadenceText { get; init; } = string.Empty;
         public string SnapshotProjectionVisualCadenceText { get; init; } = string.Empty;
         public string SnapshotProjectionMjpegText { get; init; } = string.Empty;
-        public string SnapshotProjectionMjpegTimingText { get; init; } = string.Empty;
         public string SnapshotProjectionMjpegPreviewJitterText { get; init; } = string.Empty;
-        public string SnapshotProjectionMjpegPacketHashText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackExportText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackPlaybackText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackRecordingText { get; init; } = string.Empty;

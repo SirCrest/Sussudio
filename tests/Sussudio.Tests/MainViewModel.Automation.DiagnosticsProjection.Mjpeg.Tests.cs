@@ -9,11 +9,7 @@ static partial class Program
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
         var mjpegProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs")
             .Replace("\r\n", "\n");
-        var mjpegTimingProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegTiming.cs")
-            .Replace("\r\n", "\n");
         var mjpegPreviewJitterProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.cs")
-            .Replace("\r\n", "\n");
-        var mjpegPacketHashProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPacketHash.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var mjpeg = BuildMjpegProjection(health);");
@@ -50,23 +46,21 @@ static partial class Program
         AssertDoesNotContain(mjpegProjectionText, "PreviewJitterLastDropReason = health.MjpegPreviewJitterLastDropReason,");
         AssertContains(mjpegProjectionText, "PacketHash = packetHash,");
         AssertDoesNotContain(mjpegProjectionText, "PacketHashPattern = health.MjpegPacketHashPattern,");
-        AssertDoesNotContain(mjpegProjectionText, "DecodeSampleCount = health.MjpegDecodeSampleCount,");
-        AssertDoesNotContain(mjpegProjectionText, "PerDecoder = health.MjpegPerDecoder is { Length: > 0 } perDecoder");
         AssertContains(mjpegProjectionText, "private readonly record struct MjpegProjection");
         AssertContains(mjpegProjectionText, "private static MjpegFlattenedProjection BuildMjpegFlattenedProjection(");
         AssertContains(mjpegProjectionText, "TotalDecoded = mjpeg.TotalDecoded,");
         AssertContains(mjpegProjectionText, "CompressedQueueByteBudget = mjpeg.CompressedQueueByteBudget,");
         AssertContains(mjpegProjectionText, "private readonly record struct MjpegFlattenedProjection");
-        AssertContains(mjpegTimingProjectionText, "private static MjpegTimingProjection BuildMjpegTimingProjection(CaptureHealthSnapshot health)");
-        AssertContains(mjpegTimingProjectionText, "DecodeSampleCount = health.MjpegDecodeSampleCount,");
-        AssertContains(mjpegTimingProjectionText, "PipelineMaxMs = health.MjpegPipelineMaxMs,");
-        AssertContains(mjpegTimingProjectionText, "PerDecoder = health.MjpegPerDecoder is { Length: > 0 } perDecoder");
-        AssertContains(mjpegTimingProjectionText, "private readonly record struct MjpegTimingProjection");
-        AssertContains(mjpegTimingProjectionText, "private static MjpegTimingFlattenedProjection BuildMjpegTimingFlattenedProjection(");
-        AssertContains(mjpegTimingProjectionText, "DecodeSampleCount = timing.DecodeSampleCount,");
-        AssertContains(mjpegTimingProjectionText, "PipelineMaxMs = timing.PipelineMaxMs,");
-        AssertContains(mjpegTimingProjectionText, "PerDecoder = timing.PerDecoder");
-        AssertContains(mjpegTimingProjectionText, "private readonly record struct MjpegTimingFlattenedProjection");
+        AssertContains(mjpegProjectionText, "private static MjpegTimingProjection BuildMjpegTimingProjection(CaptureHealthSnapshot health)");
+        AssertContains(mjpegProjectionText, "DecodeSampleCount = health.MjpegDecodeSampleCount,");
+        AssertContains(mjpegProjectionText, "PipelineMaxMs = health.MjpegPipelineMaxMs,");
+        AssertContains(mjpegProjectionText, "PerDecoder = health.MjpegPerDecoder is { Length: > 0 } perDecoder");
+        AssertContains(mjpegProjectionText, "private readonly record struct MjpegTimingProjection");
+        AssertContains(mjpegProjectionText, "private static MjpegTimingFlattenedProjection BuildMjpegTimingFlattenedProjection(");
+        AssertContains(mjpegProjectionText, "DecodeSampleCount = timing.DecodeSampleCount,");
+        AssertContains(mjpegProjectionText, "PipelineMaxMs = timing.PipelineMaxMs,");
+        AssertContains(mjpegProjectionText, "PerDecoder = timing.PerDecoder");
+        AssertContains(mjpegProjectionText, "private readonly record struct MjpegTimingFlattenedProjection");
 
         AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterProjection BuildMjpegPreviewJitterProjection(CaptureHealthSnapshot health)");
         AssertContains(mjpegPreviewJitterProjectionText, "Queue = BuildMjpegPreviewJitterQueueProjection(health),");
@@ -105,16 +99,16 @@ static partial class Program
         AssertContains(mjpegPreviewJitterProjectionText, "LastDropReason = events.LastDropReason,");
         AssertContains(mjpegPreviewJitterProjectionText, "ScheduleLateCount = events.ScheduleLateCount");
 
-        AssertContains(mjpegPacketHashProjectionText, "private static MjpegPacketHashProjection BuildMjpegPacketHashProjection(CaptureHealthSnapshot health)");
-        AssertContains(mjpegPacketHashProjectionText, "SampleCount = health.MjpegPacketHashSampleCount,");
-        AssertContains(mjpegPacketHashProjectionText, "Pattern = health.MjpegPacketHashPattern,");
-        AssertContains(mjpegPacketHashProjectionText, "RecentDuplicateFlags = health.MjpegPacketHashRecentDuplicateFlags");
-        AssertContains(mjpegPacketHashProjectionText, "private readonly record struct MjpegPacketHashProjection");
-        AssertContains(mjpegPacketHashProjectionText, "private static MjpegPacketHashFlattenedProjection BuildMjpegPacketHashFlattenedProjection(");
-        AssertContains(mjpegPacketHashProjectionText, "SampleCount = packetHash.SampleCount,");
-        AssertContains(mjpegPacketHashProjectionText, "Pattern = packetHash.Pattern,");
-        AssertContains(mjpegPacketHashProjectionText, "RecentDuplicateFlags = packetHash.RecentDuplicateFlags");
-        AssertContains(mjpegPacketHashProjectionText, "private readonly record struct MjpegPacketHashFlattenedProjection");
+        AssertContains(mjpegProjectionText, "private static MjpegPacketHashProjection BuildMjpegPacketHashProjection(CaptureHealthSnapshot health)");
+        AssertContains(mjpegProjectionText, "SampleCount = health.MjpegPacketHashSampleCount,");
+        AssertContains(mjpegProjectionText, "Pattern = health.MjpegPacketHashPattern,");
+        AssertContains(mjpegProjectionText, "RecentDuplicateFlags = health.MjpegPacketHashRecentDuplicateFlags");
+        AssertContains(mjpegProjectionText, "private readonly record struct MjpegPacketHashProjection");
+        AssertContains(mjpegProjectionText, "private static MjpegPacketHashFlattenedProjection BuildMjpegPacketHashFlattenedProjection(");
+        AssertContains(mjpegProjectionText, "SampleCount = packetHash.SampleCount,");
+        AssertContains(mjpegProjectionText, "Pattern = packetHash.Pattern,");
+        AssertContains(mjpegProjectionText, "RecentDuplicateFlags = packetHash.RecentDuplicateFlags");
+        AssertContains(mjpegProjectionText, "private readonly record struct MjpegPacketHashFlattenedProjection");
 
         return Task.CompletedTask;
     }

@@ -44,7 +44,6 @@ static partial class Program
                 SnapshotProjectionCaptureCadenceText,
                 SnapshotProjectionMjpegText,
                 SnapshotProjectionMjpegPreviewJitterText,
-                SnapshotProjectionMjpegPacketHashText,
                 SnapshotProjectionFlashbackExportText,
                 SnapshotProjectionFlashbackPlaybackText,
                 SnapshotProjectionFlashbackRecordingText,
@@ -69,7 +68,6 @@ static partial class Program
                 TimelineProjectionPreviewText,
                 TimelineProjectionFlashbackPlaybackText,
                 SnapshotProjectionPreviewD3DCpuTimingText,
-                SnapshotProjectionMjpegTimingText,
             });
     }
 }
