@@ -4147,18 +4147,10 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackCycleScenarios.Registrations.cs` owns
   Flashback restart/encoder cycle diagnostic task registration, priorities,
   task labels, and started action strings.
-- `tools/Common/DiagnosticSessionMetrics.Cadence.cs` owns source, preview, and
-  visual cadence DTOs, source-cadence sample aggregation, preview 1% low
-  aggregation, visual-cadence aggregation, and visual-cadence health
-  classification.
-- `tools/Common/DiagnosticSessionMetrics.PreviewD3D.cs` owns the D3D metric
-  DTO, D3D metric orchestration, frame-stat counter deltas, end-of-run p99 CPU
-  timing reads, max CPU timing aggregation, recent slow-frame counting, and
-  latest slow-frame projection.
-- `tools/Common/DiagnosticSessionMetrics.PlaybackCommands.cs` owns playback
-  command-health DTO and deltas.
-- `tools/Common/DiagnosticSessionMetrics.Counters.cs` owns shared counter-delta
-  helpers.
+- `tools/Common/DiagnosticSessionMetrics.cs` owns read-only diagnostic-session
+  metric DTOs and projections: source/preview/visual cadence aggregation,
+  visual-cadence health classification, D3D metric aggregation, playback
+  command-health deltas, and shared counter-delta helpers.
 - `tools/Common/DiagnosticSessionFlashbackExports.cs` owns rotated-export
   segment-count parsing, strict export verification payload construction, and
   range-selection cleanup.

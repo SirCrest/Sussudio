@@ -149,43 +149,28 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var metricsText = ReadDiagnosticSessionMetricsSource();
-        var cadenceText = ReadRepoFile("tools/Common/DiagnosticSessionMetrics.Cadence.cs")
-            .Replace("\r\n", "\n");
-        var previewD3DText = ReadRepoFile("tools/Common/DiagnosticSessionMetrics.PreviewD3D.cs")
-            .Replace("\r\n", "\n");
-        var playbackCommandsText = ReadRepoFile("tools/Common/DiagnosticSessionMetrics.PlaybackCommands.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(metricsText, "internal static partial class DiagnosticSessionMetrics");
-        AssertContains(cadenceText, "internal sealed class SourceCadenceSessionMetrics");
-        AssertContains(cadenceText, "internal sealed class PreviewCadenceSessionMetrics");
-        AssertContains(cadenceText, "internal sealed class VisualCadenceSessionMetrics");
-        AssertContains(previewD3DText, "internal sealed class PreviewD3DMetrics");
-        AssertContains(playbackCommandsText, "internal readonly record struct PlaybackCommandHealth(");
+        AssertContains(metricsText, "internal static class DiagnosticSessionMetrics");
+        AssertContains(metricsText, "internal sealed class SourceCadenceSessionMetrics");
+        AssertContains(metricsText, "internal sealed class PreviewCadenceSessionMetrics");
+        AssertContains(metricsText, "internal sealed class VisualCadenceSessionMetrics");
+        AssertContains(metricsText, "internal sealed class PreviewD3DMetrics");
+        AssertContains(metricsText, "internal readonly record struct PlaybackCommandHealth(");
         AssertContains(metricsText, "internal static SourceCadenceSessionMetrics BuildSourceCadenceSessionMetrics(");
         AssertContains(metricsText, "internal static PreviewCadenceSessionMetrics BuildPreviewCadenceSessionMetrics(");
         AssertContains(metricsText, "internal static VisualCadenceSessionMetrics BuildVisualCadenceSessionMetrics(");
-        AssertContains(cadenceText, "internal static SourceCadenceSessionMetrics BuildSourceCadenceSessionMetrics(");
-        AssertContains(cadenceText, "private static void ObserveSourceCadenceSnapshot(");
-        AssertContains(cadenceText, "internal static PreviewCadenceSessionMetrics BuildPreviewCadenceSessionMetrics(");
-        AssertContains(cadenceText, "private static void ObservePreviewCadenceSnapshot(");
-        AssertContains(cadenceText, "internal static VisualCadenceSessionMetrics BuildVisualCadenceSessionMetrics(");
-        AssertContains(cadenceText, "internal static bool IsVisualCadenceSessionHealthy(");
-        AssertContains(cadenceText, "private static void ObserveVisualCadenceSnapshot(");
+        AssertContains(metricsText, "private static void ObserveSourceCadenceSnapshot(");
+        AssertContains(metricsText, "private static void ObservePreviewCadenceSnapshot(");
+        AssertContains(metricsText, "internal static bool IsVisualCadenceSessionHealthy(");
+        AssertContains(metricsText, "private static void ObserveVisualCadenceSnapshot(");
         AssertContains(metricsText, "internal static PreviewD3DMetrics BuildPreviewD3DMetrics(");
-        AssertContains(previewD3DText, "CountArrayItems(sample.Snapshot, \"PreviewD3DRecentSlowFrames\")");
-        AssertContains(previewD3DText, "private static void ObservePreviewD3DCpuTiming(PreviewD3DMetrics metrics, JsonElement snapshot)");
-        AssertContains(previewD3DText, "private static void ApplySlowFrame(PreviewD3DMetrics metrics, JsonElement slowFrame)");
-        AssertContains(previewD3DText, "private static bool TryGetLatestSlowFrame(JsonElement snapshot, out JsonElement slowFrame)");
+        AssertContains(metricsText, "CountArrayItems(sample.Snapshot, \"PreviewD3DRecentSlowFrames\")");
+        AssertContains(metricsText, "private static void ObservePreviewD3DCpuTiming(PreviewD3DMetrics metrics, JsonElement snapshot)");
+        AssertContains(metricsText, "private static void ApplySlowFrame(PreviewD3DMetrics metrics, JsonElement slowFrame)");
+        AssertContains(metricsText, "private static bool TryGetLatestSlowFrame(JsonElement snapshot, out JsonElement slowFrame)");
         AssertContains(metricsText, "internal static PlaybackCommandHealth BuildPlaybackCommandHealth(");
         AssertContains(metricsText, "internal static long GetResetAwareCounterDelta(");
         AssertContains(metricsText, "internal static bool IsVisualCadenceSessionHealthy(");
-        AssertDoesNotContain(cadenceText, "internal sealed class PreviewD3DMetrics");
-        AssertContains(previewD3DText, "private static void ObservePreviewD3DCpuTiming(PreviewD3DMetrics metrics, JsonElement snapshot)");
-        AssertContains(previewD3DText, "private static void ApplySlowFrame(PreviewD3DMetrics metrics, JsonElement slowFrame)");
-        AssertContains(previewD3DText, "private static bool TryGetLatestSlowFrame(JsonElement snapshot, out JsonElement slowFrame)");
-        AssertDoesNotContain(previewD3DText, "internal sealed class SourceCadenceSessionMetrics");
-        AssertDoesNotContain(playbackCommandsText, "internal sealed class PreviewD3DMetrics");
         AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionMetrics;");
         AssertDoesNotContain(runnerText, "private sealed class SourceCadenceSessionMetrics");
         AssertDoesNotContain(runnerText, "private sealed class PreviewD3DMetrics");

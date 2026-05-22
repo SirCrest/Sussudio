@@ -128,11 +128,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackWaits.PlaybackPosition.cs");
 
     private static string ReadDiagnosticSessionMetricsSource()
-        => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionMetrics.Cadence.cs",
-            "tools/Common/DiagnosticSessionMetrics.PreviewD3D.cs",
-            "tools/Common/DiagnosticSessionMetrics.PlaybackCommands.cs",
-            "tools/Common/DiagnosticSessionMetrics.Counters.cs");
+        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionMetrics.cs");
 
     private static string ReadDiagnosticSessionModelsSource()
         => ReadNormalizedSourceFiles(
