@@ -3837,15 +3837,11 @@ the playback-target DTO, and `.PlaybackHeadroomWaits.cs` owns playback-boundary
 headroom polling while the runner keeps scenario command sequencing.
 
 Diagnostic-session Flashback snapshot waits now live in
-`tools/Common/DiagnosticSessionFlashbackWaits*.cs`. The root owns read-only
-polling loops for preview-active and Flashback-active state.
-`DiagnosticSessionFlashbackWaits.RecordingReady.cs` owns Flashback-backed
-recording readiness polling, `.BufferReady.cs` owns stress buffer readiness
-polling, `DiagnosticSessionFlashbackWaits.Playback.cs` owns playback state
-polling, `.PlaybackBoundary.cs` owns boundary-crossing polling,
-`.PlaybackWarmSample.cs` owns warmed-playback frame-count/FPS polling, and
-`.PlaybackPosition.cs` owns position convergence polling while the runner keeps
-scenario command sequencing.
+`tools/Common/DiagnosticSessionFlashbackWaits.cs`. It owns read-only polling
+loops for preview-active state, Flashback-active state, Flashback-backed
+recording readiness, stress buffer readiness, playback state, boundary
+crossing, warmed-playback frame-count/FPS, and position convergence while the
+runner keeps scenario command sequencing.
 
 Diagnostic-session Flashback recording metrics live in
 `DiagnosticSessionFlashbackMetrics.Recording.cs`, including the
@@ -3994,12 +3990,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackSegments.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`
 - `DiagnosticSessionFlashbackWaits.cs`
-- `DiagnosticSessionFlashbackWaits.RecordingReady.cs`
-- `DiagnosticSessionFlashbackWaits.BufferReady.cs`
-- `DiagnosticSessionFlashbackWaits.Playback.cs`
-- `DiagnosticSessionFlashbackWaits.PlaybackBoundary.cs`
-- `DiagnosticSessionFlashbackWaits.PlaybackWarmSample.cs`
-- `DiagnosticSessionFlashbackWaits.PlaybackPosition.cs`
 - `DiagnosticSessionFlashbackValidation.cs`
 - `DiagnosticSessionHealthPolicy.cs`
 - `DiagnosticSessionHealthTolerances.cs`

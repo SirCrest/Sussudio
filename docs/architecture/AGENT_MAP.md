@@ -4231,19 +4231,10 @@ Primary owners:
   shared command-drain polling, and command-health/latency/final-state warning
   policy.
 - `tools/Common/DiagnosticSessionFlashbackWaits.cs` owns read-only snapshot
-  polling waits for preview-active and Flashback-active state.
-- `tools/Common/DiagnosticSessionFlashbackWaits.RecordingReady.cs` owns
-  Flashback-backed recording readiness polling.
-- `tools/Common/DiagnosticSessionFlashbackWaits.BufferReady.cs` owns Flashback
-  stress buffer readiness polling.
-- `tools/Common/DiagnosticSessionFlashbackWaits.Playback.cs` owns Flashback
-  playback state polling.
-- `tools/Common/DiagnosticSessionFlashbackWaits.PlaybackBoundary.cs` owns
-  Flashback playback boundary-crossing polling.
-- `tools/Common/DiagnosticSessionFlashbackWaits.PlaybackWarmSample.cs` owns
-  Flashback warmed-playback frame-count/FPS polling.
-- `tools/Common/DiagnosticSessionFlashbackWaits.PlaybackPosition.cs` owns
-  Flashback playback position convergence polling.
+  polling waits for preview-active state, Flashback-active state,
+  Flashback-backed recording readiness, stress buffer readiness, playback
+  state, boundary crossing, warmed-playback frame-count/FPS, and position
+  convergence.
 - `tools/Common/DiagnosticSessionFlashbackValidation.cs` owns Flashback
   recording, playback, and preview scheduler warning policy over already
   projected metrics.

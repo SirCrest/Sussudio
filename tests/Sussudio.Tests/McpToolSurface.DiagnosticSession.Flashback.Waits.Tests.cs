@@ -7,22 +7,9 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var setupText = ReadDiagnosticSessionScenarioSetupSource();
         var waitsText = ReadDiagnosticSessionFlashbackWaitsSource();
-        var activeWaitsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackWaits.cs")
-            .Replace("\r\n", "\n");
-        var recordingReadyText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackWaits.RecordingReady.cs")
-            .Replace("\r\n", "\n");
-        var bufferReadyText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackWaits.BufferReady.cs")
-            .Replace("\r\n", "\n");
-        var playbackStateText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackWaits.Playback.cs")
-            .Replace("\r\n", "\n");
-        var playbackBoundaryText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackWaits.PlaybackBoundary.cs")
-            .Replace("\r\n", "\n");
-        var playbackWarmSampleText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackWaits.PlaybackWarmSample.cs")
-            .Replace("\r\n", "\n");
-        var playbackPositionText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackWaits.PlaybackPosition.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(waitsText, "internal static partial class DiagnosticSessionFlashbackWaits");
+        AssertContains(waitsText, "internal static class DiagnosticSessionFlashbackWaits");
+        AssertDoesNotContain(waitsText, "internal static partial class DiagnosticSessionFlashbackWaits");
         AssertContains(waitsText, "internal static async Task<JsonElement?> WaitForFlashbackPlaybackBoundaryCrossAsync(");
         AssertContains(waitsText, "internal static async Task<JsonElement?> WaitForFlashbackPlaybackStateAsync(");
         AssertContains(waitsText, "internal static async Task<JsonElement?> WaitForFlashbackPlaybackWarmSampleAsync(");
@@ -34,32 +21,14 @@ static partial class Program
         AssertContains(waitsText, "FlashbackPlaybackPendingCommands");
         AssertContains(waitsText, "FlashbackPlaybackFrameCount");
         AssertContains(waitsText, "RecordingBackend");
-        AssertContains(activeWaitsText, "internal static async Task<JsonElement?> WaitForFlashbackActiveAsync(");
-        AssertContains(activeWaitsText, "internal static async Task<JsonElement?> WaitForPreviewActiveAsync(");
-        AssertDoesNotContain(activeWaitsText, "RecordingBackend");
-        AssertDoesNotContain(activeWaitsText, "FlashbackBufferedDurationMs");
-        AssertContains(recordingReadyText, "internal static async Task<JsonElement?> WaitForFlashbackRecordingReadyAsync(");
-        AssertContains(recordingReadyText, "RecordingBackend");
-        AssertContains(recordingReadyText, "RecordingFileGrowing");
-        AssertContains(bufferReadyText, "internal static async Task<bool> WaitForFlashbackStressBufferReadyAsync(");
-        AssertContains(bufferReadyText, "FlashbackBufferedDurationMs");
-        AssertContains(bufferReadyText, "requiredEncodedFrames");
-        AssertContains(playbackStateText, "internal static async Task<JsonElement?> WaitForFlashbackPlaybackStateAsync(");
-        AssertContains(playbackStateText, "string expectedState");
-        AssertDoesNotContain(playbackStateText, "WaitForFlashbackPlaybackBoundaryCrossAsync(");
-        AssertDoesNotContain(playbackStateText, "WaitForFlashbackPlaybackWarmSampleAsync(");
-        AssertDoesNotContain(playbackStateText, "WaitForFlashbackPlaybackPositionAsync(");
-        AssertContains(playbackBoundaryText, "internal static async Task<JsonElement?> WaitForFlashbackPlaybackBoundaryCrossAsync(");
-        AssertContains(playbackBoundaryText, "positionMs >= boundaryMs + 1_500");
-        AssertContains(playbackBoundaryText, "FlashbackPlaybackPendingCommands");
-        AssertDoesNotContain(playbackBoundaryText, "WaitForFlashbackPlaybackWarmSampleAsync(");
-        AssertContains(playbackWarmSampleText, "internal static async Task<JsonElement?> WaitForFlashbackPlaybackWarmSampleAsync(");
-        AssertContains(playbackWarmSampleText, "FlashbackPlaybackTargetFps");
-        AssertContains(playbackWarmSampleText, "SelectedExactFrameRate");
-        AssertDoesNotContain(playbackWarmSampleText, "FlashbackPlaybackPendingCommands");
-        AssertContains(playbackPositionText, "internal static async Task<bool> WaitForFlashbackPlaybackPositionAsync(");
-        AssertContains(playbackPositionText, "Math.Abs(position - targetPositionMs) <= 1_500");
-        AssertDoesNotContain(playbackPositionText, "WaitForFlashbackPlaybackStateAsync(");
+        AssertContains(waitsText, "RecordingFileGrowing");
+        AssertContains(waitsText, "FlashbackBufferedDurationMs");
+        AssertContains(waitsText, "requiredEncodedFrames");
+        AssertContains(waitsText, "string expectedState");
+        AssertContains(waitsText, "positionMs >= boundaryMs + 1_500");
+        AssertContains(waitsText, "FlashbackPlaybackTargetFps");
+        AssertContains(waitsText, "SelectedExactFrameRate");
+        AssertContains(waitsText, "Math.Abs(position - targetPositionMs) <= 1_500");
         AssertContains(setupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackWaits;");
         AssertDoesNotContain(runnerText, "private static async Task<JsonElement?> WaitForFlashbackPlaybackBoundaryCrossAsync(");
         AssertDoesNotContain(runnerText, "private static async Task<JsonElement?> WaitForFlashbackPlaybackStateAsync(");
