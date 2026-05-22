@@ -127,11 +127,9 @@ static partial class Program
             ProcessMetricsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.ProcessMetrics.cs"),
             TimelineText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Timeline.cs"),
             TimelineProjectionText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.cs"),
-            TimelineProjectionCoreText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.Core.cs"),
             TimelineProjectionPreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.Preview.cs"),
             TimelineProjectionFlashbackPlaybackText = ReadAutomationDiagnosticsHubTimelineProjectionFlashbackPlaybackSource(),
             TimelineProjectionFlashbackExportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.FlashbackExport.cs"),
-            TimelineProjectionSystemText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.System.cs"),
         };
     }
 
@@ -218,10 +216,8 @@ static partial class Program
         public string ProcessMetricsText { get; init; } = string.Empty;
         public string TimelineText { get; init; } = string.Empty;
         public string TimelineProjectionText { get; init; } = string.Empty;
-        public string TimelineProjectionCoreText { get; init; } = string.Empty;
         public string TimelineProjectionPreviewText { get; init; } = string.Empty;
         public string TimelineProjectionFlashbackPlaybackText { get; init; } = string.Empty;
         public string TimelineProjectionFlashbackExportText { get; init; } = string.Empty;
-        public string TimelineProjectionSystemText { get; init; } = string.Empty;
     }
 }

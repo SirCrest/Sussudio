@@ -117,11 +117,9 @@ static partial class Program
                 ProcessMetricsText,
                 TimelineText,
                 TimelineProjectionText,
-                TimelineProjectionCoreText,
                 TimelineProjectionPreviewText,
                 TimelineProjectionFlashbackPlaybackText,
                 TimelineProjectionFlashbackExportText,
-                TimelineProjectionSystemText,
                 SnapshotProjectionPreviewD3DCpuTimingText,
                 SnapshotProjectionMjpegTimingText,
             });

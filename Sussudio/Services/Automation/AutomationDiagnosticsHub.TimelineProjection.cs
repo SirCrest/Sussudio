@@ -1,9 +1,25 @@
+using System;
 using Sussudio.Models;
 
 namespace Sussudio.Services.Automation;
 
 public sealed partial class AutomationDiagnosticsHub
 {
+    private static PerformanceTimelineCoreProjection BuildPerformanceTimelineCoreProjection(
+        AutomationSnapshot snapshot)
+        => new(
+            TimestampUtc: snapshot.TimestampUtc,
+            CaptureFps: snapshot.CaptureCadenceObservedFps,
+            PreviewFps: snapshot.PreviewCadenceObservedFps,
+            VideoQueueDepth: snapshot.FfmpegVideoQueueDepth,
+            VideoDrops: snapshot.VideoDropsQueueSaturated,
+            CaptureCadenceAverageMs: snapshot.CaptureCadenceAverageIntervalMs,
+            CaptureCadenceP95Ms: snapshot.CaptureCadenceP95IntervalMs,
+            CaptureCadenceP99Ms: snapshot.CaptureCadenceP99IntervalMs,
+            CaptureCadenceMaxMs: snapshot.CaptureCadenceMaxIntervalMs,
+            CaptureCadenceOnePercentLowFps: snapshot.CaptureCadenceOnePercentLowFps,
+            CaptureCadenceFivePercentLowFps: snapshot.CaptureCadenceFivePercentLowFps);
+
     private static PerformanceTimelineEntry BuildPerformanceTimelineEntry(AutomationSnapshot snapshot)
     {
         var core = BuildPerformanceTimelineCoreProjection(snapshot);
@@ -175,4 +191,43 @@ public sealed partial class AutomationDiagnosticsHub
             ThreadPoolIoAvailable = system.ThreadPoolIoAvailable
         };
     }
+
+    private readonly record struct PerformanceTimelineCoreProjection(
+        DateTimeOffset TimestampUtc,
+        double CaptureFps,
+        double PreviewFps,
+        int VideoQueueDepth,
+        long VideoDrops,
+        double CaptureCadenceAverageMs,
+        double CaptureCadenceP95Ms,
+        double CaptureCadenceP99Ms,
+        double CaptureCadenceMaxMs,
+        double CaptureCadenceOnePercentLowFps,
+        double CaptureCadenceFivePercentLowFps);
+
+    private static PerformanceTimelineSystemProjection BuildPerformanceTimelineSystemProjection(
+        AutomationSnapshot snapshot)
+        => new(
+            PipelineLatencyMs: snapshot.EstimatedPipelineLatencyMs,
+            ProcessCpuPercent: snapshot.ProcessCpuPercent,
+            MemoryWorkingSetMb: snapshot.MemoryWorkingSetMb,
+            MemoryManagedHeapMb: snapshot.MemoryManagedHeapMb,
+            GcGen0Collections: snapshot.MemoryGcGen0Collections,
+            GcGen1Collections: snapshot.MemoryGcGen1Collections,
+            GcGen2Collections: snapshot.MemoryGcGen2Collections,
+            GcPauseTimePercent: snapshot.MemoryGcPauseTimePercent,
+            ThreadPoolWorkerAvailable: snapshot.ThreadPoolWorkerAvailable,
+            ThreadPoolIoAvailable: snapshot.ThreadPoolIoAvailable);
+
+    private readonly record struct PerformanceTimelineSystemProjection(
+        long PipelineLatencyMs,
+        double ProcessCpuPercent,
+        double MemoryWorkingSetMb,
+        double MemoryManagedHeapMb,
+        int GcGen0Collections,
+        int GcGen1Collections,
+        int GcGen2Collections,
+        double GcPauseTimePercent,
+        int ThreadPoolWorkerAvailable,
+        int ThreadPoolIoAvailable);
 }

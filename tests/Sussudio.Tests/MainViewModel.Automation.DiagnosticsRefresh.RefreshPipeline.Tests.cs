@@ -37,8 +37,8 @@ static partial class Program
         AssertContains(diagnostics.TimelineProjectionText, "FlashbackPlaybackCommandsEnqueued = flashbackPlayback.CommandsEnqueued");
         AssertContains(diagnostics.TimelineProjectionText, "FlashbackExportPercent = flashbackExport.Percent");
         AssertContains(diagnostics.TimelineProjectionText, "ProcessCpuPercent = system.ProcessCpuPercent");
-        AssertContains(diagnostics.TimelineProjectionCoreText, "private static PerformanceTimelineCoreProjection BuildPerformanceTimelineCoreProjection(");
-        AssertContains(diagnostics.TimelineProjectionCoreText, "CaptureCadenceFivePercentLowFps: snapshot.CaptureCadenceFivePercentLowFps");
+        AssertContains(diagnostics.TimelineProjectionText, "private static PerformanceTimelineCoreProjection BuildPerformanceTimelineCoreProjection(");
+        AssertContains(diagnostics.TimelineProjectionText, "CaptureCadenceFivePercentLowFps: snapshot.CaptureCadenceFivePercentLowFps");
         AssertContains(diagnostics.TimelineProjectionPreviewText, "private static PerformanceTimelinePreviewProjection BuildPerformanceTimelinePreviewProjection(");
         AssertContains(diagnostics.TimelineProjectionPreviewText, "D3DPresentCallP95Ms: snapshot.PreviewD3DPresentCallP95Ms");
         AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "private static PerformanceTimelineFlashbackPlaybackProjection BuildPerformanceTimelineFlashbackPlaybackProjection(");
@@ -57,8 +57,8 @@ static partial class Program
         AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "CommandsEnqueued: snapshot.FlashbackPlaybackCommandsEnqueued");
         AssertContains(diagnostics.TimelineProjectionFlashbackExportText, "private static PerformanceTimelineFlashbackExportProjection BuildPerformanceTimelineFlashbackExportProjection(");
         AssertContains(diagnostics.TimelineProjectionFlashbackExportText, "Percent: snapshot.FlashbackExportPercent");
-        AssertContains(diagnostics.TimelineProjectionSystemText, "private static PerformanceTimelineSystemProjection BuildPerformanceTimelineSystemProjection(");
-        AssertContains(diagnostics.TimelineProjectionSystemText, "ProcessCpuPercent: snapshot.ProcessCpuPercent");
+        AssertContains(diagnostics.TimelineProjectionText, "private static PerformanceTimelineSystemProjection BuildPerformanceTimelineSystemProjection(");
+        AssertContains(diagnostics.TimelineProjectionText, "ProcessCpuPercent: snapshot.ProcessCpuPercent");
         AssertDoesNotContain(diagnostics.HubText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
         AssertContains(diagnostics.SnapshotsText, "var shouldAutoVerify = ShouldAutoVerifySnapshot(snapshot);");
         AssertContains(diagnostics.SnapshotsText, "var lastVerification = CaptureLastVerificationForSnapshot(recordingStarted);");
