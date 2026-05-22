@@ -9,8 +9,6 @@ static partial class Program
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
         var snapshotFlatteningSourceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.Signal.cs")
             .Replace("\r\n", "\n");
-        var snapshotFlatteningSourceTelemetryText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.Telemetry.cs")
-            .Replace("\r\n", "\n");
         var sourceTelemetryProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SourceTelemetry.cs")
             .Replace("\r\n", "\n");
 
@@ -23,12 +21,6 @@ static partial class Program
         AssertContains(snapshotFlatteningSourceText, "private static SourceFlattenedProjection BuildSourceFlattenedProjection(");
         AssertContains(snapshotFlatteningSourceText, "Telemetry = BuildSourceTelemetryFlattenedProjection(sourceTelemetry)");
         AssertContains(snapshotFlatteningSourceText, "private readonly record struct SourceFlattenedProjection");
-        AssertContains(snapshotFlatteningSourceTelemetryText, "private static SourceTelemetryFlattenedProjection BuildSourceTelemetryFlattenedProjection(");
-        AssertContains(snapshotFlatteningSourceTelemetryText, "SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,");
-        AssertContains(snapshotFlatteningSourceTelemetryText, "SourceTelemetryDetails = sourceTelemetry.SourceTelemetryDetails,");
-        AssertContains(snapshotFlatteningSourceTelemetryText, "SourceTelemetryAgeSeconds = sourceTelemetry.SourceTelemetryAgeSeconds,");
-        AssertContains(snapshotFlatteningSourceTelemetryText, "SourceTargetSummaryText = sourceTelemetry.SourceTargetSummaryText");
-        AssertContains(snapshotFlatteningSourceTelemetryText, "private readonly record struct SourceTelemetryFlattenedProjection");
         AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,");
         AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryDetails = sourceTelemetry.SourceTelemetryDetails,");
         AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryAgeSeconds = sourceTelemetry.SourceTelemetryAgeSeconds,");
@@ -47,6 +39,12 @@ static partial class Program
         AssertContains(sourceTelemetryProjectionText, "SourceTelemetryDetails = captureRuntime.SourceTelemetryDetails,");
         AssertContains(sourceTelemetryProjectionText, "SourceTelemetryAgeSeconds = TelemetryAgeHelper.ComputeAgeSeconds(");
         AssertContains(sourceTelemetryProjectionText, "private readonly record struct SourceTelemetryProjection");
+        AssertContains(sourceTelemetryProjectionText, "private static SourceTelemetryFlattenedProjection BuildSourceTelemetryFlattenedProjection(");
+        AssertContains(sourceTelemetryProjectionText, "SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,");
+        AssertContains(sourceTelemetryProjectionText, "SourceTelemetryDetails = sourceTelemetry.SourceTelemetryDetails,");
+        AssertContains(sourceTelemetryProjectionText, "SourceTelemetryAgeSeconds = sourceTelemetry.SourceTelemetryAgeSeconds,");
+        AssertContains(sourceTelemetryProjectionText, "SourceTargetSummaryText = sourceTelemetry.SourceTargetSummaryText");
+        AssertContains(sourceTelemetryProjectionText, "private readonly record struct SourceTelemetryFlattenedProjection");
 
         return Task.CompletedTask;
     }
