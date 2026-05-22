@@ -139,8 +139,8 @@ public sealed class AutomationCaptureFlashbackRoutingContractsTests
         => global::Program.ServiceNamespaces_FollowServiceFolders();
 
     [Fact]
-    public Task MfDeviceEnumeratorSourceOwnershipLivesInFocusedPartials()
-        => global::Program.MfDeviceEnumerator_SourceOwnershipLivesInFocusedPartials();
+    public Task MfDeviceEnumeratorSourceOwnershipLivesInCohesiveEnumerator()
+        => global::Program.MfDeviceEnumerator_SourceOwnershipLivesInCohesiveEnumerator();
 
     [Fact]
     public Task CaptureDiscoverySourceOwnershipLivesInFocusedPartials()

@@ -1338,13 +1338,11 @@ projection, and native transport gate ownership in `NativeXuDeviceSupport.cs`.
 file when this bridge changes.
 
 Native device enumeration ownership is grouped under
-`Sussudio/Services/Capture/DeviceDiscovery/`. Keep shared Media Foundation
-constants, GUIDs, and P/Invoke declarations in `MfDeviceEnumerator.cs`, MF
-video-device enumeration in `MfDeviceEnumerator.VideoDevices.cs`, WASAPI capture
-endpoint enumeration and friendly-name reads in
-`MfDeviceEnumerator.AudioEndpoints.cs`, native video format probing and
-subtype/FourCC naming in `MfDeviceEnumerator.FormatProbe.cs`, and direct plus
-enumeration-fallback MF source activation in `MfDeviceEnumerator.SourceOpening.cs`.
+`Sussudio/Services/Capture/DeviceDiscovery/`. Keep Media Foundation constants,
+GUIDs, P/Invoke declarations, MF video-device enumeration, WASAPI capture
+endpoint enumeration and friendly-name reads, native video format probing,
+subtype/FourCC naming, and direct plus enumeration-fallback MF source
+activation in `MfDeviceEnumerator.cs`.
 
 Capture service source telemetry polling and provider reads now live in
 `Sussudio/Services/Capture/CaptureService.Telemetry.cs`, while fallback snapshot

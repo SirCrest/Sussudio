@@ -2,39 +2,39 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    internal static Task MfDeviceEnumerator_SourceOwnershipLivesInFocusedPartials()
+    internal static Task MfDeviceEnumerator_SourceOwnershipLivesInCohesiveEnumerator()
     {
         var rootText = ReadMfDeviceEnumeratorFile("MfDeviceEnumerator.cs");
-        var videoDevicesText = ReadMfDeviceEnumeratorFile("MfDeviceEnumerator.VideoDevices.cs");
-        var audioEndpointsText = ReadMfDeviceEnumeratorFile("MfDeviceEnumerator.AudioEndpoints.cs");
-        var formatProbeText = ReadMfDeviceEnumeratorFile("MfDeviceEnumerator.FormatProbe.cs");
-        var sourceOpeningText = ReadMfDeviceEnumeratorFile("MfDeviceEnumerator.SourceOpening.cs");
 
-        AssertContains(rootText, "internal static partial class MfDeviceEnumerator");
+        AssertContains(rootText, "internal static class MfDeviceEnumerator");
+        AssertDoesNotContain(rootText, "partial class MfDeviceEnumerator");
         AssertContains(rootText, "private static extern int MFCreateAttributes(");
         AssertContains(rootText, "private static extern int MFCreateSourceReaderFromMediaSource(");
-        AssertDoesNotContain(rootText, "EnumerateVideoDevicesAsync");
-        AssertDoesNotContain(rootText, "EnumerateAudioCaptureEndpointsAsync");
-        AssertDoesNotContain(rootText, "ProbeVideoFormatsAsync");
-        AssertDoesNotContain(rootText, "ReadAudioEndpointFriendlyName");
-        AssertDoesNotContain(rootText, "SubtypeGuidToName");
-
-        AssertContains(videoDevicesText, "public static Task<List<MfVideoDeviceInfo>> EnumerateVideoDevicesAsync()");
-        AssertContains(videoDevicesText, "MF video device enumeration failed");
-        AssertContains(videoDevicesText, "MFEnumDeviceSources(attributes, out activateArray, out var activateCount)");
-
-        AssertContains(audioEndpointsText, "public static Task<List<AudioInputDevice>> EnumerateAudioCaptureEndpointsAsync()");
-        AssertContains(audioEndpointsText, "ReadAudioEndpointFriendlyName(endpoint, endpointId)");
-        AssertContains(audioEndpointsText, "private static string ReadAudioEndpointFriendlyName(");
-
-        AssertContains(formatProbeText, "public static Task<List<MediaFormat>> ProbeVideoFormatsAsync(string symbolicLink)");
-        AssertContains(formatProbeText, "private static string SubtypeGuidToName(Guid subtype)");
-        AssertDoesNotContain(formatProbeText, "private static IMFMediaSource CreateMediaSourceByEnumeration(");
-
-        AssertContains(sourceOpeningText, "private static IMFMediaSource CreateMediaSource(string symbolicLink)");
-        AssertContains(sourceOpeningText, "private static IMFMediaSource CreateMediaSourceByEnumeration(");
-        AssertContains(sourceOpeningText, "MfInteropHelpers.MatchesSymbolicLink(targetSymbolicLink, candidateLink)");
-        AssertContains(sourceOpeningText, "MFCreateDeviceSource(attributes, out var mediaSource)");
+        AssertContains(rootText, "public static Task<List<MfVideoDeviceInfo>> EnumerateVideoDevicesAsync()");
+        AssertContains(rootText, "MF video device enumeration failed");
+        AssertContains(rootText, "MFEnumDeviceSources(attributes, out activateArray, out var activateCount)");
+        AssertContains(rootText, "public static Task<List<AudioInputDevice>> EnumerateAudioCaptureEndpointsAsync()");
+        AssertContains(rootText, "ReadAudioEndpointFriendlyName(endpoint, endpointId)");
+        AssertContains(rootText, "private static string ReadAudioEndpointFriendlyName(");
+        AssertContains(rootText, "public static Task<List<MediaFormat>> ProbeVideoFormatsAsync(string symbolicLink)");
+        AssertContains(rootText, "private static string SubtypeGuidToName(Guid subtype)");
+        AssertContains(rootText, "private static IMFMediaSource CreateMediaSource(string symbolicLink)");
+        AssertContains(rootText, "private static IMFMediaSource CreateMediaSourceByEnumeration(");
+        AssertContains(rootText, "MfInteropHelpers.MatchesSymbolicLink(targetSymbolicLink, candidateLink)");
+        AssertContains(rootText, "MFCreateDeviceSource(attributes, out var mediaSource)");
+        foreach (var removedFile in new[]
+        {
+            "MfDeviceEnumerator.VideoDevices.cs",
+            "MfDeviceEnumerator.AudioEndpoints.cs",
+            "MfDeviceEnumerator.FormatProbe.cs",
+            "MfDeviceEnumerator.SourceOpening.cs"
+        })
+        {
+            AssertEqual(
+                false,
+                System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "DeviceDiscovery", removedFile)),
+                $"{removedFile} removed");
+        }
 
         return Task.CompletedTask;
     }
