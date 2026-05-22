@@ -85,9 +85,7 @@ execution flow and summary writing.
 Automation diagnostics now have named partial owners instead of one large hub
 body. `AutomationDiagnosticsHub.cs` is the compact field/constructor owner.
 `AutomationDiagnosticsHub.Counters.RealtimePreview.cs` owns preview jitter,
-MJPEG, and D3D recent-counter baselines and delta updates.
-`AutomationDiagnosticsHub.Counters.FlashbackRecording.cs` owns Flashback
-recording recent-counter baselines and delta updates.
+MJPEG, D3D, and Flashback recording recent-counter baselines and delta updates.
 `AutomationDiagnosticsHub.Snapshots.cs` owns public snapshot read/refresh APIs,
 refresh-gate serialization, core snapshot refresh orchestration, latest-snapshot
 publication, timeline append, event notification, and auto-verification handoff.

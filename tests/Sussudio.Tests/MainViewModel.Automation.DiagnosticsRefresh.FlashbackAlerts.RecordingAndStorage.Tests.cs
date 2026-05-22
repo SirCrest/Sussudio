@@ -44,12 +44,12 @@
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "snapshot.FlashbackEncodingFailed");
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "Flashback encoder failed: type={snapshot.FlashbackEncodingFailureType ?? \"Unknown\"}");
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-recording-degraded\"");
-        AssertContains(counters.FlashbackRecordingText, "private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(");
-        AssertContains(counters.FlashbackRecordingText, "Interlocked.Exchange(ref _lastFlashbackVideoSequenceGaps, sequenceGaps)");
-        AssertContains(counters.FlashbackRecordingText, "Interlocked.Exchange(ref _lastFlashbackGpuFramesDropped, gpuFramesDropped)");
-        AssertContains(counters.FlashbackRecordingText, "Interlocked.Exchange(ref _lastFlashbackVideoBackpressureEvents, backpressureEvents)");
-        AssertDoesNotContain(counters.FlashbackRecordingText, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
-        AssertDoesNotContain(counters.FlashbackRecordingText, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
+        AssertContains(counters.SourceFamilyText, "private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(");
+        AssertContains(counters.SourceFamilyText, "Interlocked.Exchange(ref _lastFlashbackVideoSequenceGaps, sequenceGaps)");
+        AssertContains(counters.SourceFamilyText, "Interlocked.Exchange(ref _lastFlashbackGpuFramesDropped, gpuFramesDropped)");
+        AssertContains(counters.SourceFamilyText, "Interlocked.Exchange(ref _lastFlashbackVideoBackpressureEvents, backpressureEvents)");
+        AssertContains(counters.SourceFamilyText, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
+        AssertContains(counters.SourceFamilyText, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
         AssertContains(diagnostics.SourceFamilyText, "var recentFlashbackRecording = UpdateFlashbackRecordingRecentCounters(health, nowTick);");
         AssertContains(diagnostics.SourceFamilyText, "UpdateAlerts(snapshot, recentFlashbackRecording);");
         AssertContains(diagnostics.SourceFamilyText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
