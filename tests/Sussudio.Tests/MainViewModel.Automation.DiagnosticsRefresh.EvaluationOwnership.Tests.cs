@@ -46,12 +46,12 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimePreviewDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimeStateDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"diagnostic_unavailable\"");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimeRecordingDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"recording\"");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"audio\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimeMjpegDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"source_signal\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"mjpeg_decode\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeRecordingText, "private static DiagnosticEvaluation? TryBuildRealtimeRecordingDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeRecordingText, "\"recording\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeRecordingText, "\"audio\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeSourceText, "private static DiagnosticEvaluation? TryBuildRealtimeSourceDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeSourceText, "\"source_capture\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewDiagnosticEvaluation(");
@@ -66,7 +66,6 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewPresentText, "\"present_display\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimePreviewText, "\"present_display\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"source_capture\"");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "Recording integrity is the likely failure point.");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"preview_scheduler\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"renderer\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"present_display\"");

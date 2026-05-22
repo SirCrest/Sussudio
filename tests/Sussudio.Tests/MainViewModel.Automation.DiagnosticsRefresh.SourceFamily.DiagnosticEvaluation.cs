@@ -8,7 +8,6 @@ static partial class Program
         public string DiagnosticEvaluationFlashbackRecordingConditionsText { get; init; } = string.Empty;
         public string DiagnosticEvaluationFlashbackPlaybackText { get; init; } = string.Empty;
         public string DiagnosticEvaluationRealtimeText { get; init; } = string.Empty;
-        public string DiagnosticEvaluationRealtimeRecordingText { get; init; } = string.Empty;
         public string DiagnosticEvaluationRealtimeSourceText { get; init; } = string.Empty;
         public string DiagnosticEvaluationRealtimePreviewText { get; init; } = string.Empty;
         public string DiagnosticEvaluationRealtimePreviewPresentText { get; init; } = string.Empty;
