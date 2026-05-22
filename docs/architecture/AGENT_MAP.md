@@ -4153,9 +4153,8 @@ Primary owners:
   command-health deltas, and shared counter-delta helpers.
 - `tools/Common/DiagnosticSessionFlashbackExports.cs` owns rotated-export
   segment-count parsing, strict export verification payload construction, and
-  range-selection cleanup.
-- `tools/Common/DiagnosticSessionFlashbackExports.AudioSwitch.cs` owns the
-  audio-toggle companion used by the range export audio-switch scenario.
+  range-selection cleanup, plus the audio-toggle companion used by the range
+  export audio-switch scenario.
 - Flashback export diagnostic scenario flows live in focused files:
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`
   owns concurrent export, `tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`

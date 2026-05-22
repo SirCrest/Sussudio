@@ -3757,10 +3757,9 @@ and shared counter-delta helpers.
 Diagnostic-session Flashback export helpers now live in
 `tools/Common/DiagnosticSessionFlashbackExports.cs`, which owns strict export
 verification payload construction, rotated-export segment-count parsing, and
-range-selection cleanup. `DiagnosticSessionFlashbackExports.AudioSwitch.cs`
-owns the range export audio-switch companion command because it performs a
-stateful toggle/restore workflow. Scenario command sequencing lives in separate
-scenario owners.
+range-selection cleanup, plus the range export audio-switch companion command
+because it performs a stateful toggle/restore workflow. Scenario command
+sequencing lives in separate scenario owners.
 
 Diagnostic-session Flashback export scenarios now live in a focused partial
 family of named owners. Concurrent export, disable-during-export command
@@ -4008,7 +4007,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackCycleScenarios.EncoderRestore.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackExports.cs`
-- `DiagnosticSessionFlashbackExports.AudioSwitch.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`
 - `DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
 - `DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation.cs`

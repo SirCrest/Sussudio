@@ -170,8 +170,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionFlashbackExportsSource()
     {
-        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
-            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackExports.AudioSwitch.cs");
+        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs");
     }
 
     private static string ReadDiagnosticSessionFlashbackRejectedExportsSource()
