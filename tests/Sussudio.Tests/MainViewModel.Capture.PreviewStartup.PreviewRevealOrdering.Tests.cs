@@ -8,7 +8,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.AudioBindings.cs")
             .Replace("\r\n", "\n");
-        var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.Bindings.cs")
+        var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs")
             .Replace("\r\n", "\n");
         var previewActionsText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();

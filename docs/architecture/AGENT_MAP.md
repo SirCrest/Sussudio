@@ -1529,9 +1529,7 @@ Primary current owners:
   monitoring/disabled animations plus rounded content clips.
   `Sussudio/MainWindow.AudioMeter.cs` is its XAML-facing adapter.
   `Sussudio/Controllers/Audio/AudioControlBindingController.cs` owns the audio-control
-  binding context, and
-  `Sussudio/Controllers/Audio/AudioControlBindingController.Bindings.cs` owns
-  initial audio/microphone projection, preview-volume binding and priming,
+  binding context, initial audio/microphone projection, preview-volume binding and priming,
   audio/microphone/device-audio selection handlers,
   record/preview/custom-audio/microphone toggle handlers, audio-meter activation,
   initial meter presentation, and device-audio gain/meter resize hooks.
@@ -3263,9 +3261,7 @@ Primary current owners:
   and the thin XAML-facing selection bridges for device, audio, device-audio,
   capture-mode, and recording option selection.
 - `Sussudio/Controllers/Audio/AudioControlBindingController.cs` owns the audio-control
-  binding context, and
-  `Sussudio/Controllers/Audio/AudioControlBindingController.Bindings.cs` owns
-  initial audio/microphone projection, preview-volume binding and priming,
+  binding context, initial audio/microphone projection, preview-volume binding and priming,
   audio/microphone/device-audio selection handlers,
   record/preview/custom-audio/microphone toggle handlers, audio-meter activation,
   initial meter presentation, and device-audio gain/meter resize hooks.
