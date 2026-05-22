@@ -4230,12 +4230,11 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs` owns the
   `FlashbackRecordingSessionMetrics` handoff shape and read-only recording
   metric projection.
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs`
-  owns the `FlashbackPlaybackSessionMetrics` handoff state: observed identity,
-  baseline/end snapshots, command, cadence, 1% low, decode, audio-master, and
-  stage metric fields. `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs` owns
-  playback session metric orchestration plus end-of-session playback counter
-  deltas. `tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs` owns the
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs` owns the
+  `FlashbackPlaybackSessionMetrics` handoff state, playback session metric
+  orchestration, and end-of-session playback counter deltas. It covers observed
+  identity, baseline/end snapshots, command, cadence, 1% low, decode,
+  audio-master, and stage metric fields. `tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs` owns the
   `FlashbackExportSessionMetrics` handoff shape, export-relevance and snapshot
   max aggregation, export metric orchestration, and final force-rotate fallback
   counters.

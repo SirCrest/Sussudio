@@ -3909,13 +3909,10 @@ scenario command sequencing.
 Diagnostic-session Flashback recording metrics live in
 `DiagnosticSessionFlashbackMetrics.Recording.cs`, including the
 `FlashbackRecordingSessionMetrics` handoff shape and recording metric
-projection. Flashback playback session metrics keep core observed/baseline/end
-snapshot handoff identity in
-`DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs`, while focused
-`PlaybackSession.*.Model.cs` partials own command, cadence, 1% low, decode,
-audio-master, and stage metric handoff fields.
-`DiagnosticSessionFlashbackMetrics.PlaybackSession.cs` owns playback session
-metric orchestration and end-of-session playback counter deltas. Flashback
+projection. Flashback playback session metrics live in
+`DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`, including the
+`FlashbackPlaybackSessionMetrics` handoff state, playback session metric
+orchestration, and end-of-session playback counter deltas. Flashback
 export metrics live in `DiagnosticSessionFlashbackMetrics.Export.cs`, including
 the `FlashbackExportSessionMetrics` handoff shape, export-relevance and
 snapshot max aggregation, metric orchestration, and final force-rotate fallback
@@ -4058,7 +4055,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackLifecycleScenarios.Validation.cs`
 - `DiagnosticSessionFlashbackMetrics.Recording.cs`
 - `DiagnosticSessionFlashbackMetrics.Export.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs`
