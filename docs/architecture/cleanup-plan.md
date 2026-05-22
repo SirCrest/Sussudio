@@ -2785,8 +2785,8 @@ projection ownership coverage lives in
 `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.ProjectionOwnership.Tests.cs`.
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs` owns final
 `CaptureRuntimeSnapshot` DTO construction from already-sampled field groups.
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssemblyFields.cs` owns the
-private runtime snapshot assembly handoff contract consumed by the assembler.
+The private runtime snapshot assembly handoff contract lives with the assembler
+that consumes it.
 The automation model surface lives in the `CaptureRuntimeSnapshot*.cs` partial family
 so runtime fields stay grouped by the same domain as the sampled field groups.
 Video ingest, source-reader health, WASAPI capture, and playback output counter

@@ -844,8 +844,8 @@ Important entry points:
 - `CaptureService.RuntimeSnapshots.cs` samples runtime snapshot inputs consumed by UI,
   automation, and verification, then delegates final DTO construction.
 - `CaptureService.RuntimeSnapshotAssembler.cs` owns final `CaptureRuntimeSnapshot` DTO construction
-  from already-sampled field groups.
-- `CaptureService.RuntimeSnapshotAssemblyFields.cs` owns the private runtime snapshot assembly handoff contract consumed by the final DTO assembler.
+  from already-sampled field groups and the private runtime snapshot assembly
+  handoff contract consumed by that map.
 - `CaptureService.RuntimeSnapshotIngestAudio.cs` owns runtime snapshot projection
   for video ingest, source-reader health, WASAPI capture, and playback output
   counters, and its private ingest/audio handoff model.
