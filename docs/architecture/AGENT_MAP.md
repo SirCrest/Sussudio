@@ -784,12 +784,10 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SourceTelemetry.cs`
   owns source telemetry fallback policy, age calculation, and source-target
   summary inputs consumed by `AutomationSnapshot`.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.cs`
-  owns final source projection flattening and routes source signal/telemetry
-  fields through focused flattening modules.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.Signal.cs`
-  owns final source dimensions, frame-rate, HDR, video/audio format, firmware,
-  input, USB, HDCP, and raw timing field flattening.
+  owns final source projection flattening orchestration plus source dimensions,
+  frame-rate, HDR, video/audio format, firmware, input, USB, HDCP, and raw
+  timing field flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.Telemetry.cs`
   owns final source telemetry availability, confidence, detail, age, backend,
   suppression, circuit-state, summary, and target-summary field flattening.

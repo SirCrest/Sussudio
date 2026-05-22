@@ -2,6 +2,15 @@ namespace Sussudio.Services.Automation;
 
 public sealed partial class AutomationDiagnosticsHub
 {
+    private static SourceFlattenedProjection BuildSourceFlattenedProjection(
+        SourceSignalProjection sourceSignal,
+        SourceTelemetryProjection sourceTelemetry)
+        => new()
+        {
+            Signal = BuildSourceSignalFlattenedProjection(sourceSignal),
+            Telemetry = BuildSourceTelemetryFlattenedProjection(sourceTelemetry)
+        };
+
     private static SourceSignalFlattenedProjection BuildSourceSignalFlattenedProjection(
         SourceSignalProjection sourceSignal)
         => new()
@@ -50,5 +59,11 @@ public sealed partial class AutomationDiagnosticsHub
         public string? SourceHdcpVersion { get; init; }
         public string? SourceRxTxHdcpVersion { get; init; }
         public string? SourceRawTimingHex { get; init; }
+    }
+
+    private readonly record struct SourceFlattenedProjection
+    {
+        public SourceSignalFlattenedProjection Signal { get; init; }
+        public SourceTelemetryFlattenedProjection Telemetry { get; init; }
     }
 }
