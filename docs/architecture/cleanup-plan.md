@@ -3879,21 +3879,13 @@ the `FlashbackPlaybackResultMetrics` handoff shape.
 Preserve the final `init` DTO construction in the root unless a broader
 construction pattern replaces it deliberately.
 
-Diagnostic-session Flashback stress orchestration now lives in a focused
-partial family. `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns
-stress thresholds and stress/scrub-stress task registration, `.Stress.cs` owns
-the main stress command sequence, `.StressExport.cs` owns stress export request
-and verification,
-`.WarmPlayback.cs` owns warmed-playback frame/FPS/1% low checks and delegates
-audio-master delta capture to `.WarmPlaybackAudio.cs`. `.CommandDrainWait.cs`
-owns shared live/empty-queue drain polling for stress playback commands,
-`.CommandDrain.cs` owns post-go-live playback command-health/latency/final-state
-warning policy, `.Scrub.cs` owns scrub-stress command choreography,
-`.ScrubUpdates.cs` owns concurrent scrub update-burst dispatch and failed-update
-warning policy, `.ScrubDrain.cs` owns scrub-stress post-go-live
-command-health/latency/final-state warning policy, and `.AudioMaster.cs` owns
-warmed-playback audio-master fallback classification while the runner only
-starts the scenario tasks.
+Diagnostic-session Flashback stress orchestration now lives in
+`tools/Common/DiagnosticSessionFlashbackStressScenario.cs`, which owns stress
+thresholds, stress/scrub-stress task registration, main stress and scrub-stress
+command choreography, stress export verification, warmed-playback frame/FPS/1%
+low checks, audio-master fallback delta capture/classification, shared
+live/empty-queue drain polling, and command-health/latency/final-state warning
+policy while the runner only starts the scenario tasks.
 
 Diagnostic-session Flashback validation now lives in
 `tools/Common/DiagnosticSessionFlashbackValidation.cs`. It owns recording,
@@ -4019,16 +4011,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
 - `DiagnosticSessionFlashbackSegments.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`
-- `DiagnosticSessionFlashbackStressScenario.Stress.cs`
-- `DiagnosticSessionFlashbackStressScenario.StressExport.cs`
-- `DiagnosticSessionFlashbackStressScenario.WarmPlayback.cs`
-- `DiagnosticSessionFlashbackStressScenario.WarmPlaybackAudio.cs`
-- `DiagnosticSessionFlashbackStressScenario.CommandDrainWait.cs`
-- `DiagnosticSessionFlashbackStressScenario.CommandDrain.cs`
-- `DiagnosticSessionFlashbackStressScenario.Scrub.cs`
-- `DiagnosticSessionFlashbackStressScenario.ScrubUpdates.cs`
-- `DiagnosticSessionFlashbackStressScenario.ScrubDrain.cs`
-- `DiagnosticSessionFlashbackStressScenario.AudioMaster.cs`
 - `DiagnosticSessionFlashbackWaits.cs`
 - `DiagnosticSessionFlashbackWaits.RecordingReady.cs`
 - `DiagnosticSessionFlashbackWaits.BufferReady.cs`

@@ -8,84 +8,47 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var stressText = ReadDiagnosticSessionFlashbackStressScenarioSource();
-        var stressRootText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.Stress.cs")
-            .Replace("\r\n", "\n");
-        var stressExportText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.StressExport.cs")
-            .Replace("\r\n", "\n");
-        var warmPlaybackText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlayback.cs")
-            .Replace("\r\n", "\n");
-        var warmPlaybackAudioText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlaybackAudio.cs")
-            .Replace("\r\n", "\n");
-        var commandDrainText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrain.cs")
-            .Replace("\r\n", "\n");
-        var commandDrainWaitText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrainWait.cs")
-            .Replace("\r\n", "\n");
-        var scrubText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.Scrub.cs")
-            .Replace("\r\n", "\n");
-        var scrubUpdatesText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.ScrubUpdates.cs")
-            .Replace("\r\n", "\n");
-        var scrubDrainText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.ScrubDrain.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(stressText, "internal static partial class DiagnosticSessionFlashbackStressScenario");
+        AssertContains(stressText, "internal static class DiagnosticSessionFlashbackStressScenario");
+        AssertDoesNotContain(stressText, "internal static partial class DiagnosticSessionFlashbackStressScenario");
         AssertContains(stressText, "internal const int FlashbackStressMaxPlaybackPendingCommands = 4;");
         AssertContains(stressText, "internal const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;");
         AssertContains(stressText, "internal const double FlashbackStressPlaybackWarmSeconds = 10.0;");
         AssertContains(stressText, "internal const long FlashbackStressAudioUnavailableFallbackAllowance = 4;");
         AssertContains(stressText, "internal const int FlashbackScrubStressMaxPlaybackPendingCommands = 20;");
         AssertContains(stressText, "internal static async Task RunFlashbackStressAsync(");
-        AssertContains(stressRootText, "ValidateFlashbackStressWarmPlaybackAsync(");
-        AssertContains(stressRootText, "VerifyFlashbackStressExportAsync(");
-        AssertContains(stressRootText, "ValidateFlashbackStressCommandDrainAsync(");
-        AssertDoesNotContain(stressRootText, "ClassifyFlashbackStressAudioMasterFallbackWarning(");
-        AssertDoesNotContain(stressRootText, "CreateFlashbackExportVerifyPayload(exportPath)");
-        AssertContains(stressExportText, "private static async Task VerifyFlashbackStressExportAsync(");
-        AssertContains(stressExportText, "\"flashback-stress-export.mp4\"");
-        AssertContains(stressExportText, "CreateFlashbackExportVerifyPayload(exportPath)");
-        AssertContains(stressExportText, "flashback stress export verified");
-        AssertContains(warmPlaybackText, "private static async Task ValidateFlashbackStressWarmPlaybackAsync(");
-        AssertContains(warmPlaybackText, "WaitForFlashbackPlaybackWarmSampleAsync(");
-        AssertContains(warmPlaybackText, "\"flashback playback warmed frames=");
-        AssertContains(warmPlaybackText, "CaptureFlashbackStressWarmPlaybackAudioBaseline(");
-        AssertContains(warmPlaybackText, "CaptureFlashbackStressWarmPlaybackAudioDeltas(");
-        AssertContains(warmPlaybackText, "ClassifyFlashbackStressAudioMasterFallbackWarning(");
-        AssertDoesNotContain(warmPlaybackText, "FlashbackPlaybackAudioMasterUnavailableFallbacks");
-        AssertContains(warmPlaybackAudioText, "private readonly record struct FlashbackStressWarmPlaybackAudioBaseline(");
-        AssertContains(warmPlaybackAudioText, "private readonly record struct FlashbackStressWarmPlaybackAudioDeltas(");
-        AssertContains(warmPlaybackAudioText, "private static FlashbackStressWarmPlaybackAudioBaseline CaptureFlashbackStressWarmPlaybackAudioBaseline(");
-        AssertContains(warmPlaybackAudioText, "private static FlashbackStressWarmPlaybackAudioDeltas CaptureFlashbackStressWarmPlaybackAudioDeltas(");
-        AssertContains(warmPlaybackAudioText, "FlashbackPlaybackAudioMasterUnavailableFallbacks");
-        AssertContains(warmPlaybackAudioText, "FlashbackPlaybackAudioMasterLastFallbackReason");
-        AssertDoesNotContain(warmPlaybackAudioText, "WaitForFlashbackPlaybackWarmSampleAsync(");
-        AssertDoesNotContain(warmPlaybackText, "\"flashback stress: playback command queue did not drain within 10s \"");
-        AssertContains(commandDrainText, "private static async Task ValidateFlashbackStressCommandDrainAsync(");
-        AssertContains(commandDrainText, "BuildPlaybackCommandHealth(lastSnapshot, baselineSnapshot)");
-        AssertContains(commandDrainText, "\"flashback stress: playback command queue did not drain within 10s \"");
-        AssertContains(commandDrainText, "WaitForFlashbackStressPlaybackCommandDrainAsync(");
-        AssertDoesNotContain(commandDrainText, "Stopwatch.GetTimestamp()");
-        AssertDoesNotContain(commandDrainText, "WaitForFlashbackPlaybackWarmSampleAsync(");
-        AssertContains(commandDrainWaitText, "private readonly record struct FlashbackStressPlaybackDrainResult(");
-        AssertContains(commandDrainWaitText, "private static async Task<FlashbackStressPlaybackDrainResult> WaitForFlashbackStressPlaybackCommandDrainAsync(");
-        AssertContains(commandDrainWaitText, "GetInt(lastSnapshot, \"FlashbackPlaybackPendingCommands\") == 0");
-        AssertContains(commandDrainWaitText, "GetString(lastSnapshot, \"FlashbackPlaybackState\")");
+        AssertContains(stressText, "ValidateFlashbackStressWarmPlaybackAsync(");
+        AssertContains(stressText, "private static async Task VerifyFlashbackStressExportAsync(");
+        AssertContains(stressText, "\"flashback-stress-export.mp4\"");
+        AssertContains(stressText, "CreateFlashbackExportVerifyPayload(exportPath)");
+        AssertContains(stressText, "flashback stress export verified");
+        AssertContains(stressText, "private static async Task ValidateFlashbackStressWarmPlaybackAsync(");
+        AssertContains(stressText, "WaitForFlashbackPlaybackWarmSampleAsync(");
+        AssertContains(stressText, "\"flashback playback warmed frames=");
+        AssertContains(stressText, "private readonly record struct FlashbackStressWarmPlaybackAudioBaseline(");
+        AssertContains(stressText, "private readonly record struct FlashbackStressWarmPlaybackAudioDeltas(");
+        AssertContains(stressText, "private static FlashbackStressWarmPlaybackAudioBaseline CaptureFlashbackStressWarmPlaybackAudioBaseline(");
+        AssertContains(stressText, "private static FlashbackStressWarmPlaybackAudioDeltas CaptureFlashbackStressWarmPlaybackAudioDeltas(");
+        AssertContains(stressText, "FlashbackPlaybackAudioMasterUnavailableFallbacks");
+        AssertContains(stressText, "FlashbackPlaybackAudioMasterLastFallbackReason");
+        AssertContains(stressText, "private static async Task ValidateFlashbackStressCommandDrainAsync(");
+        AssertContains(stressText, "BuildPlaybackCommandHealth(lastSnapshot, baselineSnapshot)");
+        AssertContains(stressText, "\"flashback stress: playback command queue did not drain within 10s \"");
+        AssertContains(stressText, "private readonly record struct FlashbackStressPlaybackDrainResult(");
+        AssertContains(stressText, "private static async Task<FlashbackStressPlaybackDrainResult> WaitForFlashbackStressPlaybackCommandDrainAsync(");
+        AssertContains(stressText, "GetInt(lastSnapshot, \"FlashbackPlaybackPendingCommands\") == 0");
+        AssertContains(stressText, "GetString(lastSnapshot, \"FlashbackPlaybackState\")");
         AssertContains(stressText, "internal static async Task RunFlashbackScrubStressAsync(");
-        AssertContains(scrubText, "WaitForFlashbackStressBufferReadyAsync(");
-        AssertContains(scrubText, "new Dictionary<string, object?> { [\"action\"] = \"begin-scrub\", [\"positionMs\"] = 500 }");
-        AssertContains(scrubText, "RunFlashbackScrubStressUpdateBurstAsync(");
-        AssertDoesNotContain(scrubText, "new Dictionary<string, object?> { [\"action\"] = \"update-scrub\", [\"positionMs\"] = positions[i] }");
-        AssertContains(scrubText, "new Dictionary<string, object?> { [\"action\"] = \"end-scrub\", [\"positionMs\"] = finalScrubPositionMs }");
-        AssertContains(scrubUpdatesText, "private static async Task<int> RunFlashbackScrubStressUpdateBurstAsync(");
-        AssertContains(scrubUpdatesText, "new Dictionary<string, object?> { [\"action\"] = \"update-scrub\", [\"positionMs\"] = positions[i] }");
-        AssertContains(scrubUpdatesText, "return positions[^1];");
-        AssertContains(scrubUpdatesText, "flashback scrub stress: {failedUpdates} update-scrub command(s) failed");
-        AssertContains(scrubText, "ValidateFlashbackScrubStressDrainAsync(");
-        AssertDoesNotContain(scrubText, "\"flashback scrub stress: playback did not settle live with an empty queue within 10s \"");
-        AssertContains(scrubDrainText, "private static async Task ValidateFlashbackScrubStressDrainAsync(");
-        AssertContains(scrubDrainText, "\"flashback scrub stress: playback did not settle live with an empty queue within 10s \"");
-        AssertContains(scrubDrainText, "WaitForFlashbackStressPlaybackCommandDrainAsync(");
-        AssertDoesNotContain(scrubDrainText, "Stopwatch.GetTimestamp()");
-        AssertContains(scrubDrainText, "BuildPlaybackCommandHealth(lastSnapshot, baselineSnapshot)");
-        AssertContains(scrubDrainText, "FlashbackScrubStressMaxPlaybackPendingCommands");
+        AssertContains(stressText, "WaitForFlashbackStressBufferReadyAsync(");
+        AssertContains(stressText, "new Dictionary<string, object?> { [\"action\"] = \"begin-scrub\", [\"positionMs\"] = 500 }");
+        AssertContains(stressText, "private static async Task<int> RunFlashbackScrubStressUpdateBurstAsync(");
+        AssertContains(stressText, "new Dictionary<string, object?> { [\"action\"] = \"update-scrub\", [\"positionMs\"] = positions[i] }");
+        AssertContains(stressText, "return positions[^1];");
+        AssertContains(stressText, "flashback scrub stress: {failedUpdates} update-scrub command(s) failed");
+        AssertContains(stressText, "new Dictionary<string, object?> { [\"action\"] = \"end-scrub\", [\"positionMs\"] = finalScrubPositionMs }");
+        AssertContains(stressText, "private static async Task ValidateFlashbackScrubStressDrainAsync(");
+        AssertContains(stressText, "\"flashback scrub stress: playback did not settle live with an empty queue within 10s \"");
+        AssertContains(stressText, "FlashbackScrubStressMaxPlaybackPendingCommands");
         AssertContains(stressText, "CreateFlashbackExportVerifyPayload(exportPath)");
         AssertContains(stressText, "internal static string? ClassifyFlashbackStressAudioMasterFallbackWarning(");
         AssertContains(stressText, "\"flashback stress: audio-master harmful fallbacks increased during warmed playback \"");

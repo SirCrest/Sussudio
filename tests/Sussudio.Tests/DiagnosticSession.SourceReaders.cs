@@ -85,17 +85,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionFlashbackStressScenarioSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackStressScenario.cs",
-            "tools/Common/DiagnosticSessionFlashbackStressScenario.Stress.cs",
-            "tools/Common/DiagnosticSessionFlashbackStressScenario.StressExport.cs",
-            "tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlayback.cs",
-            "tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlaybackAudio.cs",
-            "tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrainWait.cs",
-            "tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrain.cs",
-            "tools/Common/DiagnosticSessionFlashbackStressScenario.Scrub.cs",
-            "tools/Common/DiagnosticSessionFlashbackStressScenario.ScrubUpdates.cs",
-            "tools/Common/DiagnosticSessionFlashbackStressScenario.ScrubDrain.cs",
-            "tools/Common/DiagnosticSessionFlashbackStressScenario.AudioMaster.cs");
+            "tools/Common/DiagnosticSessionFlashbackStressScenario.cs");
 
     private static string ReadDiagnosticSessionFlashbackWaitsSource()
         => ReadNormalizedSourceFiles(
