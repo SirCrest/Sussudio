@@ -23,7 +23,6 @@ static partial class Program
         AssertEqual(0, directWriterCount, "CaptureService direct _sessionState writer count");
 
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
-        var coordinationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Coordination.cs").Replace("\r\n", "\n");
         var transitionExecutionText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.TransitionExecution.cs").Replace("\r\n", "\n");
         var stateMachineText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionStateMachine.cs").Replace("\r\n", "\n");
         var resourceReleaseText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.ResourceRelease.cs").Replace("\r\n", "\n");
@@ -46,19 +45,19 @@ static partial class Program
         AssertContains(transitionExecutionText, "=> _sessionStateMachine.EnterTransition(transitionState);");
         AssertContains(transitionExecutionText, "private void ResolveSessionSteadyState()");
         AssertContains(transitionExecutionText, "=> _sessionStateMachine.ResolveSteadyState(BuildSteadyStateInputs());");
-        AssertContains(coordinationText, "private CaptureSessionState CurrentSessionState");
-        AssertContains(coordinationText, "=> _sessionStateMachine.State;");
-        AssertContains(coordinationText, "private long CurrentSessionGeneration");
-        AssertContains(coordinationText, "=> _sessionStateMachine.Generation;");
-        AssertContains(coordinationText, "private CaptureSessionSteadyStateInputs BuildSteadyStateInputs()");
-        AssertContains(coordinationText, "private void EnterCleanupState()");
-        AssertContains(coordinationText, "=> _sessionStateMachine.EnterCleanup();");
+        AssertContains(transitionExecutionText, "private CaptureSessionState CurrentSessionState");
+        AssertContains(transitionExecutionText, "=> _sessionStateMachine.State;");
+        AssertContains(transitionExecutionText, "private long CurrentSessionGeneration");
+        AssertContains(transitionExecutionText, "=> _sessionStateMachine.Generation;");
+        AssertContains(transitionExecutionText, "private CaptureSessionSteadyStateInputs BuildSteadyStateInputs()");
+        AssertContains(transitionExecutionText, "private void EnterCleanupState()");
+        AssertContains(transitionExecutionText, "=> _sessionStateMachine.EnterCleanup();");
         AssertContains(transitionExecutionText, "private void EnterFaultedState()");
         AssertContains(transitionExecutionText, "=> _sessionStateMachine.EnterFaulted();");
-        AssertContains(coordinationText, "private void EnterDisposedState()");
-        AssertContains(coordinationText, "=> _sessionStateMachine.EnterDisposed();");
-        AssertContains(coordinationText, "private void ResetSessionStateAfterCleanup()");
-        AssertContains(coordinationText, "=> _sessionStateMachine.ResetAfterCleanup(_isDisposed != 0);");
+        AssertContains(transitionExecutionText, "private void EnterDisposedState()");
+        AssertContains(transitionExecutionText, "=> _sessionStateMachine.EnterDisposed();");
+        AssertContains(transitionExecutionText, "private void ResetSessionStateAfterCleanup()");
+        AssertContains(transitionExecutionText, "=> _sessionStateMachine.ResetAfterCleanup(_isDisposed != 0);");
         AssertContains(stateMachineText, "internal sealed class CaptureSessionStateMachine");
         AssertContains(stateMachineText, "private CaptureSessionState _state = CaptureSessionState.Uninitialized;");
         AssertContains(stateMachineText, "private long _generation;");
@@ -71,15 +70,11 @@ static partial class Program
         AssertContains(stateMachineText, "=> _state = CaptureSessionTransitionPolicy.ResolveSteadyState(");
         AssertContains(stateMachineText, "public void ResetAfterCleanup(bool isDisposed)");
         AssertContains(stateMachineText, "=> _state = isDisposed ? CaptureSessionState.Disposed : CaptureSessionState.Uninitialized;");
-        AssertDoesNotContain(coordinationText, "CleanupForDisposalAsync");
-        AssertDoesNotContain(coordinationText, "public void Dispose()");
-        AssertDoesNotContain(coordinationText, "public async ValueTask DisposeAsync()");
-        AssertDoesNotContain(coordinationText, "private async Task RunTransitionAsync(");
-        AssertDoesNotContain(coordinationText, "await _sessionTransitionLock.WaitAsync(");
-        AssertDoesNotContain(coordinationText, "ErrorOccurred?.Invoke(this, ex);");
-        AssertDoesNotContain(coordinationText, "private static void ReleaseSemaphoreBestEffort(");
-        AssertDoesNotContain(coordinationText, "private static void ResumeFlashbackEvictionBestEffort(");
-        AssertDoesNotContain(transitionExecutionText, "private CaptureSessionSteadyStateInputs BuildSteadyStateInputs()");
+        AssertDoesNotContain(transitionExecutionText, "CleanupForDisposalAsync");
+        AssertDoesNotContain(transitionExecutionText, "public void Dispose()");
+        AssertDoesNotContain(transitionExecutionText, "public async ValueTask DisposeAsync()");
+        AssertDoesNotContain(transitionExecutionText, "private static void ReleaseSemaphoreBestEffort(");
+        AssertDoesNotContain(transitionExecutionText, "private static void ResumeFlashbackEvictionBestEffort(");
         AssertOccursBefore(
             stateMachineText,
             "CaptureSessionTransitionPolicy.ThrowIfDisallowed(_state, transitionState);",

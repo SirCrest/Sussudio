@@ -6,7 +6,7 @@ using Sussudio.Models;
 namespace Sussudio.Services.Capture;
 
 // Disposal-triggered cleanup and final disposed-state ownership for the capture
-// service. Normal capture transitions stay in CaptureService.Coordination.cs.
+// service. Normal capture transitions stay in CaptureService.TransitionExecution.cs.
 public partial class CaptureService
 {
     private async Task CleanupForDisposalAsync()

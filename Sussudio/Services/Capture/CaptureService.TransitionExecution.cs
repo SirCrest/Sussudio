@@ -5,10 +5,16 @@ using Sussudio.Models;
 
 namespace Sussudio.Services.Capture;
 
-// Serialized transition transaction for the capture service. Feature partials
-// call this helper instead of owning their own session-state mutation policy.
+// Serialized transition transaction, steady-state sampling, and guard helpers
+// for capture service lifecycle changes.
 public partial class CaptureService
 {
+    private CaptureSessionState CurrentSessionState
+        => _sessionStateMachine.State;
+
+    private long CurrentSessionGeneration
+        => _sessionStateMachine.Generation;
+
     private async Task RunTransitionAsync(
         CaptureSessionState transitionState,
         Func<CancellationToken, Task> action,
@@ -41,12 +47,45 @@ public partial class CaptureService
         }
     }
 
+    private CaptureSessionSteadyStateInputs BuildSteadyStateInputs()
+        => new(
+            _isDisposed != 0,
+            _isRecording,
+            _isVideoPreviewActive,
+            _isAudioPreviewActive,
+            _isInitialized);
+
     private void EnterTransitionState(CaptureSessionState transitionState)
         => _sessionStateMachine.EnterTransition(transitionState);
+
+    private void EnterCleanupState()
+        => _sessionStateMachine.EnterCleanup();
 
     private void ResolveSessionSteadyState()
         => _sessionStateMachine.ResolveSteadyState(BuildSteadyStateInputs());
 
     private void EnterFaultedState()
         => _sessionStateMachine.EnterFaulted();
+
+    private void EnterDisposedState()
+        => _sessionStateMachine.EnterDisposed();
+
+    private void ResetSessionStateAfterCleanup()
+        => _sessionStateMachine.ResetAfterCleanup(_isDisposed != 0);
+
+    private void EnsureInitialized()
+    {
+        if (!_isInitialized)
+        {
+            throw new InvalidOperationException("Capture not initialized");
+        }
+    }
+
+    private void ThrowIfDisposed()
+    {
+        if (_isDisposed != 0)
+        {
+            throw new ObjectDisposedException(nameof(CaptureService));
+        }
+    }
 }
