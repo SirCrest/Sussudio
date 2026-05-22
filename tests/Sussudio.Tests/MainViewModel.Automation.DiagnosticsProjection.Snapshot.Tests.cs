@@ -9,8 +9,6 @@ static partial class Program
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
         var snapshotStatusProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SnapshotStatus.cs")
             .Replace("\r\n", "\n");
-        var snapshotStatusFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.SnapshotStatus.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var snapshotStatus = BuildSnapshotStatusProjection(viewModelSnapshot, captureRuntime);");
         AssertContains(snapshotFlatteningText, "var snapshotStatusFlattening = BuildSnapshotStatusFlattenedProjection(snapshotStatus);");
@@ -25,13 +23,6 @@ static partial class Program
         AssertDoesNotContain(snapshotFlatteningText, "TimestampUtc = snapshotStatus.TimestampUtc,");
         AssertDoesNotContain(snapshotFlatteningText, "StatusText = snapshotStatus.StatusText,");
 
-        AssertContains(snapshotStatusFlatteningText, "private static SnapshotStatusFlattenedProjection BuildSnapshotStatusFlattenedProjection(");
-        AssertContains(snapshotStatusFlatteningText, "TimestampUtc = snapshotStatus.TimestampUtc,");
-        AssertContains(snapshotStatusFlatteningText, "VerificationInProgress = snapshotStatus.VerificationInProgress,");
-        AssertContains(snapshotStatusFlatteningText, "SessionState = snapshotStatus.SessionState,");
-        AssertContains(snapshotStatusFlatteningText, "StatusText = snapshotStatus.StatusText");
-        AssertContains(snapshotStatusFlatteningText, "private readonly record struct SnapshotStatusFlattenedProjection");
-
         AssertContains(snapshotStatusProjectionText, "private SnapshotStatusProjection BuildSnapshotStatusProjection(");
         AssertContains(snapshotStatusProjectionText, "TimestampUtc = DateTimeOffset.UtcNow,");
         AssertContains(snapshotStatusProjectionText, "IsInitialized = viewModelSnapshot.IsInitialized,");
@@ -39,6 +30,12 @@ static partial class Program
         AssertContains(snapshotStatusProjectionText, "SessionState = captureRuntime.SessionState,");
         AssertContains(snapshotStatusProjectionText, "StatusText = viewModelSnapshot.StatusText");
         AssertContains(snapshotStatusProjectionText, "private readonly record struct SnapshotStatusProjection");
+        AssertContains(snapshotStatusProjectionText, "private static SnapshotStatusFlattenedProjection BuildSnapshotStatusFlattenedProjection(");
+        AssertContains(snapshotStatusProjectionText, "TimestampUtc = snapshotStatus.TimestampUtc,");
+        AssertContains(snapshotStatusProjectionText, "VerificationInProgress = snapshotStatus.VerificationInProgress,");
+        AssertContains(snapshotStatusProjectionText, "SessionState = snapshotStatus.SessionState,");
+        AssertContains(snapshotStatusProjectionText, "StatusText = snapshotStatus.StatusText");
+        AssertContains(snapshotStatusProjectionText, "private readonly record struct SnapshotStatusFlattenedProjection");
 
         return Task.CompletedTask;
     }

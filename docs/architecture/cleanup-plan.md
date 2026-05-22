@@ -141,9 +141,8 @@ Flashback export progress and force-rotate fallback timeline projection group.
 GC, thread-pool, and pipeline-latency timeline projection.
 `AutomationDiagnosticsHub.SnapshotProjection.SnapshotStatus.cs` owns timestamp,
 view-model lifecycle/audio flags, verification-in-progress, session state, and
-status-text projection consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.SnapshotStatus.cs`
-owns final snapshot status projection-to-`AutomationSnapshot` field flattening.
+status-text projection consumed by the automation snapshot DTO, plus final
+snapshot status projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.SnapshotEvaluation.cs` owns
 performance score, diagnostic lane, preview pacing classifier, and performance
 threshold projection consumed by the automation snapshot DTO.

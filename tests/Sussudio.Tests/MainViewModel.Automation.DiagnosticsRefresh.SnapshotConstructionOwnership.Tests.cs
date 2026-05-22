@@ -17,7 +17,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningAutomationSnapshotText, "private static AutomationSnapshot BuildAutomationSnapshotFromFlattenedProjections(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningAutomationSnapshotText, "return new AutomationSnapshot");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSnapshotStatusFlattenedProjection(snapshotStatus)");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningSnapshotStatusText, "private static SnapshotStatusFlattenedProjection BuildSnapshotStatusFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionSnapshotStatusText, "private static SnapshotStatusFlattenedProjection BuildSnapshotStatusFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSnapshotEvaluationFlattenedProjection(snapshotEvaluation)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningSnapshotEvaluationText, "private static SnapshotEvaluationFlattenedProjection BuildSnapshotEvaluationFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureFormatFlattenedProjection(captureFormat)");
