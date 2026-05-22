@@ -4564,8 +4564,8 @@ Primary owners:
   and combined-scenario metadata in
   `tools/Common/DiagnosticSessionScenarioCatalog.Entries.Combined.cs`.
 - `tools/Common/DiagnosticSessionResult.cs` owns diagnostic-session summary DTO
-  fields: core metadata, artifact paths, terminal state, actions, and warnings.
-  `DiagnosticSessionResult.Overview.cs` owns end-of-run overview fields.
+  fields: core metadata, artifact paths, terminal state, actions, warnings, and
+  end-of-run overview fields.
   `DiagnosticSessionResult.CaptureSource.cs` owns capture/source summary fields.
   `DiagnosticSessionResult.PreviewCadence.cs` owns preview cadence and visual-cadence fields,
   `DiagnosticSessionResult.PreviewScheduler.cs` owns preview scheduler and

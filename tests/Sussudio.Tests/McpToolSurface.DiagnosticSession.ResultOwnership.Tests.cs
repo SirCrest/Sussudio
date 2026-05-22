@@ -7,7 +7,6 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var modelText = ReadDiagnosticSessionModelsSource();
         var resultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.cs");
-        var overviewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.Overview.cs");
         var captureSourceResultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.CaptureSource.cs");
         var previewCadenceResultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.PreviewCadence.cs");
         var previewSchedulerResultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.PreviewScheduler.cs");
@@ -23,9 +22,9 @@ static partial class Program
         AssertContains(modelText, "public sealed partial class DiagnosticSessionResult");
         AssertContains(resultText, "public string SessionId { get; init; } = string.Empty;");
         AssertContains(resultText, "public string[] Warnings { get; set; } = Array.Empty<string>();");
-        AssertContains(overviewResultText, "// End-of-run overview.");
-        AssertContains(overviewResultText, "public double ProcessCpuPercentAtEnd { get; init; }");
-        AssertContains(overviewResultText, "public PresentMonProbeResult? PresentMon { get; init; }");
+        AssertContains(resultText, "// End-of-run overview.");
+        AssertContains(resultText, "public double ProcessCpuPercentAtEnd { get; init; }");
+        AssertContains(resultText, "public PresentMonProbeResult? PresentMon { get; init; }");
         AssertContains(captureSourceResultText, "// Capture/source summary.");
         AssertContains(captureSourceResultText, "public string SelectedResolutionAtEnd { get; init; } = string.Empty;");
         AssertContains(captureSourceResultText, "public string SourceTelemetrySummaryAtEnd { get; init; } = string.Empty;");
@@ -54,8 +53,6 @@ static partial class Program
         AssertContains(previewSchedulerResultText, "public long PreviewSchedulerDroppedAtEnd { get; init; }");
         AssertContains(previewD3DResultText, "// Preview D3D frame-stat and CPU timing summary.");
         AssertContains(previewD3DResultText, "public double PreviewD3DInputUploadCpuP99MsAtEnd { get; init; }");
-        AssertDoesNotContain(resultText, "public double ProcessCpuPercentAtEnd");
-        AssertDoesNotContain(resultText, "public PresentMonProbeResult? PresentMon");
         AssertDoesNotContain(resultText, "public string SelectedResolutionAtEnd");
         AssertDoesNotContain(resultText, "public string SourceTelemetrySummaryAtEnd");
         AssertDoesNotContain(resultText, "public int FlashbackPlaybackPendingCommandsAtEnd");
@@ -71,8 +68,8 @@ static partial class Program
         AssertDoesNotContain(flashbackExportResultText, "FlashbackRecordingBackendObserved");
         AssertDoesNotContain(captureSourceResultText, "FlashbackPlayback");
         AssertDoesNotContain(captureSourceResultText, "PreviewScheduler");
-        AssertDoesNotContain(overviewResultText, "FlashbackPlayback");
-        AssertDoesNotContain(overviewResultText, "PreviewScheduler");
+        AssertDoesNotContain(resultText, "FlashbackPlayback");
+        AssertDoesNotContain(resultText, "PreviewScheduler");
         AssertDoesNotContain(playbackCommandsResultText, "PreviewScheduler");
         AssertDoesNotContain(playbackCadenceResultText, "PreviewScheduler");
         AssertDoesNotContain(playbackDecodeResultText, "PreviewScheduler");

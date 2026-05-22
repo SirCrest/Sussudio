@@ -3956,7 +3956,6 @@ button events.
 Diagnostic session DTOs live in feature-oriented model files:
 `tools/Common/DiagnosticSessionOptions.cs`,
 `tools/Common/DiagnosticSessionResult.cs`,
-`tools/Common/DiagnosticSessionResult.Overview.cs`,
 `tools/Common/DiagnosticSessionResult.CaptureSource.cs`,
 `tools/Common/DiagnosticSessionResult.PreviewCadence.cs`,
 `tools/Common/DiagnosticSessionResult.PreviewScheduler.cs`,
@@ -4776,7 +4775,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionMetrics.Counters.cs`
 - `DiagnosticSessionOptions.cs`
 - `DiagnosticSessionResult.cs`
-- `DiagnosticSessionResult.Overview.cs`
 - `DiagnosticSessionResult.CaptureSource.cs`
 - `DiagnosticSessionResult.PreviewCadence.cs`
 - `DiagnosticSessionResult.PreviewScheduler.cs`

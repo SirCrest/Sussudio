@@ -178,7 +178,6 @@ static partial class Program
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionOptions.cs",
             "tools/Common/DiagnosticSessionResult.cs",
-            "tools/Common/DiagnosticSessionResult.Overview.cs",
             "tools/Common/DiagnosticSessionResult.CaptureSource.cs",
             "tools/Common/DiagnosticSessionResult.PreviewCadence.cs",
             "tools/Common/DiagnosticSessionResult.PreviewScheduler.cs",

@@ -181,6 +181,18 @@ Behavior preserved: Preview scheduler, preview cadence, and visual-cadence resul
 Notes for future agents: keep simple preview result projection records together unless a projection grows independent policy
 
 Date: 2026-05-21
+Area: Diagnostic session result models
+Problem: End-of-run overview fields lived in a tiny property-only partial separate from the root diagnostic-session summary DTO.
+Files consolidated: `tools/Common/DiagnosticSessionResult.Overview.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `DiagnosticSessionResult` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by diagnostic-session model ownership and runtime snapshot regression tests
+Behavior preserved: Diagnostic-session JSON overview fields, property names, and initialization semantics remain unchanged
+Notes for future agents: keep tiny root-summary DTO fragments with the root result model unless they represent a runtime subsystem
+
+Date: 2026-05-21
 Area: Diagnostic session result formatting
 Problem: Flashback diagnostic-session section ordering lived in a one-method router file separate from the formatter orchestration.
 Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs`
