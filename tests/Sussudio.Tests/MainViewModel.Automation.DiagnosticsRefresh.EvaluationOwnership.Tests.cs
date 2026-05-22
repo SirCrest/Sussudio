@@ -14,8 +14,8 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "TryBuildFlashbackRecordingDiagnosticEvaluation(health, isRecording, recentFlashbackRecording, lanes)");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "TryBuildFlashbackExportDiagnosticEvaluation(health, lanes)");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "TryBuildFlashbackPlaybackDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackStorageText, "private static DiagnosticEvaluation? TryBuildFlashbackStorageDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackStorageText, "\"flashback_storage\"");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "private static DiagnosticEvaluation? TryBuildFlashbackStorageDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "\"flashback_storage\"");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "private static DiagnosticEvaluation? TryBuildFlashbackRecordingDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "BuildFlashbackRecordingDiagnosticConditions(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "TryBuildFlashbackEncoderFailureDiagnosticEvaluation(health, lanes)");
@@ -36,7 +36,6 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackExportText, "\"Flashback export is running.\"");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackPlaybackText, "private static DiagnosticEvaluation? TryBuildFlashbackPlaybackDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackPlaybackText, "\"flashback_playback\"");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationFlashbackText, "\"flashback_storage\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationFlashbackText, "\"flashback_recording\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationFlashbackText, "\"flashback_playback\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimeDiagnosticEvaluation(");

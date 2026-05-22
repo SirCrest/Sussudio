@@ -413,9 +413,7 @@ verification profile shaping.
 `AutomationDiagnosticsHub.DiagnosticEvaluation.cs` owns diagnostic verdict
 orchestration and the final healthy/mixed fallback.
 `AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs` owns Flashback-specific
-diagnostic verdict ordering.
-`AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Storage.cs` owns
-Flashback storage pressure diagnostic verdicts.
+diagnostic verdict ordering and Flashback storage pressure diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Recording.cs` owns
 Flashback recording diagnostic verdict ordering plus encoder failure,
 export-rotation gap, backend staleness, and recording degradation verdicts.

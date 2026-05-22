@@ -4,7 +4,6 @@ static partial class Program
     {
         public string DiagnosticEvaluationText { get; init; } = string.Empty;
         public string DiagnosticEvaluationFlashbackText { get; init; } = string.Empty;
-        public string DiagnosticEvaluationFlashbackStorageText { get; init; } = string.Empty;
         public string DiagnosticEvaluationFlashbackRecordingText { get; init; } = string.Empty;
         public string DiagnosticEvaluationFlashbackRecordingConditionsText { get; init; } = string.Empty;
         public string DiagnosticEvaluationFlashbackExportText { get; init; } = string.Empty;

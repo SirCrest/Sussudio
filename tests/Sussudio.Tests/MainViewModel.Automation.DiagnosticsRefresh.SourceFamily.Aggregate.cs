@@ -12,7 +12,6 @@ static partial class Program
                 EvaluationPolicyText,
                 DiagnosticEvaluationText,
                 DiagnosticEvaluationFlashbackText,
-                DiagnosticEvaluationFlashbackStorageText,
                 DiagnosticEvaluationFlashbackRecordingText,
                 DiagnosticEvaluationFlashbackRecordingConditionsText,
                 DiagnosticEvaluationFlashbackExportText,

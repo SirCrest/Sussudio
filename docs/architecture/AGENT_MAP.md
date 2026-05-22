@@ -348,9 +348,8 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluation.cs`
   owns diagnostic verdict orchestration and final healthy/mixed fallback.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs`
-  owns Flashback-specific diagnostic verdict ordering.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Storage.cs`
-  owns Flashback storage pressure diagnostic verdicts.
+  owns Flashback-specific diagnostic verdict ordering and Flashback storage
+  pressure diagnostic verdicts.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Recording.cs`
   owns Flashback recording diagnostic verdict ordering plus encoder failure,
   export-rotation gap, backend staleness, and recording degradation verdicts.

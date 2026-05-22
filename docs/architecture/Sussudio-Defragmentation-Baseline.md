@@ -133,6 +133,18 @@ Behavior preserved: capture, audio-muted, and recording-growth alert state trans
 Notes for future agents: keep lightweight snapshot-driven signal alert rules with `SignalAlerts.Preview.cs` unless a rule family grows independent state or policy
 
 Date: 2026-05-21
+Area: Automation diagnostics Flashback evaluation
+Problem: Flashback temp-storage pressure verdict construction lived in a tiny partial separate from the Flashback diagnostic evaluation ordering that calls it first.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Storage.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics evaluation ownership tests and runtime snapshot regression tests
+Behavior preserved: Flashback storage-pressure diagnostic verdict still uses the same active/startup-cache/temp-drive thresholds, severity, category, message, and lane mapping
+Notes for future agents: keep first-branch Flashback diagnostic verdicts with the Flashback evaluation ordering unless the verdict family grows independent policy
+
+Date: 2026-05-21
 Area: Automation diagnostics HDR pipeline projection
 Problem: HDR pipeline policy projection and final flattened DTO field projection lived in separate partials even though the flattening is a direct one-to-one projection of HDR runtime, warmup, pipeline-mode, telemetry-alignment, and truth-verdict fields.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.HdrPipeline.cs`
