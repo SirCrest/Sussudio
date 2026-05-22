@@ -1352,10 +1352,9 @@ Primary current owners:
   animation and size waits, `Sussudio/Controllers/FullScreen/FullScreenController.Chrome.cs` owns chrome/material
   state, and `Sussudio/Controllers/FullScreen/FullScreenController.Controls.cs` owns overlay pointer/auto-hide
   behavior plus full-screen key routing and timeline eligibility.
-  `Sussudio/MainWindow.FullScreen.Composition.cs` wires the controller
-  context, `Sussudio/MainWindow.FullScreen.Commands.cs` owns button/menu/double-tap
-  and automation command adapters, and `Sussudio/MainWindow.FullScreen.Overlay.cs` owns key routing, pointer, and
-  auto-hide adapters. Flashback command execution remains in
+  `Sussudio/MainWindow.FullScreen.Composition.cs` wires the controller context,
+  button/menu/double-tap and automation command adapters, key routing, pointer,
+  and auto-hide adapters. Flashback command execution remains in
   `Sussudio/Controllers/Flashback/FlashbackCommandController.cs`.
 - `Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs` owns automation whole-
   window screenshot dispatch, UI-thread enqueue/cancellation, and failure
@@ -2101,8 +2100,8 @@ Primary current owners:
   owns the shared source reader for the split
   `MainWindow.CaptureSelectionBindings.*.cs` adapter family.
 - `tests/Sussudio.Tests/MainWindow.FullScreenOwnership.Helpers.cs` owns the
-  shared source reader for the split `MainWindow.FullScreen.*.cs` adapter
-  family.
+  shared source reader for the consolidated `MainWindow.FullScreen.Composition.cs`
+  adapter.
 - `tests/Sussudio.Tests/MainWindow.PreviewRendererOwnership.Helpers.cs` owns the
   shared source reader for the consolidated `MainWindow.PreviewRenderer.Composition.cs`
   adapter.

@@ -1,6 +1,9 @@
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Input;
 using Sussudio.Controllers;
 
 namespace Sussudio;
@@ -44,4 +47,54 @@ public sealed partial class MainWindow
             IsWindowClosing = () => _isWindowClosing,
         });
     }
+
+    private void PreviewBorder_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        ToggleFullScreen();
+    }
+
+    private void FullScreenMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        ToggleFullScreen();
+    }
+
+    private void FullScreenButton_Click(object sender, RoutedEventArgs e)
+    {
+        ToggleFullScreen();
+    }
+
+    private void ToggleFullScreen()
+        => _fullScreenController.Toggle();
+
+    public Task SetFullScreenEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+        => InvokeOnUiThreadAsync(
+            () => _fullScreenController.SetEnabledAsync(enabled),
+            cancellationToken);
+
+    private void EnterFullScreen()
+        => _fullScreenController.Enter();
+
+    private void ExitFullScreen()
+        => _fullScreenController.Exit();
+
+    private Task EnterFullScreenAsync()
+        => _fullScreenController.EnterAsync();
+
+    private Task ExitFullScreenAsync()
+        => _fullScreenController.ExitAsync();
+
+    private void OnContentKeyDown(object sender, KeyRoutedEventArgs e)
+        => _fullScreenController.OnKeyDown(e);
+
+    private void OnFullScreenPointerActivity(object sender, PointerRoutedEventArgs e)
+        => _fullScreenController.OnPointerActivity(e);
+
+    private void OnFullScreenControlsPointerEntered(object sender, PointerRoutedEventArgs e)
+        => _fullScreenController.OnControlsPointerEntered();
+
+    private void OnFullScreenControlsPointerExited(object sender, PointerRoutedEventArgs e)
+        => _fullScreenController.OnControlsPointerExited(e);
+
+    private void StopFullScreenAutoHideTimer()
+        => _fullScreenController.StopAutoHideTimer();
 }
