@@ -112,9 +112,7 @@ static partial class Program
 
     internal static Task D3D11PreviewRenderer_FrameCaptureCancellationClearsPendingRequest()
     {
-        var rendererText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotRequests.cs")
-            .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs")
+        var rendererText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs")
             .Replace("\r\n", "\n");
         var captureMethod = ExtractTextBetween(
             rendererText,
