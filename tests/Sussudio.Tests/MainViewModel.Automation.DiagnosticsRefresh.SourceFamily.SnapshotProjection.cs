@@ -7,13 +7,6 @@ static partial class Program
         public string SnapshotProjectionFlatteningText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSetText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningAutomationSnapshotText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningCaptureFormatText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningCaptureFormatRequestedText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningCaptureFormatHdrRequestText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningCaptureFormatActualText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningCaptureFormatNegotiatedText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningCaptureFormatReaderObservationText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningCaptureFormatEncoderText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningCaptureTransportText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningCaptureCadenceText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningVisualCadenceText { get; init; } = string.Empty;
