@@ -50,7 +50,6 @@ static partial class Program
                 SnapshotProjectionCaptureFormatRequestedText,
                 SnapshotProjectionCaptureFormatNegotiatedText,
                 SnapshotProjectionCaptureFormatReaderObservationText,
-                SnapshotProjectionCaptureFormatEncoderText,
                 SnapshotProjectionCaptureTransportText,
                 SnapshotProjectionCaptureCadenceText,
                 SnapshotProjectionMjpegText,

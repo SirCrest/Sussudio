@@ -196,7 +196,8 @@ capture-command projection-to-`AutomationSnapshot` field flattening.
 capture-format projection routing and groups requested, HDR-request, actual,
 negotiated, reader-observation, and encoder format modules consumed by the
 automation snapshot DTO, plus HDR activation/auto-downgrade projection, actual
-capture dimensions/frame-rate projection, and final capture-format flattening.
+capture dimensions/frame-rate projection, encoder format/codec/profile/ten-bit
+confirmation projection, and final capture-format flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Requested.cs` owns
 requested capture format, quality, HDR toggle, and audio-toggle projection
 inputs and final field flattening.
@@ -206,9 +207,6 @@ token projection inputs and final field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.ReaderObservation.cs`
 owns source-reader subtype and observed pixel/surface format projection inputs
 and final field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Encoder.cs` owns
-encoder format, codec, profile, and ten-bit confirmation projection inputs and
-final field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureTransport.cs` owns capture
 memory preference, requested/negotiated video subtype, and frame-ledger
 projection consumed by the automation snapshot DTO, plus final capture

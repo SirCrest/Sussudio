@@ -31,8 +31,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var captureFormatReaderObservationProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.ReaderObservation.cs")
             .Replace("\r\n", "\n");
-        var captureFormatEncoderProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Encoder.cs")
-            .Replace("\r\n", "\n");
         AssertContains(captureFormatRequestedProjectionText, "private static CaptureFormatRequestedProjection BuildCaptureFormatRequestedProjection(");
         AssertContains(captureFormatRequestedProjectionText, "Width = captureRuntime.RequestedWidth,");
         AssertContains(captureFormatRequestedProjectionText, "AudioEnabled = captureRuntime.RequestedAudioEnabled");
@@ -47,9 +45,9 @@ static partial class Program
         AssertContains(captureFormatReaderObservationProjectionText, "private static CaptureFormatReaderObservationProjection BuildCaptureFormatReaderObservationProjection(");
         AssertContains(captureFormatReaderObservationProjectionText, "LatestObservedFramePixelFormat = captureRuntime.LatestObservedFramePixelFormat,");
         AssertContains(captureFormatReaderObservationProjectionText, "MfReadwriteDisableConverters = captureRuntime.MfReadwriteDisableConverters");
-        AssertContains(captureFormatEncoderProjectionText, "private static CaptureFormatEncoderProjection BuildCaptureFormatEncoderProjection(");
-        AssertContains(captureFormatEncoderProjectionText, "VideoCodec = captureRuntime.EncoderVideoCodec,");
-        AssertContains(captureFormatEncoderProjectionText, "TenBitPipelineConfirmed = captureRuntime.EncoderTenBitPipelineConfirmed");
+        AssertContains(captureFormatProjectionText, "private static CaptureFormatEncoderProjection BuildCaptureFormatEncoderProjection(");
+        AssertContains(captureFormatProjectionText, "VideoCodec = captureRuntime.EncoderVideoCodec,");
+        AssertContains(captureFormatProjectionText, "TenBitPipelineConfirmed = captureRuntime.EncoderTenBitPipelineConfirmed");
 
         AssertContains(captureFormatRequestedProjectionText, "private static CaptureFormatRequestedFlattenedProjection BuildCaptureFormatRequestedFlattenedProjection(");
         AssertContains(captureFormatRequestedProjectionText, "Width = captureFormat.Requested.Width,");
@@ -63,9 +61,9 @@ static partial class Program
         AssertContains(captureFormatReaderObservationProjectionText, "private static CaptureFormatReaderObservationFlattenedProjection BuildCaptureFormatReaderObservationFlattenedProjection(");
         AssertContains(captureFormatReaderObservationProjectionText, "LatestObservedFramePixelFormat = captureFormat.ReaderObservation.LatestObservedFramePixelFormat,");
         AssertContains(captureFormatReaderObservationProjectionText, "MfReadwriteDisableConverters = captureFormat.ReaderObservation.MfReadwriteDisableConverters");
-        AssertContains(captureFormatEncoderProjectionText, "private static CaptureFormatEncoderFlattenedProjection BuildCaptureFormatEncoderFlattenedProjection(");
-        AssertContains(captureFormatEncoderProjectionText, "VideoCodec = captureFormat.Encoder.VideoCodec,");
-        AssertContains(captureFormatEncoderProjectionText, "TenBitPipelineConfirmed = captureFormat.Encoder.TenBitPipelineConfirmed");
+        AssertContains(captureFormatProjectionText, "private static CaptureFormatEncoderFlattenedProjection BuildCaptureFormatEncoderFlattenedProjection(");
+        AssertContains(captureFormatProjectionText, "VideoCodec = captureFormat.Encoder.VideoCodec,");
+        AssertContains(captureFormatProjectionText, "TenBitPipelineConfirmed = captureFormat.Encoder.TenBitPipelineConfirmed");
         AssertDoesNotContain(snapshotFlatteningText, "RequestedWidth = captureRuntime.RequestedWidth,");
         AssertDoesNotContain(snapshotFlatteningText, "RequestedWidth = captureFormat.RequestedWidth,");
         AssertDoesNotContain(snapshotFlatteningText, "HdrActivationReason = captureRuntime.HdrActivationReason,");

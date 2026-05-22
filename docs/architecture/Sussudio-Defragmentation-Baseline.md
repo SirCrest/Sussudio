@@ -145,6 +145,18 @@ Behavior preserved: Realtime MJPEG duplicate-source and decode/reorder diagnosti
 Notes for future agents: keep lightweight MJPEG realtime verdict policy with `DiagnosticEvaluationRealtime.cs`; keep source and preview separate while they own larger policy sets
 
 Date: 2026-05-21
+Area: Automation diagnostics capture-format projection
+Problem: Encoder format/codec/profile projection mappings lived in a tiny capture-format partial even though the capture-format projection owner immediately composes and flattens them with the rest of the capture-format group.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Encoder.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics capture-format projection ownership tests and runtime snapshot regression tests
+Behavior preserved: Encoder input/output pixel format, codec, profile, and ten-bit confirmation still map into the same flattened automation snapshot fields
+Notes for future agents: keep encoder capture-format DTO mappings with `CaptureFormat.cs`; keep requested, negotiated, and reader-observation projections separate while they remain larger scan units
+
+Date: 2026-05-21
 Area: Automation diagnostics preview D3D projection
 Problem: Preview D3D frame-latency wait and frame-statistics projection mappings lived in tiny partials even though the Preview D3D projection owner immediately composes and flattens both with pipeline latency; the larger frame-flow mapping remains its own focused owner.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameLatencyWait.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameStats.cs`

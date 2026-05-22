@@ -32,14 +32,14 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatActualProjection BuildCaptureFormatActualProjection(");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatNegotiatedText, "private static CaptureFormatNegotiatedProjection BuildCaptureFormatNegotiatedProjection(");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatReaderObservationText, "private static CaptureFormatReaderObservationProjection BuildCaptureFormatReaderObservationProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatEncoderText, "private static CaptureFormatEncoderProjection BuildCaptureFormatEncoderProjection(");
+        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatEncoderProjection BuildCaptureFormatEncoderProjection(");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatFlattenedProjection BuildCaptureFormatFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatRequestedText, "private static CaptureFormatRequestedFlattenedProjection BuildCaptureFormatRequestedFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatHdrRequestFlattenedProjection BuildCaptureFormatHdrRequestFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatActualFlattenedProjection BuildCaptureFormatActualFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatNegotiatedText, "private static CaptureFormatNegotiatedFlattenedProjection BuildCaptureFormatNegotiatedFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatReaderObservationText, "private static CaptureFormatReaderObservationFlattenedProjection BuildCaptureFormatReaderObservationFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatEncoderText, "private static CaptureFormatEncoderFlattenedProjection BuildCaptureFormatEncoderFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatEncoderFlattenedProjection BuildCaptureFormatEncoderFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureTransportFlattenedProjection(captureTransport)");
         AssertContains(diagnostics.SnapshotProjectionCaptureTransportText, "private static CaptureTransportFlattenedProjection BuildCaptureTransportFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureCadenceFlattenedProjection(captureCadence)");
