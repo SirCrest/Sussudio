@@ -3427,13 +3427,11 @@ context handoff consumed by the post-cleanup phase, while
 mapping from completion evidence and run bootstrap metadata.
 `DiagnosticSessionRunExecution.cs` hands scenario execution directly to
 `DiagnosticSessionScenarioPhaseRunner.cs`, which owns the main scenario phase
-for setup/startup, sampling/completion delegation, and fault drain delegation.
+for setup/startup, sampling, completion delegation, and fault drain delegation.
 `DiagnosticSessionScenarioPhaseContext.cs` owns the explicit phase input
 handoff from run context construction into the phase runner.
 `DiagnosticSessionScenarioPhaseResult.cs` owns the immutable completion handoff,
 and `DiagnosticSessionScenarioPhaseState.cs` owns mutable in-flight phase state.
-`DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owns scenario sampling:
-live-state sampling setup, sample-loop invocation, and handoff to completion.
 `DiagnosticSessionScenarioPhaseCompletion.cs` owns post-sampling completion
 order and fault-drain delegation: registered background work before
 rejected-export handling, rejected-export handling before PresentMon
@@ -4192,11 +4190,10 @@ owner, fold it back into that owner and update the source-shape tests and
    context handoff and `DiagnosticSessionRunExecution.ResultBuildRequest.cs`
    owning result-build request mapping, while
    `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario execution
-   phase. `DiagnosticSessionScenarioPhaseContext.cs`,
+   phase including scenario sampling. `DiagnosticSessionScenarioPhaseContext.cs`,
    `DiagnosticSessionScenarioPhaseResult.cs`, and
    `DiagnosticSessionScenarioPhaseState.cs` own the explicit scenario
    context/result/state handoffs, with
-   `DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owning sampling and
    `DiagnosticSessionScenarioPhaseCompletion.cs` owning post-sampling
    completion ordering and fault-drain delegation while background task
    completion lives in `DiagnosticSessionBackgroundTasks.cs`. Scenario catalog,

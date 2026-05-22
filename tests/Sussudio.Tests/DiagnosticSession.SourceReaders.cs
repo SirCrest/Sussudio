@@ -172,7 +172,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionScenarioPhaseContext.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseResult.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseState.cs",
-            "tools/Common/DiagnosticSessionScenarioPhaseRunner.Sampling.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseCompletion.cs");
 
     private static string ReadDiagnosticSessionRunExecutionRootSource()
@@ -190,7 +189,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionScenarioPhaseContext.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseResult.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseState.cs",
-            "tools/Common/DiagnosticSessionScenarioPhaseRunner.Sampling.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseCompletion.cs");
 
     private static string ReadDiagnosticSessionRunExecutionCompletionSource()
