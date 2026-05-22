@@ -2713,9 +2713,9 @@ remain in `CaptureRuntimeSnapshot.cs`, `PerformanceTimelineEntry*.cs`,
 `CaptureRuntimeSnapshot.cs` owns the capture runtime DTO surface: root
 session/device identity, ingest/audio, reader transport, capture format, HDR
 pipeline, source telemetry, A/V sync, and recording evidence.
-The `PreviewRuntimeSnapshot*.cs` partial family is split by diagnostics surface:
-root surface/frame health, startup, display cadence, D3D renderer diagnostics,
-and GPU playback. The performance timeline DTO is split by
+`PreviewRuntimeSnapshot.cs` owns the preview runtime DTO surface: surface/frame
+health, startup, display cadence, D3D renderer diagnostics, and GPU playback.
+The performance timeline DTO is split by
 diagnostics surface: root capture/preview cadence, preview/MJPEG/D3D,
 Flashback playback, Flashback export, and process/system health. Do not
 recreate a broad `AutomationRuntimeSnapshots.cs` catch-all; add new DTO fields

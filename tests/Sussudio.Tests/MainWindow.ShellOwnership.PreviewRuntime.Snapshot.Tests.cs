@@ -17,10 +17,6 @@ static partial class Program
         var previewRuntimeSnapshotHealthPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthPolicy.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotInputText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotInput.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotModelText = ReadRepoFile("Sussudio/Models/Automation/PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");
-        var previewRuntimeSnapshotStartupModelText = ReadRepoFile("Sussudio/Models/Automation/PreviewRuntimeSnapshot.Startup.cs").Replace("\r\n", "\n");
-        var previewRuntimeSnapshotDisplayCadenceModelText = ReadRepoFile("Sussudio/Models/Automation/PreviewRuntimeSnapshot.DisplayCadence.cs").Replace("\r\n", "\n");
-        var previewRuntimeSnapshotD3dModelText = ReadRepoFile("Sussudio/Models/Automation/PreviewRuntimeSnapshot.D3D.cs").Replace("\r\n", "\n");
-        var previewRuntimeSnapshotGpuPlaybackModelText = ReadRepoFile("Sussudio/Models/Automation/PreviewRuntimeSnapshot.GpuPlayback.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
@@ -111,19 +107,19 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotHealthPolicyText, "var startupTimedOut = input.IsPreviewing");
         AssertContains(previewRuntimeSnapshotHealthPolicyText, "input.FramesArrived > 30");
         AssertContains(previewRuntimeSnapshotHealthPolicyText, "input.CurrentTick - input.LastPresentedTick > 3000");
-        AssertContains(previewRuntimeSnapshotModelText, "public sealed partial class PreviewRuntimeSnapshot");
+        AssertContains(previewRuntimeSnapshotModelText, "public sealed class PreviewRuntimeSnapshot");
         AssertContains(previewRuntimeSnapshotModelText, "public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;");
         AssertContains(previewRuntimeSnapshotModelText, "public bool RendererAttached { get; init; }");
-        AssertContains(previewRuntimeSnapshotStartupModelText, "public sealed partial class PreviewRuntimeSnapshot");
-        AssertContains(previewRuntimeSnapshotStartupModelText, "public string StartupState { get; init; } = \"Idle\";");
-        AssertContains(previewRuntimeSnapshotStartupModelText, "public PreviewStartupSignalFlags StartupRequiredSignals { get; init; }");
-        AssertContains(previewRuntimeSnapshotDisplayCadenceModelText, "public double[] DisplayCadenceRecentIntervalsMs { get; init; } = Array.Empty<double>();");
-        AssertContains(previewRuntimeSnapshotD3dModelText, "public string RendererMode { get; init; } = \"None\";");
-        AssertContains(previewRuntimeSnapshotD3dModelText, "public string D3DSwapChainAddress { get; init; } = string.Empty;");
-        AssertContains(previewRuntimeSnapshotD3dModelText, "public PreviewSlowFrameDiagnostic[] D3DRecentSlowFrames { get; init; } = Array.Empty<PreviewSlowFrameDiagnostic>();");
-        AssertContains(previewRuntimeSnapshotGpuPlaybackModelText, "public string GpuPlaybackState { get; init; } = \"None\";");
+        AssertContains(previewRuntimeSnapshotModelText, "public string StartupState { get; init; } = \"Idle\";");
+        AssertContains(previewRuntimeSnapshotModelText, "public PreviewStartupSignalFlags StartupRequiredSignals { get; init; }");
+        AssertContains(previewRuntimeSnapshotModelText, "public double[] DisplayCadenceRecentIntervalsMs { get; init; } = Array.Empty<double>();");
+        AssertContains(previewRuntimeSnapshotModelText, "public string RendererMode { get; init; } = \"None\";");
+        AssertContains(previewRuntimeSnapshotModelText, "public string D3DSwapChainAddress { get; init; } = string.Empty;");
+        AssertContains(previewRuntimeSnapshotModelText, "public PreviewSlowFrameDiagnostic[] D3DRecentSlowFrames { get; init; } = Array.Empty<PreviewSlowFrameDiagnostic>();");
+        AssertContains(previewRuntimeSnapshotModelText, "public string GpuPlaybackState { get; init; } = \"None\";");
+        AssertDoesNotContain(previewRuntimeSnapshotModelText, "partial class PreviewRuntimeSnapshot");
 
-        AssertContains(agentMapText, "PreviewRuntimeSnapshot*.cs");
+        AssertContains(agentMapText, "PreviewRuntimeSnapshot.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotSamplingController.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotInput.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
@@ -132,8 +128,10 @@ static partial class Program
         AssertContains(agentMapText, "PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotHealthInputFactory.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotHealthPolicy.cs");
-        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshot*.cs");
-        AssertContains(cleanupPlanText, "root surface/frame health, startup, display cadence, D3D renderer diagnostics,");
+        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshot.cs");
+        AssertContains(cleanupPlanText, "surface/frame");
+        AssertContains(cleanupPlanText, "display cadence");
+        AssertContains(cleanupPlanText, "D3D renderer diagnostics");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotSamplingController.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotInput.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotMapper.cs");
@@ -165,10 +163,6 @@ static partial class Program
         AssertDoesNotContain(previewRuntimeSnapshotText, "FramesArrived = _previewRendererHostController.FramesArrived,");
         AssertDoesNotContain(previewRuntimeSnapshotSamplingControllerText, "TaskCompletionSource<PreviewRuntimeSnapshot>");
         AssertDoesNotContain(previewRuntimeSnapshotSamplingControllerText, "return new PreviewRuntimeSnapshot");
-        AssertDoesNotContain(previewRuntimeSnapshotModelText, "StartupGpuSignalMediaOpened");
-        AssertDoesNotContain(previewRuntimeSnapshotModelText, "DisplayCadenceRecentIntervalsMs");
-        AssertDoesNotContain(previewRuntimeSnapshotModelText, "D3DSwapChainAddress");
-        AssertDoesNotContain(previewRuntimeSnapshotModelText, "GpuPlaybackState");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetRenderCpuTimingMetrics()");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetFrameOwnershipMetrics()");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetDxgiFrameStatisticsMetrics()");
