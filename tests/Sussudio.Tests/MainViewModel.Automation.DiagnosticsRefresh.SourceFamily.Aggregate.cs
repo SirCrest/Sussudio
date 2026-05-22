@@ -52,8 +52,6 @@ static partial class Program
                 SnapshotProjectionCaptureCommandsText,
                 SnapshotProjectionCaptureFormatText,
                 SnapshotProjectionCaptureFormatRequestedText,
-                SnapshotProjectionCaptureFormatHdrRequestText,
-                SnapshotProjectionCaptureFormatActualText,
                 SnapshotProjectionCaptureFormatNegotiatedText,
                 SnapshotProjectionCaptureFormatReaderObservationText,
                 SnapshotProjectionCaptureFormatEncoderText,

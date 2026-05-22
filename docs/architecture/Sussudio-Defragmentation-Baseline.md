@@ -229,6 +229,18 @@ Behavior preserved: idle and warming-up `diagnostic_unavailable` verdicts keep t
 Notes for future agents: keep first-branch realtime state verdicts with `DiagnosticEvaluationRealtime.cs` unless they grow independent policy
 
 Date: 2026-05-21
+Area: Automation diagnostics capture-format projection
+Problem: HDR-request and actual capture-format projection groups lived in tiny partials even though the capture-format projection owner immediately composes and flattens them with the rest of the format DTO.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.HdrRequest.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Actual.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `AutomationDiagnosticsHub` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics capture-format projection ownership tests and runtime snapshot regression tests
+Behavior preserved: HDR activation/auto-downgrade fields and actual capture dimensions/frame-rate still map from `CaptureRuntimeSnapshot` into the same flattened automation snapshot fields
+Notes for future agents: keep tiny capture-format projection groups with `CaptureFormat.cs` unless a group grows independent policy or a reusable collaborator boundary
+
+Date: 2026-05-21
 Area: Automation diagnostics HDR pipeline projection
 Problem: HDR pipeline policy projection and final flattened DTO field projection lived in separate partials even though the flattening is a direct one-to-one projection of HDR runtime, warmup, pipeline-mode, telemetry-alignment, and truth-verdict fields.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.HdrPipeline.cs`

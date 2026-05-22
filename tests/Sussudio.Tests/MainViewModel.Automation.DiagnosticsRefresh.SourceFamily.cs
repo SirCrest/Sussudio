@@ -56,8 +56,6 @@ static partial class Program
             SnapshotProjectionCaptureCommandsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureCommands.cs"),
             SnapshotProjectionCaptureFormatText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs"),
             SnapshotProjectionCaptureFormatRequestedText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Requested.cs"),
-            SnapshotProjectionCaptureFormatHdrRequestText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.HdrRequest.cs"),
-            SnapshotProjectionCaptureFormatActualText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Actual.cs"),
             SnapshotProjectionCaptureFormatNegotiatedText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Negotiated.cs"),
             SnapshotProjectionCaptureFormatReaderObservationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.ReaderObservation.cs"),
             SnapshotProjectionCaptureFormatEncoderText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Encoder.cs"),

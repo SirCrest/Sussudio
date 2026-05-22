@@ -37,6 +37,76 @@ public sealed partial class AutomationDiagnosticsHub
         public CaptureFormatEncoderProjection Encoder { get; init; }
     }
 
+    private static CaptureFormatHdrRequestProjection BuildCaptureFormatHdrRequestProjection(CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            ActivationReason = captureRuntime.HdrActivationReason,
+            AutoDowngraded = captureRuntime.HdrAutoDowngraded,
+            AutoDowngradeReason = captureRuntime.HdrAutoDowngradeReason,
+            RequestedButSourceNot10Bit = captureRuntime.HdrRequestedButSourceNot10Bit
+        };
+
+    private static CaptureFormatHdrRequestFlattenedProjection BuildCaptureFormatHdrRequestFlattenedProjection(
+        CaptureFormatProjection captureFormat)
+        => new()
+        {
+            ActivationReason = captureFormat.HdrRequest.ActivationReason,
+            AutoDowngraded = captureFormat.HdrRequest.AutoDowngraded,
+            AutoDowngradeReason = captureFormat.HdrRequest.AutoDowngradeReason,
+            RequestedButSourceNot10Bit = captureFormat.HdrRequest.RequestedButSourceNot10Bit
+        };
+
+    private readonly record struct CaptureFormatHdrRequestProjection
+    {
+        public string ActivationReason { get; init; }
+        public bool AutoDowngraded { get; init; }
+        public string AutoDowngradeReason { get; init; }
+        public bool RequestedButSourceNot10Bit { get; init; }
+    }
+
+    private readonly record struct CaptureFormatHdrRequestFlattenedProjection
+    {
+        public string ActivationReason { get; init; }
+        public bool AutoDowngraded { get; init; }
+        public string AutoDowngradeReason { get; init; }
+        public bool RequestedButSourceNot10Bit { get; init; }
+    }
+
+    private static CaptureFormatActualProjection BuildCaptureFormatActualProjection(CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            Width = captureRuntime.ActualWidth,
+            Height = captureRuntime.ActualHeight,
+            FrameRate = captureRuntime.ActualFrameRate,
+            FrameRateArg = captureRuntime.ActualFrameRateArg
+        };
+
+    private static CaptureFormatActualFlattenedProjection BuildCaptureFormatActualFlattenedProjection(
+        CaptureFormatProjection captureFormat)
+        => new()
+        {
+            Width = captureFormat.Actual.Width,
+            Height = captureFormat.Actual.Height,
+            FrameRate = captureFormat.Actual.FrameRate,
+            FrameRateArg = captureFormat.Actual.FrameRateArg
+        };
+
+    private readonly record struct CaptureFormatActualProjection
+    {
+        public uint? Width { get; init; }
+        public uint? Height { get; init; }
+        public double? FrameRate { get; init; }
+        public string? FrameRateArg { get; init; }
+    }
+
+    private readonly record struct CaptureFormatActualFlattenedProjection
+    {
+        public uint? Width { get; init; }
+        public uint? Height { get; init; }
+        public double? FrameRate { get; init; }
+        public string? FrameRateArg { get; init; }
+    }
+
     private readonly record struct CaptureFormatFlattenedProjection
     {
         public CaptureFormatRequestedFlattenedProjection Requested { get; init; }

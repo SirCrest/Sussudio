@@ -463,16 +463,12 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs`
   owns capture-format projection routing and groups requested, HDR-request,
   actual, negotiated, reader-observation, and encoder format modules consumed
-  by `AutomationSnapshot`, plus final capture-format flattening.
+  by `AutomationSnapshot`, plus HDR activation/auto-downgrade projection,
+  actual capture dimensions/frame-rate projection, and final capture-format
+  flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Requested.cs`
   owns requested capture format, quality, HDR toggle, and audio-toggle
   projection inputs and final field flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.HdrRequest.cs`
-  owns HDR activation and auto-downgrade projection inputs and final field
-  flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Actual.cs`
-  owns actual capture dimensions and frame-rate projection inputs and final
-  field flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Negotiated.cs`
   owns negotiated capture dimensions, frame-rate, pixel format, and media
   subtype token projection inputs and final field flattening.

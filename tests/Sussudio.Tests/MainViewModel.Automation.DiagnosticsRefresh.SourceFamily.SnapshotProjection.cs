@@ -17,8 +17,6 @@ static partial class Program
         public string SnapshotProjectionCaptureCommandsText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureFormatText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureFormatRequestedText { get; init; } = string.Empty;
-        public string SnapshotProjectionCaptureFormatHdrRequestText { get; init; } = string.Empty;
-        public string SnapshotProjectionCaptureFormatActualText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureFormatNegotiatedText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureFormatReaderObservationText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureFormatEncoderText { get; init; } = string.Empty;
