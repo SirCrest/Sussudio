@@ -2594,10 +2594,9 @@ motion-confidence labels in
 
 Source-packet fingerprint cadence ingestion now lives in
 `Sussudio/Services/Capture/FrameFingerprintCadenceTracker.cs`. Keep frame
-recording, duplicate-run counters, and fast packet hashing there; keep metrics
-DTO construction, ring-buffer snapshot copying, unique-interval projection,
-duplicate-percent statistics, and pattern labels in
-`Sussudio/Services/Capture/FrameFingerprintCadenceTracker.Metrics.cs`.
+recording, duplicate-run counters, fast packet hashing, metrics DTO
+construction, ring-buffer snapshot copying, unique-interval projection,
+duplicate-percent statistics, and pattern labels there.
 
 MJPEG preview jitter-buffer metrics now live in
 `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs`. Keep metrics
