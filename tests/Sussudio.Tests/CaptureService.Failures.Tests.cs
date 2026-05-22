@@ -41,20 +41,22 @@ public sealed class CaptureServiceFailureOwnershipTests
         AssertContains(failuresText, "private void RecordLastFlashbackFailure(Exception ex)");
         AssertContains(failuresText, "private void ClearLastRecordingFailure()");
         AssertContains(failuresText, "private void ClearLastFlashbackFailure()");
+        AssertContains(failuresText, "private void BeginFatalCaptureCleanup(Exception ex)");
+        AssertContains(failuresText, "EnterCleanupState();");
+        AssertContains(failuresText, "EnterFaultedState();");
         AssertContains(failuresText, "GetLastFailureTelemetry()");
     }
 
     [Fact]
     public void CaptureService_FlashbackBackendFailureCleanup_LivesInFocusedPartialWithoutSessionStateWrites()
     {
-        var failureCleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FailureCleanup.cs")
+        var failuresText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Failures.cs")
             .Replace("\r\n", "\n");
         var flashbackBackendFailureCleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackBackendFailureCleanup.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(failureCleanupText, "private void BeginFatalCaptureCleanup(Exception ex)");
-        AssertDoesNotContain(failureCleanupText, "BeginFlashbackBackendCleanup(");
-        AssertDoesNotContain(failureCleanupText, "IsGpuDeviceLost(");
+        AssertContains(failuresText, "private void BeginFatalCaptureCleanup(Exception ex)");
+        AssertDoesNotContain(failuresText, "IsGpuDeviceLost(");
         AssertContains(flashbackBackendFailureCleanupText, "private void BeginFlashbackBackendCleanup(Exception ex)");
         AssertContains(flashbackBackendFailureCleanupText, "private static bool IsGpuDeviceLost(Exception ex)");
         AssertDoesNotContain(flashbackBackendFailureCleanupText, "_sessionState =");

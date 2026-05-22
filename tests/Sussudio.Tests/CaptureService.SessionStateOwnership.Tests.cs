@@ -32,7 +32,7 @@ static partial class Program
             true,
             File.Exists(Path.Combine(GetRepoRoot(), flashbackBackendFailureCleanupPath.Replace('/', Path.DirectorySeparatorChar))),
             "CaptureService Flashback backend failure cleanup partial exists");
-        var failureCleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FailureCleanup.cs").Replace("\r\n", "\n");
+        var failuresText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Failures.cs").Replace("\r\n", "\n");
         var flashbackBackendFailureCleanupText = ReadRepoFile(flashbackBackendFailureCleanupPath).Replace("\r\n", "\n");
 
         AssertContains(rootText, "private readonly CaptureSessionStateMachine _sessionStateMachine = new();");
@@ -100,12 +100,11 @@ static partial class Program
             "ResetSessionStateAfterCleanup();");
         AssertDoesNotContain(cleanupText, "_sessionState =");
 
-        var fatalCleanupText = ExtractMemberCode(failureCleanupText, "BeginFatalCaptureCleanup");
+        var fatalCleanupText = ExtractMemberCode(failuresText, "BeginFatalCaptureCleanup");
         AssertContains(fatalCleanupText, "EnterCleanupState();");
         AssertContains(fatalCleanupText, "EnterFaultedState();");
-        AssertDoesNotContain(failureCleanupText, "_sessionState =");
-        AssertDoesNotContain(failureCleanupText, "BeginFlashbackBackendCleanup(");
-        AssertDoesNotContain(failureCleanupText, "IsGpuDeviceLost(");
+        AssertDoesNotContain(failuresText, "_sessionState =");
+        AssertDoesNotContain(failuresText, "IsGpuDeviceLost(");
         AssertContains(flashbackBackendFailureCleanupText, "private void BeginFlashbackBackendCleanup(Exception ex)");
         AssertContains(flashbackBackendFailureCleanupText, "private static bool IsGpuDeviceLost(Exception ex)");
         AssertDoesNotContain(flashbackBackendFailureCleanupText, "_sessionState =");
