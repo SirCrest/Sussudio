@@ -9,11 +9,12 @@ using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 
 namespace Sussudio.Tools;
 
-internal sealed partial class DiagnosticSessionLiveStateWriter
+internal sealed class DiagnosticSessionLiveStateWriter
 {
     private readonly DiagnosticSessionRunBootstrap _runBootstrap;
     private readonly DiagnosticSessionRunState _runState;
     private readonly IReadOnlyList<string> _warnings;
+    private DateTimeOffset _lastSamplingLiveStateUtc = DateTimeOffset.MinValue;
 
     internal DiagnosticSessionLiveStateWriter(
         DiagnosticSessionRunBootstrap runBootstrap,
@@ -69,5 +70,20 @@ internal sealed partial class DiagnosticSessionLiveStateWriter
         {
             // The live-state file is diagnostic breadcrumbs only.
         }
+    }
+
+    internal async Task WriteSamplingLiveStateBestEffortAsync(
+        IReadOnlyList<DiagnosticSessionSample> samples,
+        JsonElement initialSnapshot,
+        int commandFailureCount)
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (now - _lastSamplingLiveStateUtc < TimeSpan.FromSeconds(5))
+        {
+            return;
+        }
+
+        _lastSamplingLiveStateUtc = now;
+        await WriteLiveStateBestEffortAsync(samples, initialSnapshot, commandFailureCount).ConfigureAwait(false);
     }
 }

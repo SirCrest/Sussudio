@@ -33,24 +33,17 @@ static partial class Program
         var contextText = ReadDiagnosticSessionRunContextSource();
         var liveStateWriterText = ReadRepoFile("tools/Common/DiagnosticSessionLiveStateWriter.cs")
             .Replace("\r\n", "\n");
-        var liveStateWriterSamplingText = ReadRepoFile("tools/Common/DiagnosticSessionLiveStateWriter.Sampling.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(liveStateWriterText, "internal sealed partial class DiagnosticSessionLiveStateWriter");
+        AssertContains(liveStateWriterText, "internal sealed class DiagnosticSessionLiveStateWriter");
         AssertContains(liveStateWriterText, "LivePath = Path.Combine(runBootstrap.OutputDirectory, \"session-live.json\");");
         AssertContains(liveStateWriterText, "internal string LivePath { get; }");
         AssertContains(liveStateWriterText, "internal async Task WriteLiveStateBestEffortAsync(");
-        AssertContains(liveStateWriterSamplingText, "internal sealed partial class DiagnosticSessionLiveStateWriter");
-        AssertContains(liveStateWriterSamplingText, "internal async Task WriteSamplingLiveStateBestEffortAsync(");
-        AssertContains(liveStateWriterSamplingText, "private DateTimeOffset _lastSamplingLiveStateUtc = DateTimeOffset.MinValue;");
+        AssertContains(liveStateWriterText, "internal async Task WriteSamplingLiveStateBestEffortAsync(");
+        AssertContains(liveStateWriterText, "private DateTimeOffset _lastSamplingLiveStateUtc = DateTimeOffset.MinValue;");
         AssertContains(liveStateWriterText, "TerminalState = terminalStateOverride ?? (_runState.TerminalException is null ? \"running\" : _runState.GetTerminalState())");
         AssertContains(liveStateWriterText, "LastStage = terminalStateOverride is null ? _runState.LastStage : _runState.GetResultLastStage()");
-        AssertContains(liveStateWriterSamplingText, "TimeSpan.FromSeconds(5)");
+        AssertContains(liveStateWriterText, "TimeSpan.FromSeconds(5)");
         AssertContains(liveStateWriterText, "The live-state file is diagnostic breadcrumbs only.");
-        AssertDoesNotContain(liveStateWriterText, "WriteSamplingLiveStateBestEffortAsync(");
-        AssertDoesNotContain(liveStateWriterText, "_lastSamplingLiveStateUtc");
-        AssertDoesNotContain(liveStateWriterSamplingText, "TerminalState = terminalStateOverride");
-        AssertDoesNotContain(liveStateWriterSamplingText, "The live-state file is diagnostic breadcrumbs only.");
         AssertContains(contextText, "_liveStateWriter = new DiagnosticSessionLiveStateWriter(RunBootstrap, RunState, Warnings);");
         AssertContains(contextText, "LivePath = _liveStateWriter.LivePath;");
         AssertContains(contextText, "_liveStateWriter.WriteLiveStateBestEffortAsync(");

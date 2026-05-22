@@ -4020,9 +4020,8 @@ Primary owners:
   recording.
 - `tools/Common/DiagnosticSessionLiveStateWriter.cs` owns the best-effort
   `session-live.json` breadcrumb path, payload shape, health projection,
-  warning projection, and terminal override mapping.
-- `tools/Common/DiagnosticSessionLiveStateWriter.Sampling.cs` owns the
-  sampling live-state write throttle and delegates to the breadcrumb writer.
+  warning projection, terminal override mapping, and sampling live-state write
+  throttle.
 - `tools/Common/DiagnosticSessionRunBootstrap.cs` owns diagnostic-session
   scenario normalization, scenario-plan selection, duration/sample clamping,
   session identity, output-directory creation, and runner process metadata.

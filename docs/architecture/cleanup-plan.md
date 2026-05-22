@@ -3636,9 +3636,7 @@ recording while the runner keeps the scenario flow readable.
 Diagnostic-session live breadcrumbs now live in
 `tools/Common/DiagnosticSessionLiveStateWriter.cs`. It owns the
 `session-live.json` path, payload shape, health and warning projection,
-and terminal override mapping. `DiagnosticSessionLiveStateWriter.Sampling.cs`
-owns the sampling live-state write throttle and delegates to the breadcrumb
-writer.
+terminal override mapping, and sampling live-state write throttle.
 
 Diagnostic-session run bootstrap now lives in
 `tools/Common/DiagnosticSessionRunBootstrap.cs`. It owns scenario
@@ -4136,7 +4134,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionRunState.cs`
 - `DiagnosticSessionLiveStateWriter.cs`
-- `DiagnosticSessionLiveStateWriter.Sampling.cs`
 - `DiagnosticSessionRunBootstrap.cs`
 - `DiagnosticSessionRunContext.cs`
 - `DiagnosticSessionSampler.cs`
