@@ -4,14 +4,12 @@ static partial class Program
     {
         AssertContains(diagnostics.VerificationText, "public async Task<RecordingVerificationResult> VerifyLastRecordingAsync");
         AssertContains(diagnostics.VerificationText, "public async Task<RecordingVerificationResult> VerifyFileAsync");
-        AssertContains(diagnostics.VerificationAutoText, "private bool ShouldAutoVerifySnapshot(");
-        AssertContains(diagnostics.VerificationAutoText, "private RecordingVerificationResult? CaptureLastVerificationForSnapshot(");
-        AssertContains(diagnostics.VerificationAutoText, "private void ScheduleAutoVerificationIfNeeded(");
-        AssertContains(diagnostics.VerificationAutoText, "Automatic recording verification started.");
+        AssertContains(diagnostics.VerificationText, "private bool ShouldAutoVerifySnapshot(");
+        AssertContains(diagnostics.VerificationText, "private RecordingVerificationResult? CaptureLastVerificationForSnapshot(");
+        AssertContains(diagnostics.VerificationText, "private void ScheduleAutoVerificationIfNeeded(");
+        AssertContains(diagnostics.VerificationText, "Automatic recording verification started.");
         AssertContains(diagnostics.VerificationText, "private static CaptureRuntimeSnapshot ApplyVerificationProfile(");
         AssertContains(diagnostics.VerificationText, "string.Equals(verificationProfile, \"flashback-export\"");
-        AssertDoesNotContain(diagnostics.VerificationText, "private bool ShouldAutoVerifySnapshot(");
-        AssertDoesNotContain(diagnostics.VerificationAutoText, "public async Task<RecordingVerificationResult> VerifyFileAsync");
         AssertDoesNotContain(diagnostics.HubText, "public async Task<RecordingVerificationResult> VerifyLastRecordingAsync");
         AssertContains(diagnostics.HubText, "private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;");
         AssertContains(diagnostics.HubText, "IAutomationSnapshotQueryPort snapshotQueryPort,");

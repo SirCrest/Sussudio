@@ -311,10 +311,9 @@ alerts, and audio-queue backlog alerts.
 publication, event throttling, Flashback export completion events, and recent
 event storage.
 `AutomationDiagnosticsHub.Verification.cs` owns manual recording/file
-verification entry points, flashback-export verification profile shaping, and
-event publication for explicit verification.
-`AutomationDiagnosticsHub.Verification.Auto.cs` owns last-verification snapshot
-state, post-recording auto-verification gating, and background scheduling.
+verification entry points, flashback-export verification profile shaping, event
+publication for explicit verification, last-verification snapshot state,
+post-recording auto-verification gating, and background scheduling.
 `AutomationDiagnosticsHub.DiagnosticEvaluation.cs` owns diagnostic verdict
 orchestration and the final healthy/mixed fallback.
 `AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs` owns Flashback-specific
@@ -364,10 +363,9 @@ preview jitter scheduler predicates/evidence,
 renderer-submit predicates/evidence, and
 `PreviewPacingSlowStageClassifier.D3D.cs` owns D3D stage dominance policy.
 `AutomationDiagnosticsHub.Verification.cs` owns manual recording/file
-verification commands, verification-profile adaptation, and explicit
-verification events.
-`AutomationDiagnosticsHub.Verification.Auto.cs` owns automatic post-recording
-verification scheduling and recording-start verification reset.
+verification commands, verification-profile adaptation, explicit verification
+events, automatic post-recording verification scheduling, and recording-start
+verification reset.
 
 Automation command dispatch now keeps the root router focused on the command
 envelope, correlation setup, dispatch pipeline shell, and error shaping.

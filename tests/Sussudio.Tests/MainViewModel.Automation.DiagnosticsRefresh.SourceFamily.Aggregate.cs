@@ -21,7 +21,6 @@ static partial class Program
                 FlashbackRecordingAlertsText,
                 EventsText,
                 VerificationText,
-                VerificationAutoText,
                 LifecycleText,
                 HdrText,
                 SnapshotsText,
