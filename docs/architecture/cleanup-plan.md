@@ -3397,12 +3397,6 @@ button events.
 Diagnostic session DTOs live in feature-oriented model files:
 `tools/Common/DiagnosticSessionOptions.cs`,
 `tools/Common/DiagnosticSessionResult.cs`,
-`tools/Common/DiagnosticSessionResult.CaptureSource.cs`,
-`tools/Common/DiagnosticSessionResult.PreviewCadence.cs`,
-`tools/Common/DiagnosticSessionResult.PreviewScheduler.cs`,
-`tools/Common/DiagnosticSessionResult.PreviewD3D.cs`,
-`tools/Common/DiagnosticSessionResult.FlashbackRecording.cs`,
-`tools/Common/DiagnosticSessionResult.FlashbackExport.cs`,
 `tools/Common/DiagnosticSessionSample.cs`. `DiagnosticSessionOptions.cs` also owns
 shared tool invocation defaults and the ssctl diagnostic-session usage string,
 while `DiagnosticSessionScenarioCatalog.cs` owns normalization and entry lookup.
@@ -4177,12 +4171,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionMetrics.Counters.cs`
 - `DiagnosticSessionOptions.cs`
 - `DiagnosticSessionResult.cs`
-- `DiagnosticSessionResult.CaptureSource.cs`
-- `DiagnosticSessionResult.PreviewCadence.cs`
-- `DiagnosticSessionResult.PreviewScheduler.cs`
-- `DiagnosticSessionResult.PreviewD3D.cs`
-- `DiagnosticSessionResult.FlashbackRecording.cs`
-- `DiagnosticSessionResult.FlashbackExport.cs`
 - `DiagnosticSessionSample.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionCommandChannel.cs`
