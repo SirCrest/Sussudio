@@ -105,7 +105,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs")
             .Replace("\r\n", "\n");
-        var previewSchedulerResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerResult.cs")
+        var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs")
             .Replace("\r\n", "\n");
         var previewSchedulerValidationText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs")
             .Replace("\r\n", "\n");
@@ -132,15 +132,15 @@ static partial class Program
         AssertContains(previewSchedulerValidationText, "IsSparsePreviewSchedulerStressRun(");
         AssertContains(previewSchedulerValidationText, "ValidateFlashbackPreviewScheduler(");
         AssertContains(analysisText, "DiagnosticSessionPreviewSchedulerAnalysis PreviewScheduler,");
-        AssertContains(previewSchedulerResultText, "private readonly record struct DiagnosticSessionPreviewSchedulerResultProjection(");
-        AssertContains(previewSchedulerResultText, "private static DiagnosticSessionPreviewSchedulerResultProjection BuildPreviewSchedulerResultProjection(");
-        AssertContains(previewSchedulerResultText, "var previewScheduler = analysis.PreviewScheduler;");
-        AssertContains(previewSchedulerResultText, "PreviewSchedulerDroppedAtEnd: previewScheduler.DroppedAtEnd");
-        AssertContains(previewSchedulerResultText, "PreviewSchedulerScheduleLateDelta: previewScheduler.ScheduleLateDelta");
-        AssertContains(previewSchedulerResultText, "PreviewSchedulerLastDropReasonAtEnd: previewScheduler.LastDropReasonAtEnd");
-        AssertContains(previewSchedulerResultText, "PreviewSchedulerLastUnderflowReasonAtEnd: previewScheduler.LastUnderflowReasonAtEnd");
-        AssertContains(previewSchedulerResultText, "PreviewSchedulerLastUnderflowInputAgeMsAtEnd: previewScheduler.LastUnderflowInputAgeMsAtEnd");
-        AssertContains(previewSchedulerResultText, "PreviewSchedulerLastUnderflowOutputAgeMsAtEnd: previewScheduler.LastUnderflowOutputAgeMsAtEnd");
+        AssertContains(previewResultText, "private readonly record struct DiagnosticSessionPreviewSchedulerResultProjection(");
+        AssertContains(previewResultText, "private static DiagnosticSessionPreviewSchedulerResultProjection BuildPreviewSchedulerResultProjection(");
+        AssertContains(previewResultText, "var previewScheduler = analysis.PreviewScheduler;");
+        AssertContains(previewResultText, "PreviewSchedulerDroppedAtEnd: previewScheduler.DroppedAtEnd");
+        AssertContains(previewResultText, "PreviewSchedulerScheduleLateDelta: previewScheduler.ScheduleLateDelta");
+        AssertContains(previewResultText, "PreviewSchedulerLastDropReasonAtEnd: previewScheduler.LastDropReasonAtEnd");
+        AssertContains(previewResultText, "PreviewSchedulerLastUnderflowReasonAtEnd: previewScheduler.LastUnderflowReasonAtEnd");
+        AssertContains(previewResultText, "PreviewSchedulerLastUnderflowInputAgeMsAtEnd: previewScheduler.LastUnderflowInputAgeMsAtEnd");
+        AssertContains(previewResultText, "PreviewSchedulerLastUnderflowOutputAgeMsAtEnd: previewScheduler.LastUnderflowOutputAgeMsAtEnd");
         AssertDoesNotContain(analysisText, "long PreviewSchedulerDroppedAtEnd");
         AssertDoesNotContain(analysisText, "double PreviewSchedulerMaxScheduleLateMsObserved");
         AssertDoesNotContain(previewSchedulerText, "private readonly record struct DiagnosticSessionPreviewSchedulerResultProjection(");

@@ -4080,7 +4080,7 @@ Preview-scheduler analysis handoff values live in
 `DiagnosticSessionResultBuilder.PreviewScheduler.cs`: MJPEG jitter-buffer
 counter/delta reads, last drop/underflow reason and age reads,
 and max/schedule-late aggregation. Preview-scheduler result DTO value mapping
-from that handoff lives in `DiagnosticSessionResultBuilder.PreviewSchedulerResult.cs`.
+from that handoff lives in `DiagnosticSessionResultBuilder.PreviewResult.cs`.
 `DiagnosticSessionResultAnalysis.PreviewScheduler` is the single record
 property that carries those values into the scheduler result projection without
 rereading MJPEG jitter-buffer snapshot keys. Flashback preview-scheduler validation orchestration
@@ -4089,9 +4089,8 @@ including target-FPS fallback, visual-cadence tolerance checks, sparse
 deadline/drop tolerance selection, and the call into shared Flashback preview
 validation. Preview cadence, visual cadence, and D3D frame-stats/slow-frame/
 CPU-timing result projection values are split by runtime metric owner:
-`DiagnosticSessionResultBuilder.PreviewResult.cs` owns preview-cadence result
-projection values, `DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs`
-owns visual-cadence result projection values, and
+`DiagnosticSessionResultBuilder.PreviewResult.cs` owns preview-cadence,
+preview-scheduler, and visual-cadence result projection values, and
 `DiagnosticSessionResultBuilder.PreviewD3DResult.cs` owns D3D frame-stats,
 slow-frame, and CPU-timing result projection values. The D3D fields still
 travel through a distinct `PreviewD3D` projection set member so renderer timing
@@ -4812,10 +4811,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`
 - `DiagnosticSessionResultBuilder.CaptureResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
-- `DiagnosticSessionResultBuilder.PreviewSchedulerResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`
 - `DiagnosticSessionResultBuilder.PreviewResult.cs`
-- `DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewD3DResult.cs`
 - `DiagnosticSessionResultBuildRequest.cs`
 - `DiagnosticSessionResultBuilder.ProjectionSet.cs`

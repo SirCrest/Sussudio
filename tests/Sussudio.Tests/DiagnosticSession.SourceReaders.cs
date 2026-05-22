@@ -206,7 +206,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSummary.cs",
             "tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSourceWarnings.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs",
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackCommandsResult.cs",
@@ -217,8 +216,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackExportResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.CaptureResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.PreviewD3DResult.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs");
+            "tools/Common/DiagnosticSessionResultBuilder.PreviewD3DResult.cs");
 
     private static string ReadDiagnosticSessionResultFormatterSource()
         => ReadNormalizedSourceFiles(

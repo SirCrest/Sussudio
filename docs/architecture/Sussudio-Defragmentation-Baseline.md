@@ -169,6 +169,18 @@ Behavior preserved: Flashback playback result projection values and final diagno
 Notes for future agents: keep builder projection records near the mapping code for the same result/formatter concern
 
 Date: 2026-05-21
+Area: Diagnostic session result construction
+Problem: Preview result construction kept scheduler and visual-cadence result projection records in separate small partials even though they are preview DTO mappings consumed by the same final result initializer.
+Files consolidated: `tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerResult.cs`; `tools/Common/DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `DiagnosticSessionResultBuilder` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by diagnostic-session builder ownership and runtime snapshot regression tests
+Behavior preserved: Preview scheduler, preview cadence, and visual-cadence result projection values remain unchanged
+Notes for future agents: keep simple preview result projection records together unless a projection grows independent policy
+
+Date: 2026-05-21
 Area: Diagnostic session result formatting
 Problem: Flashback diagnostic-session section ordering lived in a one-method router file separate from the formatter orchestration.
 Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs`

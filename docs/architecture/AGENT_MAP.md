@@ -4627,8 +4627,6 @@ Primary owners:
   diagnostic-session preview-scheduler analysis handoff values: MJPEG
   jitter-buffer counters, deltas, last drop/underflow reasons, underflow ages,
   and max schedule-late aggregation.
-- `tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerResult.cs` owns
-  preview-scheduler result DTO value mapping from the analysis handoff.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`
   owns Flashback preview-scheduler validation orchestration during result
   analysis: target-FPS fallback, visual-cadence tolerance checks, sparse
@@ -4663,10 +4661,8 @@ Primary owners:
   source-telemetry DTO projection values consumed by the final result
   initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs` owns
-  preview-cadence DTO projection values consumed by the final result
-  initializer.
-- `tools/Common/DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs`
-  owns visual-cadence DTO projection values consumed by the final result
+  preview-cadence, preview-scheduler, and visual-cadence DTO projection values
+  consumed by the final result
   initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewD3DResult.cs` owns D3D
   frame-stats, slow-frame, and CPU-timing DTO projection values consumed by the
