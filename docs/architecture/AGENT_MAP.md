@@ -1405,10 +1405,8 @@ Primary current owners:
 - `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs` owns top-level
   preview resize telemetry throttling and reset state for preview compositor
   transforms. `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires the
-  renderer host context, `Sussudio/MainWindow.PreviewRenderer.ResizeTelemetry.cs`
-  owns the `SizeChanged` adapter and renderer-host reset handoff, and
-  `Sussudio/MainWindow.PreviewRenderer.Lifecycle.cs` owns the stable start/stop,
-  shutdown, and reinit-unsafe-window automation adapters.
+  renderer host context, `SizeChanged` adapter, renderer-host reset handoff,
+  stable start/stop, shutdown, and reinit-unsafe-window automation adapters.
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererStartupPlanBuilder.cs` owns renderer
   startup dimension/fps/HDR/min-present-interval planning.
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns hosted preview
@@ -2113,8 +2111,8 @@ Primary current owners:
   shared source reader for the split `MainWindow.FullScreen.*.cs` adapter
   family.
 - `tests/Sussudio.Tests/MainWindow.PreviewRendererOwnership.Helpers.cs` owns the
-  shared source reader for the split `MainWindow.PreviewRenderer.*.cs` adapter
-  family.
+  shared source reader for the consolidated `MainWindow.PreviewRenderer.Composition.cs`
+  adapter.
 - `tests/Sussudio.Tests/MainWindow.ShutdownCleanupOwnership.Helpers.cs` owns the
   shared source reader for the split `MainWindow.ShutdownCleanup.*.cs` adapter
   family.
@@ -3264,10 +3262,8 @@ Primary current owners:
 - `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs` owns top-level
   preview resize log throttling and reset state.
   `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires renderer-host
-  context callbacks, `Sussudio/MainWindow.PreviewRenderer.ResizeTelemetry.cs`
-  owns the XAML-facing `SizeChanged` adapter and renderer-host reset handoff,
-  and `Sussudio/MainWindow.PreviewRenderer.Lifecycle.cs` owns renderer start,
-  stop, shutdown, and reinit-unsafe-window adapters;
+  context callbacks, the XAML-facing `SizeChanged` adapter, renderer-host reset
+  handoff, renderer start/stop/shutdown, and reinit-unsafe-window adapters;
   reinit renderer-stop/timeout policy lives with `PreviewRendererHostController.Reinit.cs`;
   preview surface presentation lives in `PreviewSurfacePresentationController`,
   and preview shadow visuals live in `PreviewSurfaceShadowController`.

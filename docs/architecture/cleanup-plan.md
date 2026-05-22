@@ -1142,11 +1142,9 @@ recording-aware close finalization now lives in
 Top-level shell resize telemetry throttling for preview compositor transforms
 now lives in `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs`.
 `Sussudio/MainWindow.PreviewRenderer.Composition.cs`
-wires renderer-host context callbacks,
-`Sussudio/MainWindow.PreviewRenderer.ResizeTelemetry.cs` owns the `SizeChanged`
-adapter and renderer-host reset handoff, and
-`Sussudio/MainWindow.PreviewRenderer.Lifecycle.cs` owns the stable start/stop,
-shutdown, and reinit-unsafe-window automation adapters. Preview surface sizing and GPU panel visibility now live in
+wires renderer-host context callbacks, the `SizeChanged` adapter, renderer-host
+reset handoff, and stable start/stop/shutdown/reinit-unsafe-window automation
+adapters. Preview surface sizing and GPU panel visibility now live in
 `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs`, while
 video/control-bar composition shadow visuals, bounds alignment, clear behavior,
 and fade routing live in
@@ -3418,10 +3416,8 @@ timeout recovery stay in `Sussudio/Controllers/Preview/Startup/PreviewStartupWat
 Top-level preview resize telemetry throttling now lives in
 `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs`.
 `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires renderer-host context
-callbacks, `Sussudio/MainWindow.PreviewRenderer.ResizeTelemetry.cs`
-owns the `SizeChanged` adapter and renderer-host reset handoff, and
-`Sussudio/MainWindow.PreviewRenderer.Lifecycle.cs` owns renderer start, stop,
-shutdown, and reinit-unsafe-window adapters; reinit renderer-stop/timeout policy lives with
+callbacks, the `SizeChanged` adapter, renderer-host reset handoff, renderer
+start/stop/shutdown, and reinit-unsafe-window adapters; reinit renderer-stop/timeout policy lives with
 `PreviewRendererHostController.Reinit.cs`; preview surface presentation lives with
 `PreviewSurfacePresentationController`, and preview shadow visuals live with
 `PreviewSurfaceShadowController`.
