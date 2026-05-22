@@ -1363,15 +1363,11 @@ Primary current owners:
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererStartupPlanBuilder.cs` owns renderer
   startup dimension/fps/HDR/min-present-interval planning.
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns hosted preview
-  renderer context, public runtime state, counters, and simple renderer surface
-  methods. `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Lifecycle.cs`
-  owns start/stop/shutdown flow, renderer startup planning, CPU fallback
-  attachment, and cleanup.
-  `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.D3D.cs` owns D3D renderer
-  startup and event/failure handling.
-  `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Reinit.cs` owns D3D
-  reinit renderer-stop/timeout policy, disposal, unsafe-window telemetry, stop
-  tick accounting, and fresh SwapChainPanel replacement.
+  renderer context, public runtime state, counters, start/stop/shutdown flow,
+  renderer startup planning, CPU fallback attachment, D3D renderer startup and
+  event/failure handling, cleanup, D3D reinit renderer-stop/timeout policy,
+  disposal, unsafe-window telemetry, stop tick accounting, and fresh
+  SwapChainPanel replacement.
   `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs` owns preview
   surface content-fit sizing and GPU panel visibility.
   `Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs` owns
@@ -3185,7 +3181,7 @@ Primary current owners:
   `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires renderer-host
   context callbacks, the XAML-facing `SizeChanged` adapter, renderer-host reset
   handoff, renderer start/stop/shutdown, and reinit-unsafe-window adapters;
-  reinit renderer-stop/timeout policy lives with `PreviewRendererHostController.Reinit.cs`;
+  reinit renderer-stop/timeout policy lives with `PreviewRendererHostController.cs`;
   preview surface presentation lives in `PreviewSurfacePresentationController`,
   and preview shadow visuals live in `PreviewSurfaceShadowController`.
 - `Sussudio/MainWindow.PropertyChangedRecording.cs` is the XAML-facing recording
