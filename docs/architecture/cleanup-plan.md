@@ -2708,11 +2708,11 @@ Automation snapshot contracts now live in named model files under
 `AutomationSnapshot*.cs` partial family by domain: root lifecycle/diagnostics,
 user settings, HDR, audio/ingest, recording, capture format, source telemetry,
 preview, MJPEG/cadence, system health, and Flashback. Other snapshot contracts
-remain in `CaptureRuntimeSnapshot*.cs`, `PerformanceTimelineEntry*.cs`,
+remain in `CaptureRuntimeSnapshot.cs`, `PerformanceTimelineEntry*.cs`,
 `FlashbackSegmentInfo.cs`, and `ViewModelRuntimeSnapshot.cs`.
-The `CaptureRuntimeSnapshot*.cs` partial family is split by runtime surface:
-root session/device identity, ingest/audio, reader transport, capture format,
-HDR pipeline, source telemetry, A/V sync, and recording evidence.
+`CaptureRuntimeSnapshot.cs` owns the capture runtime DTO surface: root
+session/device identity, ingest/audio, reader transport, capture format, HDR
+pipeline, source telemetry, A/V sync, and recording evidence.
 The `PreviewRuntimeSnapshot*.cs` partial family is split by diagnostics surface:
 root surface/frame health, startup, display cadence, D3D renderer diagnostics,
 and GPU playback. The performance timeline DTO is split by
@@ -2742,8 +2742,8 @@ projection ownership coverage lives in
 `CaptureRuntimeSnapshot` DTO construction from already-sampled field groups.
 The private runtime snapshot assembly handoff contract lives with the assembler
 that consumes it.
-The automation model surface lives in the `CaptureRuntimeSnapshot*.cs` partial family
-so runtime fields stay grouped by the same domain as the sampled field groups.
+The automation model surface lives in `CaptureRuntimeSnapshot.cs`, with sectioned
+runtime fields grouped by the same domain as the sampled field groups.
 Video ingest, source-reader health, WASAPI capture, playback output counter,
 requested/negotiated reader transport, memory preference, frame-ledger, preview
 renderer-mode projection, recording-integrity summary projection, and their

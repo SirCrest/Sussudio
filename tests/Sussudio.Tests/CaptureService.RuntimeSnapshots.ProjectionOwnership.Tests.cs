@@ -38,20 +38,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var captureRuntimeModelText = ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.cs")
             .Replace("\r\n", "\n");
-        var captureRuntimeIngestAudioModelText = ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.IngestAudio.cs")
-            .Replace("\r\n", "\n");
-        var captureRuntimeTransportModelText = ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.Transport.cs")
-            .Replace("\r\n", "\n");
-        var captureRuntimeCaptureFormatModelText = ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.CaptureFormat.cs")
-            .Replace("\r\n", "\n");
-        var captureRuntimeHdrModelText = ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.Hdr.cs")
-            .Replace("\r\n", "\n");
-        var captureRuntimeSourceTelemetryModelText = ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.SourceTelemetry.cs")
-            .Replace("\r\n", "\n");
-        var captureRuntimeAvSyncModelText = ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.AvSync.cs")
-            .Replace("\r\n", "\n");
-        var captureRuntimeRecordingModelText = ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.Recording.cs")
-            .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
             .Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md")
@@ -87,31 +73,27 @@ static partial class Program
         AssertContains(assemblerText, "RecordingIntegrityStatus = recordingIntegrity.Status,");
         AssertContains(assemblerText, "FlashbackCodecDowngradeReason = fields.FlashbackCodecDowngradeReason,");
         AssertContains(assemblerText, "AvSyncCaptureDriftMs = fields.RuntimeAvSyncDriftMs,");
-        AssertContains(captureRuntimeModelText, "public sealed partial class CaptureRuntimeSnapshot");
+        AssertContains(captureRuntimeModelText, "public sealed class CaptureRuntimeSnapshot");
         AssertContains(captureRuntimeModelText, "public CaptureSessionState SessionState { get; init; } = CaptureSessionState.Uninitialized;");
-        AssertContains(captureRuntimeIngestAudioModelText, "public bool AudioReaderActive { get; init; }");
-        AssertContains(captureRuntimeIngestAudioModelText, "public double WasapiPlaybackOutputPeak { get; init; }");
-        AssertContains(captureRuntimeTransportModelText, "public FrameLedgerEventSnapshot[] FrameLedgerRecentEvents { get; init; } = Array.Empty<FrameLedgerEventSnapshot>();");
-        AssertContains(captureRuntimeTransportModelText, "public string PreviewColorMetadata { get; init; } = \"None\";");
-        AssertContains(captureRuntimeCaptureFormatModelText, "public uint? RequestedWidth { get; init; }");
-        AssertContains(captureRuntimeCaptureFormatModelText, "public string? EncoderVideoCodec { get; init; }");
-        AssertContains(captureRuntimeHdrModelText, "public string HdrRuntimeState { get; init; } = \"Inactive\";");
-        AssertContains(captureRuntimeHdrModelText, "public string TelemetryAlignmentStatus { get; init; } = \"Unknown\";");
-        AssertContains(captureRuntimeSourceTelemetryModelText, "public IReadOnlyList<SourceTelemetryDetailEntry> SourceTelemetryDetails { get; init; } = Array.Empty<SourceTelemetryDetailEntry>();");
-        AssertContains(captureRuntimeAvSyncModelText, "public double? AvSyncCaptureDriftMs { get; init; }");
-        AssertContains(captureRuntimeRecordingModelText, "public string RecordingIntegrityStatus { get; init; } = \"NotStarted\";");
-        AssertContains(captureRuntimeRecordingModelText, "public string? FlashbackCodecDowngradeReason { get; init; }");
-        AssertDoesNotContain(captureRuntimeModelText, "AudioReaderActive");
-        AssertDoesNotContain(captureRuntimeModelText, "RequestedWidth");
-        AssertDoesNotContain(captureRuntimeModelText, "HdrRuntimeState");
-        AssertDoesNotContain(captureRuntimeModelText, "SourceTelemetryDetails");
-        AssertDoesNotContain(captureRuntimeModelText, "RecordingIntegrityStatus");
+        AssertContains(captureRuntimeModelText, "public bool AudioReaderActive { get; init; }");
+        AssertContains(captureRuntimeModelText, "public double WasapiPlaybackOutputPeak { get; init; }");
+        AssertContains(captureRuntimeModelText, "public FrameLedgerEventSnapshot[] FrameLedgerRecentEvents { get; init; } = Array.Empty<FrameLedgerEventSnapshot>();");
+        AssertContains(captureRuntimeModelText, "public string PreviewColorMetadata { get; init; } = \"None\";");
+        AssertContains(captureRuntimeModelText, "public uint? RequestedWidth { get; init; }");
+        AssertContains(captureRuntimeModelText, "public string? EncoderVideoCodec { get; init; }");
+        AssertContains(captureRuntimeModelText, "public string HdrRuntimeState { get; init; } = \"Inactive\";");
+        AssertContains(captureRuntimeModelText, "public string TelemetryAlignmentStatus { get; init; } = \"Unknown\";");
+        AssertContains(captureRuntimeModelText, "public IReadOnlyList<SourceTelemetryDetailEntry> SourceTelemetryDetails { get; init; } = Array.Empty<SourceTelemetryDetailEntry>();");
+        AssertContains(captureRuntimeModelText, "public double? AvSyncCaptureDriftMs { get; init; }");
+        AssertContains(captureRuntimeModelText, "public string RecordingIntegrityStatus { get; init; } = \"NotStarted\";");
+        AssertContains(captureRuntimeModelText, "public string? FlashbackCodecDowngradeReason { get; init; }");
+        AssertDoesNotContain(captureRuntimeModelText, "partial class CaptureRuntimeSnapshot");
 
         AssertContains(agentMapText, "`CaptureService.RuntimeSnapshots.cs` samples runtime snapshot inputs consumed by UI,");
         AssertContains(agentMapText, "`CaptureService.RuntimeSnapshotAssembler.cs` owns final `CaptureRuntimeSnapshot` DTO construction");
         AssertContains(agentMapText, "from already-sampled field groups and the private runtime snapshot assembly");
         AssertContains(agentMapText, "handoff contract consumed by that map.");
-        AssertContains(agentMapText, "CaptureRuntimeSnapshot*.cs");
+        AssertContains(agentMapText, "CaptureRuntimeSnapshot.cs");
         AssertContains(agentMapText, "owns video ingest/source-reader/WASAPI playback");
         AssertContains(agentMapText, "and reader/transport projections, recording-integrity summary projection, and");
         AssertContains(agentMapText, "and its private HDR pipeline/warmup handoff models.");
@@ -121,7 +103,7 @@ static partial class Program
         AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples");
         AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs` owns final");
         AssertContains(cleanupPlanText, "The private runtime snapshot assembly handoff contract lives with the assembler");
-        AssertContains(cleanupPlanText, "`CaptureRuntimeSnapshot*.cs` partial family");
+        AssertContains(cleanupPlanText, "`CaptureRuntimeSnapshot.cs`");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RuntimeSnapshotAssemblyFields.cs")),

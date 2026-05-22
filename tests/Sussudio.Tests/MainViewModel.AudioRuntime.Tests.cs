@@ -77,8 +77,7 @@ static partial class Program
         var playbackVolumeText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.Volume.cs").Replace("\r\n", "\n");
         var runtimeContractsText = string.Join(
             "\n",
-            ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.cs"),
-            ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.IngestAudio.cs"))
+            ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.cs"))
             .Replace("\r\n", "\n");
         var runtimeSnapshotText = string.Join(
             "\n",
