@@ -3071,16 +3071,14 @@ command failure projection, playback-thread liveness, command readiness guards,
 skipped-not-ready accounting, failure-detail formatting, last-command failure
 state, and no-op logging now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs`.
-Playback thread state fields and stop timeout policy now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs`.
-Playback thread start/recovery and start-failure rollback now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadStartLifecycle.cs`.
-Playback thread stop/cancel/join diagnostics and post-stop cleanup now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadStopLifecycle.cs`.
-Playback-thread command channel capacity/state, bounded-channel recreation,
-thread-exit completion, and abandoned-command draining now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadChannel.cs`.
-Keep queue write/coalescing/drop policy in the command queue partial.
+Playback thread lifecycle now lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs`:
+state fields, stop timeout policy, start/recovery, start-failure rollback,
+stop/cancel/join diagnostics, post-stop cleanup, command-channel
+capacity/state, bounded-channel recreation/completion, abandoned-command
+draining, scheduling policy, exit transactions, live-restore cleanup, and CTS
+disposal warnings. Keep queue write/coalescing/drop policy in the command queue
+partial.
 The playback worker loop now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs`; keep
 `PlaybackThreadEntry` queue waiting, cancellation exits, and playback pacing
@@ -3088,15 +3086,7 @@ handoff there. Playback-thread command dispatch and active-command completion
 telemetry now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommandDispatch.cs`;
 keep the command switch and command-complete logging there instead of expanding
-the loop shell. Playback-thread scheduling policy now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadScheduling.cs`;
-keep timer-resolution P/Invoke plus MMCSS task/priority env policy there so
-the worker loop remains focused on command flow.
-Playback-thread exit transactions now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadExit.cs`; keep
-prebuffer release, timer-resolution release, command-channel completion/drain,
-thread/CTS ownership clearing, and deferred preview attach there instead of
-inside the command dispatch loop.
+the loop shell.
 Playback-thread seek command execution now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekCommands.cs`.
 Keep coalesced seek resolution, exact resume targets, playback resume handoff,
@@ -3121,10 +3111,6 @@ audio/preview suppression there. Nudge command execution now lives in
 keep frame-step decode, no-file recovery, and seek-display failure recovery
 there. Go-live/stop command execution remains in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`.
-Playback-thread live-restore cleanup now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCleanup.cs`.
-Keep repeated live-restore cleanup and playback CTS disposal warnings there
-instead of duplicating state-reset blocks inside command handlers.
 Flashback playback audio routing now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs`.
 Keep live audio suppress/restore and playback-state audio/preview routing
