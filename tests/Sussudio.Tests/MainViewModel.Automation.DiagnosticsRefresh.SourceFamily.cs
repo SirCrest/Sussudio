@@ -40,7 +40,6 @@ static partial class Program
             HdrText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Hdr.cs"),
             SnapshotsText = ReadAutomationDiagnosticsHubSnapshotsSource(),
             SnapshotsCoreText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
-            SnapshotsAccessText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.Access.cs"),
             SnapshotProjectionText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
             SnapshotProjectionCompositionText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Composition.cs"),
             SnapshotProjectionFlatteningText = string.Join(
@@ -151,7 +150,6 @@ static partial class Program
             "\n",
             new[]
             {
-                ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.Access.cs"),
                 ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
             });
     }
@@ -182,7 +180,6 @@ static partial class Program
         public string HdrText { get; init; } = string.Empty;
         public string SnapshotsText { get; init; } = string.Empty;
         public string SnapshotsCoreText { get; init; } = string.Empty;
-        public string SnapshotsAccessText { get; init; } = string.Empty;
         public string SnapshotStateText { get; init; } = string.Empty;
         public string PreviewPacingText { get; init; } = string.Empty;
         public string OutputFilesText { get; init; } = string.Empty;

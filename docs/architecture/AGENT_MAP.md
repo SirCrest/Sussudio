@@ -412,11 +412,10 @@ Automation diagnostics ownership:
   `PreviewPacingSlowStageClassifier.D3D.cs` owns D3D stage dominance policy.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.ProcessMetrics.cs`
   owns process CPU, memory, GC, and thread-pool sampling.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.Access.cs`
-  owns public snapshot read/refresh APIs and refresh-gate serialization.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` owns
-  core snapshot refresh orchestration, latest-snapshot publication, timeline
-  append, event notification, and auto-verification handoff.
+  public snapshot read/refresh APIs, refresh-gate serialization, core snapshot
+  refresh orchestration, latest-snapshot publication, timeline append, event
+  notification, and auto-verification handoff.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
   owns the `BuildAutomationSnapshot` shell and dispatch into projection
   composition/flattening.
