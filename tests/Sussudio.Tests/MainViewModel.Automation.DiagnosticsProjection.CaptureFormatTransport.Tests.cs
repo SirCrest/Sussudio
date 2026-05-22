@@ -25,42 +25,36 @@ static partial class Program
         AssertContains(captureFormatProjectionText, "Encoder = BuildCaptureFormatEncoderFlattenedProjection(captureFormat)");
         AssertContains(captureFormatProjectionText, "private readonly record struct CaptureFormatFlattenedProjection");
 
-        var captureFormatRequestedProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Requested.cs")
-            .Replace("\r\n", "\n");
-        var captureFormatNegotiatedProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.Negotiated.cs")
-            .Replace("\r\n", "\n");
-        var captureFormatReaderObservationProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.ReaderObservation.cs")
-            .Replace("\r\n", "\n");
-        AssertContains(captureFormatRequestedProjectionText, "private static CaptureFormatRequestedProjection BuildCaptureFormatRequestedProjection(");
-        AssertContains(captureFormatRequestedProjectionText, "Width = captureRuntime.RequestedWidth,");
-        AssertContains(captureFormatRequestedProjectionText, "AudioEnabled = captureRuntime.RequestedAudioEnabled");
+        AssertContains(captureFormatProjectionText, "private static CaptureFormatRequestedProjection BuildCaptureFormatRequestedProjection(");
+        AssertContains(captureFormatProjectionText, "Width = captureRuntime.RequestedWidth,");
+        AssertContains(captureFormatProjectionText, "AudioEnabled = captureRuntime.RequestedAudioEnabled");
         AssertContains(captureFormatProjectionText, "private static CaptureFormatHdrRequestProjection BuildCaptureFormatHdrRequestProjection(");
         AssertContains(captureFormatProjectionText, "ActivationReason = captureRuntime.HdrActivationReason,");
         AssertContains(captureFormatProjectionText, "RequestedButSourceNot10Bit = captureRuntime.HdrRequestedButSourceNot10Bit");
         AssertContains(captureFormatProjectionText, "private static CaptureFormatActualProjection BuildCaptureFormatActualProjection(");
         AssertContains(captureFormatProjectionText, "Width = captureRuntime.ActualWidth,");
-        AssertContains(captureFormatNegotiatedProjectionText, "private static CaptureFormatNegotiatedProjection BuildCaptureFormatNegotiatedProjection(");
-        AssertContains(captureFormatNegotiatedProjectionText, "Width = captureRuntime.NegotiatedWidth ?? captureRuntime.ActualWidth,");
-        AssertContains(captureFormatNegotiatedProjectionText, "MediaSubtypeToken = captureRuntime.NegotiatedMediaSubtypeToken");
-        AssertContains(captureFormatReaderObservationProjectionText, "private static CaptureFormatReaderObservationProjection BuildCaptureFormatReaderObservationProjection(");
-        AssertContains(captureFormatReaderObservationProjectionText, "LatestObservedFramePixelFormat = captureRuntime.LatestObservedFramePixelFormat,");
-        AssertContains(captureFormatReaderObservationProjectionText, "MfReadwriteDisableConverters = captureRuntime.MfReadwriteDisableConverters");
+        AssertContains(captureFormatProjectionText, "private static CaptureFormatNegotiatedProjection BuildCaptureFormatNegotiatedProjection(");
+        AssertContains(captureFormatProjectionText, "Width = captureRuntime.NegotiatedWidth ?? captureRuntime.ActualWidth,");
+        AssertContains(captureFormatProjectionText, "MediaSubtypeToken = captureRuntime.NegotiatedMediaSubtypeToken");
+        AssertContains(captureFormatProjectionText, "private static CaptureFormatReaderObservationProjection BuildCaptureFormatReaderObservationProjection(");
+        AssertContains(captureFormatProjectionText, "LatestObservedFramePixelFormat = captureRuntime.LatestObservedFramePixelFormat,");
+        AssertContains(captureFormatProjectionText, "MfReadwriteDisableConverters = captureRuntime.MfReadwriteDisableConverters");
         AssertContains(captureFormatProjectionText, "private static CaptureFormatEncoderProjection BuildCaptureFormatEncoderProjection(");
         AssertContains(captureFormatProjectionText, "VideoCodec = captureRuntime.EncoderVideoCodec,");
         AssertContains(captureFormatProjectionText, "TenBitPipelineConfirmed = captureRuntime.EncoderTenBitPipelineConfirmed");
 
-        AssertContains(captureFormatRequestedProjectionText, "private static CaptureFormatRequestedFlattenedProjection BuildCaptureFormatRequestedFlattenedProjection(");
-        AssertContains(captureFormatRequestedProjectionText, "Width = captureFormat.Requested.Width,");
+        AssertContains(captureFormatProjectionText, "private static CaptureFormatRequestedFlattenedProjection BuildCaptureFormatRequestedFlattenedProjection(");
+        AssertContains(captureFormatProjectionText, "Width = captureFormat.Requested.Width,");
         AssertContains(captureFormatProjectionText, "private static CaptureFormatHdrRequestFlattenedProjection BuildCaptureFormatHdrRequestFlattenedProjection(");
         AssertContains(captureFormatProjectionText, "ActivationReason = captureFormat.HdrRequest.ActivationReason,");
         AssertContains(captureFormatProjectionText, "private static CaptureFormatActualFlattenedProjection BuildCaptureFormatActualFlattenedProjection(");
         AssertContains(captureFormatProjectionText, "Width = captureFormat.Actual.Width,");
-        AssertContains(captureFormatNegotiatedProjectionText, "private static CaptureFormatNegotiatedFlattenedProjection BuildCaptureFormatNegotiatedFlattenedProjection(");
-        AssertContains(captureFormatNegotiatedProjectionText, "Width = captureFormat.Negotiated.Width,");
-        AssertContains(captureFormatNegotiatedProjectionText, "MediaSubtypeToken = captureFormat.Negotiated.MediaSubtypeToken");
-        AssertContains(captureFormatReaderObservationProjectionText, "private static CaptureFormatReaderObservationFlattenedProjection BuildCaptureFormatReaderObservationFlattenedProjection(");
-        AssertContains(captureFormatReaderObservationProjectionText, "LatestObservedFramePixelFormat = captureFormat.ReaderObservation.LatestObservedFramePixelFormat,");
-        AssertContains(captureFormatReaderObservationProjectionText, "MfReadwriteDisableConverters = captureFormat.ReaderObservation.MfReadwriteDisableConverters");
+        AssertContains(captureFormatProjectionText, "private static CaptureFormatNegotiatedFlattenedProjection BuildCaptureFormatNegotiatedFlattenedProjection(");
+        AssertContains(captureFormatProjectionText, "Width = captureFormat.Negotiated.Width,");
+        AssertContains(captureFormatProjectionText, "MediaSubtypeToken = captureFormat.Negotiated.MediaSubtypeToken");
+        AssertContains(captureFormatProjectionText, "private static CaptureFormatReaderObservationFlattenedProjection BuildCaptureFormatReaderObservationFlattenedProjection(");
+        AssertContains(captureFormatProjectionText, "LatestObservedFramePixelFormat = captureFormat.ReaderObservation.LatestObservedFramePixelFormat,");
+        AssertContains(captureFormatProjectionText, "MfReadwriteDisableConverters = captureFormat.ReaderObservation.MfReadwriteDisableConverters");
         AssertContains(captureFormatProjectionText, "private static CaptureFormatEncoderFlattenedProjection BuildCaptureFormatEncoderFlattenedProjection(");
         AssertContains(captureFormatProjectionText, "VideoCodec = captureFormat.Encoder.VideoCodec,");
         AssertContains(captureFormatProjectionText, "TenBitPipelineConfirmed = captureFormat.Encoder.TenBitPipelineConfirmed");
