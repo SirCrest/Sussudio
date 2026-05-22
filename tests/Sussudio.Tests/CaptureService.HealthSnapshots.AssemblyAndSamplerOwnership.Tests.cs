@@ -100,7 +100,7 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
-        var avSyncSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAvSync.cs")
+        var avSyncSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var avSyncHealth = CaptureAvSyncHealthSnapshotFields();");
@@ -116,6 +116,12 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
             "Services",
             "Capture",
             "CaptureService.HealthSnapshots.AvSync.cs")));
+        Assert.False(File.Exists(Path.Combine(
+            FindRepoRoot(),
+            "Sussudio",
+            "Services",
+            "Capture",
+            "CaptureService.SnapshotAvSync.cs")));
         AssertContains(avSyncSnapshotText, "private AvSyncHealthSnapshotFields CaptureAvSyncHealthSnapshotFields()");
         AssertContains(avSyncSnapshotText, "var (captureDriftMs, captureDriftRateMsPerSec) = ComputeAvSyncDrift();");
         AssertContains(avSyncSnapshotText, "var (encoderDriftMs, encoderCorrectionSamples) = GetEncoderAvSyncDrift();");

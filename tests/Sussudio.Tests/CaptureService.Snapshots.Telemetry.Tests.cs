@@ -1,3 +1,4 @@
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -69,10 +70,11 @@ static partial class Program
         var originType = RequireType("Sussudio.Models.SourceTelemetryOrigin");
         var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
             .Replace("\r\n", "\n");
-        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotTelemetry.cs")
-            .Replace("\r\n", "\n");
-        AssertDoesNotContain(snapshotsText, "private static string ResolveSourceTelemetryBackend(");
-        AssertContains(telemetryText, "private static string ResolveSourceTelemetryBackend(");
+        AssertContains(snapshotsText, "private static string ResolveSourceTelemetryBackend(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.SnapshotTelemetry.cs")),
+            "old source telemetry snapshot partial removed");
 
         // NativeXu origin
         var nativeXuTelemetry = RuntimeHelpers.GetUninitializedObject(telemetryType);
@@ -161,12 +163,9 @@ static partial class Program
         var availabilityType = RequireType("Sussudio.Models.SourceTelemetryAvailability");
         var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
             .Replace("\r\n", "\n");
-        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotTelemetry.cs")
-            .Replace("\r\n", "\n");
         var runtimeSourceTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs")
             .Replace("\r\n", "\n");
         AssertDoesNotContain(snapshotsText, "private static (string Status, string Reason) ResolveTelemetryAlignment(");
-        AssertDoesNotContain(telemetryText, "private static (string Status, string Reason) ResolveTelemetryAlignment(");
         AssertContains(runtimeSourceTelemetryText, "private static (string Status, string Reason) ResolveTelemetryAlignment(");
 
         // Aligned case: telemetry matches settings

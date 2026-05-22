@@ -2870,34 +2870,20 @@ backend-staleness reason policy now stays with the buffer health partial, while
 export elapsed/progress-age/file-length helpers stay with the export health
 partial.
 
-Recording byte-count snapshot policy now lives in
-`Sussudio/Services/Capture/CaptureService.SnapshotRecordingStats.cs`. Keep
-active LibAv byte polling, active Flashback buffer estimates, finalized-output
-file fallback, and failure flagging there without adding transition-lock waits
-or state mutation.
-
-Recording-format snapshot policy now lives in
-`Sussudio/Services/Capture/CaptureService.SnapshotRecordingFormat.cs`. Keep
-encoder codec labels, output pixel-format/profile labels, and requested
-frame-rate argument projection there.
-
-Observed frame-format snapshot policy now lives in
-`Sussudio/Services/Capture/CaptureService.SnapshotObservedFrames.cs`. Keep the
-explicit `Interlocked.Read` counter projection and private
-`ObservedFrameSnapshotFields` owner there; do not infer fake P010 or NV12 frame
-counts from requested settings.
-
-Source telemetry snapshot policy now lives in
-`Sussudio/Services/Capture/CaptureService.SnapshotTelemetry.cs`. Keep shared
-telemetry backend labels and suppression/circuit-state mapping there. Runtime
-frame-rate origin labels and request/telemetry alignment live with
+Recording byte-count, recording-format, observed frame-format, source
+telemetry, and A/V sync snapshot policy now live in
+`Sussudio/Services/Capture/CaptureService.Snapshots.cs`. Keep these helpers
+read-only: no transition-lock waits or state mutation. Active LibAv byte
+polling, active Flashback buffer estimates, finalized-output file fallback,
+failure flagging, encoder codec/output/profile labels, requested frame-rate
+argument projection, explicit observed-frame `Interlocked.Read` counters,
+source telemetry backend/suppression/circuit-state mapping, A/V sync drift
+baseline state, and encoder drift/correction projection stay together as the
+diagnostics/runtime snapshot helper surface. Runtime frame-rate origin labels
+and request/telemetry alignment live with
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs`;
 HDR warmup state classification lives with
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs`.
-
-A/V sync snapshot policy, health field projection, and drift baseline state now
-live in `Sussudio/Services/Capture/CaptureService.SnapshotAvSync.cs`. Keep live
-source/audio drift calculations and encoder drift/correction projection there.
 
 Stats dock, stats toggle, and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/Stats/StatsOverlayController.cs`. Stats overlay controller

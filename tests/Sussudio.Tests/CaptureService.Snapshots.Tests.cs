@@ -1,3 +1,4 @@
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -8,12 +9,6 @@ static partial class Program
     {
         var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
             .Replace("\r\n", "\n");
-        var recordingStatsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotRecordingStats.cs")
-            .Replace("\r\n", "\n");
-        var formatText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotRecordingFormat.cs")
-            .Replace("\r\n", "\n");
-        var observedText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotObservedFrames.cs")
-            .Replace("\r\n", "\n");
         var flashbackBufferText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.cs")
             .Replace("\r\n", "\n");
         var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs")
@@ -22,50 +17,55 @@ static partial class Program
         AssertContains(snapshotsText, "public CaptureDiagnosticsSnapshot GetDiagnosticsSnapshot()");
         AssertContains(snapshotsText, "return GetHealthSnapshot();");
         AssertContains(snapshotsText, "private static long ComputeTickAge(long tick)");
-        AssertContains(recordingStatsText, "public RecordingStats GetRecordingStats()");
-        AssertContains(recordingStatsText, "return new RecordingStats(_recordingBackend.LibAvSink.OutputBytes, 0);");
+        AssertContains(snapshotsText, "public RecordingStats GetRecordingStats()");
+        AssertContains(snapshotsText, "return new RecordingStats(_recordingBackend.LibAvSink.OutputBytes, 0);");
         AssertContains(
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs"),
             "private readonly CaptureRecordingBackendResources _recordingBackend = new();");
-        AssertContains(recordingStatsText, "IsFlashbackRecordingBackendActive()");
-        AssertContains(recordingStatsText, "bufferManager.TotalBytesWritten - _flashbackRecordingStartBytes");
-        AssertContains(recordingStatsText, "isFlashbackEstimate: true");
-        AssertContains(recordingStatsText, "new FileInfo(path).Length");
-        AssertContains(recordingStatsText, "catch (FileNotFoundException)");
-        AssertContains(recordingStatsText, "isFailure: true");
+        AssertContains(snapshotsText, "IsFlashbackRecordingBackendActive()");
+        AssertContains(snapshotsText, "bufferManager.TotalBytesWritten - _flashbackRecordingStartBytes");
+        AssertContains(snapshotsText, "isFlashbackEstimate: true");
+        AssertContains(snapshotsText, "new FileInfo(path).Length");
+        AssertContains(snapshotsText, "catch (FileNotFoundException)");
+        AssertContains(snapshotsText, "isFailure: true");
 
-        AssertContains(formatText, "private static string? ResolveEncoderCodecName(");
-        AssertContains(formatText, "MediaFormat.MapNvencCodecName(settings.Format)");
-        AssertContains(formatText, "private static string? ResolveEncoderOutputPixelFormat(");
-        AssertContains(formatText, "return \"yuv420p10le\";");
-        AssertContains(formatText, "private static string? ResolveEncoderVideoProfile(");
-        AssertContains(formatText, "RecordingFormat.H264Mp4 => \"high\"");
-        AssertContains(formatText, "private static string? ResolveRequestedFrameRateArg(");
-        AssertContains(formatText, "RequestedFrameRateNumerator is uint numerator");
-        AssertContains(formatText, "RequestedFrameRateDenominator is uint denominator");
+        AssertContains(snapshotsText, "private static string? ResolveEncoderCodecName(");
+        AssertContains(snapshotsText, "MediaFormat.MapNvencCodecName(settings.Format)");
+        AssertContains(snapshotsText, "private static string? ResolveEncoderOutputPixelFormat(");
+        AssertContains(snapshotsText, "return \"yuv420p10le\";");
+        AssertContains(snapshotsText, "private static string? ResolveEncoderVideoProfile(");
+        AssertContains(snapshotsText, "RecordingFormat.H264Mp4 => \"high\"");
+        AssertContains(snapshotsText, "private static string? ResolveRequestedFrameRateArg(");
+        AssertContains(snapshotsText, "RequestedFrameRateNumerator is uint numerator");
+        AssertContains(snapshotsText, "RequestedFrameRateDenominator is uint denominator");
 
-        AssertContains(observedText, "private ObservedFrameSnapshotFields ResolveObservedFrameTelemetry()");
-        AssertContains(observedText, "private readonly record struct ObservedFrameSnapshotFields(");
-        AssertContains(observedText, "return new ObservedFrameSnapshotFields(");
-        AssertContains(observedText, "Math.Max(0, Interlocked.Read(ref _observedP010FrameCount))");
-        AssertContains(observedText, "Math.Max(0, Interlocked.Read(ref _observedNv12FrameCount))");
-        AssertContains(observedText, "Math.Max(0, Interlocked.Read(ref _observedOtherFrameCount))");
+        AssertContains(snapshotsText, "private ObservedFrameSnapshotFields ResolveObservedFrameTelemetry()");
+        AssertContains(snapshotsText, "private readonly record struct ObservedFrameSnapshotFields(");
+        AssertContains(snapshotsText, "return new ObservedFrameSnapshotFields(");
+        AssertContains(snapshotsText, "Math.Max(0, Interlocked.Read(ref _observedP010FrameCount))");
+        AssertContains(snapshotsText, "Math.Max(0, Interlocked.Read(ref _observedNv12FrameCount))");
+        AssertContains(snapshotsText, "Math.Max(0, Interlocked.Read(ref _observedOtherFrameCount))");
         AssertContains(flashbackBufferText, "private static string ResolveFlashbackBackendSettingsStaleReason(");
         AssertContains(flashbackExportText, "private static long ComputeFlashbackExportElapsedMs(");
         AssertContains(flashbackExportText, "private static long ComputeFlashbackExportLastProgressAgeMs(");
         AssertContains(flashbackExportText, "private static long GetFileLengthOrZero(string? path)");
 
-        AssertDoesNotContain(snapshotsText, "private static string? ResolveEncoderCodecName(");
-        AssertDoesNotContain(snapshotsText, "private static string? ResolveEncoderOutputPixelFormat(");
-        AssertDoesNotContain(snapshotsText, "private static string? ResolveEncoderVideoProfile(");
-        AssertDoesNotContain(snapshotsText, "private static string? ResolveRequestedFrameRateArg(");
-        AssertDoesNotContain(snapshotsText, "ResolveObservedFrameTelemetry()");
         AssertDoesNotContain(snapshotsText, "private static string ResolveFlashbackBackendSettingsStaleReason(");
         AssertDoesNotContain(snapshotsText, "private static long ComputeFlashbackExportElapsedMs(");
         AssertDoesNotContain(snapshotsText, "private static long ComputeFlashbackExportLastProgressAgeMs(");
         AssertDoesNotContain(snapshotsText, "private static long GetFileLengthOrZero(string? path)");
-        AssertDoesNotContain(snapshotsText, "public RecordingStats GetRecordingStats()");
-        AssertDoesNotContain(snapshotsText, "new FileInfo(path).Length");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.SnapshotRecordingStats.cs")),
+            "old recording stats snapshot partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.SnapshotRecordingFormat.cs")),
+            "old recording format snapshot partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.SnapshotObservedFrames.cs")),
+            "old observed frames snapshot partial removed");
 
         return Task.CompletedTask;
     }
@@ -140,12 +140,9 @@ static partial class Program
             ?? throw new InvalidOperationException("ResolveHdrWarmupState not found.");
         var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
             .Replace("\r\n", "\n");
-        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotTelemetry.cs")
-            .Replace("\r\n", "\n");
         var hdrPipelineText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs")
             .Replace("\r\n", "\n");
         AssertDoesNotContain(snapshotsText, "private static string ResolveHdrWarmupState(");
-        AssertDoesNotContain(telemetryText, "private static string ResolveHdrWarmupState(");
         AssertContains(hdrPipelineText, "private static string ResolveHdrWarmupState(");
 
         // HDR not requested → NotRequested
