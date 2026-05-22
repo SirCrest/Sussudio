@@ -6,7 +6,7 @@ static partial class Program
     {
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var adapterText = ReadMainWindowCaptureSelectionBindingsAdapterSource();
-        var propertyChangesText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.PropertyChanges.cs").Replace("\r\n", "\n");
+        var propertyChangesText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
 
         AssertContains(propertyChangesText, "public bool TryHandlePropertyChanged(string? propertyName)");
         AssertContains(propertyChangesText, "case nameof(MainViewModel.SelectedDevice):");

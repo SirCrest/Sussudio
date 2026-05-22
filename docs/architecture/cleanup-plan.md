@@ -3438,19 +3438,17 @@ Responsive layout ownership checks live in
 `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs`.
 
 Capture, audio, microphone, and encoder selection synchronization now lives in
-the `Sussudio/Controllers/Capture/CaptureSelectionBindingController*.cs` family. The
-root controller owns the controller shell, context lifetime, XAML control
-dependency bag. `.CollectionSync.cs` owns capture/audio/microphone/encoder
-collection wiring, collection-change debounce/queued sync, and available-option
-property-change rebinding. `.DeviceSelection.cs` owns capture-device selection,
-pending-device apply state, and mismatch logging, `.AudioSelection.cs` owns
-audio input and microphone selection, `.CaptureModeSelection.cs` owns resolution
-and frame-rate selection, `.RecordingSelection.cs` owns recording format/quality/preset/
-split-encode selection and shared string ComboBox selection application,
-`Sussudio/Controllers/Capture/CaptureComboBoxSelectionNormalizer.cs` owns pure capture/audio/microphone/
-resolution/frame-rate/string ComboBox selection and fallback matching, and
-`.DeviceAudio.cs` owns device-audio mode/gain projection. `.PropertyChanges.cs`
-owns the capture-selection `PropertyChanged` router, while
+`Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs`. The
+controller owns its context lifetime, XAML control dependency bag,
+capture/audio/microphone/encoder collection wiring, collection-change
+debounce/queued sync, available-option property-change rebinding,
+capture-device selection, pending-device apply state, mismatch logging, audio
+input and microphone selection, resolution and frame-rate selection, recording
+format/quality/preset/split-encode selection, shared string ComboBox selection
+application, device-audio mode/gain projection, and the capture-selection
+`PropertyChanged` router. `Sussudio/Controllers/Capture/CaptureComboBoxSelectionNormalizer.cs`
+owns pure capture/audio/microphone/resolution/frame-rate/string ComboBox
+selection and fallback matching, while
 `Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs` keeps controller
 instantiation, XAML dependency wiring, collection/property-change adapters, and
 the thin XAML-facing selection bridges for device, audio, device-audio,

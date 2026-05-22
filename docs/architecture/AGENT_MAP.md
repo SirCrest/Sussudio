@@ -3245,29 +3245,19 @@ Primary current owners:
   the control-bar label breakpoint and narrow/wide placement policy.
   `MainWindow.ResponsiveShellLayout.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs` owns
-  the capture-selection binding controller shell, context lifetime, and XAML
-  control dependency bag,
-  `Sussudio/Controllers/Capture/CaptureSelectionBindingController.CollectionSync.cs`
-  owns capture/audio/microphone/encoder collection source wiring,
-  collection-change debounce/queued sync, and available-option property-change
-  rebinding,
-  `Sussudio/Controllers/Capture/CaptureSelectionBindingController.DeviceSelection.cs`
-  owns capture-device ComboBox/ViewModel synchronization, pending-device apply
-  state, and selected-device property-change mismatch logging,
-  `Sussudio/Controllers/Capture/CaptureSelectionBindingController.AudioSelection.cs`
-  owns audio-input and microphone ComboBox/ViewModel synchronization,
-  `Sussudio/Controllers/Capture/CaptureSelectionBindingController.CaptureModeSelection.cs`
-  owns resolution and frame-rate ComboBox/ViewModel synchronization,
-  `Sussudio/Controllers/Capture/CaptureSelectionBindingController.RecordingSelection.cs`
-  owns recording format/quality/preset/split-encode ComboBox synchronization
-  and shared string ComboBox selection application,
+  the capture-selection binding controller shell, context lifetime, XAML
+  control dependency bag, capture/audio/microphone/encoder collection source
+  wiring, collection-change debounce/queued sync, available-option
+  property-change rebinding, capture-device ComboBox/ViewModel synchronization,
+  pending-device apply state, selected-device property-change mismatch logging,
+  audio-input and microphone ComboBox/ViewModel synchronization, resolution and
+  frame-rate ComboBox/ViewModel synchronization, recording
+  format/quality/preset/split-encode ComboBox synchronization, shared string
+  ComboBox selection application, device-audio mode/gain control projection,
+  and the capture-selection `PropertyChanged` router.
   `Sussudio/Controllers/Capture/CaptureComboBoxSelectionNormalizer.cs` owns pure
   capture/audio/microphone/resolution/frame-rate/string ComboBox
-  selection and fallback matching, and
-  `Sussudio/Controllers/Capture/CaptureSelectionBindingController.DeviceAudio.cs` owns
-  device-audio mode/gain control projection.
-  `Sussudio/Controllers/Capture/CaptureSelectionBindingController.PropertyChanges.cs`
-  owns the capture-selection `PropertyChanged` router.
+  selection and fallback matching.
   `Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs` owns controller
   instantiation, XAML dependency wiring, collection/property-change adapters,
   and the thin XAML-facing selection bridges for device, audio, device-audio,
@@ -3280,7 +3270,7 @@ Primary current owners:
   record/preview/custom-audio/microphone toggle handlers, audio-meter activation,
   initial meter presentation, and device-audio gain/meter resize hooks.
   Device-audio mode/gain control projection stays in
-  `Sussudio/Controllers/Capture/CaptureSelectionBindingController.DeviceAudio.cs`.
+  `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs`.
   `Sussudio/MainWindow.AudioBindings.cs` is its XAML-facing adapter.
 - `Sussudio/Controllers/Capture/CaptureDeviceActionController.cs` owns the capture-
   device refresh/apply button workflows and preserves the explicit apply/reinit
