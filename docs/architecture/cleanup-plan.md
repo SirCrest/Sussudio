@@ -3794,12 +3794,10 @@ cadence DTOs. `DiagnosticSessionMetrics.Cadence.Source.cs` owns source-cadence
 sample aggregation, `.Cadence.Preview.cs` owns preview 1% low aggregation, and
 `.Cadence.Visual.cs` owns visual-cadence aggregation plus visual-cadence health
 classification.
-`DiagnosticSessionMetrics.PreviewD3D.Model.cs` owns the D3D metric DTO.
-`DiagnosticSessionMetrics.PreviewD3D.cs` owns D3D metric orchestration plus
-frame-stat counter deltas and end-of-run p99 CPU timing reads.
-`DiagnosticSessionMetrics.PreviewD3D.CpuTiming.cs` owns max CPU timing
-aggregation, while `DiagnosticSessionMetrics.PreviewD3D.SlowFrames.cs` owns
-recent slow-frame counting and latest slow-frame projection.
+`DiagnosticSessionMetrics.PreviewD3D.cs` owns the D3D metric DTO, D3D metric
+orchestration, frame-stat counter deltas, end-of-run p99 CPU timing reads, max
+CPU timing aggregation, recent slow-frame counting, and latest slow-frame
+projection.
 `DiagnosticSessionMetrics.PlaybackCommands.cs` owns the playback
 command-health DTO and deltas, while `.Counters.cs` owns shared counter-delta
 helpers. Do not reintroduce an empty family root or a generic metric DTO bag.
@@ -4163,10 +4161,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionMetrics.Cadence.Source.cs`
 - `DiagnosticSessionMetrics.Cadence.Preview.cs`
 - `DiagnosticSessionMetrics.Cadence.Visual.cs`
-- `DiagnosticSessionMetrics.PreviewD3D.Model.cs`
 - `DiagnosticSessionMetrics.PreviewD3D.cs`
-- `DiagnosticSessionMetrics.PreviewD3D.CpuTiming.cs`
-- `DiagnosticSessionMetrics.PreviewD3D.SlowFrames.cs`
 - `DiagnosticSessionMetrics.PlaybackCommands.cs`
 - `DiagnosticSessionMetrics.Counters.cs`
 - `DiagnosticSessionOptions.cs`

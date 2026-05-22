@@ -4203,15 +4203,10 @@ Primary owners:
   low aggregation.
 - `tools/Common/DiagnosticSessionMetrics.Cadence.Visual.cs` owns visual-cadence
   aggregation and visual-cadence health classification.
-- `tools/Common/DiagnosticSessionMetrics.PreviewD3D.Model.cs` owns the D3D
-  metric DTO.
-- `tools/Common/DiagnosticSessionMetrics.PreviewD3D.cs` owns D3D metric
-  orchestration plus frame-stat counter deltas and end-of-run p99 CPU timing
-  reads.
-- `tools/Common/DiagnosticSessionMetrics.PreviewD3D.CpuTiming.cs` owns max CPU
-  timing aggregation.
-- `tools/Common/DiagnosticSessionMetrics.PreviewD3D.SlowFrames.cs` owns recent
-  slow-frame counting and latest slow-frame projection.
+- `tools/Common/DiagnosticSessionMetrics.PreviewD3D.cs` owns the D3D metric
+  DTO, D3D metric orchestration, frame-stat counter deltas, end-of-run p99 CPU
+  timing reads, max CPU timing aggregation, recent slow-frame counting, and
+  latest slow-frame projection.
 - `tools/Common/DiagnosticSessionMetrics.PlaybackCommands.cs` owns playback
   command-health DTO and deltas.
 - `tools/Common/DiagnosticSessionMetrics.Counters.cs` owns shared counter-delta

@@ -3,6 +3,27 @@ using static Sussudio.Tools.AutomationSnapshotFormatter;
 
 namespace Sussudio.Tools;
 
+internal sealed class PreviewD3DMetrics
+{
+    public long MissedRefreshDelta { get; init; }
+    public long StatsFailureDelta { get; init; }
+    public int MaxRecentSlowFramesObserved { get; set; }
+    public string LatestSlowFrameReason { get; set; } = string.Empty;
+    public double LatestSlowFrameOverBudgetMs { get; set; }
+    public double LatestSlowFramePresentIntervalMs { get; set; }
+    public double LatestSlowFrameTotalFrameCpuMs { get; set; }
+    public double LatestSlowFramePresentCallMs { get; set; }
+    public int LatestSlowFramePendingFrameCount { get; set; }
+    public double InputUploadCpuP99MsAtEnd { get; init; }
+    public double InputUploadCpuMaxMsObserved { get; set; }
+    public double RenderSubmitCpuP99MsAtEnd { get; init; }
+    public double RenderSubmitCpuMaxMsObserved { get; set; }
+    public double PresentCallP99MsAtEnd { get; init; }
+    public double PresentCallMaxMsObserved { get; set; }
+    public double TotalFrameCpuP99MsAtEnd { get; init; }
+    public double TotalFrameCpuMaxMsObserved { get; set; }
+}
+
 internal static partial class DiagnosticSessionMetrics
 {
     internal static PreviewD3DMetrics BuildPreviewD3DMetrics(
@@ -46,5 +67,55 @@ internal static partial class DiagnosticSessionMetrics
         }
 
         return metrics;
+    }
+
+    private static void ObservePreviewD3DCpuTiming(PreviewD3DMetrics metrics, JsonElement snapshot)
+    {
+        metrics.InputUploadCpuMaxMsObserved = Math.Max(
+            metrics.InputUploadCpuMaxMsObserved,
+            GetDouble(snapshot, "PreviewD3DInputUploadCpuMaxMs"));
+        metrics.RenderSubmitCpuMaxMsObserved = Math.Max(
+            metrics.RenderSubmitCpuMaxMsObserved,
+            GetDouble(snapshot, "PreviewD3DRenderSubmitCpuMaxMs"));
+        metrics.PresentCallMaxMsObserved = Math.Max(
+            metrics.PresentCallMaxMsObserved,
+            GetDouble(snapshot, "PreviewD3DPresentCallMaxMs"));
+        metrics.TotalFrameCpuMaxMsObserved = Math.Max(
+            metrics.TotalFrameCpuMaxMsObserved,
+            GetDouble(snapshot, "PreviewD3DTotalFrameCpuMaxMs"));
+    }
+
+    private static void ApplySlowFrame(PreviewD3DMetrics metrics, JsonElement slowFrame)
+    {
+        metrics.LatestSlowFrameReason = GetSlowFrameReason(slowFrame);
+        metrics.LatestSlowFrameOverBudgetMs = GetDouble(slowFrame, "WorstOverBudgetMs");
+        metrics.LatestSlowFramePresentIntervalMs = GetDouble(slowFrame, "PresentIntervalMs");
+        metrics.LatestSlowFrameTotalFrameCpuMs = GetDouble(slowFrame, "TotalFrameCpuMs");
+        metrics.LatestSlowFramePresentCallMs = GetDouble(slowFrame, "PresentCallMs");
+        metrics.LatestSlowFramePendingFrameCount = GetInt(slowFrame, "PendingFrameCount");
+    }
+
+    private static string GetSlowFrameReason(JsonElement slowFrame)
+        => GetString(slowFrame, "SlowReason") ?? GetString(slowFrame, "Reason") ?? string.Empty;
+
+    private static int CountArrayItems(JsonElement snapshot, string propertyName)
+    {
+        return snapshot.TryGetProperty(propertyName, out var value) && value.ValueKind == JsonValueKind.Array
+            ? value.GetArrayLength()
+            : 0;
+    }
+
+    private static bool TryGetLatestSlowFrame(JsonElement snapshot, out JsonElement slowFrame)
+    {
+        if (snapshot.TryGetProperty("PreviewD3DRecentSlowFrames", out var frames) &&
+            frames.ValueKind == JsonValueKind.Array &&
+            frames.GetArrayLength() > 0)
+        {
+            slowFrame = frames.EnumerateArray().Last().Clone();
+            return true;
+        }
+
+        slowFrame = default;
+        return false;
     }
 }
