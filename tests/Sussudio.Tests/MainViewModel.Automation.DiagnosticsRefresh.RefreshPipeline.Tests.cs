@@ -16,11 +16,11 @@ static partial class Program
         AssertContains(diagnostics.SnapshotsText, "UpdateAudioSignalState(viewModelSnapshot, nowTick);");
         AssertContains(diagnostics.SnapshotsText, "UpdateRecordingFileGrowthState(");
         AssertDoesNotContain(diagnostics.SnapshotsText, "var audioSignalPresent = viewModelSnapshot.AudioPeak >= AudioSignalThreshold;");
-        AssertContains(diagnostics.OutputFilesText, "private LastOutputProbe ProbeLastOutput(");
-        AssertContains(diagnostics.OutputFilesText, "private readonly record struct LastOutputProbe(");
-        AssertContains(diagnostics.ProcessMetricsText, "private ProcessResourceSnapshot CaptureProcessResourceSnapshot()");
-        AssertContains(diagnostics.ProcessMetricsText, "private double CalculateProcessCpuPercent(double processCpuTotalMs)");
-        AssertContains(diagnostics.ProcessMetricsText, "private readonly record struct ProcessResourceSnapshot(");
+        AssertContains(diagnostics.SnapshotsCoreText, "private LastOutputProbe ProbeLastOutput(");
+        AssertContains(diagnostics.SnapshotsCoreText, "private readonly record struct LastOutputProbe(");
+        AssertContains(diagnostics.SnapshotsCoreText, "private ProcessResourceSnapshot CaptureProcessResourceSnapshot()");
+        AssertContains(diagnostics.SnapshotsCoreText, "private double CalculateProcessCpuPercent(double processCpuTotalMs)");
+        AssertContains(diagnostics.SnapshotsCoreText, "private readonly record struct ProcessResourceSnapshot(");
         AssertContains(diagnostics.TimelineText, "public IReadOnlyList<PerformanceTimelineEntry> GetPerformanceTimeline");
         AssertContains(diagnostics.TimelineText, "private void AppendPerformanceTimelineEntry(AutomationSnapshot snapshot)");
         AssertContains(diagnostics.TimelineText, "BuildPerformanceTimelineEntry(snapshot)");
@@ -64,8 +64,8 @@ static partial class Program
         AssertDoesNotContain(diagnostics.SnapshotsText, "_lastVerification = null;");
         AssertContains(diagnostics.SnapshotsText, "ScheduleAutoVerificationIfNeeded(shouldAutoVerify);");
         AssertDoesNotContain(diagnostics.SnapshotsText, "Automatic recording verification started.");
-        AssertDoesNotContain(diagnostics.SnapshotsText, "new FileInfo(lastOutputPath).Length");
-        AssertDoesNotContain(diagnostics.SnapshotsText, "GC.GetGCMemoryInfo()");
+        AssertContains(diagnostics.SnapshotsCoreText, "new FileInfo(lastOutputPath).Length");
+        AssertContains(diagnostics.SnapshotsCoreText, "GC.GetGCMemoryInfo()");
         AssertDoesNotContain(diagnostics.HubText, "private double CalculateProcessCpuPercent(double processCpuTotalMs)");
         AssertContains(diagnostics.SourceFamilyText, "private readonly SemaphoreSlim _refreshGate = new(1, 1);");
         AssertContains(diagnostics.SourceFamilyText, "await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);");

@@ -57,8 +57,6 @@ static partial class Program
                 SnapshotProjectionHdrPipelineText,
                 SnapshotStateText,
                 PreviewPacingText,
-                OutputFilesText,
-                ProcessMetricsText,
                 TimelineText,
                 TimelineProjectionText,
                 TimelineProjectionPreviewText,

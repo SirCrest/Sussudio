@@ -63,8 +63,6 @@ static partial class Program
             SnapshotProjectionHdrPipelineText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.HdrPipeline.cs"),
             SnapshotStateText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotState.cs"),
             PreviewPacingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.PreviewPacing.cs"),
-            OutputFilesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.OutputFiles.cs"),
-            ProcessMetricsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.ProcessMetrics.cs"),
             TimelineText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Timeline.cs"),
             TimelineProjectionText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.cs"),
             TimelineProjectionPreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.Preview.cs"),
@@ -124,8 +122,6 @@ static partial class Program
         public string SnapshotsCoreText { get; init; } = string.Empty;
         public string SnapshotStateText { get; init; } = string.Empty;
         public string PreviewPacingText { get; init; } = string.Empty;
-        public string OutputFilesText { get; init; } = string.Empty;
-        public string ProcessMetricsText { get; init; } = string.Empty;
         public string TimelineText { get; init; } = string.Empty;
         public string TimelineProjectionText { get; init; } = string.Empty;
         public string TimelineProjectionPreviewText { get; init; } = string.Empty;

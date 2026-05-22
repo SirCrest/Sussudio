@@ -358,8 +358,11 @@ pipeline, source-HDR, and verification metadata evidence, plus preview HDR
 input detection, HDR pixel-format helpers used by preview state, and tone-map
 state projection.
 `AutomationDiagnosticsHub.Lifecycle.cs` owns start/stop/dispose and the polling
-loop. `AutomationDiagnosticsHub.OutputFiles.cs` owns cached last-output file
-existence and size probing. `AutomationDiagnosticsHub.PreviewPacing.cs` owns
+loop. `AutomationDiagnosticsHub.Snapshots.cs` owns public snapshot read/refresh
+APIs, refresh-gate serialization, core snapshot refresh orchestration, cached
+last-output file existence/size probing, process CPU/memory/GC/thread-pool
+sampling, latest-snapshot publication, timeline append, event notification, and
+auto-verification handoff. `AutomationDiagnosticsHub.PreviewPacing.cs` owns
 automation snapshot input projection for preview pacing stage classification.
 `PreviewPacingClassificationModels.cs` owns the preview pacing DTOs,
 `PreviewPacingSlowStageClassifier.cs` owns classification ordering,
@@ -370,8 +373,6 @@ preview jitter scheduler predicates/evidence,
 `PreviewPacingSlowStageClassifier.Lanes.Render.cs` owns compositor-miss and
 renderer-submit predicates/evidence, and
 `PreviewPacingSlowStageClassifier.D3D.cs` owns D3D stage dominance policy.
-`AutomationDiagnosticsHub.ProcessMetrics.cs` owns process CPU, memory, GC, and
-thread-pool sampling.
 `AutomationDiagnosticsHub.Verification.cs` owns manual recording/file
 verification commands, verification-profile adaptation, and explicit
 verification events.
