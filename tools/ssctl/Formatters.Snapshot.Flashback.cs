@@ -23,4 +23,10 @@ internal static partial class Formatters
         AppendSnapshotFlashbackPlaybackMetricsSection(builder, snapshot);
         builder.AppendLine();
     }
+
+    private static void AppendSnapshotFlashbackEncodingSection(StringBuilder builder, JsonElement snapshot)
+    {
+        AppendSnapshotFlashbackEncodingStatusSection(builder, snapshot);
+        AppendSnapshotFlashbackEncodingHealthSection(builder, snapshot);
+    }
 }

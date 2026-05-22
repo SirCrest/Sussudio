@@ -59,3 +59,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: covered by ssctl formatter contracts and runtime snapshot formatter tests
 Behavior preserved: formatter output paths and section order remain unchanged; only source ownership changed
 Notes for future agents: keep formatter row families grouped when they are one visible section; split again only for a named formatter collaborator or a demonstrable testability boundary
+
+Date: 2026-05-21
+Area: Tool snapshot formatting
+Problem: Flashback encoding subsection routing lived in one-method shared and ssctl partial files separate from the Flashback section owner.
+Files consolidated: `tools/Common/AutomationSnapshotFormatter.Flashback.Encoding.cs`; `tools/ssctl/Formatters.Snapshot.Flashback.Encoding.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `AutomationSnapshotFormatter` -1 file; `Formatters` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by ssctl/shared formatter contract tests
+Behavior preserved: Flashback formatter gating, section order, encoding status, and encoding health output stay unchanged
+Notes for future agents: keep one-method subsection routers with their section owner unless the router grows real policy

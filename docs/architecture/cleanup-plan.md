@@ -786,9 +786,8 @@ embedded AV-sync drift, and source-signal text in
 fallback text in `Formatters.Snapshot.Preview.cs`,
 diagnostic health/frame-lane text in `Formatters.Snapshot.DiagnosticLanes.cs`,
 Flashback snapshot gating/order and encoding subsection order in
-`Formatters.Snapshot.Flashback.cs` and
-`Formatters.Snapshot.Flashback.Encoding.cs`, Flashback encoder/buffer/cache
-text in `Formatters.Snapshot.Flashback.Encoding.Status.cs`, Flashback
+`Formatters.Snapshot.Flashback.cs`, Flashback encoder/buffer/cache text in
+`Formatters.Snapshot.Flashback.Encoding.Status.cs`, Flashback
 queue-latency, backpressure, failure, and GPU queue text in
 `Formatters.Snapshot.Flashback.Encoding.Health.cs`, Flashback export progress, result,
 throughput, force-rotate fallback, range, output path, and message text in
@@ -836,8 +835,7 @@ string/bool accessors live in `AutomationSnapshotFormatter.Values.cs`; numeric
 JSON parsing lives in `AutomationSnapshotFormatter.Values.Numeric.cs`; while
 byte/number/interval, frame-budget, and tick-age display helpers live in
 `AutomationSnapshotFormatter.DisplayValues.cs`; the Flashback gate/header/order
-lives in `AutomationSnapshotFormatter.Flashback.cs`; Flashback encoding
-subsection order lives in `AutomationSnapshotFormatter.Flashback.Encoding.cs`.
+and encoding subsection order live in `AutomationSnapshotFormatter.Flashback.cs`.
 Flashback encoder, buffer, temp-cache, and cleanup text lives in
 `AutomationSnapshotFormatter.Flashback.Encoding.Status.cs`, while Flashback
 queue-latency, backpressure, failure, and GPU queue text lives in

@@ -21,7 +21,6 @@ static partial class Program
         var sharedFormatterNumericValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Values.Numeric.cs");
         var sharedFormatterDisplayValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.DisplayValues.cs");
         var sharedFormatterFlashbackSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.cs");
-        var sharedFormatterFlashbackEncodingSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.Encoding.cs");
         var sharedFormatterFlashbackEncodingStatusSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.Encoding.Status.cs");
         var sharedFormatterFlashbackEncodingHealthSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.Encoding.Health.cs");
         var sharedFormatterFlashbackExportSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.Export.cs");
@@ -127,16 +126,12 @@ static partial class Program
         AssertContains(sharedFormatterFlashbackSource, "AppendFlashbackPlaybackStatusSection(builder, snapshot);");
         AssertContains(sharedFormatterFlashbackSource, "AppendFlashbackExportSection(builder, snapshot);");
         AssertContains(sharedFormatterFlashbackSource, "AppendFlashbackPlaybackMetricsSection(builder, snapshot);");
-        AssertDoesNotContain(sharedFormatterFlashbackSource, "private static void AppendFlashbackEncodingSection(StringBuilder builder, JsonElement snapshot)");
         AssertDoesNotContain(sharedFormatterFlashbackSource, "Encoder: {codec}");
         AssertDoesNotContain(sharedFormatterFlashbackSource, "Flashback Queue Latency:");
         AssertDoesNotContain(sharedFormatterFlashbackSource, "Flashback GPU Queue:");
-        AssertContains(sharedFormatterFlashbackEncodingSource, "private static void AppendFlashbackEncodingSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterFlashbackEncodingSource, "AppendFlashbackEncodingStatusSection(builder, snapshot);");
-        AssertContains(sharedFormatterFlashbackEncodingSource, "AppendFlashbackEncodingHealthSection(builder, snapshot);");
-        AssertDoesNotContain(sharedFormatterFlashbackEncodingSource, "Encoder: {codec}");
-        AssertDoesNotContain(sharedFormatterFlashbackEncodingSource, "Flashback Queue Latency:");
-        AssertDoesNotContain(sharedFormatterFlashbackEncodingSource, "Flashback GPU Queue:");
+        AssertContains(sharedFormatterFlashbackSource, "private static void AppendFlashbackEncodingSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterFlashbackSource, "AppendFlashbackEncodingStatusSection(builder, snapshot);");
+        AssertContains(sharedFormatterFlashbackSource, "AppendFlashbackEncodingHealthSection(builder, snapshot);");
         AssertContains(sharedFormatterFlashbackEncodingStatusSource, "private static void AppendFlashbackEncodingStatusSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterFlashbackEncodingStatusSource, "Encoder: {codec}");
         AssertContains(sharedFormatterFlashbackEncodingStatusSource, "Temp Cache:");

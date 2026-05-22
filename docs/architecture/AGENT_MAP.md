@@ -4422,9 +4422,7 @@ Primary owners:
 - `tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs` owns diagnostic health,
   summary, evidence, and frame-lane snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot
-  active/failure gating and section ordering.
-- `tools/ssctl/Formatters.Snapshot.Flashback.Encoding.cs` owns Flashback
-  encoding subsection order.
+  active/failure gating plus section and encoding subsection ordering.
 - `tools/ssctl/Formatters.Snapshot.Flashback.Encoding.Status.cs` owns
   Flashback encoder, buffer, temp-cache, and cleanup snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.Encoding.Health.cs` owns
@@ -5196,9 +5194,7 @@ Primary owners:
   `tools/Common/AutomationSnapshotFormatter.DisplayValues.cs` owns shared
   byte, number, interval, frame-budget, and tick-age display helpers, while
   `tools/Common/AutomationSnapshotFormatter.Flashback.cs` owns the Flashback
-  gate, header, and subsection ordering.
-  `tools/Common/AutomationSnapshotFormatter.Flashback.Encoding.cs` owns
-  Flashback encoding subsection order.
+  gate, header, subsection ordering, and encoding subsection ordering.
   `tools/Common/AutomationSnapshotFormatter.Flashback.Encoding.Status.cs` owns
   Flashback encoder, buffer, cache, and cleanup text.
   `tools/Common/AutomationSnapshotFormatter.Flashback.Encoding.Health.cs` owns
