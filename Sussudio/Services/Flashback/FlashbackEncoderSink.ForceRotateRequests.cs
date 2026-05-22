@@ -1,12 +1,47 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Sussudio.Models;
 
 namespace Sussudio.Services.Flashback;
 
 internal sealed partial class FlashbackEncoderSink
 {
+    private bool _forceRotateRequested;
+    private volatile ForceRotateRequest? _forceRotateRequest;
+    private TimeSpan _forceRotateInPoint;
+    private TimeSpan _forceRotateOutPoint;
+    private bool _forceRotateDraining;
+
     private const int ForceRotateCommittedGraceMs = 1_000;
+
+    public bool IsForceRotateActive =>
+        Volatile.Read(ref _forceRotateRequested) ||
+        Volatile.Read(ref _forceRotateDraining);
+    public bool IsForceRotateRequested => Volatile.Read(ref _forceRotateRequested);
+    public bool IsForceRotateDraining => Volatile.Read(ref _forceRotateDraining);
+
+    public bool WaitForForceRotateIdle(TimeSpan timeout)
+    {
+        var timeoutMs = Math.Max(0, (long)timeout.TotalMilliseconds);
+        var deadlineTick = Environment.TickCount64 + timeoutMs;
+        while (IsForceRotateActive)
+        {
+            if (timeoutMs == 0 || Environment.TickCount64 >= deadlineTick)
+            {
+                return false;
+            }
+
+            SignalWork("force_rotate_idle");
+            if (WaitForCancellation(TimeSpan.FromMilliseconds(10)))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     public FlashbackForceRotateResult ForceRotateForExport(
         TimeSpan inPoint,
@@ -111,4 +146,110 @@ internal sealed partial class FlashbackEncoderSink
         return FlashbackForceRotateResult.Completed(request.Task.GetAwaiter().GetResult());
     }
 
+    private bool TryCancelForceRotate(ForceRotateRequest request)
+    {
+        lock (_sync)
+        {
+            if (ReferenceEquals(_forceRotateRequest, request))
+            {
+                _forceRotateRequested = false;
+                _forceRotateRequest = null;
+            }
+        }
+
+        return request.TryCancel();
+    }
+
+    private void CompletePendingForceRotateWithEmptyResult()
+    {
+        ForceRotateRequest? pendingRequest;
+        lock (_sync)
+        {
+            _forceRotateRequested = false;
+            pendingRequest = _forceRotateRequest;
+            _forceRotateRequest = null;
+        }
+
+        lock (_videoQueueSync)
+        {
+            Volatile.Write(ref _forceRotateDraining, false);
+        }
+
+        pendingRequest?.CompleteEmpty();
+    }
+
+    private static bool ShouldAbortForceRotateDrain(
+        ForceRotateRequest request,
+        string phase,
+        int inFlightRounds)
+    {
+        if (!request.IsCompleted)
+        {
+            return false;
+        }
+
+        Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_ABORT_DRAIN phase={phase} in_flight_rounds={inFlightRounds}");
+        return true;
+    }
+
+    private sealed class ForceRotateRequest
+    {
+        private const int StatePending = 0;
+        private const int StateCommitting = 1;
+        private const int StateCompleted = 2;
+        private const int StateCanceled = 3;
+
+        private int _state = StatePending;
+
+        private readonly TaskCompletionSource<IReadOnlyList<string>> _completion =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task<IReadOnlyList<string>> Task => _completion.Task;
+
+        public bool IsCompleted
+        {
+            get
+            {
+                var state = Volatile.Read(ref _state);
+                return state == StateCompleted ||
+                       state == StateCanceled ||
+                       _completion.Task.IsCompleted;
+            }
+        }
+
+        public bool TryBeginCommit()
+            => Interlocked.CompareExchange(ref _state, StateCommitting, StatePending) == StatePending;
+
+        public bool TryCancel()
+        {
+            if (Interlocked.CompareExchange(ref _state, StateCanceled, StatePending) != StatePending)
+            {
+                return false;
+            }
+
+            _completion.TrySetResult(Array.Empty<string>());
+            return true;
+        }
+
+        public void Complete(IReadOnlyList<string> paths)
+        {
+            while (true)
+            {
+                var state = Volatile.Read(ref _state);
+                if (state == StateCompleted || state == StateCanceled)
+                {
+                    return;
+                }
+
+                if (Interlocked.CompareExchange(ref _state, StateCompleted, state) == state)
+                {
+                    _completion.TrySetResult(paths);
+                    return;
+                }
+            }
+        }
+
+        public void CompleteEmpty()
+            => Complete(Array.Empty<string>());
+    }
 }

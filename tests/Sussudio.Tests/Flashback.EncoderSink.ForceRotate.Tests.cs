@@ -100,10 +100,7 @@ static partial class Program
     {
         var sourceText = ReadFlashbackEncoderSinkSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs").Replace("\r\n", "\n");
-        var forceRotateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs").Replace("\r\n", "\n");
         var forceRotateRequestsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateRequests.cs").Replace("\r\n", "\n");
-        var forceRotateLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateLifecycle.cs").Replace("\r\n", "\n");
-        var forceRotateRequestText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateRequest.cs").Replace("\r\n", "\n");
         var forceRotateExecutionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateExecution.cs").Replace("\r\n", "\n");
         var loopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs").Replace("\r\n", "\n");
 
@@ -118,18 +115,15 @@ static partial class Program
 
         AssertContains(sourceText, "private sealed class ForceRotateRequest");
         AssertContains(forceRotateRequestsText, "private const int ForceRotateCommittedGraceMs = 1_000;");
-        AssertContains(forceRotateRequestText, "private sealed class ForceRotateRequest");
-        AssertContains(forceRotateRequestText, "public bool TryBeginCommit()\n            => Interlocked.CompareExchange(ref _state, StateCommitting, StatePending) == StatePending;");
-        AssertContains(forceRotateRequestText, "public bool TryCancel()");
-        AssertContains(forceRotateRequestText, "public void Complete(IReadOnlyList<string> paths)");
-        AssertContains(forceRotateLifecycleText, "private bool TryCancelForceRotate(ForceRotateRequest request)");
-        AssertContains(forceRotateLifecycleText, "private void CompletePendingForceRotateWithEmptyResult()");
-        AssertContains(forceRotateLifecycleText, "private static bool ShouldAbortForceRotateDrain(");
+        AssertContains(forceRotateRequestsText, "private sealed class ForceRotateRequest");
+        AssertContains(forceRotateRequestsText, "public bool TryBeginCommit()\n            => Interlocked.CompareExchange(ref _state, StateCommitting, StatePending) == StatePending;");
+        AssertContains(forceRotateRequestsText, "public bool TryCancel()");
+        AssertContains(forceRotateRequestsText, "public void Complete(IReadOnlyList<string> paths)");
+        AssertContains(forceRotateRequestsText, "private bool TryCancelForceRotate(ForceRotateRequest request)");
+        AssertContains(forceRotateRequestsText, "private void CompletePendingForceRotateWithEmptyResult()");
+        AssertContains(forceRotateRequestsText, "private static bool ShouldAbortForceRotateDrain(");
         AssertDoesNotContain(rootText, "private sealed class ForceRotateRequest");
         AssertDoesNotContain(rootText, "private const int ForceRotateCommittedGraceMs = 1_000;");
-        AssertDoesNotContain(forceRotateText, "private sealed class ForceRotateRequest");
-        AssertDoesNotContain(forceRotateRequestsText, "private sealed class ForceRotateRequest");
-        AssertDoesNotContain(forceRotateText, "public FlashbackForceRotateResult ForceRotateForExport(");
         AssertContains(loopBlock, "if (ProcessPendingForceRotate(videoQueue, audioQueue, microphoneQueue, gpuQueue))");
         AssertContains(loopBlock, "madeProgress = true;\n                        continue;");
         AssertContains(executionBlock, "localRequest = _forceRotateRequest;\n            _forceRotateRequest = null;");
