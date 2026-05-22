@@ -376,9 +376,8 @@ source/capture cadence diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Mjpeg.cs` owns MJPEG
 duplicate source-signal and decode/reorder diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Preview.cs` owns realtime
-preview diagnostic verdict ordering plus the renderer pacing verdict.
-`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.PreviewScheduler.cs` owns
-preview scheduler diagnostic verdicts.
+preview diagnostic verdict ordering plus preview scheduler and renderer pacing
+verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.PreviewPresent.cs` owns
 present/display cadence and preview display 1% low diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs` owns diagnostic lane text

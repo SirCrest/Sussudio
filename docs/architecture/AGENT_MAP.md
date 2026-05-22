@@ -366,10 +366,8 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Mjpeg.cs`
   owns MJPEG duplicate source-signal and decode/reorder diagnostic verdicts.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Preview.cs`
-  owns realtime preview diagnostic verdict ordering plus the renderer pacing
-  verdict.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.PreviewScheduler.cs`
-  owns preview scheduler diagnostic verdicts.
+  owns realtime preview diagnostic verdict ordering plus preview scheduler and
+  renderer pacing verdicts.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.PreviewPresent.cs`
   owns present/display cadence and preview display 1% low diagnostic verdicts.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs`

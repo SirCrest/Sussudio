@@ -133,6 +133,18 @@ Behavior preserved: Preview D3D frame-latency wait counters and DXGI frame-stati
 Notes for future agents: keep frame-latency wait and frame-stats DTO mappings with `PreviewD3D.cs`; keep frame-flow separate while it remains a larger scan unit
 
 Date: 2026-05-21
+Area: Automation diagnostics realtime preview evaluation
+Problem: Preview scheduler diagnostic verdict construction lived in a one-method partial even though it is only called by the realtime preview diagnostic owner that already composes preview scheduler, renderer, and present/display verdicts.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.PreviewScheduler.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics evaluation source-ownership tests and runtime snapshot regression tests
+Behavior preserved: Preview scheduler diagnostic severity, code, message selection, and lane mapping remain unchanged
+Notes for future agents: keep lightweight preview scheduler verdict policy with `DiagnosticEvaluationRealtime.Preview.cs`; keep present/display separate while it owns its larger cadence and 1% low policy
+
+Date: 2026-05-21
 Area: Automation diagnostics preview runtime projection
 Problem: Preview frame counters/pipeline latency and preview color/HDR state lived in tiny partials even though the preview runtime projection owner immediately composes and flattens both groups with the rest of the preview runtime DTO.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Frame.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Color.cs`

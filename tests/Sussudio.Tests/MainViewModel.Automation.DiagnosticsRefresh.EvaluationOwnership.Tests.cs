@@ -58,13 +58,12 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "TryBuildRealtimePreviewSchedulerDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "TryBuildRealtimePreviewRendererDiagnosticEvaluation(lanes)");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "TryBuildRealtimePreviewPresentDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewSchedulerText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewSchedulerDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewSchedulerText, "\"preview_scheduler\"");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewSchedulerDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "\"preview_scheduler\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewRendererDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "\"renderer\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewPresentText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewPresentDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewPresentText, "\"present_display\"");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimePreviewText, "\"preview_scheduler\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimePreviewText, "\"present_display\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"source_capture\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"source_signal\"");

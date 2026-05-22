@@ -21,7 +21,6 @@ static partial class Program
                 DiagnosticEvaluationRealtimeSourceText,
                 DiagnosticEvaluationRealtimeMjpegText,
                 DiagnosticEvaluationRealtimePreviewText,
-                DiagnosticEvaluationRealtimePreviewSchedulerText,
                 DiagnosticEvaluationRealtimePreviewPresentText,
                 DiagnosticEvaluationLanesText,
                 DiagnosticEvaluationLanesRealtimePreviewText,
