@@ -124,14 +124,12 @@ Flashback playback timeline projection composition, final grouped handoff,
 playback cadence, decode timing, command queue/coalescing, audio-master
 fallback, playback stage/failure, backend settings, queue reject, cleanup, and
 force-rotate timeline projection.
-`AutomationDiagnosticsHub.SnapshotProjection.SnapshotStatus.cs` owns timestamp,
-view-model lifecycle/audio flags, verification-in-progress, session state, and
-status-text projection consumed by the automation snapshot DTO, plus final
-snapshot status projection-to-`AutomationSnapshot` field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.SnapshotEvaluation.cs` owns
-performance score, diagnostic lane, preview pacing classifier, and performance
-threshold projection consumed by the automation snapshot DTO, plus final
-snapshot evaluation projection-to-`AutomationSnapshot` field flattening.
+`AutomationDiagnosticsHub.SnapshotProjection.cs` owns root snapshot construction,
+timestamp/status projection, view-model lifecycle/audio flags,
+verification-in-progress, session state, status-text projection, performance
+score, diagnostic lane, preview pacing classifier, performance threshold
+projection, AV-sync projection, capture command projection, and final
+status/evaluation/AV-sync/capture-command flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Audio.cs` owns audio/ingest
 projection routing, view-model audio peak/clipping and detected audio-signal
 projection inputs, capture-ingest and WASAPI projection groups, and flattened
