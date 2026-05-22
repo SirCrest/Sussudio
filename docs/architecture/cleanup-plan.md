@@ -1403,8 +1403,9 @@ capture service owns shared state, construction, and public event surface, but
 these diagnostics are no longer embedded in the lifecycle/orchestration file.
 
 Capture service initialization now lives in
-`Sussudio/Services/Capture/CaptureService.Initialization.cs`. That file owns
-the public initialization transition, initial selected device/settings capture,
+`Sussudio/Services/Capture/CaptureService.cs` with shared service state,
+construction, and the public event/property surface. The root owns the public
+initialization transition, initial selected device/settings capture,
 negotiated-format seeding, the initial observed-pixel telemetry reset call,
 fallback source telemetry, source telemetry refresh, NTSC frame-rate correction,
 and initialized status event.

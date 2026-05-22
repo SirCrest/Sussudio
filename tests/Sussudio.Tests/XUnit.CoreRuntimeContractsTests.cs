@@ -71,8 +71,8 @@ public sealed class CoreRuntimeContractsTests
         => global::Program.GetRuntimeSnapshot_ThreadHealthProbes_DefaultToZeroWhenInactive();
 
     [Fact]
-    public Task CaptureServiceInitializationLivesInFocusedPartial()
-        => global::Program.CaptureService_InitializationLivesInFocusedPartial();
+    public Task CaptureServiceInitializationLivesWithServiceRoot()
+        => global::Program.CaptureService_InitializationLivesWithServiceRoot();
 
     [Fact]
     public Task CaptureServiceRuntimeSnapshotAssemblerOwnsDtoMapping()

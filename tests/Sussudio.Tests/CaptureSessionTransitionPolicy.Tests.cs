@@ -156,9 +156,9 @@ static partial class Program
 
         var lifecycleTransitionOwners = new[]
         {
+            "Sussudio/Services/Capture/CaptureService.cs",
             "Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs",
             "Sussudio/Services/Capture/CaptureService.Cleanup.cs",
-            "Sussudio/Services/Capture/CaptureService.Initialization.cs",
             "Sussudio/Services/Capture/CaptureService.PreviewStart.cs",
             "Sussudio/Services/Capture/CaptureService.PreviewStop.cs",
             "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs",

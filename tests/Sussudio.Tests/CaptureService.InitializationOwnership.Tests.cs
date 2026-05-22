@@ -2,11 +2,9 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    internal static Task CaptureService_InitializationLivesInFocusedPartial()
+    internal static Task CaptureService_InitializationLivesWithServiceRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
-        var initializationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Initialization.cs")
             .Replace("\r\n", "\n");
         var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Telemetry.cs")
             .Replace("\r\n", "\n");
@@ -15,18 +13,21 @@ static partial class Program
         var captureFormatTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.CaptureFormatTelemetry.cs")
             .Replace("\r\n", "\n");
 
-        AssertDoesNotContain(rootText, "public Task InitializeAsync(");
         AssertContains(rootText, "private static ISourceSignalTelemetryProvider CreateDefaultTelemetryProvider()");
-        AssertContains(initializationText, "public Task InitializeAsync(CaptureDevice device, CaptureSettings settings, CancellationToken cancellationToken = default)");
-        AssertContains(initializationText, "=> RunTransitionAsync(CaptureSessionState.Initializing, async transitionToken =>");
-        AssertContains(initializationText, "_audioDeviceId = settings.UseCustomAudioInput ? settings.AudioDeviceId : device.AudioDeviceId;");
-        AssertContains(initializationText, "_actualPixelFormat = settings.RequestedPixelFormat ?? (settings.HdrEnabled ? \"P010\" : \"NV12\");");
-        AssertContains(initializationText, "ResetObservedPixelTelemetry();");
-        AssertContains(initializationText, "ResetCachedMjpegTimingMetrics();");
-        AssertContains(initializationText, "_latestSourceTelemetry = BuildFallbackTelemetry();");
-        AssertContains(initializationText, "await RefreshSourceTelemetryAsync(transitionToken).ConfigureAwait(false);");
-        AssertContains(initializationText, "TryCorrectFrameRateFromTelemetry();");
-        AssertContains(initializationText, "StatusChanged?.Invoke(this, \"Initialized\");");
+        AssertContains(rootText, "public Task InitializeAsync(CaptureDevice device, CaptureSettings settings, CancellationToken cancellationToken = default)");
+        AssertContains(rootText, "=> RunTransitionAsync(CaptureSessionState.Initializing, async transitionToken =>");
+        AssertContains(rootText, "_audioDeviceId = settings.UseCustomAudioInput ? settings.AudioDeviceId : device.AudioDeviceId;");
+        AssertContains(rootText, "_actualPixelFormat = settings.RequestedPixelFormat ?? (settings.HdrEnabled ? \"P010\" : \"NV12\");");
+        AssertContains(rootText, "ResetObservedPixelTelemetry();");
+        AssertContains(rootText, "ResetCachedMjpegTimingMetrics();");
+        AssertContains(rootText, "_latestSourceTelemetry = BuildFallbackTelemetry();");
+        AssertContains(rootText, "await RefreshSourceTelemetryAsync(transitionToken).ConfigureAwait(false);");
+        AssertContains(rootText, "TryCorrectFrameRateFromTelemetry();");
+        AssertContains(rootText, "StatusChanged?.Invoke(this, \"Initialized\");");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Initialization.cs")),
+            "old initialization partial removed");
         AssertContains(telemetryFallbackText, "private SourceSignalTelemetrySnapshot BuildFallbackTelemetry()");
         AssertContains(captureFormatTelemetryText, "private void TryCorrectFrameRateFromTelemetry()");
         AssertContains(captureFormatTelemetryText, "private static string ResolveFrameRateArg(");
