@@ -335,8 +335,9 @@ progress/force-rotation gap alerts, temp-cache pressure alerts, encoder failure
 alerts, and recording path degradation alerts.
 `AutomationDiagnosticsHub.FlashbackPlaybackAlerts.Commands.cs` owns playback
 command queue and command failure alerts.
-`AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Audio.cs` owns
-audio-master fallback and audio-queue backlog alerts.
+`AutomationDiagnosticsHub.Alerts.cs` owns Flashback playback performance
+orchestration, submit-failure alerts, audio-master fallback alerts, and
+audio-queue backlog alerts.
 `AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Cadence.cs` owns
 playback target-rate, present-cadence, slow-playback, and frametime alert
 rules.
