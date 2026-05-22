@@ -3993,12 +3993,10 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs` owns
   diagnostic-session preview-scheduler analysis handoff values: MJPEG
   jitter-buffer counters, deltas, last drop/underflow reasons, underflow ages,
-  and max schedule-late aggregation.
-- `tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`
-  owns Flashback preview-scheduler validation orchestration during result
-  analysis: target-FPS fallback, visual-cadence tolerance checks, sparse
-  deadline/drop tolerance selection, and the call into shared Flashback
-  preview validation.
+  max schedule-late aggregation, and Flashback preview-scheduler validation
+  orchestration during result analysis: target-FPS fallback, visual-cadence
+  tolerance checks, sparse deadline/drop tolerance selection, and the call into
+  shared Flashback preview validation.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs` owns
   Flashback playback result projection composition plus the command, cadence,
   1% low, decode, audio-master, and stage DTO value maps consumed by the final

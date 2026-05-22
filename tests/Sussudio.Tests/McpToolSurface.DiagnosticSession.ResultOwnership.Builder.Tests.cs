@@ -98,8 +98,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
             .Replace("\r\n", "\n");
-        var previewSchedulerValidationText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(analysisText, "previewScheduler,");
         AssertContains(previewSchedulerText, "private readonly record struct DiagnosticSessionPreviewSchedulerAnalysis(");
@@ -111,17 +109,17 @@ static partial class Program
         AssertContains(previewSchedulerText, "LastUnderflowReasonAtEnd: GetString(lastSnapshot, \"MjpegPreviewJitterLastUnderflowReason\") ?? string.Empty");
         AssertContains(previewSchedulerText, "LastUnderflowInputAgeMsAtEnd: GetDouble(lastSnapshot, \"MjpegPreviewJitterLastUnderflowInputAgeMs\")");
         AssertContains(previewSchedulerText, "LastUnderflowOutputAgeMsAtEnd: GetDouble(lastSnapshot, \"MjpegPreviewJitterLastUnderflowOutputAgeMs\")");
-        AssertContains(previewSchedulerValidationText, "private static void ValidateFlashbackPreviewSchedulerAnalysis(");
-        AssertContains(previewSchedulerValidationText, "var previewTargetFps = GetDouble(lastSnapshot, \"ExpectedCaptureFrameRate\");");
-        AssertContains(previewSchedulerValidationText, "previewTargetFps = GetDouble(lastSnapshot, \"SelectedExactFrameRate\");");
-        AssertContains(previewSchedulerValidationText, "var toleratesPreviewCycleSchedulerSettling =");
-        AssertContains(previewSchedulerValidationText, "scenarioPlan.IsPreviewCycleScenario && visualCadenceHealthy");
-        AssertContains(previewSchedulerValidationText, "var toleratesSparsePreviewSchedulerDeadlineDrops =");
-        AssertContains(previewSchedulerValidationText, "IsSparsePreviewSchedulerDeadlineDropRun(");
-        AssertContains(previewSchedulerValidationText, "var toleratesSparseScrubSchedulerTransitions =");
-        AssertContains(previewSchedulerValidationText, "scenarioPlan.ToleratesSparsePreviewSchedulerStressTransitions &&");
-        AssertContains(previewSchedulerValidationText, "IsSparsePreviewSchedulerStressRun(");
-        AssertContains(previewSchedulerValidationText, "ValidateFlashbackPreviewScheduler(");
+        AssertContains(previewSchedulerText, "private static void ValidateFlashbackPreviewSchedulerAnalysis(");
+        AssertContains(previewSchedulerText, "var previewTargetFps = GetDouble(lastSnapshot, \"ExpectedCaptureFrameRate\");");
+        AssertContains(previewSchedulerText, "previewTargetFps = GetDouble(lastSnapshot, \"SelectedExactFrameRate\");");
+        AssertContains(previewSchedulerText, "var toleratesPreviewCycleSchedulerSettling =");
+        AssertContains(previewSchedulerText, "scenarioPlan.IsPreviewCycleScenario && visualCadenceHealthy");
+        AssertContains(previewSchedulerText, "var toleratesSparsePreviewSchedulerDeadlineDrops =");
+        AssertContains(previewSchedulerText, "IsSparsePreviewSchedulerDeadlineDropRun(");
+        AssertContains(previewSchedulerText, "var toleratesSparseScrubSchedulerTransitions =");
+        AssertContains(previewSchedulerText, "scenarioPlan.ToleratesSparsePreviewSchedulerStressTransitions &&");
+        AssertContains(previewSchedulerText, "IsSparsePreviewSchedulerStressRun(");
+        AssertContains(previewSchedulerText, "ValidateFlashbackPreviewScheduler(");
         AssertContains(analysisText, "DiagnosticSessionPreviewSchedulerAnalysis PreviewScheduler,");
         AssertContains(previewResultText, "private readonly record struct DiagnosticSessionPreviewSchedulerResultProjection(");
         AssertContains(previewResultText, "private static DiagnosticSessionPreviewSchedulerResultProjection BuildPreviewSchedulerResultProjection(");

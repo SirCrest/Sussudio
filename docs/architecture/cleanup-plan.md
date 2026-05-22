@@ -3500,17 +3500,16 @@ composition, diagnostic-health warning tolerance, sparse source-cadence warning
 tolerance, sparse preview-scheduler warning tolerance, source-reader/ingest
 warning deltas, tolerated-warning reason selection, and emitted health warning
 text live in `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`.
-Preview-scheduler analysis handoff values live in
+Preview-scheduler analysis handoff values and validation orchestration live in
 `DiagnosticSessionResultBuilder.PreviewScheduler.cs`: MJPEG jitter-buffer
 counter/delta reads, last drop/underflow reason and age reads,
-and max/schedule-late aggregation.
+max/schedule-late aggregation, target-FPS fallback, visual-cadence tolerance
+checks, sparse deadline/drop tolerance selection, and the call into shared
+Flashback preview validation.
 `DiagnosticSessionResultAnalysis.PreviewScheduler` is the single record
 property that carries those values into the scheduler result projection without
-rereading MJPEG jitter-buffer snapshot keys. Flashback preview-scheduler validation orchestration
-now lives in `DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`,
-including target-FPS fallback, visual-cadence tolerance checks, sparse
-deadline/drop tolerance selection, and the call into shared Flashback preview
-validation. Preview cadence, visual cadence, and D3D frame-stats/slow-frame/
+rereading MJPEG jitter-buffer snapshot keys. Preview cadence, visual cadence,
+and D3D frame-stats/slow-frame/
 CPU-timing result projection values live with the other small projection
 builders in `DiagnosticSessionResultBuilder.Projections.cs`. The D3D fields
 still travel through a distinct `PreviewD3D` projection set member so renderer
@@ -4165,7 +4164,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
-- `DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`
 - `DiagnosticSessionResultBuildRequest.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionResultFormatter.Overview.cs`
