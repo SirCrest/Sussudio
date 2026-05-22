@@ -3679,15 +3679,10 @@ should use `DiagnosticSessionCommandChannel` typed `AutomationCommandKind`
 sends.
 
 Diagnostic-session cleanup mutations now live in
-`tools/Common/DiagnosticSessionCleanupActions.cs`. The root owns the public
-cleanup flow and ordering. Recording stop for verification lives in
-`DiagnosticSessionCleanupActions.Recording.cs` through typed
-`AutomationCommandKind.SetRecordingEnabled`. Flashback playback go-live restore
-lives in `.FlashbackPlayback.cs`, preview stop lives in `.Preview.cs`, and
-Flashback enable-state restore lives in `.FlashbackState.cs` through typed
-`AutomationCommandKind.FlashbackAction`, `SetPreviewEnabled`, and
-`SetFlashbackEnabled` sends. The cleanup result record lives with the public
-cleanup flow in `DiagnosticSessionCleanupActions.cs`, while
+`tools/Common/DiagnosticSessionCleanupActions.cs`. It owns the public cleanup
+flow and ordering, recording stop for verification, Flashback playback go-live
+restore, preview stop, Flashback enable-state restore, typed automation command
+sends, and the cleanup result record, while
 `DiagnosticSessionCleanupPolicy.cs` remains the post-cleanup warning validator.
 
 Diagnostic-session recording checks now live in
@@ -3959,10 +3954,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionBackgroundTasks.RecordingSettingsDeferred.cs`
 - `DiagnosticSessionBackgroundTasks.FaultDrain.cs`
 - `DiagnosticSessionCleanupActions.cs`
-- `DiagnosticSessionCleanupActions.Recording.cs`
-- `DiagnosticSessionCleanupActions.FlashbackPlayback.cs`
-- `DiagnosticSessionCleanupActions.Preview.cs`
-- `DiagnosticSessionCleanupActions.FlashbackState.cs`
 - `DiagnosticSessionCleanupPolicy.cs`
 - `DiagnosticSessionRecordingChecks.cs`
 - `DiagnosticSessionRecordingVerification.cs`

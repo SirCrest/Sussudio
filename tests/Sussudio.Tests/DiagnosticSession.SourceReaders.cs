@@ -9,11 +9,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionCleanupActionsSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionCleanupActions.cs",
-            "tools/Common/DiagnosticSessionCleanupActions.Recording.cs",
-            "tools/Common/DiagnosticSessionCleanupActions.FlashbackPlayback.cs",
-            "tools/Common/DiagnosticSessionCleanupActions.Preview.cs",
-            "tools/Common/DiagnosticSessionCleanupActions.FlashbackState.cs");
+            "tools/Common/DiagnosticSessionCleanupActions.cs");
 
     private static string ReadDiagnosticSessionScenarioSetupSource()
         => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioSetup.cs");

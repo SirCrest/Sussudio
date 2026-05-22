@@ -7,33 +7,24 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var cleanupActionsText = ReadDiagnosticSessionCleanupActionsSource();
-        var cleanupActionsRootText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupActions.cs")
-            .Replace("\r\n", "\n");
-        var cleanupRecordingText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupActions.Recording.cs")
-            .Replace("\r\n", "\n");
-        var cleanupFlashbackPlaybackText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupActions.FlashbackPlayback.cs")
-            .Replace("\r\n", "\n");
-        var cleanupPreviewText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupActions.Preview.cs")
-            .Replace("\r\n", "\n");
-        var cleanupFlashbackStateText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupActions.FlashbackState.cs")
-            .Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(cleanupActionsText, "internal static partial class DiagnosticSessionCleanupActions");
+        AssertContains(cleanupActionsText, "internal static class DiagnosticSessionCleanupActions");
+        AssertDoesNotContain(cleanupActionsText, "internal static partial class DiagnosticSessionCleanupActions");
         AssertContains(cleanupActionsText, "internal static async Task<DiagnosticSessionCleanupResult> RunAsync(");
         AssertContains(cleanupActionsText, "internal readonly record struct DiagnosticSessionCleanupResult(bool StoppedRecordingForVerification)");
-        AssertContains(cleanupActionsRootText, "StopRecordingForCleanupAsync(");
-        AssertContains(cleanupRecordingText, "private static async Task<bool> StopRecordingForCleanupAsync(");
-        AssertContains(cleanupRecordingText, "setStage(\"cleanup-stop-recording\")");
-        AssertContains(cleanupRecordingText, "recordTerminalException(ex, \"cleanup-stop-recording\")");
-        AssertContains(cleanupFlashbackPlaybackText, "private static async Task RestoreLiveFlashbackPlaybackAsync(");
-        AssertContains(cleanupFlashbackPlaybackText, "setStage(\"cleanup-go-live\")");
-        AssertContains(cleanupPreviewText, "private static async Task StopPreviewIfStartedAsync(");
-        AssertContains(cleanupPreviewText, "setStage(\"cleanup-stop-preview\")");
-        AssertContains(cleanupFlashbackStateText, "private static async Task RestoreFlashbackEnabledStateAsync(");
-        AssertContains(cleanupFlashbackStateText, "setStage(\"cleanup-restore-flashback-off\")");
-        AssertContains(cleanupFlashbackStateText, "setStage(\"cleanup-restore-flashback-on\")");
+        AssertContains(cleanupActionsText, "StopRecordingForCleanupAsync(");
+        AssertContains(cleanupActionsText, "private static async Task<bool> StopRecordingForCleanupAsync(");
+        AssertContains(cleanupActionsText, "setStage(\"cleanup-stop-recording\")");
+        AssertContains(cleanupActionsText, "recordTerminalException(ex, \"cleanup-stop-recording\")");
+        AssertContains(cleanupActionsText, "private static async Task RestoreLiveFlashbackPlaybackAsync(");
+        AssertContains(cleanupActionsText, "setStage(\"cleanup-go-live\")");
+        AssertContains(cleanupActionsText, "private static async Task StopPreviewIfStartedAsync(");
+        AssertContains(cleanupActionsText, "setStage(\"cleanup-stop-preview\")");
+        AssertContains(cleanupActionsText, "private static async Task RestoreFlashbackEnabledStateAsync(");
+        AssertContains(cleanupActionsText, "setStage(\"cleanup-restore-flashback-off\")");
+        AssertContains(cleanupActionsText, "setStage(\"cleanup-restore-flashback-on\")");
         AssertContains(cleanupActionsText, "using Sussudio.Models;");
         AssertContains(cleanupActionsText, "DiagnosticSessionCommandChannel commandChannel,");
         AssertContains(cleanupActionsText, "commandChannel.SendWithTokenAsync(");
@@ -61,18 +52,6 @@ static partial class Program
         AssertDoesNotContain(cleanupActionsText, "sendWithTokenAsync(\"SetPreviewEnabled\"");
         AssertDoesNotContain(cleanupActionsText, "sendWithTokenAsync(\"SetFlashbackEnabled\"");
         AssertDoesNotContain(cleanupActionsText, "GetDefaultResponseTimeout(\"SetFlashbackEnabled\")");
-        AssertDoesNotContain(cleanupActionsRootText, "setStage(\"cleanup-stop-recording\")");
-        AssertDoesNotContain(cleanupActionsRootText, "recordTerminalException(ex, \"cleanup-stop-recording\")");
-        AssertDoesNotContain(cleanupRecordingText, "setStage(\"cleanup-go-live\")");
-        AssertDoesNotContain(cleanupRecordingText, "setStage(\"cleanup-stop-preview\")");
-        AssertDoesNotContain(cleanupRecordingText, "setStage(\"cleanup-restore-flashback-off\")");
-        AssertDoesNotContain(cleanupRecordingText, "setStage(\"cleanup-restore-flashback-on\")");
-        AssertDoesNotContain(cleanupFlashbackPlaybackText, "SetPreviewEnabled");
-        AssertDoesNotContain(cleanupFlashbackPlaybackText, "SetFlashbackEnabled");
-        AssertDoesNotContain(cleanupPreviewText, "FlashbackAction");
-        AssertDoesNotContain(cleanupPreviewText, "SetFlashbackEnabled");
-        AssertDoesNotContain(cleanupFlashbackStateText, "FlashbackAction");
-        AssertDoesNotContain(cleanupFlashbackStateText, "SetPreviewEnabled");
 
         return Task.CompletedTask;
     }

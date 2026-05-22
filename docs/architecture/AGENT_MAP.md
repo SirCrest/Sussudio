@@ -4089,19 +4089,9 @@ Primary owners:
   mutations on `DiagnosticSessionCommandChannel` typed `AutomationCommandKind`
   sends.
 - `tools/Common/DiagnosticSessionCleanupActions.cs` owns diagnostic-session
-  cleanup flow, ordering, stage/action naming, and the cleanup result handoff
-  record.
-- `tools/Common/DiagnosticSessionCleanupActions.Recording.cs` owns
-  diagnostic-session recording stop for verification through typed
-  `AutomationCommandKind.SetRecordingEnabled`.
-- `tools/Common/DiagnosticSessionCleanupActions.FlashbackPlayback.cs` owns
-  Flashback playback go-live restore through typed
-  `AutomationCommandKind.FlashbackAction`.
-  `tools/Common/DiagnosticSessionCleanupActions.Preview.cs` owns preview stop
-  through typed `AutomationCommandKind.SetPreviewEnabled`.
-  `tools/Common/DiagnosticSessionCleanupActions.FlashbackState.cs` owns
-  Flashback enable-state restore through typed
-  `AutomationCommandKind.SetFlashbackEnabled`.
+  cleanup flow, ordering, stage/action naming, cleanup result handoff, recording
+  stop for verification, Flashback playback go-live restore, preview stop, and
+  Flashback enable-state restore through typed automation commands.
 - `tools/Common/DiagnosticSessionRecordingChecks.cs` owns post-cleanup
   diagnostic-session recording checks: deferred Flashback recording-settings
   restore, verification handoff, and Flashback recording validation. Keep the
