@@ -669,9 +669,8 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.HdrPipeline.cs`
   owns HDR availability/request state, runtime/readiness fallback, HDR
   warmup/downgrade, pipeline parity, telemetry-alignment, and HDR truth verdict
-  projection consumed by `AutomationSnapshot`.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.HdrPipeline.cs`
-  owns final HDR pipeline projection-to-`AutomationSnapshot` field flattening.
+  projection plus final HDR pipeline projection-to-`AutomationSnapshot` field
+  flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotState.cs` owns
   stateful snapshot bookkeeping for audio mute suspicion and recording file
   growth tracking.

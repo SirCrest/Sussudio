@@ -52,7 +52,6 @@ static partial class Program
                 SnapshotProjectionFlatteningSourceText,
                 SnapshotProjectionFlatteningSourceSignalText,
                 SnapshotProjectionFlatteningSettingsText,
-                SnapshotProjectionFlatteningHdrPipelineText,
                 SnapshotProjectionFlatteningFlashbackExportText,
                 SnapshotProjectionSnapshotStatusText,
                 SnapshotProjectionSnapshotEvaluationText,

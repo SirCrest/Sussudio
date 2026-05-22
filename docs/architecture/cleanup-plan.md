@@ -399,9 +399,8 @@ visibility projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.HdrPipeline.cs` owns HDR
 availability/request state, runtime/readiness fallback, HDR warmup/downgrade,
 pipeline parity, telemetry-alignment, and HDR truth verdict projection consumed
-by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.HdrPipeline.cs` owns
-final HDR pipeline projection-to-`AutomationSnapshot` field flattening.
+by the automation snapshot DTO plus final HDR pipeline projection-to-
+`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation, active-alert
 transitions, Flashback alert group routing, and Flashback playback alert
 orchestration, plus signal alert orchestration.

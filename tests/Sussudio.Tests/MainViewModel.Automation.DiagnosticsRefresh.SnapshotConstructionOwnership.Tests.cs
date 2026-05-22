@@ -65,7 +65,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSettingsFlattenedProjection(userSettings, recordingSettings)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningSettingsText, "private static SettingsFlattenedProjection BuildSettingsFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildHdrPipelineFlattenedProjection(hdrPipeline)");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningHdrPipelineText, "private static HdrPipelineFlattenedProjection BuildHdrPipelineFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionHdrPipelineText, "private static HdrPipelineFlattenedProjection BuildHdrPipelineFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildPreviewRuntimeFlattenedProjection(previewSummary)");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "BuildPreviewRuntimeFrameProjection(previewRuntime)");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "BuildPreviewRuntimeCadenceProjection(previewRuntime)");

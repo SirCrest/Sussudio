@@ -132,8 +132,6 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var snapshotFlatteningHdrPipelineText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.HdrPipeline.cs")
-            .Replace("\r\n", "\n");
         var hdrPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.HdrPipeline.cs")
             .Replace("\r\n", "\n");
 
@@ -145,14 +143,14 @@ static partial class Program
         AssertContains(snapshotFlatteningText, "PipelineModeStatus = hdrPipelineFlattening.PipelineModeStatus,");
         AssertContains(snapshotFlatteningText, "TelemetryAlignmentReason = hdrPipelineFlattening.TelemetryAlignmentReason,");
         AssertContains(snapshotFlatteningText, "HdrTruthVerdict = hdrPipelineFlattening.TruthVerdict,");
-        AssertContains(snapshotFlatteningHdrPipelineText, "private static HdrPipelineFlattenedProjection BuildHdrPipelineFlattenedProjection(");
-        AssertContains(snapshotFlatteningHdrPipelineText, "IsHdrAvailable = hdrPipeline.IsHdrAvailable,");
-        AssertContains(snapshotFlatteningHdrPipelineText, "HdrRuntimeState = hdrPipeline.HdrRuntimeState,");
-        AssertContains(snapshotFlatteningHdrPipelineText, "HdrWarmupObservedNonP010Frames = hdrPipeline.HdrWarmupObservedNonP010Frames,");
-        AssertContains(snapshotFlatteningHdrPipelineText, "PipelineModeStatus = hdrPipeline.PipelineModeStatus,");
-        AssertContains(snapshotFlatteningHdrPipelineText, "TelemetryAlignmentReason = hdrPipeline.TelemetryAlignmentReason,");
-        AssertContains(snapshotFlatteningHdrPipelineText, "TruthVerdict = hdrPipeline.TruthVerdict");
-        AssertContains(snapshotFlatteningHdrPipelineText, "private readonly record struct HdrPipelineFlattenedProjection");
+        AssertContains(hdrPipelineProjectionText, "private static HdrPipelineFlattenedProjection BuildHdrPipelineFlattenedProjection(");
+        AssertContains(hdrPipelineProjectionText, "IsHdrAvailable = hdrPipeline.IsHdrAvailable,");
+        AssertContains(hdrPipelineProjectionText, "HdrRuntimeState = hdrPipeline.HdrRuntimeState,");
+        AssertContains(hdrPipelineProjectionText, "HdrWarmupObservedNonP010Frames = hdrPipeline.HdrWarmupObservedNonP010Frames,");
+        AssertContains(hdrPipelineProjectionText, "PipelineModeStatus = hdrPipeline.PipelineModeStatus,");
+        AssertContains(hdrPipelineProjectionText, "TelemetryAlignmentReason = hdrPipeline.TelemetryAlignmentReason,");
+        AssertContains(hdrPipelineProjectionText, "TruthVerdict = hdrPipeline.TruthVerdict");
+        AssertContains(hdrPipelineProjectionText, "private readonly record struct HdrPipelineFlattenedProjection");
         AssertDoesNotContain(snapshotFlatteningText, "IsHdrAvailable = viewModelSnapshot.IsHdrAvailable,");
         AssertDoesNotContain(snapshotFlatteningText, "IsHdrAvailable = hdrPipeline.IsHdrAvailable,");
         AssertDoesNotContain(snapshotFlatteningText, "HdrRuntimeState = !string.IsNullOrWhiteSpace(viewModelSnapshot.HdrRuntimeState)");
