@@ -1666,11 +1666,10 @@ Recording integrity policy is now split under
 `Sussudio/Services/Capture/CaptureService.RecordingIntegrity*.cs`. The root
 partial resolves the active backend, `.Models.cs` owns the private counter DTOs,
 `.Summary.cs` owns final `RecordingIntegritySummary` DTO construction plus the
-structured `RECORDING_INTEGRITY` log line,
-`.SummaryFields.cs` owns normalized video/audio summary handoff fields, and
-`.SummaryEvaluation.cs` owns integrity status, reason, and audio-status
-classification. `.Counters.cs` owns video/backend counter capture and baseline
-deltas, and `.Audio.cs` owns audio counter capture and baseline deltas. Snapshot
+structured `RECORDING_INTEGRITY` log line, normalized video/audio summary
+handoff fields, integrity status, reason, and audio-status classification.
+`.Counters.cs` owns video/backend counter capture and baseline deltas, and
+`.Audio.cs` owns audio counter capture and baseline deltas. Snapshot
 partials consume that policy instead of containing it.
 
 LibAv encoder option validation now lives in
