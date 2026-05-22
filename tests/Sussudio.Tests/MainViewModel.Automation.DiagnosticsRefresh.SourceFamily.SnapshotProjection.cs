@@ -105,12 +105,6 @@ static partial class Program
         public string SnapshotProjectionRecordingIntegrityBackpressureText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingIntegrityAudioText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingIntegrityAvSyncText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningRecordingIntegrityText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningRecordingIntegritySummaryText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningRecordingIntegrityVideoText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningRecordingIntegrityBackpressureText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningRecordingIntegrityAudioText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningRecordingIntegrityAvSyncText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingPipelineText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingPipelineEncoderText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingPipelineIngestText { get; init; } = string.Empty;

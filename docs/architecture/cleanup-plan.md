@@ -418,23 +418,15 @@ flattening.
 drift and encoder correction projection plus final A/V sync projection-to-
 `AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs` owns
-recording-integrity projection routing consumed by the automation snapshot
-DTO. Its focused owners split status/reason, video-frame counters,
-queue/backpressure, audio integrity, and A/V sync projection inputs:
+recording-integrity projection routing and final flattening consumed by the
+automation snapshot DTO. Its focused owners split status/reason, video-frame
+counters, queue/backpressure, audio integrity, and A/V sync projection inputs
+plus final field flattening:
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Summary.cs`,
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Video.cs`,
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Backpressure.cs`,
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.Audio.cs`, and
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.AvSync.cs`.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.cs`
-owns final recording-integrity projection-to-`AutomationSnapshot` routing.
-Its focused flattening owners mirror status/reason, video-frame counters,
-queue/backpressure, audio integrity, and A/V sync fields:
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.Summary.cs`,
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.Video.cs`,
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.Backpressure.cs`,
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.Audio.cs`, and
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingIntegrity.AvSync.cs`.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs` owns
 recording-pipeline projection routing and groups encoder, ingest, video-queue,
 and GPU/CUDA health input modules consumed by the automation snapshot DTO.

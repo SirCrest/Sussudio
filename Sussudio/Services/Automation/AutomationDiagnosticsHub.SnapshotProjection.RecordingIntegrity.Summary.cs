@@ -16,7 +16,27 @@ public sealed partial class AutomationDiagnosticsHub
             Reason = captureRuntime.RecordingIntegrityReason
         };
 
+    private static RecordingIntegritySummaryFlattenedProjection BuildRecordingIntegritySummaryFlattenedProjection(
+        RecordingIntegritySummaryProjection summary)
+        => new()
+        {
+            Status = summary.Status,
+            Complete = summary.Complete,
+            Backend = summary.Backend,
+            CompletedUtc = summary.CompletedUtc,
+            Reason = summary.Reason
+        };
+
     private readonly record struct RecordingIntegritySummaryProjection
+    {
+        public string Status { get; init; }
+        public bool Complete { get; init; }
+        public string Backend { get; init; }
+        public DateTimeOffset? CompletedUtc { get; init; }
+        public string Reason { get; init; }
+    }
+
+    private readonly record struct RecordingIntegritySummaryFlattenedProjection
     {
         public string Status { get; init; }
         public bool Complete { get; init; }
