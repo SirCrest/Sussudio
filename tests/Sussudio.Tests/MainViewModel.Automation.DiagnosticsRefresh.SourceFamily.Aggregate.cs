@@ -102,7 +102,6 @@ static partial class Program
                 SnapshotProjectionPreviewRuntimeGpuPlaybackText,
                 SnapshotProjectionPreviewRuntimeColorText,
                 SnapshotProjectionProcessResourcesText,
-                SnapshotProjectionFlatteningProcessResourcesText,
                 SnapshotProjectionRecordingIntegrityText,
                 SnapshotProjectionRecordingIntegritySummaryText,
                 SnapshotProjectionRecordingIntegrityVideoText,

@@ -7,8 +7,6 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var processResourceFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.ProcessResources.cs")
-            .Replace("\r\n", "\n");
         var processResourceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs")
             .Replace("\r\n", "\n");
 
@@ -24,17 +22,16 @@ static partial class Program
         AssertDoesNotContain(snapshotFlatteningText, "ThreadPoolIoMax = processResources.ThreadPoolIoMax,");
         AssertDoesNotContain(snapshotFlatteningText, "ThreadPoolIoMax = processResourceProjection.ThreadPoolIoMax,");
 
-        AssertContains(processResourceFlatteningText, "private static ProcessResourceFlattenedProjection BuildProcessResourceFlattenedProjection(");
-        AssertContains(processResourceFlatteningText, "MemoryWorkingSetMb = processResourceProjection.MemoryWorkingSetMb,");
-        AssertContains(processResourceFlatteningText, "MemoryGcFragmentationPercent = processResourceProjection.MemoryGcFragmentationPercent,");
-        AssertContains(processResourceFlatteningText, "ThreadPoolIoMax = processResourceProjection.ThreadPoolIoMax");
-        AssertContains(processResourceFlatteningText, "private readonly record struct ProcessResourceFlattenedProjection");
-
         AssertContains(processResourceProjectionText, "private static ProcessResourceProjection BuildProcessResourceProjection(ProcessResourceSnapshot processResources)");
         AssertContains(processResourceProjectionText, "MemoryWorkingSetMb = processResources.MemoryWorkingSetMb,");
         AssertContains(processResourceProjectionText, "MemoryGcFragmentationPercent = processResources.MemoryGcFragmentationPercent,");
         AssertContains(processResourceProjectionText, "ThreadPoolIoMax = processResources.ThreadPoolIoMax");
         AssertContains(processResourceProjectionText, "private readonly record struct ProcessResourceProjection");
+        AssertContains(processResourceProjectionText, "private static ProcessResourceFlattenedProjection BuildProcessResourceFlattenedProjection(");
+        AssertContains(processResourceProjectionText, "MemoryWorkingSetMb = processResourceProjection.MemoryWorkingSetMb,");
+        AssertContains(processResourceProjectionText, "MemoryGcFragmentationPercent = processResourceProjection.MemoryGcFragmentationPercent,");
+        AssertContains(processResourceProjectionText, "ThreadPoolIoMax = processResourceProjection.ThreadPoolIoMax");
+        AssertContains(processResourceProjectionText, "private readonly record struct ProcessResourceFlattenedProjection");
 
         return Task.CompletedTask;
     }

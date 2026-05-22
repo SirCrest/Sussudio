@@ -64,7 +64,6 @@ static partial class Program
         public string SnapshotProjectionPreviewRuntimeGpuPlaybackText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewRuntimeColorText { get; init; } = string.Empty;
         public string SnapshotProjectionProcessResourcesText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningProcessResourcesText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingIntegrityText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingIntegritySummaryText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingIntegrityVideoText { get; init; } = string.Empty;

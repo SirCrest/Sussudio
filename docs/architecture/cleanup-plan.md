@@ -342,9 +342,7 @@ preview HDR, tone-map, color-context, and adapter metadata projection inputs and
 final field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs` owns process
 memory, CPU, GC, and thread-pool projection consumed by the automation snapshot
-DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.ProcessResources.cs`
-owns final process resource projection-to-`AutomationSnapshot` field
+DTO, plus final process resource projection-to-`AutomationSnapshot` field
 flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.AvSync.cs` owns live A/V sync
 drift and encoder correction projection plus final A/V sync projection-to-
