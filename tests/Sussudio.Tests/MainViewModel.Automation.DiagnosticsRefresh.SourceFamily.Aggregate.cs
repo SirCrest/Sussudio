@@ -99,7 +99,6 @@ static partial class Program
                 SnapshotProjectionSnapshotEvaluationText,
                 SnapshotProjectionFlatteningSnapshotEvaluationText,
                 SnapshotProjectionAvSyncText,
-                SnapshotProjectionFlatteningAvSyncText,
                 SnapshotProjectionAudioText,
                 SnapshotProjectionAudioSignalText,
                 SnapshotProjectionAudioDropsText,

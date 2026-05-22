@@ -193,6 +193,18 @@ Behavior preserved: Source signal and source telemetry projections still flatten
 Notes for future agents: keep tiny source flattening orchestration with the source signal flattened projection owner unless it grows real policy
 
 Date: 2026-05-21
+Area: Automation diagnostics A/V sync snapshot projection
+Problem: A/V sync projection and final flattening lived in two tiny partials even though the fields are a direct one-to-one handoff.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AvSync.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics A/V sync projection ownership and runtime snapshot regression tests
+Behavior preserved: A/V sync capture drift, drift rate, encoder drift, and correction sample fields still flatten into the automation snapshot unchanged
+Notes for future agents: keep direct one-to-one projection/flattening pairs together unless either side grows independent policy
+
+Date: 2026-05-21
 Area: Diagnostic session result formatting
 Problem: Flashback playback performance text was split across separate cadence, 1% low, audio-master, and row-assembly fragments even though those helpers only compose the single `Flashback Playback Perf` row.
 Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Cadence.cs`; `tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.OnePercentLow.cs`; `tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.AudioMaster.cs`

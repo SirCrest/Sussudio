@@ -44,8 +44,6 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var avSyncFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AvSync.cs")
-            .Replace("\r\n", "\n");
         var avSyncProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.AvSync.cs")
             .Replace("\r\n", "\n");
 
@@ -59,11 +57,11 @@ static partial class Program
         AssertDoesNotContain(snapshotFlatteningText, "AvSyncEncoderCorrectionSamples = captureRuntime.AvSyncEncoderCorrectionSamples,");
         AssertDoesNotContain(snapshotFlatteningText, "AvSyncEncoderCorrectionSamples = avSync.EncoderCorrectionSamples,");
 
-        AssertContains(avSyncFlatteningText, "private static AvSyncFlattenedProjection BuildAvSyncFlattenedProjection(AvSyncProjection avSync)");
-        AssertContains(avSyncFlatteningText, "CaptureDriftMs = avSync.CaptureDriftMs,");
-        AssertContains(avSyncFlatteningText, "CaptureDriftRateMsPerSec = avSync.CaptureDriftRateMsPerSec,");
-        AssertContains(avSyncFlatteningText, "EncoderCorrectionSamples = avSync.EncoderCorrectionSamples");
-        AssertContains(avSyncFlatteningText, "private readonly record struct AvSyncFlattenedProjection");
+        AssertContains(avSyncProjectionText, "private static AvSyncFlattenedProjection BuildAvSyncFlattenedProjection(AvSyncProjection avSync)");
+        AssertContains(avSyncProjectionText, "CaptureDriftMs = avSync.CaptureDriftMs,");
+        AssertContains(avSyncProjectionText, "CaptureDriftRateMsPerSec = avSync.CaptureDriftRateMsPerSec,");
+        AssertContains(avSyncProjectionText, "EncoderCorrectionSamples = avSync.EncoderCorrectionSamples");
+        AssertContains(avSyncProjectionText, "private readonly record struct AvSyncFlattenedProjection");
 
         AssertContains(avSyncProjectionText, "private static AvSyncProjection BuildAvSyncProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(avSyncProjectionText, "CaptureDriftMs = captureRuntime.AvSyncCaptureDriftMs,");

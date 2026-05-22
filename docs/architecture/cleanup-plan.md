@@ -441,9 +441,8 @@ DTO.
 owns final process resource projection-to-`AutomationSnapshot` field
 flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.AvSync.cs` owns live A/V sync
-drift and encoder correction projection consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.AvSync.cs` owns final
-A/V sync projection-to-`AutomationSnapshot` field flattening.
+drift and encoder correction projection plus final A/V sync projection-to-
+`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs` owns
 recording-integrity projection routing consumed by the automation snapshot
 DTO. Its focused owners split status/reason, video-frame counters,
