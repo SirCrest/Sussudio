@@ -684,14 +684,12 @@ health DTO surface, including source-signal, queue-age, A/V sync, Flashback
 encoder/backend, playback, and export health properties. Keep this model as a
 single cohesive DTO surface unless a future change introduces a real named
 collaborator instead of another partial fragment.
-`Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.SourceTelemetry.cs`,
-`CaptureDiagnosticsSnapshot.CaptureCadence.cs`,
-`CaptureDiagnosticsSnapshot.Recording.cs`, `CaptureDiagnosticsSnapshot.Flashback.cs`,
-and `CaptureDiagnosticsSnapshot.Mjpeg.cs` own the base diagnostics DTO's source
-telemetry, capture-cadence, recording/audio queue, Flashback queue, and MJPEG
-diagnostics properties. Keep session state, negotiated format, observed frame,
-and HDR auto-downgrade fields in the root `CaptureDiagnosticsSnapshot.cs`
-compatibility partial.
+`Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.cs` owns the base
+diagnostics DTO surface: session state, negotiated format, observed frame, HDR
+auto-downgrade, source telemetry, capture cadence, recording/audio queue,
+Flashback queue, MJPEG, and visual-cadence diagnostics properties. Keep this as
+a single cohesive DTO surface unless a future change introduces a real named
+collaborator instead of another partial fragment.
 
 `tests/Sussudio.Tests/RecordingQueue.Tests.cs` is now the shared recording
 queue source-reader helper shell. Capture health snapshot ownership coverage is
