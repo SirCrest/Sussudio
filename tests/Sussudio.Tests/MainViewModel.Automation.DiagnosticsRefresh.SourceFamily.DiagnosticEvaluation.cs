@@ -20,8 +20,5 @@ static partial class Program
         public string DiagnosticEvaluationLanesText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesRealtimeSourceText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesRealtimePreviewText { get; init; } = string.Empty;
-        public string DiagnosticEvaluationLanesFlashbackRecordingText { get; init; } = string.Empty;
-        public string DiagnosticEvaluationLanesFlashbackExportText { get; init; } = string.Empty;
-        public string DiagnosticEvaluationLanesFlashbackPlaybackText { get; init; } = string.Empty;
     }
 }
