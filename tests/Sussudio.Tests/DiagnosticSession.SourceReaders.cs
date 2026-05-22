@@ -161,21 +161,15 @@ static partial class Program
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionResultBuildRequest.cs",
             "tools/Common/DiagnosticSessionResultBuilder.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.ProjectionSet.cs",
+            "tools/Common/DiagnosticSessionResultBuilder.Projections.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Flattening.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.OverviewResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Analysis.cs",
             "tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs",
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs",
             "tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.FlashbackExportResult.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.CaptureResult.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.PreviewD3DResult.cs");
+            "tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs");
 
     private static string ReadDiagnosticSessionResultFormatterSource()
         => ReadNormalizedSourceFiles(

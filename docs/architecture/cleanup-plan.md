@@ -3482,12 +3482,10 @@ artifact paths into the named projection-set owner and flattening owner.
 `DiagnosticSessionResultBuilder.Flattening.cs` owns final
 `DiagnosticSessionResult` DTO assignment from the projection set; keep domain
 projection composition outside this initializer.
-`DiagnosticSessionResultBuilder.ProjectionSet.cs` owns projection-set assembly
-from overview, capture, Flashback, preview, D3D, and visual-cadence projection
-owners plus the private projection-set handoff record. Overview
-outcome policy plus process CPU end/max-observed aggregation, recording
-verification, and PresentMon DTO projection values live in
-`DiagnosticSessionResultBuilder.OverviewResult.cs`. Diagnostic metric gathering
+`DiagnosticSessionResultBuilder.Projections.cs` owns projection-set assembly,
+the private projection-set handoff record, and the small result projection
+records/builders for overview, capture, Flashback recording/export, preview
+cadence/scheduler, preview D3D, and visual cadence. Diagnostic metric gathering
 for validation/result projections and analysis warning emission live in
 `DiagnosticSessionResultBuilder.Analysis.cs`, which also owns the private
 analysis handoff record. Named validation handoff order lives in
@@ -3505,8 +3503,7 @@ text live in `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`.
 Preview-scheduler analysis handoff values live in
 `DiagnosticSessionResultBuilder.PreviewScheduler.cs`: MJPEG jitter-buffer
 counter/delta reads, last drop/underflow reason and age reads,
-and max/schedule-late aggregation. Preview-scheduler result DTO value mapping
-from that handoff lives in `DiagnosticSessionResultBuilder.PreviewResult.cs`.
+and max/schedule-late aggregation.
 `DiagnosticSessionResultAnalysis.PreviewScheduler` is the single record
 property that carries those values into the scheduler result projection without
 rereading MJPEG jitter-buffer snapshot keys. Flashback preview-scheduler validation orchestration
@@ -3514,30 +3511,26 @@ now lives in `DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`,
 including target-FPS fallback, visual-cadence tolerance checks, sparse
 deadline/drop tolerance selection, and the call into shared Flashback preview
 validation. Preview cadence, visual cadence, and D3D frame-stats/slow-frame/
-CPU-timing result projection values are split by runtime metric owner:
-`DiagnosticSessionResultBuilder.PreviewResult.cs` owns preview-cadence,
-preview-scheduler, and visual-cadence result projection values, and
-`DiagnosticSessionResultBuilder.PreviewD3DResult.cs` owns D3D frame-stats,
-slow-frame, and CPU-timing result projection values. The D3D fields still
-travel through a distinct `PreviewD3D` projection set member so renderer timing
-semantics stay separate from scheduler/jitter policy.
+CPU-timing result projection values live with the other small projection
+builders in `DiagnosticSessionResultBuilder.Projections.cs`. The D3D fields
+still travel through a distinct `PreviewD3D` projection set member so renderer
+timing semantics stay separate from scheduler/jitter policy.
 Flashback playback result composition lives in
 `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`, which keeps the
 playback projection record as one cohesive handoff into the result projection
 set. The detailed command queue, cadence/slow-frame/dropped-frame, 1% low,
 audio-master, decode timing, and stage DTO value maps now live in that same
 file so the projection shape and the mappings that fill it stay together.
-Flashback recording backend/growth/integrity DTO projection values live in
-`DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`, while export
+Flashback recording backend/growth/integrity DTO projection values and export
 status/progress DTO projection values live in
-`DiagnosticSessionResultBuilder.FlashbackExportResult.cs`; result construction
+`DiagnosticSessionResultBuilder.Projections.cs`; result construction
 still consumes named Flashback projections while preserving the existing
 `summary.json` field shape.
 Export force-rotate fallback counters now travel with
 `FlashbackExportSessionMetrics` instead of loose analysis record fields.
 Capture selection, negotiated format, source geometry, detected cadence, HDR,
 and source-telemetry DTO projection values live in
-`DiagnosticSessionResultBuilder.CaptureResult.cs`.
+`DiagnosticSessionResultBuilder.Projections.cs`.
 
 Diagnostic-session result artifact setup now lives in
 `tools/Common/DiagnosticSessionResultArtifacts.cs`. It owns result artifact path
@@ -4165,21 +4158,15 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultArtifacts.cs`
 - `DiagnosticSessionResultBuilder.cs`
 - `DiagnosticSessionResultBuilder.Flattening.cs`
-- `DiagnosticSessionResultBuilder.OverviewResult.cs`
+- `DiagnosticSessionResultBuilder.Projections.cs`
 - `DiagnosticSessionResultBuilder.Analysis.cs`
 - `DiagnosticSessionResultBuilder.AnalysisValidation.cs`
 - `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
-- `DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`
-- `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`
-- `DiagnosticSessionResultBuilder.CaptureResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
 - `DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`
-- `DiagnosticSessionResultBuilder.PreviewResult.cs`
-- `DiagnosticSessionResultBuilder.PreviewD3DResult.cs`
 - `DiagnosticSessionResultBuildRequest.cs`
-- `DiagnosticSessionResultBuilder.ProjectionSet.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionResultFormatter.Overview.cs`
 - `DiagnosticSessionResultFormatter.CaptureMode.cs`

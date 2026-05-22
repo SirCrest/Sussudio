@@ -3967,10 +3967,11 @@ Primary owners:
   `DiagnosticSessionResult` DTO assignment from the projection set. Keep
   domain projection composition in the projection owners and projection-set
   owner, not in this initializer.
-- `tools/Common/DiagnosticSessionResultBuilder.OverviewResult.cs` owns
-  diagnostic-session outcome policy plus overview DTO projection for process
-  CPU end/max-observed aggregation, recording verification, and PresentMon
-  fields.
+- `tools/Common/DiagnosticSessionResultBuilder.Projections.cs` owns the
+  private projection-set handoff record, projection-set assembly, and the
+  small result projection records/builders for overview, capture, Flashback
+  recording/export, preview cadence/scheduler, preview D3D, and visual
+  cadence.
 - `tools/Common/DiagnosticSessionResultBuilder.Analysis.cs` owns
   diagnostic-session metric preparation for validation/result projections,
   analysis warning emission, and the handoff into the named
@@ -4002,30 +4003,9 @@ Primary owners:
   Flashback playback result projection composition plus the command, cadence,
   1% low, decode, audio-master, and stage DTO value maps consumed by the final
   result initializer.
-- `tools/Common/DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`
-  owns Flashback recording backend/growth/integrity result DTO projections
-  consumed by the final result initializer.
-- `tools/Common/DiagnosticSessionResultBuilder.FlashbackExportResult.cs` owns
-  Flashback export status/progress result DTO projections consumed by the final
-  result initializer.
-- `tools/Common/DiagnosticSessionResultBuilder.CaptureResult.cs` owns capture
-  selection, negotiated format, source geometry, detected cadence, HDR, and
-  source-telemetry DTO projection values consumed by the final result
-  initializer.
-- `tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs` owns
-  preview-cadence, preview-scheduler, and visual-cadence DTO projection values
-  consumed by the final result
-  initializer.
-- `tools/Common/DiagnosticSessionResultBuilder.PreviewD3DResult.cs` owns D3D
-  frame-stats, slow-frame, and CPU-timing DTO projection values consumed by the
-  final result initializer. It should not map scheduler metrics directly, and
-  D3D fields stay in their own projection struct.
 - `tools/Common/DiagnosticSessionResultBuildRequest.cs` owns the result-build
   request handoff created by `DiagnosticSessionRunExecution.ResultBuildRequest.cs`
   and consumed by the result builder.
-- `tools/Common/DiagnosticSessionResultBuilder.ProjectionSet.cs` owns the
-  private projection-set handoff record plus projection-set assembly from the
-  focused result projection owners.
 - `tools/Common/DiagnosticSessionResultArtifacts.cs` owns diagnostic-session
   result artifact path construction and pre-summary sample, frame-ledger, and
   timeline artifact writes, including frame-ledger trace shaping.
