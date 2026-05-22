@@ -3236,7 +3236,8 @@ recording-state presentation adapter.
 
 Recording button command execution and preview-state logging after a recording
 start now live in `Sussudio/Controllers/Recording/Button/RecordingButtonActionController.cs`.
-`MainWindow.RecordingActions.cs` is the XAML-facing adapter.
+`MainWindow.ButtonActions.cs` is the XAML-facing adapter for recording and
+capture-device button workflows.
 
 Live-signal pill text application, visibility state, show/hide debounce timers,
 and the small scale/fade animation now live in
@@ -3413,8 +3414,8 @@ method names for binding setup and cross-controller calls.
 
 Capture-device refresh/apply button workflows now live in
 `Sussudio/Controllers/Capture/CaptureDeviceActionController.cs`.
-`MainWindow.CaptureDeviceActions.cs` is the XAML-facing adapter and keeps the
-explicit apply/reinit path separate from selection synchronization.
+`MainWindow.ButtonActions.cs` is the XAML-facing adapter and keeps the explicit
+apply/reinit path separate from selection synchronization.
 
 Pure capture-option presentation decisions now live in
 `Sussudio/Controllers/Capture/CaptureOptionPresentationPolicy.cs`: HDR toggle

@@ -3101,7 +3101,8 @@ Primary current owners:
   chrome controller and recording-state presentation adapter.
 - `Sussudio/Controllers/Recording/Button/RecordingButtonActionController.cs` owns the recording
   button command workflow and preview-state logging after a start.
-  `MainWindow.RecordingActions.cs` is the XAML-facing adapter.
+  `MainWindow.ButtonActions.cs` is the XAML-facing adapter for recording and
+  capture-device button workflows.
 - `Sussudio/Controllers/Shell/LiveSignalInfoController.cs` owns live-signal pill
   text application, visibility state, show/hide debounce timers, and the small
   scale/fade animation. `MainWindow.LiveSignalInfo.cs` is the XAML-facing
@@ -3242,7 +3243,7 @@ Primary current owners:
   `Sussudio/MainWindow.AudioBindings.cs` is its XAML-facing adapter.
 - `Sussudio/Controllers/Capture/CaptureDeviceActionController.cs` owns the capture-
   device refresh/apply button workflows and preserves the explicit apply/reinit
-  path. `MainWindow.CaptureDeviceActions.cs` is the XAML-facing adapter.
+  path. `MainWindow.ButtonActions.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Capture/CaptureOptionPresentationPolicy.cs` owns pure
   capture-option presentation decisions: HDR toggle enablement, MJPEG decoder
   count visibility, bitrate/preset visibility, audio clipping visibility, and

@@ -1,3 +1,4 @@
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -5,7 +6,7 @@ static partial class Program
     internal static Task CaptureDeviceButtonActions_LiveInController()
     {
         var mainWindowText = ReadMainWindowCompositionSource();
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.CaptureDeviceActions.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.ButtonActions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureDeviceActionController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private CaptureDeviceActionController _captureDeviceActionController = null!;");
@@ -34,6 +35,10 @@ static partial class Program
         AssertDoesNotContain(adapterText, "ViewModel.RefreshDevicesAsync();");
         AssertDoesNotContain(adapterText, "ViewModel.ApplySelectedDeviceAsync(selectedDevice);");
         AssertDoesNotContain(adapterText, "UpdateDeviceApplyButtonState();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.CaptureDeviceActions.cs")),
+            "capture-device button adapter folded into MainWindow.ButtonActions.cs");
 
         return Task.CompletedTask;
     }

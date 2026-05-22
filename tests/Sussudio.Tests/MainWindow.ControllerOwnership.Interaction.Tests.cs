@@ -1,3 +1,4 @@
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -5,7 +6,7 @@ static partial class Program
     internal static Task RecordingButtonAction_LivesInController()
     {
         var mainWindowText = ReadMainWindowCompositionSource();
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.RecordingActions.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.ButtonActions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/Button/RecordingButtonActionController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private RecordingButtonActionController _recordingButtonActionController = null!;");
@@ -30,6 +31,10 @@ static partial class Program
         AssertDoesNotContain(adapterText, "ViewModel.ToggleRecordingAsync();");
         AssertDoesNotContain(adapterText, "PreviewStateDuringRecording");
         AssertDoesNotContain(adapterText, "WARNING: preview renderer appears inactive while recording.");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.RecordingActions.cs")),
+            "recording button adapter folded into MainWindow.ButtonActions.cs");
 
         return Task.CompletedTask;
     }
