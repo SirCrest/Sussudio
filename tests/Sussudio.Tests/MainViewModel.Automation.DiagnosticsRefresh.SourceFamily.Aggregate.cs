@@ -48,7 +48,6 @@ static partial class Program
                 SnapshotProjectionText,
                 SnapshotProjectionCompositionText,
                 SnapshotProjectionFlatteningText,
-                SnapshotProjectionFlatteningCaptureCadenceText,
                 SnapshotProjectionFlatteningVisualCadenceText,
                 SnapshotProjectionFlatteningMjpegTimingText,
                 SnapshotProjectionFlatteningSourceText,

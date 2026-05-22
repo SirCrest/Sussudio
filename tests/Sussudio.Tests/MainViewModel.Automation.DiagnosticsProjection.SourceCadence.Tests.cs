@@ -96,8 +96,6 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var snapshotFlatteningCaptureCadenceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureCadence.cs")
-            .Replace("\r\n", "\n");
         var captureCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs")
             .Replace("\r\n", "\n");
 
@@ -105,10 +103,6 @@ static partial class Program
         AssertContains(snapshotFlatteningText, "var captureCadenceFlattening = BuildCaptureCadenceFlattenedProjection(captureCadence);");
         AssertContains(snapshotFlatteningText, "ExpectedCaptureFrameRate = captureCadenceFlattening.ExpectedFrameRate,");
         AssertContains(snapshotFlatteningText, "CaptureCadenceEstimatedDroppedFrames = captureCadenceFlattening.EstimatedDroppedFrames,");
-        AssertContains(snapshotFlatteningCaptureCadenceText, "private static CaptureCadenceFlattenedProjection BuildCaptureCadenceFlattenedProjection(");
-        AssertContains(snapshotFlatteningCaptureCadenceText, "ExpectedFrameRate = captureCadence.ExpectedFrameRate,");
-        AssertContains(snapshotFlatteningCaptureCadenceText, "EstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames");
-        AssertContains(snapshotFlatteningCaptureCadenceText, "private readonly record struct CaptureCadenceFlattenedProjection");
         AssertDoesNotContain(snapshotFlatteningText, "ExpectedCaptureFrameRate = health.ExpectedFrameRate,");
         AssertDoesNotContain(snapshotFlatteningText, "CaptureCadenceEstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames,");
         AssertDoesNotContain(snapshotFlatteningText, "ExpectedCaptureFrameRate = captureCadence.ExpectedFrameRate,");
@@ -118,6 +112,10 @@ static partial class Program
         AssertContains(captureCadenceProjectionText, "ExpectedFrameRate = health.ExpectedFrameRate,");
         AssertContains(captureCadenceProjectionText, "EstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames,");
         AssertContains(captureCadenceProjectionText, "private readonly record struct CaptureCadenceProjection");
+        AssertContains(captureCadenceProjectionText, "private static CaptureCadenceFlattenedProjection BuildCaptureCadenceFlattenedProjection(");
+        AssertContains(captureCadenceProjectionText, "ExpectedFrameRate = captureCadence.ExpectedFrameRate,");
+        AssertContains(captureCadenceProjectionText, "EstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames");
+        AssertContains(captureCadenceProjectionText, "private readonly record struct CaptureCadenceFlattenedProjection");
         AssertDoesNotContain(captureCadenceProjectionText, "VisualMotionConfidence");
         AssertDoesNotContain(captureCadenceProjectionText, "VisualCenterRecentChangeIntervalsMs");
 
