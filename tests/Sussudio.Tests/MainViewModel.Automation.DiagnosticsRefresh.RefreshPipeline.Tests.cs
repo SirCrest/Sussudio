@@ -55,8 +55,8 @@ static partial class Program
         AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "private static PerformanceTimelineFlashbackPlaybackStagesProjection BuildPerformanceTimelineFlashbackPlaybackStagesProjection(");
         AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "private static PerformanceTimelineFlashbackPlaybackBackendProjection BuildPerformanceTimelineFlashbackPlaybackBackendProjection(");
         AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "CommandsEnqueued: snapshot.FlashbackPlaybackCommandsEnqueued");
-        AssertContains(diagnostics.TimelineProjectionFlashbackExportText, "private static PerformanceTimelineFlashbackExportProjection BuildPerformanceTimelineFlashbackExportProjection(");
-        AssertContains(diagnostics.TimelineProjectionFlashbackExportText, "Percent: snapshot.FlashbackExportPercent");
+        AssertContains(diagnostics.TimelineProjectionText, "private static PerformanceTimelineFlashbackExportProjection BuildPerformanceTimelineFlashbackExportProjection(");
+        AssertContains(diagnostics.TimelineProjectionText, "Percent: snapshot.FlashbackExportPercent");
         AssertContains(diagnostics.TimelineProjectionText, "private static PerformanceTimelineSystemProjection BuildPerformanceTimelineSystemProjection(");
         AssertContains(diagnostics.TimelineProjectionText, "ProcessCpuPercent: snapshot.ProcessCpuPercent");
         AssertDoesNotContain(diagnostics.HubText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");

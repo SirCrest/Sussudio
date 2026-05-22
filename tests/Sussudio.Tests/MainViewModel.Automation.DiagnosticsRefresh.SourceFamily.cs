@@ -129,7 +129,6 @@ static partial class Program
             TimelineProjectionText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.cs"),
             TimelineProjectionPreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.Preview.cs"),
             TimelineProjectionFlashbackPlaybackText = ReadAutomationDiagnosticsHubTimelineProjectionFlashbackPlaybackSource(),
-            TimelineProjectionFlashbackExportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.FlashbackExport.cs"),
         };
     }
 
@@ -212,6 +211,5 @@ static partial class Program
         public string TimelineProjectionText { get; init; } = string.Empty;
         public string TimelineProjectionPreviewText { get; init; } = string.Empty;
         public string TimelineProjectionFlashbackPlaybackText { get; init; } = string.Empty;
-        public string TimelineProjectionFlashbackExportText { get; init; } = string.Empty;
     }
 }

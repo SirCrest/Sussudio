@@ -673,6 +673,7 @@ Automation diagnostics ownership:
   owns final `AutomationSnapshot` to `PerformanceTimelineEntry` assignment plus
   timestamp, observed capture/preview FPS, encoder video queue depth/drop,
   capture cadence, process, memory, GC, thread-pool, and pipeline-latency
+  timeline projection, plus Flashback export progress and force-rotate fallback
   timeline projection.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.Preview.cs`
   owns preview cadence, visual cadence, MJPEG packet/jitter, D3D preview, and
@@ -682,9 +683,6 @@ Automation diagnostics ownership:
   playback cadence, decode timing, command queue/coalescing, audio-master
   fallback, playback stage/failure, backend settings, queue reject, cleanup, and
   force-rotate timeline projection.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackExport.cs`
-  owns the Flashback export progress and force-rotate fallback timeline
-  projection group.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Verification.cs` owns
   manual recording/file verification commands and explicit verification events.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Verification.Auto.cs`

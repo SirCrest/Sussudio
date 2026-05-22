@@ -89,8 +89,8 @@ static partial class Program
         AssertContains(diagnostics.TimelineProjectionText, "FlashbackExportPercent = flashbackExport.Percent");
         AssertContains(diagnostics.TimelineProjectionText, "FlashbackExportThroughputBytesPerSec = flashbackExport.ThroughputBytesPerSec");
         AssertContains(diagnostics.TimelineProjectionText, "FlashbackExportLastProgressAgeMs = flashbackExport.LastProgressAgeMs");
-        AssertContains(diagnostics.TimelineProjectionFlashbackExportText, "Percent: snapshot.FlashbackExportPercent");
-        AssertContains(diagnostics.TimelineProjectionFlashbackExportText, "ThroughputBytesPerSec: snapshot.FlashbackExportThroughputBytesPerSec");
-        AssertContains(diagnostics.TimelineProjectionFlashbackExportText, "LastProgressAgeMs: snapshot.FlashbackExportLastProgressAgeMs");
+        AssertContains(diagnostics.TimelineProjectionText, "Percent: snapshot.FlashbackExportPercent");
+        AssertContains(diagnostics.TimelineProjectionText, "ThroughputBytesPerSec: snapshot.FlashbackExportThroughputBytesPerSec");
+        AssertContains(diagnostics.TimelineProjectionText, "LastProgressAgeMs: snapshot.FlashbackExportLastProgressAgeMs");
     }
 }
