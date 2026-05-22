@@ -71,3 +71,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: covered by ssctl/shared formatter contract tests
 Behavior preserved: Flashback formatter gating, section order, encoding status, and encoding health output stay unchanged
 Notes for future agents: keep one-method subsection routers with their section owner unless the router grows real policy
+
+Date: 2026-05-21
+Area: Tool snapshot formatting
+Problem: Automation response-success detection lived in a one-method partial file separate from the other JSON value accessors.
+Files consolidated: `tools/Common/AutomationSnapshotFormatter.Response.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationSnapshotFormatter` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by shared formatter contracts and MCP/ssctl tool formatter tests
+Behavior preserved: `AutomationSnapshotFormatter.IsSuccess` signature and semantics stay unchanged
+Notes for future agents: keep generic JSON response/value helpers together unless response handling becomes a named policy object

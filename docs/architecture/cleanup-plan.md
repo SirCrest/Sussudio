@@ -830,8 +830,8 @@ pipeline, diagnostics, and capture cadence text live in
 `AutomationSnapshotFormatter.VideoPipeline.cs`,
 `AutomationSnapshotFormatter.Diagnostics.cs`,
 `AutomationSnapshotFormatter.CaptureCadence.cs`. Snapshot response-success
-detection lives in `AutomationSnapshotFormatter.Response.cs`; tolerant JSON
-string/bool accessors live in `AutomationSnapshotFormatter.Values.cs`; numeric
+detection and tolerant JSON string/bool accessors live in
+`AutomationSnapshotFormatter.Values.cs`; numeric
 JSON parsing lives in `AutomationSnapshotFormatter.Values.Numeric.cs`; while
 byte/number/interval, frame-budget, and tick-age display helpers live in
 `AutomationSnapshotFormatter.DisplayValues.cs`; the Flashback gate/header/order

@@ -210,7 +210,6 @@ internal static class RuntimeContractSource
             "tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs",
             "tools/Common/AutomationSnapshotFormatter.AvSync.cs",
             "tools/Common/AutomationSnapshotFormatter.Source.cs",
-            "tools/Common/AutomationSnapshotFormatter.Response.cs",
             "tools/Common/AutomationSnapshotFormatter.Values.cs",
             "tools/Common/AutomationSnapshotFormatter.Values.Numeric.cs",
             "tools/Common/AutomationSnapshotFormatter.DisplayValues.cs",

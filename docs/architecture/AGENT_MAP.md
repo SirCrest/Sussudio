@@ -5185,10 +5185,8 @@ Primary owners:
   encoder correction text.
   `tools/Common/AutomationSnapshotFormatter.Source.cs` owns source dimensions,
   source frame-rate summary, HDR, and source telemetry text.
-  `tools/Common/AutomationSnapshotFormatter.Response.cs` owns automation
-  response-success detection.
-  `tools/Common/AutomationSnapshotFormatter.Values.cs` owns tolerant JSON
-  string/bool accessors.
+  `tools/Common/AutomationSnapshotFormatter.Values.cs` owns automation
+  response-success detection and tolerant JSON string/bool accessors.
   `tools/Common/AutomationSnapshotFormatter.Values.Numeric.cs` owns tolerant
   numeric JSON parsing.
   `tools/Common/AutomationSnapshotFormatter.DisplayValues.cs` owns shared

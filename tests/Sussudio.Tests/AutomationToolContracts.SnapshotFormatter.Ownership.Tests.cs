@@ -16,7 +16,6 @@ static partial class Program
         var sharedFormatterCaptureCadenceSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs");
         var sharedFormatterAvSyncSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.AvSync.cs");
         var sharedFormatterSourceSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Source.cs");
-        var sharedFormatterResponseSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Response.cs");
         var sharedFormatterValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Values.cs");
         var sharedFormatterNumericValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Values.Numeric.cs");
         var sharedFormatterDisplayValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.DisplayValues.cs");
@@ -95,9 +94,8 @@ static partial class Program
         AssertContains(sharedFormatterCaptureCadenceSource, "AppendAvSyncSection(builder, snapshot);");
         AssertContains(sharedFormatterCaptureCadenceSource, "AppendPreviewSection(builder, snapshot);");
         AssertContains(sharedFormatterCaptureCadenceSource, "AppendSourceSection(builder, snapshot);");
-        AssertContains(sharedFormatterResponseSource, "internal static bool IsSuccess(JsonElement response)");
-        AssertContains(sharedFormatterResponseSource, "response.TryGetProperty(\"Success\", out var success)");
-        AssertDoesNotContain(sharedFormatterValuesSource, "internal static bool IsSuccess(JsonElement response)");
+        AssertContains(sharedFormatterValuesSource, "internal static bool IsSuccess(JsonElement response)");
+        AssertContains(sharedFormatterValuesSource, "response.TryGetProperty(\"Success\", out var success)");
         AssertContains(sharedFormatterValuesSource, "internal static string Get(JsonElement element, string propertyName, string fallback = \"N/A\")");
         AssertContains(sharedFormatterValuesSource, "internal static bool GetBool(JsonElement element, string propertyName)");
         AssertContains(sharedFormatterValuesSource, "internal static string? GetString(JsonElement element, string propertyName)");

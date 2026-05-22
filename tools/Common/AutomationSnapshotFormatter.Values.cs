@@ -4,6 +4,13 @@ namespace Sussudio.Tools;
 
 internal static partial class AutomationSnapshotFormatter
 {
+    internal static bool IsSuccess(JsonElement response)
+    {
+        return response.ValueKind == JsonValueKind.Object &&
+               response.TryGetProperty("Success", out var success) &&
+               success.ValueKind == JsonValueKind.True;
+    }
+
     internal static string Get(JsonElement element, string propertyName, string fallback = "N/A")
     {
         if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty(propertyName, out var value))
