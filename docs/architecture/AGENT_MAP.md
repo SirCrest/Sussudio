@@ -3394,10 +3394,9 @@ Primary current owners:
   `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`.
   `MainViewModel.CaptureSettings.cs` owns the impure adapter that samples UI
   selection and observed runtime/source state. `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`
-  owns final `CaptureSettings` assembly and audio/microphone device application.
-  `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.Policy.cs` owns pure
-  projection policy/input DTOs: selected frame-rate option seed, auto-resolved
-  effective FPS, negotiated rational/source-telemetry overrides,
+  owns final `CaptureSettings` assembly, audio/microphone device application,
+  pure projection policy/input DTOs, selected frame-rate option seed,
+  auto-resolved effective FPS, negotiated rational/source-telemetry overrides,
   rational/decimal fallbacks, requested pixel format, and MJPEG decode forcing.
   `MainViewModel.PreviewState.cs` keeps the compatibility facade entry points
   for device initialization, preview start/stop, selected-device apply, and

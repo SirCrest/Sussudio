@@ -4679,9 +4679,8 @@ owner, fold it back into that owner and update the source-shape tests and
    settings projection from UI/runtime state is sampled by
    `MainViewModel.CaptureSettings.cs` and projected by
    `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`, which owns final
-   `CaptureSettings` assembly and audio/microphone device application. Pure
-   projection policy and input DTOs now live in
-   `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.Policy.cs`:
+   `CaptureSettings` assembly, audio/microphone device application, pure
+   projection policy, and input DTOs:
    selected-option seeding, auto-resolved effective FPS, runtime/source rational
    overrides, rational/decimal fallbacks, requested pixel format, and MJPEG
    decode forcing.
