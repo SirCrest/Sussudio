@@ -30,4 +30,10 @@ public sealed partial class MainWindow
                 AnalogAudioGainValueTextBlock = AnalogAudioGainValueTextBlock
             });
     }
+
+    private void AttachCaptureSelectionBindings()
+        => _captureSelectionBindingController.AttachCollectionBindings();
+
+    private bool TryHandleCaptureSelectionPropertyChanged(string? propertyName)
+        => _captureSelectionBindingController.TryHandlePropertyChanged(propertyName);
 }

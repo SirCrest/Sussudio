@@ -3361,12 +3361,9 @@ Primary current owners:
   device-audio mode/gain control projection.
   `Sussudio/Controllers/Capture/CaptureSelectionBindingController.PropertyChanges.cs`
   owns the capture-selection `PropertyChanged` router.
-  `Sussudio/MainWindow.CaptureSelectionBindings.cs` is the XAML-facing
-  adapter-family marker. `Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs`
-  owns controller instantiation and XAML dependency wiring,
-  `Sussudio/MainWindow.CaptureSelectionBindings.CollectionSync.cs` owns the
-  collection binding adapter, `Sussudio/MainWindow.CaptureSelectionBindings.PropertyRouter.cs`
-  owns the property router adapter,
+  `Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs` owns controller
+  instantiation, XAML dependency wiring, the collection binding adapter, and the
+  property router adapter,
   `Sussudio/MainWindow.CaptureSelectionBindings.DeviceSelection.cs` owns
   device-selection and apply-button adapters,
   `Sussudio/MainWindow.CaptureSelectionBindings.AudioSelection.cs` owns audio

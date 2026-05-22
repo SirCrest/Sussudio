@@ -3532,12 +3532,9 @@ split-encode selection and shared string ComboBox selection application,
 resolution/frame-rate/string ComboBox selection and fallback matching, and
 `.DeviceAudio.cs` owns device-audio mode/gain projection. `.PropertyChanges.cs`
 owns the capture-selection `PropertyChanged` router, while
-`Sussudio/MainWindow.CaptureSelectionBindings.cs` is the XAML-facing
-adapter-family marker. `Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs`
-keeps controller instantiation and XAML dependency wiring,
-`Sussudio/MainWindow.CaptureSelectionBindings.CollectionSync.cs` keeps the
-collection binding adapter, `Sussudio/MainWindow.CaptureSelectionBindings.PropertyRouter.cs`
-keeps the property router adapter,
+`Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs` keeps controller
+instantiation, XAML dependency wiring, the collection binding adapter, and the
+property router adapter,
 `Sussudio/MainWindow.CaptureSelectionBindings.DeviceSelection.cs` keeps
 device-selection and apply-button adapters,
 `Sussudio/MainWindow.CaptureSelectionBindings.AudioSelection.cs` keeps audio
