@@ -14,8 +14,6 @@ static partial class Program
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs").Replace("\r\n", "\n");
         var runtimeLifecycleControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.Context.cs").Replace("\r\n", "\n");
         var runtimeEventIngressControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs").Replace("\r\n", "\n");
-        var runtimeEventIngressContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Context.cs").Replace("\r\n", "\n");
-        var runtimeEventIngressSubscriptionsText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Subscriptions.cs").Replace("\r\n", "\n");
         var disposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs").Replace("\r\n", "\n");
         var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs").Replace("\r\n", "\n");
         var disposalControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.Context.cs").Replace("\r\n", "\n");
@@ -78,11 +76,9 @@ static partial class Program
         AssertContains(runtimeLifecycleControllerText, "_context.UpdateDiskSpace();");
 
         AssertContains(runtimeEventIngressControllerText, "namespace Sussudio.Controllers;");
-        AssertContains(runtimeEventIngressControllerText, "internal sealed partial class MainViewModelRuntimeEventIngressController");
-        AssertContains(runtimeEventIngressSubscriptionsText, "namespace Sussudio.Controllers;");
-        AssertContains(runtimeEventIngressSubscriptionsText, "internal sealed partial class MainViewModelRuntimeEventIngressController");
-        AssertContains(runtimeEventIngressContextText, "namespace Sussudio.Controllers;");
-        AssertContains(runtimeEventIngressContextText, "internal sealed class MainViewModelRuntimeEventIngressControllerContext");
+        AssertContains(runtimeEventIngressControllerText, "internal sealed class MainViewModelRuntimeEventIngressController");
+        AssertDoesNotContain(runtimeEventIngressControllerText, "partial class MainViewModelRuntimeEventIngressController");
+        AssertContains(runtimeEventIngressControllerText, "internal sealed class MainViewModelRuntimeEventIngressControllerContext");
         AssertContains(runtimeEventIngressControllerText, "private readonly MainViewModelRuntimeEventIngressControllerContext _context;");
         AssertDoesNotContain(runtimeEventIngressControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.");
@@ -90,30 +86,30 @@ static partial class Program
         AssertContains(runtimeEventIngressControllerText, "_context.ReinitializeDeviceAsync(\"system resume\")");
         AssertContains(controllerGraphRuntimeEventIngressText, "private static MainViewModelRuntimeEventIngressController CreateRuntimeEventIngressController(");
         AssertContains(controllerGraphRuntimeEventIngressText, "new MainViewModelRuntimeEventIngressControllerContext");
-        AssertContains(runtimeEventIngressContextText, "public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }");
-        AssertContains(runtimeEventIngressContextText, "public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }");
+        AssertContains(runtimeEventIngressControllerText, "public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }");
+        AssertContains(runtimeEventIngressControllerText, "public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }");
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"audio device invalidated\")");
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"system resume\")");
         AssertEqual(
             true,
             runtimeEventIngressControllerText.Split('\n').Length >= 100,
             "runtime event ingress controller is a substantial ownership file");
-        AssertContains(runtimeEventIngressSubscriptionsText, "public void Attach()");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachFormatProbeCompleted(_context.OnDeviceFormatProbeCompleted);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachCaptureStatusChanged(OnCaptureStatusChanged);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachCaptureErrorOccurred(OnCaptureError);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachCapturePreCleanupRequested(OnCapturePreCleanupRequested);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachFrameCaptured(OnFrameCaptured);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachAudioLevelUpdated(_context.OnAudioLevelUpdated);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachSourceTelemetryUpdated(_context.OnSourceTelemetryUpdated);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.AttachAudioDevicesChanged(_context.OnAudioDevicesChanged);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "public void Detach()");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.DetachFormatProbeCompleted(_context.OnDeviceFormatProbeCompleted);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.DetachCaptureStatusChanged(OnCaptureStatusChanged);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "_context.DetachAudioLevelUpdated(_context.OnAudioLevelUpdated);");
-        AssertContains(runtimeEventIngressSubscriptionsText, "SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;");
+        AssertContains(runtimeEventIngressControllerText, "public void Attach()");
+        AssertContains(runtimeEventIngressControllerText, "_context.AttachFormatProbeCompleted(_context.OnDeviceFormatProbeCompleted);");
+        AssertContains(runtimeEventIngressControllerText, "_context.AttachCaptureStatusChanged(OnCaptureStatusChanged);");
+        AssertContains(runtimeEventIngressControllerText, "_context.AttachCaptureErrorOccurred(OnCaptureError);");
+        AssertContains(runtimeEventIngressControllerText, "_context.AttachCapturePreCleanupRequested(OnCapturePreCleanupRequested);");
+        AssertContains(runtimeEventIngressControllerText, "_context.AttachFrameCaptured(OnFrameCaptured);");
+        AssertContains(runtimeEventIngressControllerText, "_context.AttachAudioLevelUpdated(_context.OnAudioLevelUpdated);");
+        AssertContains(runtimeEventIngressControllerText, "_context.AttachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);");
+        AssertContains(runtimeEventIngressControllerText, "_context.AttachSourceTelemetryUpdated(_context.OnSourceTelemetryUpdated);");
+        AssertContains(runtimeEventIngressControllerText, "SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;");
+        AssertContains(runtimeEventIngressControllerText, "_context.AttachAudioDevicesChanged(_context.OnAudioDevicesChanged);");
+        AssertContains(runtimeEventIngressControllerText, "public void Detach()");
+        AssertContains(runtimeEventIngressControllerText, "_context.DetachFormatProbeCompleted(_context.OnDeviceFormatProbeCompleted);");
+        AssertContains(runtimeEventIngressControllerText, "_context.DetachCaptureStatusChanged(OnCaptureStatusChanged);");
+        AssertContains(runtimeEventIngressControllerText, "_context.DetachAudioLevelUpdated(_context.OnAudioLevelUpdated);");
+        AssertContains(runtimeEventIngressControllerText, "SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;");
 
         AssertContains(controllerGraphRuntimeDisposalText, "private static MainViewModelDisposalController CreateDisposalController(");
         AssertContains(controllerGraphRuntimeDisposalText, "MainViewModelDeviceAudioRequestController deviceAudioRequestController,");

@@ -2,21 +2,103 @@ using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Win32;
+using Sussudio.Models;
 using Sussudio.Services.Capture;
 
 namespace Sussudio.Controllers;
+
+internal sealed class MainViewModelRuntimeEventIngressControllerContext
+{
+    public required Action<EventHandler<DeviceService.DeviceFormatProbeCompletedEventArgs>> AttachFormatProbeCompleted { get; init; }
+    public required Action<EventHandler<DeviceService.DeviceFormatProbeCompletedEventArgs>> DetachFormatProbeCompleted { get; init; }
+    public required EventHandler<DeviceService.DeviceFormatProbeCompletedEventArgs> OnDeviceFormatProbeCompleted { get; init; }
+    public required Action<EventHandler<string>> AttachCaptureStatusChanged { get; init; }
+    public required Action<EventHandler<string>> DetachCaptureStatusChanged { get; init; }
+    public required Action<EventHandler<Exception>> AttachCaptureErrorOccurred { get; init; }
+    public required Action<EventHandler<Exception>> DetachCaptureErrorOccurred { get; init; }
+    public required Action<Action> AttachCapturePreCleanupRequested { get; init; }
+    public required Action<Action> DetachCapturePreCleanupRequested { get; init; }
+    public required Action<EventHandler<ulong>> AttachFrameCaptured { get; init; }
+    public required Action<EventHandler<ulong>> DetachFrameCaptured { get; init; }
+    public required Action<EventHandler<AudioLevelEventArgs>> AttachAudioLevelUpdated { get; init; }
+    public required Action<EventHandler<AudioLevelEventArgs>> DetachAudioLevelUpdated { get; init; }
+    public required EventHandler<AudioLevelEventArgs> OnAudioLevelUpdated { get; init; }
+    public required Action<EventHandler<AudioLevelEventArgs>> AttachMicrophoneAudioLevelUpdated { get; init; }
+    public required Action<EventHandler<AudioLevelEventArgs>> DetachMicrophoneAudioLevelUpdated { get; init; }
+    public required EventHandler<AudioLevelEventArgs> OnMicrophoneAudioLevelUpdated { get; init; }
+    public required Action<EventHandler<SourceSignalTelemetrySnapshot>> AttachSourceTelemetryUpdated { get; init; }
+    public required Action<EventHandler<SourceSignalTelemetrySnapshot>> DetachSourceTelemetryUpdated { get; init; }
+    public required EventHandler<SourceSignalTelemetrySnapshot> OnSourceTelemetryUpdated { get; init; }
+    public required Action<Action> AttachAudioDevicesChanged { get; init; }
+    public required Action<Action> DetachAudioDevicesChanged { get; init; }
+    public required Action OnAudioDevicesChanged { get; init; }
+    public required Func<Action, bool> TryEnqueueOnUiThread { get; init; }
+    public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }
+    public required Action<string> SetStatusText { get; init; }
+    public required Action<CaptureRuntimeSnapshot> UpdateLiveCaptureInfo { get; init; }
+    public required Action<CaptureRuntimeSnapshot> UpdateHdrRuntimeStatusFromCapture { get; init; }
+    public required Action<bool> SetIsInitialized { get; init; }
+    public required Func<bool> IsCaptureInitialized { get; init; }
+    public required Func<bool> IsInitialized { get; init; }
+    public required Action<bool> SetIsPreviewing { get; init; }
+    public required Func<bool> IsVideoPreviewActive { get; init; }
+    public required Func<bool> IsPreviewing { get; init; }
+    public required Action<bool> SetIsRecording { get; init; }
+    public required Func<bool> IsCaptureRecording { get; init; }
+    public required Func<bool> IsRecording { get; init; }
+    public required Action ResetAudioMeter { get; init; }
+    public required Func<Func<Task>[]> GetPreviewRendererStopHandlers { get; init; }
+    public required Func<string, Task> ReinitializeDeviceAsync { get; init; }
+    public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }
+}
 
 /// <summary>
 /// Owns runtime event subscriptions and external event ingress for the
 /// compatibility ViewModel facade.
 /// </summary>
-internal sealed partial class MainViewModelRuntimeEventIngressController
+internal sealed class MainViewModelRuntimeEventIngressController
 {
     private readonly MainViewModelRuntimeEventIngressControllerContext _context;
 
     public MainViewModelRuntimeEventIngressController(MainViewModelRuntimeEventIngressControllerContext context)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+    }
+
+    public void Attach()
+    {
+        _context.AttachFormatProbeCompleted(_context.OnDeviceFormatProbeCompleted);
+
+        _context.AttachCaptureStatusChanged(OnCaptureStatusChanged);
+        _context.AttachCaptureErrorOccurred(OnCaptureError);
+        _context.AttachCapturePreCleanupRequested(OnCapturePreCleanupRequested);
+        _context.AttachFrameCaptured(OnFrameCaptured);
+        _context.AttachAudioLevelUpdated(_context.OnAudioLevelUpdated);
+        _context.AttachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);
+        _context.AttachSourceTelemetryUpdated(_context.OnSourceTelemetryUpdated);
+
+        // SystemEvents.PowerModeChanged is the managed desktop wake signal used
+        // to recover capture after sleep or hibernate resume.
+        SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;
+
+        _context.AttachAudioDevicesChanged(_context.OnAudioDevicesChanged);
+    }
+
+    public void Detach()
+    {
+        _context.DetachFormatProbeCompleted(_context.OnDeviceFormatProbeCompleted);
+
+        SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;
+
+        _context.DetachCaptureStatusChanged(OnCaptureStatusChanged);
+        _context.DetachCaptureErrorOccurred(OnCaptureError);
+        _context.DetachCapturePreCleanupRequested(OnCapturePreCleanupRequested);
+        _context.DetachFrameCaptured(OnFrameCaptured);
+        _context.DetachAudioLevelUpdated(_context.OnAudioLevelUpdated);
+        _context.DetachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);
+        _context.DetachSourceTelemetryUpdated(_context.OnSourceTelemetryUpdated);
+
+        _context.DetachAudioDevicesChanged(_context.OnAudioDevicesChanged);
     }
 
     private void OnCaptureStatusChanged(object? sender, string status)

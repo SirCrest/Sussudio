@@ -3367,13 +3367,10 @@ Primary current owners:
   is a top-level `Sussudio.Controllers` owner for runtime event handling through graph-built context ports:
   system-resume preview rebind handling, audio-device-invalidated rebind
   scheduling through the preview lifecycle owner, capture status/error fan-out,
-  capture pre-cleanup renderer stop fan-out, and frame-captured callbacks.
-  `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Context.cs`
-  is a top-level `Sussudio.Controllers` owner for the runtime event ingress graph-port contract that both handlers and
-  subscription wiring consume.
-  `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Subscriptions.cs`
-  is a top-level `Sussudio.Controllers` owner for runtime event subscription/unsubscription ordering through graph-built
-  context ports, including the desktop power-resume signal.
+  capture pre-cleanup renderer stop fan-out, frame-captured callbacks, the
+  runtime event ingress graph-port contract, and event
+  subscription/unsubscription ordering including the desktop power-resume
+  signal.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`
   is a top-level `Sussudio.Controllers` owner for late device-format probe event
   ingress, UI enqueue/generation checks, selected-device capability refresh,
