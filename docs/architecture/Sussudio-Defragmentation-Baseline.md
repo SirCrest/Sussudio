@@ -193,6 +193,18 @@ Behavior preserved: Realtime source/capture cadence diagnostic severity, codes, 
 Notes for future agents: keep lightweight realtime source verdict policy with `DiagnosticEvaluationRealtime.cs`; keep preview separate while it owns scheduler and renderer policy
 
 Date: 2026-05-21
+Area: Automation diagnostics realtime preview evaluation
+Problem: Present/display preview diagnostic verdict construction lived in a small partial even though it is only called by the realtime preview diagnostic owner that orders scheduler, renderer, and present/display verdicts.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.PreviewPresent.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics evaluation source-ownership tests and runtime snapshot regression tests
+Behavior preserved: Realtime present/display cadence and preview display 1% low diagnostic severity, codes, messages, and lane mapping remain unchanged
+Notes for future agents: keep lightweight realtime preview verdict policy with `DiagnosticEvaluationRealtime.Preview.cs`; extract a named collaborator only if preview verdict policy grows beyond one cohesive scan unit
+
+Date: 2026-05-21
 Area: Automation diagnostics preview D3D projection
 Problem: Preview D3D frame-latency wait and frame-statistics projection mappings lived in tiny partials even though the Preview D3D projection owner immediately composes and flattens both with pipeline latency; the larger frame-flow mapping remains its own focused owner.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameLatencyWait.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameStats.cs`

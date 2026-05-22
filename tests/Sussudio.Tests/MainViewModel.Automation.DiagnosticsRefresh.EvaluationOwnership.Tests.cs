@@ -62,9 +62,8 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "\"preview_scheduler\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewRendererDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "\"renderer\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewPresentText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewPresentDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewPresentText, "\"present_display\"");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimePreviewText, "\"present_display\"");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewPresentDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "\"present_display\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"preview_scheduler\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"renderer\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"present_display\"");
