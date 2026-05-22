@@ -15,8 +15,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Startup = BuildPreviewRuntimeStartupFlattenedProjection(previewSummary.Startup),");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "GpuPlayback = BuildPreviewRuntimeGpuPlaybackFlattenedProjection(previewSummary.GpuPlayback),");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Color = BuildPreviewRuntimeColorFlattenedProjection(previewSummary.Color)");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeFrameText, "private static PreviewRuntimeFrameFlattenedProjection BuildPreviewRuntimeFrameFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeFrameText, "EstimatedPipelineLatencyMs = frame.EstimatedPipelineLatencyMs");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeFrameFlattenedProjection BuildPreviewRuntimeFrameFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "EstimatedPipelineLatencyMs = frame.EstimatedPipelineLatencyMs");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeCadenceText, "private static PreviewRuntimeCadenceFlattenedProjection BuildPreviewRuntimeCadenceFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeCadenceText, "OnePercentLowFps = cadence.OnePercentLowFps,");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeSurfaceText, "private static PreviewRuntimeSurfaceFlattenedProjection BuildPreviewRuntimeSurfaceFlattenedProjection(");
@@ -25,8 +25,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeStartupText, "Strategy = startup.Strategy,");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeGpuPlaybackText, "private static PreviewRuntimeGpuPlaybackFlattenedProjection BuildPreviewRuntimeGpuPlaybackFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeGpuPlaybackText, "PositionEventCount = gpuPlayback.PositionEventCount");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeColorText, "private static PreviewRuntimeColorFlattenedProjection BuildPreviewRuntimeColorFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeColorText, "AdapterColorMetadata = color.AdapterColorMetadata");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeColorFlattenedProjection BuildPreviewRuntimeColorFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "AdapterColorMetadata = color.AdapterColorMetadata");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeProjection BuildPreviewRuntimeProjection(");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Frame = BuildPreviewRuntimeFrameProjection(previewRuntime),");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Cadence = BuildPreviewRuntimeCadenceProjection(previewRuntime),");
@@ -34,8 +34,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Startup = BuildPreviewRuntimeStartupProjection(previewRuntime),");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "GpuPlayback = BuildPreviewRuntimeGpuPlaybackProjection(previewRuntime),");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Color = BuildPreviewRuntimeColorProjection(previewHdrState, captureRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeFrameText, "private static PreviewRuntimeFrameProjection BuildPreviewRuntimeFrameProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeFrameText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeFrameProjection BuildPreviewRuntimeFrameProjection(");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeCadenceText, "private static PreviewRuntimeCadenceProjection BuildPreviewRuntimeCadenceProjection(");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeCadenceText, "OnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeCadenceText, "SlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent");
@@ -46,9 +46,9 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeStartupText, "RendererMode = previewRuntime.RendererMode");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeGpuPlaybackText, "private static PreviewRuntimeGpuPlaybackProjection BuildPreviewRuntimeGpuPlaybackProjection(");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeGpuPlaybackText, "PlaybackState = previewRuntime.GpuPlaybackState,");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeColorText, "private static PreviewRuntimeColorProjection BuildPreviewRuntimeColorProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeColorText, "HdrInputDetected = previewHdrState.InputDetected,");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeColorText, "AdapterColorMetadata = captureRuntime.PreviewColorMetadata");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeColorProjection BuildPreviewRuntimeColorProjection(");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "HdrInputDetected = previewHdrState.InputDetected,");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "AdapterColorMetadata = captureRuntime.PreviewColorMetadata");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "PreviewFramesArrived = previewRuntime.FramesArrived,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "PreviewStartupStrategy = previewRuntime.StartupStrategy.ToString(),");

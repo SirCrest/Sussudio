@@ -566,12 +566,10 @@ Automation diagnostics ownership:
   owns DXGI frame-statistics projection, including recent missed-refresh and
   stats failure deltas.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs`
-  owns preview runtime projection routing and groups frame, cadence, surface,
-  startup, GPU-playback, and color modules consumed by `AutomationSnapshot`,
-  plus final preview runtime flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Frame.cs`
-  owns preview frame counters and estimated pipeline latency projection inputs
-  and final field flattening.
+  owns preview runtime projection routing, preview frame counters, estimated
+  pipeline latency, preview HDR/tone-map/color metadata, and the frame,
+  cadence, surface, startup, GPU-playback, and color groups consumed by
+  `AutomationSnapshot`, plus final preview runtime flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Cadence.cs`
   owns preview display-cadence projection inputs and final field flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Surface.cs`
@@ -583,9 +581,6 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.GpuPlayback.cs`
   owns preview GPU playback state and position projection inputs and final
   field flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Color.cs`
-  owns preview HDR, tone-map, color-context, and adapter metadata projection
-  inputs and final field flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs`
   owns process memory, CPU, GC, and thread-pool projection consumed by
   `AutomationSnapshot`, plus final process resource

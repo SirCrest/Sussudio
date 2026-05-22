@@ -294,12 +294,10 @@ owns waitable frame-latency projection.
 DXGI frame-statistics projection, including recent missed-refresh and stats
 failure deltas.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs` owns preview
-runtime projection routing and groups frame, cadence, surface, startup,
-GPU-playback, and color modules consumed by the automation snapshot DTO, plus
+runtime projection routing, preview frame counters, estimated pipeline latency,
+preview HDR/tone-map/color metadata, and the frame, cadence, surface, startup,
+GPU-playback, and color groups consumed by the automation snapshot DTO, plus
 final preview runtime flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Frame.cs` owns
-preview frame counters and estimated pipeline latency projection inputs and
-final field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Cadence.cs` owns
 preview display-cadence projection inputs and final field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Surface.cs` owns
@@ -311,9 +309,6 @@ flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.GpuPlayback.cs` owns
 preview GPU playback state and position projection inputs and final field
 flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Color.cs` owns
-preview HDR, tone-map, color-context, and adapter metadata projection inputs and
-final field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs` owns process
 memory, CPU, GC, and thread-pool projection consumed by the automation snapshot
 DTO, plus final process resource projection-to-`AutomationSnapshot` field
