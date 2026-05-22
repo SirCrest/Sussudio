@@ -331,10 +331,8 @@ blank, stall, startup, cadence, display 1% low, capture cadence drop, capture
 1% low, audio muted signal, and recording output-growth signal alert rules.
 `AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs`
 owns Flashback recording alert orchestration, shared condition setup, export
-progress/force-rotation gap alerts, temp-cache pressure alerts, and encoder
-failure alerts.
-`AutomationDiagnosticsHub.FlashbackRecordingAlerts.Degradation.cs` owns
-recording path degradation alerts.
+progress/force-rotation gap alerts, temp-cache pressure alerts, encoder failure
+alerts, and recording path degradation alerts.
 `AutomationDiagnosticsHub.FlashbackPlaybackAlerts.Commands.cs` owns playback
 command queue and command failure alerts.
 `AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Audio.cs` owns

@@ -22,7 +22,6 @@ static partial class Program
                 AlertsText,
                 SignalAlertsPreviewText,
                 FlashbackRecordingAlertsText,
-                FlashbackRecordingAlertsDegradationText,
                 FlashbackPlaybackAlertsCommandsText,
                 FlashbackPlaybackPerformanceAlertsAudioText,
                 FlashbackPlaybackPerformanceAlertsCadenceText,

@@ -43,7 +43,7 @@
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-encoding-failed\"");
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "snapshot.FlashbackEncodingFailed");
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "Flashback encoder failed: type={snapshot.FlashbackEncodingFailureType ?? \"Unknown\"}");
-        AssertContains(diagnostics.FlashbackRecordingAlertsDegradationText, "\"flashback-recording-degraded\"");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-recording-degraded\"");
         AssertContains(counters.FlashbackRecordingText, "private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(");
         AssertContains(counters.FlashbackRecordingText, "Interlocked.Exchange(ref _lastFlashbackVideoSequenceGaps, sequenceGaps)");
         AssertContains(counters.FlashbackRecordingText, "Interlocked.Exchange(ref _lastFlashbackGpuFramesDropped, gpuFramesDropped)");
@@ -60,13 +60,13 @@
         AssertContains(diagnostics.SourceFamilyText, "flashbackRecordingRecentForceRotateGap");
         AssertContains(diagnostics.SourceFamilyText, "IsFlashbackForceRotateRejectReason(snapshot.FlashbackVideoQueueLastRejectReason)");
         AssertContains(diagnostics.SourceFamilyText, "flashbackRecordingRecent.SequenceGaps > 0");
-        AssertContains(diagnostics.FlashbackRecordingAlertsDegradationText, "(flashbackRecordingRecent.SequenceGaps > 0 && !flashbackRecordingRecentForceRotateGap)");
-        AssertContains(diagnostics.FlashbackRecordingAlertsDegradationText, "flashbackRecordingRecent.GpuFramesDropped > 0");
-        AssertContains(diagnostics.FlashbackRecordingAlertsDegradationText, "flashbackRecordingRecentBackpressure");
-        AssertContains(diagnostics.FlashbackRecordingAlertsDegradationText, "flashbackRecordingQueueBacklog");
-        AssertContains(diagnostics.FlashbackRecordingAlertsDegradationText, "flashbackAudioQueueBacklog");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "(flashbackRecordingRecent.SequenceGaps > 0 && !flashbackRecordingRecentForceRotateGap)");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "flashbackRecordingRecent.GpuFramesDropped > 0");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "flashbackRecordingRecentBackpressure");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "flashbackRecordingQueueBacklog");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "flashbackAudioQueueBacklog");
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "snapshot.FlashbackVideoBackpressureLastWaitMs >= FlashbackRecordingBackpressureWarningMs");
-        AssertContains(diagnostics.FlashbackRecordingAlertsDegradationText, "Flashback recording path degraded:");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "Flashback recording path degraded:");
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-export-rotation-gap\"");
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "Flashback export rotation skipped live-edge frames:");
         AssertContains(diagnostics.SourceFamilyText, "forceRotate={snapshot.FlashbackForceRotateActive}");

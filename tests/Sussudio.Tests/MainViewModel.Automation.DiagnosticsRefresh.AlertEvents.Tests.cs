@@ -40,7 +40,7 @@ static partial class Program
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "UpdateFlashbackStorageAlerts(snapshot);");
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "UpdateFlashbackEncoderAlerts(snapshot);");
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "UpdateFlashbackRecordingDegradationAlert(");
-        AssertDoesNotContain(diagnostics.FlashbackRecordingAlertsText, "\"flashback-recording-degraded\"");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-recording-degraded\"");
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "private void UpdateFlashbackExportAlerts(");
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-export-stalled\"");
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-export-rotation-gap\"");
@@ -48,11 +48,7 @@ static partial class Program
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-temp-cache-pressure\"");
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "private void UpdateFlashbackEncoderAlerts(");
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-encoding-failed\"");
-        AssertContains(diagnostics.FlashbackRecordingAlertsDegradationText, "private void UpdateFlashbackRecordingDegradationAlert(");
-        AssertContains(diagnostics.FlashbackRecordingAlertsDegradationText, "\"flashback-recording-degraded\"");
-        AssertDoesNotContain(diagnostics.FlashbackRecordingAlertsDegradationText, "\"flashback-export-stalled\"");
-        AssertDoesNotContain(diagnostics.FlashbackRecordingAlertsDegradationText, "\"flashback-temp-cache-pressure\"");
-        AssertDoesNotContain(diagnostics.FlashbackRecordingAlertsDegradationText, "\"flashback-encoding-failed\"");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "private void UpdateFlashbackRecordingDegradationAlert(");
         AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackPlaybackAlerts(");
         AssertContains(diagnostics.AlertsText, "UpdateFlashbackPlaybackCommandAlerts(snapshot, nowUnixMs);");
         AssertContains(diagnostics.AlertsText, "UpdateFlashbackPlaybackPerformanceAlerts(snapshot);");
