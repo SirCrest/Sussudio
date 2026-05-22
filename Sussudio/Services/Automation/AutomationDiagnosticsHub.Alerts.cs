@@ -73,4 +73,10 @@ public sealed partial class AutomationDiagnosticsHub
             "Performance returned to perfection threshold.",
             throttleMs: 5000);
     }
+
+    private void UpdateFlashbackPlaybackAlerts(AutomationSnapshot snapshot, long nowUnixMs)
+    {
+        UpdateFlashbackPlaybackCommandAlerts(snapshot, nowUnixMs);
+        UpdateFlashbackPlaybackPerformanceAlerts(snapshot);
+    }
 }

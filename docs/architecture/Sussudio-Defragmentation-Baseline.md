@@ -205,6 +205,18 @@ Behavior preserved: Preview HDR input detection still uses `MediaFormat.IsHdrPix
 Notes for future agents: keep single-use helpers with their only runtime projection owner unless they become shared policy
 
 Date: 2026-05-21
+Area: Automation diagnostics alerts
+Problem: Flashback playback alert orchestration lived in a tiny router partial separate from the alert orchestration root that calls it.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackPlaybackAlerts.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics alert source-ownership and runtime snapshot regression tests
+Behavior preserved: Flashback playback command and performance alert routing remains unchanged
+Notes for future agents: keep one-method alert routers with the alert orchestration root unless they grow policy
+
+Date: 2026-05-21
 Area: Diagnostic session result formatting
 Problem: Flashback diagnostic-session section ordering lived in a one-method router file separate from the formatter orchestration.
 Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs`

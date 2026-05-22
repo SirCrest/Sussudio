@@ -522,16 +522,16 @@ pipeline parity, telemetry-alignment, and HDR truth verdict projection consumed
 by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.HdrPipeline.cs` owns
 final HDR pipeline projection-to-`AutomationSnapshot` field flattening.
-`AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation and active-alert
-transitions. `AutomationDiagnosticsHub.SignalAlerts.cs` owns signal alert
+`AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation, active-alert
+transitions, Flashback alert group routing, and Flashback playback alert
+orchestration. `AutomationDiagnosticsHub.SignalAlerts.cs` owns signal alert
 orchestration. `AutomationDiagnosticsHub.SignalAlerts.Preview.cs` owns preview
 blank, stall, startup, cadence, and display 1% low signal alert rules.
 `AutomationDiagnosticsHub.SignalAlerts.Capture.cs` owns capture cadence drop and
 1% low signal alert rules.
 `AutomationDiagnosticsHub.SignalAlerts.AudioRecording.cs` owns audio muted
 signal and recording output-growth alert rules.
-`AutomationDiagnosticsHub.Alerts.cs` also routes Flashback recording and
-playback alert groups. `AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs`
+`AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs`
 owns Flashback recording alert orchestration and shared condition setup.
 `AutomationDiagnosticsHub.FlashbackRecordingAlerts.Export.cs` owns export
 progress and force-rotation gap alerts.
@@ -541,8 +541,6 @@ pressure alerts.
 failure alerts.
 `AutomationDiagnosticsHub.FlashbackRecordingAlerts.Degradation.cs` owns
 recording path degradation alerts.
-`AutomationDiagnosticsHub.FlashbackPlaybackAlerts.cs` owns Flashback playback
-alert orchestration.
 `AutomationDiagnosticsHub.FlashbackPlaybackAlerts.Commands.cs` owns playback
 command queue and command failure alerts.
 `AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.cs` owns Flashback
