@@ -92,7 +92,6 @@ static partial class Program
         var contextText = ReadDiagnosticSessionRunContextSource();
         var completionRootText = ReadDiagnosticSessionRunExecutionCompletionRootSource();
         var completionContextText = ReadDiagnosticSessionRunExecutionCompletionContextSource();
-        var resultBuildRequestText = ReadDiagnosticSessionRunExecutionResultBuildRequestSource();
         var recordingChecksText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
             .Replace("\r\n", "\n");
         var recordingVerificationText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingVerification.cs")
@@ -108,7 +107,7 @@ static partial class Program
 
         AssertContains(completionRootText, "private static async Task<DiagnosticSessionResult> RunCompletionPhaseAsync(DiagnosticSessionCompletionContext context)");
         AssertContains(completionContextText, "internal sealed class DiagnosticSessionCompletionContext");
-        AssertContains(resultBuildRequestText, "private static DiagnosticSessionResultBuildRequest CreateResultBuildRequest(");
+        AssertContains(completionRootText, "private static DiagnosticSessionResultBuildRequest CreateResultBuildRequest(");
         AssertContains(completionRootText, "DiagnosticSessionRecordingChecks.RunAsync(");
         AssertContains(completionRootText, "var verification = recordingCheckResult.Verification;");
         AssertContains(completionRootText, "context.ScenarioPhase.FlashbackRecordingSettingsDeferredPresetState");
@@ -117,13 +116,11 @@ static partial class Program
         AssertContains(completionRootText, "CreateResultBuildRequest(");
         AssertContains(completionRootText, "context.ScenarioPhase.PresentMon");
         AssertContains(completionRootText, "await context.WriteLiveStateBestEffortAsync(result.CompletedUtc, result.TerminalState).ConfigureAwait(false);");
-        AssertContains(resultBuildRequestText, "postRunSnapshots.HealthSnapshot");
-        AssertContains(resultBuildRequestText, "postRunSnapshots.Timeline");
-        AssertContains(resultBuildRequestText, "runBootstrap.RunnerProcessId");
+        AssertContains(completionRootText, "postRunSnapshots.HealthSnapshot");
+        AssertContains(completionRootText, "postRunSnapshots.Timeline");
+        AssertContains(completionRootText, "runBootstrap.RunnerProcessId");
         AssertDoesNotContain(completionRootText, "internal sealed class DiagnosticSessionCompletionContext");
-        AssertDoesNotContain(completionRootText, "private static DiagnosticSessionResultBuildRequest CreateResultBuildRequest(");
         AssertDoesNotContain(completionContextText, "DiagnosticSessionRecordingChecks.RunAsync(");
-        AssertDoesNotContain(resultBuildRequestText, "DiagnosticSessionRecordingChecks.RunAsync(");
         AssertContains(contextText, "new DiagnosticSessionCompletionContext");
         AssertContains(executionText, "return await RunCompletionPhaseAsync(");
         AssertContains(executionText, "runContext.CreateCompletionContext(options, scenarioPhase, stoppedRecordingForVerification, cancellationToken)");
@@ -135,9 +132,9 @@ static partial class Program
         AssertContains(postRunText, "setStage(\"final-snapshot\")");
         AssertContains(resultBuilderText, "runState.SetStage(\"summary\")");
         AssertContains(agentMapText, "`tools/Common/DiagnosticSessionRunExecution.CompletionContext.cs` owns the");
-        AssertContains(agentMapText, "`tools/Common/DiagnosticSessionRunExecution.ResultBuildRequest.cs` owns the");
+        AssertContains(agentMapText, "and final snapshot capture, result-build request mapping, result-build");
         AssertContains(cleanupPlanText, "`DiagnosticSessionRunExecution.CompletionContext.cs` owns the completion");
-        AssertContains(cleanupPlanText, "`DiagnosticSessionRunExecution.ResultBuildRequest.cs` owns result-build request");
+        AssertContains(cleanupPlanText, "`DiagnosticSessionRunExecution.Completion.cs` owns the final result-build");
         AssertOccursBefore(completionRootText, "DiagnosticSessionRecordingChecks.RunAsync(", "DiagnosticSessionPostRunSnapshots.CaptureAsync(");
         AssertOccursBefore(completionRootText, "DiagnosticSessionPostRunSnapshots.CaptureAsync(", "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
         AssertOccursBefore(completionRootText, "DiagnosticSessionResultBuilder.BuildAndWriteAsync(", "await context.WriteLiveStateBestEffortAsync(result.CompletedUtc, result.TerminalState)");
