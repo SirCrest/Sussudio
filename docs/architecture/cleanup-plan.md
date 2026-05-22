@@ -29,14 +29,13 @@ handlers, and emergency recording finalization. `Sussudio/App.LaunchLifecycle.cs
 owns the single-instance mutex guard, startup identity logging, and MainWindow
 activation.
 
-Logger diagnostics are split from the nonblocking writer without changing the
-public static logging surface. `Sussudio/Logger.cs` stays the hot-path writer
-owner for initialization, rotation, bounded channel enqueueing, dropped-message
-fallback, direct file writes, and `LogEvent`. `Sussudio/Logger.Diagnostics.cs`
-owns system evidence collection, exception formatting, structured snapshot JSON
-routing through `LoggingJsonContext`, and fatal breadcrumbs. Keep WMI/system
-evidence and JSON payload routing out of the writer root so the saturation and
-shutdown behavior remains easy to audit.
+Logger diagnostics live with the nonblocking writer without changing the public
+static logging surface. `Sussudio/Logger.cs` owns initialization, rotation,
+bounded channel enqueueing, dropped-message fallback, direct file writes,
+`LogEvent`, system evidence collection, exception formatting, structured
+snapshot JSON routing through `LoggingJsonContext`, and fatal breadcrumbs.
+`LoggingJsonContext.cs` remains the source-generated JSON context boundary for
+known log payloads.
 
 Runtime path resolution lives with the public cached path API without changing
 repo/temp/log path behavior. `Sussudio/RuntimePaths.cs` owns the public

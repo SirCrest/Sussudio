@@ -18,38 +18,38 @@ static partial class Program
         AssertContains(contextText, "internal sealed partial class LoggingJsonContext : JsonSerializerContext");
 
         var loggerText = ReadRepoFile("Sussudio/Logger.cs");
-        var loggerDiagnosticsText = ReadRepoFile("Sussudio/Logger.Diagnostics.cs");
-        AssertContains(loggerText, "public static partial class Logger");
+        AssertContains(loggerText, "public static class Logger");
+        AssertDoesNotContain(loggerText, "partial class Logger");
         AssertContains(loggerText, "Channel.CreateBounded<string>");
         AssertContains(loggerText, "private static async Task RunLogWriterAsync()");
         AssertContains(loggerText, "private static void WriteDirect(string entry)");
         AssertContains(loggerText, "private static void RotatePriorLog()");
-        AssertDoesNotContain(loggerText, "new ManagementObjectSearcher(");
-        AssertDoesNotContain(loggerText, "public static void LogStructured(");
-        AssertDoesNotContain(loggerText, "public static void LogFatalBreadcrumb(");
-        AssertContains(loggerDiagnosticsText, "public static partial class Logger");
-        AssertContains(loggerDiagnosticsText, "public static void LogSystemInfo()");
-        AssertContains(loggerDiagnosticsText, "new ManagementObjectSearcher(");
-        AssertContains(loggerDiagnosticsText, "public static void LogStructured(");
-        AssertContains(loggerDiagnosticsText, "public static void LogFatalBreadcrumb(");
+        AssertContains(loggerText, "public static void LogSystemInfo()");
+        AssertContains(loggerText, "new ManagementObjectSearcher(");
+        AssertContains(loggerText, "public static void LogStructured(");
+        AssertContains(loggerText, "public static void LogFatalBreadcrumb(");
         AssertContains(
-            loggerDiagnosticsText,
+            loggerText,
             "JsonSerializer.Serialize(healthSnapshot, LoggingJsonContext.Default.CaptureHealthSnapshot)");
         AssertContains(
-            loggerDiagnosticsText,
+            loggerText,
             "JsonSerializer.Serialize(diagnosticsSnapshot, LoggingJsonContext.Default.CaptureDiagnosticsSnapshot)");
         AssertOccursBefore(
-            loggerDiagnosticsText,
+            loggerText,
             "CaptureHealthSnapshot healthSnapshot =>",
             "CaptureDiagnosticsSnapshot diagnosticsSnapshot =>");
         AssertOccursBefore(
-            loggerDiagnosticsText,
+            loggerText,
             "CaptureHealthSnapshot healthSnapshot =>",
             "_ when JsonSerializer.IsReflectionEnabledByDefault =>");
         AssertOccursBefore(
-            loggerDiagnosticsText,
+            loggerText,
             "CaptureDiagnosticsSnapshot diagnosticsSnapshot =>",
             "_ when JsonSerializer.IsReflectionEnabledByDefault =>");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Logger.Diagnostics.cs")),
+            "old Logger diagnostics partial removed");
 
         LoggingJsonContext_SerializesRepresentativePayloadsWithSourceGeneration();
 
