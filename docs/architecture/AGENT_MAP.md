@@ -3954,19 +3954,13 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResult.cs` owns diagnostic-session summary DTO
   fields: core metadata, artifact paths, terminal state, actions, warnings, and
   end-of-run overview fields.
+  It also owns Flashback playback command queue, cadence, 1% low, decode,
+  audio-master, stage, and seek result fields.
   `DiagnosticSessionResult.CaptureSource.cs` owns capture/source summary fields.
   `DiagnosticSessionResult.PreviewCadence.cs` owns preview cadence and visual-cadence fields,
   `DiagnosticSessionResult.PreviewScheduler.cs` owns preview scheduler and
   jitter-buffer fields, `DiagnosticSessionResult.PreviewD3D.cs` owns D3D
   frame-stat and CPU timing fields.
-  `DiagnosticSessionResult.FlashbackPlayback.Commands.cs`
-  owns Flashback playback command queue fields,
-  `DiagnosticSessionResult.FlashbackPlayback.Cadence.cs` owns playback cadence
-  and frame-delivery fields, playback 1% low sample-window fields, and
-  audio-master fallback/drift fields,
-  `DiagnosticSessionResult.FlashbackPlayback.Decode.cs` owns decode timing
-  fields, and `DiagnosticSessionResult.FlashbackPlayback.Stage.cs` owns submit-failure,
-  stage, and seek fields.
   `DiagnosticSessionResult.FlashbackRecording.cs` owns Flashback recording
   summary fields, and `DiagnosticSessionResult.FlashbackExport.cs` owns
   Flashback export summary fields.

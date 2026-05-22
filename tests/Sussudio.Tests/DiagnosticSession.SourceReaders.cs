@@ -165,10 +165,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionResult.PreviewCadence.cs",
             "tools/Common/DiagnosticSessionResult.PreviewScheduler.cs",
             "tools/Common/DiagnosticSessionResult.PreviewD3D.cs",
-            "tools/Common/DiagnosticSessionResult.FlashbackPlayback.Commands.cs",
-            "tools/Common/DiagnosticSessionResult.FlashbackPlayback.Cadence.cs",
-            "tools/Common/DiagnosticSessionResult.FlashbackPlayback.Decode.cs",
-            "tools/Common/DiagnosticSessionResult.FlashbackPlayback.Stage.cs",
             "tools/Common/DiagnosticSessionResult.FlashbackRecording.cs",
             "tools/Common/DiagnosticSessionResult.FlashbackExport.cs",
             "tools/Common/DiagnosticSessionSample.cs");
