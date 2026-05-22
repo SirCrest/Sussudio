@@ -7,8 +7,6 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var mjpegTimingFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegTiming.cs")
-            .Replace("\r\n", "\n");
         var mjpegProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs")
             .Replace("\r\n", "\n");
         var mjpegTimingProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegTiming.cs")
@@ -36,11 +34,6 @@ static partial class Program
         AssertContains(snapshotFlatteningText, "var mjpegPacketHashFlattening = BuildMjpegPacketHashFlattenedProjection(mjpeg.PacketHash);");
         AssertContains(snapshotFlatteningText, "MjpegPacketHashPattern = mjpegPacketHashFlattening.Pattern,");
         AssertContains(snapshotFlatteningText, "MjpegPerDecoder = mjpegTimingFlattening.PerDecoder,");
-        AssertContains(mjpegTimingFlatteningText, "private static MjpegTimingFlattenedProjection BuildMjpegTimingFlattenedProjection(");
-        AssertContains(mjpegTimingFlatteningText, "DecodeSampleCount = timing.DecodeSampleCount,");
-        AssertContains(mjpegTimingFlatteningText, "PipelineMaxMs = timing.PipelineMaxMs,");
-        AssertContains(mjpegTimingFlatteningText, "PerDecoder = timing.PerDecoder");
-        AssertContains(mjpegTimingFlatteningText, "private readonly record struct MjpegTimingFlattenedProjection");
         AssertDoesNotContain(snapshotFlatteningText, "MjpegDecodeSampleCount = health.MjpegDecodeSampleCount,");
         AssertDoesNotContain(snapshotFlatteningText, "MjpegTotalDecoded = mjpeg.TotalDecoded,");
         AssertDoesNotContain(snapshotFlatteningText, "MjpegCompressedQueueByteBudget = mjpeg.CompressedQueueByteBudget,");
@@ -77,6 +70,11 @@ static partial class Program
         AssertContains(mjpegTimingProjectionText, "PipelineMaxMs = health.MjpegPipelineMaxMs,");
         AssertContains(mjpegTimingProjectionText, "PerDecoder = health.MjpegPerDecoder is { Length: > 0 } perDecoder");
         AssertContains(mjpegTimingProjectionText, "private readonly record struct MjpegTimingProjection");
+        AssertContains(mjpegTimingProjectionText, "private static MjpegTimingFlattenedProjection BuildMjpegTimingFlattenedProjection(");
+        AssertContains(mjpegTimingProjectionText, "DecodeSampleCount = timing.DecodeSampleCount,");
+        AssertContains(mjpegTimingProjectionText, "PipelineMaxMs = timing.PipelineMaxMs,");
+        AssertContains(mjpegTimingProjectionText, "PerDecoder = timing.PerDecoder");
+        AssertContains(mjpegTimingProjectionText, "private readonly record struct MjpegTimingFlattenedProjection");
 
         AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterProjection BuildMjpegPreviewJitterProjection(CaptureHealthSnapshot health)");
         AssertContains(mjpegPreviewJitterProjectionText, "Queue = BuildMjpegPreviewJitterQueueProjection(health),");

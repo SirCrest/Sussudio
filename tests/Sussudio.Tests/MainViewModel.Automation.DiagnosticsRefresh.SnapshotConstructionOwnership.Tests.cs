@@ -49,7 +49,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegFlattenedProjection(mjpeg)");
         AssertContains(diagnostics.SnapshotProjectionMjpegText, "private static MjpegFlattenedProjection BuildMjpegFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegTimingFlattenedProjection(mjpeg.Timing)");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegTimingText, "private static MjpegTimingFlattenedProjection BuildMjpegTimingFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionMjpegTimingText, "private static MjpegTimingFlattenedProjection BuildMjpegTimingFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegPreviewJitterFlattenedProjection(mjpeg.PreviewJitter)");
         AssertContains(diagnostics.SnapshotProjectionMjpegPreviewJitterText, "private static MjpegPreviewJitterFlattenedProjection BuildMjpegPreviewJitterFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionMjpegPreviewJitterQueueText, "private static MjpegPreviewJitterQueueFlattenedProjection BuildMjpegPreviewJitterQueueFlattenedProjection(");
