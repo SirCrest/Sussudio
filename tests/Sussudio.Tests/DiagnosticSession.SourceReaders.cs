@@ -172,16 +172,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionResultFormatterSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionResultFormatter.cs",
-            "tools/Common/DiagnosticSessionResultFormatter.Overview.cs",
-            "tools/Common/DiagnosticSessionResultFormatter.CaptureMode.cs",
-            "tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.cs",
-            "tools/Common/DiagnosticSessionResultFormatter.FlashbackRecording.cs",
-            "tools/Common/DiagnosticSessionResultFormatter.FlashbackExport.cs",
-            "tools/Common/DiagnosticSessionResultFormatter.PreviewScheduler.cs",
-            "tools/Common/DiagnosticSessionResultFormatter.PreviewD3D.Performance.cs",
-            "tools/Common/DiagnosticSessionResultFormatter.PreviewVisualCadence.cs",
-            "tools/Common/DiagnosticSessionResultFormatter.Artifacts.cs");
+            "tools/Common/DiagnosticSessionResultFormatter.cs");
 
     private static string ReadDiagnosticSessionRunnerSource()
         => ReadNormalizedSourceFiles(

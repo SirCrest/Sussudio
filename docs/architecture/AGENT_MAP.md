@@ -4396,29 +4396,11 @@ Primary owners:
   callbacks.
 - `tools/Common/DiagnosticSessionResultFormatter.cs` owns the public
   human-readable diagnostic-session text flow used by ssctl and MCP plus
-  section ordering and the small recording-verification, PresentMon, and
-  process-performance summary rows. It also owns preview diagnostic-session text
-  section ordering and Flashback diagnostic-session text section ordering. Keep
-  `DiagnosticSessionRunner.Format(...)` as the stable compatibility wrapper.
-- `tools/Common/DiagnosticSessionResultFormatter.Overview.cs` owns the
-  diagnostic-session header, summary, and evidence section.
-- `tools/Common/DiagnosticSessionResultFormatter.CaptureMode.cs` owns the
-  capture-mode summary row and frame-rate text formatting.
-- `tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.cs` owns
-  Flashback playback command, performance, decode, stage, and seek-cap summary
-  lines.
-  `DiagnosticSessionResultFormatter.FlashbackRecording.cs` owns Flashback
-  recording summary text. `DiagnosticSessionResultFormatter.FlashbackExport.cs`
-  owns Flashback export summary text, including force-rotate fallback and
-  throughput formatting.
-- `tools/Common/DiagnosticSessionResultFormatter.PreviewScheduler.cs` owns preview
-  scheduler lines.
-  `DiagnosticSessionResultFormatter.PreviewD3D.Performance.cs` owns D3D
-  performance, slow-frame, and CPU-timing lines.
-  `DiagnosticSessionResultFormatter.PreviewVisualCadence.cs` owns visual-cadence
-  lines.
-- `tools/Common/DiagnosticSessionResultFormatter.Artifacts.cs` owns artifact,
-  action, and warning sections.
+  all rendered section rows: overview/health/evidence, capture mode, recording
+  verification, PresentMon, Flashback playback/recording/export, preview
+  scheduler, preview D3D, visual cadence, process performance, artifacts,
+  actions, and warnings. Keep `DiagnosticSessionRunner.Format(...)` as the
+  stable compatibility wrapper.
 - `tools/Common/DiagnosticSessionOptionalTextFormatter.cs` owns shared
   diagnostic-session optional text formatting used by scenarios, result
   builders, result formatters, and validation policies.

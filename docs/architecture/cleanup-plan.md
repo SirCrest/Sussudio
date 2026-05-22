@@ -3452,24 +3452,13 @@ playback submit/stage/seek, Flashback recording, Flashback export, preview
 cadence, preview scheduler, preview D3D, preview visual cadence, process,
 recording verification, and PresentMon fields.
 
-Diagnostic-session result text now lives in a focused partial family rooted at
-`tools/Common/DiagnosticSessionResultFormatter.cs`. The root owns the public
-`Format(...)` flow, Flashback section ordering, preview section ordering,
-recording verification text, PresentMon text, and process-performance text.
-`.Overview.cs` owns the header/summary/evidence section. `.CaptureMode.cs` owns
-the capture-mode row and frame-rate text formatting. `.FlashbackPlayback.Commands.cs`
-owns playback command rows. `.FlashbackPlayback.Performance.cs` owns playback
-performance row assembly plus cadence, 1% low, submit-failure, and audio-master
-performance text. `.FlashbackPlayback.Stages.cs` owns playback stage/seek-cap rows.
-`.FlashbackRecording.cs` owns Flashback recording summary text,
-`.FlashbackExport.cs` owns Flashback export summary text, and
-`.FlashbackPlayback.Decode.cs` owns playback decode text,
-`.PreviewScheduler.cs` owns
-preview scheduler text, `.PreviewD3D.Performance.cs` owns D3D
-performance, slow-frame, and CPU-timing text, and `.PreviewVisualCadence.cs`
-owns visual cadence text. `.Artifacts.cs` owns
-artifact/action/warning sections, and
-`DiagnosticSessionOptionalTextFormatter.cs` owns shared optional text helpers.
+Diagnostic-session result text now lives in
+`tools/Common/DiagnosticSessionResultFormatter.cs`. The formatter owns the
+public `Format(...)` flow, section ordering, and all rendered rows: overview,
+capture mode, recording verification, PresentMon, Flashback playback/recording/
+export, preview scheduler, preview D3D, visual cadence, process performance,
+artifacts, actions, and warnings. `DiagnosticSessionOptionalTextFormatter.cs`
+owns shared optional text helpers.
 The runner keeps `Format(...)` as a compatibility wrapper so existing ssctl
 and MCP callers do not need to know about the formatter owner.
 
@@ -4166,15 +4155,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
 - `DiagnosticSessionResultBuildRequest.cs`
 - `DiagnosticSessionResultFormatter.cs`
-- `DiagnosticSessionResultFormatter.Overview.cs`
-- `DiagnosticSessionResultFormatter.CaptureMode.cs`
-- `DiagnosticSessionResultFormatter.FlashbackPlayback.cs`
-- `DiagnosticSessionResultFormatter.FlashbackRecording.cs`
-- `DiagnosticSessionResultFormatter.FlashbackExport.cs`
-- `DiagnosticSessionResultFormatter.PreviewScheduler.cs`
-- `DiagnosticSessionResultFormatter.PreviewD3D.Performance.cs`
-- `DiagnosticSessionResultFormatter.PreviewVisualCadence.cs`
-- `DiagnosticSessionResultFormatter.Artifacts.cs`
 - `DiagnosticSessionRunState.cs`
 - `DiagnosticSessionLiveStateWriter.cs`
 - `DiagnosticSessionLiveStateWriter.Sampling.cs`
