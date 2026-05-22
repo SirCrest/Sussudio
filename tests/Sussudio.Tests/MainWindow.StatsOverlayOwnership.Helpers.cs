@@ -9,7 +9,6 @@ internal static class MainWindowStatsOverlaySource
             "\n",
             new[]
             {
-                "Sussudio/MainWindow.StatsOverlay.cs",
                 "Sussudio/MainWindow.StatsOverlay.Composition.cs",
                 "Sussudio/MainWindow.StatsOverlay.Shell.cs",
                 "Sussudio/MainWindow.StatsOverlay.Snapshot.cs",

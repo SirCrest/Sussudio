@@ -7,7 +7,6 @@ static partial class Program
             "\n",
             new[]
             {
-                "Sussudio/MainWindow.ShellChrome.cs",
                 "Sussudio/MainWindow.ShellChrome.NativeWindow.cs",
                 "Sussudio/MainWindow.ShellChrome.ControlBar.cs",
                 "Sussudio/MainWindow.ShellChrome.LaunchEntrance.cs",

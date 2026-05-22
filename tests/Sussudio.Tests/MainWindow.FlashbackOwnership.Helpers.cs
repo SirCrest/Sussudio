@@ -7,7 +7,6 @@ static partial class Program
             "\n",
             new[]
             {
-                "Sussudio/MainWindow.Flashback.cs",
                 "Sussudio/MainWindow.Flashback.Commands.cs",
                 "Sussudio/MainWindow.Flashback.Polling.cs",
                 "Sussudio/MainWindow.Flashback.Playhead.cs",

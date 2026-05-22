@@ -14,8 +14,8 @@ static partial class Program
 
         AssertContains(agentMapText, nativeBootstrapOwner);
         AssertContains(cleanupPlanText, nativeBootstrapOwner);
-        AssertContains(agentMapText, "Sussudio/MainWindow.ShellChrome.cs");
-        AssertContains(cleanupPlanText, "Sussudio/MainWindow.ShellChrome.cs");
+        AssertContains(agentMapText, "Sussudio/MainWindow.ShellChrome.NativeWindow.cs");
+        AssertContains(cleanupPlanText, "Sussudio/MainWindow.ShellChrome.NativeWindow.cs");
         AssertContains(agentMapText, "owns native window");
         AssertContains(cleanupPlanText, "DWM cloak/dark-mode setup");
         AssertContains(agentMapText, "first-composed-frame");

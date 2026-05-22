@@ -1385,9 +1385,9 @@ Primary current owners:
   shutdown disposal. `Sussudio/MainWindow.ShellChrome.LaunchStartup.cs` starts
   the controller after initial device refresh; `Sussudio/MainWindow.ShutdownCleanup.Composition.cs`
   passes the controller dispose delegate into the shutdown cleanup controller.
-- `Sussudio/MainWindow.ShellChrome.cs` is the XAML-facing shell launch/chrome
-  adapter-family marker. `Sussudio/MainWindow.ShellChrome.NativeWindow.cs`
-  owns native shell bootstrap callbacks, `Sussudio/MainWindow.ShellChrome.ControlBar.cs`
+- The XAML-facing shell launch/chrome adapters live in focused partials:
+  `Sussudio/MainWindow.ShellChrome.NativeWindow.cs` owns native shell bootstrap callbacks,
+  `Sussudio/MainWindow.ShellChrome.ControlBar.cs`
   owns control-bar animation callbacks, `Sussudio/MainWindow.ShellChrome.LaunchEntrance.cs`
   owns launch entrance callbacks, `Sussudio/MainWindow.ShellChrome.LaunchStartup.cs`
   owns first-load startup callbacks, `Sussudio/MainWindow.ShellChrome.SettingsShelf.cs`
@@ -1559,9 +1559,8 @@ Primary current owners:
   focused partials or controllers, including initial recording lockout,
   device-selection change hooks, stats visibility sync, and status-strip
   projection.
-- `Sussudio/MainWindow.PreviewTransitions.cs` owns the preview-transition
-  adapter-family marker. `Sussudio/MainWindow.PreviewTransitions.ButtonActions.cs`
-  owns the preview button XAML command adapter.
+- `Sussudio/MainWindow.PreviewTransitions.ButtonActions.cs`
+  owns the preview-transition preview button XAML command adapter.
   `PreviewButtonActionController` owns the preview
   fade/reinit/start/stop command behavior. One-line XAML command bridges for
   capture-device, recording, output-path, and preview-screenshot buttons live in
@@ -1605,8 +1604,8 @@ Primary current owners:
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs` owns
   graph factory wiring from those contexts: snapshot provider, frame-time
   presentation, dock graph, overlay controller, and section chrome controller.
-  `Sussudio/MainWindow.StatsOverlay.cs` is the stats overlay XAML adapter-family
-  marker. `Sussudio/MainWindow.StatsOverlay.Composition.cs` owns composition
+  The stats overlay XAML adapters live in focused partials.
+  `Sussudio/MainWindow.StatsOverlay.Composition.cs` owns composition
   controller instantiation, `Sussudio/MainWindow.StatsOverlay.Shell.cs` owns
   shell-control and visibility source wiring,
   `Sussudio/MainWindow.StatsOverlay.Snapshot.cs` owns stats snapshot source
@@ -3080,8 +3079,7 @@ Primary current owners:
   timeline visibility, lockout, toggle synchronization, and timeline track layout sizing.
   `Sussudio/Controllers/Flashback/FlashbackTimelineAnimationController.cs`
   owns show/hide storyboard state, immediate collapse, and fullscreen animation
-  reset. `MainWindow.Flashback.cs` is the XAML-facing Flashback adapter family
-  marker. The sibling `MainWindow.Flashback.*.cs` partials own focused command,
+  reset. The `MainWindow.Flashback.*.cs` partials own focused command,
   polling, playhead, scrub, settings, timeline, and presentation adapter
   surfaces: `Sussudio/MainWindow.Flashback.Commands.cs`,
   `Sussudio/MainWindow.Flashback.Polling.cs`,
@@ -3177,9 +3175,8 @@ Primary current owners:
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
   shell/content fade and scale transitions, video-shadow fade timing,
   unavailable-placeholder fades, and startup/unavailable presentation prep.
-  `Sussudio/MainWindow.PreviewTransitions.cs` is the XAML-facing
-  preview-transition adapter-family marker. `Sussudio/MainWindow.PreviewTransitions.Animation.cs`
-  wires transition animation callbacks; video-shadow fade callbacks route
+  `Sussudio/MainWindow.PreviewTransitions.Animation.cs` wires
+  preview-transition animation callbacks; video-shadow fade callbacks route
   through `PreviewSurfaceShadowController` and `PreviewShadowFadeAnimator`.
 - `Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs` owns preview
   button glyph and tooltip presentation for Start Preview and Stop Preview.

@@ -1124,8 +1124,8 @@ string-based.
 First-load startup, initial ViewModel/device refresh, automation startup timing,
 and the launch entrance trigger now live in
 `Sussudio/Controllers/Launch/LaunchStartupController.cs`.
-`Sussudio/MainWindow.ShellChrome.cs` is the XAML-facing shell launch/chrome
-adapter-family marker; `Sussudio/MainWindow.ShellChrome.LaunchStartup.cs` keeps
+The XAML-facing shell launch/chrome adapters live in focused partials:
+`Sussudio/MainWindow.ShellChrome.LaunchStartup.cs` keeps
 the Loaded adapter and `Sussudio/MainWindow.ShellChrome.NativeWindow.cs` keeps
 native shell bootstrap wiring.
 Automation host composition, once-only
@@ -2852,8 +2852,8 @@ stats dock presentation/diagnostic/hardware/refresh controller graph wiring
 now lives in `Sussudio/Controllers/Stats/StatsDockControllerGraph.cs`, with
 the dock graph context contract in
 `Sussudio/Controllers/Stats/StatsDockControllerGraph.Contexts.cs`;
-`Sussudio/MainWindow.StatsOverlay.cs` is now the XAML-facing adapter-family
-marker, with `Sussudio/MainWindow.StatsOverlay.Composition.cs`,
+The XAML-facing stats overlay adapters live in focused partials, with
+`Sussudio/MainWindow.StatsOverlay.Composition.cs`,
 `Sussudio/MainWindow.StatsOverlay.Shell.cs`,
 `Sussudio/MainWindow.StatsOverlay.Snapshot.cs`,
 `Sussudio/MainWindow.StatsOverlay.DockTargets.cs`,
@@ -2980,8 +2980,7 @@ layout sizing now live in
 `Sussudio/Controllers/Flashback/FlashbackTimelineController.cs`. Show/hide
 storyboard state, immediate collapse, and fullscreen animation reset live in
 `Sussudio/Controllers/Flashback/FlashbackTimelineAnimationController.cs`.
-`MainWindow.Flashback.cs` is the XAML-facing Flashback adapter family marker.
-The sibling `MainWindow.Flashback.*.cs` partials own the focused XAML adapter
+The `MainWindow.Flashback.*.cs` partials own the focused XAML adapter
 surfaces for commands, polling, playhead motion, scrub input, settings,
 timeline visibility, and presentation. The presentation surface is split across
 `Sussudio/MainWindow.Flashback.Presentation.Markers.cs`,
@@ -3303,8 +3302,8 @@ fade, loading-phrase start/stop ordering, one-shot splash playback state, and
 handoff into shell entrance, and
 `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs` owns shell
 chrome/button/stats entrance choreography, deferred preview reveal logging,
-active-storyboard cleanup, and control-bar shadow fade. `MainWindow.ShellChrome.cs`
-is the adapter-family marker; `Sussudio/MainWindow.ShellChrome.LaunchEntrance.cs`
+active-storyboard cleanup, and control-bar shadow fade.
+`Sussudio/MainWindow.ShellChrome.LaunchEntrance.cs`
 is the XAML-facing adapter for launch entrance wiring.
 
 Control-bar button ownership and hover/press/release scale behavior now live in
@@ -3318,9 +3317,8 @@ button now live in `Sussudio/Controllers/Shell/ShellElevationController.cs`.
 Preview shell/content fade and scale transitions, video-shadow fade timing, and
 unavailable-placeholder presentation now live in
 `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`.
-`MainWindow.PreviewTransitions.cs` is the XAML-facing preview-transition
-adapter-family marker. `Sussudio/MainWindow.PreviewTransitions.Animation.cs`
-wires transition animation callbacks; video-shadow fade callbacks route through
+`Sussudio/MainWindow.PreviewTransitions.Animation.cs` wires preview-transition
+animation callbacks; video-shadow fade callbacks route through
 `PreviewSurfaceShadowController` and shared compositor shadow opacity fades live
 in `Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs`.
 
