@@ -3538,18 +3538,9 @@ semantics stay separate from scheduler/jitter policy.
 Flashback playback result composition lives in
 `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`, which keeps the
 playback projection record as one cohesive handoff into the result projection
-set.
-The detailed playback result DTO value maps are split by runtime metric owner:
-command queue values live in
-`DiagnosticSessionResultBuilder.FlashbackPlaybackCommandsResult.cs`, cadence/
-slow-frame/dropped-frame, 1% low sample-window, audio-master fallback,
-buffering, and A/V-drift values live in
-`DiagnosticSessionResultBuilder.FlashbackPlaybackCadenceResult.cs`, decode timing values live in
-`DiagnosticSessionResultBuilder.FlashbackPlaybackDecodeResult.cs`, and
-submit/segment/write-head/near-live/seek-cap stage values live in
-`DiagnosticSessionResultBuilder.FlashbackPlaybackStagesResult.cs`.
-focused Flashback playback result owner keeps its projection record next to the
-mapping that fills it.
+set. The detailed command queue, cadence/slow-frame/dropped-frame, 1% low,
+audio-master, decode timing, and stage DTO value maps now live in that same
+file so the projection shape and the mappings that fill it stay together.
 Flashback recording backend/growth/integrity DTO projection values live in
 `DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`, while export
 status/progress DTO projection values live in
@@ -4216,10 +4207,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.DiagnosticHealthSummary.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealthSourceWarnings.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
-- `DiagnosticSessionResultBuilder.FlashbackPlaybackCommandsResult.cs`
-- `DiagnosticSessionResultBuilder.FlashbackPlaybackCadenceResult.cs`
-- `DiagnosticSessionResultBuilder.FlashbackPlaybackDecodeResult.cs`
-- `DiagnosticSessionResultBuilder.FlashbackPlaybackStagesResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`
 - `DiagnosticSessionResultBuilder.CaptureResult.cs`
