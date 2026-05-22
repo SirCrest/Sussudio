@@ -335,6 +335,53 @@ public sealed partial class AutomationDiagnosticsHub
         public bool? TenBitPipelineConfirmed { get; init; }
     }
 
+    private static CaptureTransportProjection BuildCaptureTransportProjection(CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            MemoryPreference = captureRuntime.MemoryPreference,
+            VideoRequestedSubtype = captureRuntime.VideoRequestedSubtype,
+            VideoNegotiatedSubtype = captureRuntime.VideoNegotiatedSubtype,
+            FrameLedgerCapacity = captureRuntime.FrameLedgerCapacity,
+            FrameLedgerEventCount = captureRuntime.FrameLedgerEventCount,
+            FrameLedgerDroppedEventCount = captureRuntime.FrameLedgerDroppedEventCount,
+            FrameLedgerRecentEvents = captureRuntime.FrameLedgerRecentEvents
+        };
+
+    private readonly record struct CaptureTransportProjection
+    {
+        public string MemoryPreference { get; init; }
+        public string VideoRequestedSubtype { get; init; }
+        public string VideoNegotiatedSubtype { get; init; }
+        public int FrameLedgerCapacity { get; init; }
+        public long FrameLedgerEventCount { get; init; }
+        public long FrameLedgerDroppedEventCount { get; init; }
+        public FrameLedgerEventSnapshot[] FrameLedgerRecentEvents { get; init; }
+    }
+
+    private static CaptureTransportFlattenedProjection BuildCaptureTransportFlattenedProjection(
+        CaptureTransportProjection captureTransport)
+        => new()
+        {
+            MemoryPreference = captureTransport.MemoryPreference,
+            VideoRequestedSubtype = captureTransport.VideoRequestedSubtype,
+            VideoNegotiatedSubtype = captureTransport.VideoNegotiatedSubtype,
+            FrameLedgerCapacity = captureTransport.FrameLedgerCapacity,
+            FrameLedgerEventCount = captureTransport.FrameLedgerEventCount,
+            FrameLedgerDroppedEventCount = captureTransport.FrameLedgerDroppedEventCount,
+            FrameLedgerRecentEvents = captureTransport.FrameLedgerRecentEvents
+        };
+
+    private readonly record struct CaptureTransportFlattenedProjection
+    {
+        public string MemoryPreference { get; init; }
+        public string VideoRequestedSubtype { get; init; }
+        public string VideoNegotiatedSubtype { get; init; }
+        public int FrameLedgerCapacity { get; init; }
+        public long FrameLedgerEventCount { get; init; }
+        public long FrameLedgerDroppedEventCount { get; init; }
+        public FrameLedgerEventSnapshot[] FrameLedgerRecentEvents { get; init; }
+    }
+
     private readonly record struct CaptureFormatFlattenedProjection
     {
         public CaptureFormatRequestedFlattenedProjection Requested { get; init; }

@@ -135,8 +135,7 @@ snapshot evaluation projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Audio.cs` owns audio/ingest
 projection routing, view-model audio peak/clipping and detected audio-signal
 projection inputs, capture-ingest and WASAPI projection groups, and flattened
-audio signal fields consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.AudioDrops.cs` owns audio drop
+audio signal fields consumed by the automation snapshot DTO, plus audio drop
 counter projection, derived real-time/file-writer drop totals, and final
 audio-drop projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureIngest.cs` owns capture
@@ -199,12 +198,10 @@ automation snapshot DTO, plus HDR activation/auto-downgrade projection, actual
 capture dimensions/frame-rate projection, requested capture format/quality/HDR
 toggle/audio toggle, negotiated capture dimensions/frame-rate/pixel format,
 source-reader subtype and observed pixel/surface format projection inputs,
-encoder format/codec/profile/ten-bit confirmation projection, and final
-capture-format flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.CaptureTransport.cs` owns capture
-memory preference, requested/negotiated video subtype, and frame-ledger
-projection consumed by the automation snapshot DTO, plus final capture
-transport projection-to-`AutomationSnapshot` field flattening.
+encoder format/codec/profile/ten-bit confirmation projection, capture memory
+preference, requested/negotiated video subtype, frame-ledger projection, final
+capture-format flattening, and final capture-transport projection-to-
+`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs` owns source
 capture cadence projection inputs consumed by the automation snapshot DTO, plus
 final source capture cadence projection-to-`AutomationSnapshot` field
