@@ -24,7 +24,6 @@ static partial class Program
         public string SnapshotProjectionMjpegPacketHashText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackExportText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackPlaybackText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlashbackPlaybackTimingText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackRecordingText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackRecordingQueuesText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewD3DText { get; init; } = string.Empty;

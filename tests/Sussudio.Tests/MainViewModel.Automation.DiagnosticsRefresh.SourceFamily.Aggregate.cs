@@ -47,7 +47,6 @@ static partial class Program
                 SnapshotProjectionMjpegPacketHashText,
                 SnapshotProjectionFlashbackExportText,
                 SnapshotProjectionFlashbackPlaybackText,
-                SnapshotProjectionFlashbackPlaybackTimingText,
                 SnapshotProjectionFlashbackRecordingText,
                 SnapshotProjectionFlashbackRecordingQueuesText,
                 SnapshotProjectionPreviewD3DText,

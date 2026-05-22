@@ -242,16 +242,10 @@ routing, and final projection-to-`AutomationSnapshot` flattening.
 Flashback video, GPU, and audio queue/backpressure projection plus flattened
 queue/backpressure fields consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs` owns
-Flashback playback state/frame summary and routing to the playback leaf
-projections consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.AudioMaster.cs`
-owns audio-master delay/fallback projection,
-`AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.Timing.cs` owns
-playback event, cadence, PTS-cadence, and A/V drift projection,
-`AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.Decode.cs` owns
-seek-cap/decode timing projection plus flattened decode fields, and
-`AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.Commands.cs`
-owns playback command queue projection plus flattened command queue fields.
+Flashback playback state/frame summary, audio-master delay/fallback projection,
+playback event/cadence/PTS-cadence/A/V drift projection, seek-cap/decode timing
+projection, playback command queue projection, and final flattened playback
+fields consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs` owns D3D preview
 swap-chain and renderer-state projection plus composition of D3D leaf
 projections consumed by the automation snapshot DTO, plus final D3D
