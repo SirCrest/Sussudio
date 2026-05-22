@@ -107,15 +107,12 @@ intentionally a single `init`-property map: do not split it by adding mutable
 setters or shallow fragment records unless a deliberate snapshot construction
 pattern is introduced first. `AutomationDiagnosticsHub.Snapshots.cs` owns
 stateful snapshot bookkeeping for audio mute suspicion and recording file growth
-tracking. `AutomationDiagnosticsHub.Timeline.cs`
-owns performance-timeline ring reads and append mechanics.
-`AutomationDiagnosticsHub.TimelineProjection.cs` owns final
-`AutomationSnapshot` to `PerformanceTimelineEntry` assignment.
-`AutomationDiagnosticsHub.TimelineProjection.cs` owns final `AutomationSnapshot`
-to `PerformanceTimelineEntry` assignment plus timestamp, observed
-capture/preview FPS, encoder video queue depth/drop, capture cadence, process,
-memory, GC, thread-pool, pipeline-latency, Flashback export progress, and
-force-rotate fallback timeline projection.
+tracking. `AutomationDiagnosticsHub.Timeline.cs` owns performance-timeline ring
+reads, append mechanics, final `AutomationSnapshot` to
+`PerformanceTimelineEntry` assignment, timestamp, observed capture/preview FPS,
+encoder video queue depth/drop, capture cadence, process, memory, GC,
+thread-pool, pipeline-latency, Flashback export progress, and force-rotate
+fallback timeline projection.
 `AutomationDiagnosticsHub.TimelineProjection.Preview.cs` owns preview cadence,
 visual cadence, MJPEG packet/jitter, D3D preview, and preview-pacing timeline
 projection.

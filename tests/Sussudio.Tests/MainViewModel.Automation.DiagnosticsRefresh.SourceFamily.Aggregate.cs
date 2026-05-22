@@ -52,7 +52,6 @@ static partial class Program
                 SnapshotProjectionHdrPipelineText,
                 PreviewPacingText,
                 TimelineText,
-                TimelineProjectionText,
                 TimelineProjectionPreviewText,
                 TimelineProjectionFlashbackPlaybackText,
                 SnapshotProjectionPreviewD3DCpuTimingText,
