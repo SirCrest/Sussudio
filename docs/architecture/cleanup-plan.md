@@ -285,12 +285,11 @@ owns playback command queue projection plus flattened command queue fields.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs` owns D3D preview
 swap-chain and renderer-state projection plus composition of D3D leaf
 projections consumed by the automation snapshot DTO, plus final D3D
-projection-to-`AutomationSnapshot` flattening and renderer-state fields.
+projection-to-`AutomationSnapshot` flattening, renderer-state fields, and D3D
+pipeline-latency projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DCpuTiming.cs` owns D3D
 CPU upload/render/present/total-frame timing and flattened CPU timing fields
 consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.PipelineLatency.cs`
-owns D3D pipeline-latency projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameFlow.cs` owns
 submitted/rendered/dropped frame ownership and recent slow-frame projection
 plus flattened frame-flow fields.

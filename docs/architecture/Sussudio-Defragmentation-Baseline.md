@@ -157,6 +157,18 @@ Behavior preserved: preview HDR input/tone-map projection and HDR truth classifi
 Notes for future agents: keep HDR diagnostics projection together unless preview HDR state or truth classification grows an independent collaborator boundary
 
 Date: 2026-05-21
+Area: Automation diagnostics PreviewD3D projection
+Problem: D3D pipeline-latency projection lived in a 23-line partial even though the PreviewD3D projection owner composes it immediately and flattens its values into the same latency-and-stats DTO.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.PipelineLatency.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics PreviewD3D projection ownership tests and runtime snapshot regression tests
+Behavior preserved: PreviewD3D pipeline-latency sample count, average, p95, p99, and max values still map from `PreviewRuntimeSnapshot` into the same flattened automation snapshot fields
+Notes for future agents: keep tiny metric projection builders with the PreviewD3D projection owner unless the metric family grows independent policy or reusable behavior
+
+Date: 2026-05-21
 Area: Automation diagnostics HDR pipeline projection
 Problem: HDR pipeline policy projection and final flattened DTO field projection lived in separate partials even though the flattening is a direct one-to-one projection of HDR runtime, warmup, pipeline-mode, telemetry-alignment, and truth-verdict fields.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.HdrPipeline.cs`

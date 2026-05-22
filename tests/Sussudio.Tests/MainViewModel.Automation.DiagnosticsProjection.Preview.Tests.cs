@@ -128,8 +128,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewD3DFrameStatsProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameStats.cs")
             .Replace("\r\n", "\n");
-        var previewD3DPipelineLatencyProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.PipelineLatency.cs")
-            .Replace("\r\n", "\n");
         var previewD3DCpuTimingProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DCpuTiming.cs")
             .Replace("\r\n", "\n");
 
@@ -213,12 +211,10 @@ static partial class Program
         AssertContains(previewD3DCpuTimingProjectionText, "InputUploadP99Ms = previewRuntime.D3DInputUploadCpuP99Ms,");
         AssertContains(previewD3DCpuTimingProjectionText, "private readonly record struct PreviewD3DCpuTimingProjection");
         AssertDoesNotContain(previewD3DCpuTimingProjectionText, "PipelineLatencyMaxMs = previewRuntime.D3DPipelineLatencyMaxMs");
-        AssertContains(previewD3DPipelineLatencyProjectionText, "private static PreviewD3DPipelineLatencyProjection BuildPreviewD3DPipelineLatencyProjection(");
-        AssertContains(previewD3DPipelineLatencyProjectionText, "SampleCount = previewRuntime.D3DPipelineLatencySampleCount,");
-        AssertContains(previewD3DPipelineLatencyProjectionText, "MaxMs = previewRuntime.D3DPipelineLatencyMaxMs");
-        AssertContains(previewD3DPipelineLatencyProjectionText, "private readonly record struct PreviewD3DPipelineLatencyProjection");
-        AssertDoesNotContain(previewD3DProjectionText, "private static PreviewD3DPipelineLatencyProjection BuildPreviewD3DPipelineLatencyProjection(");
-        AssertDoesNotContain(previewD3DProjectionText, "private readonly record struct PreviewD3DPipelineLatencyProjection");
+        AssertContains(previewD3DProjectionText, "private static PreviewD3DPipelineLatencyProjection BuildPreviewD3DPipelineLatencyProjection(");
+        AssertContains(previewD3DProjectionText, "SampleCount = previewRuntime.D3DPipelineLatencySampleCount,");
+        AssertContains(previewD3DProjectionText, "MaxMs = previewRuntime.D3DPipelineLatencyMaxMs");
+        AssertContains(previewD3DProjectionText, "private readonly record struct PreviewD3DPipelineLatencyProjection");
         AssertContains(previewD3DFrameFlowProjectionText, "private static PreviewD3DFrameFlowProjection BuildPreviewD3DFrameFlowProjection(");
         AssertContains(previewD3DFrameFlowProjectionText, "LastRenderedPipelineLatencyMs = previewRuntime.D3DLastRenderedPipelineLatencyMs,");
         AssertContains(previewD3DFrameFlowProjectionText, "RecentSlowFrames = previewRuntime.D3DRecentSlowFrames");
