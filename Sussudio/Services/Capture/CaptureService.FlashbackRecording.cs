@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Flashback;
 
@@ -70,4 +71,19 @@ public partial class CaptureService
             $"Restart preview so flashback can reopen with audio={audioEnabled} microphone={microphoneEnabled} " +
             $"(current audio={flashbackSink.AudioEnabled} microphone={flashbackSink.MicrophoneEnabled}).");
     }
+
+    private static string? ResolveFlashbackExportVerificationFormat(
+        CaptureSettings? settings,
+        UnifiedVideoCapture? unifiedVideoCapture)
+        => settings?.Format.ToString();
+
+    /// <summary>
+    /// Flashback recording honors the requested codec and preset directly. This legacy
+    /// snapshot field remains for compatibility and should stay null unless a future
+    /// explicit, user-visible substitution is introduced.
+    /// </summary>
+    private static string? ResolveFlashbackCodecDowngradeReason(
+        CaptureSettings? settings,
+        UnifiedVideoCapture? unifiedVideoCapture)
+        => null;
 }

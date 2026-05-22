@@ -1518,8 +1518,8 @@ recording session-context policy now lives in
 keep codec selection, GPU handle handoff, and HDR guardrails there.
 `Sussudio/Services/Capture/CaptureService.FlashbackRecording.FrameRate.cs`
 owns delivered-cadence frame-rate rational preservation/inference, and
-`Sussudio/Services/Capture/CaptureService.FlashbackRecording.SnapshotCompatibility.cs`
-owns legacy Flashback export verification/downgrade snapshot fields.
+`Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs` also owns
+legacy Flashback export verification/downgrade snapshot fields.
 Preview-backend resource state now belongs to
 `Sussudio/Services/Flashback/FlashbackBackendResources.cs`, which owns the
 preview backend resource grouping, install/take/clear state, and

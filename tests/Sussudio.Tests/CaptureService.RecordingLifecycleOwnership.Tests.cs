@@ -69,8 +69,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackRecordingFrameRateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.FrameRate.cs")
             .Replace("\r\n", "\n");
-        var flashbackRecordingSnapshotCompatibilityText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.SnapshotCompatibility.cs")
-            .Replace("\r\n", "\n");
 
         AssertDoesNotContain(rootText, "public Task StartRecordingAsync(");
         AssertDoesNotContain(rootText, "public Task StopRecordingAsync(");
@@ -210,8 +208,8 @@ static partial class Program
         AssertDoesNotContain(flashbackRecordingSessionContextText, "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveFlashbackSessionFrameRateParts(");
         AssertContains(flashbackRecordingFrameRateText, "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveFlashbackSessionFrameRateParts(");
         AssertContains(flashbackRecordingFrameRateText, "private static readonly (int Numerator, int Denominator)[] CommonFlashbackFrameRateParts");
-        AssertContains(flashbackRecordingSnapshotCompatibilityText, "private static string? ResolveFlashbackExportVerificationFormat(");
-        AssertContains(flashbackRecordingSnapshotCompatibilityText, "private static string? ResolveFlashbackCodecDowngradeReason(");
+        AssertContains(flashbackRecordingText, "private static string? ResolveFlashbackExportVerificationFormat(");
+        AssertContains(flashbackRecordingText, "private static string? ResolveFlashbackCodecDowngradeReason(");
         AssertDoesNotContain(flashbackRecordingText, "private FlashbackSessionContext CreateFlashbackSessionContext(");
 
         return Task.CompletedTask;
