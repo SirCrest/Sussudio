@@ -527,12 +527,9 @@ Automation diagnostics ownership:
   pipeline latency, preview surface visibility, renderer attachment, GPU
   playback state/position, preview HDR/tone-map/color metadata, and the frame,
   cadence, surface, startup, GPU-playback, and color groups consumed by
-  `AutomationSnapshot`, plus final preview runtime flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Cadence.cs`
-  owns preview display-cadence projection inputs and final field flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Startup.cs`
-  owns preview startup/readiness and renderer mode projection inputs and final
-  field flattening.
+  `AutomationSnapshot`, plus preview display-cadence projection inputs, preview
+  startup/readiness and renderer mode projection inputs, and final preview
+  runtime flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs`
   owns process memory, CPU, GC, and thread-pool projection consumed by
   `AutomationSnapshot`, plus final process resource

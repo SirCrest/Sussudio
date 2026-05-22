@@ -29,22 +29,18 @@ static partial class Program
         AssertContains(previewRuntimeProjectionText, "Color = BuildPreviewRuntimeColorFlattenedProjection(previewSummary.Color)");
         AssertContains(previewRuntimeProjectionText, "private readonly record struct PreviewRuntimeFlattenedProjection");
 
-        var previewRuntimeCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Cadence.cs")
-            .Replace("\r\n", "\n");
-        var previewRuntimeStartupProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Startup.cs")
-            .Replace("\r\n", "\n");
         AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeFrameProjection BuildPreviewRuntimeFrameProjection(");
         AssertContains(previewRuntimeProjectionText, "FramesArrived = previewRuntime.FramesArrived,");
         AssertContains(previewRuntimeProjectionText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs");
-        AssertContains(previewRuntimeCadenceProjectionText, "private static PreviewRuntimeCadenceProjection BuildPreviewRuntimeCadenceProjection(");
-        AssertContains(previewRuntimeCadenceProjectionText, "OnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,");
-        AssertContains(previewRuntimeCadenceProjectionText, "RecentIntervalsMs = previewRuntime.DisplayCadenceRecentIntervalsMs,");
-        AssertContains(previewRuntimeCadenceProjectionText, "SlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent");
+        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeCadenceProjection BuildPreviewRuntimeCadenceProjection(");
+        AssertContains(previewRuntimeProjectionText, "OnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,");
+        AssertContains(previewRuntimeProjectionText, "RecentIntervalsMs = previewRuntime.DisplayCadenceRecentIntervalsMs,");
+        AssertContains(previewRuntimeProjectionText, "SlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent");
         AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeSurfaceProjection BuildPreviewRuntimeSurfaceProjection(");
         AssertContains(previewRuntimeProjectionText, "RendererAttached = previewRuntime.RendererAttached");
-        AssertContains(previewRuntimeStartupProjectionText, "private static PreviewRuntimeStartupProjection BuildPreviewRuntimeStartupProjection(");
-        AssertContains(previewRuntimeStartupProjectionText, "Strategy = previewRuntime.StartupStrategy.ToString(),");
-        AssertContains(previewRuntimeStartupProjectionText, "RendererMode = previewRuntime.RendererMode");
+        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeStartupProjection BuildPreviewRuntimeStartupProjection(");
+        AssertContains(previewRuntimeProjectionText, "Strategy = previewRuntime.StartupStrategy.ToString(),");
+        AssertContains(previewRuntimeProjectionText, "RendererMode = previewRuntime.RendererMode");
         AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeGpuPlaybackProjection BuildPreviewRuntimeGpuPlaybackProjection(");
         AssertContains(previewRuntimeProjectionText, "PlaybackState = previewRuntime.GpuPlaybackState,");
         AssertContains(previewRuntimeProjectionText, "PositionEventCount = previewRuntime.GpuPositionEventCount");
@@ -55,14 +51,14 @@ static partial class Program
         AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeFrameFlattenedProjection BuildPreviewRuntimeFrameFlattenedProjection(");
         AssertContains(previewRuntimeProjectionText, "FramesArrived = frame.FramesArrived,");
         AssertContains(previewRuntimeProjectionText, "EstimatedPipelineLatencyMs = frame.EstimatedPipelineLatencyMs");
-        AssertContains(previewRuntimeCadenceProjectionText, "private static PreviewRuntimeCadenceFlattenedProjection BuildPreviewRuntimeCadenceFlattenedProjection(");
-        AssertContains(previewRuntimeCadenceProjectionText, "OnePercentLowFps = cadence.OnePercentLowFps,");
-        AssertContains(previewRuntimeCadenceProjectionText, "SlowFramePercent = cadence.SlowFramePercent");
+        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeCadenceFlattenedProjection BuildPreviewRuntimeCadenceFlattenedProjection(");
+        AssertContains(previewRuntimeProjectionText, "OnePercentLowFps = cadence.OnePercentLowFps,");
+        AssertContains(previewRuntimeProjectionText, "SlowFramePercent = cadence.SlowFramePercent");
         AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeSurfaceFlattenedProjection BuildPreviewRuntimeSurfaceFlattenedProjection(");
         AssertContains(previewRuntimeProjectionText, "RendererAttached = surface.RendererAttached");
-        AssertContains(previewRuntimeStartupProjectionText, "private static PreviewRuntimeStartupFlattenedProjection BuildPreviewRuntimeStartupFlattenedProjection(");
-        AssertContains(previewRuntimeStartupProjectionText, "Strategy = startup.Strategy,");
-        AssertContains(previewRuntimeStartupProjectionText, "RendererMode = startup.RendererMode");
+        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeStartupFlattenedProjection BuildPreviewRuntimeStartupFlattenedProjection(");
+        AssertContains(previewRuntimeProjectionText, "Strategy = startup.Strategy,");
+        AssertContains(previewRuntimeProjectionText, "RendererMode = startup.RendererMode");
         AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeGpuPlaybackFlattenedProjection BuildPreviewRuntimeGpuPlaybackFlattenedProjection(");
         AssertContains(previewRuntimeProjectionText, "PlaybackState = gpuPlayback.PlaybackState,");
         AssertContains(previewRuntimeProjectionText, "PositionEventCount = gpuPlayback.PositionEventCount");

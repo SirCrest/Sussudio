@@ -75,6 +75,82 @@ public sealed partial class AutomationDiagnosticsHub
         public long EstimatedPipelineLatencyMs { get; init; }
     }
 
+    private static PreviewRuntimeCadenceProjection BuildPreviewRuntimeCadenceProjection(
+        PreviewRuntimeSnapshot previewRuntime)
+        => new()
+        {
+            SampleCount = previewRuntime.DisplayCadenceSampleCount,
+            ObservedFps = previewRuntime.DisplayCadenceObservedFps,
+            ExpectedIntervalMs = previewRuntime.DisplayCadenceExpectedIntervalMs,
+            AverageIntervalMs = previewRuntime.DisplayCadenceAverageIntervalMs,
+            P95IntervalMs = previewRuntime.DisplayCadenceP95IntervalMs,
+            P99IntervalMs = previewRuntime.DisplayCadenceP99IntervalMs,
+            MaxIntervalMs = previewRuntime.DisplayCadenceMaxIntervalMs,
+            OnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,
+            FivePercentLowFps = previewRuntime.DisplayCadenceFivePercentLowFps,
+            SampleDurationMs = previewRuntime.DisplayCadenceSampleDurationMs,
+            RecentIntervalsMs = previewRuntime.DisplayCadenceRecentIntervalsMs,
+            JitterStdDevMs = previewRuntime.DisplayCadenceJitterStdDevMs,
+            SlowFrameCount = previewRuntime.DisplayCadenceSlowFrameCount,
+            SlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent
+        };
+
+    private static PreviewRuntimeCadenceFlattenedProjection BuildPreviewRuntimeCadenceFlattenedProjection(
+        PreviewRuntimeCadenceProjection cadence)
+        => new()
+        {
+            SampleCount = cadence.SampleCount,
+            ObservedFps = cadence.ObservedFps,
+            ExpectedIntervalMs = cadence.ExpectedIntervalMs,
+            AverageIntervalMs = cadence.AverageIntervalMs,
+            P95IntervalMs = cadence.P95IntervalMs,
+            P99IntervalMs = cadence.P99IntervalMs,
+            MaxIntervalMs = cadence.MaxIntervalMs,
+            OnePercentLowFps = cadence.OnePercentLowFps,
+            FivePercentLowFps = cadence.FivePercentLowFps,
+            SampleDurationMs = cadence.SampleDurationMs,
+            RecentIntervalsMs = cadence.RecentIntervalsMs,
+            JitterStdDevMs = cadence.JitterStdDevMs,
+            SlowFrameCount = cadence.SlowFrameCount,
+            SlowFramePercent = cadence.SlowFramePercent
+        };
+
+    private readonly record struct PreviewRuntimeCadenceProjection
+    {
+        public int SampleCount { get; init; }
+        public double ObservedFps { get; init; }
+        public double ExpectedIntervalMs { get; init; }
+        public double AverageIntervalMs { get; init; }
+        public double P95IntervalMs { get; init; }
+        public double P99IntervalMs { get; init; }
+        public double MaxIntervalMs { get; init; }
+        public double OnePercentLowFps { get; init; }
+        public double FivePercentLowFps { get; init; }
+        public double SampleDurationMs { get; init; }
+        public double[] RecentIntervalsMs { get; init; }
+        public double JitterStdDevMs { get; init; }
+        public long SlowFrameCount { get; init; }
+        public double SlowFramePercent { get; init; }
+    }
+
+    private readonly record struct PreviewRuntimeCadenceFlattenedProjection
+    {
+        public int SampleCount { get; init; }
+        public double ObservedFps { get; init; }
+        public double ExpectedIntervalMs { get; init; }
+        public double AverageIntervalMs { get; init; }
+        public double P95IntervalMs { get; init; }
+        public double P99IntervalMs { get; init; }
+        public double MaxIntervalMs { get; init; }
+        public double OnePercentLowFps { get; init; }
+        public double FivePercentLowFps { get; init; }
+        public double SampleDurationMs { get; init; }
+        public double[] RecentIntervalsMs { get; init; }
+        public double JitterStdDevMs { get; init; }
+        public long SlowFrameCount { get; init; }
+        public double SlowFramePercent { get; init; }
+    }
+
     private static PreviewRuntimeColorProjection BuildPreviewRuntimeColorProjection(
         PreviewHdrState previewHdrState,
         CaptureRuntimeSnapshot captureRuntime)
@@ -149,6 +225,94 @@ public sealed partial class AutomationDiagnosticsHub
         public bool GpuElementVisible { get; init; }
         public bool CpuElementVisible { get; init; }
         public bool RendererAttached { get; init; }
+    }
+
+    private static PreviewRuntimeStartupProjection BuildPreviewRuntimeStartupProjection(
+        PreviewRuntimeSnapshot previewRuntime)
+        => new()
+        {
+            State = previewRuntime.StartupState,
+            AttemptId = previewRuntime.StartupAttemptId,
+            ElapsedMs = previewRuntime.StartupElapsedMs,
+            TimeoutMs = previewRuntime.StartupTimeoutMs,
+            GpuSignalMediaOpened = previewRuntime.StartupGpuSignalMediaOpened,
+            GpuSignalFirstFrame = previewRuntime.StartupGpuSignalFirstFrame,
+            GpuSignalPlaybackAdvancing = previewRuntime.StartupGpuSignalPlaybackAdvancing,
+            RequiredSignals = previewRuntime.StartupRequiredSignals,
+            ReceivedSignals = previewRuntime.StartupReceivedSignals,
+            Strategy = previewRuntime.StartupStrategy.ToString(),
+            MissingSignals = previewRuntime.StartupMissingSignals,
+            RecoveryAttemptCount = previewRuntime.StartupRecoveryAttemptCount,
+            LastFailureReason = previewRuntime.StartupLastFailureReason,
+            FirstVisualConfirmed = previewRuntime.FirstVisualConfirmed,
+            BlankSuspected = previewRuntime.BlankSuspected,
+            Stalled = previewRuntime.StallSuspected,
+            RendererMode = previewRuntime.RendererMode
+        };
+
+    private static PreviewRuntimeStartupFlattenedProjection BuildPreviewRuntimeStartupFlattenedProjection(
+        PreviewRuntimeStartupProjection startup)
+        => new()
+        {
+            State = startup.State,
+            AttemptId = startup.AttemptId,
+            ElapsedMs = startup.ElapsedMs,
+            TimeoutMs = startup.TimeoutMs,
+            GpuSignalMediaOpened = startup.GpuSignalMediaOpened,
+            GpuSignalFirstFrame = startup.GpuSignalFirstFrame,
+            GpuSignalPlaybackAdvancing = startup.GpuSignalPlaybackAdvancing,
+            RequiredSignals = startup.RequiredSignals,
+            ReceivedSignals = startup.ReceivedSignals,
+            Strategy = startup.Strategy,
+            MissingSignals = startup.MissingSignals,
+            RecoveryAttemptCount = startup.RecoveryAttemptCount,
+            LastFailureReason = startup.LastFailureReason,
+            FirstVisualConfirmed = startup.FirstVisualConfirmed,
+            BlankSuspected = startup.BlankSuspected,
+            Stalled = startup.Stalled,
+            RendererMode = startup.RendererMode
+        };
+
+    private readonly record struct PreviewRuntimeStartupProjection
+    {
+        public string State { get; init; }
+        public string? AttemptId { get; init; }
+        public double? ElapsedMs { get; init; }
+        public int TimeoutMs { get; init; }
+        public bool GpuSignalMediaOpened { get; init; }
+        public bool GpuSignalFirstFrame { get; init; }
+        public bool GpuSignalPlaybackAdvancing { get; init; }
+        public PreviewStartupSignalFlags RequiredSignals { get; init; }
+        public PreviewStartupSignalFlags ReceivedSignals { get; init; }
+        public string Strategy { get; init; }
+        public string? MissingSignals { get; init; }
+        public int RecoveryAttemptCount { get; init; }
+        public string? LastFailureReason { get; init; }
+        public bool FirstVisualConfirmed { get; init; }
+        public bool BlankSuspected { get; init; }
+        public bool Stalled { get; init; }
+        public string RendererMode { get; init; }
+    }
+
+    private readonly record struct PreviewRuntimeStartupFlattenedProjection
+    {
+        public string State { get; init; }
+        public string? AttemptId { get; init; }
+        public double? ElapsedMs { get; init; }
+        public int TimeoutMs { get; init; }
+        public bool GpuSignalMediaOpened { get; init; }
+        public bool GpuSignalFirstFrame { get; init; }
+        public bool GpuSignalPlaybackAdvancing { get; init; }
+        public PreviewStartupSignalFlags RequiredSignals { get; init; }
+        public PreviewStartupSignalFlags ReceivedSignals { get; init; }
+        public string Strategy { get; init; }
+        public string? MissingSignals { get; init; }
+        public int RecoveryAttemptCount { get; init; }
+        public string? LastFailureReason { get; init; }
+        public bool FirstVisualConfirmed { get; init; }
+        public bool BlankSuspected { get; init; }
+        public bool Stalled { get; init; }
+        public string RendererMode { get; init; }
     }
 
     private static PreviewRuntimeGpuPlaybackProjection BuildPreviewRuntimeGpuPlaybackProjection(

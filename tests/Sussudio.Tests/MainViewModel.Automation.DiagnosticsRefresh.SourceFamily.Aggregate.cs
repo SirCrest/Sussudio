@@ -53,8 +53,6 @@ static partial class Program
                 SnapshotProjectionPreviewD3DText,
                 SnapshotProjectionPreviewD3DFrameFlowText,
                 SnapshotProjectionPreviewRuntimeText,
-                SnapshotProjectionPreviewRuntimeCadenceText,
-                SnapshotProjectionPreviewRuntimeStartupText,
                 SnapshotProjectionProcessResourcesText,
                 SnapshotProjectionRecordingIntegrityText,
                 SnapshotProjectionRecordingPipelineText,

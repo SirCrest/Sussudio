@@ -270,12 +270,8 @@ runtime projection routing, preview frame counters, estimated pipeline latency,
 preview surface visibility, renderer attachment, GPU playback state/position,
 preview HDR/tone-map/color metadata, and the frame, cadence, surface, startup,
 GPU-playback, and color groups consumed by the automation snapshot DTO, plus
-final preview runtime flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Cadence.cs` owns
-preview display-cadence projection inputs and final field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Startup.cs` owns
-preview startup/readiness and renderer mode projection inputs and final field
-flattening.
+preview display-cadence projection inputs, preview startup/readiness and
+renderer mode projection inputs, and final preview runtime flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs` owns process
 memory, CPU, GC, and thread-pool projection consumed by the automation snapshot
 DTO, plus final process resource projection-to-`AutomationSnapshot` field
