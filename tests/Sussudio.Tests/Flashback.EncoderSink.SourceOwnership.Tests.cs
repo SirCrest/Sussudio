@@ -381,46 +381,44 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackEncoderSink_RuntimeStateLivesInFocusedPartials()
+    internal static Task FlashbackEncoderSink_RuntimeStateLivesInCohesivePartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
-        var countersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.Counters.cs")
-            .Replace("\r\n", "\n");
-        var queueMetricsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.QueueMetrics.cs")
-            .Replace("\r\n", "\n");
-        var statusText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.Status.cs")
+        var runtimeStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.cs")
             .Replace("\r\n", "\n");
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
             ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
 
-        AssertContains(countersText, "public event EventHandler<long>? FrameEncoded;");
-        AssertContains(countersText, "public long DroppedVideoFrames =>");
-        AssertContains(countersText, "public long VideoFramesSubmittedToEncoder =>");
-        AssertContains(countersText, "public long SegmentRotationFailures =>");
-        AssertDoesNotContain(countersText, "public void SetFatalErrorCallback");
-        AssertDoesNotContain(countersText, "public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics");
-
-        AssertContains(queueMetricsText, "public int VideoQueueCount =>");
-        AssertContains(queueMetricsText, "public long VideoQueueRejectedFrames =>");
-        AssertContains(queueMetricsText, "public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics");
-        AssertContains(queueMetricsText, "public long GpuQueueRejectedFrames =>");
-        AssertDoesNotContain(queueMetricsText, "public bool EncodingFailed =>");
-        AssertDoesNotContain(queueMetricsText, "public string? CodecName =>");
-
-        AssertContains(statusText, "public bool EncodingFailed =>");
-        AssertContains(statusText, "public void SetFatalErrorCallback(Action<Exception>? callback)");
-        AssertContains(statusText, "public string? CodecName =>");
-        AssertContains(statusText, "public bool? IsP010 =>");
-        AssertContains(statusText, "internal Task EncodingCompletionTask =>");
-        AssertDoesNotContain(statusText, "public long DroppedVideoFrames =>");
-        AssertDoesNotContain(statusText, "public int VideoQueueCount =>");
+        AssertContains(runtimeStateText, "public event EventHandler<long>? FrameEncoded;");
+        AssertContains(runtimeStateText, "public long DroppedVideoFrames =>");
+        AssertContains(runtimeStateText, "public long VideoFramesSubmittedToEncoder =>");
+        AssertContains(runtimeStateText, "public long SegmentRotationFailures =>");
+        AssertContains(runtimeStateText, "public int VideoQueueCount =>");
+        AssertContains(runtimeStateText, "public long VideoQueueRejectedFrames =>");
+        AssertContains(runtimeStateText, "public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics");
+        AssertContains(runtimeStateText, "public long GpuQueueRejectedFrames =>");
+        AssertContains(runtimeStateText, "public bool EncodingFailed =>");
+        AssertContains(runtimeStateText, "public void SetFatalErrorCallback(Action<Exception>? callback)");
+        AssertContains(runtimeStateText, "public string? CodecName =>");
+        AssertContains(runtimeStateText, "public bool? IsP010 =>");
+        AssertContains(runtimeStateText, "internal Task EncodingCompletionTask =>");
 
         AssertDoesNotContain(rootText, "public event EventHandler<long>? FrameEncoded;");
-        AssertContains(docsText, "FlashbackEncoderSink.RuntimeState.Counters.cs");
-        AssertContains(docsText, "FlashbackEncoderSink.RuntimeState.QueueMetrics.cs");
-        AssertContains(docsText, "FlashbackEncoderSink.RuntimeState.Status.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.RuntimeState.cs");
+        foreach (var removedFile in new[]
+        {
+            "FlashbackEncoderSink.RuntimeState.Counters.cs",
+            "FlashbackEncoderSink.RuntimeState.QueueMetrics.cs",
+            "FlashbackEncoderSink.RuntimeState.Status.cs"
+        })
+        {
+            AssertEqual(
+                false,
+                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
+                $"{removedFile} folded into FlashbackEncoderSink.RuntimeState.cs");
+        }
 
         return Task.CompletedTask;
     }

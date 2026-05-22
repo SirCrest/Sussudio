@@ -103,8 +103,8 @@ public sealed class FlashbackEncoderSinkContractsTests
         => global::Program.FlashbackEncoderSink_ProducerInputsLiveInFocusedPartials();
 
     [Fact]
-    public Task FlashbackEncoderSinkRuntimeStateLivesInFocusedPartials()
-        => global::Program.FlashbackEncoderSink_RuntimeStateLivesInFocusedPartials();
+    public Task FlashbackEncoderSinkRuntimeStateLivesInCohesivePartial()
+        => global::Program.FlashbackEncoderSink_RuntimeStateLivesInCohesivePartial();
 
     [Fact]
     public Task FlashbackEncoderSinkRecordingLifecycleLivesInFocusedPartials()
