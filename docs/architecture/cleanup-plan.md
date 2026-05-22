@@ -1039,15 +1039,11 @@ encoding contracts in xUnit after their removal from the legacy D3D harness
 catalog. The empty legacy D3D catalog hook was removed after this final group
 moved to xUnit.
 
-Fullscreen transition mechanics now live under the
-`Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the
-root controller to the public toggle/state surface,
-`FullScreenController.Transitions.cs` to enter/exit orchestration,
-`FullScreenController.Animation.cs` to rect animation,
-`FullScreenController.Chrome.cs` to chrome/material state, and
-`FullScreenController.Controls.cs` to overlay pointer/auto-hide behavior plus
-full-screen key routing, while timeline eligibility lives inside the controller
-family. `.Composition.cs` wires controller callbacks directly into the FullScreen
+Fullscreen transition mechanics now live in
+`Sussudio/Controllers/FullScreen/FullScreenController.cs`. Keep the controller
+as the single owner for public toggle/state, enter/exit orchestration, rect
+animation, chrome/material state, overlay pointer/auto-hide behavior, full-screen
+key routing, and timeline eligibility. `.Composition.cs` wires controller callbacks directly into the FullScreen
 context, `.Commands.cs` owns button/menu/double-tap and automation command
 adapters, `.Input.cs` owns key routing, and `.Overlay.cs` owns pointer and
 auto-hide adapters. Flashback command execution remains in

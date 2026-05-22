@@ -5,14 +5,6 @@ static partial class Program
         var fullScreenSource = ReadMainWindowFullScreenAdapterSource();
         var fullScreenControllerRootSource = ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.cs")
             .Replace("\r\n", "\n");
-        var fullScreenControllerTransitionSource = ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Transitions.cs")
-            .Replace("\r\n", "\n");
-        var fullScreenControllerAnimationSource = ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Animation.cs")
-            .Replace("\r\n", "\n");
-        var fullScreenControllerChromeSource = ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Chrome.cs")
-            .Replace("\r\n", "\n");
-        var fullScreenControllerControlsSource = ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Controls.cs")
-            .Replace("\r\n", "\n");
         var closeLifecycleSource = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs")
             .Replace("\r\n", "\n");
         var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Dispatching.cs")
@@ -24,29 +16,24 @@ static partial class Program
         AssertContains(fullScreenSource, "private void OnContentKeyDown(object sender, KeyRoutedEventArgs e)\n        => _fullScreenController.OnKeyDown(e);");
         AssertContains(fullScreenSource, "private Task EnterFullScreenAsync()\n        => _fullScreenController.EnterAsync();");
         AssertContains(fullScreenSource, "private Task ExitFullScreenAsync()\n        => _fullScreenController.ExitAsync();");
-        AssertContains(fullScreenControllerRootSource, "internal sealed partial class FullScreenController");
-        AssertContains(fullScreenControllerTransitionSource, "public async Task EnterAsync()");
-        AssertContains(fullScreenControllerTransitionSource, "public async Task ExitAsync()");
-        AssertContains(fullScreenControllerTransitionSource, "await AnimateFullScreenRectAsync(");
-        AssertContains(fullScreenControllerAnimationSource, "private Task AnimateFullScreenRectAsync(");
-        AssertContains(fullScreenControllerAnimationSource, "return completion.Task;");
-        AssertContains(fullScreenControllerChromeSource, "private void PrepareChromeForOverlay()");
-        AssertContains(fullScreenControllerControlsSource, "public void OnKeyDown(KeyRoutedEventArgs e)");
-        AssertContains(fullScreenControllerControlsSource, "if (e.Key == Windows.System.VirtualKey.Escape && _isFullScreen)");
-        AssertContains(fullScreenControllerControlsSource, "Exit();");
-        AssertContains(fullScreenControllerControlsSource, "public void OnPointerActivity(PointerRoutedEventArgs e)");
-        AssertContains(fullScreenControllerControlsSource, "private void ShowControls()");
-        AssertDoesNotContain(fullScreenControllerRootSource, "public async Task EnterAsync()");
-        AssertDoesNotContain(fullScreenControllerRootSource, "private Task AnimateFullScreenRectAsync(");
-        AssertDoesNotContain(fullScreenControllerRootSource, "private void ShowControls()");
+        AssertContains(fullScreenControllerRootSource, "internal sealed class FullScreenController");
+        AssertContains(fullScreenControllerRootSource, "public async Task EnterAsync()");
+        AssertContains(fullScreenControllerRootSource, "public async Task ExitAsync()");
+        AssertContains(fullScreenControllerRootSource, "await AnimateFullScreenRectAsync(");
+        AssertContains(fullScreenControllerRootSource, "private Task AnimateFullScreenRectAsync(");
+        AssertContains(fullScreenControllerRootSource, "return completion.Task;");
+        AssertContains(fullScreenControllerRootSource, "private void PrepareChromeForOverlay()");
+        AssertContains(fullScreenControllerRootSource, "public void OnKeyDown(KeyRoutedEventArgs e)");
+        AssertContains(fullScreenControllerRootSource, "if (e.Key == Windows.System.VirtualKey.Escape && _isFullScreen)");
+        AssertContains(fullScreenControllerRootSource, "Exit();");
+        AssertContains(fullScreenControllerRootSource, "public void OnPointerActivity(PointerRoutedEventArgs e)");
+        AssertContains(fullScreenControllerRootSource, "private void ShowControls()");
+        AssertDoesNotContain(fullScreenControllerRootSource, "partial class FullScreenController");
         AssertDoesNotContain(fullScreenSource, "private async void EnterFullScreen");
         AssertDoesNotContain(fullScreenSource, "private async void ExitFullScreen");
         AssertDoesNotContain(fullScreenSource, "Windows.System.VirtualKey.Escape");
         AssertDoesNotContain(fullScreenSource, "HandleFlashbackFullScreenKeyDown");
         AssertDoesNotContain(fullScreenControllerRootSource, "async void");
-        AssertDoesNotContain(fullScreenControllerTransitionSource, "async void");
-        AssertDoesNotContain(fullScreenControllerAnimationSource, "async void");
-        AssertDoesNotContain(fullScreenControllerControlsSource, "async void");
         AssertContains(dispatchingSource, "private Task InvokeOnUiThreadAsync(Func<Task> action, CancellationToken cancellationToken = default)");
         AssertContains(dispatchingSource, "=> WindowUiDispatchController.InvokeAsync(action, cancellationToken);");
         AssertContains(dispatchControllerSource, "await action().ConfigureAwait(true);");

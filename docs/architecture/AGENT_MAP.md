@@ -1309,10 +1309,9 @@ Primary current owners:
 - `Sussudio/MainWindow.*.cs` for shell, renderer, fullscreen, screenshots,
   animations, and window lifecycle.
 - `Sussudio/Controllers/FullScreen/FullScreenController.cs` owns fullscreen public
-  toggle/state and shared context; `Sussudio/Controllers/FullScreen/FullScreenController.Transitions.cs` owns
-  enter/exit orchestration, `Sussudio/Controllers/FullScreen/FullScreenController.Animation.cs` owns rect
-  animation and size waits, `Sussudio/Controllers/FullScreen/FullScreenController.Chrome.cs` owns chrome/material
-  state, and `Sussudio/Controllers/FullScreen/FullScreenController.Controls.cs` owns overlay pointer/auto-hide
+  toggle/state, enter/exit orchestration, rect animation and size waits,
+  chrome/material state, overlay pointer/auto-hide behavior, and full-screen key
+  routing behind the shared full-screen context.
   behavior plus full-screen key routing and timeline eligibility.
   `Sussudio/MainWindow.FullScreen.Composition.cs` wires the controller context,
   button/menu/double-tap and automation command adapters, key routing, pointer,

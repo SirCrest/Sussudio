@@ -23,11 +23,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var fullScreenWindowText = ReadMainWindowFullScreenAdapterSource();
-        var fullScreenControllerText = (
-            ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.cs")
-            + "\n" + ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Transitions.cs")
-            + "\n" + ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Chrome.cs")
-            + "\n" + ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Controls.cs"))
+        var fullScreenControllerText = ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.cs")
             .Replace("\r\n", "\n");
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml")
             .Replace("\r\n", "\n");
