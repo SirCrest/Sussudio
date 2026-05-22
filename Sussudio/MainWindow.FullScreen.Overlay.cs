@@ -4,6 +4,9 @@ namespace Sussudio;
 
 public sealed partial class MainWindow
 {
+    private void OnContentKeyDown(object sender, KeyRoutedEventArgs e)
+        => _fullScreenController.OnKeyDown(e);
+
     private void OnFullScreenPointerActivity(object sender, PointerRoutedEventArgs e)
         => _fullScreenController.OnPointerActivity(e);
 

@@ -1050,8 +1050,7 @@ root controller to the public toggle/state surface,
 `FullScreenController.Chrome.cs` to chrome/material state, and
 `FullScreenController.Controls.cs` to overlay pointer/auto-hide behavior plus
 full-screen key routing, while timeline eligibility lives inside the controller
-family. `MainWindow.FullScreen.cs` is now the XAML adapter family marker,
-`.Composition.cs` wires controller callbacks directly into the FullScreen
+family. `.Composition.cs` wires controller callbacks directly into the FullScreen
 context, `.Commands.cs` owns button/menu/double-tap and automation command
 adapters, `.Input.cs` owns key routing, and `.Overlay.cs` owns pointer and
 auto-hide adapters. Flashback command execution remains in
