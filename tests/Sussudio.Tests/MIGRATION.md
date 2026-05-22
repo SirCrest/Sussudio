@@ -233,7 +233,7 @@ add xUnit alongside, and port incrementally.
   the former legacy presentation-preview MainViewModel audio-control group:
   analog gain mapping, preview audio monitoring volume persistence, microphone
   and device guards, device-audio request lifetime, audio-device selection
-  policy, native XU audio-control profiles/transport, and audio meter callback
+  policy, native XU audio-control service cohesion, and audio meter callback
   ownership checks.
 - `XUnit.PresentationPreviewResponsiveLayoutContractsTests.cs` owns the former
   legacy presentation-preview MainWindow responsive shell layout and breakpoint

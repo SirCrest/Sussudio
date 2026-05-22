@@ -47,12 +47,8 @@ public sealed class PresentationPreviewMainViewModelAudioControlsContractsTests
         => global::Program.AudioDeviceSelectionPolicy_EmptyListsReturnNullSelections();
 
     [Fact]
-    public Task NativeXuAudioControlProfilesLiveInFocusedPartial()
-        => global::Program.NativeXuAudioControlService_ProfilesLiveInFocusedPartial();
-
-    [Fact]
-    public Task NativeXuAudioControlTransportLivesInFocusedPartial()
-        => global::Program.NativeXuAudioControlService_TransportLivesInFocusedPartial();
+    public Task NativeXuAudioControlServiceLivesInCohesiveServiceFile()
+        => global::Program.NativeXuAudioControlService_LivesInCohesiveServiceFile();
 
     [Fact]
     public Task AudioMetersOwnCallbackMeterState()

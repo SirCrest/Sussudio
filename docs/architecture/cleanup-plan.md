@@ -164,14 +164,13 @@ constants/P/Invokes and shared COM release/failure helpers.
 parsing, and sample-type classification. `WasapiComInterop.DeviceClients.cs`
 owns device enumerator activation, endpoint volume helpers, AudioClient
 activation, and AudioClient3 shared-stream initialization.
-`NativeXuAudioControlService.Profiles.cs` owns 4K X selector-3 byte indexes,
-HDMI/Analog reference payloads, gain-profile placeholders, hex parsing, and
-payload decode/confidence helpers. `NativeXuAudioControlService.Transport.cs`
-owns selector-3 payload read/update workflow and verification against mutated
-control bytes. `NativeXuAudioControlService.RawTransport.cs` owns dev-specific
-candidate enumeration, raw XU GET/SET, raw payload normalization/rehydration,
-and retrying the shared native transport gate from `NativeXuDeviceSupport.cs`.
-`NativeXuAudioControlService.cs` owns the public service flow and snapshot DTOs.
+`NativeXuAudioControlService.cs` owns the public service flow, snapshot DTOs,
+4K X selector-3 byte indexes, HDMI/Analog reference payloads, gain-profile
+placeholders, hex parsing, payload decode/confidence helpers, selector-3
+payload read/update workflow, verification against mutated control bytes,
+dev-specific candidate enumeration, raw XU GET/SET, raw payload
+normalization/rehydration, and retrying the shared native transport gate from
+`NativeXuDeviceSupport.cs`.
 `AutomationDiagnosticsHub.SnapshotProjection.WasapiAudio.cs` owns WASAPI
 capture/playback callback, queue, gap, glitch, and latency projection plus
 flattened WASAPI capture/playback fields consumed by the automation snapshot
@@ -927,7 +926,7 @@ Presentation-preview MainViewModel audio-control checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelAudioControlsContractsTests.cs`,
 keeping analog gain mapping, preview audio monitoring volume persistence,
 microphone and device guards, device-audio request lifetime, audio-device
-selection policy, native XU audio-control profiles/transport, and audio meter
+selection policy, native XU audio-control service cohesion, and audio meter
 callback ownership contracts in xUnit after their removal from the legacy
 harness catalog.
 Presentation-preview responsive layout checks now execute through
