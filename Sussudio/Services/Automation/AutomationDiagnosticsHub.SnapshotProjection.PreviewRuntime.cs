@@ -18,6 +18,18 @@ public sealed partial class AutomationDiagnosticsHub
             Color = BuildPreviewRuntimeColorProjection(previewHdrState, captureRuntime)
         };
 
+    private static PreviewRuntimeFlattenedProjection BuildPreviewRuntimeFlattenedProjection(
+        PreviewRuntimeProjection previewSummary)
+        => new()
+        {
+            Frame = BuildPreviewRuntimeFrameFlattenedProjection(previewSummary.Frame),
+            Cadence = BuildPreviewRuntimeCadenceFlattenedProjection(previewSummary.Cadence),
+            Surface = BuildPreviewRuntimeSurfaceFlattenedProjection(previewSummary.Surface),
+            Startup = BuildPreviewRuntimeStartupFlattenedProjection(previewSummary.Startup),
+            GpuPlayback = BuildPreviewRuntimeGpuPlaybackFlattenedProjection(previewSummary.GpuPlayback),
+            Color = BuildPreviewRuntimeColorFlattenedProjection(previewSummary.Color)
+        };
+
     private readonly record struct PreviewRuntimeProjection
     {
         public PreviewRuntimeFrameProjection Frame { get; init; }
@@ -26,5 +38,15 @@ public sealed partial class AutomationDiagnosticsHub
         public PreviewRuntimeStartupProjection Startup { get; init; }
         public PreviewRuntimeGpuPlaybackProjection GpuPlayback { get; init; }
         public PreviewRuntimeColorProjection Color { get; init; }
+    }
+
+    private readonly record struct PreviewRuntimeFlattenedProjection
+    {
+        public PreviewRuntimeFrameFlattenedProjection Frame { get; init; }
+        public PreviewRuntimeCadenceFlattenedProjection Cadence { get; init; }
+        public PreviewRuntimeSurfaceFlattenedProjection Surface { get; init; }
+        public PreviewRuntimeStartupFlattenedProjection Startup { get; init; }
+        public PreviewRuntimeGpuPlaybackFlattenedProjection GpuPlayback { get; init; }
+        public PreviewRuntimeColorFlattenedProjection Color { get; init; }
     }
 }

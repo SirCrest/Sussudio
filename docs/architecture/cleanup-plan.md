@@ -389,35 +389,25 @@ DXGI frame-statistics projection, including recent missed-refresh and stats
 failure deltas.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs` owns preview
 runtime projection routing and groups frame, cadence, surface, startup,
-GPU-playback, and color input modules consumed by the automation snapshot DTO.
+GPU-playback, and color modules consumed by the automation snapshot DTO, plus
+final preview runtime flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Frame.cs` owns
-preview frame counters and estimated pipeline latency projection inputs.
+preview frame counters and estimated pipeline latency projection inputs and
+final field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Cadence.cs` owns
-preview display-cadence projection inputs.
+preview display-cadence projection inputs and final field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Surface.cs` owns
-preview surface visibility and renderer-attachment projection inputs.
+preview surface visibility and renderer-attachment projection inputs and final
+field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Startup.cs` owns
-preview startup/readiness and renderer mode projection inputs.
+preview startup/readiness and renderer mode projection inputs and final field
+flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.GpuPlayback.cs` owns
-preview GPU playback state and position projection inputs.
+preview GPU playback state and position projection inputs and final field
+flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Color.cs` owns
-preview HDR, tone-map, color-context, and adapter metadata projection inputs.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.cs`
-owns final preview runtime projection-to-`AutomationSnapshot` field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.Frame.cs`
-owns final preview frame-counter and estimated-pipeline-latency field
-flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.Cadence.cs`
-owns final preview display-cadence field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.Surface.cs`
-owns final preview surface visibility and renderer-attachment field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.Startup.cs`
-owns final preview startup/readiness field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.GpuPlayback.cs`
-owns final preview GPU playback state and position field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.Color.cs`
-owns final preview HDR, tone-map, color-context, and adapter metadata field
-flattening.
+preview HDR, tone-map, color-context, and adapter metadata projection inputs and
+final field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs` owns process
 memory, CPU, GC, and thread-pool projection consumed by the automation snapshot
 DTO.

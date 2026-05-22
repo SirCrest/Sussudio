@@ -7,8 +7,6 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var snapshotFlatteningPreviewRuntimeText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.cs")
-            .Replace("\r\n", "\n");
         var previewRuntimeProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs")
             .Replace("\r\n", "\n");
 
@@ -22,14 +20,14 @@ static partial class Program
         AssertContains(snapshotFlatteningText, "PreviewGpuPlaybackState = previewRuntimeFlattening.GpuPlayback.PlaybackState,");
         AssertContains(snapshotFlatteningText, "PreviewColorContext = previewRuntimeFlattening.Color.ColorContext,");
         AssertContains(snapshotFlatteningText, "PreviewAdapterColorMetadata = previewRuntimeFlattening.Color.AdapterColorMetadata,");
-        AssertContains(snapshotFlatteningPreviewRuntimeText, "private static PreviewRuntimeFlattenedProjection BuildPreviewRuntimeFlattenedProjection(");
-        AssertContains(snapshotFlatteningPreviewRuntimeText, "Frame = BuildPreviewRuntimeFrameFlattenedProjection(previewSummary.Frame),");
-        AssertContains(snapshotFlatteningPreviewRuntimeText, "Cadence = BuildPreviewRuntimeCadenceFlattenedProjection(previewSummary.Cadence),");
-        AssertContains(snapshotFlatteningPreviewRuntimeText, "Surface = BuildPreviewRuntimeSurfaceFlattenedProjection(previewSummary.Surface),");
-        AssertContains(snapshotFlatteningPreviewRuntimeText, "Startup = BuildPreviewRuntimeStartupFlattenedProjection(previewSummary.Startup),");
-        AssertContains(snapshotFlatteningPreviewRuntimeText, "GpuPlayback = BuildPreviewRuntimeGpuPlaybackFlattenedProjection(previewSummary.GpuPlayback),");
-        AssertContains(snapshotFlatteningPreviewRuntimeText, "Color = BuildPreviewRuntimeColorFlattenedProjection(previewSummary.Color)");
-        AssertContains(snapshotFlatteningPreviewRuntimeText, "private readonly record struct PreviewRuntimeFlattenedProjection");
+        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeFlattenedProjection BuildPreviewRuntimeFlattenedProjection(");
+        AssertContains(previewRuntimeProjectionText, "Frame = BuildPreviewRuntimeFrameFlattenedProjection(previewSummary.Frame),");
+        AssertContains(previewRuntimeProjectionText, "Cadence = BuildPreviewRuntimeCadenceFlattenedProjection(previewSummary.Cadence),");
+        AssertContains(previewRuntimeProjectionText, "Surface = BuildPreviewRuntimeSurfaceFlattenedProjection(previewSummary.Surface),");
+        AssertContains(previewRuntimeProjectionText, "Startup = BuildPreviewRuntimeStartupFlattenedProjection(previewSummary.Startup),");
+        AssertContains(previewRuntimeProjectionText, "GpuPlayback = BuildPreviewRuntimeGpuPlaybackFlattenedProjection(previewSummary.GpuPlayback),");
+        AssertContains(previewRuntimeProjectionText, "Color = BuildPreviewRuntimeColorFlattenedProjection(previewSummary.Color)");
+        AssertContains(previewRuntimeProjectionText, "private readonly record struct PreviewRuntimeFlattenedProjection");
 
         var previewRuntimeFrameProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Frame.cs")
             .Replace("\r\n", "\n");
@@ -43,19 +41,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewRuntimeColorProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.Color.cs")
             .Replace("\r\n", "\n");
-        var snapshotFlatteningPreviewRuntimeFrameText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.Frame.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningPreviewRuntimeCadenceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.Cadence.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningPreviewRuntimeSurfaceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.Surface.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningPreviewRuntimeStartupText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.Startup.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningPreviewRuntimeGpuPlaybackText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.GpuPlayback.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningPreviewRuntimeColorText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewRuntime.Color.cs")
-            .Replace("\r\n", "\n");
-
         AssertContains(previewRuntimeFrameProjectionText, "private static PreviewRuntimeFrameProjection BuildPreviewRuntimeFrameProjection(");
         AssertContains(previewRuntimeFrameProjectionText, "FramesArrived = previewRuntime.FramesArrived,");
         AssertContains(previewRuntimeFrameProjectionText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs");
@@ -75,23 +60,23 @@ static partial class Program
         AssertContains(previewRuntimeColorProjectionText, "HdrInputDetected = previewHdrState.InputDetected,");
         AssertContains(previewRuntimeColorProjectionText, "AdapterColorMetadata = captureRuntime.PreviewColorMetadata");
 
-        AssertContains(snapshotFlatteningPreviewRuntimeFrameText, "private static PreviewRuntimeFrameFlattenedProjection BuildPreviewRuntimeFrameFlattenedProjection(");
-        AssertContains(snapshotFlatteningPreviewRuntimeFrameText, "FramesArrived = frame.FramesArrived,");
-        AssertContains(snapshotFlatteningPreviewRuntimeFrameText, "EstimatedPipelineLatencyMs = frame.EstimatedPipelineLatencyMs");
-        AssertContains(snapshotFlatteningPreviewRuntimeCadenceText, "private static PreviewRuntimeCadenceFlattenedProjection BuildPreviewRuntimeCadenceFlattenedProjection(");
-        AssertContains(snapshotFlatteningPreviewRuntimeCadenceText, "OnePercentLowFps = cadence.OnePercentLowFps,");
-        AssertContains(snapshotFlatteningPreviewRuntimeCadenceText, "SlowFramePercent = cadence.SlowFramePercent");
-        AssertContains(snapshotFlatteningPreviewRuntimeSurfaceText, "private static PreviewRuntimeSurfaceFlattenedProjection BuildPreviewRuntimeSurfaceFlattenedProjection(");
-        AssertContains(snapshotFlatteningPreviewRuntimeSurfaceText, "RendererAttached = surface.RendererAttached");
-        AssertContains(snapshotFlatteningPreviewRuntimeStartupText, "private static PreviewRuntimeStartupFlattenedProjection BuildPreviewRuntimeStartupFlattenedProjection(");
-        AssertContains(snapshotFlatteningPreviewRuntimeStartupText, "Strategy = startup.Strategy,");
-        AssertContains(snapshotFlatteningPreviewRuntimeStartupText, "RendererMode = startup.RendererMode");
-        AssertContains(snapshotFlatteningPreviewRuntimeGpuPlaybackText, "private static PreviewRuntimeGpuPlaybackFlattenedProjection BuildPreviewRuntimeGpuPlaybackFlattenedProjection(");
-        AssertContains(snapshotFlatteningPreviewRuntimeGpuPlaybackText, "PlaybackState = gpuPlayback.PlaybackState,");
-        AssertContains(snapshotFlatteningPreviewRuntimeGpuPlaybackText, "PositionEventCount = gpuPlayback.PositionEventCount");
-        AssertContains(snapshotFlatteningPreviewRuntimeColorText, "private static PreviewRuntimeColorFlattenedProjection BuildPreviewRuntimeColorFlattenedProjection(");
-        AssertContains(snapshotFlatteningPreviewRuntimeColorText, "ColorContext = color.ColorContext,");
-        AssertContains(snapshotFlatteningPreviewRuntimeColorText, "AdapterColorMetadata = color.AdapterColorMetadata");
+        AssertContains(previewRuntimeFrameProjectionText, "private static PreviewRuntimeFrameFlattenedProjection BuildPreviewRuntimeFrameFlattenedProjection(");
+        AssertContains(previewRuntimeFrameProjectionText, "FramesArrived = frame.FramesArrived,");
+        AssertContains(previewRuntimeFrameProjectionText, "EstimatedPipelineLatencyMs = frame.EstimatedPipelineLatencyMs");
+        AssertContains(previewRuntimeCadenceProjectionText, "private static PreviewRuntimeCadenceFlattenedProjection BuildPreviewRuntimeCadenceFlattenedProjection(");
+        AssertContains(previewRuntimeCadenceProjectionText, "OnePercentLowFps = cadence.OnePercentLowFps,");
+        AssertContains(previewRuntimeCadenceProjectionText, "SlowFramePercent = cadence.SlowFramePercent");
+        AssertContains(previewRuntimeSurfaceProjectionText, "private static PreviewRuntimeSurfaceFlattenedProjection BuildPreviewRuntimeSurfaceFlattenedProjection(");
+        AssertContains(previewRuntimeSurfaceProjectionText, "RendererAttached = surface.RendererAttached");
+        AssertContains(previewRuntimeStartupProjectionText, "private static PreviewRuntimeStartupFlattenedProjection BuildPreviewRuntimeStartupFlattenedProjection(");
+        AssertContains(previewRuntimeStartupProjectionText, "Strategy = startup.Strategy,");
+        AssertContains(previewRuntimeStartupProjectionText, "RendererMode = startup.RendererMode");
+        AssertContains(previewRuntimeGpuPlaybackProjectionText, "private static PreviewRuntimeGpuPlaybackFlattenedProjection BuildPreviewRuntimeGpuPlaybackFlattenedProjection(");
+        AssertContains(previewRuntimeGpuPlaybackProjectionText, "PlaybackState = gpuPlayback.PlaybackState,");
+        AssertContains(previewRuntimeGpuPlaybackProjectionText, "PositionEventCount = gpuPlayback.PositionEventCount");
+        AssertContains(previewRuntimeColorProjectionText, "private static PreviewRuntimeColorFlattenedProjection BuildPreviewRuntimeColorFlattenedProjection(");
+        AssertContains(previewRuntimeColorProjectionText, "ColorContext = color.ColorContext,");
+        AssertContains(previewRuntimeColorProjectionText, "AdapterColorMetadata = color.AdapterColorMetadata");
         AssertDoesNotContain(snapshotFlatteningText, "PreviewFramesArrived = previewRuntime.FramesArrived,");
         AssertDoesNotContain(snapshotFlatteningText, "PreviewFramesArrived = previewSummary.FramesArrived,");
         AssertDoesNotContain(snapshotFlatteningText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs,");
