@@ -3521,17 +3521,9 @@ resolution/frame-rate/string ComboBox selection and fallback matching, and
 `.DeviceAudio.cs` owns device-audio mode/gain projection. `.PropertyChanges.cs`
 owns the capture-selection `PropertyChanged` router, while
 `Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs` keeps controller
-instantiation, XAML dependency wiring, the collection binding adapter, and the
-property router adapter,
-`Sussudio/MainWindow.CaptureSelectionBindings.DeviceSelection.cs` keeps
-device-selection and apply-button adapters,
-`Sussudio/MainWindow.CaptureSelectionBindings.AudioSelection.cs` keeps audio
-input and microphone adapters, `Sussudio/MainWindow.CaptureSelectionBindings.DeviceAudio.cs`
-keeps device-audio mode/gain adapters,
-`Sussudio/MainWindow.CaptureSelectionBindings.CaptureMode.cs` keeps
-resolution/frame-rate adapters, and
-`Sussudio/MainWindow.CaptureSelectionBindings.RecordingSelection.cs` keeps
-recording format/quality/preset/split-encode adapters while preserving the old
+instantiation, XAML dependency wiring, collection/property-change adapters, and
+the thin XAML-facing selection bridges for device, audio, device-audio,
+capture-mode, and recording option selection while preserving the old
 method names for binding setup and cross-controller calls.
 
 Capture-device refresh/apply button workflows now live in

@@ -3347,18 +3347,9 @@ Primary current owners:
   `Sussudio/Controllers/Capture/CaptureSelectionBindingController.PropertyChanges.cs`
   owns the capture-selection `PropertyChanged` router.
   `Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs` owns controller
-  instantiation, XAML dependency wiring, the collection binding adapter, and the
-  property router adapter,
-  `Sussudio/MainWindow.CaptureSelectionBindings.DeviceSelection.cs` owns
-  device-selection and apply-button adapters,
-  `Sussudio/MainWindow.CaptureSelectionBindings.AudioSelection.cs` owns audio
-  input and microphone selection adapters,
-  `Sussudio/MainWindow.CaptureSelectionBindings.DeviceAudio.cs` owns
-  device-audio mode/gain adapters,
-  `Sussudio/MainWindow.CaptureSelectionBindings.CaptureMode.cs` owns
-  resolution/frame-rate adapters, and
-  `Sussudio/MainWindow.CaptureSelectionBindings.RecordingSelection.cs` owns
-  recording format/quality/preset/split-encode adapters.
+  instantiation, XAML dependency wiring, collection/property-change adapters,
+  and the thin XAML-facing selection bridges for device, audio, device-audio,
+  capture-mode, and recording option selection.
 - `Sussudio/Controllers/Audio/AudioControlBindingController.cs` owns the audio-control
   binding context, and
   `Sussudio/Controllers/Audio/AudioControlBindingController.Bindings.cs` owns

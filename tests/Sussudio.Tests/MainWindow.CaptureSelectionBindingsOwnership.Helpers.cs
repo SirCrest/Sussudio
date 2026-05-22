@@ -8,10 +8,5 @@ static partial class Program
             new[]
             {
                 "Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs",
-                "Sussudio/MainWindow.CaptureSelectionBindings.DeviceSelection.cs",
-                "Sussudio/MainWindow.CaptureSelectionBindings.AudioSelection.cs",
-                "Sussudio/MainWindow.CaptureSelectionBindings.DeviceAudio.cs",
-                "Sussudio/MainWindow.CaptureSelectionBindings.CaptureMode.cs",
-                "Sussudio/MainWindow.CaptureSelectionBindings.RecordingSelection.cs",
             }.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
 }
