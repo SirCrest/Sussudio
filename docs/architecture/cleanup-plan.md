@@ -679,12 +679,11 @@ new evidence fields should land beside the closest runtime or diagnostic
 surface and get a matching source-ownership assertion in the snapshot-model
 tests.
 
-`Sussudio/Models/Capture/CaptureHealthSnapshot.FlashbackBackend.cs`,
-`CaptureHealthSnapshot.FlashbackPlayback.cs`, and
-`CaptureHealthSnapshot.FlashbackExport.cs` now own the Flashback encoder/backend,
-playback, and export health DTO properties. Keep source-signal, queue-age, and
-A/V sync extension fields in the root `CaptureHealthSnapshot.cs` compatibility
-partial.
+`Sussudio/Models/Capture/CaptureHealthSnapshot.cs` owns the extended capture
+health DTO surface, including source-signal, queue-age, A/V sync, Flashback
+encoder/backend, playback, and export health properties. Keep this model as a
+single cohesive DTO surface unless a future change introduces a real named
+collaborator instead of another partial fragment.
 `Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.SourceTelemetry.cs`,
 `CaptureDiagnosticsSnapshot.CaptureCadence.cs`,
 `CaptureDiagnosticsSnapshot.Recording.cs`, `CaptureDiagnosticsSnapshot.Flashback.cs`,
