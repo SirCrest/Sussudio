@@ -182,12 +182,6 @@ static partial class Program
             new[]
             {
                 ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs"),
-                ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.Cadence.cs"),
-                ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.Decode.cs"),
-                ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.Commands.cs"),
-                ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.AudioMaster.cs"),
-                ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.Stages.cs"),
-                ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.Backend.cs"),
             });
     }
 

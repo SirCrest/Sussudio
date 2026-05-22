@@ -169,6 +169,18 @@ Behavior preserved: performance timeline entries still flow through typed core/s
 Notes for future agents: keep direct core/system timeline projection beside the timeline entry builder unless either grows independent policy
 
 Date: 2026-05-21
+Area: Automation diagnostics Flashback playback timeline projection
+Problem: Flashback playback performance timeline projection was split across six tiny partials even though each group is a direct field projection from the same `AutomationSnapshot` into the same grouped timeline record.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.Cadence.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.Decode.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.Commands.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.AudioMaster.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.Stages.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.Backend.cs`
+Files added: none
+Net production .cs delta: -6
+Partial clusters reduced: `AutomationDiagnosticsHub` -6 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics refresh-pipeline ownership tests, MCP performance timeline projection contract tests, and runtime snapshot regression tests
+Behavior preserved: Flashback playback timeline entries still flow through typed grouped projection records before final DTO initialization
+Notes for future agents: keep direct Flashback playback timeline field groups beside the Flashback playback timeline projection owner unless a group grows independent policy
+
+Date: 2026-05-21
 Area: Automation diagnostics PreviewD3D projection
 Problem: PreviewD3D projection data and matching flattened DTO field projection lived in parallel partial fragments, forcing agents to open several extra files to audit one automation snapshot concern.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.CpuTiming.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.LatencyAndStats.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.FrameFlow.cs`

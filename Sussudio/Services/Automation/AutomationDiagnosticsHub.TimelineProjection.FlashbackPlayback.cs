@@ -86,6 +86,178 @@ public sealed partial class AutomationDiagnosticsHub
             ForceRotateDraining: backend.ForceRotateDraining);
     }
 
+    private static PerformanceTimelineFlashbackPlaybackCadenceProjection BuildPerformanceTimelineFlashbackPlaybackCadenceProjection(
+        AutomationSnapshot snapshot)
+        => new(
+            TargetFps: snapshot.FlashbackPlaybackTargetFps,
+            ObservedFps: snapshot.FlashbackPlaybackObservedFps,
+            P99FrameMs: snapshot.FlashbackPlaybackP99FrameMs,
+            MaxFrameMs: snapshot.FlashbackPlaybackMaxFrameMs,
+            OnePercentLowFps: snapshot.FlashbackPlaybackOnePercentLowFps,
+            FivePercentLowFps: snapshot.FlashbackPlaybackFivePercentLowFps,
+            SlowFramePercent: snapshot.FlashbackPlaybackSlowFramePercent,
+            DroppedFrames: snapshot.FlashbackPlaybackDroppedFrames);
+
+    private readonly record struct PerformanceTimelineFlashbackPlaybackCadenceProjection(
+        double TargetFps,
+        double ObservedFps,
+        double P99FrameMs,
+        double MaxFrameMs,
+        double OnePercentLowFps,
+        double FivePercentLowFps,
+        double SlowFramePercent,
+        long DroppedFrames);
+
+    private static PerformanceTimelineFlashbackPlaybackDecodeProjection BuildPerformanceTimelineFlashbackPlaybackDecodeProjection(
+        AutomationSnapshot snapshot)
+        => new(
+            DecodeP99Ms: snapshot.FlashbackPlaybackDecodeP99Ms,
+            DecodeMaxMs: snapshot.FlashbackPlaybackDecodeMaxMs,
+            MaxDecodePhase: snapshot.FlashbackPlaybackMaxDecodePhase,
+            MaxDecodeReceiveMs: snapshot.FlashbackPlaybackMaxDecodeReceiveMs,
+            MaxDecodeFeedMs: snapshot.FlashbackPlaybackMaxDecodeFeedMs,
+            MaxDecodeReadMs: snapshot.FlashbackPlaybackMaxDecodeReadMs,
+            MaxDecodeSendMs: snapshot.FlashbackPlaybackMaxDecodeSendMs,
+            MaxDecodeAudioMs: snapshot.FlashbackPlaybackMaxDecodeAudioMs,
+            MaxDecodeConvertMs: snapshot.FlashbackPlaybackMaxDecodeConvertMs,
+            MaxDecodeUtcUnixMs: snapshot.FlashbackPlaybackMaxDecodeUtcUnixMs,
+            MaxDecodePositionMs: snapshot.FlashbackPlaybackMaxDecodePositionMs,
+            SeekForwardDecodeCapHits: snapshot.FlashbackPlaybackSeekForwardDecodeCapHits,
+            LastSeekHitForwardDecodeCap: snapshot.FlashbackPlaybackLastSeekHitForwardDecodeCap);
+
+    private readonly record struct PerformanceTimelineFlashbackPlaybackDecodeProjection(
+        double DecodeP99Ms,
+        double DecodeMaxMs,
+        string MaxDecodePhase,
+        double MaxDecodeReceiveMs,
+        double MaxDecodeFeedMs,
+        double MaxDecodeReadMs,
+        double MaxDecodeSendMs,
+        double MaxDecodeAudioMs,
+        double MaxDecodeConvertMs,
+        long MaxDecodeUtcUnixMs,
+        long MaxDecodePositionMs,
+        long SeekForwardDecodeCapHits,
+        bool LastSeekHitForwardDecodeCap);
+
+    private static PerformanceTimelineFlashbackPlaybackCommandsProjection BuildPerformanceTimelineFlashbackPlaybackCommandsProjection(
+        AutomationSnapshot snapshot)
+        => new(
+            PendingCommands: snapshot.FlashbackPlaybackPendingCommands,
+            MaxPendingCommands: snapshot.FlashbackPlaybackMaxPendingCommands,
+            CommandsEnqueued: snapshot.FlashbackPlaybackCommandsEnqueued,
+            CommandsProcessed: snapshot.FlashbackPlaybackCommandsProcessed,
+            CommandsDropped: snapshot.FlashbackPlaybackCommandsDropped,
+            CommandsSkippedNotReady: snapshot.FlashbackPlaybackCommandsSkippedNotReady,
+            ScrubUpdatesCoalesced: snapshot.FlashbackPlaybackScrubUpdatesCoalesced,
+            SeekCommandsCoalesced: snapshot.FlashbackPlaybackSeekCommandsCoalesced,
+            LastCommandQueued: snapshot.FlashbackPlaybackLastCommandQueued,
+            LastCommandProcessed: snapshot.FlashbackPlaybackLastCommandProcessed,
+            MaxCommandQueueLatencyMs: snapshot.FlashbackPlaybackMaxCommandQueueLatencyMs,
+            MaxCommandQueueLatencyCommand: snapshot.FlashbackPlaybackMaxCommandQueueLatencyCommand,
+            LastCommandFailureUtcUnixMs: snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs,
+            LastCommandFailure: snapshot.FlashbackPlaybackLastCommandFailure);
+
+    private readonly record struct PerformanceTimelineFlashbackPlaybackCommandsProjection(
+        int PendingCommands,
+        int MaxPendingCommands,
+        long CommandsEnqueued,
+        long CommandsProcessed,
+        long CommandsDropped,
+        long CommandsSkippedNotReady,
+        long ScrubUpdatesCoalesced,
+        long SeekCommandsCoalesced,
+        string LastCommandQueued,
+        string LastCommandProcessed,
+        long MaxCommandQueueLatencyMs,
+        string MaxCommandQueueLatencyCommand,
+        long LastCommandFailureUtcUnixMs,
+        string LastCommandFailure);
+
+    private static PerformanceTimelineFlashbackPlaybackAudioMasterProjection BuildPerformanceTimelineFlashbackPlaybackAudioMasterProjection(
+        AutomationSnapshot snapshot)
+        => new(
+            DelayDoubles: snapshot.FlashbackPlaybackAudioMasterDelayDoubles,
+            DelayShrinks: snapshot.FlashbackPlaybackAudioMasterDelayShrinks,
+            Fallbacks: snapshot.FlashbackPlaybackAudioMasterFallbacks,
+            UnavailableFallbacks: snapshot.FlashbackPlaybackAudioMasterUnavailableFallbacks,
+            StaleFallbacks: snapshot.FlashbackPlaybackAudioMasterStaleFallbacks,
+            DriftOutlierFallbacks: snapshot.FlashbackPlaybackAudioMasterDriftOutlierFallbacks,
+            LastFallbackReason: snapshot.FlashbackPlaybackAudioMasterLastFallbackReason,
+            LastFallbackClockAgeMs: snapshot.FlashbackPlaybackAudioMasterLastFallbackClockAgeMs);
+
+    private readonly record struct PerformanceTimelineFlashbackPlaybackAudioMasterProjection(
+        long DelayDoubles,
+        long DelayShrinks,
+        long Fallbacks,
+        long UnavailableFallbacks,
+        long StaleFallbacks,
+        long DriftOutlierFallbacks,
+        string LastFallbackReason,
+        double LastFallbackClockAgeMs);
+
+    private static PerformanceTimelineFlashbackPlaybackStagesProjection BuildPerformanceTimelineFlashbackPlaybackStagesProjection(
+        AutomationSnapshot snapshot)
+        => new(
+            SubmitFailures: snapshot.FlashbackPlaybackSubmitFailures,
+            LastDropUtcUnixMs: snapshot.FlashbackPlaybackLastDropUtcUnixMs,
+            LastDropReason: snapshot.FlashbackPlaybackLastDropReason,
+            LastSubmitFailureUtcUnixMs: snapshot.FlashbackPlaybackLastSubmitFailureUtcUnixMs,
+            LastSubmitFailure: snapshot.FlashbackPlaybackLastSubmitFailure,
+            SegmentSwitches: snapshot.FlashbackPlaybackSegmentSwitches,
+            Fmp4Reopens: snapshot.FlashbackPlaybackFmp4Reopens,
+            WriteHeadWaits: snapshot.FlashbackPlaybackWriteHeadWaits,
+            NearLiveSnaps: snapshot.FlashbackPlaybackNearLiveSnaps,
+            DecodeErrorSnaps: snapshot.FlashbackPlaybackDecodeErrorSnaps,
+            LastWriteHeadWaitGapMs: snapshot.FlashbackPlaybackLastWriteHeadWaitGapMs);
+
+    private readonly record struct PerformanceTimelineFlashbackPlaybackStagesProjection(
+        long SubmitFailures,
+        long LastDropUtcUnixMs,
+        string LastDropReason,
+        long LastSubmitFailureUtcUnixMs,
+        string LastSubmitFailure,
+        long SegmentSwitches,
+        long Fmp4Reopens,
+        long WriteHeadWaits,
+        long NearLiveSnaps,
+        long DecodeErrorSnaps,
+        long LastWriteHeadWaitGapMs);
+
+    private static PerformanceTimelineFlashbackPlaybackBackendProjection BuildPerformanceTimelineFlashbackPlaybackBackendProjection(
+        AutomationSnapshot snapshot)
+        => new(
+            SettingsStale: snapshot.FlashbackBackendSettingsStale,
+            SettingsStaleReason: snapshot.FlashbackBackendSettingsStaleReason,
+            ActiveFormat: snapshot.FlashbackBackendActiveFormat,
+            RequestedFormat: snapshot.FlashbackBackendRequestedFormat,
+            ActivePreset: snapshot.FlashbackBackendActivePreset,
+            RequestedPreset: snapshot.FlashbackBackendRequestedPreset,
+            VideoQueueRejectedFrames: snapshot.FlashbackVideoQueueRejectedFrames,
+            VideoQueueLastRejectReason: snapshot.FlashbackVideoQueueLastRejectReason,
+            GpuQueueRejectedFrames: snapshot.FlashbackGpuQueueRejectedFrames,
+            GpuQueueLastRejectReason: snapshot.FlashbackGpuQueueLastRejectReason,
+            FatalCleanupInProgress: snapshot.FatalCleanupInProgress,
+            CleanupInProgress: snapshot.FlashbackCleanupInProgress,
+            ForceRotateRequested: snapshot.FlashbackForceRotateRequested,
+            ForceRotateDraining: snapshot.FlashbackForceRotateDraining);
+
+    private readonly record struct PerformanceTimelineFlashbackPlaybackBackendProjection(
+        bool SettingsStale,
+        string SettingsStaleReason,
+        string ActiveFormat,
+        string RequestedFormat,
+        string ActivePreset,
+        string RequestedPreset,
+        long VideoQueueRejectedFrames,
+        string VideoQueueLastRejectReason,
+        long GpuQueueRejectedFrames,
+        string GpuQueueLastRejectReason,
+        bool FatalCleanupInProgress,
+        bool CleanupInProgress,
+        bool ForceRotateRequested,
+        bool ForceRotateDraining);
+
     private readonly record struct PerformanceTimelineFlashbackPlaybackProjection(
         string State,
         double TargetFps,
