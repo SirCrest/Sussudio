@@ -43,7 +43,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureService_RecordingOutcomeStateLivesInFocusedPartial()
+    internal static Task CaptureService_RecordingOutcomeStateLivesWithRecordingLifecycle()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
@@ -61,28 +61,26 @@ static partial class Program
             }).Replace("\r\n", "\n");
         var routerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs")
             .Replace("\r\n", "\n");
-        var outcomeStateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs")
-            .Replace("\r\n", "\n");
 
         AssertDoesNotContain(rootText, "private string? _lastOutputPath;");
         AssertDoesNotContain(rootText, "private string _lastFinalizeStatus = \"None\";");
         AssertDoesNotContain(rootText, "private DateTimeOffset? _lastFinalizeUtc;");
         AssertDoesNotContain(rootText, "private IReadOnlyList<string> _lastPreservedArtifacts = Array.Empty<string>();");
-        AssertContains(outcomeStateText, "private void PublishRecordingStartedOutcome(string finalOutputPath)");
-        AssertContains(outcomeStateText, "private string? _lastOutputPath;");
-        AssertContains(outcomeStateText, "private string _lastFinalizeStatus = \"None\";");
-        AssertContains(outcomeStateText, "private DateTimeOffset? _lastFinalizeUtc;");
-        AssertContains(outcomeStateText, "private IReadOnlyList<string> _lastPreservedArtifacts = Array.Empty<string>();");
-        AssertContains(outcomeStateText, "_lastOutputPath = finalOutputPath;");
-        AssertContains(outcomeStateText, "_lastFinalizeStatus = \"Recording\";");
-        AssertContains(outcomeStateText, "_lastFinalizeUtc = null;");
-        AssertContains(outcomeStateText, "_lastPreservedArtifacts = Array.Empty<string>();");
-        AssertContains(outcomeStateText, "private void PublishRecordingFinalizedOutcome(FinalizeResult result, bool updateOutputPath)");
-        AssertContains(outcomeStateText, "if (updateOutputPath)");
-        AssertContains(outcomeStateText, "_lastOutputPath = result.OutputPath;");
-        AssertContains(outcomeStateText, "_lastFinalizeStatus = result.StatusMessage;");
-        AssertContains(outcomeStateText, "_lastFinalizeUtc = DateTimeOffset.UtcNow;");
-        AssertContains(outcomeStateText, "_lastPreservedArtifacts = result.PreservedArtifacts;");
+        AssertContains(lifecycleText, "private void PublishRecordingStartedOutcome(string finalOutputPath)");
+        AssertContains(lifecycleText, "private string? _lastOutputPath;");
+        AssertContains(lifecycleText, "private string _lastFinalizeStatus = \"None\";");
+        AssertContains(lifecycleText, "private DateTimeOffset? _lastFinalizeUtc;");
+        AssertContains(lifecycleText, "private IReadOnlyList<string> _lastPreservedArtifacts = Array.Empty<string>();");
+        AssertContains(lifecycleText, "_lastOutputPath = finalOutputPath;");
+        AssertContains(lifecycleText, "_lastFinalizeStatus = \"Recording\";");
+        AssertContains(lifecycleText, "_lastFinalizeUtc = null;");
+        AssertContains(lifecycleText, "_lastPreservedArtifacts = Array.Empty<string>();");
+        AssertContains(lifecycleText, "private void PublishRecordingFinalizedOutcome(FinalizeResult result, bool updateOutputPath)");
+        AssertContains(lifecycleText, "if (updateOutputPath)");
+        AssertContains(lifecycleText, "_lastOutputPath = result.OutputPath;");
+        AssertContains(lifecycleText, "_lastFinalizeStatus = result.StatusMessage;");
+        AssertContains(lifecycleText, "_lastFinalizeUtc = DateTimeOffset.UtcNow;");
+        AssertContains(lifecycleText, "_lastPreservedArtifacts = result.PreservedArtifacts;");
 
         var flashbackStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartFlashback.cs")
             .Replace("\r\n", "\n");
@@ -93,9 +91,6 @@ static partial class Program
         AssertContains(libAvStartText, "PublishRecordingStartedOutcome(rollback.RecordingContext.FinalOutputPath);");
         AssertDoesNotContain(lifecycleText, "_lastOutputPath = fbRecordingContext.FinalOutputPath;");
         AssertDoesNotContain(lifecycleText, "_lastOutputPath = recordingContext.FinalOutputPath;");
-        AssertDoesNotContain(lifecycleText, "_lastFinalizeStatus = \"Recording\";");
-        AssertDoesNotContain(lifecycleText, "_lastFinalizeUtc = null;");
-        AssertDoesNotContain(lifecycleText, "_lastPreservedArtifacts = Array.Empty<string>();");
 
         AssertContains(finalizationCallSiteText, "PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);");
         AssertContains(finalizationCallSiteText, "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
@@ -107,6 +102,10 @@ static partial class Program
         AssertDoesNotContain(finalizationCallSiteText, "_lastFinalizeUtc = DateTimeOffset.UtcNow;");
         AssertDoesNotContain(finalizationCallSiteText, "_lastPreservedArtifacts = fbResult.PreservedArtifacts;");
         AssertDoesNotContain(finalizationCallSiteText, "_lastPreservedArtifacts = result.PreservedArtifacts;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingOutcomeState.cs")),
+            "old recording outcome-state partial removed");
 
         return Task.CompletedTask;
     }

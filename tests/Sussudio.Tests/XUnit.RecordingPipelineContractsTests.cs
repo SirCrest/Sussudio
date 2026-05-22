@@ -31,8 +31,8 @@ public sealed class RecordingPipelineContractsTests
         => global::Program.CaptureService_RecordingRollbackLivesInFocusedPartial();
 
     [Fact]
-    public Task CaptureServiceRecordingOutcomeStateLivesInFocusedPartial()
-        => global::Program.CaptureService_RecordingOutcomeStateLivesInFocusedPartial();
+    public Task CaptureServiceRecordingOutcomeStateLivesWithRecordingLifecycle()
+        => global::Program.CaptureService_RecordingOutcomeStateLivesWithRecordingLifecycle();
 
     [Fact]
     public Task CaptureServiceAudioOwnershipLivesInFocusedPartials()

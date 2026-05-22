@@ -1576,19 +1576,19 @@ owns standard LibAv live-preview restoration after recording: pending Flashback
 enable-after-recording detection, guarded Flashback preview backend restore,
 failed-restore rollback and purge, standard post-recording microphone monitor
 restart, and the `FLASHBACK_ENABLE_AFTER_RECORDING_*` breadcrumbs. Recording
-outcome field publication is delegated to
-`Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs` and
-post-recording microphone monitor restart mechanics to
+outcome field publication now lives with
+`Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`; post-recording
+microphone monitor restart mechanics live in
 `Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`.
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs` owns
 Flashback recording export finalization plus live-edge boundary snapshots,
 including idempotent `EndFlashbackRecordingAccounting()` calls, source-frame
 counters, recording integrity counters, and audio integrity counters.
-`Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs` owns the
+`Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs` owns the
 helper boundary that publishes recording-start and recording-finalize outcome
 fields (`_lastOutputPath`, `_lastFinalizeStatus`, `_lastFinalizeUtc`, and
-`_lastPreservedArtifacts`) without leaving direct write blocks in lifecycle or
-finalization partials.
+`_lastPreservedArtifacts`) without leaving direct write blocks in start or
+finalization call-site partials.
 
 Transient recording-start rollback cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingRollback.cs`. That file owns
