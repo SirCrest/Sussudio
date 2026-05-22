@@ -170,10 +170,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionRunner.cs",
             "tools/Common/DiagnosticSessionRunExecution.cs",
             "tools/Common/DiagnosticSessionRunContext.cs",
-            "tools/Common/DiagnosticSessionRunContext.InitialSnapshot.cs",
-            "tools/Common/DiagnosticSessionRunContext.LiveState.cs",
-            "tools/Common/DiagnosticSessionRunContext.Lifetime.cs",
-            "tools/Common/DiagnosticSessionRunContext.PhaseContexts.cs",
             "tools/Common/DiagnosticSessionRunExecution.Completion.cs",
             "tools/Common/DiagnosticSessionRunExecution.CompletionContext.cs",
             "tools/Common/DiagnosticSessionRunExecution.ResultBuildRequest.cs",
@@ -188,26 +184,10 @@ static partial class Program
         => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunExecution.cs");
 
     private static string ReadDiagnosticSessionRunContextSource()
-        => ReadDiagnosticSessionRunContextRootSource()
-            + "\n" + ReadDiagnosticSessionRunContextInitialSnapshotSource()
-            + "\n" + ReadDiagnosticSessionRunContextLiveStateSource()
-            + "\n" + ReadDiagnosticSessionRunContextLifetimeSource()
-            + "\n" + ReadDiagnosticSessionRunContextPhaseContextsSource();
-
-    private static string ReadDiagnosticSessionRunContextRootSource()
         => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunContext.cs");
 
-    private static string ReadDiagnosticSessionRunContextInitialSnapshotSource()
-        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunContext.InitialSnapshot.cs");
-
-    private static string ReadDiagnosticSessionRunContextLiveStateSource()
-        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunContext.LiveState.cs");
-
-    private static string ReadDiagnosticSessionRunContextLifetimeSource()
-        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunContext.Lifetime.cs");
-
-    private static string ReadDiagnosticSessionRunContextPhaseContextsSource()
-        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunContext.PhaseContexts.cs");
+    private static string ReadDiagnosticSessionRunContextRootSource()
+        => ReadDiagnosticSessionRunContextSource();
 
     private static string ReadDiagnosticSessionRunExecutionScenarioSource()
         => ReadNormalizedSourceFiles(

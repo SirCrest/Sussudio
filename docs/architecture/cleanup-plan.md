@@ -3413,13 +3413,10 @@ partials.
 public compatibility entry points; `DiagnosticSessionRunExecution.cs` owns the
 visible run phase sequence around context creation, initial snapshot, scenario
 execution, cleanup, and completion handoff. `DiagnosticSessionRunContext.cs`
-owns core mutable per-run infrastructure: bootstrap, actions, warnings,
-samples, run state, command channel, and scenario cancellation source.
-`DiagnosticSessionRunContext.InitialSnapshot.cs` owns initial snapshot state and
-capture, `DiagnosticSessionRunContext.LiveState.cs` owns live-state writer
-handoff, and `DiagnosticSessionRunContext.Lifetime.cs` owns run-context
-disposal. `DiagnosticSessionRunContext.PhaseContexts.cs` owns
-scenario/completion context construction and the callback/token handoffs passed
+owns the cohesive mutable per-run context: bootstrap, actions, warnings,
+samples, run state, command channel, scenario cancellation source, initial
+snapshot state and capture, live-state writer handoff, disposal, and
+scenario/completion context construction with the callback/token handoffs passed
 into those phases.
 `DiagnosticSessionRunExecution.Completion.cs` owns the
 post-cleanup evidence/result sequence for recording checks, post-run timeline
@@ -3625,13 +3622,10 @@ ordering.
 
 Diagnostic-session run context now lives in
 `tools/Common/DiagnosticSessionRunContext.cs`. `DiagnosticSessionRunContext.cs`
-owns core mutable per-run infrastructure: bootstrap, actions, warnings,
-samples, run state, command channel, and scenario cancellation source.
-`DiagnosticSessionRunContext.InitialSnapshot.cs` owns initial snapshot state and
-capture, `DiagnosticSessionRunContext.LiveState.cs` owns live-state writer
-handoff, and `DiagnosticSessionRunContext.Lifetime.cs` owns run-context
-disposal. `DiagnosticSessionRunContext.PhaseContexts.cs` owns
-scenario/completion context construction and the explicit callback/token
+owns the cohesive mutable per-run context: bootstrap, actions, warnings,
+samples, run state, command channel, scenario cancellation source, initial
+snapshot state and capture, live-state writer handoff, disposal, and
+scenario/completion context construction with the explicit callback/token
 handoffs consumed by scenario and completion phases.
 
 Diagnostic-session run state now lives in
@@ -4145,10 +4139,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionLiveStateWriter.cs`
 - `DiagnosticSessionLiveStateWriter.Sampling.cs`
 - `DiagnosticSessionRunBootstrap.cs`
-- `DiagnosticSessionRunContext.InitialSnapshot.cs`
-- `DiagnosticSessionRunContext.LiveState.cs`
-- `DiagnosticSessionRunContext.Lifetime.cs`
-- `DiagnosticSessionRunContext.PhaseContexts.cs`
+- `DiagnosticSessionRunContext.cs`
 - `DiagnosticSessionSampler.cs`
 - `DiagnosticSessionScenarioCatalog.cs`
 - `DiagnosticSessionScenarioCatalog.Names.cs`
@@ -4201,13 +4192,9 @@ owner, fold it back into that owner and update the source-shape tests and
    `tools/Common/DiagnosticSessionRunner.cs` is now the small public wrapper,
    while `tools/Common/DiagnosticSessionRunExecution.cs` owns the visible run
    phase sequence and `tools/Common/DiagnosticSessionRunContext.cs` owns the
-   core mutable per-run infrastructure, with
-   `tools/Common/DiagnosticSessionRunContext.InitialSnapshot.cs`,
-   `tools/Common/DiagnosticSessionRunContext.LiveState.cs`, and
-   `tools/Common/DiagnosticSessionRunContext.Lifetime.cs` owning snapshot,
-   live-state, and disposal responsibilities, and
-   `tools/Common/DiagnosticSessionRunContext.PhaseContexts.cs` owning explicit
-   scenario/completion context construction. `DiagnosticSessionRunExecution.Completion.cs` owns the
+   cohesive mutable per-run context: snapshot, live-state, disposal, and
+   explicit scenario/completion context construction.
+   `DiagnosticSessionRunExecution.Completion.cs` owns the
    post-cleanup evidence/result sequence, with
    `DiagnosticSessionRunExecution.CompletionContext.cs` owning the completion
    context handoff and `DiagnosticSessionRunExecution.ResultBuildRequest.cs`

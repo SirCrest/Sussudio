@@ -2,8 +2,11 @@ using System.Text.Json;
 
 namespace Sussudio.Tools;
 
-internal sealed partial class DiagnosticSessionRunContext : IDisposable
+internal sealed class DiagnosticSessionRunContext : IDisposable
 {
+    private readonly DiagnosticSessionLiveStateWriter _liveStateWriter;
+    private bool _disposed;
+
     internal DiagnosticSessionRunContext(
         DiagnosticSessionOptions options,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
@@ -56,6 +59,12 @@ internal sealed partial class DiagnosticSessionRunContext : IDisposable
 
     internal CancellationToken ScenarioCancellationToken { get; }
 
+    internal JsonElement InitialSnapshot { get; private set; }
+
+    internal bool InitialSnapshotKnown { get; private set; }
+
+    internal string LivePath { get; }
+
     internal void SetStage(string stage)
     {
         RunState.SetStage(stage);
@@ -64,5 +73,111 @@ internal sealed partial class DiagnosticSessionRunContext : IDisposable
     internal void RecordTerminalException(Exception ex, string stage)
     {
         RunState.RecordTerminalException(ex, stage);
+    }
+
+    internal async Task CaptureInitialSnapshotAsync()
+    {
+        await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
+        var initialSnapshotResult = await DiagnosticSessionInitialSnapshot.CaptureAsync(
+                CommandChannel,
+                SetStage,
+                RecordTerminalException,
+                () => WriteLiveStateBestEffortAsync())
+            .ConfigureAwait(false);
+        InitialSnapshot = initialSnapshotResult.Snapshot;
+        InitialSnapshotKnown = initialSnapshotResult.Known;
+    }
+
+    internal async Task WriteLiveStateBestEffortAsync(
+        DateTimeOffset? completedUtcOverride = null,
+        string? terminalStateOverride = null)
+    {
+        await _liveStateWriter.WriteLiveStateBestEffortAsync(
+                Samples,
+                InitialSnapshot,
+                CommandChannel.FailureCount,
+                completedUtcOverride,
+                terminalStateOverride)
+            .ConfigureAwait(false);
+    }
+
+    internal async Task WriteSamplingLiveStateBestEffortAsync()
+    {
+        await _liveStateWriter.WriteSamplingLiveStateBestEffortAsync(
+                Samples,
+                InitialSnapshot,
+                CommandChannel.FailureCount)
+            .ConfigureAwait(false);
+    }
+
+    internal DiagnosticSessionScenarioPhaseContext CreateScenarioPhaseContext(
+        DiagnosticSessionOptions options,
+        CancellationToken cancellationToken)
+        => new DiagnosticSessionScenarioPhaseContext()
+        {
+            Options = options,
+            Scenario = Scenario,
+            ScenarioPlan = ScenarioPlan,
+            DurationSeconds = DurationSeconds,
+            SampleIntervalMs = SampleIntervalMs,
+            OutputDirectory = OutputDirectory,
+            InitialSnapshot = InitialSnapshot,
+            InitialSnapshotKnown = InitialSnapshotKnown,
+            Actions = Actions,
+            Warnings = Warnings,
+            Samples = Samples,
+            CommandChannel = CommandChannel,
+            ScenarioCancellationSource = ScenarioCancellationSource,
+            ScenarioCancellationToken = ScenarioCancellationToken,
+            RunCancellationToken = cancellationToken,
+            SetStage = SetStage,
+            GetLastStage = () => RunState.LastStage,
+            RecordTerminalException = RecordTerminalException,
+            WriteLiveStateBestEffortAsync = () => WriteLiveStateBestEffortAsync(),
+            WriteSamplingLiveStateBestEffortAsync = WriteSamplingLiveStateBestEffortAsync,
+        };
+
+    internal DiagnosticSessionCompletionContext CreateCompletionContext(
+        DiagnosticSessionOptions options,
+        DiagnosticSessionScenarioPhaseResult scenarioPhase,
+        bool stoppedRecordingForVerification,
+        CancellationToken cancellationToken)
+        => new DiagnosticSessionCompletionContext()
+        {
+            Options = options,
+            RunBootstrap = RunBootstrap,
+            LivePath = LivePath,
+            InitialSnapshot = InitialSnapshot,
+            Samples = Samples,
+            ScenarioPhase = scenarioPhase,
+            StoppedRecordingForVerification = stoppedRecordingForVerification,
+            Actions = Actions,
+            Warnings = Warnings,
+            CommandChannel = CommandChannel,
+            RunState = RunState,
+            SetStage = SetStage,
+            RecordTerminalException = RecordTerminalException,
+            RunCancellationToken = cancellationToken,
+            WriteLiveStateBestEffortAsync = (completedUtc, terminalState) =>
+                WriteLiveStateBestEffortAsync(completedUtc, terminalState),
+        };
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        CommandChannel.Dispose();
+        ScenarioCancellationSource.Dispose();
+        _disposed = true;
+    }
+
+    private void InitializeUnknownSnapshotState()
+    {
+        var unknownSnapshot = DiagnosticSessionInitialSnapshot.CreateUnknown();
+        InitialSnapshot = unknownSnapshot.Snapshot;
+        InitialSnapshotKnown = unknownSnapshot.Known;
     }
 }
