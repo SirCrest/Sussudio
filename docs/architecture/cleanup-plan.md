@@ -1449,9 +1449,9 @@ teardown order.
 Best-effort resource release helpers are delegated to
 `Sussudio/Services/Capture/CaptureService.ResourceRelease.cs`.
 
-Disposal-triggered cleanup and dispose flow now live in
-`Sussudio/Services/Capture/CaptureService.DisposalLifecycle.cs`; disposed-state
-writes route through Coordination. Coordination lock disposal is delegated to
+Disposal-triggered cleanup and dispose flow live with explicit cleanup in
+`Sussudio/Services/Capture/CaptureService.Cleanup.cs`; disposed-state writes
+route through TransitionExecution helpers. Coordination lock disposal is delegated to
 `Sussudio/Services/Capture/CaptureService.ResourceRelease.cs`.
 
 Capture resource release helpers now live in

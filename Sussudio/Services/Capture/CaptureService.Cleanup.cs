@@ -5,12 +5,59 @@ using Sussudio.Models;
 
 namespace Sussudio.Services.Capture;
 
-// Cleanup lifecycle for session teardown and app shutdown. This path preserves
-// failed Flashback recording artifacts when finalization cannot complete cleanly.
+// Cleanup lifecycle for session teardown, app shutdown, and disposal-triggered
+// cleanup. This path preserves failed Flashback recording artifacts when
+// finalization cannot complete cleanly.
 public partial class CaptureService
 {
     public Task CleanupAsync(CancellationToken cancellationToken = default)
         => RunTransitionAsync(CaptureSessionState.CleaningUp, CleanupCoreAsync, cancellationToken);
+
+    private async Task CleanupForDisposalAsync()
+    {
+        await _sessionTransitionLock.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+        try
+        {
+            EnterCleanupState();
+            await CleanupCoreAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+        finally
+        {
+            ReleaseSemaphoreBestEffort(_sessionTransitionLock, "dispose_cleanup");
+        }
+    }
+
+    public void Dispose()
+    {
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
+        try
+        {
+            Task.Run(CleanupForDisposalAsync).GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"CaptureService.Dispose cleanup warning: {ex.Message}");
+        }
+
+        DisposeCoordinationLocksBestEffort();
+        EnterDisposedState();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
+        try
+        {
+            await CleanupForDisposalAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"CaptureService.DisposeAsync cleanup warning: {ex.Message}");
+        }
+
+        DisposeCoordinationLocksBestEffort();
+        EnterDisposedState();
+    }
 
     private async Task CleanupCoreAsync(CancellationToken transitionToken)
     {

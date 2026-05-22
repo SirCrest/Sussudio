@@ -27,7 +27,6 @@ static partial class Program
         var stateMachineText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionStateMachine.cs").Replace("\r\n", "\n");
         var resourceReleaseText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.ResourceRelease.cs").Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs").Replace("\r\n", "\n");
-        var disposalLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.DisposalLifecycle.cs").Replace("\r\n", "\n");
         var flashbackBackendFailureCleanupPath = "Sussudio/Services/Capture/CaptureService.FlashbackBackendFailureCleanup.cs";
         AssertEqual(
             true,
@@ -79,13 +78,13 @@ static partial class Program
             stateMachineText,
             "CaptureSessionTransitionPolicy.ThrowIfDisallowed(_state, transitionState);",
             "_state = transitionState;");
-        AssertContains(disposalLifecycleText, "private async Task CleanupForDisposalAsync()");
-        AssertContains(disposalLifecycleText, "EnterCleanupState();");
-        AssertContains(disposalLifecycleText, "await CleanupCoreAsync(CancellationToken.None).ConfigureAwait(false);");
-        AssertContains(disposalLifecycleText, "public void Dispose()");
-        AssertContains(disposalLifecycleText, "public async ValueTask DisposeAsync()");
-        AssertDoesNotContain(disposalLifecycleText, "private void DisposeCoordinationLocksBestEffort()");
-        AssertDoesNotContain(disposalLifecycleText, "private static void DisposeSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)");
+        AssertContains(cleanupText, "private async Task CleanupForDisposalAsync()");
+        AssertContains(cleanupText, "EnterCleanupState();");
+        AssertContains(cleanupText, "await CleanupCoreAsync(CancellationToken.None).ConfigureAwait(false);");
+        AssertContains(cleanupText, "public void Dispose()");
+        AssertContains(cleanupText, "public async ValueTask DisposeAsync()");
+        AssertDoesNotContain(cleanupText, "private void DisposeCoordinationLocksBestEffort()");
+        AssertDoesNotContain(cleanupText, "private static void DisposeSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)");
         AssertContains(resourceReleaseText, "private void DisposeCoordinationLocksBestEffort()");
         AssertContains(resourceReleaseText, "private static void DisposeSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)");
         AssertContains(resourceReleaseText, "private static void ReleaseSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)");
@@ -95,8 +94,7 @@ static partial class Program
         AssertContains(resourceReleaseText, "CAPTURE_SERVICE_SEMAPHORE_RELEASE_WARN");
         AssertContains(resourceReleaseText, "CAPTURE_SERVICE_SEMAPHORE_DISPOSE_WARN");
         AssertContains(resourceReleaseText, "FLASHBACK_EVICTION_RESUME_WARN");
-        AssertContains(disposalLifecycleText, "EnterDisposedState();");
-        AssertDoesNotContain(disposalLifecycleText, "_sessionState =");
+        AssertContains(cleanupText, "EnterDisposedState();");
         AssertContains(
             cleanupText,
             "ResetSessionStateAfterCleanup();");
