@@ -3833,20 +3833,11 @@ The root owns selected-scenario dispatch, `.Inactive.cs` owns inactive-buffer
 failure-kind and last-result assertions, and `.Recording.cs` owns
 active-Flashback-recording failure-kind and backend-stability assertions.
 
-Diagnostic-session Flashback recording-settings deferral now lives in named
-partial owners.
-`DiagnosticSessionFlashbackRecordingSettingsScenarios.DeferredPresetState.cs`
-owns deferred preset state. During-recording command choreography lives in
-`DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`,
-restart/disable rejection-message policy lives in
-`DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingRejections.cs`,
-and active recording backend/file/counter stability checks live in
-`DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingValidation.cs`.
-Post-stop preset verification and encoder-frame checks live in
-`DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`, while
-original-preset restore command execution and post-restore verification live in
-`DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStopRestore.cs`. Do not
-reintroduce an empty family root.
+Diagnostic-session Flashback recording-settings deferral now lives in
+`DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`, which owns deferred
+preset state, during-recording command choreography, restart/disable rejection
+policy, active recording backend/file/counter stability checks, post-stop preset
+verification, encoder-frame checks, and original-preset restore verification.
 
 Diagnostic-session Flashback segment playback now lives in
 `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios*.cs`. The root
@@ -4043,12 +4034,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingValidation.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingRestartValidation.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
-- `DiagnosticSessionFlashbackRecordingSettingsScenarios.DeferredPresetState.cs`
-- `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`
-- `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingRejections.cs`
-- `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingValidation.cs`
-- `DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`
-- `DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStopRestore.cs`
+- `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.Target.cs`

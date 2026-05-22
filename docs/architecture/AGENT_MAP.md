@@ -4248,20 +4248,11 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackRejectedExports.cs` owns Flashback
   rejected-export diagnostic scenario dispatch, inactive-buffer failure-kind
   assertions, and active-Flashback-recording backend-stability assertions.
-- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DeferredPresetState.cs`
-  owns deferred recording-settings preset state.
-- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`
-  owns deferred recording-settings command choreography while Flashback is
-  recording.
-- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingRejections.cs`
-  owns active-recording restart/disable rejection-message policy.
-- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingValidation.cs`
-  owns active-recording post-mutation backend, file-path, and counter
-  stability checks.
-- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`
-  owns post-stop preset verification, encoder-frame check, and restore routing.
-- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStopRestore.cs`
-  owns original-preset restore command execution and post-restore verification.
+- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
+  owns deferred recording-settings preset state, during-recording preset
+  mutation, restart/disable rejection-message policy, active-recording
+  backend/file/counter stability checks, post-stop preset verification,
+  encoder-frame checks, and original-preset restore verification.
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs` owns the
   Flashback completed-segment playback boundary-crossing choreography.
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Registrations.cs`

@@ -80,12 +80,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionFlashbackRecordingSettingsScenariosSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DeferredPresetState.cs",
-            "tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs",
-            "tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingRejections.cs",
-            "tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecordingValidation.cs",
-            "tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs",
-            "tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStopRestore.cs");
+            "tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs");
 
     private static string ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource()
         => ReadNormalizedSourceFiles(
