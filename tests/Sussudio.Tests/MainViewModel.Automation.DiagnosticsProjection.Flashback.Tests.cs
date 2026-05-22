@@ -193,16 +193,6 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var flashbackPlaybackFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackPlayback.cs")
-            .Replace("\r\n", "\n");
-        var flashbackPlaybackFlatteningAudioMasterText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackPlayback.AudioMaster.cs")
-            .Replace("\r\n", "\n");
-        var flashbackPlaybackFlatteningTimingText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackPlayback.Timing.cs")
-            .Replace("\r\n", "\n");
-        var flashbackPlaybackFlatteningDecodeText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackPlayback.Decode.cs")
-            .Replace("\r\n", "\n");
-        var flashbackPlaybackFlatteningCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackPlayback.Commands.cs")
-            .Replace("\r\n", "\n");
         var flashbackPlaybackProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackAudioMasterProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.AudioMaster.cs")
@@ -221,38 +211,6 @@ static partial class Program
         AssertContains(snapshotFlatteningText, "FlashbackPlaybackTargetFps = flashbackPlaybackFlattening.Timing.TargetFps,");
         AssertContains(snapshotFlatteningText, "FlashbackPlaybackMaxDecodePhase = flashbackPlaybackFlattening.Decode.MaxPhase,");
         AssertContains(snapshotFlatteningText, "FlashbackPlaybackLastCommandFailure = flashbackPlaybackFlattening.Commands.LastFailure,");
-        AssertContains(flashbackPlaybackFlatteningText, "private static FlashbackPlaybackFlattenedProjection BuildFlashbackPlaybackFlattenedProjection(");
-        AssertContains(flashbackPlaybackFlatteningText, "FlashbackPlaybackProjection flashbackPlayback");
-        AssertContains(flashbackPlaybackFlatteningText, "State = flashbackPlayback.State,");
-        AssertContains(flashbackPlaybackFlatteningText, "AudioMaster = BuildFlashbackPlaybackAudioMasterFlattenedProjection(flashbackPlayback.AudioMaster),");
-        AssertContains(flashbackPlaybackFlatteningText, "Timing = BuildFlashbackPlaybackTimingFlattenedProjection(flashbackPlayback.Timing),");
-        AssertContains(flashbackPlaybackFlatteningText, "Decode = BuildFlashbackPlaybackDecodeFlattenedProjection(flashbackPlayback.Decode),");
-        AssertContains(flashbackPlaybackFlatteningText, "Commands = BuildFlashbackPlaybackCommandFlattenedProjection(flashbackPlayback.Commands)");
-        AssertContains(flashbackPlaybackFlatteningText, "private readonly record struct FlashbackPlaybackFlattenedProjection");
-        AssertContains(flashbackPlaybackFlatteningText, "public FlashbackPlaybackAudioMasterFlattenedProjection AudioMaster { get; init; }");
-        AssertContains(flashbackPlaybackFlatteningText, "public FlashbackPlaybackTimingFlattenedProjection Timing { get; init; }");
-        AssertContains(flashbackPlaybackFlatteningText, "public FlashbackPlaybackDecodeFlattenedProjection Decode { get; init; }");
-        AssertContains(flashbackPlaybackFlatteningText, "public FlashbackPlaybackCommandFlattenedProjection Commands { get; init; }");
-        AssertContains(flashbackPlaybackFlatteningAudioMasterText, "private static FlashbackPlaybackAudioMasterFlattenedProjection BuildFlashbackPlaybackAudioMasterFlattenedProjection(");
-        AssertContains(flashbackPlaybackFlatteningAudioMasterText, "Fallbacks = audioMaster.Fallbacks,");
-        AssertContains(flashbackPlaybackFlatteningAudioMasterText, "LastFallbackReason = audioMaster.LastFallbackReason,");
-        AssertContains(flashbackPlaybackFlatteningAudioMasterText, "private readonly record struct FlashbackPlaybackAudioMasterFlattenedProjection");
-        AssertContains(flashbackPlaybackFlatteningTimingText, "private static FlashbackPlaybackTimingFlattenedProjection BuildFlashbackPlaybackTimingFlattenedProjection(");
-        AssertContains(flashbackPlaybackFlatteningTimingText, "FlashbackPlaybackTimingProjection timing");
-        AssertContains(flashbackPlaybackFlatteningTimingText, "TargetFps = timing.TargetFps,");
-        AssertContains(flashbackPlaybackFlatteningTimingText, "PtsCadenceMismatchCount = timing.PtsCadenceMismatchCount,");
-        AssertContains(flashbackPlaybackFlatteningTimingText, "AvDriftMs = timing.AvDriftMs");
-        AssertContains(flashbackPlaybackFlatteningTimingText, "private readonly record struct FlashbackPlaybackTimingFlattenedProjection");
-        AssertContains(flashbackPlaybackFlatteningDecodeText, "private static FlashbackPlaybackDecodeFlattenedProjection BuildFlashbackPlaybackDecodeFlattenedProjection(");
-        AssertContains(flashbackPlaybackFlatteningDecodeText, "MaxPhase = decode.MaxPhase,");
-        AssertContains(flashbackPlaybackFlatteningDecodeText, "MaxPositionMs = decode.MaxPositionMs");
-        AssertContains(flashbackPlaybackFlatteningDecodeText, "private readonly record struct FlashbackPlaybackDecodeFlattenedProjection");
-        AssertContains(flashbackPlaybackFlatteningCommandsText, "private static FlashbackPlaybackCommandFlattenedProjection BuildFlashbackPlaybackCommandFlattenedProjection(");
-        AssertContains(flashbackPlaybackFlatteningCommandsText, "LastFailure = commands.LastFailure");
-        AssertContains(flashbackPlaybackFlatteningCommandsText, "private readonly record struct FlashbackPlaybackCommandFlattenedProjection");
-        AssertDoesNotContain(flashbackPlaybackFlatteningText, "AudioMasterFallbacks = flashbackPlayback.AudioMaster.Fallbacks,");
-        AssertDoesNotContain(flashbackPlaybackFlatteningText, "MaxDecodePhase = flashbackPlayback.Decode.MaxPhase,");
-        AssertDoesNotContain(flashbackPlaybackFlatteningText, "LastCommandFailure = flashbackPlayback.Commands.LastFailure");
         AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackState = health.FlashbackPlaybackState,");
         AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackTargetFps = health.FlashbackPlaybackTargetFps,");
         AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackLastCommandFailure = health.FlashbackPlaybackLastCommandFailure,");
@@ -271,6 +229,21 @@ static partial class Program
         AssertContains(flashbackPlaybackProjectionText, "Timing = timing,");
         AssertContains(flashbackPlaybackProjectionText, "Decode = decode,");
         AssertContains(flashbackPlaybackProjectionText, "Commands = commands");
+        AssertContains(flashbackPlaybackProjectionText, "private static FlashbackPlaybackFlattenedProjection BuildFlashbackPlaybackFlattenedProjection(");
+        AssertContains(flashbackPlaybackProjectionText, "FlashbackPlaybackProjection flashbackPlayback");
+        AssertContains(flashbackPlaybackProjectionText, "State = flashbackPlayback.State,");
+        AssertContains(flashbackPlaybackProjectionText, "AudioMaster = BuildFlashbackPlaybackAudioMasterFlattenedProjection(flashbackPlayback.AudioMaster),");
+        AssertContains(flashbackPlaybackProjectionText, "Timing = BuildFlashbackPlaybackTimingFlattenedProjection(flashbackPlayback.Timing),");
+        AssertContains(flashbackPlaybackProjectionText, "Decode = BuildFlashbackPlaybackDecodeFlattenedProjection(flashbackPlayback.Decode),");
+        AssertContains(flashbackPlaybackProjectionText, "Commands = BuildFlashbackPlaybackCommandFlattenedProjection(flashbackPlayback.Commands)");
+        AssertContains(flashbackPlaybackProjectionText, "private readonly record struct FlashbackPlaybackFlattenedProjection");
+        AssertContains(flashbackPlaybackProjectionText, "public FlashbackPlaybackAudioMasterFlattenedProjection AudioMaster { get; init; }");
+        AssertContains(flashbackPlaybackProjectionText, "public FlashbackPlaybackTimingFlattenedProjection Timing { get; init; }");
+        AssertContains(flashbackPlaybackProjectionText, "public FlashbackPlaybackDecodeFlattenedProjection Decode { get; init; }");
+        AssertContains(flashbackPlaybackProjectionText, "public FlashbackPlaybackCommandFlattenedProjection Commands { get; init; }");
+        AssertDoesNotContain(flashbackPlaybackProjectionText, "AudioMasterFallbacks = flashbackPlayback.AudioMaster.Fallbacks,");
+        AssertDoesNotContain(flashbackPlaybackProjectionText, "MaxDecodePhase = flashbackPlayback.Decode.MaxPhase,");
+        AssertDoesNotContain(flashbackPlaybackProjectionText, "LastCommandFailure = flashbackPlayback.Commands.LastFailure");
         AssertDoesNotContain(flashbackPlaybackProjectionText, "TargetFps = health.FlashbackPlaybackTargetFps,");
         AssertDoesNotContain(flashbackPlaybackProjectionText, "AudioMasterFallbacks = audioMaster.Fallbacks,");
         AssertDoesNotContain(flashbackPlaybackProjectionText, "AudioMasterFallbacks = health.FlashbackPlaybackAudioMasterFallbacks,");
@@ -294,23 +267,40 @@ static partial class Program
         AssertContains(flashbackPlaybackAudioMasterProjectionText, "Fallbacks = health.FlashbackPlaybackAudioMasterFallbacks,");
         AssertContains(flashbackPlaybackAudioMasterProjectionText, "LastFallbackReason = health.FlashbackPlaybackAudioMasterLastFallbackReason,");
         AssertContains(flashbackPlaybackAudioMasterProjectionText, "private readonly record struct FlashbackPlaybackAudioMasterProjection");
+        AssertContains(flashbackPlaybackAudioMasterProjectionText, "private static FlashbackPlaybackAudioMasterFlattenedProjection BuildFlashbackPlaybackAudioMasterFlattenedProjection(");
+        AssertContains(flashbackPlaybackAudioMasterProjectionText, "Fallbacks = audioMaster.Fallbacks,");
+        AssertContains(flashbackPlaybackAudioMasterProjectionText, "LastFallbackReason = audioMaster.LastFallbackReason,");
+        AssertContains(flashbackPlaybackAudioMasterProjectionText, "private readonly record struct FlashbackPlaybackAudioMasterFlattenedProjection");
 
         AssertContains(flashbackPlaybackTimingProjectionText, "private static FlashbackPlaybackTimingProjection BuildFlashbackPlaybackTimingProjection(CaptureHealthSnapshot health)");
         AssertContains(flashbackPlaybackTimingProjectionText, "TargetFps = health.FlashbackPlaybackTargetFps,");
         AssertContains(flashbackPlaybackTimingProjectionText, "PtsCadenceMismatchCount = health.FlashbackPlaybackPtsCadenceMismatchCount,");
         AssertContains(flashbackPlaybackTimingProjectionText, "AvDriftMs = health.FlashbackAvDriftMs");
         AssertContains(flashbackPlaybackTimingProjectionText, "private readonly record struct FlashbackPlaybackTimingProjection");
+        AssertContains(flashbackPlaybackTimingProjectionText, "private static FlashbackPlaybackTimingFlattenedProjection BuildFlashbackPlaybackTimingFlattenedProjection(");
+        AssertContains(flashbackPlaybackTimingProjectionText, "FlashbackPlaybackTimingProjection timing");
+        AssertContains(flashbackPlaybackTimingProjectionText, "TargetFps = timing.TargetFps,");
+        AssertContains(flashbackPlaybackTimingProjectionText, "PtsCadenceMismatchCount = timing.PtsCadenceMismatchCount,");
+        AssertContains(flashbackPlaybackTimingProjectionText, "AvDriftMs = timing.AvDriftMs");
+        AssertContains(flashbackPlaybackTimingProjectionText, "private readonly record struct FlashbackPlaybackTimingFlattenedProjection");
 
         AssertContains(flashbackPlaybackDecodeProjectionText, "private static FlashbackPlaybackDecodeProjection BuildFlashbackPlaybackDecodeProjection(CaptureHealthSnapshot health)");
         AssertContains(flashbackPlaybackDecodeProjectionText, "SeekForwardDecodeCapHits = health.FlashbackPlaybackSeekForwardDecodeCapHits,");
         AssertContains(flashbackPlaybackDecodeProjectionText, "MaxPhase = health.FlashbackPlaybackMaxDecodePhase,");
         AssertContains(flashbackPlaybackDecodeProjectionText, "MaxPositionMs = health.FlashbackPlaybackMaxDecodePositionMs");
         AssertContains(flashbackPlaybackDecodeProjectionText, "private readonly record struct FlashbackPlaybackDecodeProjection");
+        AssertContains(flashbackPlaybackDecodeProjectionText, "private static FlashbackPlaybackDecodeFlattenedProjection BuildFlashbackPlaybackDecodeFlattenedProjection(");
+        AssertContains(flashbackPlaybackDecodeProjectionText, "MaxPhase = decode.MaxPhase,");
+        AssertContains(flashbackPlaybackDecodeProjectionText, "MaxPositionMs = decode.MaxPositionMs");
+        AssertContains(flashbackPlaybackDecodeProjectionText, "private readonly record struct FlashbackPlaybackDecodeFlattenedProjection");
 
         AssertContains(flashbackPlaybackCommandProjectionText, "private static FlashbackPlaybackCommandProjection BuildFlashbackPlaybackCommandProjection(CaptureHealthSnapshot health)");
         AssertContains(flashbackPlaybackCommandProjectionText, "ThreadAlive = health.FlashbackPlaybackThreadAlive,");
         AssertContains(flashbackPlaybackCommandProjectionText, "LastFailure = health.FlashbackPlaybackLastCommandFailure");
         AssertContains(flashbackPlaybackCommandProjectionText, "private readonly record struct FlashbackPlaybackCommandProjection");
+        AssertContains(flashbackPlaybackCommandProjectionText, "private static FlashbackPlaybackCommandFlattenedProjection BuildFlashbackPlaybackCommandFlattenedProjection(");
+        AssertContains(flashbackPlaybackCommandProjectionText, "LastFailure = commands.LastFailure");
+        AssertContains(flashbackPlaybackCommandProjectionText, "private readonly record struct FlashbackPlaybackCommandFlattenedProjection");
 
         return Task.CompletedTask;
     }
