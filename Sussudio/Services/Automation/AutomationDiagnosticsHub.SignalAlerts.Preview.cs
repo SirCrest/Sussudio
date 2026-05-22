@@ -74,4 +74,51 @@ public sealed partial class AutomationDiagnosticsHub
             "Preview/display 1% low returned to target range.",
             throttleMs: 5000);
     }
+
+    private void UpdateCaptureSignalAlerts(
+        AutomationSnapshot snapshot,
+        bool captureOnePercentLowDegraded)
+    {
+        SetAlertState(
+            "capture-cadence-drop",
+            snapshot.CaptureCadenceSampleCount >= 120 && snapshot.CaptureCadenceEstimatedDropPercent >= 1.0,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Capture,
+            $"Capture cadence drop estimate={snapshot.CaptureCadenceEstimatedDropPercent:0.##}% " +
+            $"(estDropped={snapshot.CaptureCadenceEstimatedDroppedFrames}, severeGaps={snapshot.CaptureCadenceSevereGapCount}).",
+            "Capture cadence drop estimate returned to healthy range.");
+
+        SetAlertState(
+            "capture-cadence-low-1pct",
+            captureOnePercentLowDegraded,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Capture,
+            $"Capture cadence 1% low is below target: onePercentLow={snapshot.CaptureCadenceOnePercentLowFps:0.##}fps " +
+            $"target={snapshot.ExpectedCaptureFrameRate:0.##}fps avg={snapshot.CaptureCadenceObservedFps:0.##}fps " +
+            $"p95={snapshot.CaptureCadenceP95IntervalMs:0.##}ms p99={snapshot.CaptureCadenceP99IntervalMs:0.##}ms max={snapshot.CaptureCadenceMaxIntervalMs:0.##}ms.",
+            "Capture cadence 1% low returned to target range.",
+            throttleMs: 5000);
+    }
+
+    private void UpdateAudioSignalAlerts(AutomationSnapshot snapshot)
+    {
+        SetAlertState(
+            "audio-muted-suspect",
+            snapshot.AudioMutedSuspected,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Audio,
+            "Audio is enabled but sustained low signal suggests muted or disconnected input.",
+            "Audio signal recovered.");
+    }
+
+    private void UpdateRecordingGrowthAlerts(AutomationSnapshot snapshot)
+    {
+        SetAlertState(
+            "recording-not-growing",
+            snapshot.IsRecording && !snapshot.RecordingFileGrowing,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Recording,
+            "Recording is active but output bytes are not increasing.",
+            "Recording output growth resumed.");
+    }
 }
