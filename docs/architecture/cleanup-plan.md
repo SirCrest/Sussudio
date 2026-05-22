@@ -2708,16 +2708,16 @@ Automation snapshot contracts now live in named model files under
 `AutomationSnapshot*.cs` partial family by domain: root lifecycle/diagnostics,
 user settings, HDR, audio/ingest, recording, capture format, source telemetry,
 preview, MJPEG/cadence, system health, and Flashback. Other snapshot contracts
-remain in `CaptureRuntimeSnapshot.cs`, `PerformanceTimelineEntry*.cs`,
+remain in `CaptureRuntimeSnapshot.cs`, `PerformanceTimelineEntry.cs`,
 `FlashbackSegmentInfo.cs`, and `ViewModelRuntimeSnapshot.cs`.
 `CaptureRuntimeSnapshot.cs` owns the capture runtime DTO surface: root
 session/device identity, ingest/audio, reader transport, capture format, HDR
 pipeline, source telemetry, A/V sync, and recording evidence.
 `PreviewRuntimeSnapshot.cs` owns the preview runtime DTO surface: surface/frame
 health, startup, display cadence, D3D renderer diagnostics, and GPU playback.
-The performance timeline DTO is split by
-diagnostics surface: root capture/preview cadence, preview/MJPEG/D3D,
-Flashback playback, Flashback export, and process/system health. Do not
+`PerformanceTimelineEntry.cs` owns the timeline DTO surface: capture/preview
+cadence, preview/MJPEG/D3D, Flashback playback, Flashback export, and
+process/system health. Do not
 recreate a broad `AutomationRuntimeSnapshots.cs` catch-all; add new DTO fields
 to the partial that matches the snapshot surface they own.
 
