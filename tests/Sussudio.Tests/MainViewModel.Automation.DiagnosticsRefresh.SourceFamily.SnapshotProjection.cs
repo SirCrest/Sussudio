@@ -18,10 +18,6 @@ static partial class Program
         public string SnapshotProjectionFlatteningSourceTelemetryText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSettingsText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningHdrPipelineText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningPreviewD3DText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningPreviewD3DCpuTimingText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningPreviewD3DLatencyAndStatsText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningPreviewD3DFrameFlowText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningFlashbackExportText { get; init; } = string.Empty;
         public string SnapshotProjectionSnapshotStatusText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSnapshotStatusText { get; init; } = string.Empty;

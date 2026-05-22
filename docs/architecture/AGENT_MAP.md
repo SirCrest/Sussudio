@@ -589,26 +589,16 @@ Automation diagnostics ownership:
   owns playback command queue projection plus flattened command queue fields.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs`
   owns D3D preview swap-chain and renderer-state projection plus composition of
-  D3D leaf projections consumed by `AutomationSnapshot`.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.cs`
-  owns final D3D projection-to-`AutomationSnapshot` field flattening and the
-  root renderer-state fields for that flattened projection.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.CpuTiming.cs`
-  owns flattened D3D CPU upload/render/present/total-frame timing fields.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.LatencyAndStats.cs`
-  owns flattened D3D pipeline-latency, waitable-frame-latency, and DXGI
-  frame-stat fields.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.FrameFlow.cs`
-  owns flattened submitted/rendered/dropped frame ownership and recent
-  slow-frame fields.
+  D3D leaf projections consumed by `AutomationSnapshot`, plus final D3D
+  projection-to-`AutomationSnapshot` flattening and renderer-state fields.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DCpuTiming.cs`
-  owns D3D CPU upload/render/present/total-frame timing consumed by
-  `AutomationSnapshot`.
+  owns D3D CPU upload/render/present/total-frame timing and flattened CPU
+  timing fields consumed by `AutomationSnapshot`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.PipelineLatency.cs`
   owns D3D pipeline-latency projection consumed by `AutomationSnapshot`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameFlow.cs`
   owns submitted/rendered/dropped frame ownership and recent slow-frame
-  projection.
+  projection plus flattened frame-flow fields.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameLatencyWait.cs`
   owns waitable frame-latency projection.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameStats.cs`

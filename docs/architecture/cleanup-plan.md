@@ -314,25 +314,16 @@ seek-cap/decode timing projection plus flattened decode fields, and
 owns playback command queue projection plus flattened command queue fields.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs` owns D3D preview
 swap-chain and renderer-state projection plus composition of D3D leaf
-projections consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.cs` owns
-the final D3D projection-to-`AutomationSnapshot` field flattening consumed by
-the root snapshot initializer plus root renderer-state fields.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.CpuTiming.cs`
-owns flattened D3D CPU upload/render/present/total-frame timing fields.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.LatencyAndStats.cs`
-owns flattened D3D pipeline-latency, waitable-frame-latency, and DXGI frame-stat
-fields.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.FrameFlow.cs`
-owns flattened submitted/rendered/dropped frame ownership and recent slow-frame
-fields.
+projections consumed by the automation snapshot DTO, plus final D3D
+projection-to-`AutomationSnapshot` flattening and renderer-state fields.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DCpuTiming.cs` owns D3D
-CPU upload/render/present/total-frame timing consumed by the automation snapshot
-DTO.
+CPU upload/render/present/total-frame timing and flattened CPU timing fields
+consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.PipelineLatency.cs`
 owns D3D pipeline-latency projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameFlow.cs` owns
-submitted/rendered/dropped frame ownership and recent slow-frame projection.
+submitted/rendered/dropped frame ownership and recent slow-frame projection
+plus flattened frame-flow fields.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameLatencyWait.cs`
 owns waitable frame-latency projection.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameStats.cs` owns
