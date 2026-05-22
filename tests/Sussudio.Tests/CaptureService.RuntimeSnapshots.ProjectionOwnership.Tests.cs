@@ -2,13 +2,11 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    internal static Task CaptureService_RuntimeIngestAudioProjection_LivesInFocusedPartial()
+    internal static Task CaptureService_RuntimeIngestAudioProjection_LivesWithRuntimeSnapshotSampler()
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
         var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
-        var ingestAudioText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(runtimeText, "var ingestAudio = CaptureRuntimeIngestAudioSnapshotFields(");
@@ -17,16 +15,13 @@ static partial class Program
         AssertContains(assemblerText, "SourceReaderFrameChannelDepth = ingestAudio.SourceReaderFrameChannelDepth,");
         AssertContains(assemblerText, "WasapiPlaybackTargetVolumePercent = ingestAudio.WasapiPlaybackTargetVolumePercent,");
 
-        AssertContains(ingestAudioText, "private RuntimeIngestAudioSnapshotFields CaptureRuntimeIngestAudioSnapshotFields(");
-        AssertContains(ingestAudioText, "private sealed class RuntimeIngestAudioSnapshotFields");
-        AssertContains(ingestAudioText, "VideoReaderActive = unifiedVideoCapture != null && (videoPreviewActive || recordingActive)");
-        AssertContains(ingestAudioText, "IngestLastVideoFrameAgeMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0)");
-        AssertContains(ingestAudioText, "SourceReaderFrameChannelDepth = sink?.VideoQueueCount ?? 0");
-        AssertContains(ingestAudioText, "WasapiPlaybackTargetVolumePercent = (wasapiPlayback?.TargetVolume ?? 0) * 100.0");
-        AssertContains(ingestAudioText, "WasapiPlaybackCurrentVolumePercent = (wasapiPlayback?.CurrentVolume ?? 0) * 100.0");
-
-        AssertDoesNotContain(runtimeText, "SourceReaderFrameChannelDepth = sink?.VideoQueueCount ?? 0");
-        AssertDoesNotContain(runtimeText, "WasapiPlaybackTargetVolumePercent = (wasapiPlayback?.TargetVolume ?? 0) * 100.0");
+        AssertContains(runtimeText, "private RuntimeIngestAudioSnapshotFields CaptureRuntimeIngestAudioSnapshotFields(");
+        AssertContains(runtimeText, "private sealed class RuntimeIngestAudioSnapshotFields");
+        AssertContains(runtimeText, "VideoReaderActive = unifiedVideoCapture != null && (videoPreviewActive || recordingActive)");
+        AssertContains(runtimeText, "IngestLastVideoFrameAgeMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0)");
+        AssertContains(runtimeText, "SourceReaderFrameChannelDepth = sink?.VideoQueueCount ?? 0");
+        AssertContains(runtimeText, "WasapiPlaybackTargetVolumePercent = (wasapiPlayback?.TargetVolume ?? 0) * 100.0");
+        AssertContains(runtimeText, "WasapiPlaybackCurrentVolumePercent = (wasapiPlayback?.CurrentVolume ?? 0) * 100.0");
 
         return Task.CompletedTask;
     }
@@ -36,10 +31,6 @@ static partial class Program
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
         var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
-        var ingestAudioText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs")
-            .Replace("\r\n", "\n");
-        var readerTransportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotReaderTransport.cs")
             .Replace("\r\n", "\n");
         var hdrPipelineText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs")
             .Replace("\r\n", "\n");
@@ -80,14 +71,13 @@ static partial class Program
         AssertContains(assemblerText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
         AssertContains(assemblerText, "public RuntimeHdrWarmupSnapshotFields HdrWarmup { get; init; } = new();");
         AssertContains(assemblerText, "public ObservedFrameSnapshotFields ObservedTelemetry { get; init; }");
-        AssertContains(ingestAudioText, "private sealed class RuntimeIngestAudioSnapshotFields");
-        AssertContains(readerTransportText, "private sealed class RuntimeReaderTransportSnapshotFields");
+        AssertContains(runtimeText, "private sealed class RuntimeIngestAudioSnapshotFields");
+        AssertContains(runtimeText, "private sealed class RuntimeReaderTransportSnapshotFields");
         AssertContains(hdrPipelineText, "private sealed class RuntimeHdrPipelineSnapshotFields");
         AssertContains(hdrPipelineText, "private sealed class RuntimeHdrWarmupSnapshotFields");
         AssertContains(sourceTelemetryText, "private sealed class RuntimeSourceTelemetrySnapshotFields");
         AssertContains(recordingIntegrityText, "private sealed class RuntimeRecordingIntegritySnapshotFields");
-        AssertDoesNotContain(ingestAudioText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
-        AssertDoesNotContain(readerTransportText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
+        AssertDoesNotContain(runtimeText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
         AssertDoesNotContain(hdrPipelineText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
         AssertDoesNotContain(sourceTelemetryText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
         AssertDoesNotContain(recordingIntegrityText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
@@ -125,8 +115,8 @@ static partial class Program
         AssertContains(agentMapText, "from already-sampled field groups and the private runtime snapshot assembly");
         AssertContains(agentMapText, "handoff contract consumed by that map.");
         AssertContains(agentMapText, "CaptureRuntimeSnapshot*.cs");
-        AssertContains(agentMapText, "and its private ingest/audio handoff model.");
-        AssertContains(agentMapText, "and its private reader/transport handoff model.");
+        AssertContains(agentMapText, "owns video ingest/source-reader/WASAPI playback");
+        AssertContains(agentMapText, "and reader/transport projections plus their private handoff models");
         AssertContains(agentMapText, "and its private HDR pipeline/warmup handoff models.");
         AssertContains(agentMapText, "and its private source-telemetry handoff model.");
         AssertContains(agentMapText, "and its private recording-integrity handoff model.");
@@ -138,8 +128,9 @@ static partial class Program
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RuntimeSnapshotAssemblyFields.cs")),
             "old runtime snapshot assembly-fields partial removed");
-        AssertContains(cleanupPlanText, "projection and its private ingest/audio handoff model lives in");
-        AssertContains(cleanupPlanText, "preview renderer-mode projection and its private reader/transport handoff model now lives in");
+        AssertContains(cleanupPlanText, "Video ingest, source-reader health, WASAPI capture, playback output counter,");
+        AssertContains(cleanupPlanText, "requested/negotiated reader transport, memory preference, frame-ledger, preview");
+        AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`,");
         AssertContains(cleanupPlanText, "HDR pipeline parity/downgrade, warmup state/count projection, and their private handoff models now live in");
         AssertContains(cleanupPlanText, "source telemetry detail/frame-rate-origin/age/alignment projection and its private handoff model now lives in");
         AssertContains(cleanupPlanText, "and recording-integrity summary projection and its private handoff model now lives in");
@@ -147,15 +138,11 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureService_RuntimeReaderTransportProjection_LivesInFocusedPartial()
+    internal static Task CaptureService_RuntimeReaderTransportProjection_LivesWithRuntimeSnapshotSampler()
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
         var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
-        var ingestAudioText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs")
-            .Replace("\r\n", "\n");
-        var readerTransportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotReaderTransport.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(runtimeText, "var readerTransport = CaptureRuntimeReaderTransportSnapshotFields(");
@@ -166,22 +153,16 @@ static partial class Program
         AssertContains(assemblerText, "MfSourceReaderNegotiatedFormat = readerTransport.MfSourceReaderNegotiatedFormat,");
         AssertContains(assemblerText, "ReaderSourceSubtype = readerTransport.ReaderSourceSubtype,");
 
-        AssertContains(readerTransportText, "private static RuntimeReaderTransportSnapshotFields CaptureRuntimeReaderTransportSnapshotFields(");
-        AssertContains(readerTransportText, "private sealed class RuntimeReaderTransportSnapshotFields");
-        AssertContains(readerTransportText, "requestedSettings!.RequestedPixelFormat");
-        AssertContains(readerTransportText, "mfSourceReaderNegotiatedFormat.Contains(\"P010\", StringComparison.OrdinalIgnoreCase)");
-        AssertContains(readerTransportText, "unifiedVideoCapture.IsHighFrameRateMjpegMode ? \"MJPG\"");
-        AssertContains(readerTransportText, "readerSourceStreamType = (recordingActive || videoPreviewActive) && unifiedVideoCapture != null");
-        AssertContains(readerTransportText, "FrameLedgerSummary.Empty");
-        AssertContains(readerTransportText, "MemoryPreference = unifiedVideoCapture?.D3DManager != null ? \"Gpu\" : \"Cpu\",");
-        AssertContains(readerTransportText, "(previewFrameSink as D3D11PreviewRenderer)?.RendererMode ?? \"None\"");
-        AssertContains(readerTransportText, "ReaderSourceSubtype = actualPixelFormat");
-
-        AssertDoesNotContain(runtimeText, "var negotiatedSubtypeFromSourceReader");
-        AssertDoesNotContain(runtimeText, "unifiedVideoCapture.IsHighFrameRateMjpegMode ? \"MJPG\"");
-        AssertDoesNotContain(runtimeText, "GetFrameLedgerSummary() ?? FrameLedgerSummary.Empty");
-        AssertDoesNotContain(runtimeText, "(_videoPipeline.PreviewFrameSink as D3D11PreviewRenderer)?.RendererMode ?? \"None\"");
-        AssertDoesNotContain(ingestAudioText, "D3DManager != null ? \"Gpu\"");
+        AssertContains(runtimeText, "private static RuntimeReaderTransportSnapshotFields CaptureRuntimeReaderTransportSnapshotFields(");
+        AssertContains(runtimeText, "private sealed class RuntimeReaderTransportSnapshotFields");
+        AssertContains(runtimeText, "requestedSettings!.RequestedPixelFormat");
+        AssertContains(runtimeText, "mfSourceReaderNegotiatedFormat.Contains(\"P010\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(runtimeText, "unifiedVideoCapture.IsHighFrameRateMjpegMode ? \"MJPG\"");
+        AssertContains(runtimeText, "readerSourceStreamType = (recordingActive || videoPreviewActive) && unifiedVideoCapture != null");
+        AssertContains(runtimeText, "FrameLedgerSummary.Empty");
+        AssertContains(runtimeText, "MemoryPreference = unifiedVideoCapture?.D3DManager != null ? \"Gpu\" : \"Cpu\",");
+        AssertContains(runtimeText, "(previewFrameSink as D3D11PreviewRenderer)?.RendererMode ?? \"None\"");
+        AssertContains(runtimeText, "ReaderSourceSubtype = actualPixelFormat");
 
         return Task.CompletedTask;
     }

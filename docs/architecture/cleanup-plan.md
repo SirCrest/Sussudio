@@ -2782,12 +2782,11 @@ The private runtime snapshot assembly handoff contract lives with the assembler
 that consumes it.
 The automation model surface lives in the `CaptureRuntimeSnapshot*.cs` partial family
 so runtime fields stay grouped by the same domain as the sampled field groups.
-Video ingest, source-reader health, WASAPI capture, and playback output counter
-projection and its private ingest/audio handoff model lives in
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs`,
-requested/negotiated reader transport, memory preference, frame-ledger, and
-preview renderer-mode projection and its private reader/transport handoff model now lives in
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotReaderTransport.cs`,
+Video ingest, source-reader health, WASAPI capture, playback output counter,
+requested/negotiated reader transport, memory preference, frame-ledger, preview
+renderer-mode projection, and their private handoff models now live with the
+runtime snapshot sampler in
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`,
 HDR pipeline parity/downgrade, warmup state/count projection, and their private handoff models now live in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs`,
 source telemetry detail/frame-rate-origin/age/alignment projection and its private handoff model now lives in

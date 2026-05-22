@@ -83,8 +83,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var runtimeSnapshotText = string.Join(
             "\n",
-            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"),
-            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs"))
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"))
             .Replace("\r\n", "\n");
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText().Replace("\r\n", "\n");
         var automationInterfaceText = ReadRepoFile("Sussudio/Services/Automation/IAutomationViewModel.cs").Replace("\r\n", "\n");
