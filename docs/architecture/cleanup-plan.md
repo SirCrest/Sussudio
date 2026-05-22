@@ -154,31 +154,14 @@ flattening.
 projection routing and groups audio signal, capture-ingest, and WASAPI
 projection inputs consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.Audio.Signal.cs` owns view-model
-audio peak/clipping and detected audio-signal projection inputs.
+audio peak/clipping and detected audio-signal projection inputs plus flattened
+audio signal fields.
 `AutomationDiagnosticsHub.SnapshotProjection.AudioDrops.cs` owns audio drop
 counter projection, derived real-time/file-writer drop totals, and final
 audio-drop projection-to-`AutomationSnapshot` field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.cs`
-owns final audio and ingest projection-to-`AutomationSnapshot` field
-flattening and routes grouped signal, ingest, source-reader, WASAPI capture,
-and WASAPI playback flattening modules.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.Signal.cs`
-owns final audio peak, clipping, signal-present, and muted-suspected field
-flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.CaptureIngest.cs`
-owns final audio/video reader active state and ingest counter field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.SourceReader.cs`
-owns final source-reader delivery, drop, outstanding-read, and channel-depth
-field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.WasapiCapture.cs`
-owns final WASAPI capture callback, gap, glitch, timestamp, silence, and
-audio-level event field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.WasapiPlayback.cs`
-owns final WASAPI playback render, queue, buffered-duration, endpoint-duration,
-stream-latency, and last-render field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureIngest.cs` owns capture
-audio/video reader, source-reader, and ingest counter projection consumed by the
-automation snapshot DTO.
+audio/video reader, source-reader, and ingest counter projection plus flattened
+ingest/source-reader fields consumed by the automation snapshot DTO.
 `WasapiAudioCapture.Initialization.cs` owns WASAPI endpoint binding, mix-format
 negotiation, AudioClient startup, capture event/client acquisition, and
 initialization-time metric resets. `WasapiAudioCapture.Conversion.cs` owns
@@ -222,8 +205,9 @@ candidate enumeration, raw XU GET/SET, raw payload normalization/rehydration,
 and retrying the shared native transport gate from `NativeXuDeviceSupport.cs`.
 `NativeXuAudioControlService.cs` owns the public service flow and snapshot DTOs.
 `AutomationDiagnosticsHub.SnapshotProjection.WasapiAudio.cs` owns WASAPI
-capture/playback callback, queue, gap, glitch, and latency projection consumed
-by the automation snapshot DTO.
+capture/playback callback, queue, gap, glitch, and latency projection plus
+flattened WASAPI capture/playback fields consumed by the automation snapshot
+DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureCommands.cs` owns capture
 session command queue counters, latency, last-command, and last-error
 projection inputs consumed by the automation snapshot DTO.

@@ -7,8 +7,6 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var audioFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.cs")
-            .Replace("\r\n", "\n");
         var audioProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Audio.cs")
             .Replace("\r\n", "\n");
         var audioSignalProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Audio.Signal.cs")
@@ -41,36 +39,6 @@ static partial class Program
         AssertDoesNotContain(snapshotFlatteningText, "WasapiPlaybackBufferedDurationMs = captureRuntime.WasapiPlaybackBufferedDurationMs,");
         AssertDoesNotContain(snapshotFlatteningText, "WasapiPlaybackBufferedDurationMs = audioAndIngest.WasapiPlaybackBufferedDurationMs,");
 
-        AssertContains(audioFlatteningText, "private static AudioAndIngestFlattenedProjection BuildAudioAndIngestFlattenedProjection(");
-        AssertContains(audioFlatteningText, "Signal = BuildAudioSignalFlattenedProjection(audioAndIngest.Signal),");
-        AssertContains(audioFlatteningText, "Ingest = BuildCaptureIngestFlattenedProjection(audioAndIngest.Ingest),");
-        AssertContains(audioFlatteningText, "SourceReader = BuildSourceReaderFlattenedProjection(audioAndIngest.Ingest),");
-        AssertContains(audioFlatteningText, "WasapiCapture = BuildWasapiCaptureFlattenedProjection(audioAndIngest.Wasapi),");
-        AssertContains(audioFlatteningText, "WasapiPlayback = BuildWasapiPlaybackFlattenedProjection(audioAndIngest.Wasapi)");
-        AssertContains(audioFlatteningText, "private readonly record struct AudioAndIngestFlattenedProjection");
-
-        var audioSignalFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.Signal.cs")
-            .Replace("\r\n", "\n");
-        var captureIngestFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.CaptureIngest.cs")
-            .Replace("\r\n", "\n");
-        var sourceReaderFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.SourceReader.cs")
-            .Replace("\r\n", "\n");
-        var wasapiCaptureFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.WasapiCapture.cs")
-            .Replace("\r\n", "\n");
-        var wasapiPlaybackFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.WasapiPlayback.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(audioSignalFlatteningText, "private static AudioSignalFlattenedProjection BuildAudioSignalFlattenedProjection(");
-        AssertContains(audioSignalFlatteningText, "Peak = signal.Peak,");
-        AssertContains(captureIngestFlatteningText, "private static CaptureIngestFlattenedProjection BuildCaptureIngestFlattenedProjection(");
-        AssertContains(captureIngestFlatteningText, "AudioFramesWrittenToSink = ingest.AudioFramesWrittenToSink,");
-        AssertContains(sourceReaderFlatteningText, "private static SourceReaderFlattenedProjection BuildSourceReaderFlattenedProjection(");
-        AssertContains(sourceReaderFlatteningText, "ReadOutstanding = ingest.SourceReaderReadOutstanding,");
-        AssertContains(wasapiCaptureFlatteningText, "private static WasapiCaptureFlattenedProjection BuildWasapiCaptureFlattenedProjection(");
-        AssertContains(wasapiCaptureFlatteningText, "AudioLevelEventsFired = wasapi.CaptureAudioLevelEventsFired,");
-        AssertContains(wasapiPlaybackFlatteningText, "private static WasapiPlaybackFlattenedProjection BuildWasapiPlaybackFlattenedProjection(");
-        AssertContains(wasapiPlaybackFlatteningText, "BufferedDurationMs = wasapi.PlaybackBufferedDurationMs,");
-
         AssertContains(audioProjectionText, "private static AudioAndIngestProjection BuildAudioAndIngestProjection(");
         AssertContains(audioProjectionText, "Signal = BuildAudioSignalProjection(viewModelSnapshot, audioSignal),");
         AssertContains(audioProjectionText, "Ingest = BuildCaptureIngestProjection(captureRuntime),");
@@ -79,6 +47,13 @@ static partial class Program
         AssertContains(audioProjectionText, "public AudioSignalProjection Signal { get; init; }");
         AssertContains(audioProjectionText, "public CaptureIngestProjection Ingest { get; init; }");
         AssertContains(audioProjectionText, "public WasapiAudioProjection Wasapi { get; init; }");
+        AssertContains(audioProjectionText, "private static AudioAndIngestFlattenedProjection BuildAudioAndIngestFlattenedProjection(");
+        AssertContains(audioProjectionText, "Signal = BuildAudioSignalFlattenedProjection(audioAndIngest.Signal),");
+        AssertContains(audioProjectionText, "Ingest = BuildCaptureIngestFlattenedProjection(audioAndIngest.Ingest),");
+        AssertContains(audioProjectionText, "SourceReader = BuildSourceReaderFlattenedProjection(audioAndIngest.Ingest),");
+        AssertContains(audioProjectionText, "WasapiCapture = BuildWasapiCaptureFlattenedProjection(audioAndIngest.Wasapi),");
+        AssertContains(audioProjectionText, "WasapiPlayback = BuildWasapiPlaybackFlattenedProjection(audioAndIngest.Wasapi)");
+        AssertContains(audioProjectionText, "private readonly record struct AudioAndIngestFlattenedProjection");
         AssertDoesNotContain(audioProjectionText, "AudioPeak = viewModelSnapshot.AudioPeak,");
         AssertDoesNotContain(audioProjectionText, "SourceReaderReadOutstanding = captureRuntime.SourceReaderReadOutstanding,");
         AssertDoesNotContain(audioProjectionText, "WasapiCaptureAudioLevelEventsFired = captureRuntime.WasapiCaptureAudioLevelEventsFired,");
@@ -87,6 +62,8 @@ static partial class Program
         AssertContains(audioSignalProjectionText, "Peak = viewModelSnapshot.AudioPeak,");
         AssertContains(audioSignalProjectionText, "SignalPresent = audioSignal.SignalPresent,");
         AssertContains(audioSignalProjectionText, "private readonly record struct AudioSignalProjection");
+        AssertContains(audioSignalProjectionText, "private static AudioSignalFlattenedProjection BuildAudioSignalFlattenedProjection(");
+        AssertContains(audioSignalProjectionText, "Peak = signal.Peak,");
 
         AssertContains(audioDropsProjectionText, "private static AudioDropsProjection BuildAudioDropsProjection(CaptureHealthSnapshot health)");
         AssertContains(audioDropsProjectionText, "QueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,");
@@ -97,11 +74,19 @@ static partial class Program
         AssertContains(captureIngestProjectionText, "AudioFramesWrittenToSink = captureRuntime.AudioFramesWrittenToSink,");
         AssertContains(captureIngestProjectionText, "SourceReaderReadOutstanding = captureRuntime.SourceReaderReadOutstanding,");
         AssertContains(captureIngestProjectionText, "private readonly record struct CaptureIngestProjection");
+        AssertContains(captureIngestProjectionText, "private static CaptureIngestFlattenedProjection BuildCaptureIngestFlattenedProjection(");
+        AssertContains(captureIngestProjectionText, "AudioFramesWrittenToSink = ingest.AudioFramesWrittenToSink,");
+        AssertContains(captureIngestProjectionText, "private static SourceReaderFlattenedProjection BuildSourceReaderFlattenedProjection(");
+        AssertContains(captureIngestProjectionText, "ReadOutstanding = ingest.SourceReaderReadOutstanding,");
 
         AssertContains(wasapiAudioProjectionText, "private static WasapiAudioProjection BuildWasapiAudioProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(wasapiAudioProjectionText, "CaptureAudioLevelEventsFired = captureRuntime.WasapiCaptureAudioLevelEventsFired,");
         AssertContains(wasapiAudioProjectionText, "PlaybackBufferedDurationMs = captureRuntime.WasapiPlaybackBufferedDurationMs,");
         AssertContains(wasapiAudioProjectionText, "private readonly record struct WasapiAudioProjection");
+        AssertContains(wasapiAudioProjectionText, "private static WasapiCaptureFlattenedProjection BuildWasapiCaptureFlattenedProjection(");
+        AssertContains(wasapiAudioProjectionText, "AudioLevelEventsFired = wasapi.CaptureAudioLevelEventsFired,");
+        AssertContains(wasapiAudioProjectionText, "private static WasapiPlaybackFlattenedProjection BuildWasapiPlaybackFlattenedProjection(");
+        AssertContains(wasapiAudioProjectionText, "BufferedDurationMs = wasapi.PlaybackBufferedDurationMs,");
 
         return Task.CompletedTask;
     }
