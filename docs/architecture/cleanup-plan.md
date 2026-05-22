@@ -3047,21 +3047,12 @@ Flashback playback position/file-PTS mapping now lives in
 It owns scrub/seek clamping, marker-bound range limits, saturating timestamp
 math, active fMP4 segment detection, and playback path comparison.
 
-Cadence summary DTO construction, percentile math, and low-FPS derivation live
-in `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackCadenceMetrics.cs`.
-Decode summary DTO construction and decode timing percentile projection live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackDecodeMetrics.cs`.
-Private playback metric counters, read-only counter projection, and cadence sample rings now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.MetricsCollection.cs`.
-Playback metric reset behavior now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.MetricReset.cs`.
-Seek-cap telemetry state, read-only projection, decoder seek forwarding, and
-forward-decode-cap hit logging now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.SeekCapTelemetry.cs`.
-Playback decode duration rings, max decode phase timing state, read-only max
-decode projection, decode timing wrappers, and dominant decode phase resolution
-now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackDecodeMetricsCollection.cs`.
+Playback metrics now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs`: cadence
+summary DTOs, decode summary DTOs, percentile math, low-FPS derivation, private
+metric counters, read-only projections, cadence/decode sample rings, metric
+reset behavior, seek-cap telemetry, decode timing wrappers, max decode phase
+state, and dominant decode phase resolution.
 
 Flashback playback public command entry points now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Commands.cs`. Keep

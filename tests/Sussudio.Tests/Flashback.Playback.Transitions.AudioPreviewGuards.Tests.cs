@@ -7,7 +7,7 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
-        var metricsCollectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.MetricsCollection.cs")
+        var metricsCollectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs")
             .Replace("\r\n", "\n");
         var audioCallbackText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioCallback.cs")
             .Replace("\r\n", "\n");
