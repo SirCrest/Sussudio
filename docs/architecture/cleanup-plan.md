@@ -1459,9 +1459,9 @@ best-effort semaphore release/disposal, coordination-lock disposal, Flashback
 backend/export held-lock release helpers, and Flashback eviction resume warnings
 used by lifecycle/export/cleanup partials.
 
-Deferred capture cleanup now lives in
-`Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs`. That file owns
-the Flashback artifact cleanup adapter handoff and export-lock delegation.
+Deferred Flashback artifact cleanup adapter handoff and export-lock delegation
+now live with the Flashback preview backend owner in
+`Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs`.
 Deferred unified-video cleanup after LibAv drains lives with the video pipeline
 resource owner. Pending LibAv drain task state and reentry policy live in
 `Sussudio/Services/Capture/CaptureRecordingBackendResources.cs`. Flashback backend
