@@ -7,11 +7,6 @@ static partial class Program
             "\n",
             new[]
             {
-                "Sussudio/MainWindow.PreviewTransitions.AudioFade.cs",
-                "Sussudio/MainWindow.PreviewTransitions.ButtonActions.cs",
-                "Sussudio/MainWindow.PreviewTransitions.FadeIn.cs",
-                "Sussudio/MainWindow.PreviewTransitions.Overlay.cs",
-                "Sussudio/MainWindow.PreviewTransitions.Animation.cs",
-                "Sussudio/MainWindow.PreviewTransitions.Reinit.cs",
+                "Sussudio/MainWindow.PreviewTransitions.Composition.cs",
             }.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
 }

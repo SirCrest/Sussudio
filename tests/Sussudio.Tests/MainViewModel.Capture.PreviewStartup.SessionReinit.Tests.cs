@@ -22,8 +22,8 @@ static partial class Program
         AssertContains(mainWindowText, "InitializePreviewReinitTransitionController();");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewTransitions.Reinit.cs")),
-            "preview reinit adapter lives in the focused preview transition reinit partial");
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewTransitions.Composition.cs")),
+            "preview reinit adapter lives in the preview transitions composition partial");
         AssertContains(previewStartupText, "private PreviewStartupSessionController _previewStartupSessionController = null!;");
         AssertContains(previewStartupText, "private void InitializePreviewStartupSessionController()");
         AssertContains(previewStartupText, "private PreviewStartupState CurrentPreviewStartupState");
