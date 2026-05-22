@@ -2310,9 +2310,9 @@ Primary current owners:
   RuntimePaths resolution-policy source ownership, FFmpeg runtime location,
   bounded external process supervision, MMCSS registration, ProcessSpec, and
   ProcessRunResult contract checks.
-  `FfmpegRuntimeLocator.cs` owns app-local/PATH runtime and tool resolution,
-  while `FfmpegRuntimeLocator.Probes.cs` owns cached FFmpeg encoder/split-encode
-  capability probes through bounded `ProcessSupervisor` calls.
+  `FfmpegRuntimeLocator.cs` owns app-local/PATH runtime and tool resolution plus
+  cached FFmpeg encoder/split-encode capability probes through bounded
+  `ProcessSupervisor` calls.
 - `tests/Sussudio.Tests/ProjectBuildContracts.Tests.cs` owns project-file build
   and publish policy contract helpers. `tests/Sussudio.Tests/XUnit.ProjectBuildContractsTests.cs`
   owns xUnit execution for those checks after their removal from the legacy

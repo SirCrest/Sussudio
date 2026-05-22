@@ -44,12 +44,11 @@ repo/temp/log path behavior. `Sussudio/RuntimePaths.cs` owns the public
 repo-root marker discovery, latest-build parent fallback, log-root override and
 fallback policy, guarded directory creation, and trace fallback diagnostics.
 
-FFmpeg runtime location is split from capability probing without changing the
+FFmpeg runtime location lives with capability probing without changing the
 public locator surface. `Sussudio/Services/Runtime/FfmpegRuntimeLocator.cs` owns
-app-local, Program Files, and PATH-based runtime/tool resolution.
-`FfmpegRuntimeLocator.Probes.cs` owns cached encoder and split-encode capability
-probes, including the bounded `ProcessSupervisor` calls and timeout policy used
-by startup recording capability checks.
+app-local, Program Files, and PATH-based runtime/tool resolution, cached encoder
+and split-encode capability probes, and the bounded `ProcessSupervisor` calls
+and timeout policy used by startup recording capability checks.
 
 Automation contracts have been extracted into `Sussudio.Automation.Contracts/`.
 This removes the old linked-source arrangement where app and tools compiled
