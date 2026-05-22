@@ -45,7 +45,6 @@ static partial class Program
                 SnapshotProjectionFlatteningText,
                 SnapshotProjectionSnapshotStatusText,
                 SnapshotProjectionSnapshotEvaluationText,
-                SnapshotProjectionAvSyncText,
                 SnapshotProjectionAudioText,
                 SnapshotProjectionAudioSignalText,
                 SnapshotProjectionAudioDropsText,

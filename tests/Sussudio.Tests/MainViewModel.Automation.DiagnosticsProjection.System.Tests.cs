@@ -36,12 +36,12 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationDiagnosticsAvSyncProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsAvSyncProjection_LivesWithProjectionRoot()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var avSyncProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.AvSync.cs")
+        var avSyncProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var avSync = BuildAvSyncProjection(captureRuntime);");

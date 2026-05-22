@@ -95,7 +95,9 @@ refresh-gate serialization, core snapshot refresh orchestration, latest-snapshot
 publication, timeline append, event notification, and auto-verification handoff.
 `AutomationDiagnosticsHub.SnapshotProjection.cs`
 owns the `BuildAutomationSnapshot` shell and dispatch into projection
-composition/flattening. `AutomationDiagnosticsHub.SnapshotProjection.Composition.cs`
+composition/flattening, plus live A/V sync drift and encoder correction
+projection and final A/V sync projection-to-`AutomationSnapshot` field
+flattening. `AutomationDiagnosticsHub.SnapshotProjection.Composition.cs`
 owns projection-set composition from runtime/view-model snapshots and diagnostic
 classifiers. `AutomationDiagnosticsHub.SnapshotProjection.Flattening.Set.cs`
 owns the projection-to-flattened-set dispatch root, invocation of every focused
@@ -322,9 +324,6 @@ final field flattening.
 memory, CPU, GC, and thread-pool projection consumed by the automation snapshot
 DTO, plus final process resource projection-to-`AutomationSnapshot` field
 flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.AvSync.cs` owns live A/V sync
-drift and encoder correction projection plus final A/V sync projection-to-
-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs` owns
 recording-integrity projection routing and final flattening consumed by the
 automation snapshot DTO. Its focused owners split status/reason, video-frame

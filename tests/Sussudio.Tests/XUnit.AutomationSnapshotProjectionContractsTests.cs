@@ -79,8 +79,8 @@ public sealed class AutomationSnapshotProjectionContractsTests
         => global::Program.AutomationDiagnosticsProcessResourceProjection_LivesInFocusedPartial();
 
     [Fact]
-    public Task AutomationDiagnosticsAvSyncProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsAvSyncProjection_LivesInFocusedPartial();
+    public Task AutomationDiagnosticsAvSyncProjectionLivesWithProjectionRoot()
+        => global::Program.AutomationDiagnosticsAvSyncProjection_LivesWithProjectionRoot();
 
     [Fact]
     public Task AutomationDiagnosticsPreviewRuntimeProjectionLivesInFocusedPartial()

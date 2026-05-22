@@ -193,6 +193,18 @@ Behavior preserved: Flashback playback cadence/audio performance routing and `fl
 Notes for future agents: keep one-method Flashback playback performance routers with `Alerts.cs` unless the routing becomes independent policy
 
 Date: 2026-05-21
+Area: Automation diagnostics snapshot projection
+Problem: Live A/V sync projection and flattening lived in a tiny partial even though the snapshot projection root already owns top-level projection dispatch into composition and flattening.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.AvSync.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics system projection ownership tests and runtime snapshot regression tests
+Behavior preserved: A/V sync capture drift, drift rate, encoder drift, and encoder correction samples still map from `CaptureRuntimeSnapshot` into the same flattened automation snapshot fields
+Notes for future agents: keep tiny top-level system projection leaves with `SnapshotProjection.cs` unless they grow independent policy or belong to a named runtime domain owner
+
+Date: 2026-05-21
 Area: Automation diagnostics HDR pipeline projection
 Problem: HDR pipeline policy projection and final flattened DTO field projection lived in separate partials even though the flattening is a direct one-to-one projection of HDR runtime, warmup, pipeline-mode, telemetry-alignment, and truth-verdict fields.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.HdrPipeline.cs`
