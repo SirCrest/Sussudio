@@ -11,8 +11,7 @@ static partial class Program
         var playheadText = ReadMainWindowFlashbackAdapterSource();
         var pollingAdapterText = ReadMainWindowFlashbackAdapterSource();
         var controllerRootText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs").Replace("\r\n", "\n");
-        var controllerCtiText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Cti.cs").Replace("\r\n", "\n");
-        var controllerVisualsText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Visuals.cs").Replace("\r\n", "\n");
+        var controllerText = controllerRootText;
         var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
 
         AssertContains(playheadText, "XAML-facing Flashback playhead motion adapter");
@@ -33,7 +32,7 @@ static partial class Program
         AssertOccursBefore(mainWindowText, "InitializeFlashbackScrubInteractionController();", "InitializeFlashbackPlayheadMotionController();");
         AssertOccursBefore(mainWindowText, "InitializeFlashbackPlayheadMotionController();", "InitializeFlashbackTimelineController();");
         AssertContains(controllerRootText, "internal sealed class FlashbackPlayheadMotionControllerContext");
-        AssertContains(controllerRootText, "internal sealed partial class FlashbackPlayheadMotionController");
+        AssertContains(controllerRootText, "internal sealed class FlashbackPlayheadMotionController");
         AssertContains(controllerRootText, "private enum FlashbackPlayheadMotion");
         AssertContains(controllerRootText, "private Visual? _flashbackPlayheadVisual;");
         AssertContains(controllerRootText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
@@ -41,31 +40,36 @@ static partial class Program
         AssertContains(controllerRootText, "private bool _snapFlashbackPlayheadOnNextUpdate;");
         AssertContains(controllerRootText, "public void RequestSnapOnNextUpdate()");
         AssertContains(controllerRootText, "public void PositionMagneticPlayhead(double x, double trackWidth)");
-        AssertContains(controllerCtiText, "public void RefreshCtiMotion(string reason)");
-        AssertContains(controllerCtiText, "public void StopCtiAnchorTimer()");
-        AssertContains(controllerCtiText, "private void StartFlashbackCtiAnchorTimer()");
-        AssertContains(controllerCtiText, "private void FlashbackCtiAnchorTimer_Tick(DispatcherQueueTimer sender, object args)");
-        AssertContains(controllerCtiText, "FlashbackTimelineGeometry.IsUsableTrackDimension(trackW)");
-        AssertContains(controllerCtiText, "state == FlashbackPlaybackState.Live");
-        AssertContains(controllerCtiText, "SnapPlayheadVisualsToFraction(1.0, trackW);");
-        AssertContains(controllerCtiText, "StartLinearPlayheadExtrapolation(");
-        AssertContains(controllerCtiText, "RefreshCtiMotion(\"anchor_tick\");");
-        AssertContains(controllerCtiText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
-        AssertContains(controllerVisualsText, "private void EnsureFlashbackPlayheadVisuals()");
-        AssertContains(controllerVisualsText, "private void PositionFlashbackPlayhead(double x, double trackWidth, FlashbackPlayheadMotion motion)");
-        AssertContains(controllerVisualsText, "private void StartLinearPlayheadExtrapolation(");
-        AssertContains(controllerVisualsText, "private static void StartLinearKeyframe(");
-        AssertContains(controllerVisualsText, "private void SnapPlayheadVisualsToFraction(");
-        AssertContains(controllerVisualsText, "private void AnimateFlashbackPlayheadX(");
-        AssertContains(controllerVisualsText, "private static void SnapFlashbackPlayheadX(");
-        AssertContains(controllerVisualsText, "ElementCompositionPreview.SetIsTranslationEnabled(_context.Playhead, true);");
-        AssertContains(controllerVisualsText, "Canvas.SetLeft(_context.Playhead, 0);");
-        AssertContains(controllerVisualsText, "var labelX = Math.Clamp(x - labelW / 2, 0, Math.Max(0, trackWidth - labelW));");
-        AssertContains(controllerVisualsText, "var lineX = (float)(x - 1);");
-        AssertContains(controllerVisualsText, "var handleX = (float)(x - 5);");
-        AssertDoesNotContain(controllerRootText, "public void RefreshCtiMotion(string reason)");
-        AssertDoesNotContain(controllerRootText, "private void EnsureFlashbackPlayheadVisuals()");
-        AssertDoesNotContain(controllerRootText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
+        AssertContains(controllerText, "public void RefreshCtiMotion(string reason)");
+        AssertContains(controllerText, "public void StopCtiAnchorTimer()");
+        AssertContains(controllerText, "private void StartFlashbackCtiAnchorTimer()");
+        AssertContains(controllerText, "private void FlashbackCtiAnchorTimer_Tick(DispatcherQueueTimer sender, object args)");
+        AssertContains(controllerText, "FlashbackTimelineGeometry.IsUsableTrackDimension(trackW)");
+        AssertContains(controllerText, "state == FlashbackPlaybackState.Live");
+        AssertContains(controllerText, "SnapPlayheadVisualsToFraction(1.0, trackW);");
+        AssertContains(controllerText, "StartLinearPlayheadExtrapolation(");
+        AssertContains(controllerText, "RefreshCtiMotion(\"anchor_tick\");");
+        AssertContains(controllerText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
+        AssertContains(controllerText, "private void EnsureFlashbackPlayheadVisuals()");
+        AssertContains(controllerText, "private void PositionFlashbackPlayhead(double x, double trackWidth, FlashbackPlayheadMotion motion)");
+        AssertContains(controllerText, "private void StartLinearPlayheadExtrapolation(");
+        AssertContains(controllerText, "private static void StartLinearKeyframe(");
+        AssertContains(controllerText, "private void SnapPlayheadVisualsToFraction(");
+        AssertContains(controllerText, "private void AnimateFlashbackPlayheadX(");
+        AssertContains(controllerText, "private static void SnapFlashbackPlayheadX(");
+        AssertContains(controllerText, "ElementCompositionPreview.SetIsTranslationEnabled(_context.Playhead, true);");
+        AssertContains(controllerText, "Canvas.SetLeft(_context.Playhead, 0);");
+        AssertContains(controllerText, "var labelX = Math.Clamp(x - labelW / 2, 0, Math.Max(0, trackWidth - labelW));");
+        AssertContains(controllerText, "var lineX = (float)(x - 1);");
+        AssertContains(controllerText, "var handleX = (float)(x - 5);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackPlayheadMotionController.Cti.cs")),
+            "Flashback playhead CTI partial is consolidated into the motion controller root");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackPlayheadMotionController.Visuals.cs")),
+            "Flashback playhead visuals partial is consolidated into the motion controller root");
         AssertContains(scrubText, "PositionMagneticPlayhead = PositionFlashbackMagneticPlayhead,");
         AssertContains(scrubControllerText, "_context.PositionMagneticPlayhead(x, width);");
         AssertContains(playbackCoordinatorText, "_context.RefreshCtiMotion(\"state_change\");");

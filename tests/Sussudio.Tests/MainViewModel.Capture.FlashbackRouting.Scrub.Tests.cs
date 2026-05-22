@@ -18,10 +18,7 @@ static partial class Program
         var flashbackGeometryText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineGeometry.cs")
             .Replace("\r\n", "\n");
         var flashbackPlayheadText = ReadMainWindowFlashbackAdapterSource();
-        var flashbackPlayheadControllerText = (
-            ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs")
-            + "\n" + ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Cti.cs")
-            + "\n" + ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Visuals.cs"))
+        var flashbackPlayheadControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs")
             .Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
