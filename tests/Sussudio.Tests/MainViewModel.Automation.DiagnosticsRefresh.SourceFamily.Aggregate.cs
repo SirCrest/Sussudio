@@ -66,8 +66,6 @@ static partial class Program
                 SnapshotProjectionFlashbackRecordingQueuesText,
                 SnapshotProjectionPreviewD3DText,
                 SnapshotProjectionPreviewD3DFrameFlowText,
-                SnapshotProjectionPreviewD3DFrameLatencyWaitText,
-                SnapshotProjectionPreviewD3DFrameStatsText,
                 SnapshotProjectionPreviewRuntimeText,
                 SnapshotProjectionPreviewRuntimeCadenceText,
                 SnapshotProjectionPreviewRuntimeStartupText,

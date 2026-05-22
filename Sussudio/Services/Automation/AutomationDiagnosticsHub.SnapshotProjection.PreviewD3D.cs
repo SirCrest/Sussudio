@@ -85,6 +85,82 @@ public sealed partial class AutomationDiagnosticsHub
         public double MaxMs { get; init; }
     }
 
+    private static PreviewD3DFrameLatencyWaitProjection BuildPreviewD3DFrameLatencyWaitProjection(
+        PreviewRuntimeSnapshot previewRuntime)
+        => new()
+        {
+            Enabled = previewRuntime.D3DFrameLatencyWaitEnabled,
+            HandleActive = previewRuntime.D3DFrameLatencyWaitHandleActive,
+            CallCount = previewRuntime.D3DFrameLatencyWaitCallCount,
+            SignaledCount = previewRuntime.D3DFrameLatencyWaitSignaledCount,
+            TimeoutCount = previewRuntime.D3DFrameLatencyWaitTimeoutCount,
+            UnexpectedResultCount = previewRuntime.D3DFrameLatencyWaitUnexpectedResultCount,
+            LastResult = previewRuntime.D3DFrameLatencyWaitLastResult,
+            LastMs = previewRuntime.D3DFrameLatencyWaitLastMs,
+            SampleCount = previewRuntime.D3DFrameLatencyWaitSampleCount,
+            AvgMs = previewRuntime.D3DFrameLatencyWaitAvgMs,
+            P95Ms = previewRuntime.D3DFrameLatencyWaitP95Ms,
+            P99Ms = previewRuntime.D3DFrameLatencyWaitP99Ms,
+            MaxMs = previewRuntime.D3DFrameLatencyWaitMaxMs
+        };
+
+    private readonly record struct PreviewD3DFrameLatencyWaitProjection
+    {
+        public bool Enabled { get; init; }
+        public bool HandleActive { get; init; }
+        public long CallCount { get; init; }
+        public long SignaledCount { get; init; }
+        public long TimeoutCount { get; init; }
+        public long UnexpectedResultCount { get; init; }
+        public uint LastResult { get; init; }
+        public double LastMs { get; init; }
+        public int SampleCount { get; init; }
+        public double AvgMs { get; init; }
+        public double P95Ms { get; init; }
+        public double P99Ms { get; init; }
+        public double MaxMs { get; init; }
+    }
+
+    private static PreviewD3DFrameStatsProjection BuildPreviewD3DFrameStatsProjection(
+        PreviewRuntimeSnapshot previewRuntime,
+        long recentD3DMissedRefreshes,
+        long recentD3DStatsFailures)
+        => new()
+        {
+            SampleCount = previewRuntime.D3DFrameStatsSampleCount,
+            SuccessCount = previewRuntime.D3DFrameStatsSuccessCount,
+            FailureCount = previewRuntime.D3DFrameStatsFailureCount,
+            LastError = previewRuntime.D3DFrameStatsLastError,
+            PresentCount = previewRuntime.D3DFrameStatsPresentCount,
+            PresentRefreshCount = previewRuntime.D3DFrameStatsPresentRefreshCount,
+            SyncRefreshCount = previewRuntime.D3DFrameStatsSyncRefreshCount,
+            SyncQpcTime = previewRuntime.D3DFrameStatsSyncQpcTime,
+            LastPresentDelta = previewRuntime.D3DFrameStatsLastPresentDelta,
+            LastPresentRefreshDelta = previewRuntime.D3DFrameStatsLastPresentRefreshDelta,
+            LastSyncRefreshDelta = previewRuntime.D3DFrameStatsLastSyncRefreshDelta,
+            MissedRefreshCount = previewRuntime.D3DFrameStatsMissedRefreshCount,
+            RecentMissedRefreshCount = recentD3DMissedRefreshes,
+            RecentFailureCount = recentD3DStatsFailures
+        };
+
+    private readonly record struct PreviewD3DFrameStatsProjection
+    {
+        public long SampleCount { get; init; }
+        public long SuccessCount { get; init; }
+        public long FailureCount { get; init; }
+        public string LastError { get; init; }
+        public long PresentCount { get; init; }
+        public long PresentRefreshCount { get; init; }
+        public long SyncRefreshCount { get; init; }
+        public long SyncQpcTime { get; init; }
+        public long LastPresentDelta { get; init; }
+        public long LastPresentRefreshDelta { get; init; }
+        public long LastSyncRefreshDelta { get; init; }
+        public long MissedRefreshCount { get; init; }
+        public long RecentMissedRefreshCount { get; init; }
+        public long RecentFailureCount { get; init; }
+    }
+
     private static PreviewD3DFlattenedProjection BuildPreviewD3DFlattenedProjection(
         PreviewD3DProjection previewD3D)
         => new()
