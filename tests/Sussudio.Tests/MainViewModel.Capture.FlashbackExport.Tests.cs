@@ -19,14 +19,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var exportForceRotateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportForceRotate.cs")
             .Replace("\r\n", "\n");
-        var exportRequestPreparationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRequestPreparation.cs")
-            .Replace("\r\n", "\n");
         var captureServiceText = exportOperationsText
             + "\n" + exportBackendSnapshotText
             + "\n" + exportRangeResolutionText
             + "\n" + exportCoreText
             + "\n" + exportForceRotateText
-            + "\n" + exportRequestPreparationText
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
                 .Replace("\r\n", "\n")
@@ -67,12 +64,12 @@ static partial class Program
         AssertDoesNotContain(exportOperationsText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
         AssertContains(exportCoreText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
         AssertContains(exportCoreText, "bufferManager.PauseEviction();");
-        AssertContains(exportRequestPreparationText, "private FlashbackExportPreparationResult PrepareFlashbackExportRequest(");
-        AssertContains(exportRequestPreparationText, "PrepareFlashbackExportForceRotateSegments(");
-        AssertDoesNotContain(exportRequestPreparationText, "ForceRotateForExport(");
+        AssertContains(exportCoreText, "private FlashbackExportPreparationResult PrepareFlashbackExportRequest(");
+        AssertContains(exportCoreText, "PrepareFlashbackExportForceRotateSegments(");
+        AssertDoesNotContain(exportCoreText, "ForceRotateForExport(");
         AssertContains(exportForceRotateText, "private FlashbackExportForceRotatePreparation PrepareFlashbackExportForceRotateSegments(");
         AssertContains(exportForceRotateText, "ForceRotateForExport");
-        AssertContains(exportRequestPreparationText, "CreateFlashbackExportThrottleDelayProvider");
+        AssertContains(exportCoreText, "CreateFlashbackExportThrottleDelayProvider");
 
         var rangeExport = ExtractMemberCode(exportOperationsText, "ExportFlashbackRangeAsync");
         AssertContains(rangeExport, "SnapshotFlashbackExportBackendAsync(");

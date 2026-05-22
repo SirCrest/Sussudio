@@ -16,8 +16,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var sourceText = exportOperationsText
             + "\n" + exportCoreText
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRequestPreparation.cs")
-                .Replace("\r\n", "\n")
             + "\n" + exportPlanningText
             + "\n" + ReadCaptureServiceRecordingFinalizationSource();
 

@@ -9,7 +9,6 @@ static partial class Program
         var exportRangeResolutionText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRangeResolution.cs");
         var exportCoreText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs");
         var exportForceRotateText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportForceRotate.cs");
-        var exportRequestPreparationText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRequestPreparation.cs");
         var exportDiagnosticsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs");
         var exportProgressText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs");
         AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
@@ -24,12 +23,12 @@ static partial class Program
         AssertDoesNotContain(exportOperationsText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
         AssertContains(exportCoreText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
         AssertContains(exportCoreText, "bufferManager.PauseEviction();");
-        AssertContains(exportRequestPreparationText, "private FlashbackExportPreparationResult PrepareFlashbackExportRequest(");
-        AssertContains(exportRequestPreparationText, "PrepareFlashbackExportForceRotateSegments(");
-        AssertDoesNotContain(exportRequestPreparationText, "ForceRotateForExport(");
+        AssertContains(exportCoreText, "private FlashbackExportPreparationResult PrepareFlashbackExportRequest(");
+        AssertContains(exportCoreText, "PrepareFlashbackExportForceRotateSegments(");
+        AssertDoesNotContain(exportCoreText, "ForceRotateForExport(");
         AssertContains(exportForceRotateText, "private FlashbackExportForceRotatePreparation PrepareFlashbackExportForceRotateSegments(");
         AssertContains(exportForceRotateText, "ForceRotateForExport");
-        AssertContains(exportRequestPreparationText, "CreateFlashbackExportThrottleDelayProvider");
+        AssertContains(exportCoreText, "CreateFlashbackExportThrottleDelayProvider");
         AssertContains(exportDiagnosticsText, "private long BeginFlashbackExportDiagnostics(");
         AssertContains(exportDiagnosticsText, "private void RecordRejectedFlashbackExportDiagnostics(");
         AssertContains(exportDiagnosticsText, "private void CompleteFlashbackExportDiagnostics(");
