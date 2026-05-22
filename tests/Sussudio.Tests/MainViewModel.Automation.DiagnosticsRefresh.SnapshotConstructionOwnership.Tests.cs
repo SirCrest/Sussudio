@@ -149,7 +149,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningAudioAndIngestWasapiCaptureText, "private static WasapiCaptureFlattenedProjection BuildWasapiCaptureFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningAudioAndIngestWasapiPlaybackText, "private static WasapiPlaybackFlattenedProjection BuildWasapiPlaybackFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildAudioDropsFlattenedProjection(audioDrops)");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningAudioDropsText, "private static AudioDropsFlattenedProjection BuildAudioDropsFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionAudioDropsText, "private static AudioDropsFlattenedProjection BuildAudioDropsFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureCommandFlattenedProjection(captureCommands)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureCommandsText, "private static CaptureCommandFlattenedProjection BuildCaptureCommandFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "new AutomationSnapshot");

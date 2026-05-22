@@ -108,7 +108,6 @@ static partial class Program
                 SnapshotProjectionFlatteningAudioAndIngestSourceReaderText,
                 SnapshotProjectionFlatteningAudioAndIngestWasapiCaptureText,
                 SnapshotProjectionFlatteningAudioAndIngestWasapiPlaybackText,
-                SnapshotProjectionFlatteningAudioDropsText,
                 SnapshotProjectionCaptureIngestText,
                 SnapshotProjectionWasapiAudioText,
                 SnapshotProjectionCaptureCommandsText,

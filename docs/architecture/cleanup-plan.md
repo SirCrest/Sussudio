@@ -156,7 +156,8 @@ projection inputs consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.Audio.Signal.cs` owns view-model
 audio peak/clipping and detected audio-signal projection inputs.
 `AutomationDiagnosticsHub.SnapshotProjection.AudioDrops.cs` owns audio drop
-counter projection and derived real-time/file-writer drop totals.
+counter projection, derived real-time/file-writer drop totals, and final
+audio-drop projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.cs`
 owns final audio and ingest projection-to-`AutomationSnapshot` field
 flattening and routes grouped signal, ingest, source-reader, WASAPI capture,
@@ -175,8 +176,6 @@ audio-level event field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioAndIngest.WasapiPlayback.cs`
 owns final WASAPI playback render, queue, buffered-duration, endpoint-duration,
 stream-latency, and last-render field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.AudioDrops.cs` owns
-final audio-drop projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureIngest.cs` owns capture
 audio/video reader, source-reader, and ingest counter projection consumed by the
 automation snapshot DTO.
