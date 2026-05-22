@@ -19,7 +19,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSnapshotStatusFlattenedProjection(snapshotStatus)");
         AssertContains(diagnostics.SnapshotProjectionSnapshotStatusText, "private static SnapshotStatusFlattenedProjection BuildSnapshotStatusFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSnapshotEvaluationFlattenedProjection(snapshotEvaluation)");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningSnapshotEvaluationText, "private static SnapshotEvaluationFlattenedProjection BuildSnapshotEvaluationFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionSnapshotEvaluationText, "private static SnapshotEvaluationFlattenedProjection BuildSnapshotEvaluationFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureFormatFlattenedProjection(captureFormat)");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "BuildCaptureFormatRequestedProjection(captureRuntime)");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "BuildCaptureFormatHdrRequestProjection(captureRuntime)");
@@ -45,7 +45,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureCadenceFlattenedProjection(captureCadence)");
         AssertContains(diagnostics.SnapshotProjectionCaptureCadenceText, "private static CaptureCadenceFlattenedProjection BuildCaptureCadenceFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildVisualCadenceFlattenedProjection(visualCadence)");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningVisualCadenceText, "private static VisualCadenceFlattenedProjection BuildVisualCadenceFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionVisualCadenceText, "private static VisualCadenceFlattenedProjection BuildVisualCadenceFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegFlattenedProjection(mjpeg)");
         AssertContains(diagnostics.SnapshotProjectionMjpegText, "private static MjpegFlattenedProjection BuildMjpegFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegTimingFlattenedProjection(mjpeg.Timing)");
@@ -59,8 +59,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegPacketHashFlattenedProjection(mjpeg.PacketHash)");
         AssertContains(diagnostics.SnapshotProjectionMjpegPacketHashText, "private static MjpegPacketHashFlattenedProjection BuildMjpegPacketHashFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSourceFlattenedProjection(sourceSignal, sourceTelemetry)");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningSourceText, "private static SourceFlattenedProjection BuildSourceFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningSourceSignalText, "private static SourceSignalFlattenedProjection BuildSourceSignalFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionSourceSignalText, "private static SourceFlattenedProjection BuildSourceFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionSourceSignalText, "private static SourceSignalFlattenedProjection BuildSourceSignalFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionSourceTelemetryText, "private static SourceTelemetryFlattenedProjection BuildSourceTelemetryFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSettingsFlattenedProjection(userSettings, recordingSettings)");
         AssertContains(diagnostics.SnapshotProjectionUserSettingsText, "private static SettingsFlattenedProjection BuildSettingsFlattenedProjection(");

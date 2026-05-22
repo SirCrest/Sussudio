@@ -145,10 +145,8 @@ status-text projection consumed by the automation snapshot DTO, plus final
 snapshot status projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.SnapshotEvaluation.cs` owns
 performance score, diagnostic lane, preview pacing classifier, and performance
-threshold projection consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.SnapshotEvaluation.cs`
-owns final snapshot evaluation projection-to-`AutomationSnapshot` field
-flattening.
+threshold projection consumed by the automation snapshot DTO, plus final
+snapshot evaluation projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Audio.cs` owns audio/ingest
 projection routing and groups audio signal, capture-ingest, and WASAPI
 projection inputs consumed by the automation snapshot DTO.
@@ -242,10 +240,8 @@ final source capture cadence projection-to-`AutomationSnapshot` field
 flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs` owns preview
 visual cadence and center-crop visual cadence projection inputs consumed by the
-automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.VisualCadence.cs` owns
-final visual cadence and center-crop visual cadence projection-to-`AutomationSnapshot`
-field flattening.
+automation snapshot DTO, plus final visual cadence and center-crop visual
+cadence projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs` owns CPU MJPEG totals,
 compressed queue, and failure projection inputs consumed by the automation
 snapshot DTO, plus final CPU MJPEG totals, compressed queue, and failure
@@ -384,10 +380,10 @@ telemetry fallback policy, age calculation, and source-target summary inputs
 consumed by the automation snapshot DTO, plus final source telemetry
 availability, confidence, detail, age, backend, suppression, circuit-state,
 summary, and target-summary field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.Signal.cs`
-owns final source projection flattening orchestration plus source dimensions,
-frame-rate, HDR, video/audio format, firmware, input, USB, HDCP, and raw timing
-field flattening.
+`AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs` also owns final
+source projection flattening orchestration plus source dimensions, frame-rate,
+HDR, video/audio format, firmware, input, USB, HDCP, and raw timing field
+flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.UserSettings.cs` owns selected
 device, selected capture/recording options, preview volume, and stats
 visibility projection consumed by the automation snapshot DTO, plus final

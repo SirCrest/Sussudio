@@ -145,6 +145,18 @@ Behavior preserved: settings and Flashback export automation fields still flow t
 Notes for future agents: keep direct settings and Flashback export flattening beside their projection owners unless either grows real cross-domain policy
 
 Date: 2026-05-21
+Area: Automation diagnostics source, visual cadence, and snapshot evaluation projection
+Problem: Source signal, visual cadence, and snapshot evaluation final flattened DTO field projections lived in separate partials even though each flattening step is a direct one-to-one projection from its matching typed projection records.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.Signal.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.VisualCadence.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.SnapshotEvaluation.cs`
+Files added: none
+Net production .cs delta: -3
+Partial clusters reduced: `AutomationDiagnosticsHub` -3 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics source/visual cadence/snapshot evaluation ownership tests and runtime snapshot regression tests
+Behavior preserved: source, visual cadence, and snapshot evaluation automation fields still flow through typed projection records before final DTO initialization
+Notes for future agents: keep direct source, visual cadence, and snapshot evaluation flattening beside their projection owners unless any grows real cross-domain policy
+
+Date: 2026-05-21
 Area: Automation diagnostics PreviewD3D projection
 Problem: PreviewD3D projection data and matching flattened DTO field projection lived in parallel partial fragments, forcing agents to open several extra files to audit one automation snapshot concern.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.CpuTiming.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.LatencyAndStats.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.FrameFlow.cs`

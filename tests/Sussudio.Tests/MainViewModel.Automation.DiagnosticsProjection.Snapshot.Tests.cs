@@ -47,8 +47,6 @@ static partial class Program
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
         var snapshotEvaluationProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SnapshotEvaluation.cs")
             .Replace("\r\n", "\n");
-        var snapshotEvaluationFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.SnapshotEvaluation.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var snapshotEvaluation = BuildSnapshotEvaluationProjection(performance, diagnostic, previewPacingClassification);");
         AssertContains(snapshotFlatteningText, "var snapshotEvaluationFlattening = BuildSnapshotEvaluationFlattenedProjection(snapshotEvaluation);");
@@ -63,12 +61,12 @@ static partial class Program
         AssertDoesNotContain(snapshotFlatteningText, "PerformanceScore = snapshotEvaluation.PerformanceScore,");
         AssertDoesNotContain(snapshotFlatteningText, "PerformanceThresholdCaptureDropPercent = snapshotEvaluation.PerformanceThresholdCaptureDropPercent,");
 
-        AssertContains(snapshotEvaluationFlatteningText, "private static SnapshotEvaluationFlattenedProjection BuildSnapshotEvaluationFlattenedProjection(");
-        AssertContains(snapshotEvaluationFlatteningText, "PerformanceScore = snapshotEvaluation.PerformanceScore,");
-        AssertContains(snapshotEvaluationFlatteningText, "DiagnosticHealthStatus = snapshotEvaluation.DiagnosticHealthStatus,");
-        AssertContains(snapshotEvaluationFlatteningText, "PreviewPacingLikelySlowStage = snapshotEvaluation.PreviewPacingLikelySlowStage,");
-        AssertContains(snapshotEvaluationFlatteningText, "PerformanceThresholdCaptureDropPercent = snapshotEvaluation.PerformanceThresholdCaptureDropPercent,");
-        AssertContains(snapshotEvaluationFlatteningText, "private readonly record struct SnapshotEvaluationFlattenedProjection");
+        AssertContains(snapshotEvaluationProjectionText, "private static SnapshotEvaluationFlattenedProjection BuildSnapshotEvaluationFlattenedProjection(");
+        AssertContains(snapshotEvaluationProjectionText, "PerformanceScore = snapshotEvaluation.PerformanceScore,");
+        AssertContains(snapshotEvaluationProjectionText, "DiagnosticHealthStatus = snapshotEvaluation.DiagnosticHealthStatus,");
+        AssertContains(snapshotEvaluationProjectionText, "PreviewPacingLikelySlowStage = snapshotEvaluation.PreviewPacingLikelySlowStage,");
+        AssertContains(snapshotEvaluationProjectionText, "PerformanceThresholdCaptureDropPercent = snapshotEvaluation.PerformanceThresholdCaptureDropPercent,");
+        AssertContains(snapshotEvaluationProjectionText, "private readonly record struct SnapshotEvaluationFlattenedProjection");
 
         AssertContains(snapshotEvaluationProjectionText, "private SnapshotEvaluationProjection BuildSnapshotEvaluationProjection(");
         AssertContains(snapshotEvaluationProjectionText, "PerformanceScore = performance.Score,");
