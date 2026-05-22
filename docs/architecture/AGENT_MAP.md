@@ -4320,27 +4320,11 @@ Primary owners:
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs`
   owns audio-master maxima.
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs`
-  owns the core `FlashbackPlaybackResultMetrics` handoff identity: end snapshot.
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Commands.Model.cs`,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Cadence.Model.cs`,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.Model.cs`,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.AudioMaster.Model.cs`,
-  and `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Stages.Model.cs`
-  own command, cadence, decode, audio-master, and stage result metric handoff
-  fields, and
+  owns the `FlashbackPlaybackResultMetrics` handoff shape: end snapshot plus
+  command, cadence, decode, audio-master, and stage result fields.
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs` owns final
-  result metric construction.
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.ObservedReads.cs`
-  owns observed-gated primitive reads used by focused playback-result helpers.
-  Focused helpers own end-snapshot command, cadence, decode, audio-master, and
-  stage metric reads:
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Commands.cs`,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Cadence.cs`,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.cs`,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.AudioMaster.cs`,
-  and `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Stages.cs`.
-  Each focused playback-result metric owner keeps its private grouped handoff
-  record beside the snapshot reads that fill it.
+  result metric construction, observed-gated primitive reads, and the grouped
+  end-snapshot command, cadence, decode, audio-master, and stage metric reads.
   Export metrics include force-rotate fallback total, delta, and last fallback
   segment count; keep those counters derived outside export-observed relevance gating.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`

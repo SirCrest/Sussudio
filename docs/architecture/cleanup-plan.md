@@ -3970,20 +3970,11 @@ snapshot max aggregation in
 force-rotate fallback counters in `DiagnosticSessionFlashbackMetrics.Export.cs`.
 
 Diagnostic-session Flashback playback result metrics now keep the
-`FlashbackPlaybackResultMetrics` end-snapshot handoff identity in
-`tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs`,
-focused `PlaybackResult.*.Model.cs` partials own command, cadence, decode,
-audio-master, and stage result handoff fields, and final construction lives in
+`FlashbackPlaybackResultMetrics` handoff shape in
+`tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs`, and
+final construction plus observed-gated command, cadence, decode, audio-master,
+and stage end-snapshot reads in
 `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`.
-Observed-gated primitive reads live in
-`DiagnosticSessionFlashbackMetrics.PlaybackResult.ObservedReads.cs`, with
-end-snapshot reads split into named owners: `.PlaybackResult.Commands.cs` owns
-command queue and command failure fields, `.PlaybackResult.Cadence.cs` owns
-frame cadence and dropped-frame fields, `.PlaybackResult.Decode.cs` owns decode
-timing and max-phase fields, `.PlaybackResult.AudioMaster.cs` owns audio-master
-fallback fields, `.PlaybackResult.Stages.cs` owns playback stage counters and
-seek-forward decode-cap deltas. Each focused playback-result metric owner keeps
-its private grouped handoff record next to the end-snapshot reads that fill it.
 Preserve the final `init` DTO construction in the root unless a broader
 construction pattern replaces it deliberately.
 
@@ -4126,18 +4117,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.FrameDecode.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.AudioMaster.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Commands.Model.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Cadence.Model.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.Model.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackResult.AudioMaster.Model.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Stages.Model.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackResult.ObservedReads.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Commands.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Cadence.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Decode.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackResult.AudioMaster.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Stages.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackPreStop.cs`
