@@ -1418,11 +1418,9 @@ audio input switching lives in
 `Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs`. Preview-time
 microphone monitoring lives in
 `Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs` for shared
-state and mic-level forwarding,
+state, mic-level forwarding, and writer-detach/disposal cleanup,
 `Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Update.cs` for the
 public update transaction,
-`Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Disposal.cs` for
-writer-detach/disposal cleanup, and
 `Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Restart.cs` for
 post-recording restart and Flashback writer reattachment.
 `Sussudio/Services/Capture/PreviewAudioGraphResources.cs` owns the live
