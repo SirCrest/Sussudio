@@ -4,7 +4,7 @@ static partial class Program
 {
     internal static Task ControlBarHoverAnimations_LiveInController()
     {
-        var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
+        var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadMainWindowShellChromeAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ControlBarAnimationController.cs").Replace("\r\n", "\n");
@@ -57,7 +57,7 @@ static partial class Program
 
     internal static Task PreviewTransitionAnimations_LiveInController()
     {
-        var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
+        var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadMainWindowPreviewTransitionsAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");

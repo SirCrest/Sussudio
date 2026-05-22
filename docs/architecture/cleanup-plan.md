@@ -3230,12 +3230,9 @@ finally path, and splash/entrance trigger.
 handler and shell launch context wiring.
 
 Launch entrance ownership is split by phase:
-`Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs` owns context and
-initial hidden/scaled shell state,
-`Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs` owns splash
-fade, loading-phrase start/stop ordering, one-shot splash playback state, and
-handoff into shell entrance, and
-`Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs` owns shell
+`Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs` owns context,
+initial hidden/scaled shell state, splash fade, loading-phrase start/stop
+ordering, one-shot splash playback state, handoff into shell entrance, shell
 chrome/button/stats entrance choreography, deferred preview reveal logging,
 active-storyboard cleanup, and control-bar shadow fade.
 `Sussudio/MainWindow.ShellChrome.Composition.cs`

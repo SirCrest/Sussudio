@@ -10,8 +10,6 @@ static partial class Program
         var startupText = ReadMainWindowShellChromeAdapterSource();
         var adapterText = ReadMainWindowShellChromeAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
-        var splashText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs").Replace("\r\n", "\n");
-        var shellText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
@@ -33,39 +31,43 @@ static partial class Program
         AssertContains(controllerInitializationText, "InitializeLaunchEntranceAnimationController();");
         AssertContains(mainWindowText, "PrepareLaunchEntranceInitialState();");
         AssertContains(startupText, "PlaySplashAndEntrance();");
-        AssertContains(controllerText, "internal sealed partial class LaunchEntranceAnimationController");
-        AssertContains(splashText, "internal sealed partial class LaunchEntranceAnimationController");
-        AssertContains(shellText, "internal sealed partial class LaunchEntranceAnimationController");
-        AssertContains(splashText, "private bool _played;");
-        AssertContains(shellText, "private Storyboard? _activeStoryboard;");
+        AssertContains(controllerText, "internal sealed class LaunchEntranceAnimationController");
+        AssertContains(controllerText, "private bool _played;");
+        AssertContains(controllerText, "private Storyboard? _activeStoryboard;");
         AssertContains(controllerText, "public void PrepareInitialState()");
         AssertContains(controllerText, "_context.ControlBarBorder.RenderTransform = new TranslateTransform { Y = 16 };");
         AssertContains(controllerText, "_context.PreviewBorderScale.ScaleX = 0.97;");
         AssertContains(controllerText, "foreach (var button in _context.GetEntranceButtons())");
-        AssertContains(splashText, "public void PlaySplashAndEntrance()");
-        AssertContains(splashText, "BeginTime = TimeSpan.FromMilliseconds(180)");
-        AssertContains(splashText, "BeginTime = TimeSpan.FromMilliseconds(3000)");
-        AssertContains(splashText, "_context.StopSplashLoadingPhrases();");
-        AssertContains(splashText, "PlayEntranceAnimation();");
-        AssertOccursBefore(splashText, "_context.StartSplashLoadingPhrases();", "splashStoryboard.Begin();");
-        AssertOccursBefore(splashText, "_context.StopSplashLoadingPhrases();", "PlayEntranceAnimation();");
-        AssertContains(shellText, "private void PlayEntranceAnimation()");
-        AssertContains(shellText, "var buttons = _context.GetEntranceButtons();");
-        AssertContains(shellText, "LAUNCH_PREVIEW_REVEAL_DEFERRED");
-        AssertContains(shellText, "_context.AddPreviewShellEntranceAnimations(storyboard, easing, 900, 400);");
-        AssertContains(shellText, "_context.FadeInControlBarShadow();");
-        AssertContains(agentMapText, "Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs");
-        AssertContains(agentMapText, "Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs");
-        AssertContains(cleanupPlanText, "Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs");
-        AssertContains(cleanupPlanText, "Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs");
+        AssertContains(controllerText, "public void PlaySplashAndEntrance()");
+        AssertContains(controllerText, "BeginTime = TimeSpan.FromMilliseconds(180)");
+        AssertContains(controllerText, "BeginTime = TimeSpan.FromMilliseconds(3000)");
+        AssertContains(controllerText, "_context.StopSplashLoadingPhrases();");
+        AssertContains(controllerText, "PlayEntranceAnimation();");
+        AssertOccursBefore(controllerText, "_context.StartSplashLoadingPhrases();", "splashStoryboard.Begin();");
+        AssertOccursBefore(controllerText, "_context.StopSplashLoadingPhrases();", "PlayEntranceAnimation();");
+        AssertContains(controllerText, "private void PlayEntranceAnimation()");
+        AssertContains(controllerText, "var buttons = _context.GetEntranceButtons();");
+        AssertContains(controllerText, "LAUNCH_PREVIEW_REVEAL_DEFERRED");
+        AssertContains(controllerText, "_context.AddPreviewShellEntranceAnimations(storyboard, easing, 900, 400);");
+        AssertContains(controllerText, "_context.FadeInControlBarShadow();");
+        AssertContains(agentMapText, "Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs");
+        AssertContains(cleanupPlanText, "Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs");
+        AssertDoesNotContain(agentMapText, "LaunchEntranceAnimationController.Splash.cs");
+        AssertDoesNotContain(agentMapText, "LaunchEntranceAnimationController.Shell.cs");
+        AssertDoesNotContain(cleanupPlanText, "LaunchEntranceAnimationController.Splash.cs");
+        AssertDoesNotContain(cleanupPlanText, "LaunchEntranceAnimationController.Shell.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "Entrance", "LaunchEntranceAnimationController.Splash.cs")),
+            "launch entrance splash phase is consolidated into the root controller");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "Entrance", "LaunchEntranceAnimationController.Shell.cs")),
+            "launch entrance shell phase is consolidated into the root controller");
         AssertDoesNotContain(mainWindowText, "private bool _entranceAnimationPlayed;");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _entranceStoryboard;");
         AssertDoesNotContain(mainWindowText, "ControlBarBorder.Opacity = 0;");
         AssertDoesNotContain(mainWindowText, "var entranceButtons = GetEntranceButtons();");
-        AssertDoesNotContain(controllerText, "public void PlaySplashAndEntrance()");
-        AssertDoesNotContain(controllerText, "private void PlayEntranceAnimation()");
-        AssertDoesNotContain(splashText, "LAUNCH_PREVIEW_REVEAL_DEFERRED");
-        AssertDoesNotContain(shellText, "_context.StartSplashLoadingPhrases();");
 
         return Task.CompletedTask;
     }

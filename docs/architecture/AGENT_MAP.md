@@ -3081,14 +3081,11 @@ Primary current owners:
   `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing Loaded
   adapter and shell launch context wiring owner.
 - `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs` owns launch
-  entrance context and initial hidden/scaled shell state.
-  `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs` owns the
-  splash fade, one-shot splash playback state, loading-phrase start/stop
-  ordering, and handoff into shell entrance.
-  `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs` owns shell
-  chrome/button/stats entrance choreography, deferred preview reveal logging,
-  active-storyboard cleanup, and the delayed control-bar shadow fade routed
-  through `PreviewShadowFadeAnimator`.
+  entrance context, initial hidden/scaled shell state, splash fade, one-shot
+  splash playback state, loading-phrase start/stop ordering, handoff into shell
+  entrance, shell chrome/button/stats entrance choreography, deferred preview
+  reveal logging, active-storyboard cleanup, and the delayed control-bar shadow
+  fade routed through `PreviewShadowFadeAnimator`.
   `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing launch
   entrance adapter.
 - `Sussudio/Controllers/Shell/ControlBarAnimationController.cs` owns the control-bar

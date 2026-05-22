@@ -7,7 +7,7 @@ static partial class Program
 {
     internal static Task SplashLoadingPhrases_LiveInController()
     {
-        var launchEntranceSplashText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs").Replace("\r\n", "\n");
+        var launchEntranceText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadMainWindowCompositionSource();
         var launchAdapterText = ReadMainWindowShellChromeAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs").Replace("\r\n", "\n");
@@ -21,8 +21,8 @@ static partial class Program
         AssertContains(launchAdapterText, "=> _splashLoadingPhraseController.Start();");
         AssertContains(launchAdapterText, "=> _splashLoadingPhraseController.Stop();");
         AssertContains(mainWindowText, "InitializeSplashLoadingPhraseController();");
-        AssertContains(launchEntranceSplashText, "_context.StartSplashLoadingPhrases();");
-        AssertContains(launchEntranceSplashText, "_context.StopSplashLoadingPhrases();");
+        AssertContains(launchEntranceText, "_context.StartSplashLoadingPhrases();");
+        AssertContains(launchEntranceText, "_context.StopSplashLoadingPhrases();");
         AssertContains(controllerText, "internal sealed class SplashLoadingPhraseController");
         AssertContains(controllerText, "private DispatcherTimer? _splashPhraseTimer;");
         AssertContains(controllerText, "SplashLoadingPhraseCatalog.Load()");
