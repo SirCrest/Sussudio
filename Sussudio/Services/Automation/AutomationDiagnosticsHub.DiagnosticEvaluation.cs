@@ -3,6 +3,19 @@ using Sussudio.Models;
 
 namespace Sussudio.Services.Automation;
 
+internal readonly record struct DiagnosticEvaluation(
+    string HealthStatus,
+    string LikelyStage,
+    string Summary,
+    string Evidence,
+    string SourceLane,
+    string DecodeLane,
+    string PreviewLane,
+    string RenderLane,
+    string PresentLane,
+    string RecordingLane,
+    string AudioLane);
+
 public sealed partial class AutomationDiagnosticsHub
 {
     private static DiagnosticEvaluation BuildDiagnosticEvaluation(

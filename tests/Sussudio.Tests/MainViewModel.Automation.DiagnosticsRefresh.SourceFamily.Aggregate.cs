@@ -7,7 +7,6 @@ static partial class Program
             new[]
             {
                 HubText,
-                EvaluationModelsText,
                 EvaluationText,
                 EvaluationPolicyText,
                 DiagnosticEvaluationText,

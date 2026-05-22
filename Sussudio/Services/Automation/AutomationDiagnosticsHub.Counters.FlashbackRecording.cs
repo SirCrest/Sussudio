@@ -4,6 +4,16 @@ using Sussudio.Models;
 
 namespace Sussudio.Services.Automation;
 
+internal readonly record struct FlashbackRecordingRecentCounters(
+    long DroppedFrames,
+    long EncoderDroppedFrames,
+    long SequenceGaps,
+    long GpuFramesDropped,
+    long BackpressureEvents)
+{
+    public static FlashbackRecordingRecentCounters Empty { get; } = new(0, 0, 0, 0, 0);
+}
+
 public sealed partial class AutomationDiagnosticsHub
 {
     private long _lastFlashbackDroppedFrames;

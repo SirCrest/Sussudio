@@ -5,6 +5,8 @@ using Sussudio.Models;
 
 namespace Sussudio.Services.Automation;
 
+internal readonly record struct PerformanceEvaluation(double Score, bool PerfectionMet, string Summary);
+
 public sealed partial class AutomationDiagnosticsHub
 {
     private PerformanceEvaluation EvaluatePerformance(

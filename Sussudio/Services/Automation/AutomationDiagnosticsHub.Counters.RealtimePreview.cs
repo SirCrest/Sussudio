@@ -4,6 +4,35 @@ using Sussudio.Models;
 
 namespace Sussudio.Services.Automation;
 
+internal readonly record struct D3DRendererRecentCounters(
+    long Submitted,
+    long Rendered,
+    long Dropped)
+{
+    public static D3DRendererRecentCounters Empty { get; } = new(0, 0, 0);
+}
+
+internal readonly record struct MjpegRecentCounters(
+    long TotalDropped,
+    long DecodeFailures,
+    long EmitFailures,
+    long CompressedQueueDrops)
+{
+    public static MjpegRecentCounters Empty { get; } = new(0, 0, 0, 0);
+
+    public long Failures => DecodeFailures + EmitFailures + CompressedQueueDrops;
+}
+
+internal readonly record struct PreviewJitterRecentCounters(
+    long Dropped,
+    long Underflows,
+    long DeadlineDrops,
+    long ScheduleLateCount,
+    double ScheduleLateMs)
+{
+    public static PreviewJitterRecentCounters Empty { get; } = new(0, 0, 0, 0, 0);
+}
+
 public sealed partial class AutomationDiagnosticsHub
 {
     private long _lastPreviewJitterTotalDropped;

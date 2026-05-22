@@ -5,7 +5,6 @@ static partial class Program
         return new AutomationDiagnosticsHubSourceFamily
         {
             HubText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.cs"),
-            EvaluationModelsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.EvaluationModels.cs"),
             EvaluationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
             EvaluationPolicyText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.EvaluationPolicy.cs"),
             DiagnosticEvaluationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluation.cs"),
@@ -130,7 +129,6 @@ static partial class Program
         private string? _sourceFamilyText;
 
         public string HubText { get; init; } = string.Empty;
-        public string EvaluationModelsText { get; init; } = string.Empty;
         public string EvaluationText { get; init; } = string.Empty;
         public string EvaluationPolicyText { get; init; } = string.Empty;
         public string EventsText { get; init; } = string.Empty;
