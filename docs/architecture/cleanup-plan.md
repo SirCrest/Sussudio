@@ -2982,8 +2982,8 @@ keep pause-from-live freeze/display ordering, exact resume targets, and
 audio/preview suppression there. Nudge command execution now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadNudgeCommand.cs`;
 keep frame-step decode, no-file recovery, and seek-display failure recovery
-there. Go-live/stop command execution remains in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`.
+there. Terminal go-live/stop command execution lives with the dispatch switch in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommandDispatch.cs`.
 Flashback playback audio routing now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs`.
 Keep live audio suppress/restore and playback-state audio/preview routing
