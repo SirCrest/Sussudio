@@ -1563,14 +1563,12 @@ stop, source-reader boundary diagnostics, WASAPI recording sink detach,
 microphone capture disposal before sink stop, LibAv sink normal/emergency stop,
 sink disposal, LibAv drain task tracking, inactive-preview teardown after
 recording, audio-fault folding, encoder/runtime and recording-integrity
-summaries, final state completion, preview-restore ordering, and the visible
-final outcome publication before delayed cancellation throws.
-`Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs`
-owns standard LibAv live-preview restoration after recording: pending Flashback
-enable-after-recording detection, guarded Flashback preview backend restore,
-failed-restore rollback and purge, standard post-recording microphone monitor
-restart, and the `FLASHBACK_ENABLE_AFTER_RECORDING_*` breadcrumbs. Recording
-outcome field publication now lives with
+summaries, final state completion, pending Flashback enable-after-recording
+detection, guarded Flashback preview backend restore, failed-restore rollback
+and purge, standard post-recording microphone monitor restart,
+`FLASHBACK_ENABLE_AFTER_RECORDING_*` breadcrumbs, preview-restore ordering, and
+the visible final outcome publication before delayed cancellation throws.
+Recording outcome field publication now lives with
 `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`; post-recording
 microphone monitor restart mechanics live in
 `Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`.

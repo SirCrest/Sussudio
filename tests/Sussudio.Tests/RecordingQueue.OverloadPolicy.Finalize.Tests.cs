@@ -14,8 +14,6 @@ static partial class Program
         var unifiedVideoCaptureSource = sources.UnifiedVideoCaptureSource;
         var microphoneMonitorText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs")
             .Replace("\r\n", "\n");
-        var libAvPreviewRestoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs")
-            .Replace("\r\n", "\n");
         var stopRecordingBackendRouter = ExtractSourceBlock(
             captureServiceSource,
             "private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync",
@@ -93,7 +91,7 @@ static partial class Program
         AssertFlashbackAndLibAvMicrophoneRestartPolicies(
             flashbackStopRecordingBackend,
             microphoneMonitorText,
-            libAvPreviewRestoreText);
+            libAvStopRecordingBackend);
         AssertFlashbackBackendCleanupPolicies(captureServiceSource, flashbackBackendSource);
         AssertRecordingQueueHealthSnapshotTelemetry(
             captureServiceSource,
@@ -107,7 +105,7 @@ static partial class Program
     private static void AssertFlashbackAndLibAvMicrophoneRestartPolicies(
         string flashbackStopRecordingBackend,
         string microphoneMonitorText,
-        string libAvPreviewRestoreText)
+        string libAvStopRecordingBackend)
     {
         var flashbackMicMonitorRestart = ExtractSourceBlock(
             flashbackStopRecordingBackend,
@@ -132,14 +130,14 @@ static partial class Program
             "micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));",
             "_previewAudioGraph.MicrophoneCapture = micCapture;");
 
-        AssertContains(libAvPreviewRestoreText, "private async Task<OperationCanceledException?> RestorePendingFlashbackEnableAfterLibAvRecordingAsync(");
-        AssertContains(libAvPreviewRestoreText, "if (!_pendingFlashbackEnableAfterRecording)");
-        AssertContains(libAvPreviewRestoreText, "_pendingFlashbackEnableAfterRecording = false;");
-        AssertContains(libAvPreviewRestoreText, "await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, cancellationToken)");
-        AssertContains(libAvPreviewRestoreText, "FLASHBACK_ENABLE_AFTER_RECORDING_CANCELLED");
-        AssertContains(libAvPreviewRestoreText, "FLASHBACK_ENABLE_AFTER_RECORDING_FAIL type={ex.GetType().Name} error='{ex.Message}'");
+        AssertContains(libAvStopRecordingBackend, "private async Task<OperationCanceledException?> RestorePendingFlashbackEnableAfterLibAvRecordingAsync(");
+        AssertContains(libAvStopRecordingBackend, "if (!_pendingFlashbackEnableAfterRecording)");
+        AssertContains(libAvStopRecordingBackend, "_pendingFlashbackEnableAfterRecording = false;");
+        AssertContains(libAvStopRecordingBackend, "await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, cancellationToken)");
+        AssertContains(libAvStopRecordingBackend, "FLASHBACK_ENABLE_AFTER_RECORDING_CANCELLED");
+        AssertContains(libAvStopRecordingBackend, "FLASHBACK_ENABLE_AFTER_RECORDING_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         var standardMicMonitorRestart = ExtractSourceBlock(
-            libAvPreviewRestoreText,
+            libAvStopRecordingBackend,
             "private async Task<OperationCanceledException?> RestartStandardMicrophoneMonitorAfterLibAvRecordingAsync",
             "        return cancellationException;");
         AssertContains(standardMicMonitorRestart, "await RestartMicrophoneMonitorAfterRecordingAsync(");
