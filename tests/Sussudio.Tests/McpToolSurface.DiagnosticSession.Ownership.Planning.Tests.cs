@@ -43,8 +43,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var planText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs")
             .Replace("\r\n", "\n");
-        var planPoliciesText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPlan.Policies.cs")
-            .Replace("\r\n", "\n");
         var catalogText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs")
             .Replace("\r\n", "\n");
         var catalogNamesText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Names.cs")
@@ -105,21 +103,18 @@ static partial class Program
         AssertContains(catalogRecordingEntriesText, "DiagnosticSessionScenarioPlan.Create(runFlashbackExportRejected: true)");
         AssertContains(catalogCombinedEntriesText, "private static DiagnosticSessionScenarioCatalogEntry CreateCombinedScenarioEntry()");
         AssertContains(catalogCombinedEntriesText, "DiagnosticSessionScenarioPlan.Create(runCombined: true)");
-        AssertContains(planText, "internal readonly partial record struct DiagnosticSessionScenarioPlan(");
+        AssertContains(planText, "internal readonly record struct DiagnosticSessionScenarioPlan(");
         AssertContains(planText, "internal static DiagnosticSessionScenarioPlan Create(");
         AssertContains(planText, "internal static DiagnosticSessionScenarioPlan From(string scenario)");
         AssertContains(planText, "DiagnosticSessionScenarioCatalog.TryGetEntry(scenario, out var entry)");
         AssertContains(planText, "? entry.Plan");
-        AssertDoesNotContain(planText, "internal bool RequiresFlashbackRecordingReadiness");
-        AssertDoesNotContain(planText, "internal bool UsesFlashbackScenarioWarningPolicy");
-        AssertContains(planPoliciesText, "internal readonly partial record struct DiagnosticSessionScenarioPlan");
-        AssertContains(planPoliciesText, "internal bool RequiresFlashbackRecordingReadiness");
-        AssertContains(planPoliciesText, "internal bool UsesFlashbackScenarioWarningPolicy");
-        AssertContains(planPoliciesText, "internal bool ToleratesSourceSignalHealthWarning");
-        AssertContains(planPoliciesText, "internal bool ToleratesFlashbackForceRotateDrainWarning");
-        AssertContains(planPoliciesText, "internal bool IsPreviewCycleScenario");
-        AssertContains(planPoliciesText, "internal bool ToleratesSparsePreviewSchedulerStressTransitions");
-        AssertContains(planPoliciesText, "RunFlashbackSegmentPlayback");
+        AssertContains(planText, "internal bool RequiresFlashbackRecordingReadiness");
+        AssertContains(planText, "internal bool UsesFlashbackScenarioWarningPolicy");
+        AssertContains(planText, "internal bool ToleratesSourceSignalHealthWarning");
+        AssertContains(planText, "internal bool ToleratesFlashbackForceRotateDrainWarning");
+        AssertContains(planText, "internal bool IsPreviewCycleScenario");
+        AssertContains(planText, "internal bool ToleratesSparsePreviewSchedulerStressTransitions");
+        AssertContains(planText, "RunFlashbackSegmentPlayback");
         AssertContains(bootstrapText, "var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);");
         AssertContains(runnerText, "ScenarioPlan = RunBootstrap.ScenarioPlan;");
         AssertDoesNotContain(runnerText, "scenario == \"flashback-playback\"");

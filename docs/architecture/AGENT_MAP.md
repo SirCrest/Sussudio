@@ -4443,12 +4443,10 @@ Primary owners:
   fallback when connect retry returns no response, and fixed wait command
   payload shaping. Keep the underlying runner delegate string-compatible.
 - `tools/Common/DiagnosticSessionScenarioPlan.cs` owns the scenario plan DTO,
-  creation factory, and catalog lookup handoff.
-  `tools/Common/DiagnosticSessionScenarioPlan.Policies.cs` owns grouped
-  warning/validation policies, including the preview-cycle grouped predicate,
-  used by the runner. Keep new scenario booleans in the DTO and grouped
-  derivations in the policy partial instead of adding string comparisons in
-  `DiagnosticSessionRunner`.
+  creation factory, catalog lookup handoff, and grouped warning/validation
+  policies, including the preview-cycle grouped predicate, used by the runner.
+  Keep new scenario booleans and grouped derivations in the plan instead of
+  adding string comparisons in `DiagnosticSessionRunner`.
 - `tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon option/result,
   summary, swap-chain, app-correlation summary, and metric DTOs.
 - `tools/Common/PresentMon/PresentMonProbe.Options.cs` owns
@@ -4532,6 +4530,5 @@ Invariants:
   wiring scenario behavior into `DiagnosticSessionRunner`. Preserve the final
   order in `tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs`.
 - Keep diagnostic-session grouped policy derivation in
-  `tools/Common/DiagnosticSessionScenarioPlan.Policies.cs`; the runner should
-  consume named properties instead of comparing normalized scenario strings
-  directly.
+  `tools/Common/DiagnosticSessionScenarioPlan.cs`; the runner should consume
+  named properties instead of comparing normalized scenario strings directly.

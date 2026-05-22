@@ -165,8 +165,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionScenarioPlanSource()
     {
-        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs")
-            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioPlan.Policies.cs");
+        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs");
     }
 
     private static string ReadDiagnosticSessionFlashbackExportsSource()
