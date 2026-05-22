@@ -3644,16 +3644,10 @@ cleanup, and concurrent-output-directory failure message while the runner only
 acquires and disposes the lock.
 
 Diagnostic-session background task tracking now lives in
-`tools/Common/DiagnosticSessionBackgroundTasks.cs`. The root owns scenario task
-registration, deterministic await order, and normal registered scenario
-completion, plus the registration record that preserves await order.
-`DiagnosticSessionBackgroundTasks.PresentMon.cs` owns PresentMon
-task registration, normal completion, and interrupted-session observation,
-`DiagnosticSessionBackgroundTasks.RecordingSettingsDeferred.cs` owns deferred
-Flashback recording-settings registration, normal completion, and
-interrupted-session observation.
-`DiagnosticSessionBackgroundTasks.FaultDrain.cs` owns interrupted drain
-orchestration, generic scenario-task warning collection, and the drain handoff
+`tools/Common/DiagnosticSessionBackgroundTasks.cs`. It owns scenario task
+registration, deterministic await order, normal registered scenario completion,
+PresentMon and deferred Flashback recording-settings task tracking,
+interrupted-session observation, warning collection, and the drain handoff
 record.
 
 Diagnostic-session scenario startup now lives in
@@ -3950,9 +3944,6 @@ Remaining `tools/Common` ownership:
 - `AutomationPipeClient/AutomationPipeClient.Commands.cs`
 - `AutomationPipeClient/AutomationCommandTransport.cs`
 - `DiagnosticSessionBackgroundTasks.cs`
-- `DiagnosticSessionBackgroundTasks.PresentMon.cs`
-- `DiagnosticSessionBackgroundTasks.RecordingSettingsDeferred.cs`
-- `DiagnosticSessionBackgroundTasks.FaultDrain.cs`
 - `DiagnosticSessionCleanupActions.cs`
 - `DiagnosticSessionCleanupPolicy.cs`
 - `DiagnosticSessionRecordingChecks.cs`

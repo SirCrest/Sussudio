@@ -14,54 +14,35 @@ static partial class Program
         var presentMonStartupText = ReadRepoFile("tools/Common/DiagnosticSessionPresentMonStartup.cs")
             .Replace("\r\n", "\n");
         var tasksText = ReadDiagnosticSessionBackgroundTasksSource();
-        var tasksRootText = ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.cs")
-            .Replace("\r\n", "\n");
-        var presentMonTasksText = ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.PresentMon.cs")
-            .Replace("\r\n", "\n");
-        var recordingSettingsTasksText = ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.RecordingSettingsDeferred.cs")
-            .Replace("\r\n", "\n");
-        var faultDrainText = ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.FaultDrain.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(startupText, "internal static class DiagnosticSessionScenarioStartup");
         AssertDoesNotContain(startupText, "internal static partial class DiagnosticSessionScenarioStartup");
         AssertContains(startupText, "internal static async Task<DiagnosticSessionScenarioStartupResult> StartAsync(");
         AssertContains(startupText, "internal readonly record struct DiagnosticSessionScenarioStartupResult(bool StartedFlashbackPlayback)");
-        AssertContains(tasksText, "internal sealed partial class DiagnosticSessionBackgroundTasks");
-        AssertContains(tasksRootText, "internal readonly record struct DiagnosticSessionBackgroundTaskRegistration(");
-        AssertContains(tasksRootText, "private readonly List<DiagnosticSessionBackgroundTaskRegistration> _scenarioTasks = [];");
-        AssertContains(tasksRootText, "internal void AddScenario(int awaitOrder, string stage, Task task)");
-        AssertContains(tasksRootText, "internal async Task<FlashbackRecordingSettingsDeferredPresetState> CompleteRegisteredScenarioWorkAsync(");
-        AssertContains(tasksRootText, "private async Task AwaitScenarioTasksAsync()");
-        AssertContains(tasksRootText, "_scenarioTasks.OrderBy(task => task.AwaitOrder)");
-        AssertContains(presentMonTasksText, "private Task<PresentMonProbeResult>? _presentMonTask;");
-        AssertContains(presentMonTasksText, "internal void SetPresentMon(Task<PresentMonProbeResult> task)");
-        AssertContains(presentMonTasksText, "internal async Task<PresentMonProbeResult?> CompletePresentMonAsync(");
-        AssertContains(presentMonTasksText, "private async Task<PresentMonProbeResult?> AwaitPresentMonAsync(");
-        AssertContains(presentMonTasksText, "private async Task<PresentMonProbeResult?> ObservePresentMonAfterFaultAsync(");
-        AssertContains(presentMonTasksText, "presentmon-task: task still running after diagnostic interruption");
-        AssertContains(recordingSettingsTasksText, "private Task<FlashbackRecordingSettingsDeferredPresetState>? _recordingSettingsDeferredTask;");
-        AssertContains(recordingSettingsTasksText, "internal void SetRecordingSettingsDeferred(Task<FlashbackRecordingSettingsDeferredPresetState> task)");
-        AssertContains(recordingSettingsTasksText, "private async Task<FlashbackRecordingSettingsDeferredPresetState> AwaitRecordingSettingsDeferredAsync(");
-        AssertContains(recordingSettingsTasksText, "private async Task<FlashbackRecordingSettingsDeferredPresetState> ObserveRecordingSettingsDeferredAfterFaultAsync(");
-        AssertContains(recordingSettingsTasksText, "flashback-recording-settings-deferred-task: task still running after diagnostic interruption");
-        AssertContains(faultDrainText, "internal readonly record struct DiagnosticSessionBackgroundTaskDrainResult(");
-        AssertContains(faultDrainText, "internal async Task<DiagnosticSessionBackgroundTaskDrainResult> ObserveAfterFaultAsync(");
-        AssertContains(faultDrainText, "ObservePresentMonAfterFaultAsync(");
-        AssertContains(faultDrainText, "ObserveRecordingSettingsDeferredAfterFaultAsync(");
-        AssertContains(faultDrainText, "private static async Task ObserveTaskAfterFaultAsync(");
-        AssertDoesNotContain(tasksRootText, "private Task<PresentMonProbeResult>? _presentMonTask;");
-        AssertDoesNotContain(tasksRootText, "private Task<FlashbackRecordingSettingsDeferredPresetState>? _recordingSettingsDeferredTask;");
-        AssertDoesNotContain(tasksRootText, "internal async Task<PresentMonProbeResult?> CompletePresentMonAsync(");
-        AssertDoesNotContain(tasksRootText, "internal void SetPresentMon(");
-        AssertDoesNotContain(tasksRootText, "internal void SetRecordingSettingsDeferred(");
-        AssertDoesNotContain(tasksRootText, "ObserveAfterFaultAsync(");
-        AssertDoesNotContain(tasksRootText, "internal readonly record struct DiagnosticSessionBackgroundTaskDrainResult(");
-        AssertDoesNotContain(presentMonTasksText, "SetRecordingSettingsDeferred(");
-        AssertDoesNotContain(recordingSettingsTasksText, "SetPresentMon(");
-        AssertDoesNotContain(faultDrainText, "internal readonly record struct DiagnosticSessionBackgroundTaskRegistration(");
-        AssertDoesNotContain(faultDrainText, "presentmon-task: task still running after diagnostic interruption");
-        AssertDoesNotContain(faultDrainText, "flashback-recording-settings-deferred-task: task still running after diagnostic interruption");
+        AssertContains(tasksText, "internal sealed class DiagnosticSessionBackgroundTasks");
+        AssertDoesNotContain(tasksText, "internal sealed partial class DiagnosticSessionBackgroundTasks");
+        AssertContains(tasksText, "internal readonly record struct DiagnosticSessionBackgroundTaskRegistration(");
+        AssertContains(tasksText, "internal readonly record struct DiagnosticSessionBackgroundTaskDrainResult(");
+        AssertContains(tasksText, "private readonly List<DiagnosticSessionBackgroundTaskRegistration> _scenarioTasks = [];");
+        AssertContains(tasksText, "private Task<PresentMonProbeResult>? _presentMonTask;");
+        AssertContains(tasksText, "private Task<FlashbackRecordingSettingsDeferredPresetState>? _recordingSettingsDeferredTask;");
+        AssertContains(tasksText, "internal void AddScenario(int awaitOrder, string stage, Task task)");
+        AssertContains(tasksText, "internal void SetPresentMon(Task<PresentMonProbeResult> task)");
+        AssertContains(tasksText, "internal void SetRecordingSettingsDeferred(Task<FlashbackRecordingSettingsDeferredPresetState> task)");
+        AssertContains(tasksText, "internal async Task<FlashbackRecordingSettingsDeferredPresetState> CompleteRegisteredScenarioWorkAsync(");
+        AssertContains(tasksText, "internal async Task<PresentMonProbeResult?> CompletePresentMonAsync(");
+        AssertContains(tasksText, "internal async Task<DiagnosticSessionBackgroundTaskDrainResult> ObserveAfterFaultAsync(");
+        AssertContains(tasksText, "private async Task AwaitScenarioTasksAsync()");
+        AssertContains(tasksText, "_scenarioTasks.OrderBy(task => task.AwaitOrder)");
+        AssertContains(tasksText, "private async Task<PresentMonProbeResult?> AwaitPresentMonAsync(");
+        AssertContains(tasksText, "private async Task<PresentMonProbeResult?> ObservePresentMonAfterFaultAsync(");
+        AssertContains(tasksText, "presentmon-task: task still running after diagnostic interruption");
+        AssertContains(tasksText, "private async Task<FlashbackRecordingSettingsDeferredPresetState> AwaitRecordingSettingsDeferredAsync(");
+        AssertContains(tasksText, "private async Task<FlashbackRecordingSettingsDeferredPresetState> ObserveRecordingSettingsDeferredAfterFaultAsync(");
+        AssertContains(tasksText, "flashback-recording-settings-deferred-task: task still running after diagnostic interruption");
+        AssertContains(tasksText, "ObservePresentMonAfterFaultAsync(");
+        AssertContains(tasksText, "ObserveRecordingSettingsDeferredAfterFaultAsync(");
+        AssertContains(tasksText, "private static async Task ObserveTaskAfterFaultAsync(");
         AssertContains(runnerText, "var backgroundTasks = new DiagnosticSessionBackgroundTasks();");
         AssertContains(startupText, "private static void RegisterFlashbackScenarioTasks(");
         AssertContains(startupText, "private static void RegisterDeferredFlashbackRecordingSettingsTask(");
