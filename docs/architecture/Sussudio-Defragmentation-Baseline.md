@@ -181,6 +181,18 @@ Behavior preserved: Capture command automation fields still flow through typed p
 Notes for future agents: keep direct capture command flattening beside the capture command projection unless the flattening policy grows shared logic
 
 Date: 2026-05-21
+Area: Automation diagnostics MJPEG root projection
+Problem: Root MJPEG projection and final flattened DTO field projection lived in separate tiny partials even though the flattening is a direct one-to-one projection of MJPEG root counters and queue fields.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.Mjpeg.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics MJPEG projection ownership tests and runtime snapshot regression tests
+Behavior preserved: MJPEG root automation fields still flow through typed projection records before final DTO initialization
+Notes for future agents: keep direct root MJPEG flattening beside the root MJPEG projection; timing, preview jitter, and packet hash remain separate named sub-projections
+
+Date: 2026-05-21
 Area: Automation diagnostics Flashback recording projection
 Problem: Flashback recording projection data and matching flattened DTO field projection lived in parallel partial fragments, forcing agents to open twelve files to audit one automation snapshot concern.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.StartupCache.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.Queues.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.Runtime.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.Backend.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackRecording.Encoder.cs`

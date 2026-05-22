@@ -7,8 +7,6 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var mjpegFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.Mjpeg.cs")
-            .Replace("\r\n", "\n");
         var mjpegTimingFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegTiming.cs")
             .Replace("\r\n", "\n");
         var mjpegProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs")
@@ -31,10 +29,6 @@ static partial class Program
         AssertContains(snapshotProjectionText, "var mjpeg = BuildMjpegProjection(health);");
         AssertContains(snapshotFlatteningText, "var mjpegFlattening = BuildMjpegFlattenedProjection(mjpeg);");
         AssertContains(snapshotFlatteningText, "MjpegTotalDecoded = mjpegFlattening.TotalDecoded,");
-        AssertContains(mjpegFlatteningText, "private static MjpegFlattenedProjection BuildMjpegFlattenedProjection(");
-        AssertContains(mjpegFlatteningText, "TotalDecoded = mjpeg.TotalDecoded,");
-        AssertContains(mjpegFlatteningText, "CompressedQueueByteBudget = mjpeg.CompressedQueueByteBudget,");
-        AssertContains(mjpegFlatteningText, "private readonly record struct MjpegFlattenedProjection");
         AssertContains(snapshotFlatteningText, "var mjpegTimingFlattening = BuildMjpegTimingFlattenedProjection(mjpeg.Timing);");
         AssertContains(snapshotFlatteningText, "MjpegDecodeSampleCount = mjpegTimingFlattening.DecodeSampleCount,");
         AssertContains(snapshotFlatteningText, "var mjpegPreviewJitterFlattening = BuildMjpegPreviewJitterFlattenedProjection(mjpeg.PreviewJitter);");
@@ -74,6 +68,10 @@ static partial class Program
         AssertDoesNotContain(mjpegProjectionText, "DecodeSampleCount = health.MjpegDecodeSampleCount,");
         AssertDoesNotContain(mjpegProjectionText, "PerDecoder = health.MjpegPerDecoder is { Length: > 0 } perDecoder");
         AssertContains(mjpegProjectionText, "private readonly record struct MjpegProjection");
+        AssertContains(mjpegProjectionText, "private static MjpegFlattenedProjection BuildMjpegFlattenedProjection(");
+        AssertContains(mjpegProjectionText, "TotalDecoded = mjpeg.TotalDecoded,");
+        AssertContains(mjpegProjectionText, "CompressedQueueByteBudget = mjpeg.CompressedQueueByteBudget,");
+        AssertContains(mjpegProjectionText, "private readonly record struct MjpegFlattenedProjection");
         AssertContains(mjpegTimingProjectionText, "private static MjpegTimingProjection BuildMjpegTimingProjection(CaptureHealthSnapshot health)");
         AssertContains(mjpegTimingProjectionText, "DecodeSampleCount = health.MjpegDecodeSampleCount,");
         AssertContains(mjpegTimingProjectionText, "PipelineMaxMs = health.MjpegPipelineMaxMs,");
