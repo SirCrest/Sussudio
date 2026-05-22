@@ -74,7 +74,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 228 | Sussudio/Services/Audio/WasapiAudioPlayback.RenderThread.cs |
 | 227 | Sussudio/Controllers/Window/WindowUiDispatchController.cs |
 | 226 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs |
-| 226 | Sussudio/RuntimePaths.Resolution.cs |
+| 207 | Sussudio/RuntimePaths.cs |
 | 225 | Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs |
 | 223 | Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs |
 | 223 | Sussudio/Services/Audio/WasapiAudioCapture.Conversion.cs |

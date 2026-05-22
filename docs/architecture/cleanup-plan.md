@@ -38,9 +38,9 @@ routing through `LoggingJsonContext`, and fatal breadcrumbs. Keep WMI/system
 evidence and JSON payload routing out of the writer root so the saturation and
 shutdown behavior remains easy to audit.
 
-Runtime path resolution is split from the public cached path API without
-changing repo/temp/log path behavior. `Sussudio/RuntimePaths.cs` owns the public
-`GetRepo*` API and lazy cache fields. `Sussudio/RuntimePaths.Resolution.cs` owns
+Runtime path resolution lives with the public cached path API without changing
+repo/temp/log path behavior. `Sussudio/RuntimePaths.cs` owns the public
+`GetRepo*` API, lazy cache fields,
 repo-root marker discovery, latest-build parent fallback, log-root override and
 fallback policy, guarded directory creation, and trace fallback diagnostics.
 
