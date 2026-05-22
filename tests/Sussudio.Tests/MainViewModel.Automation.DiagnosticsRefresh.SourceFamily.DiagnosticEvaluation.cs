@@ -10,6 +10,5 @@ static partial class Program
         public string DiagnosticEvaluationRealtimeText { get; init; } = string.Empty;
         public string DiagnosticEvaluationRealtimePreviewText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesText { get; init; } = string.Empty;
-        public string DiagnosticEvaluationLanesRealtimePreviewText { get; init; } = string.Empty;
     }
 }
