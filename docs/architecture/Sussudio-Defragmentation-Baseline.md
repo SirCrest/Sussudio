@@ -193,6 +193,18 @@ Behavior preserved: preview surface visibility, renderer attachment, GPU playbac
 Notes for future agents: keep tiny preview runtime DTO mapping groups with `PreviewRuntime.cs`; keep cadence/startup separate while they remain more semantic scan units
 
 Date: 2026-05-21
+Area: Automation diagnostics audio projection
+Problem: Audio signal projection lived in a tiny partial even though the audio/ingest projection owner immediately composes and flattens it with the rest of the audio DTO.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Audio.Signal.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics audio projection ownership tests and runtime snapshot regression tests
+Behavior preserved: audio peak, clipping, signal-present, and muted-suspected fields still map into the same flattened automation snapshot fields
+Notes for future agents: keep audio signal DTO mapping with `Audio.cs`; keep audio drop accounting separate because it is composed independently from capture health
+
+Date: 2026-05-21
 Area: Automation diagnostics signal alerts
 Problem: Capture cadence, audio muted, and recording growth signal alert rules lived in tiny partials separate from the signal alert owner even though they all update alert state from the same automation snapshot surface.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.Capture.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.AudioRecording.cs`

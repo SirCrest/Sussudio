@@ -438,12 +438,9 @@ Automation diagnostics ownership:
   performance threshold projection consumed by `AutomationSnapshot`, plus final
   snapshot evaluation projection-to-`AutomationSnapshot` field flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Audio.cs`
-  owns audio/ingest projection routing, groups audio signal, capture-ingest,
-  and WASAPI projection inputs, and owns final audio/ingest projection-to-
-  `AutomationSnapshot` flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Audio.Signal.cs`
-  owns view-model audio peak/clipping and detected audio-signal projection
-  inputs plus flattened audio signal fields.
+  owns audio/ingest projection routing, view-model audio peak/clipping and
+  detected audio-signal projection inputs, capture-ingest and WASAPI projection
+  groups, and final audio/ingest projection-to-`AutomationSnapshot` flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.AudioDrops.cs`
   owns audio drop counter projection and derived real-time/file-writer drop
   totals, plus final audio-drop projection-to-`AutomationSnapshot` field

@@ -149,10 +149,10 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionAudioText, "BuildAudioSignalProjection(viewModelSnapshot, audioSignal)");
         AssertContains(diagnostics.SnapshotProjectionAudioText, "BuildCaptureIngestProjection(captureRuntime)");
         AssertContains(diagnostics.SnapshotProjectionAudioText, "BuildWasapiAudioProjection(captureRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionAudioSignalText, "private static AudioSignalProjection BuildAudioSignalProjection(");
+        AssertContains(diagnostics.SnapshotProjectionAudioText, "private static AudioSignalProjection BuildAudioSignalProjection(");
         AssertContains(diagnostics.SnapshotProjectionAudioDropsText, "private static AudioDropsProjection BuildAudioDropsProjection(");
         AssertContains(diagnostics.SnapshotProjectionAudioText, "private static AudioAndIngestFlattenedProjection BuildAudioAndIngestFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionAudioSignalText, "private static AudioSignalFlattenedProjection BuildAudioSignalFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionAudioText, "private static AudioSignalFlattenedProjection BuildAudioSignalFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionCaptureIngestText, "private static CaptureIngestFlattenedProjection BuildCaptureIngestFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionCaptureIngestText, "private static SourceReaderFlattenedProjection BuildSourceReaderFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionWasapiAudioText, "private static WasapiCaptureFlattenedProjection BuildWasapiCaptureFlattenedProjection(");

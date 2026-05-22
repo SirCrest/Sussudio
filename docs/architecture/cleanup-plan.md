@@ -133,11 +133,9 @@ performance score, diagnostic lane, preview pacing classifier, and performance
 threshold projection consumed by the automation snapshot DTO, plus final
 snapshot evaluation projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Audio.cs` owns audio/ingest
-projection routing and groups audio signal, capture-ingest, and WASAPI
-projection inputs consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Audio.Signal.cs` owns view-model
-audio peak/clipping and detected audio-signal projection inputs plus flattened
-audio signal fields.
+projection routing, view-model audio peak/clipping and detected audio-signal
+projection inputs, capture-ingest and WASAPI projection groups, and flattened
+audio signal fields consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.AudioDrops.cs` owns audio drop
 counter projection, derived real-time/file-writer drop totals, and final
 audio-drop projection-to-`AutomationSnapshot` field flattening.

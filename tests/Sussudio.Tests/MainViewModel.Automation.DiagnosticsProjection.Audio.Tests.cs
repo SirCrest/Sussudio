@@ -9,8 +9,6 @@ static partial class Program
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
         var audioProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Audio.cs")
             .Replace("\r\n", "\n");
-        var audioSignalProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Audio.Signal.cs")
-            .Replace("\r\n", "\n");
         var audioDropsProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.AudioDrops.cs")
             .Replace("\r\n", "\n");
         var captureIngestProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureIngest.cs")
@@ -58,12 +56,12 @@ static partial class Program
         AssertDoesNotContain(audioProjectionText, "SourceReaderReadOutstanding = captureRuntime.SourceReaderReadOutstanding,");
         AssertDoesNotContain(audioProjectionText, "WasapiCaptureAudioLevelEventsFired = captureRuntime.WasapiCaptureAudioLevelEventsFired,");
 
-        AssertContains(audioSignalProjectionText, "private static AudioSignalProjection BuildAudioSignalProjection(");
-        AssertContains(audioSignalProjectionText, "Peak = viewModelSnapshot.AudioPeak,");
-        AssertContains(audioSignalProjectionText, "SignalPresent = audioSignal.SignalPresent,");
-        AssertContains(audioSignalProjectionText, "private readonly record struct AudioSignalProjection");
-        AssertContains(audioSignalProjectionText, "private static AudioSignalFlattenedProjection BuildAudioSignalFlattenedProjection(");
-        AssertContains(audioSignalProjectionText, "Peak = signal.Peak,");
+        AssertContains(audioProjectionText, "private static AudioSignalProjection BuildAudioSignalProjection(");
+        AssertContains(audioProjectionText, "Peak = viewModelSnapshot.AudioPeak,");
+        AssertContains(audioProjectionText, "SignalPresent = audioSignal.SignalPresent,");
+        AssertContains(audioProjectionText, "private readonly record struct AudioSignalProjection");
+        AssertContains(audioProjectionText, "private static AudioSignalFlattenedProjection BuildAudioSignalFlattenedProjection(");
+        AssertContains(audioProjectionText, "Peak = signal.Peak,");
 
         AssertContains(audioDropsProjectionText, "private static AudioDropsProjection BuildAudioDropsProjection(CaptureHealthSnapshot health)");
         AssertContains(audioDropsProjectionText, "QueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,");
