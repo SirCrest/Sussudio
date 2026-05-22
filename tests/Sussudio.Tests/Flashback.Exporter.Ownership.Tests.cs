@@ -48,11 +48,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var outputFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs")
             .Replace("\r\n", "\n");
-        var outputValidationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.OutputValidation.cs")
-            .Replace("\r\n", "\n");
-        var pathValidationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PathValidation.cs")
-            .Replace("\r\n", "\n");
-        var segmentSelectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentSelection.cs")
+        var validationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Validation.cs")
             .Replace("\r\n", "\n");
         var libAvErrorsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.LibAvErrors.cs")
             .Replace("\r\n", "\n");
@@ -187,12 +183,12 @@ static partial class Program
         AssertContains(lifecycleText, "private void DisposeExportLockBestEffort()");
         AssertContains(lifecycleText, "private static FinalizeResult CreateCancelledExportResult(string outputPath)");
         AssertContains(lifecycleText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");
-        AssertContains(outputValidationText, "private static long GetFileLengthBestEffort(string path)");
-        AssertContains(outputValidationText, "private static bool TryValidateCompletedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
-        AssertContains(pathValidationText, "private static bool IsSamePath(string? left, string? right)");
-        AssertContains(pathValidationText, "private static bool TryValidateOutputPath(string outputPath, out string fullOutputPath, out string failureMessage)");
-        AssertContains(segmentSelectionText, "private static bool SegmentOverlapsExportRange(");
-        AssertContains(segmentSelectionText, "private static bool TryValidateExportRange(TimeSpan inPoint, TimeSpan outPoint, out string failureMessage)");
+        AssertContains(validationText, "private static long GetFileLengthBestEffort(string path)");
+        AssertContains(validationText, "private static bool TryValidateCompletedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
+        AssertContains(validationText, "private static bool IsSamePath(string? left, string? right)");
+        AssertContains(validationText, "private static bool TryValidateOutputPath(string outputPath, out string fullOutputPath, out string failureMessage)");
+        AssertContains(validationText, "private static bool SegmentOverlapsExportRange(");
+        AssertContains(validationText, "private static bool TryValidateExportRange(TimeSpan inPoint, TimeSpan outPoint, out string failureMessage)");
         AssertContains(lifecycleText, "private void CloseActiveInput()");
         AssertContains(lifecycleText, "private void CloseOutputIo()");
         AssertContains(lifecycleText, "private void CleanupNativeState()");
@@ -241,6 +237,18 @@ static partial class Program
                 false,
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
                 $"{removedFile} folded into FlashbackExporter.Lifecycle.cs");
+        }
+        foreach (var removedFile in new[]
+        {
+            "FlashbackExporter.OutputValidation.cs",
+            "FlashbackExporter.PathValidation.cs",
+            "FlashbackExporter.SegmentSelection.cs"
+        })
+        {
+            AssertEqual(
+                false,
+                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
+                $"{removedFile} folded into FlashbackExporter.Validation.cs");
         }
 
         return Task.CompletedTask;

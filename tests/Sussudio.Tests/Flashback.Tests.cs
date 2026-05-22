@@ -130,9 +130,7 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Progress.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.WriterPacing.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.TempFiles.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.OutputValidation.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PathValidation.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentSelection.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Validation.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.LibAvErrors.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.TimeMath.cs").Replace("\r\n", "\n")
         };

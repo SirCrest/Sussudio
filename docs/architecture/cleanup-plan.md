@@ -2134,13 +2134,11 @@ tracking live in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentInputPreflight.cs`. The
 root exporter keeps shared native state, constants, and fields only.
 
-Flashback exporter completed-output length validation lives in
-`Sussudio/Services/Flashback/FlashbackExporter.OutputValidation.cs`, normalized
-path comparison and output path validation live in
-`Sussudio/Services/Flashback/FlashbackExporter.PathValidation.cs`, and
-export-range validation plus segment/export-range overlap classification live in
-`Sussudio/Services/Flashback/FlashbackExporter.SegmentSelection.cs`. FFmpeg error
-string formatting/throwing lives in
+Flashback exporter validation policy now lives in
+`Sussudio/Services/Flashback/FlashbackExporter.Validation.cs`. Keep
+completed-output length validation, normalized path comparison, output path
+validation, export-range validation, and segment/export-range overlap
+classification there. FFmpeg error string formatting/throwing lives in
 `Sussudio/Services/Flashback/FlashbackExporter.LibAvErrors.cs`, and timestamp
 math/saturated arithmetic lives in
 `Sussudio/Services/Flashback/FlashbackExporter.TimeMath.cs` so
