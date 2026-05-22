@@ -263,21 +263,13 @@ per-decoder projection inputs consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegTiming.cs` owns
 final CPU MJPEG timing projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.cs` owns MJPEG
-preview jitter projection routing consumed by the automation snapshot DTO.
-Its focused owners split queue counters, timing samples, adaptive drop/depth
-counters, and last scheduler event projection inputs:
+preview jitter projection routing and final projection-to-`AutomationSnapshot`
+flattening. Its focused owners split queue counters, timing samples, adaptive
+drop/depth counters, and last scheduler event projection plus flattening inputs:
 `AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Queue.cs`,
 `AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Timing.cs`,
 `AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Adaptive.cs`,
 and `AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Events.cs`.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPreviewJitter.cs`
-owns final MJPEG preview jitter projection-to-`AutomationSnapshot` routing.
-Its focused flattening owners mirror queue counters, timing samples, adaptive
-drop/depth counters, and last scheduler event fields:
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPreviewJitter.Queue.cs`,
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPreviewJitter.Timing.cs`,
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPreviewJitter.Adaptive.cs`,
-and `AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPreviewJitter.Events.cs`.
 `AutomationDiagnosticsHub.SnapshotProjection.MjpegPacketHash.cs` owns MJPEG
 packet duplicate-run / unique-frame projection inputs consumed by the automation
 snapshot DTO.

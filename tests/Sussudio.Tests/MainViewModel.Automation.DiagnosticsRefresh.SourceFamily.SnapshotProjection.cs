@@ -12,11 +12,6 @@ static partial class Program
         public string SnapshotProjectionFlatteningVisualCadenceText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningMjpegText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningMjpegTimingText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningMjpegPreviewJitterText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningMjpegPreviewJitterQueueText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningMjpegPreviewJitterTimingText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningMjpegPreviewJitterAdaptiveText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningMjpegPreviewJitterEventsText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningMjpegPacketHashText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSourceText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSourceSignalText { get; init; } = string.Empty;
