@@ -1535,9 +1535,9 @@ Primary current owners:
   `RegisterCloseLifecycle`, `CloseAsync`, and the stable
   `RequestWindowClose()` adapter.
 - `Sussudio/MainWindow.ShutdownCleanup.Composition.cs` wires MainWindow cleanup
-  delegates into `WindowShutdownCleanupController`,
-  `Sussudio/MainWindow.ShutdownCleanup.Event.cs` owns the stable `Closed` event
-  adapter, and `Sussudio/MainWindow.ShutdownCleanup.Adapters.cs` owns the timer,
+  delegates and the stable `Closed` event adapter into
+  `WindowShutdownCleanupController`, and
+  `Sussudio/MainWindow.ShutdownCleanup.Adapters.cs` owns the timer,
   event-detach, stats, recording-visual, and preview-size cleanup delegate
   adapters.
 - `Sussudio/Controllers/Window/NativeWindowBootstrapController.cs` owns native window

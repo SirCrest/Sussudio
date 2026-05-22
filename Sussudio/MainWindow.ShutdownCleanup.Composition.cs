@@ -32,4 +32,7 @@ public sealed partial class MainWindow
             DisposeViewModelAsync = ViewModel.DisposeAsync
         });
     }
+
+    private async void MainWindow_Closed(object sender, WindowEventArgs args)
+        => await _windowShutdownCleanupController.RunAsync();
 }
