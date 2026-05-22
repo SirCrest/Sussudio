@@ -15,18 +15,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackSessionModelText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs")
             .Replace("\r\n", "\n");
-        var playbackSessionCommandsModelText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Commands.Model.cs")
-            .Replace("\r\n", "\n");
-        var playbackSessionCadenceModelText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Cadence.Model.cs")
-            .Replace("\r\n", "\n");
-        var playbackSessionOnePercentLowModelText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.OnePercentLow.Model.cs")
-            .Replace("\r\n", "\n");
-        var playbackSessionDecodeModelText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Decode.Model.cs")
-            .Replace("\r\n", "\n");
-        var playbackSessionAudioMasterModelText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.AudioMaster.Model.cs")
-            .Replace("\r\n", "\n");
-        var playbackSessionStagesModelText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Stages.Model.cs")
-            .Replace("\r\n", "\n");
         var playbackSessionText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs")
             .Replace("\r\n", "\n");
         var playbackObservationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs")
@@ -75,12 +63,6 @@ static partial class Program
         AssertContains(metricsText, "internal static partial class DiagnosticSessionFlashbackMetrics");
         AssertContains(recordingModelText, "internal sealed class FlashbackRecordingSessionMetrics");
         AssertContains(playbackSessionModelText, "internal sealed partial class FlashbackPlaybackSessionMetrics");
-        AssertContains(playbackSessionCommandsModelText, "internal sealed partial class FlashbackPlaybackSessionMetrics");
-        AssertContains(playbackSessionCadenceModelText, "internal sealed partial class FlashbackPlaybackSessionMetrics");
-        AssertContains(playbackSessionOnePercentLowModelText, "internal sealed partial class FlashbackPlaybackSessionMetrics");
-        AssertContains(playbackSessionDecodeModelText, "internal sealed partial class FlashbackPlaybackSessionMetrics");
-        AssertContains(playbackSessionAudioMasterModelText, "internal sealed partial class FlashbackPlaybackSessionMetrics");
-        AssertContains(playbackSessionStagesModelText, "internal sealed partial class FlashbackPlaybackSessionMetrics");
         AssertContains(playbackResultModelText, "internal sealed partial class FlashbackPlaybackResultMetrics");
         AssertContains(playbackResultCommandsModelText, "internal sealed partial class FlashbackPlaybackResultMetrics");
         AssertContains(playbackResultCadenceModelText, "internal sealed partial class FlashbackPlaybackResultMetrics");
@@ -89,12 +71,12 @@ static partial class Program
         AssertContains(playbackResultStagesModelText, "internal sealed partial class FlashbackPlaybackResultMetrics");
         AssertContains(exportModelText, "internal sealed class FlashbackExportSessionMetrics");
         AssertContains(playbackSessionModelText, "public JsonElement BaselineSnapshot { get; init; }");
-        AssertContains(playbackSessionCommandsModelText, "public int MaxCommandQueueLatencyMsObserved { get; set; }");
-        AssertContains(playbackSessionCadenceModelText, "public double MaxSlowFramePercentObserved { get; set; }");
-        AssertContains(playbackSessionOnePercentLowModelText, "public long MinOnePercentLowAudioMasterFallbacks { get; set; }");
-        AssertContains(playbackSessionDecodeModelText, "public string MaxDecodePhaseObserved { get; set; } = string.Empty;");
-        AssertContains(playbackSessionAudioMasterModelText, "public double MaxAbsAvDriftMsObserved { get; set; }");
-        AssertContains(playbackSessionStagesModelText, "public long SubmitFailuresDelta { get; set; }");
+        AssertContains(playbackSessionModelText, "public int MaxCommandQueueLatencyMsObserved { get; set; }");
+        AssertContains(playbackSessionModelText, "public double MaxSlowFramePercentObserved { get; set; }");
+        AssertContains(playbackSessionModelText, "public long MinOnePercentLowAudioMasterFallbacks { get; set; }");
+        AssertContains(playbackSessionModelText, "public string MaxDecodePhaseObserved { get; set; } = string.Empty;");
+        AssertContains(playbackSessionModelText, "public double MaxAbsAvDriftMsObserved { get; set; }");
+        AssertContains(playbackSessionModelText, "public long SubmitFailuresDelta { get; set; }");
         AssertContains(playbackResultModelText, "public JsonElement EndSnapshot { get; init; }");
         AssertContains(playbackResultCommandsModelText, "public int PendingCommandsAtEnd { get; init; }");
         AssertContains(playbackResultCadenceModelText, "public double OnePercentLowFpsAtEnd { get; init; }");
@@ -102,13 +84,6 @@ static partial class Program
         AssertContains(playbackResultAudioMasterModelText, "public long AudioMasterFallbacksAtEnd { get; init; }");
         AssertContains(playbackResultStagesModelText, "public long SeekForwardDecodeCapHitsDelta { get; init; }");
         AssertContains(exportModelText, "public long ForceRotateFallbacksAtEnd { get; set; }");
-        AssertDoesNotContain(playbackSessionModelText, "MaxCommandQueueLatencyMsObserved");
-        AssertDoesNotContain(playbackSessionModelText, "MinOnePercentLowAudioMasterFallbacks");
-        AssertDoesNotContain(playbackSessionModelText, "MaxDecodePhaseObserved");
-        AssertDoesNotContain(playbackSessionCommandsModelText, "MinOnePercentLowFpsObserved");
-        AssertDoesNotContain(playbackSessionOnePercentLowModelText, "MaxDecodePhaseObserved");
-        AssertDoesNotContain(playbackSessionDecodeModelText, "MaxAudioMasterFallbacksObserved");
-        AssertDoesNotContain(playbackSessionAudioMasterModelText, "SubmitFailuresDelta");
         AssertDoesNotContain(playbackResultModelText, "PendingCommandsAtEnd");
         AssertDoesNotContain(playbackResultModelText, "SeekForwardDecodeCapHitsDelta");
         AssertDoesNotContain(playbackResultCommandsModelText, "DecodeAvgMsAtEnd");

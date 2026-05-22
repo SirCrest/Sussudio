@@ -4299,16 +4299,9 @@ Primary owners:
   `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs` owns read-only
   recording metric projection.
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs`
-  owns the core `FlashbackPlaybackSessionMetrics` handoff identity: observed
-  state, baseline/end snapshots, and end session frame count. Focused
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Commands.Model.cs`,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Cadence.Model.cs`,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.OnePercentLow.Model.cs`,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Decode.Model.cs`,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.AudioMaster.Model.cs`,
-  and `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Stages.Model.cs`
-  own command, cadence, 1% low, decode, audio-master, and stage metric handoff
-  fields. `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs` owns
+  owns the `FlashbackPlaybackSessionMetrics` handoff state: observed identity,
+  baseline/end snapshots, command, cadence, 1% low, decode, audio-master, and
+  stage metric fields. `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs` owns
   playback session metric orchestration plus end-of-session playback counter
   deltas. `tools/Common/DiagnosticSessionFlashbackMetrics.Export.Model.cs`
   owns the `FlashbackExportSessionMetrics` handoff shape,
