@@ -3309,10 +3309,9 @@ Primary current owners:
   timeline/export state. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets
   out of the root facade file. `Sussudio/ViewModels/AudioRampTraceRecorder.cs`
-  owns audio ramp diagnostic state, bounded ring-buffer storage, and snapshot
-  projection, while `Sussudio/ViewModels/AudioRampTraceRecorder.Capture.cs`
-  owns trace session start/complete, trace-point capture, sampler loop, and
-  delayed sampler shutdown.
+  owns audio ramp diagnostic state, bounded ring-buffer storage, snapshot
+  projection, trace session start/complete, trace-point capture, sampler loop,
+  and delayed sampler shutdown.
   `Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs` keeps the
   automation-facing adapter methods plus trace recorder and preview-volume
   transition controller wiring. `PreviewAudioVolumeTransitionController.cs`

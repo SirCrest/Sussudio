@@ -4581,10 +4581,9 @@ owner, fold it back into that owner and update the source-shape tests and
    or automation contracts. The live audio/microphone meter callback state
    now has a named owner in `MainViewModel.AudioMeters.cs`; keep future meter
    behavior there instead of growing the root facade file. Audio ramp trace
-   state, bounded ring-buffer storage, and snapshot projection live in
-   `Sussudio/ViewModels/AudioRampTraceRecorder.cs`. Trace session start/complete,
-   trace-point capture, sampler loop, and delayed sampler shutdown live in
-   `Sussudio/ViewModels/AudioRampTraceRecorder.Capture.cs`, with
+   state, bounded ring-buffer storage, snapshot projection, trace session
+   start/complete, trace-point capture, sampler loop, and delayed sampler
+   shutdown live in `Sussudio/ViewModels/AudioRampTraceRecorder.cs`, with
    `Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs` kept as the
    automation-facing adapter and trace/preview-volume controller wiring owner;
    preview-volume save/override and ramp adapter methods now live in
