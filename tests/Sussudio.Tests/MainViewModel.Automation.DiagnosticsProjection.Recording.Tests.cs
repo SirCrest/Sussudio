@@ -84,8 +84,6 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var recordingOutputFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingOutput.cs")
-            .Replace("\r\n", "\n");
         var recordingOutputProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingOutput.cs")
             .Replace("\r\n", "\n");
 
@@ -99,18 +97,17 @@ static partial class Program
         AssertDoesNotContain(snapshotFlatteningText, "RecordingBackend = recordingBackend.Backend,");
         AssertDoesNotContain(snapshotFlatteningText, "MuxResult = recordingBackend.MuxResult,");
 
-        AssertContains(recordingOutputFlatteningText, "private static RecordingOutputFlattenedProjection BuildRecordingOutputFlattenedProjection(");
-        AssertContains(recordingOutputFlatteningText, "Backend = recordingBackend.Backend,");
-        AssertContains(recordingOutputFlatteningText, "AudioPathMode = recordingBackend.AudioPathMode,");
-        AssertContains(recordingOutputFlatteningText, "MuxResult = recordingBackend.MuxResult,");
-        AssertContains(recordingOutputFlatteningText, "private readonly record struct RecordingOutputFlattenedProjection");
-
         AssertContains(recordingOutputProjectionText, "private static RecordingBackendProjection BuildRecordingBackendProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(recordingOutputProjectionText, "Backend = captureRuntime.RecordingBackend,");
         AssertContains(recordingOutputProjectionText, "AudioPathMode = captureRuntime.AudioPathMode,");
         AssertContains(recordingOutputProjectionText, "MuxResult = ResolveMuxResult(captureRuntime.MuxSucceeded)");
         AssertContains(recordingOutputProjectionText, "private static string ResolveMuxResult(bool? muxSucceeded)");
         AssertContains(recordingOutputProjectionText, "private readonly record struct RecordingBackendProjection");
+        AssertContains(recordingOutputProjectionText, "private static RecordingOutputFlattenedProjection BuildRecordingOutputFlattenedProjection(");
+        AssertContains(recordingOutputProjectionText, "Backend = recordingBackend.Backend,");
+        AssertContains(recordingOutputProjectionText, "AudioPathMode = recordingBackend.AudioPathMode,");
+        AssertContains(recordingOutputProjectionText, "MuxResult = recordingBackend.MuxResult,");
+        AssertContains(recordingOutputProjectionText, "private readonly record struct RecordingOutputFlattenedProjection");
 
         return Task.CompletedTask;
     }
@@ -120,8 +117,6 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var recordingOutputFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingOutput.cs")
-            .Replace("\r\n", "\n");
         var recordingOutputProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingOutput.cs")
             .Replace("\r\n", "\n");
 
@@ -139,11 +134,6 @@ static partial class Program
         AssertDoesNotContain(snapshotFlatteningText, "LastOutputSizeBytes = lastOutput.SizeBytes,");
         AssertDoesNotContain(snapshotFlatteningText, "LastVerification = recordingOutput.LastVerification,");
 
-        AssertContains(recordingOutputFlatteningText, "OutputPath = recordingOutput.OutputPath,");
-        AssertContains(recordingOutputFlatteningText, "RecordingVideoBytes = recordingOutput.RecordingVideoBytes,");
-        AssertContains(recordingOutputFlatteningText, "LastOutputPath = recordingOutput.LastOutputPath,");
-        AssertContains(recordingOutputFlatteningText, "LastVerification = recordingOutput.LastVerification");
-
         AssertContains(recordingOutputProjectionText, "private static RecordingOutputProjection BuildRecordingOutputProjection(");
         AssertContains(recordingOutputProjectionText, "OutputPath = viewModelSnapshot.OutputPath,");
         AssertContains(recordingOutputProjectionText, "RecordingVideoBytes = recordingStats.VideoBytes,");
@@ -151,6 +141,10 @@ static partial class Program
         AssertContains(recordingOutputProjectionText, "LastOutputSizeBytes = lastOutput.SizeBytes,");
         AssertContains(recordingOutputProjectionText, "LastVerification = lastVerification");
         AssertContains(recordingOutputProjectionText, "private readonly record struct RecordingOutputProjection");
+        AssertContains(recordingOutputProjectionText, "OutputPath = recordingOutput.OutputPath,");
+        AssertContains(recordingOutputProjectionText, "RecordingVideoBytes = recordingOutput.RecordingVideoBytes,");
+        AssertContains(recordingOutputProjectionText, "LastOutputPath = recordingOutput.LastOutputPath,");
+        AssertContains(recordingOutputProjectionText, "LastVerification = recordingOutput.LastVerification");
 
         return Task.CompletedTask;
     }

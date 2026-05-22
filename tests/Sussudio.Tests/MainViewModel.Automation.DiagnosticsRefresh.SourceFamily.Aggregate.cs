@@ -116,7 +116,6 @@ static partial class Program
                 SnapshotProjectionRecordingPipelineVideoQueueText,
                 SnapshotProjectionRecordingPipelineHardwareQueuesText,
                 SnapshotProjectionRecordingOutputText,
-                SnapshotProjectionFlatteningRecordingOutputText,
                 SnapshotProjectionSourceSignalText,
                 SnapshotProjectionSourceTelemetryText,
                 SnapshotProjectionUserSettingsText,

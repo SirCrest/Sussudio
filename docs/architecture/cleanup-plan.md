@@ -379,10 +379,8 @@ flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingOutput.cs` owns recording
 backend/audio-path/mux-result projection, UI output text, accumulated recording
 bytes, file-growth state, last finalized output metadata, and last verification
-result projection consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingOutput.cs`
-owns final recording backend and output projection-to-`AutomationSnapshot` field
-flattening.
+result projection consumed by the automation snapshot DTO, plus final recording
+backend and output projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs` owns detected
 source frame-rate fallback, source dimensions/HDR, and raw source signal
 metadata projection consumed by the automation snapshot DTO.
