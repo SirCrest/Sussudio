@@ -105,9 +105,9 @@ owns the final `AutomationSnapshot` DTO initializer that flattens the named
 projection records into the automation wire snapshot. This final initializer is
 intentionally a single `init`-property map: do not split it by adding mutable
 setters or shallow fragment records unless a deliberate snapshot construction
-pattern is introduced first. `AutomationDiagnosticsHub.SnapshotState.cs`
-owns stateful snapshot bookkeeping for audio mute suspicion and recording file
-growth tracking. `AutomationDiagnosticsHub.Timeline.cs`
+pattern is introduced first. `AutomationDiagnosticsHub.Snapshots.cs` owns
+stateful snapshot bookkeeping for audio mute suspicion and recording file growth
+tracking. `AutomationDiagnosticsHub.Timeline.cs`
 owns performance-timeline ring reads and append mechanics.
 `AutomationDiagnosticsHub.TimelineProjection.cs` owns final
 `AutomationSnapshot` to `PerformanceTimelineEntry` assignment.

@@ -50,7 +50,6 @@ static partial class Program
                 SnapshotProjectionSourceTelemetryText,
                 SnapshotProjectionUserSettingsText,
                 SnapshotProjectionHdrPipelineText,
-                SnapshotStateText,
                 PreviewPacingText,
                 TimelineText,
                 TimelineProjectionText,

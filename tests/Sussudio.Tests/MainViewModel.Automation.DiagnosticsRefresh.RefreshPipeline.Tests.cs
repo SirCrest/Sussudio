@@ -10,12 +10,12 @@ static partial class Program
         AssertContains(diagnostics.SnapshotsCoreText, "await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(diagnostics.SnapshotsCoreText, "return await RefreshSnapshotCoreAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(diagnostics.SnapshotsCoreText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
-        AssertContains(diagnostics.SnapshotStateText, "private AudioSignalState UpdateAudioSignalState(");
-        AssertContains(diagnostics.SnapshotStateText, "private bool UpdateRecordingFileGrowthState(");
-        AssertContains(diagnostics.SnapshotStateText, "private readonly record struct AudioSignalState(");
+        AssertContains(diagnostics.SnapshotsCoreText, "private AudioSignalState UpdateAudioSignalState(");
+        AssertContains(diagnostics.SnapshotsCoreText, "private bool UpdateRecordingFileGrowthState(");
+        AssertContains(diagnostics.SnapshotsCoreText, "private readonly record struct AudioSignalState(");
         AssertContains(diagnostics.SnapshotsText, "UpdateAudioSignalState(viewModelSnapshot, nowTick);");
         AssertContains(diagnostics.SnapshotsText, "UpdateRecordingFileGrowthState(");
-        AssertDoesNotContain(diagnostics.SnapshotsText, "var audioSignalPresent = viewModelSnapshot.AudioPeak >= AudioSignalThreshold;");
+        AssertContains(diagnostics.SnapshotsCoreText, "var audioSignalPresent = viewModelSnapshot.AudioPeak >= AudioSignalThreshold;");
         AssertContains(diagnostics.SnapshotsCoreText, "private LastOutputProbe ProbeLastOutput(");
         AssertContains(diagnostics.SnapshotsCoreText, "private readonly record struct LastOutputProbe(");
         AssertContains(diagnostics.SnapshotsCoreText, "private ProcessResourceSnapshot CaptureProcessResourceSnapshot()");
