@@ -193,6 +193,18 @@ Behavior preserved: Diagnostic-session JSON overview fields, property names, and
 Notes for future agents: keep tiny root-summary DTO fragments with the root result model unless they represent a runtime subsystem
 
 Date: 2026-05-21
+Area: Automation diagnostics HDR projection
+Problem: HDR pixel-format detection lived in a 9-line core partial even though its only caller is preview HDR state projection.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.Hdr.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics source-ownership and runtime snapshot regression tests
+Behavior preserved: Preview HDR input detection still uses `MediaFormat.IsHdrPixelFormat` for negotiated pixel format
+Notes for future agents: keep single-use helpers with their only runtime projection owner unless they become shared policy
+
+Date: 2026-05-21
 Area: Diagnostic session result formatting
 Problem: Flashback diagnostic-session section ordering lived in a one-method router file separate from the formatter orchestration.
 Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs`
