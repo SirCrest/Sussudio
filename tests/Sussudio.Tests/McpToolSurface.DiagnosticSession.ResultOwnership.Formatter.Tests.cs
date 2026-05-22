@@ -13,17 +13,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var captureModeText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.CaptureMode.cs")
             .Replace("\r\n", "\n");
-        var flashbackPlaybackCommandsText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs")
+        var flashbackPlaybackText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.cs")
             .Replace("\r\n", "\n");
         var flashbackRecordingText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackRecording.cs")
             .Replace("\r\n", "\n");
         var flashbackExportText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackExport.cs")
-            .Replace("\r\n", "\n");
-        var flashbackPlaybackPerformanceText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs")
-            .Replace("\r\n", "\n");
-        var flashbackPlaybackDecodeText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs")
-            .Replace("\r\n", "\n");
-        var flashbackPlaybackStagesText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Stages.cs")
             .Replace("\r\n", "\n");
         var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.PreviewScheduler.cs")
             .Replace("\r\n", "\n");
@@ -92,12 +86,12 @@ static partial class Program
         AssertContains(formatterText, "private static void AppendPreviewSections(");
         AssertContains(formatterText, "private static void AppendArtifacts(");
         AssertContains(formatterText, "\"Flashback Playback Perf: \"");
-        AssertContains(flashbackPlaybackCommandsText, "private static void AppendFlashbackPlaybackCommands(");
-        AssertContains(flashbackPlaybackCommandsText, "\"Flashback Playback Commands: \"");
-        AssertContains(flashbackPlaybackCommandsText, "FormatOptional(result.FlashbackPlaybackMaxCommandQueueLatencyCommandObserved)");
-        AssertContains(flashbackPlaybackStagesText, "private static void AppendFlashbackPlaybackStages(");
-        AssertContains(flashbackPlaybackStagesText, "\"Flashback Playback Stages: \"");
-        AssertContains(flashbackPlaybackStagesText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta");
+        AssertContains(flashbackPlaybackText, "private static void AppendFlashbackPlaybackCommands(");
+        AssertContains(flashbackPlaybackText, "\"Flashback Playback Commands: \"");
+        AssertContains(flashbackPlaybackText, "FormatOptional(result.FlashbackPlaybackMaxCommandQueueLatencyCommandObserved)");
+        AssertContains(flashbackPlaybackText, "private static void AppendFlashbackPlaybackStages(");
+        AssertContains(flashbackPlaybackText, "\"Flashback Playback Stages: \"");
+        AssertContains(flashbackPlaybackText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta");
         AssertContains(flashbackRecordingText, "private static void AppendFlashbackRecording(");
         AssertContains(flashbackRecordingText, "\"Flashback Recording: \"");
         AssertContains(flashbackRecordingText, "FlashbackRecordingVideoFramesSubmittedDelta");
@@ -105,25 +99,23 @@ static partial class Program
         AssertContains(flashbackExportText, "\"Flashback Export: \"");
         AssertContains(flashbackExportText, "FlashbackExportForceRotateFallbacksDelta");
         AssertContains(flashbackExportText, "FormatBytes(result.FlashbackExportMaxOutputBytesObserved)");
-        AssertContains(flashbackPlaybackPerformanceText, "private static void AppendFlashbackPlaybackPerformance(");
-        AssertContains(flashbackPlaybackPerformanceText, "\"Flashback Playback Perf: \"");
-        AssertContains(flashbackPlaybackPerformanceText, "BuildFlashbackPlaybackCadencePerformanceText(result)");
-        AssertContains(flashbackPlaybackPerformanceText, "BuildFlashbackPlaybackAudioMasterPerformanceText(result)");
-        AssertContains(flashbackPlaybackPerformanceText, "BuildFlashbackPlaybackSubmitPerformanceText(result)");
-        AssertContains(flashbackPlaybackPerformanceText, "submitFailuresDelta={result.FlashbackPlaybackSubmitFailuresDelta}");
-        AssertContains(flashbackPlaybackPerformanceText, "private static string BuildFlashbackPlaybackCadencePerformanceText(");
-        AssertContains(flashbackPlaybackPerformanceText, "BuildFlashbackPlaybackOnePercentLowPerformanceText(result)");
-        AssertContains(flashbackPlaybackPerformanceText, "droppedFramesDelta={result.FlashbackPlaybackDroppedFramesDelta}");
-        AssertContains(flashbackPlaybackPerformanceText, "private static string BuildFlashbackPlaybackOnePercentLowPerformanceText(");
-        AssertContains(flashbackPlaybackPerformanceText, "onePercentLowMinAvDriftMs={result.FlashbackPlaybackMinOnePercentLowAvDriftMs:0.##}");
-        AssertContains(flashbackPlaybackPerformanceText, "onePercentLowMinAudioFallbacks={result.FlashbackPlaybackMinOnePercentLowAudioMasterFallbacks}");
-        AssertContains(flashbackPlaybackPerformanceText, "private static string BuildFlashbackPlaybackAudioMasterPerformanceText(");
-        AssertContains(flashbackPlaybackPerformanceText, "FormatOptional(result.FlashbackPlaybackAudioMasterLastFallbackReasonAtEnd)");
-        AssertContains(flashbackPlaybackPerformanceText, "absAvDriftMsMax={result.FlashbackPlaybackMaxAbsAvDriftMsObserved:0.##}");
-        AssertDoesNotContain(flashbackPlaybackPerformanceText, "\"Flashback Playback Decode: \"");
-        AssertContains(flashbackPlaybackDecodeText, "private static void AppendFlashbackPlaybackDecode(");
-        AssertContains(flashbackPlaybackDecodeText, "\"Flashback Playback Decode: \"");
-        AssertDoesNotContain(flashbackPlaybackDecodeText, "\"Flashback Playback Stages: \"");
+        AssertContains(flashbackPlaybackText, "private static void AppendFlashbackPlaybackPerformance(");
+        AssertContains(flashbackPlaybackText, "\"Flashback Playback Perf: \"");
+        AssertContains(flashbackPlaybackText, "BuildFlashbackPlaybackCadencePerformanceText(result)");
+        AssertContains(flashbackPlaybackText, "BuildFlashbackPlaybackAudioMasterPerformanceText(result)");
+        AssertContains(flashbackPlaybackText, "BuildFlashbackPlaybackSubmitPerformanceText(result)");
+        AssertContains(flashbackPlaybackText, "submitFailuresDelta={result.FlashbackPlaybackSubmitFailuresDelta}");
+        AssertContains(flashbackPlaybackText, "private static string BuildFlashbackPlaybackCadencePerformanceText(");
+        AssertContains(flashbackPlaybackText, "BuildFlashbackPlaybackOnePercentLowPerformanceText(result)");
+        AssertContains(flashbackPlaybackText, "droppedFramesDelta={result.FlashbackPlaybackDroppedFramesDelta}");
+        AssertContains(flashbackPlaybackText, "private static string BuildFlashbackPlaybackOnePercentLowPerformanceText(");
+        AssertContains(flashbackPlaybackText, "onePercentLowMinAvDriftMs={result.FlashbackPlaybackMinOnePercentLowAvDriftMs:0.##}");
+        AssertContains(flashbackPlaybackText, "onePercentLowMinAudioFallbacks={result.FlashbackPlaybackMinOnePercentLowAudioMasterFallbacks}");
+        AssertContains(flashbackPlaybackText, "private static string BuildFlashbackPlaybackAudioMasterPerformanceText(");
+        AssertContains(flashbackPlaybackText, "FormatOptional(result.FlashbackPlaybackAudioMasterLastFallbackReasonAtEnd)");
+        AssertContains(flashbackPlaybackText, "absAvDriftMsMax={result.FlashbackPlaybackMaxAbsAvDriftMsObserved:0.##}");
+        AssertContains(flashbackPlaybackText, "private static void AppendFlashbackPlaybackDecode(");
+        AssertContains(flashbackPlaybackText, "\"Flashback Playback Decode: \"");
         AssertContains(previewSchedulerText, "private static void AppendPreviewScheduler(");
         AssertContains(previewSchedulerText, "\"Preview Scheduler: \"");
         AssertContains(previewSchedulerText, "FormatOptional(result.PreviewSchedulerLastUnderflowReasonAtEnd)");

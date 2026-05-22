@@ -4451,19 +4451,13 @@ Primary owners:
   diagnostic-session header, summary, and evidence section.
 - `tools/Common/DiagnosticSessionResultFormatter.CaptureMode.cs` owns the
   capture-mode summary row and frame-rate text formatting.
-- `tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs` owns
-  playback command lines.
-  `DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs` owns
-  playback performance row assembly, cadence, 1% low, submit-failure,
-  audio-master fallback, buffering, queue, and A/V-drift performance text.
-  `DiagnosticSessionResultFormatter.FlashbackPlayback.Stages.cs` owns playback
-  stage/seek-cap lines.
+- `tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.cs` owns
+  Flashback playback command, performance, decode, stage, and seek-cap summary
+  lines.
   `DiagnosticSessionResultFormatter.FlashbackRecording.cs` owns Flashback
   recording summary text. `DiagnosticSessionResultFormatter.FlashbackExport.cs`
   owns Flashback export summary text, including force-rotate fallback and
   throughput formatting.
-  `DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs` owns playback
-  decode timing lines.
 - `tools/Common/DiagnosticSessionResultFormatter.PreviewScheduler.cs` owns preview
   scheduler lines.
   `DiagnosticSessionResultFormatter.PreviewD3D.Performance.cs` owns D3D
