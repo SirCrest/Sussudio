@@ -16,12 +16,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionCleanupActions.FlashbackState.cs");
 
     private static string ReadDiagnosticSessionScenarioSetupSource()
-        => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionScenarioSetup.cs",
-            "tools/Common/DiagnosticSessionScenarioSetup.Flashback.cs",
-            "tools/Common/DiagnosticSessionScenarioSetup.Preview.cs",
-            "tools/Common/DiagnosticSessionScenarioSetup.Recording.cs",
-            "tools/Common/DiagnosticSessionScenarioSetup.Results.cs");
+        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioSetup.cs");
 
     private static string ReadDiagnosticSessionFlashbackCycleScenariosSource()
         => ReadNormalizedSourceFiles(

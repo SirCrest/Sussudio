@@ -17,6 +17,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "scenarioPlan.ToleratesFlashbackForceRotateDrainWarning");
         AssertContains(diagnosticSessionText, "scenarioPlan.IsPreviewCycleScenario");
         AssertContains(diagnosticSessionText, "internal sealed partial class DiagnosticSessionBackgroundTasks");
+        AssertContains(diagnosticSessionText, "internal static class DiagnosticSessionScenarioSetup");
         AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionRunState");
         AssertContains(diagnosticSessionText, "internal sealed partial class DiagnosticSessionLiveStateWriter");
         AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionRunContext : IDisposable");

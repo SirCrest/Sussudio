@@ -3683,13 +3683,12 @@ selection while delegating option/correlation policy to
 scenario task registration.
 
 Diagnostic-session scenario setup now lives in
-`tools/Common/DiagnosticSessionScenarioSetup.cs`. The root owns initial setup
-ordering and result handoff. Flashback enable/disable for scenario requirements
-lives in `.Flashback.cs`, preview start and video-flow wait live in
-`.Preview.cs`, recording start and Flashback recording-readiness wait live in
-`.Recording.cs`, and result records live in `.Results.cs`. Fixed setup
-mutations should use `DiagnosticSessionCommandChannel` typed
-`AutomationCommandKind` sends.
+`tools/Common/DiagnosticSessionScenarioSetup.cs`. It owns initial setup
+ordering and result handoff, Flashback enable/disable for scenario
+requirements, preview start and video-flow wait, recording start and Flashback
+recording-readiness wait, and setup result records. Fixed setup mutations
+should use `DiagnosticSessionCommandChannel` typed `AutomationCommandKind`
+sends.
 
 Diagnostic-session cleanup mutations now live in
 `tools/Common/DiagnosticSessionCleanupActions.cs`. The root owns the public
@@ -4153,10 +4152,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioPlan.cs`
 - `DiagnosticSessionScenarioPlan.Policies.cs`
 - `DiagnosticSessionScenarioSetup.cs`
-- `DiagnosticSessionScenarioSetup.Flashback.cs`
-- `DiagnosticSessionScenarioSetup.Preview.cs`
-- `DiagnosticSessionScenarioSetup.Recording.cs`
-- `DiagnosticSessionScenarioSetup.Results.cs`
 - `DiagnosticSessionScenarioStartup.cs`
 - `DiagnosticSessionScenarioStartup.Registrations.cs`
 - `DiagnosticSessionScenarioStartup.Playback.cs`

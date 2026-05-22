@@ -133,47 +133,28 @@ static partial class Program
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var setupText = ReadDiagnosticSessionScenarioSetupSource();
-        var setupRootText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioSetup.cs")
-            .Replace("\r\n", "\n");
-        var setupFlashbackText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioSetup.Flashback.cs")
-            .Replace("\r\n", "\n");
-        var setupPreviewText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioSetup.Preview.cs")
-            .Replace("\r\n", "\n");
-        var setupRecordingText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioSetup.Recording.cs")
-            .Replace("\r\n", "\n");
-        var setupResultsText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioSetup.Results.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(setupRootText, "internal static partial class DiagnosticSessionScenarioSetup");
-        AssertContains(setupRootText, "internal static async Task<DiagnosticSessionScenarioSetupResult> RunAsync(");
-        AssertContains(setupRootText, "SetupFlashbackStateAsync(");
-        AssertContains(setupRootText, "StartPreviewIfNeededAsync(");
-        AssertContains(setupRootText, "StartRecordingIfNeededAsync(");
-        AssertContains(setupResultsText, "internal readonly record struct DiagnosticSessionScenarioSetupResult(");
-        AssertContains(setupResultsText, "private readonly record struct DiagnosticSessionFlashbackSetupResult(");
+        AssertContains(setupText, "internal static class DiagnosticSessionScenarioSetup");
+        AssertContains(setupText, "internal static async Task<DiagnosticSessionScenarioSetupResult> RunAsync(");
+        AssertContains(setupText, "SetupFlashbackStateAsync(");
+        AssertContains(setupText, "StartPreviewIfNeededAsync(");
+        AssertContains(setupText, "StartRecordingIfNeededAsync(");
+        AssertContains(setupText, "internal readonly record struct DiagnosticSessionScenarioSetupResult(");
+        AssertContains(setupText, "private readonly record struct DiagnosticSessionFlashbackSetupResult(");
         AssertContains(setupText, "DiagnosticSessionCommandChannel commandChannel,");
-        AssertContains(setupFlashbackText, "DiagnosticSessionScenarioCatalog.NeedsFlashback(scenario)");
-        AssertContains(setupFlashbackText, "scenarioPlan.RunFlashbackExportRejected");
-        AssertContains(setupFlashbackText, "AutomationCommandKind.SetFlashbackEnabled,");
-        AssertContains(setupFlashbackText, "actions.Add(\"flashback enabled\")");
-        AssertContains(setupFlashbackText, "actions.Add(\"flashback disabled for rejected export\")");
-        AssertContains(setupPreviewText, "DiagnosticSessionScenarioCatalog.NeedsPreview(scenario)");
-        AssertContains(setupPreviewText, "AutomationCommandKind.SetPreviewEnabled,");
-        AssertContains(setupPreviewText, "actions.Add(\"preview started\")");
-        AssertContains(setupPreviewText, "await tryWaitAsync(\"VideoFramesFlowing\", 15_000)");
-        AssertContains(setupRecordingText, "DiagnosticSessionScenarioCatalog.NeedsRecording(scenario)");
-        AssertContains(setupRecordingText, "WaitForFlashbackStressBufferReadyAsync(SendByNameAsync, cancellationToken)");
-        AssertContains(setupRecordingText, "AutomationCommandKind.SetRecordingEnabled,");
-        AssertContains(setupRecordingText, "actions.Add(\"recording started\")");
-        AssertContains(setupRecordingText, "await tryWaitAsync(\"RecordingFileGrowing\", 20_000)");
-        AssertDoesNotContain(setupRootText, "AutomationCommandKind.SetFlashbackEnabled");
-        AssertDoesNotContain(setupRootText, "AutomationCommandKind.SetPreviewEnabled");
-        AssertDoesNotContain(setupRootText, "AutomationCommandKind.SetRecordingEnabled");
-        AssertDoesNotContain(setupFlashbackText, "SetPreviewEnabled");
-        AssertDoesNotContain(setupFlashbackText, "SetRecordingEnabled");
-        AssertDoesNotContain(setupPreviewText, "SetFlashbackEnabled");
-        AssertDoesNotContain(setupPreviewText, "SetRecordingEnabled");
-        AssertDoesNotContain(setupRecordingText, "SetPreviewEnabled");
+        AssertContains(setupText, "DiagnosticSessionScenarioCatalog.NeedsFlashback(scenario)");
+        AssertContains(setupText, "scenarioPlan.RunFlashbackExportRejected");
+        AssertContains(setupText, "AutomationCommandKind.SetFlashbackEnabled,");
+        AssertContains(setupText, "actions.Add(\"flashback enabled\")");
+        AssertContains(setupText, "actions.Add(\"flashback disabled for rejected export\")");
+        AssertContains(setupText, "DiagnosticSessionScenarioCatalog.NeedsPreview(scenario)");
+        AssertContains(setupText, "AutomationCommandKind.SetPreviewEnabled,");
+        AssertContains(setupText, "actions.Add(\"preview started\")");
+        AssertContains(setupText, "await tryWaitAsync(\"VideoFramesFlowing\", 15_000)");
+        AssertContains(setupText, "DiagnosticSessionScenarioCatalog.NeedsRecording(scenario)");
+        AssertContains(setupText, "WaitForFlashbackStressBufferReadyAsync(SendByNameAsync, cancellationToken)");
+        AssertContains(setupText, "AutomationCommandKind.SetRecordingEnabled,");
+        AssertContains(setupText, "actions.Add(\"recording started\")");
+        AssertContains(setupText, "await tryWaitAsync(\"RecordingFileGrowing\", 20_000)");
         AssertContains(runnerText, "DiagnosticSessionScenarioSetup.RunAsync(");
         AssertContains(runnerText, "context.CommandChannel,");
         AssertContains(runnerText, "startedPreview = setupResult.StartedPreview;");

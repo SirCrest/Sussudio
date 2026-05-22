@@ -4092,16 +4092,11 @@ Primary owners:
   launch, correlation snapshot capture, and `presentmon.csv` output selection
   for diagnostic sessions.
 - `tools/Common/DiagnosticSessionScenarioSetup.cs` owns diagnostic-session
-  initial setup ordering and result handoff before sampling.
-  `tools/Common/DiagnosticSessionScenarioSetup.Flashback.cs` owns enabling or
-  disabling Flashback for scenario requirements.
-  `tools/Common/DiagnosticSessionScenarioSetup.Preview.cs` owns preview start
-  and video-flow readiness wait.
-  `tools/Common/DiagnosticSessionScenarioSetup.Recording.cs` owns recording
-  start and Flashback recording-readiness wait.
-  `tools/Common/DiagnosticSessionScenarioSetup.Results.cs` owns setup result
-  records. Keep fixed setup mutations on `DiagnosticSessionCommandChannel`
-  typed `AutomationCommandKind` sends.
+  initial setup ordering, Flashback enable/disable for scenario requirements,
+  preview start and video-flow readiness wait, recording start and Flashback
+  recording-readiness wait, plus setup result records. Keep fixed setup
+  mutations on `DiagnosticSessionCommandChannel` typed `AutomationCommandKind`
+  sends.
 - `tools/Common/DiagnosticSessionCleanupActions.cs` owns diagnostic-session
   cleanup flow, ordering, stage/action naming, and the cleanup result handoff
   record.
