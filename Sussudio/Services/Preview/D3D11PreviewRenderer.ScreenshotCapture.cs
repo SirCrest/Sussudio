@@ -14,7 +14,10 @@ internal sealed partial class D3D11PreviewRenderer
 
     private TaskCompletionSource<PreviewFrameCaptureResult>? _frameCaptureRequest;
     private string? _frameCaptureOutputPath;
+    private ID3D11Texture2D? _captureStagingTexture;
     private int _frameCaptureEncodeInProgress;
+    private int _captureStagingWidth;
+    private int _captureStagingHeight;
 
     public Task<PreviewFrameCaptureResult> CaptureNextFrameAsync(string outputPath)
         => CaptureNextFrameAsync(outputPath, CancellationToken.None);
@@ -268,6 +271,40 @@ internal sealed partial class D3D11PreviewRenderer
                     EndPngFrameCaptureCompletion();
                 }
             });
+    }
+
+    private ID3D11Texture2D EnsureFrameCaptureStagingTexture(Texture2DDescription backBufferDescription, int width, int height)
+    {
+        if (_captureStagingTexture == null ||
+            _captureStagingWidth != width ||
+            _captureStagingHeight != height)
+        {
+            _captureStagingTexture?.Dispose();
+            _captureStagingTexture = _device!.CreateTexture2D(new Texture2DDescription(
+                backBufferDescription.Format,
+                (uint)width,
+                (uint)height,
+                1,
+                1,
+                BindFlags.None,
+                ResourceUsage.Staging,
+                CpuAccessFlags.Read,
+                1,
+                0,
+                ResourceOptionFlags.None));
+            _captureStagingWidth = width;
+            _captureStagingHeight = height;
+        }
+
+        return _captureStagingTexture!;
+    }
+
+    private void DisposeFrameCaptureStagingResources()
+    {
+        _captureStagingTexture?.Dispose();
+        _captureStagingTexture = null;
+        _captureStagingWidth = 0;
+        _captureStagingHeight = 0;
     }
 
     private static PreviewFrameCaptureResult CreateFrameCaptureError(string message, string rendererMode = "Unknown")

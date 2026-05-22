@@ -1062,8 +1062,7 @@ handling, render-thread GPU readback, before-present screenshot dispatch,
 error-result construction, capture-result logging, and off-thread PNG
 completion gate state now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs`.
-Preview-frame capture staging-resource reuse and teardown live in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotStaging.cs`.
+Preview-frame capture staging-resource reuse and teardown also live there.
 Preview-frame BMP/PNG pixel conversion, mapped-frame buffer copying, luminance
 analysis, and letterbox/pillarbox measurement live in
 `Sussudio/Services/Preview/PreviewScreenshotCapture.cs`: mapped-frame copying,
@@ -2352,7 +2351,7 @@ VideoProcessor input texture teardown stays with
 `D3D11PreviewRenderer.InputResources.cs`, HDR shader input teardown stays with
 `D3D11PreviewRenderer.HdrInputResources.cs`, shader/SRV teardown stays with
 `D3D11PreviewRenderer.ShaderRendering.cs`, and preview-frame capture staging
-teardown stays with `D3D11PreviewRenderer.ScreenshotStaging.cs`; keep
+teardown stays with `D3D11PreviewRenderer.ScreenshotCapture.cs`; keep
 swap-chain color-space application with render-pass selection in
 `D3D11PreviewRenderer.RenderPasses.cs`.
 Raw-frame VideoProcessor input texture allocation now lives in
