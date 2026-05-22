@@ -193,6 +193,18 @@ Behavior preserved: Flashback export timeline fields still flow through a typed 
 Notes for future agents: keep direct Flashback export timeline projection beside the timeline entry builder unless it grows independent policy
 
 Date: 2026-05-21
+Area: Automation diagnostics realtime source lane formatting
+Problem: Source cadence and source-signal diagnostic lane formatting lived in a tiny partial separate from the diagnostic lane orchestration and neighboring lane formatting helpers.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Realtime.Source.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics evaluation ownership tests and runtime snapshot regression tests
+Behavior preserved: source and source-signal diagnostic lane text still feeds the same `DiagnosticEvaluationLanes` record before diagnostic verdict construction
+Notes for future agents: keep lightweight diagnostic lane text builders with `DiagnosticEvaluationLanes.cs` unless a lane grows independent policy
+
+Date: 2026-05-21
 Area: Automation diagnostics PreviewD3D projection
 Problem: PreviewD3D projection data and matching flattened DTO field projection lived in parallel partial fragments, forcing agents to open several extra files to audit one automation snapshot concern.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.CpuTiming.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.LatencyAndStats.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.PreviewD3D.FrameFlow.cs`

@@ -447,10 +447,9 @@ preview scheduler diagnostic verdicts.
 present/display cadence and preview display 1% low diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs` owns diagnostic lane text
 orchestration, MJPEG decode lane formatting, recording/audio lane formatting,
-Flashback recording/export/playback lane formatting, and lane DTOs used by
-diagnostic verdicts.
-`AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Realtime.Source.cs` owns
-source cadence and source-signal diagnostic lane text formatting.
+source cadence/source-signal lane formatting, Flashback
+recording/export/playback lane formatting, and lane DTOs used by diagnostic
+verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Realtime.Preview.cs` owns
 preview scheduler, renderer, present/display, and visual-cadence diagnostic
 lane text formatting.
