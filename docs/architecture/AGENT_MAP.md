@@ -4643,18 +4643,12 @@ Primary owners:
   owns Flashback playback command queue result DTO value mapping and projection
   record shape.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackCadenceResult.cs`
-  owns Flashback playback cadence, slow-frame, and dropped-frame result DTO
-  value mapping and projection record shape.
-- `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackOnePercentLowResult.cs`
-  owns Flashback playback 1% low result DTO value mapping and projection record
-  shape.
+  owns Flashback playback cadence, slow-frame, dropped-frame, 1% low,
+  audio-master, and A/V-drift result DTO value mapping and projection record
+  shapes.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackDecodeResult.cs`
   owns Flashback playback decode timing result DTO value mapping and projection
   record shape.
-- `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackAudioMasterResult.cs`
-  owns Flashback playback audio-master and A/V-drift result DTO value mapping,
-  including fallback counters, fallback reason/age, buffered/queued audio
-  duration, observed absolute drift values, and projection record shape.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackStagesResult.cs`
   owns Flashback playback submit, segment, write-head, near-live, decode-error,
   and seek-cap result DTO value mapping and projection record shape.

@@ -4103,15 +4103,12 @@ set.
 The detailed playback result DTO value maps are split by runtime metric owner:
 command queue values live in
 `DiagnosticSessionResultBuilder.FlashbackPlaybackCommandsResult.cs`, cadence/
-slow-frame/dropped-frame values live in
-`DiagnosticSessionResultBuilder.FlashbackPlaybackCadenceResult.cs`, 1% low
-sample-window values live in
-`DiagnosticSessionResultBuilder.FlashbackPlaybackOnePercentLowResult.cs`, decode timing values live in
+slow-frame/dropped-frame, 1% low sample-window, audio-master fallback,
+buffering, and A/V-drift values live in
+`DiagnosticSessionResultBuilder.FlashbackPlaybackCadenceResult.cs`, decode timing values live in
 `DiagnosticSessionResultBuilder.FlashbackPlaybackDecodeResult.cs`, and
 submit/segment/write-head/near-live/seek-cap stage values live in
 `DiagnosticSessionResultBuilder.FlashbackPlaybackStagesResult.cs`.
-Audio-master fallback, buffering, and A/V-drift result values live in
-`DiagnosticSessionResultBuilder.FlashbackPlaybackAudioMasterResult.cs`. Each
 focused Flashback playback result owner keeps its projection record next to the
 mapping that fills it.
 Flashback recording backend/growth/integrity DTO projection values live in
@@ -4809,9 +4806,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackCommandsResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackCadenceResult.cs`
-- `DiagnosticSessionResultBuilder.FlashbackPlaybackOnePercentLowResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackDecodeResult.cs`
-- `DiagnosticSessionResultBuilder.FlashbackPlaybackAudioMasterResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackStagesResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`

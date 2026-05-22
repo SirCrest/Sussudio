@@ -157,6 +157,18 @@ Behavior preserved: Diagnostic-session JSON property names, initialization seman
 Notes for future agents: keep property-only result partials grouped by the projection/report concern they model
 
 Date: 2026-05-21
+Area: Diagnostic session result construction
+Problem: Flashback playback result builder projections kept 1% low and audio-master value mappings in separate tiny partials from the cadence/frame-delivery projection owner, while the result DTO and formatter now group these playback performance concerns together.
+Files consolidated: `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackOnePercentLowResult.cs`; `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackAudioMasterResult.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `DiagnosticSessionResultBuilder` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by diagnostic-session builder ownership and runtime snapshot regression tests
+Behavior preserved: Flashback playback result projection values and final diagnostic-session JSON fields remain unchanged
+Notes for future agents: keep builder projection records near the mapping code for the same result/formatter concern
+
+Date: 2026-05-21
 Area: Diagnostic session result formatting
 Problem: Flashback diagnostic-session section ordering lived in a one-method router file separate from the formatter orchestration.
 Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs`
