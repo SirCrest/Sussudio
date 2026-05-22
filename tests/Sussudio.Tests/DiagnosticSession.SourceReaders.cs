@@ -65,7 +65,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs",
-            "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs");
 

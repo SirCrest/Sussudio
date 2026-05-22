@@ -4242,12 +4242,10 @@ Primary owners:
   playback snapshot observation dispatch, active/relevant snapshot gating,
   session frame-count projection, 1% low window capture, frame/decode maxima,
   and audio-master maxima.
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs`
-  owns the `FlashbackPlaybackResultMetrics` handoff shape: end snapshot plus
-  command, cadence, decode, audio-master, and stage result fields.
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs` owns final
-  result metric construction, observed-gated primitive reads, and the grouped
-  end-snapshot command, cadence, decode, audio-master, and stage metric reads.
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs` owns the
+  `FlashbackPlaybackResultMetrics` handoff shape, final result metric
+  construction, observed-gated primitive reads, and the grouped end-snapshot
+  command, cadence, decode, audio-master, and stage metric reads.
   Export metrics include force-rotate fallback total, delta, and last fallback
   segment count; keep those counters derived outside export-observed relevance gating.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`

@@ -3919,11 +3919,11 @@ snapshot max aggregation, metric orchestration, and final force-rotate fallback
 counters.
 
 Diagnostic-session Flashback playback result metrics now keep the
-`FlashbackPlaybackResultMetrics` handoff shape in
-`tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs`, and
-final construction plus observed-gated command, cadence, decode, audio-master,
-and stage end-snapshot reads in
-`tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`.
+`FlashbackPlaybackResultMetrics` handoff shape, final construction, and
+observed-gated command, cadence, decode, audio-master, and stage end-snapshot
+reads in `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
+alongside
+the `FlashbackPlaybackResultMetrics` handoff shape.
 Preserve the final `init` DTO construction in the root unless a broader
 construction pattern replaces it deliberately.
 
@@ -4057,7 +4057,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.Export.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackResult.Model.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
