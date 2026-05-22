@@ -8,7 +8,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var requestsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Requests.cs")
             .Replace("\r\n", "\n");
-        var lifetimeText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Lifetime.cs")
+        var lifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs")
             .Replace("\r\n", "\n");
         var singleFileText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFile.cs")
             .Replace("\r\n", "\n");
@@ -48,17 +48,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var outputFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs")
             .Replace("\r\n", "\n");
-        var exportLockText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.ExportLock.cs")
-            .Replace("\r\n", "\n");
         var outputValidationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.OutputValidation.cs")
             .Replace("\r\n", "\n");
         var pathValidationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PathValidation.cs")
             .Replace("\r\n", "\n");
         var segmentSelectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentSelection.cs")
-            .Replace("\r\n", "\n");
-        var nativeStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.NativeState.cs")
-            .Replace("\r\n", "\n");
-        var cancellationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Cancellation.cs")
             .Replace("\r\n", "\n");
         var libAvErrorsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.LibAvErrors.cs")
             .Replace("\r\n", "\n");
@@ -75,8 +69,8 @@ static partial class Program
 
         AssertContains(requestsText, "public Task<FinalizeResult> ExportAsync(");
         AssertContains(requestsText, "request.SegmentPaths.Select(path => new FlashbackExportSegment");
-        AssertContains(lifetimeText, "public void Dispose()");
-        AssertContains(lifetimeText, "FLASHBACK_EXPORT_DISPOSE_TIMEOUT_OK");
+        AssertContains(lifecycleText, "public void Dispose()");
+        AssertContains(lifecycleText, "FLASHBACK_EXPORT_DISPOSE_TIMEOUT_OK");
         AssertContains(singleFileText, "private FinalizeResult ExportCore(");
         AssertContains(singleFileText, "WriteSingleFilePacketsToActiveOutput(");
         AssertContains(singleFileText, "ReleaseExportLockBestEffort(\"single_export\");");
@@ -188,24 +182,24 @@ static partial class Program
         AssertDoesNotContain(segmentsText, "CloseOutputIo();\n\n            if (!TryFinalizeTempOutputFile");
         AssertContains(segmentsText, "if (!TryFinalizeActiveOutputFile(tmpPath, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))");
         AssertDoesNotContain(segmentPacketWritingText, "TryFinalizeActiveOutputFile(");
-        AssertContains(exportLockText, "private bool TryWaitForExportLock(string outputPath, CancellationToken ct, out FinalizeResult cancellationResult)");
-        AssertContains(exportLockText, "private void ReleaseExportLockBestEffort(string operation)");
-        AssertContains(exportLockText, "private void DisposeExportLockBestEffort()");
-        AssertContains(cancellationText, "private static FinalizeResult CreateCancelledExportResult(string outputPath)");
-        AssertContains(cancellationText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");
+        AssertContains(lifecycleText, "private bool TryWaitForExportLock(string outputPath, CancellationToken ct, out FinalizeResult cancellationResult)");
+        AssertContains(lifecycleText, "private void ReleaseExportLockBestEffort(string operation)");
+        AssertContains(lifecycleText, "private void DisposeExportLockBestEffort()");
+        AssertContains(lifecycleText, "private static FinalizeResult CreateCancelledExportResult(string outputPath)");
+        AssertContains(lifecycleText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");
         AssertContains(outputValidationText, "private static long GetFileLengthBestEffort(string path)");
         AssertContains(outputValidationText, "private static bool TryValidateCompletedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
         AssertContains(pathValidationText, "private static bool IsSamePath(string? left, string? right)");
         AssertContains(pathValidationText, "private static bool TryValidateOutputPath(string outputPath, out string fullOutputPath, out string failureMessage)");
         AssertContains(segmentSelectionText, "private static bool SegmentOverlapsExportRange(");
         AssertContains(segmentSelectionText, "private static bool TryValidateExportRange(TimeSpan inPoint, TimeSpan outPoint, out string failureMessage)");
-        AssertContains(nativeStateText, "private void CloseActiveInput()");
-        AssertContains(nativeStateText, "private void CloseOutputIo()");
-        AssertContains(nativeStateText, "private void CleanupNativeState()");
-        AssertContains(cancellationText, "private CancellationTokenSource CreateExportCancellationSource(CancellationToken ct)");
-        AssertContains(cancellationText, "private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)");
-        AssertContains(cancellationText, "private void ClearDisposeCtsReference(CancellationTokenSource? disposeCts)");
-        AssertContains(cancellationText, "private void EnsureNotDisposed()");
+        AssertContains(lifecycleText, "private void CloseActiveInput()");
+        AssertContains(lifecycleText, "private void CloseOutputIo()");
+        AssertContains(lifecycleText, "private void CleanupNativeState()");
+        AssertContains(lifecycleText, "private CancellationTokenSource CreateExportCancellationSource(CancellationToken ct)");
+        AssertContains(lifecycleText, "private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)");
+        AssertContains(lifecycleText, "private void ClearDisposeCtsReference(CancellationTokenSource? disposeCts)");
+        AssertContains(lifecycleText, "private void EnsureNotDisposed()");
         AssertContains(libAvErrorsText, "private static void ThrowIfError(int errorCode, string operation)");
         AssertContains(libAvErrorsText, "private static string GetErrorString(int errorCode)");
         AssertContains(packetTimingText, "private static long ResolveFrameDurationUs(AVStream* videoStream)");
@@ -235,6 +229,19 @@ static partial class Program
         AssertDoesNotContain(rootText, "public void Dispose()");
         AssertDoesNotContain(rootText, "private FinalizeResult ExportCore(");
         AssertDoesNotContain(rootText, "private FinalizeResult ExportSegmentsCore(");
+        foreach (var removedFile in new[]
+        {
+            "FlashbackExporter.Lifetime.cs",
+            "FlashbackExporter.ExportLock.cs",
+            "FlashbackExporter.NativeState.cs",
+            "FlashbackExporter.Cancellation.cs"
+        })
+        {
+            AssertEqual(
+                false,
+                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
+                $"{removedFile} folded into FlashbackExporter.Lifecycle.cs");
+        }
 
         return Task.CompletedTask;
     }

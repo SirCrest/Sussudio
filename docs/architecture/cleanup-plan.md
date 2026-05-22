@@ -2074,10 +2074,12 @@ Flashback exporter request routing now lives in
 `ExportAsync` null/disposed guards, segment path normalization, adaptive
 throttle provider handoff, and single-versus-segment export selection there.
 
-Flashback exporter lifetime behavior now lives in
-`Sussudio/Services/Flashback/FlashbackExporter.Lifetime.cs`. Keep public
-`Dispose`, active export cancellation, native-state cleanup on dispose, and
-dispose-timeout logging there.
+Flashback exporter lifecycle behavior now lives in
+`Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs`. Keep public
+`Dispose`, active export cancellation, linked export cancellation-source helpers,
+shared cancelled/disposed result creation, export-lock wait/release/disposal,
+native input/output cleanup, native-state cleanup on dispose, and dispose-timeout
+logging there.
 
 Flashback exporter execution scheduling now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Execution.cs`. Keep the
@@ -2132,18 +2134,12 @@ tracking live in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentInputPreflight.cs`. The
 root exporter keeps shared native state, constants, and fields only.
 
-Flashback exporter lock policy now lives in
-`Sussudio/Services/Flashback/FlashbackExporter.ExportLock.cs`. Completed-output
-length validation lives in
+Flashback exporter completed-output length validation lives in
 `Sussudio/Services/Flashback/FlashbackExporter.OutputValidation.cs`, normalized
 path comparison and output path validation live in
 `Sussudio/Services/Flashback/FlashbackExporter.PathValidation.cs`, and
 export-range validation plus segment/export-range overlap classification live in
-`Sussudio/Services/Flashback/FlashbackExporter.SegmentSelection.cs`. Native
-input/output cleanup lives in
-`Sussudio/Services/Flashback/FlashbackExporter.NativeState.cs`, linked export
-cancellation-source helpers plus shared cancelled/disposed result creation live in
-`Sussudio/Services/Flashback/FlashbackExporter.Cancellation.cs`, FFmpeg error
+`Sussudio/Services/Flashback/FlashbackExporter.SegmentSelection.cs`. FFmpeg error
 string formatting/throwing lives in
 `Sussudio/Services/Flashback/FlashbackExporter.LibAvErrors.cs`, and timestamp
 math/saturated arithmetic lives in
