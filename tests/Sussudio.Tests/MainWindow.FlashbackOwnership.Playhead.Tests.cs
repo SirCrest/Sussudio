@@ -28,8 +28,8 @@ static partial class Program
         AssertContains(mainWindowText, "InitializeFlashbackPlayheadMotionController();");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Playhead.cs")),
-            "Flashback playhead adapter lives in the focused Flashback playhead partial");
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
+            "Flashback playhead adapter lives in the consolidated Flashback interaction adapter");
         AssertOccursBefore(mainWindowText, "InitializeFlashbackScrubInteractionController();", "InitializeFlashbackPlayheadMotionController();");
         AssertOccursBefore(mainWindowText, "InitializeFlashbackPlayheadMotionController();", "InitializeFlashbackTimelineController();");
         AssertContains(controllerRootText, "internal sealed class FlashbackPlayheadMotionControllerContext");

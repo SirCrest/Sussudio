@@ -14,8 +14,8 @@ static partial class Program
         AssertContains(timelineAdapterText, "FlashbackTrackBackground = FlashbackTrackBackground,");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Timeline.cs")),
-            "Flashback timeline adapter lives in the focused Flashback timeline partial");
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
+            "Flashback timeline adapter lives in the consolidated Flashback interaction adapter");
         AssertContains(timelineAdapterText, "FlashbackScrubArea = FlashbackScrubArea,");
         AssertContains(timelineAdapterText, "FlashbackPlayhead = FlashbackPlayhead,");
         AssertContains(timelineAdapterText, "FlashbackLiveEdge = FlashbackLiveEdge,");

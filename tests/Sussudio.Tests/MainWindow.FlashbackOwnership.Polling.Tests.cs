@@ -24,8 +24,8 @@ static partial class Program
         AssertContains(mainWindowText, "InitializeFlashbackPollingController();");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Polling.cs")),
-            "Flashback polling adapter lives in the focused Flashback polling partial");
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
+            "Flashback polling adapter lives in the consolidated Flashback interaction adapter");
         AssertContains(timelineAdapterText, "StartStatusPolling = StartFlashbackStatusPolling,");
         AssertContains(shutdownCleanupText, "StopFlashbackStatusPolling();");
         AssertContains(shutdownCleanupControllerText, "_context.StopTimers();");

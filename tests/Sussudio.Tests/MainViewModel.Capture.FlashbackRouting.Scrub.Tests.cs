@@ -138,8 +138,8 @@ static partial class Program
         AssertDoesNotContain(flashbackScrubControllerText, "var carriedPosition = _isScrubbing ? _context.ViewModel.FlashbackPlaybackPosition : (TimeSpan?)null;");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Scrub.cs")),
-            "Flashback scrub adapter lives in the focused Flashback scrub partial");
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
+            "Flashback scrub adapter lives in the consolidated Flashback interaction adapter");
         AssertDoesNotContain(mainWindowText, "private bool _isFlashbackScrubbing;");
         AssertDoesNotContain(mainWindowText, "private TimeSpan? _lastScrubPointerPosition;");
 

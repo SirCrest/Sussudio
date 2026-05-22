@@ -35,8 +35,8 @@ static partial class Program
         AssertContains(mainWindowText, "InitializeFlashbackSettingsBindingController();");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Settings.cs")),
-            "Flashback settings adapter lives in the focused Flashback settings partial");
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
+            "Flashback settings adapter lives in the consolidated Flashback interaction adapter");
         AssertContains(bindingsText, "ApplyInitialFlashbackSettings();");
         AssertContains(bindingsText, "AttachFlashbackSettingsBindings();");
 
@@ -81,8 +81,8 @@ static partial class Program
         AssertContains(mainWindowText, "InitializeFlashbackCommandController();");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Commands.cs")),
-            "Flashback command adapter lives in the focused Flashback command partial");
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
+            "Flashback command adapter lives in the consolidated Flashback interaction adapter");
         AssertDoesNotContain(flashbackText, "private async Task ApplyFlashbackEnabledToggleAsync(bool requestedEnabled)");
         AssertDoesNotContain(bindingsText, "FlashbackEnabledToggle.IsOn = ViewModel.IsFlashbackEnabled;");
         AssertDoesNotContain(bindingsText, "FlashbackGpuDecodeToggle.IsOn = ViewModel.FlashbackGpuDecode;");
