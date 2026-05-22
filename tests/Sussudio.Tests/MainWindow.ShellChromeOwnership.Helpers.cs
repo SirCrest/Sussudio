@@ -7,13 +7,6 @@ static partial class Program
             "\n",
             new[]
             {
-                "Sussudio/MainWindow.ShellChrome.NativeWindow.cs",
-                "Sussudio/MainWindow.ShellChrome.ControlBar.cs",
-                "Sussudio/MainWindow.ShellChrome.LaunchEntrance.cs",
-                "Sussudio/MainWindow.ShellChrome.LaunchStartup.cs",
-                "Sussudio/MainWindow.ShellChrome.SettingsShelf.cs",
-                "Sussudio/MainWindow.ShellChrome.ShellElevation.cs",
-                "Sussudio/MainWindow.ShellChrome.ShellPropertyChanged.cs",
-                "Sussudio/MainWindow.ShellChrome.SplashPhrases.cs",
+                "Sussudio/MainWindow.ShellChrome.Composition.cs",
             }.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
 }

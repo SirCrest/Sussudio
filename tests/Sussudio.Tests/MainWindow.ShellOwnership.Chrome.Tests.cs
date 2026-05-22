@@ -16,8 +16,8 @@ static partial class Program
         AssertContains(settingsShelfText, "=> _settingsShelfController.ApplyVisibility(visible);");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShellChrome.SettingsShelf.cs")),
-            "settings shelf adapter lives in the focused shell chrome settings shelf partial");
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShellChrome.Composition.cs")),
+            "settings shelf adapter lives in the shell chrome composition partial");
         AssertContains(mainWindowText, "InitializeSettingsShelfController();");
         AssertContains(fullScreenText, "ResetSettingsShelfAnimation = _settingsShelfController.ResetAnimationState,");
         AssertDoesNotContain(settingsShelfText, "ResetSettingsShelfAnimationForFullScreen");

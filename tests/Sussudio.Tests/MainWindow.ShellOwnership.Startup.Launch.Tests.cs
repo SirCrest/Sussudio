@@ -28,8 +28,8 @@ static partial class Program
         AssertContains(adapterText, "=> _launchEntranceAnimationController.PlaySplashAndEntrance();");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShellChrome.LaunchEntrance.cs")),
-            "launch entrance adapter lives in the focused shell chrome launch entrance partial");
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShellChrome.Composition.cs")),
+            "launch entrance adapter lives in the shell chrome composition partial");
         AssertContains(controllerInitializationText, "InitializeLaunchEntranceAnimationController();");
         AssertContains(mainWindowText, "PrepareLaunchEntranceInitialState();");
         AssertContains(startupText, "PlaySplashAndEntrance();");
@@ -111,8 +111,8 @@ static partial class Program
         AssertContains(cleanupPlanText, "Sussudio/Controllers/Launch/LaunchStartupController.cs");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShellChrome.LaunchStartup.cs")),
-            "startup adapter lives in the focused shell chrome launch startup partial");
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShellChrome.Composition.cs")),
+            "startup adapter lives in the shell chrome composition partial");
         AssertContains(mainWindowText, "private readonly WindowAutomationHostLifecycleController _automationHostLifecycleController;");
         AssertEqual(
             false,

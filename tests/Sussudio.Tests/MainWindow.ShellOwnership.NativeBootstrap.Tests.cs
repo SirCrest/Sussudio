@@ -14,8 +14,8 @@ static partial class Program
 
         AssertContains(agentMapText, nativeBootstrapOwner);
         AssertContains(cleanupPlanText, nativeBootstrapOwner);
-        AssertContains(agentMapText, "Sussudio/MainWindow.ShellChrome.NativeWindow.cs");
-        AssertContains(cleanupPlanText, "Sussudio/MainWindow.ShellChrome.NativeWindow.cs");
+        AssertContains(agentMapText, "Sussudio/MainWindow.ShellChrome.Composition.cs");
+        AssertContains(cleanupPlanText, "Sussudio/MainWindow.ShellChrome.Composition.cs");
         AssertContains(agentMapText, "owns native window");
         AssertContains(cleanupPlanText, "DWM cloak/dark-mode setup");
         AssertContains(agentMapText, "first-composed-frame");
@@ -46,8 +46,8 @@ static partial class Program
         AssertContains(nativeWindowText, "=> _nativeWindowBootstrapController.CancelPendingFirstFrameReveal();");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShellChrome.NativeWindow.cs")),
-            "native window adapter lives in the focused shell chrome native window partial");
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShellChrome.Composition.cs")),
+            "native window adapter lives in the shell chrome composition partial");
         AssertDoesNotContain(nativeWindowText, "private static extern int DwmSetWindowAttribute(");
         AssertDoesNotContain(nativeWindowText, "MinSizeWindowSubclass.Install(");
 
