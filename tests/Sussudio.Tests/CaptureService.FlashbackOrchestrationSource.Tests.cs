@@ -10,7 +10,6 @@ static partial class Program
         "Sussudio/Services/Capture/CaptureService.FlashbackRestart.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackAudioInputs.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs",
-        "Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackendDisposal.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackBufferCycle.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackBufferSettings.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackRecordingFormat.cs",
@@ -88,7 +87,6 @@ static partial class Program
         var flashbackRestartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRestart.cs");
         var audioInputsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackAudioInputs.cs");
         var previewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs");
-        var disposalText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackendDisposal.cs");
         var bufferCycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackBufferCycle.cs");
         var bufferSettingsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackBufferSettings.cs");
         var recordingFormatText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecordingFormat.cs");
@@ -114,9 +112,13 @@ static partial class Program
         AssertContains(flashbackRestartText, "UpdateEncodingSettings(settings);");
         AssertContains(audioInputsText, "private async Task EnsureFlashbackAudioInputsAsync(");
         AssertContains(previewBackendText, "private async Task EnsureFlashbackPreviewBackendAsync(");
-        AssertContains(disposalText, "private async Task DisposeFlashbackPreviewBackendAsync(");
-        AssertContains(disposalText, "private async Task DisposeFlashbackPreviewBackendCoreAsync(");
-        AssertContains(disposalText, "CreateFlashbackPreviewBackendDisposalRequest(");
+        AssertContains(previewBackendText, "private async Task DisposeFlashbackPreviewBackendAsync(");
+        AssertContains(previewBackendText, "private async Task DisposeFlashbackPreviewBackendCoreAsync(");
+        AssertContains(previewBackendText, "CreateFlashbackPreviewBackendDisposalRequest(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackPreviewBackendDisposal.cs")),
+            "old Flashback preview backend disposal partial removed");
         AssertContains(backendResourcesText, "internal readonly record struct FlashbackPreviewBackendDisposalRequest(");
         AssertContains(backendResourcesText, "public async Task DisposePreviewBackendAsync(");
         AssertContains(bufferCycleText, "private async Task CycleFlashbackBufferAsync(");

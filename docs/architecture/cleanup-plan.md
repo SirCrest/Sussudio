@@ -5240,7 +5240,8 @@ owner, fold it back into that owner and update the source-shape tests and
    instead of private root resource shim properties. Keep later Flashback backend
    mechanics in the matching focused owner before inventing another small owner;
    `CaptureService.FlashbackPreviewBackend.cs` should stay the transition
-   coordinator for AV1 probing, readiness waiting, and cleanup handoff.
+   coordinator for AV1 probing, readiness waiting, cleanup handoff, and preview
+   backend disposal request construction.
    `CaptureRecordingBackendResources.cs` now owns active recording backend
    resources: LibAv/Flashback sink identity, active recording context/settings,
    pending LibAv drain task tracking, and pending-drain reentry policy. Recording

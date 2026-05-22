@@ -164,13 +164,14 @@ static partial class Program
         var previewBackendEntry = ExtractTextBetween(
             agentMapText,
             "- `CaptureService.FlashbackPreviewBackend.cs` owns Flashback preview backend",
-            "- `CaptureService.FlashbackPreviewBackendDisposal.cs` owns Flashback preview");
+            "- `CaptureService.FlashbackBufferCycle.cs` owns buffer-cycle");
 
         AssertContains(previewBackendEntry, "transition coordination");
         AssertContains(previewBackendEntry, "AV1 encoder support probing");
         AssertContains(previewBackendEntry, "video/audio readiness");
         AssertContains(previewBackendEntry, "resource-owner request construction");
         AssertContains(previewBackendEntry, "deferred cleanup handoff");
+        AssertContains(previewBackendEntry, "preview backend disposal request construction");
         AssertContains(previewBackendEntry, "Startup construction, install, and playback initialization");
         AssertContains(previewBackendEntry, "`FlashbackBackendResources.Startup.cs`");
         AssertContains(previewBackendEntry, "producer attach/detach request\n  contracts and feed wiring live in `FlashbackBackendResources.Producers.cs`");
