@@ -2813,10 +2813,9 @@ summary, live Flashback audio/video queue, force-rotate, backpressure, and GPU
 queue projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.cs`;
 recording health orchestration and LibAv-only CUDA queue projection live in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs`, while
-active recording backend selection, LibAv-vs-Flashback fallback, and
-backend-specific queue/counter normalization live in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotRecordingActiveBackend.cs`;
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs`, along
+with active recording backend selection, LibAv-vs-Flashback fallback, and
+backend-specific queue/counter normalization;
 Flashback export diagnostic and derived progress/throughput projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs`.
 Flashback playback health snapshot orchestration now lives in
