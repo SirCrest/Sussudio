@@ -4060,10 +4060,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.LiveRestore.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`
-- `DiagnosticSessionFlashbackSegments.CompletedWaits.cs`
-- `DiagnosticSessionFlashbackSegments.PlaybackTargetWaits.cs`
-- `DiagnosticSessionFlashbackSegments.PlaybackHeadroomWaits.cs`
-- `DiagnosticSessionFlashbackSegments.Parsing.cs`
+- `DiagnosticSessionFlashbackSegments.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`
 - `DiagnosticSessionFlashbackStressScenario.Stress.cs`
 - `DiagnosticSessionFlashbackStressScenario.StressExport.cs`

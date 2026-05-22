@@ -98,10 +98,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionFlashbackSegmentsSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackSegments.CompletedWaits.cs",
-            "tools/Common/DiagnosticSessionFlashbackSegments.PlaybackTargetWaits.cs",
-            "tools/Common/DiagnosticSessionFlashbackSegments.PlaybackHeadroomWaits.cs",
-            "tools/Common/DiagnosticSessionFlashbackSegments.Parsing.cs");
+            "tools/Common/DiagnosticSessionFlashbackSegments.cs");
 
     private static string ReadDiagnosticSessionFlashbackStressScenarioSource()
         => ReadNormalizedSourceFiles(
