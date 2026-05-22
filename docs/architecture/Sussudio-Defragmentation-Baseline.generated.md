@@ -130,7 +130,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 12 | Sussudio/Models/Audio/AudioInputDevice.cs |
 | 12 | Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackPlaybackAlerts.cs |
 | 12 | Sussudio/Services/Preview/ILiveVideoSource.cs |
-| 12 | Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.Ui.cs |
+| 12 | Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.cs |
 | 12 | tools/Common/AutomationSnapshotFormatter.Flashback.Export.cs |
 | 12 | tools/Common/DiagnosticSessionResult.Overview.cs |
 | 12 | tools/Common/DiagnosticSessionScenarioCatalog.Entries.Combined.cs |

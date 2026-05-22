@@ -4869,13 +4869,8 @@ owner, fold it back into that owner and update the source-shape tests and
    Settings initialization, simple persistence reactions, and the impure
    settings load/save adapter stay in `MainViewModel.SettingsPersistence.cs`.
    `MainViewModel.SettingsLoadApplication.cs` owns the validated load-plan
-   application order, while `MainViewModel.SettingsLoadApplication.Recording.cs`,
-   `MainViewModel.SettingsLoadApplication.Audio.cs`,
-   `MainViewModel.SettingsLoadApplication.Ui.cs`,
-   `MainViewModel.SettingsLoadApplication.DeviceAudio.cs`,
-   `MainViewModel.SettingsLoadApplication.Flashback.cs`, and
-   `MainViewModel.SettingsLoadApplication.PendingDevices.cs` own feature-specific
-   state assignment and deferred device/audio/microphone selection staging.
+   application order, feature-specific state assignment, and deferred
+   device/audio/microphone selection staging.
    `MainViewModelSettingsPersistenceProjection.Load.cs` owns persisted-settings
    validation, clamping, and deferred-selection projection,
    `MainViewModelSettingsPersistenceProjection.Save.cs` owns save DTO projection,

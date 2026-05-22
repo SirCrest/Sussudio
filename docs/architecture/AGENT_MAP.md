@@ -3562,13 +3562,8 @@ Primary current owners:
   `MainViewModel.SettingsPersistence.cs` owns settings initialization, simple
   persistence reactions, and the impure settings load/save adapter.
   `MainViewModel.SettingsLoadApplication.cs` owns validated load-plan
-  application order. `MainViewModel.SettingsLoadApplication.Recording.cs`,
-  `MainViewModel.SettingsLoadApplication.Audio.cs`,
-  `MainViewModel.SettingsLoadApplication.Ui.cs`,
-  `MainViewModel.SettingsLoadApplication.DeviceAudio.cs`,
-  `MainViewModel.SettingsLoadApplication.Flashback.cs`, and
-  `MainViewModel.SettingsLoadApplication.PendingDevices.cs` own feature-specific
-  state assignment and deferred device/audio/microphone selection staging.
+  application order, feature-specific state assignment, and deferred
+  device/audio/microphone selection staging.
   `MainViewModelSettingsPersistenceProjection.Load.cs` owns persisted-settings
   validation, clamping, and deferred-selection handoff, while
   `MainViewModelSettingsPersistenceProjection.Save.cs` owns save DTO projection.

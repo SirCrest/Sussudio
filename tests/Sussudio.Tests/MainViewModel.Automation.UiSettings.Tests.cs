@@ -29,15 +29,7 @@ static partial class Program
     {
         var settingsPersistenceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs").Replace("\r\n", "\n");
         var settingsLoadApplicationRootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.cs").Replace("\r\n", "\n");
-        var settingsLoadApplicationText = string.Join(
-            "\n",
-            settingsLoadApplicationRootText,
-            ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.Recording.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.Audio.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.Ui.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.DeviceAudio.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.Flashback.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.PendingDevices.cs").Replace("\r\n", "\n"));
+        var settingsLoadApplicationText = settingsLoadApplicationRootText;
         var settingsLoadProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.Load.cs").Replace("\r\n", "\n");
         var settingsSaveProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.Save.cs").Replace("\r\n", "\n");
         var settingsProjectionModelsText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.Models.cs").Replace("\r\n", "\n");
@@ -77,6 +69,21 @@ static partial class Program
         AssertContains(settingsLoadApplicationText, "_pendingSavedDeviceId = loadPlan.PendingDeviceId;");
         AssertContains(settingsLoadApplicationText, "_pendingSavedAudioDeviceId = loadPlan.PendingAudioDeviceId;");
         AssertContains(settingsLoadApplicationText, "_pendingSavedMicrophoneDeviceId = loadPlan.PendingMicrophoneDeviceId;");
+        foreach (var removedFile in new[]
+        {
+            "MainViewModel.SettingsLoadApplication.Recording.cs",
+            "MainViewModel.SettingsLoadApplication.Audio.cs",
+            "MainViewModel.SettingsLoadApplication.Ui.cs",
+            "MainViewModel.SettingsLoadApplication.DeviceAudio.cs",
+            "MainViewModel.SettingsLoadApplication.Flashback.cs",
+            "MainViewModel.SettingsLoadApplication.PendingDevices.cs"
+        })
+        {
+            AssertEqual(
+                false,
+                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", removedFile)),
+                $"{removedFile} folded into MainViewModel.SettingsLoadApplication.cs");
+        }
         AssertContains(settingsLoadProjectionText, "internal static partial class MainViewModelSettingsPersistenceProjection");
         AssertContains(settingsLoadProjectionText, "internal static MainViewModelSettingsLoadPlan BuildLoadPlan(");
         AssertContains(settingsSaveProjectionText, "internal static UserSettings BuildSaveSettings(");
