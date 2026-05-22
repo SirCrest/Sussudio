@@ -1397,9 +1397,8 @@ construction and merge policy live in
 `Sussudio/Services/Capture/CaptureService.TelemetryFallback.cs`. Capture-format
 runtime telemetry, NTSC frame-rate correction, and frame-rate argument formatting
 now live in
-`Sussudio/Services/Capture/CaptureService.CaptureFormatTelemetry.cs`.
-Observed pixel-format normalization, resets, and explicit counter updates now live in
-`Sussudio/Services/Capture/CaptureService.ObservedPixelTelemetry.cs`. The root
+`Sussudio/Services/Capture/CaptureService.CaptureFormatTelemetry.cs`, including
+observed pixel-format normalization, resets, and explicit counter updates. The root
 capture service owns shared state, construction, and public event surface, but
 these diagnostics are no longer embedded in the lifecycle/orchestration file.
 
