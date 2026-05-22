@@ -2818,8 +2818,9 @@ cadence and MJPEG field records live beside their samplers. The assembler remain
 allocation-neutral final DTO construction from captured fields; do not split it
 into post-construction mutators or shallow fragment records just to reduce line
 count.
-source telemetry, backend, suppression, and circuit-state projection lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotSourceTelemetry.cs`;
+source telemetry, backend, suppression, and circuit-state projection lives with
+the health snapshot sampler in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`;
 Flashback buffer, startup-cache, backend-staleness reason policy, encoder
 summary, live Flashback audio/video queue, force-rotate, backpressure, and GPU
 queue projection lives in

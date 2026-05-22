@@ -56,27 +56,28 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
     }
 
     [Fact]
-    public void CaptureService_HealthSnapshotSourceTelemetryFields_LiveInFocusedPartial()
+    public void CaptureService_HealthSnapshotSourceTelemetryFields_LiveWithHealthSampler()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
-        var sourceTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotSourceTelemetry.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var sourceTelemetry = CaptureSourceTelemetryHealthSnapshotFields(_latestSourceTelemetry);");
         AssertContains(healthSnapshotAssemblerText, "SourceTelemetryAvailability = sourceTelemetry.Availability,");
         AssertContains(healthSnapshotAssemblerText, "SourceTelemetryBackend = sourceTelemetry.Backend,");
         AssertContains(healthSnapshotAssemblerText, "SourceTelemetryCircuitState = sourceTelemetry.CircuitState,");
-        AssertDoesNotContain(healthSnapshotText, "ResolveSourceTelemetrySuppressedReason(_latestSourceTelemetry)");
-        AssertDoesNotContain(healthSnapshotText, "ResolveSourceTelemetryCircuitState(");
-
-        AssertContains(sourceTelemetryText, "private SourceTelemetryHealthSnapshotFields CaptureSourceTelemetryHealthSnapshotFields(");
-        AssertContains(sourceTelemetryText, "ResolveSourceTelemetrySuppressedReason(telemetry) ?? string.Empty");
-        AssertContains(sourceTelemetryText, "ResolveSourceTelemetryBackend(telemetry)");
-        AssertContains(sourceTelemetryText, "ResolveSourceTelemetryCircuitState(telemetry.Availability, suppressed)");
-        AssertContains(sourceTelemetryText, "private readonly record struct SourceTelemetryHealthSnapshotFields");
+        AssertContains(healthSnapshotText, "private SourceTelemetryHealthSnapshotFields CaptureSourceTelemetryHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "ResolveSourceTelemetrySuppressedReason(telemetry) ?? string.Empty");
+        AssertContains(healthSnapshotText, "ResolveSourceTelemetryBackend(telemetry)");
+        AssertContains(healthSnapshotText, "ResolveSourceTelemetryCircuitState(telemetry.Availability, suppressed)");
+        AssertContains(healthSnapshotText, "private readonly record struct SourceTelemetryHealthSnapshotFields");
+        Assert.False(System.IO.File.Exists(System.IO.Path.Combine(
+            FindRepoRoot(),
+            "Sussudio",
+            "Services",
+            "Capture",
+            "CaptureService.HealthSnapshotSourceTelemetry.cs")));
 
     }
 }
