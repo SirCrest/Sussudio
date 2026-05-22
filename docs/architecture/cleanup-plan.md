@@ -3961,7 +3961,6 @@ Diagnostic session DTOs live in feature-oriented model files:
 `tools/Common/DiagnosticSessionResult.PreviewCadence.cs`,
 `tools/Common/DiagnosticSessionResult.PreviewScheduler.cs`,
 `tools/Common/DiagnosticSessionResult.PreviewD3D.cs`,
-`tools/Common/DiagnosticSessionResult.PreviewVisualCadence.cs`,
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.Commands.cs`,
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.Cadence.cs`,
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.OnePercentLow.cs`,
@@ -4793,7 +4792,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResult.PreviewCadence.cs`
 - `DiagnosticSessionResult.PreviewScheduler.cs`
 - `DiagnosticSessionResult.PreviewD3D.cs`
-- `DiagnosticSessionResult.PreviewVisualCadence.cs`
 - `DiagnosticSessionResult.FlashbackPlayback.Commands.cs`
 - `DiagnosticSessionResult.FlashbackPlayback.Cadence.cs`
 - `DiagnosticSessionResult.FlashbackPlayback.OnePercentLow.cs`

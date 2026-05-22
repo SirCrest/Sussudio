@@ -183,7 +183,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionResult.PreviewCadence.cs",
             "tools/Common/DiagnosticSessionResult.PreviewScheduler.cs",
             "tools/Common/DiagnosticSessionResult.PreviewD3D.cs",
-            "tools/Common/DiagnosticSessionResult.PreviewVisualCadence.cs",
             "tools/Common/DiagnosticSessionResult.FlashbackPlayback.Commands.cs",
             "tools/Common/DiagnosticSessionResult.FlashbackPlayback.Cadence.cs",
             "tools/Common/DiagnosticSessionResult.FlashbackPlayback.OnePercentLow.cs",

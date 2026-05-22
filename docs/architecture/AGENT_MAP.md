@@ -4567,11 +4567,10 @@ Primary owners:
   fields: core metadata, artifact paths, terminal state, actions, and warnings.
   `DiagnosticSessionResult.Overview.cs` owns end-of-run overview fields.
   `DiagnosticSessionResult.CaptureSource.cs` owns capture/source summary fields.
-  `DiagnosticSessionResult.PreviewCadence.cs` owns preview cadence fields,
+  `DiagnosticSessionResult.PreviewCadence.cs` owns preview cadence and visual-cadence fields,
   `DiagnosticSessionResult.PreviewScheduler.cs` owns preview scheduler and
   jitter-buffer fields, `DiagnosticSessionResult.PreviewD3D.cs` owns D3D
-  frame-stat and CPU timing fields, and
-  `DiagnosticSessionResult.PreviewVisualCadence.cs` owns visual-cadence fields.
+  frame-stat and CPU timing fields.
   `DiagnosticSessionResult.FlashbackPlayback.Commands.cs`
   owns Flashback playback command queue fields,
   `DiagnosticSessionResult.FlashbackPlayback.Cadence.cs` owns playback cadence

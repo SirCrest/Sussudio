@@ -12,7 +12,6 @@ static partial class Program
         var previewCadenceResultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.PreviewCadence.cs");
         var previewSchedulerResultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.PreviewScheduler.cs");
         var previewD3DResultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.PreviewD3D.cs");
-        var previewVisualCadenceResultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.PreviewVisualCadence.cs");
         var playbackCommandsResultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.FlashbackPlayback.Commands.cs");
         var playbackCadenceResultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.FlashbackPlayback.Cadence.cs");
         var playbackOnePercentLowResultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.FlashbackPlayback.OnePercentLow.cs");
@@ -51,12 +50,12 @@ static partial class Program
         AssertContains(flashbackExportResultText, "public string FlashbackExportStatusAtEnd { get; init; } = string.Empty;");
         AssertContains(previewCadenceResultText, "// Preview cadence summary.");
         AssertContains(previewCadenceResultText, "public double PreviewCadenceOnePercentLowFpsAtEnd { get; init; }");
+        AssertContains(previewCadenceResultText, "// Preview visual-cadence summary.");
+        AssertContains(previewCadenceResultText, "public double VisualCadenceOutputFpsAtEnd { get; init; }");
         AssertContains(previewSchedulerResultText, "// Preview scheduler and jitter-buffer summary.");
         AssertContains(previewSchedulerResultText, "public long PreviewSchedulerDroppedAtEnd { get; init; }");
         AssertContains(previewD3DResultText, "// Preview D3D frame-stat and CPU timing summary.");
         AssertContains(previewD3DResultText, "public double PreviewD3DInputUploadCpuP99MsAtEnd { get; init; }");
-        AssertContains(previewVisualCadenceResultText, "// Preview visual-cadence summary.");
-        AssertContains(previewVisualCadenceResultText, "public double VisualCadenceOutputFpsAtEnd { get; init; }");
         AssertDoesNotContain(resultText, "public double ProcessCpuPercentAtEnd");
         AssertDoesNotContain(resultText, "public PresentMonProbeResult? PresentMon");
         AssertDoesNotContain(resultText, "public string SelectedResolutionAtEnd");
@@ -93,11 +92,10 @@ static partial class Program
         AssertDoesNotContain(previewCadenceResultText, "FlashbackPlayback");
         AssertDoesNotContain(previewSchedulerResultText, "FlashbackPlayback");
         AssertDoesNotContain(previewD3DResultText, "FlashbackPlayback");
-        AssertDoesNotContain(previewVisualCadenceResultText, "FlashbackPlayback");
         AssertDoesNotContain(previewCadenceResultText, "PreviewScheduler");
         AssertDoesNotContain(previewSchedulerResultText, "PreviewD3DInputUploadCpuP99MsAtEnd");
         AssertDoesNotContain(previewD3DResultText, "VisualCadenceOutputFpsAtEnd");
-        AssertDoesNotContain(previewVisualCadenceResultText, "PreviewD3DInputUploadCpuP99MsAtEnd");
+        AssertDoesNotContain(previewCadenceResultText, "PreviewD3DInputUploadCpuP99MsAtEnd");
         AssertContains(modelText, "public sealed class DiagnosticSessionSample");
         AssertContains(modelText, "public string TerminalState { get; set; }");
         AssertContains(modelText, "public JsonElement Snapshot { get; init; }");

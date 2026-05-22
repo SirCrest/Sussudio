@@ -95,3 +95,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: covered by diagnostic-session formatter ownership tests and runtime formatter tests
 Behavior preserved: diagnostic-session report order and row text remain unchanged
 Notes for future agents: keep short scalar summary rows with the formatter root unless they grow separate formatting policy
+
+Date: 2026-05-21
+Area: Diagnostic session result models
+Problem: Preview cadence and visual-cadence DTO fields were split across two tiny partial files even though callers treat them as one preview cadence result surface.
+Files consolidated: `tools/Common/DiagnosticSessionResult.PreviewVisualCadence.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `DiagnosticSessionResult` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by diagnostic-session model ownership and formatter tests
+Behavior preserved: DTO property names and init semantics stay unchanged
+Notes for future agents: keep preview cadence DTO fields grouped unless visual cadence grows independent behavior or a separate model type
