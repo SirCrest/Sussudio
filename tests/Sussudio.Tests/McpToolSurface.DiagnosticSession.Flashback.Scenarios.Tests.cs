@@ -226,50 +226,30 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var segmentPlaybackText = ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource();
-        var segmentPlaybackRootText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs")
-            .Replace("\r\n", "\n");
-        var segmentPlaybackRegistrationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Registrations.cs")
-            .Replace("\r\n", "\n");
-        var segmentPlaybackLiveRestoreText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.LiveRestore.cs")
-            .Replace("\r\n", "\n");
-        var segmentPlaybackTargetText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Target.cs")
-            .Replace("\r\n", "\n");
-        var segmentPlaybackValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(segmentPlaybackText, "internal static partial class DiagnosticSessionFlashbackSegmentPlaybackScenarios");
+        AssertContains(segmentPlaybackText, "internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios");
+        AssertDoesNotContain(segmentPlaybackText, "internal static partial class DiagnosticSessionFlashbackSegmentPlaybackScenarios");
         AssertContains(segmentPlaybackText, "internal static async Task RunFlashbackSegmentPlaybackAsync(");
-        AssertContains(segmentPlaybackRootText, "flashback segment playback live headroom established");
-        AssertContains(segmentPlaybackRootText, "flashback segment playback started near boundary");
-        AssertContains(segmentPlaybackRootText, "AcquireFlashbackSegmentPlaybackTargetAsync(");
-        AssertContains(segmentPlaybackRootText, "ValidateFlashbackSegmentPlaybackSnapshot(");
-        AssertContains(segmentPlaybackRootText, "ReturnFlashbackSegmentPlaybackLiveAsync(");
-        AssertDoesNotContain(segmentPlaybackRootText, "WaitForFlashbackPlayableCompletedSegmentAsync(");
-        AssertDoesNotContain(segmentPlaybackRootText, "recording-assisted rotation started");
-        AssertDoesNotContain(segmentPlaybackRootText, "frameCount >= 180");
-        AssertDoesNotContain(segmentPlaybackRootText, "playback FPS below source-rate target after warm sample");
-        AssertDoesNotContain(segmentPlaybackRootText, "internal static void RegisterSelectedFlashbackSegmentPlaybackScenarioTask(");
-        AssertDoesNotContain(segmentPlaybackRootText, "\"go-live\"");
-        AssertContains(segmentPlaybackTargetText, "private static async Task<FlashbackSegmentPlaybackTarget?> AcquireFlashbackSegmentPlaybackTargetAsync(");
-        AssertContains(segmentPlaybackTargetText, "WaitForFlashbackPlayableCompletedSegmentAsync(");
-        AssertContains(segmentPlaybackTargetText, "CreateFlashbackCompletedSegmentViaRecordingAsync(");
-        AssertContains(segmentPlaybackTargetText, "no playable completed segment became available after recording-assisted rotation");
-        AssertContains(segmentPlaybackValidationText, "private static void ValidateFlashbackSegmentPlaybackSnapshot(");
-        AssertContains(segmentPlaybackValidationText, "frameCount >= 180");
-        AssertContains(segmentPlaybackValidationText, "playback FPS below source-rate target after warm sample");
-        AssertContains(segmentPlaybackValidationText, "flashback segment playback: command queue unhealthy");
-        AssertContains(segmentPlaybackLiveRestoreText, "private static async Task ReturnFlashbackSegmentPlaybackLiveAsync(");
-        AssertContains(segmentPlaybackLiveRestoreText, "\"go-live\"");
-        AssertContains(segmentPlaybackLiveRestoreText, "flashback segment playback go-live requested");
-        AssertContains(segmentPlaybackLiveRestoreText, "flashback segment playback: playback ended in state");
+        AssertContains(segmentPlaybackText, "flashback segment playback live headroom established");
+        AssertContains(segmentPlaybackText, "flashback segment playback started near boundary");
+        AssertContains(segmentPlaybackText, "private static async Task<FlashbackSegmentPlaybackTarget?> AcquireFlashbackSegmentPlaybackTargetAsync(");
+        AssertContains(segmentPlaybackText, "WaitForFlashbackPlayableCompletedSegmentAsync(");
+        AssertContains(segmentPlaybackText, "no playable completed segment became available after recording-assisted rotation");
+        AssertContains(segmentPlaybackText, "private static void ValidateFlashbackSegmentPlaybackSnapshot(");
+        AssertContains(segmentPlaybackText, "frameCount >= 180");
+        AssertContains(segmentPlaybackText, "playback FPS below source-rate target after warm sample");
+        AssertContains(segmentPlaybackText, "flashback segment playback: command queue unhealthy");
+        AssertContains(segmentPlaybackText, "private static async Task ReturnFlashbackSegmentPlaybackLiveAsync(");
+        AssertContains(segmentPlaybackText, "\"go-live\"");
+        AssertContains(segmentPlaybackText, "flashback segment playback go-live requested");
+        AssertContains(segmentPlaybackText, "flashback segment playback: playback ended in state");
         AssertContains(segmentPlaybackText, "private static async Task<bool> CreateFlashbackCompletedSegmentViaRecordingAsync(");
         AssertContains(segmentPlaybackText, "recording-assisted rotation started");
         AssertContains(segmentPlaybackText, "private static async Task TryStopRecordingAsync(");
-        AssertContains(segmentPlaybackRegistrationText, "internal static void RegisterSelectedFlashbackSegmentPlaybackScenarioTask(");
-        AssertContains(segmentPlaybackRegistrationText, "scenarioPlan.RunFlashbackSegmentPlayback");
-        AssertContains(segmentPlaybackRegistrationText, "7,\n            \"flashback-segment-playback-task\",");
-        AssertContains(segmentPlaybackRegistrationText, "actions.Add(\"flashback segment playback started\")");
-        AssertDoesNotContain(segmentPlaybackRegistrationText, "ReturnFlashbackSegmentPlaybackLiveAsync(");
+        AssertContains(segmentPlaybackText, "internal static void RegisterSelectedFlashbackSegmentPlaybackScenarioTask(");
+        AssertContains(segmentPlaybackText, "scenarioPlan.RunFlashbackSegmentPlayback");
+        AssertContains(segmentPlaybackText, "7,\n            \"flashback-segment-playback-task\",");
+        AssertContains(segmentPlaybackText, "actions.Add(\"flashback segment playback started\")");
         AssertContains(startupText, "DiagnosticSessionFlashbackSegmentPlaybackScenarios.RegisterSelectedFlashbackSegmentPlaybackScenarioTask(");
         AssertDoesNotContain(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegmentPlaybackScenarios;");
         AssertDoesNotContain(startupText, "RunFlashbackSegmentPlaybackAsync(");

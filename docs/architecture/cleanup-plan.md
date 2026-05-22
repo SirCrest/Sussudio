@@ -3840,16 +3840,12 @@ policy, active recording backend/file/counter stability checks, post-stop preset
 verification, encoder-frame checks, and original-preset restore verification.
 
 Diagnostic-session Flashback segment playback now lives in
-`tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios*.cs`. The root
-owns completed-segment boundary-crossing choreography, `.Registrations.cs` owns
-task registration, priority, label, and started action, `.Target.cs` owns
-playback target acquisition plus recording-assisted retry routing,
-`.LiveRestore.cs` owns go-live restore and final playback-state warning policy,
-`.Validation.cs` owns post-boundary snapshot/FPS/command-health warning policy, and
-recording-assisted segment rotation plus best-effort stop cleanup live beside it
-in `DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`
-while the `DiagnosticSessionFlashbackSegments.*` family stays read-only segment
-parsing and wait policy.
+`tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`, which owns
+task registration, completed-segment boundary-crossing choreography, playback
+target acquisition, recording-assisted retry routing, go-live restore,
+post-boundary snapshot/FPS/command-health warning policy, and best-effort
+recording cleanup. `DiagnosticSessionFlashbackSegments.cs` stays the read-only
+segment parsing and wait-policy helper.
 
 Diagnostic-session Flashback segment handling now lives in a small read-only
 family. `.Parsing.cs` owns `FlashbackGetSegments` response parsing and the
@@ -4036,11 +4032,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
-- `DiagnosticSessionFlashbackSegmentPlaybackScenarios.Registrations.cs`
-- `DiagnosticSessionFlashbackSegmentPlaybackScenarios.Target.cs`
-- `DiagnosticSessionFlashbackSegmentPlaybackScenarios.LiveRestore.cs`
-- `DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs`
-- `DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`
 - `DiagnosticSessionFlashbackSegments.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`
 - `DiagnosticSessionFlashbackStressScenario.Stress.cs`

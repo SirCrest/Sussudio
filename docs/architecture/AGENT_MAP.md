@@ -4254,22 +4254,9 @@ Primary owners:
   backend/file/counter stability checks, post-stop preset verification,
   encoder-frame checks, and original-preset restore verification.
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs` owns the
-  Flashback completed-segment playback boundary-crossing choreography.
-- `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Registrations.cs`
-  owns completed-segment playback scenario registration, priority, task label,
-  and started action string.
-- `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Target.cs`
-  owns completed-segment playback target acquisition, recording-assisted retry
-  routing, and unavailable-target warning policy.
-- `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.LiveRestore.cs`
-  owns completed-segment playback go-live restore and final playback-state
-  warning policy.
-- `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs`
-  owns completed-segment playback snapshot, FPS, command-health, and boundary
-  warning policy.
-- `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`
-  owns recording-assisted segment rotation and best-effort stop cleanup for
-  segment playback diagnostics.
+  Flashback completed-segment playback scenario: task registration, target
+  acquisition, boundary-crossing playback, go-live restore, snapshot/FPS/
+  command-health validation, and recording-assisted segment rotation fallback.
 - `tools/Common/DiagnosticSessionFlashbackSegments.cs` owns read-only
   `FlashbackGetSegments` response parsing, completed-segment discovery,
   playable completed-segment target selection, buffered-boundary projection,
