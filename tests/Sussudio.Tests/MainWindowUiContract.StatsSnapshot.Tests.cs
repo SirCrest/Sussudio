@@ -12,7 +12,6 @@ public class MainWindowUiContractStatsSnapshotTests
     {
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
-        var statsOverlayCompositionGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs");
         var statsSnapshotProviderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSnapshotProvider.cs");
         var mainWindowText = MainWindowCompositionSource.Read();
         var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs");
@@ -34,7 +33,7 @@ public class MainWindowUiContractStatsSnapshotTests
         AssertContains(statsOverlayText, "IsPreviewing = () => ViewModel.IsPreviewing,");
         AssertContains(statsOverlayText, "IsRecording = () => ViewModel.IsRecording");
         AssertContains(statsOverlayText, "=> _statsOverlayCompositionController.GetStatsSnapshot();");
-        AssertContains(statsOverlayCompositionGraphText, "private static StatsSnapshotProvider CreateSnapshotProvider(");
+        AssertContains(statsOverlayCompositionText, "private static StatsSnapshotProvider CreateSnapshotProvider(");
         AssertContains(statsOverlayCompositionText, "=> _statsSnapshotProvider.GetSnapshot();");
         AssertContains(statsSnapshotProviderText, "internal sealed class StatsSnapshotProvider");
         AssertDoesNotContain(statsSnapshotProviderText, "internal sealed partial class StatsSnapshotProvider");

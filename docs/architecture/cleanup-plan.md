@@ -2818,13 +2818,12 @@ HDR warmup state classification lives with
 Stats dock, stats toggle, and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/Stats/StatsOverlayController.cs`. Stats overlay controller
 composition stays split by role: `StatsOverlayCompositionController.cs` owns the
-runtime facade and construction-order entry point, while
+runtime facade, construction-order entry point, snapshot provider, frame-time
+presentation, dock graph, overlay controller, and section chrome factory wiring
+from the grouped contexts, while
 `StatsOverlayCompositionController.Contexts.cs` owns the grouped composition
 context DTOs for shell controls, snapshot sources, dock targets, hardware
-sources, and frame-time targets. `StatsOverlayCompositionController.Graph.cs`
-owns snapshot provider, frame-time presentation, dock graph, overlay controller,
-and section chrome factory wiring from those contexts instead of a flat
-dependency bag;
+sources, and frame-time targets;
 stats dock presentation/diagnostic/hardware/refresh controller graph wiring
 now lives in `Sussudio/Controllers/Stats/StatsDockControllerGraph.cs`, with
 the dock graph context contract in
@@ -2873,9 +2872,9 @@ frame-time canvas sizing, sample projection, and expected-line geometry live in
 `Sussudio/MainWindow.StatsOverlay.Composition.cs` owns the XAML-facing compact
 overlay adapter beside the stats overlay visibility route, while
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.Contexts.cs`
-owns the grouped stats composition context contracts and
-`Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs` owns
-presentation-controller graph composition from those contexts.
+owns the grouped stats composition context contracts; presentation-controller
+graph composition from those contexts lives in
+`Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
 `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` keeps the stats dock
 projection refresh adapter.
 Decode and GPU hardware stats row refresh/application over presentation inputs

@@ -10,8 +10,7 @@ public class StatsOverlayLifecycleTests
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
         var statsOverlayCompositionContextsText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.Contexts.cs");
-        var statsOverlayCompositionGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs");
-        var frameTimeOverlayText = statsOverlayCompositionText + "\n" + statsOverlayCompositionGraphText;
+        var frameTimeOverlayText = statsOverlayCompositionText;
         var statsDockGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockControllerGraph.cs");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.Adapters.cs");
@@ -24,9 +23,8 @@ public class StatsOverlayLifecycleTests
 
         AssertContains(statsOverlayText, "private StatsOverlayCompositionController _statsOverlayCompositionController = null!;");
         AssertContains(statsOverlayText, "private void InitializeStatsOverlayCompositionController()");
-        AssertContains(statsOverlayCompositionText, "internal sealed partial class StatsOverlayCompositionController");
+        AssertContains(statsOverlayCompositionText, "internal sealed class StatsOverlayCompositionController");
         AssertContains(statsOverlayCompositionContextsText, "internal sealed class StatsOverlayCompositionControllerContext");
-        AssertContains(statsOverlayCompositionGraphText, "internal sealed partial class StatsOverlayCompositionController");
         AssertContains(statsOverlayCompositionText, "private readonly StatsOverlayController _statsOverlayController;");
         AssertContains(statsOverlayCompositionText, "private readonly StatsDockControllerGraph _statsDockControllerGraph;");
         AssertContains(statsOverlayCompositionText, "private readonly StatsSnapshotProvider _statsSnapshotProvider;");
@@ -55,15 +53,13 @@ public class StatsOverlayLifecycleTests
         AssertContains(statsOverlayText, "StatsToggle = StatsToggle,");
         AssertContains(statsOverlayText, "IsWindowClosing = () => _isWindowClosing,");
         AssertContains(statsOverlayText, "SetStatsVisible = visible => ViewModel.IsStatsVisible = visible,");
-        AssertContains(statsOverlayCompositionGraphText, "StatsToggle = context.Shell.StatsToggle,");
-        AssertContains(statsOverlayCompositionGraphText, "GetCaptureHealthSnapshot = context.SnapshotSources.GetCaptureHealthSnapshot,");
-        AssertContains(statsOverlayCompositionGraphText, "DiagnosticsContent = context.DockTargets.DiagnosticsContent,");
-        AssertContains(statsOverlayCompositionGraphText, "GetMjpegPipelineTimingDetails = context.HardwareSources.GetMjpegPipelineTimingDetails,");
-        AssertContains(statsOverlayCompositionGraphText, "UpdateStatsDock = _statsDockControllerGraph.RefreshDock,");
-        AssertContains(statsOverlayCompositionGraphText, "UpdateFrameTimeOverlay = UpdateFrameTimeOverlay,");
+        AssertContains(statsOverlayCompositionText, "StatsToggle = context.Shell.StatsToggle,");
+        AssertContains(statsOverlayCompositionText, "GetCaptureHealthSnapshot = context.SnapshotSources.GetCaptureHealthSnapshot,");
+        AssertContains(statsOverlayCompositionText, "DiagnosticsContent = context.DockTargets.DiagnosticsContent,");
+        AssertContains(statsOverlayCompositionText, "GetMjpegPipelineTimingDetails = context.HardwareSources.GetMjpegPipelineTimingDetails,");
+        AssertContains(statsOverlayCompositionText, "UpdateStatsDock = _statsDockControllerGraph.RefreshDock,");
+        AssertContains(statsOverlayCompositionText, "UpdateFrameTimeOverlay = UpdateFrameTimeOverlay,");
         AssertDoesNotContain(statsOverlayCompositionText, "internal sealed class StatsOverlayShellContext");
-        AssertDoesNotContain(statsOverlayCompositionGraphText, "internal sealed class StatsOverlayShellContext");
-        AssertDoesNotContain(statsOverlayCompositionText, "private StatsDockControllerGraph CreateDockControllerGraph(");
         AssertContains(statsDockGraphText, "internal sealed class StatsDockControllerGraph");
         AssertContains(statsDockGraphText, "public void RefreshDock()");
         AssertContains(bindingsText, "AttachStatsOverlayToggleBindings();");
@@ -165,12 +161,11 @@ public class StatsOverlayLifecycleTests
     {
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
-        var statsOverlayCompositionGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs");
         var mainWindowText = MainWindowCompositionSource.Read();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSectionChromeController.cs");
 
         AssertContains(statsOverlayCompositionText, "private readonly StatsSectionChromeController _statsSectionChromeController;");
-        AssertContains(statsOverlayCompositionGraphText, "private StatsSectionChromeController CreateSectionChromeController(");
+        AssertContains(statsOverlayCompositionText, "private StatsSectionChromeController CreateSectionChromeController(");
         AssertContains(statsOverlayText, "private void StatsSectionHeader_Tapped(object sender, TappedRoutedEventArgs e)");
         AssertContains(statsOverlayText, "private void SetStatsSectionVisible(string section, bool visible)");
         AssertContains(statsOverlayText, "=> _statsOverlayCompositionController.ToggleSectionFromHeader(sender);");
@@ -186,7 +181,7 @@ public class StatsOverlayLifecycleTests
         AssertContains(controllerText, "_context.RefreshDiagnosticsSection();");
         AssertContains(mainWindowText, "ViewModel.StatsSectionVisibilityHandler = SetStatsSectionVisible;");
         AssertContains(mainWindowText, "InitializeStatsOverlayCompositionController();");
-        AssertContains(statsOverlayCompositionGraphText, "RefreshDiagnosticsSection = _statsDockControllerGraph.RefreshDiagnosticsSection");
+        AssertContains(statsOverlayCompositionText, "RefreshDiagnosticsSection = _statsDockControllerGraph.RefreshDiagnosticsSection");
         AssertDoesNotContain(statsOverlayText, "StatsDockPanel.FindName(contentName)");
         AssertDoesNotContain(statsOverlayText, "rotate.Angle =");
         AssertDoesNotContain(statsOverlayText, "UpdateDiagnosticsSection(snapshot");

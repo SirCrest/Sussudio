@@ -9,9 +9,8 @@ public partial class StatsPresentationTests
     {
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
-        var statsOverlayCompositionGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs").Replace("\r\n", "\n");
         var statsDockRefreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
-        var frameTimeOverlayText = statsOverlayCompositionText + "\n" + statsOverlayCompositionGraphText;
+        var frameTimeOverlayText = statsOverlayCompositionText;
         var frameTimeOverlayControllerText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
         var frameTimeOverlayGeometryText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs").Replace("\r\n", "\n");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
