@@ -12,23 +12,18 @@ namespace Sussudio.Tests;
 public class RecordingArtifactManagerTests
 {
     [Fact]
-    public void ArtifactManager_FinalizationLivesInFocusedPartial()
+    public void ArtifactManager_OwnsContextCreationAndFinalization()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/RecordingArtifactManager.cs");
-        var finalizationText = ReadRepoFile("Sussudio/Services/Recording/RecordingArtifactManager.Finalization.cs");
 
-        AssertContains(rootText, "public sealed partial class RecordingArtifactManager");
+        AssertContains(rootText, "public sealed class RecordingArtifactManager");
+        AssertDoesNotContain(rootText, "partial class RecordingArtifactManager");
         AssertContains(rootText, "public async Task<RecordingContext> CreateContextAsync(");
         AssertContains(rootText, "private static RecordingContext BuildContext(");
-        AssertDoesNotContain(rootText, "public FinalizeResult FinalizeContext(");
-        AssertDoesNotContain(rootText, "public Task RollbackAsync(");
-        AssertDoesNotContain(rootText, "private static bool TryValidateFinalOutput(");
-
-        AssertContains(finalizationText, "public sealed partial class RecordingArtifactManager");
-        AssertContains(finalizationText, "public FinalizeResult FinalizeContext(");
-        AssertContains(finalizationText, "public Task RollbackAsync(");
-        AssertContains(finalizationText, "private static bool TryValidateFinalOutput(");
-        AssertContains(finalizationText, "private static IReadOnlyList<string> GetExistingTempArtifacts(");
+        AssertContains(rootText, "public FinalizeResult FinalizeContext(");
+        AssertContains(rootText, "public Task RollbackAsync(");
+        AssertContains(rootText, "private static bool TryValidateFinalOutput(");
+        AssertContains(rootText, "private static IReadOnlyList<string> GetExistingTempArtifacts(");
     }
 
     [Fact]
