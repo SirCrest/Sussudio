@@ -3405,10 +3405,8 @@ MCP-compatible scenario description, and the CLI help-list constant.
 `DiagnosticSessionScenarioCatalog.Requirements.cs` owns setup requirement
 queries and export verification artifact lookup.
 `DiagnosticSessionScenarioCatalog.Entries.cs` owns scenario ordering by
-composing focused entry groups. Core, Flashback playback, Flashback export/
-lifecycle, Flashback recording/rejection, and combined scenario requirement
-metadata now live in the matching `DiagnosticSessionScenarioCatalog.Entries.*.cs`
-partials.
+composing core, Flashback playback, Flashback export/lifecycle, Flashback
+recording/rejection, and combined scenario requirement metadata.
 `DiagnosticSessionRunner.cs` owns the
 public compatibility entry points; `DiagnosticSessionRunExecution.cs` owns the
 visible run phase sequence around context creation, initial snapshot, scenario
@@ -4024,11 +4022,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioCatalog.Names.cs`
 - `DiagnosticSessionScenarioCatalog.Requirements.cs`
 - `DiagnosticSessionScenarioCatalog.Entries.cs`
-- `DiagnosticSessionScenarioCatalog.Entries.Core.cs`
-- `DiagnosticSessionScenarioCatalog.Entries.FlashbackPlayback.cs`
-- `DiagnosticSessionScenarioCatalog.Entries.FlashbackExport.cs`
-- `DiagnosticSessionScenarioCatalog.Entries.FlashbackRecording.cs`
-- `DiagnosticSessionScenarioCatalog.Entries.Combined.cs`
 - `DiagnosticSessionScenarioPlan.cs`
 - `DiagnosticSessionScenarioSetup.cs`
 - `DiagnosticSessionScenarioStartup.cs`

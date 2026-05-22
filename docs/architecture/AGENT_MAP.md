@@ -3941,16 +3941,8 @@ Primary owners:
   `tools/Common/DiagnosticSessionScenarioCatalog.Requirements.cs` owns scenario
   requirement queries and export-verification lookup.
   `tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs` owns scenario
-  ordering by composing focused entry groups. Core scenario metadata lives in
-  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.Core.cs`, Flashback
-  playback metadata in
-  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.FlashbackPlayback.cs`,
-  Flashback export/lifecycle metadata in
-  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.FlashbackExport.cs`,
-  Flashback recording/rejection metadata in
-  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.FlashbackRecording.cs`,
-  and combined-scenario metadata in
-  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.Combined.cs`.
+  ordering plus core, Flashback playback, Flashback export/lifecycle, Flashback
+  recording/rejection, and combined scenario metadata.
 - `tools/Common/DiagnosticSessionResult.cs` owns diagnostic-session summary DTO
   fields: core metadata, artifact paths, terminal state, actions, warnings,
   end-of-run overview, capture/source, Flashback playback/recording/export,
@@ -4414,10 +4406,9 @@ Invariants:
   `tools/Common/DiagnosticSessionScenarioCatalog.Names.cs`, then add requirement
   queries in `tools/Common/DiagnosticSessionScenarioCatalog.Requirements.cs`
   when a new entry shape needs them, plus export verification metadata and plan
-  metadata in the focused
-  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.*.cs` group before
+  metadata in `tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs` before
   wiring scenario behavior into `DiagnosticSessionRunner`. Preserve the final
-  order in `tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs`.
+  order there.
 - Keep diagnostic-session grouped policy derivation in
   `tools/Common/DiagnosticSessionScenarioPlan.cs`; the runner should consume
   named properties instead of comparing normalized scenario strings directly.
