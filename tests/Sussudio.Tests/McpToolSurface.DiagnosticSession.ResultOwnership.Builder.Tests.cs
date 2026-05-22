@@ -33,12 +33,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticHealthText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs")
             .Replace("\r\n", "\n");
-        var diagnosticHealthToleranceText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthTolerance.cs")
-            .Replace("\r\n", "\n");
-        var diagnosticHealthSummaryText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSummary.cs")
-            .Replace("\r\n", "\n");
-        var diagnosticHealthSourceWarningsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSourceWarnings.cs")
-            .Replace("\r\n", "\n");
         var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs")
             .Replace("\r\n", "\n");
 
@@ -63,21 +57,18 @@ static partial class Program
         AssertContains(analysisText, "healthSummary,");
         AssertContains(analysisText, "var previewScheduler = BuildPreviewSchedulerAnalysis(initialSnapshot, lastSnapshot, samples);");
         AssertContains(analysisText, "var validationOutcome = ValidateAnalysis(");
-        AssertContains(diagnosticHealthSummaryText, "private readonly record struct DiagnosticSessionHealthSummary(");
-        AssertContains(diagnosticHealthSummaryText, "private static DiagnosticSessionHealthSummary BuildDiagnosticHealthSummary(");
-        AssertContains(diagnosticHealthSourceWarningsText, "private readonly record struct DiagnosticHealthSourceWarningCounters(");
-        AssertContains(diagnosticHealthSourceWarningsText, "private static DiagnosticHealthSourceWarningCounters BuildDiagnosticHealthSourceWarningCounters(");
+        AssertContains(diagnosticHealthText, "private readonly record struct DiagnosticSessionHealthSummary(");
+        AssertContains(diagnosticHealthText, "private static DiagnosticSessionHealthSummary BuildDiagnosticHealthSummary(");
+        AssertContains(diagnosticHealthText, "private readonly record struct DiagnosticHealthSourceWarningCounters(");
+        AssertContains(diagnosticHealthText, "private static DiagnosticHealthSourceWarningCounters BuildDiagnosticHealthSourceWarningCounters(");
         AssertContains(diagnosticHealthText, "var tolerance = BuildDiagnosticHealthToleranceVerdict(");
         AssertContains(diagnosticHealthText, "tolerance.IsTolerated");
         AssertContains(diagnosticHealthText, "tolerance.WarningReason");
-        AssertContains(diagnosticHealthToleranceText, "private readonly record struct DiagnosticSessionHealthToleranceVerdict(");
-        AssertContains(diagnosticHealthToleranceText, "private static DiagnosticSessionHealthToleranceVerdict BuildDiagnosticHealthToleranceVerdict(");
-        AssertContains(diagnosticHealthToleranceText, "var sourceWarningCounters = BuildDiagnosticHealthSourceWarningCounters(initialSnapshot, lastSnapshot);");
-        AssertContains(diagnosticHealthToleranceText, "IsSparseSourceCaptureCadenceWarningRun(");
-        AssertContains(diagnosticHealthToleranceText, "IsSparsePreviewSchedulerDeadlineDropRun(");
-        AssertDoesNotContain(diagnosticHealthText, "private static DiagnosticSessionHealthSummary BuildDiagnosticHealthSummary(");
-        AssertDoesNotContain(diagnosticHealthText, "private static DiagnosticHealthSourceWarningCounters BuildDiagnosticHealthSourceWarningCounters(");
-        AssertDoesNotContain(diagnosticHealthText, "var sourceWarningCounters = BuildDiagnosticHealthSourceWarningCounters(initialSnapshot, lastSnapshot);");
+        AssertContains(diagnosticHealthText, "private readonly record struct DiagnosticSessionHealthToleranceVerdict(");
+        AssertContains(diagnosticHealthText, "private static DiagnosticSessionHealthToleranceVerdict BuildDiagnosticHealthToleranceVerdict(");
+        AssertContains(diagnosticHealthText, "var sourceWarningCounters = BuildDiagnosticHealthSourceWarningCounters(initialSnapshot, lastSnapshot);");
+        AssertContains(diagnosticHealthText, "IsSparseSourceCaptureCadenceWarningRun(");
+        AssertContains(diagnosticHealthText, "IsSparsePreviewSchedulerDeadlineDropRun(");
         AssertContains(analysisValidationText, "private readonly record struct DiagnosticSessionAnalysisValidationOutcome(");
         AssertContains(analysisValidationText, "private static DiagnosticSessionAnalysisValidationOutcome ValidateAnalysis(");
         AssertContains(analysisValidationText, "ValidateFlashbackPlaybackSession(");

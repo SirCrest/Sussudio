@@ -3985,17 +3985,10 @@ Primary owners:
   during result construction, and tolerated Flashback scenario warning
   classification.
 - `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs` owns
-  diagnostic-session health verdict composition and health warning text emitted
-  during result construction.
-- `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthTolerance.cs`
-  owns diagnostic-health warning tolerance, sparse source-cadence warning
-  tolerance, sparse preview-scheduler warning tolerance, and tolerated-warning
-  reason selection.
-- `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSummary.cs`
-  owns diagnostic-session health summary snapshot selection and health summary
-  text projection.
-- `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealthSourceWarnings.cs`
-  owns source-reader/ingest warning deltas for sparse source-capture tolerance.
+  diagnostic-session health summary snapshot selection, health verdict
+  composition, source-reader/ingest warning deltas for sparse source-capture
+  tolerance, sparse preview-scheduler warning tolerance, tolerated-warning
+  reason selection, and health warning text emitted during result construction.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs` owns
   diagnostic-session preview-scheduler analysis handoff values: MJPEG
   jitter-buffer counters, deltas, last drop/underflow reasons, underflow ages,

@@ -3496,16 +3496,12 @@ Flashback playback/export analysis warning text, thresholds, and tolerated
 Flashback scenario warning classification live in
 `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`; the top-level
 `DiagnosticSessionResultBuildRequest.cs` owns the result-build request handoff
-created by `DiagnosticSessionRunExecution.ResultBuildRequest.cs`. Diagnostic health verdict
-composition and health warning text now live in
-`DiagnosticSessionResultBuilder.DiagnosticHealth.cs`. Diagnostic-health warning
-tolerance, sparse source-cadence warning tolerance, sparse preview-scheduler
-warning tolerance, and tolerated-warning reason selection live in
-`DiagnosticSessionResultBuilder.DiagnosticHealthTolerance.cs`. Diagnostic health summary
-snapshot selection and health summary text projection live in
-`DiagnosticSessionResultBuilder.DiagnosticHealthSummary.cs`; source-reader/
-ingest warning deltas for sparse source-capture tolerance live in
-`DiagnosticSessionResultBuilder.DiagnosticHealthSourceWarnings.cs`.
+created by `DiagnosticSessionRunExecution.ResultBuildRequest.cs`. Diagnostic
+health summary snapshot selection, health summary text projection, verdict
+composition, diagnostic-health warning tolerance, sparse source-cadence warning
+tolerance, sparse preview-scheduler warning tolerance, source-reader/ingest
+warning deltas, tolerated-warning reason selection, and emitted health warning
+text live in `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`.
 Preview-scheduler analysis handoff values live in
 `DiagnosticSessionResultBuilder.PreviewScheduler.cs`: MJPEG jitter-buffer
 counter/delta reads, last drop/underflow reason and age reads,
@@ -4174,8 +4170,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.AnalysisValidation.cs`
 - `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
-- `DiagnosticSessionResultBuilder.DiagnosticHealthSummary.cs`
-- `DiagnosticSessionResultBuilder.DiagnosticHealthSourceWarnings.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`
