@@ -308,14 +308,10 @@ blank, stall, startup, cadence, display 1% low, capture cadence drop, capture
 owns Flashback recording alert orchestration, shared condition setup, export
 progress/force-rotation gap alerts, temp-cache pressure alerts, encoder failure
 alerts, and recording path degradation alerts.
-`AutomationDiagnosticsHub.FlashbackPlaybackAlerts.Commands.cs` owns playback
-command queue and command failure alerts.
-`AutomationDiagnosticsHub.Alerts.cs` owns Flashback playback performance
-orchestration, submit-failure alerts, audio-master fallback alerts, and
-audio-queue backlog alerts.
-`AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Cadence.cs` owns
-playback target-rate, present-cadence, slow-playback, and frametime alert
-rules.
+`AutomationDiagnosticsHub.Alerts.cs` owns Flashback playback alert
+orchestration, command queue/failure alerts, target-rate/present-cadence/
+slow-playback/frametime alerts, submit-failure alerts, audio-master fallback
+alerts, and audio-queue backlog alerts.
 `AutomationDiagnosticsHub.DiagnosticEvents.cs` owns diagnostics event
 publication, event throttling, Flashback export completion events, and recent
 event storage.

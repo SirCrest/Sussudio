@@ -61,13 +61,10 @@ static partial class Program
         AssertContains(diagnostics.AlertsText, "\"flashback-playback-submit-failures\"");
         AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackPlaybackAudioAlerts(");
         AssertContains(diagnostics.AlertsText, "\"flashback-playback-audio-queue-backlog\"");
-        AssertDoesNotContain(diagnostics.AlertsText, "\"flashback-playback-command-stalled\"");
-        AssertContains(diagnostics.FlashbackPlaybackAlertsCommandsText, "private void UpdateFlashbackPlaybackCommandAlerts(");
-        AssertContains(diagnostics.FlashbackPlaybackAlertsCommandsText, "\"flashback-playback-command-stalled\"");
-        AssertContains(diagnostics.FlashbackPlaybackPerformanceAlertsCadenceText, "private void UpdateFlashbackPlaybackCadenceAlerts(");
-        AssertContains(diagnostics.FlashbackPlaybackPerformanceAlertsCadenceText, "\"flashback-playback-slow\"");
-        AssertDoesNotContain(diagnostics.AlertsText, "\"flashback-playback-slow\"");
-        AssertDoesNotContain(diagnostics.FlashbackPlaybackPerformanceAlertsCadenceText, "\"flashback-playback-audio-master-fallback\"");
+        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackPlaybackCommandAlerts(");
+        AssertContains(diagnostics.AlertsText, "\"flashback-playback-command-stalled\"");
+        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackPlaybackCadenceAlerts(");
+        AssertContains(diagnostics.AlertsText, "\"flashback-playback-slow\"");
         AssertDoesNotContain(diagnostics.AlertsText, "\"flashback-export-stalled\"");
         AssertDoesNotContain(diagnostics.HubText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
     }
