@@ -5,7 +5,6 @@ static partial class Program
         public string SnapshotProjectionText { get; init; } = string.Empty;
         public string SnapshotProjectionCompositionText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningRootText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSetText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningAutomationSnapshotText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningCaptureFormatText { get; init; } = string.Empty;

@@ -98,11 +98,10 @@ append, event notification, and auto-verification handoff.
 owns the `BuildAutomationSnapshot` shell and dispatch into projection
 composition/flattening. `AutomationDiagnosticsHub.SnapshotProjection.Composition.cs`
 owns projection-set composition from runtime/view-model snapshots and diagnostic
-classifiers. `AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs`
-owns the projection-to-flattened-set dispatch root.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.Set.cs` owns invocation
-of every focused final-domain flattener and the private flattened projection
-set handoff. `AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs`
+classifiers. `AutomationDiagnosticsHub.SnapshotProjection.Flattening.Set.cs`
+owns the projection-to-flattened-set dispatch root, invocation of every focused
+final-domain flattener, and the private flattened projection set handoff.
+`AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs`
 owns the final `AutomationSnapshot` DTO initializer that flattens the named
 projection records into the automation wire snapshot. This final initializer is
 intentionally a single `init`-property map: do not split it by adding mutable

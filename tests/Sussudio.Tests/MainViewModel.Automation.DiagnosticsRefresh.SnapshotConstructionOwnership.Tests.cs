@@ -9,9 +9,9 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "private readonly record struct AutomationSnapshotProjectionSet(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "private static AutomationSnapshot BuildAutomationSnapshotFromProjections(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "AutomationSnapshotProjectionSet projections");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningRootText, "BuildAutomationSnapshotFlattenedProjectionSet(projections)");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningRootText, "BuildAutomationSnapshotFromFlattenedProjections(flattened)");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningRootText, "new AutomationSnapshot");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningSetText, "BuildAutomationSnapshotFlattenedProjectionSet(projections)");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningSetText, "BuildAutomationSnapshotFromFlattenedProjections(flattened)");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningSetText, "return new AutomationSnapshot\n        {");
         AssertContains(diagnostics.SnapshotProjectionFlatteningSetText, "private static AutomationSnapshotFlattenedProjectionSet BuildAutomationSnapshotFlattenedProjectionSet(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningSetText, "private readonly record struct AutomationSnapshotFlattenedProjectionSet(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningAutomationSnapshotText, "private static AutomationSnapshot BuildAutomationSnapshotFromFlattenedProjections(");

@@ -217,6 +217,18 @@ Behavior preserved: Flashback playback command and performance alert routing rem
 Notes for future agents: keep one-method alert routers with the alert orchestration root unless they grow policy
 
 Date: 2026-05-21
+Area: Automation diagnostics snapshot flattening
+Problem: Projection-to-flattened-set dispatch lived in a tiny router partial separate from the flattened projection-set owner.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics snapshot-construction ownership and runtime snapshot regression tests
+Behavior preserved: Automation snapshot projection flattening still routes through the flattened projection set before final DTO initialization
+Notes for future agents: keep one-method flattening routers with the flattened set owner unless they grow real dispatch policy
+
+Date: 2026-05-21
 Area: Diagnostic session result formatting
 Problem: Flashback diagnostic-session section ordering lived in a one-method router file separate from the formatter orchestration.
 Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs`
