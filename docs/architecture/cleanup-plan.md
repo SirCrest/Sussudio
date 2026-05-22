@@ -4846,7 +4846,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.AudioMaster.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Stages.cs`
-- `DiagnosticSessionResultFormatter.Preview.cs`
 - `DiagnosticSessionResultFormatter.PreviewScheduler.cs`
 - `DiagnosticSessionResultFormatter.PreviewD3D.Performance.cs`
 - `DiagnosticSessionResultFormatter.PreviewD3D.CpuTiming.cs`

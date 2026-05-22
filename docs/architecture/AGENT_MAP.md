@@ -5112,8 +5112,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultFormatter.cs` owns the public
   human-readable diagnostic-session text flow used by ssctl and MCP plus
   section ordering and the small recording-verification, PresentMon, and
-  process-performance summary rows. Keep `DiagnosticSessionRunner.Format(...)`
-  as the stable compatibility wrapper.
+  process-performance summary rows. It also owns preview diagnostic-session text
+  section ordering. Keep `DiagnosticSessionRunner.Format(...)` as the stable
+  compatibility wrapper.
 - `tools/Common/DiagnosticSessionResultFormatter.Overview.cs` owns the
   diagnostic-session header, summary, and evidence section.
 - `tools/Common/DiagnosticSessionResultFormatter.CaptureMode.cs` owns the
@@ -5138,9 +5139,7 @@ Primary owners:
   throughput formatting.
   `DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs` owns playback
   decode timing lines.
-- `tools/Common/DiagnosticSessionResultFormatter.Preview.cs` owns preview
-  diagnostic-session text section ordering.
-  `DiagnosticSessionResultFormatter.PreviewScheduler.cs` owns preview
+- `tools/Common/DiagnosticSessionResultFormatter.PreviewScheduler.cs` owns preview
   scheduler lines.
   `DiagnosticSessionResultFormatter.PreviewD3D.Performance.cs` owns D3D
   performance and slow-frame lines.

@@ -33,8 +33,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackPlaybackStagesText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Stages.cs")
             .Replace("\r\n", "\n");
-        var previewRootText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Preview.cs")
-            .Replace("\r\n", "\n");
         var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.PreviewScheduler.cs")
             .Replace("\r\n", "\n");
         var previewD3DPerformanceText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.PreviewD3D.Performance.cs")
@@ -59,6 +57,20 @@ static partial class Program
         AssertContains(formatterRootText, "\"PresentMon: ");
         AssertContains(formatterRootText, "private static void AppendProcessPerformance(");
         AssertContains(formatterRootText, "\"Process Perf: \"");
+        AssertContains(formatterRootText, "private static void AppendPreviewSections(");
+        AssertContains(formatterRootText, "AppendPreviewScheduler(builder, result);");
+        AssertContains(formatterRootText, "AppendPreviewD3DPerformance(builder, result);");
+        AssertContains(formatterRootText, "AppendPreviewD3DCpuTiming(builder, result);");
+        AssertContains(formatterRootText, "AppendPreviewVisualCadence(builder, result);");
+        AssertDoesNotContain(formatterRootText, "private static void AppendPreviewScheduler(");
+        AssertDoesNotContain(formatterRootText, "\"Preview Scheduler: \"");
+        AssertDoesNotContain(formatterRootText, "FormatOptional(result.PreviewSchedulerLastUnderflowReasonAtEnd)");
+        AssertDoesNotContain(formatterRootText, "private static void AppendPreviewD3DPerformance(");
+        AssertDoesNotContain(formatterRootText, "\"Preview D3D Perf: \"");
+        AssertDoesNotContain(formatterRootText, "private static void AppendPreviewD3DCpuTiming(");
+        AssertDoesNotContain(formatterRootText, "\"Preview D3D CPU Timing: \"");
+        AssertDoesNotContain(formatterRootText, "private static void AppendPreviewVisualCadence(");
+        AssertDoesNotContain(formatterRootText, "\"Preview Visual Cadence: \"");
         AssertDoesNotContain(formatterRootText, "private static string FormatFrameRate(");
         AssertContains(overviewText, "private static void AppendOverview(");
         AssertContains(overviewText, "== Diagnostic Session:");
@@ -128,20 +140,6 @@ static partial class Program
         AssertContains(flashbackPlaybackDecodeText, "private static void AppendFlashbackPlaybackDecode(");
         AssertContains(flashbackPlaybackDecodeText, "\"Flashback Playback Decode: \"");
         AssertDoesNotContain(flashbackPlaybackDecodeText, "\"Flashback Playback Stages: \"");
-        AssertContains(previewRootText, "private static void AppendPreviewSections(");
-        AssertContains(previewRootText, "AppendPreviewScheduler(builder, result);");
-        AssertContains(previewRootText, "AppendPreviewD3DPerformance(builder, result);");
-        AssertContains(previewRootText, "AppendPreviewD3DCpuTiming(builder, result);");
-        AssertContains(previewRootText, "AppendPreviewVisualCadence(builder, result);");
-        AssertDoesNotContain(previewRootText, "private static void AppendPreviewScheduler(");
-        AssertDoesNotContain(previewRootText, "\"Preview Scheduler: \"");
-        AssertDoesNotContain(previewRootText, "FormatOptional(result.PreviewSchedulerLastUnderflowReasonAtEnd)");
-        AssertDoesNotContain(previewRootText, "private static void AppendPreviewD3DPerformance(");
-        AssertDoesNotContain(previewRootText, "\"Preview D3D Perf: \"");
-        AssertDoesNotContain(previewRootText, "private static void AppendPreviewD3DCpuTiming(");
-        AssertDoesNotContain(previewRootText, "\"Preview D3D CPU Timing: \"");
-        AssertDoesNotContain(previewRootText, "private static void AppendPreviewVisualCadence(");
-        AssertDoesNotContain(previewRootText, "\"Preview Visual Cadence: \"");
         AssertContains(previewSchedulerText, "private static void AppendPreviewScheduler(");
         AssertContains(previewSchedulerText, "\"Preview Scheduler: \"");
         AssertContains(previewSchedulerText, "FormatOptional(result.PreviewSchedulerLastUnderflowReasonAtEnd)");

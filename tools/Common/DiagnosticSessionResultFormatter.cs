@@ -43,4 +43,12 @@ public static partial class DiagnosticSessionResultFormatter
             $"cpuPercentEnd={result.ProcessCpuPercentAtEnd:0.##} " +
             $"cpuPercentMaxObserved={result.ProcessCpuMaxPercentObserved:0.##}");
     }
+
+    private static void AppendPreviewSections(StringBuilder builder, DiagnosticSessionResult result)
+    {
+        AppendPreviewScheduler(builder, result);
+        AppendPreviewD3DPerformance(builder, result);
+        AppendPreviewD3DCpuTiming(builder, result);
+        AppendPreviewVisualCadence(builder, result);
+    }
 }

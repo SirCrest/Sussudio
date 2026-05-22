@@ -239,7 +239,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.AudioMaster.cs",
             "tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs",
             "tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Stages.cs",
-            "tools/Common/DiagnosticSessionResultFormatter.Preview.cs",
             "tools/Common/DiagnosticSessionResultFormatter.PreviewScheduler.cs",
             "tools/Common/DiagnosticSessionResultFormatter.PreviewD3D.Performance.cs",
             "tools/Common/DiagnosticSessionResultFormatter.PreviewD3D.CpuTiming.cs",
