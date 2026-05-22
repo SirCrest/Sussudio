@@ -2816,8 +2816,9 @@ recording health orchestration and LibAv-only CUDA queue projection live in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs`, along
 with active recording backend selection, LibAv-vs-Flashback fallback, and
 backend-specific queue/counter normalization;
-Flashback export diagnostic and derived progress/throughput projection lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs`.
+Flashback export diagnostics and derived health progress/throughput projection
+lives in
+`Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs`.
 Flashback playback health snapshot orchestration now lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs`
 with the aggregate playback field record, state/frame/segment/PTS/seek-cap/
@@ -2827,8 +2828,8 @@ playback command telemetry sampling, and each matching private field record.
 The general snapshot partial is now the diagnostics-snapshot compatibility
 entry point plus shared tick-age snapshot helper policy. Flashback
 backend-staleness reason policy now stays with the buffer health partial, while
-export elapsed/progress-age/file-length helpers stay with the export health
-partial.
+export elapsed/progress-age/file-length helpers stay with the export
+diagnostics partial.
 
 Recording byte-count, recording-format, observed frame-format, source
 telemetry, and A/V sync snapshot policy now live in

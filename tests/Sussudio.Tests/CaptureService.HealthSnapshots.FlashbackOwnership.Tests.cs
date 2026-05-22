@@ -3,13 +3,13 @@ using Xunit;
 public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
 {
     [Fact]
-    public void CaptureService_HealthSnapshotFlashbackExportFields_LiveInFocusedPartial()
+    public void CaptureService_HealthSnapshotFlashbackExportFields_LiveWithExportDiagnostics()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
-        var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs")
+        var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var flashbackExport = CaptureFlashbackExportHealthSnapshotFields(snapshotUtcUnixMs);");
@@ -31,6 +31,12 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(flashbackExportText, "var outputBytes = GetFileLengthOrZero(");
         AssertContains(flashbackExportText, "ThroughputBytesPerSec = throughputBytesPerSec");
         AssertContains(flashbackExportText, "FinalizeResult? LastResult");
+        Assert.False(System.IO.File.Exists(System.IO.Path.Combine(
+            FindRepoRoot(),
+            "Sussudio",
+            "Services",
+            "Capture",
+            "CaptureService.HealthSnapshotFlashbackExport.cs")));
 
     }
 
