@@ -57,7 +57,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionMjpegPreviewJitterAdaptiveText, "private static MjpegPreviewJitterAdaptiveFlattenedProjection BuildMjpegPreviewJitterAdaptiveFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionMjpegPreviewJitterEventsText, "private static MjpegPreviewJitterEventFlattenedProjection BuildMjpegPreviewJitterEventFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegPacketHashFlattenedProjection(mjpeg.PacketHash)");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningMjpegPacketHashText, "private static MjpegPacketHashFlattenedProjection BuildMjpegPacketHashFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionMjpegPacketHashText, "private static MjpegPacketHashFlattenedProjection BuildMjpegPacketHashFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSourceFlattenedProjection(sourceSignal, sourceTelemetry)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningSourceText, "private static SourceFlattenedProjection BuildSourceFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningSourceSignalText, "private static SourceSignalFlattenedProjection BuildSourceSignalFlattenedProjection(");

@@ -59,7 +59,6 @@ static partial class Program
             SnapshotProjectionFlatteningVisualCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.VisualCadence.cs"),
             SnapshotProjectionFlatteningMjpegText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.Mjpeg.cs"),
             SnapshotProjectionFlatteningMjpegTimingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegTiming.cs"),
-            SnapshotProjectionFlatteningMjpegPacketHashText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPacketHash.cs"),
             SnapshotProjectionFlatteningSourceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.Signal.cs"),
             SnapshotProjectionFlatteningSourceSignalText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.Signal.cs"),
             SnapshotProjectionFlatteningSourceTelemetryText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.Source.Telemetry.cs"),

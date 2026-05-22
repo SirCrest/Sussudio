@@ -11,8 +11,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var mjpegTimingFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegTiming.cs")
             .Replace("\r\n", "\n");
-        var mjpegPacketHashFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPacketHash.cs")
-            .Replace("\r\n", "\n");
         var mjpegProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs")
             .Replace("\r\n", "\n");
         var mjpegTimingProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegTiming.cs")
@@ -49,11 +47,6 @@ static partial class Program
         AssertContains(mjpegTimingFlatteningText, "PipelineMaxMs = timing.PipelineMaxMs,");
         AssertContains(mjpegTimingFlatteningText, "PerDecoder = timing.PerDecoder");
         AssertContains(mjpegTimingFlatteningText, "private readonly record struct MjpegTimingFlattenedProjection");
-        AssertContains(mjpegPacketHashFlatteningText, "private static MjpegPacketHashFlattenedProjection BuildMjpegPacketHashFlattenedProjection(");
-        AssertContains(mjpegPacketHashFlatteningText, "SampleCount = packetHash.SampleCount,");
-        AssertContains(mjpegPacketHashFlatteningText, "Pattern = packetHash.Pattern,");
-        AssertContains(mjpegPacketHashFlatteningText, "RecentDuplicateFlags = packetHash.RecentDuplicateFlags");
-        AssertContains(mjpegPacketHashFlatteningText, "private readonly record struct MjpegPacketHashFlattenedProjection");
         AssertDoesNotContain(snapshotFlatteningText, "MjpegDecodeSampleCount = health.MjpegDecodeSampleCount,");
         AssertDoesNotContain(snapshotFlatteningText, "MjpegTotalDecoded = mjpeg.TotalDecoded,");
         AssertDoesNotContain(snapshotFlatteningText, "MjpegCompressedQueueByteBudget = mjpeg.CompressedQueueByteBudget,");
@@ -129,6 +122,11 @@ static partial class Program
         AssertContains(mjpegPacketHashProjectionText, "Pattern = health.MjpegPacketHashPattern,");
         AssertContains(mjpegPacketHashProjectionText, "RecentDuplicateFlags = health.MjpegPacketHashRecentDuplicateFlags");
         AssertContains(mjpegPacketHashProjectionText, "private readonly record struct MjpegPacketHashProjection");
+        AssertContains(mjpegPacketHashProjectionText, "private static MjpegPacketHashFlattenedProjection BuildMjpegPacketHashFlattenedProjection(");
+        AssertContains(mjpegPacketHashProjectionText, "SampleCount = packetHash.SampleCount,");
+        AssertContains(mjpegPacketHashProjectionText, "Pattern = packetHash.Pattern,");
+        AssertContains(mjpegPacketHashProjectionText, "RecentDuplicateFlags = packetHash.RecentDuplicateFlags");
+        AssertContains(mjpegPacketHashProjectionText, "private readonly record struct MjpegPacketHashFlattenedProjection");
 
         return Task.CompletedTask;
     }

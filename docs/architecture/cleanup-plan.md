@@ -269,10 +269,8 @@ drop/depth counters, and last scheduler event projection plus flattening inputs:
 and `AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Events.cs`.
 `AutomationDiagnosticsHub.SnapshotProjection.MjpegPacketHash.cs` owns MJPEG
 packet duplicate-run / unique-frame projection inputs consumed by the automation
-snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.MjpegPacketHash.cs`
-owns final MJPEG packet duplicate-run / unique-frame projection-to-`AutomationSnapshot`
-field flattening.
+snapshot DTO, plus final MJPEG packet duplicate-run / unique-frame
+projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs` owns active
 Flashback export progress, failure, force-rotate fallback, and last-result
 projection consumed by the automation snapshot DTO.
