@@ -7,8 +7,6 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var flashbackExportFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackExport.cs")
-            .Replace("\r\n", "\n");
         var flashbackExportProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs")
             .Replace("\r\n", "\n");
 
@@ -27,13 +25,13 @@ static partial class Program
         AssertDoesNotContain(snapshotFlatteningText, "LastExportId = flashbackExportLastResult.LastExportId,");
         AssertDoesNotContain(snapshotFlatteningText, "LastExportId = flashbackExport.LastExportId,");
 
-        AssertContains(flashbackExportFlatteningText, "private static FlashbackExportFlattenedProjection BuildFlashbackExportFlattenedProjection(");
-        AssertContains(flashbackExportFlatteningText, "Active = flashbackExport.Active,");
-        AssertContains(flashbackExportFlatteningText, "Percent = flashbackExport.Percent,");
-        AssertContains(flashbackExportFlatteningText, "LastForceRotateFallbackSegments = flashbackExport.LastForceRotateFallbackSegments,");
-        AssertContains(flashbackExportFlatteningText, "LastExportId = lastResult.LastExportId,");
-        AssertContains(flashbackExportFlatteningText, "LastExportMessage = lastResult.LastExportMessage");
-        AssertContains(flashbackExportFlatteningText, "private readonly record struct FlashbackExportFlattenedProjection");
+        AssertContains(flashbackExportProjectionText, "private static FlashbackExportFlattenedProjection BuildFlashbackExportFlattenedProjection(");
+        AssertContains(flashbackExportProjectionText, "Active = flashbackExport.Active,");
+        AssertContains(flashbackExportProjectionText, "Percent = flashbackExport.Percent,");
+        AssertContains(flashbackExportProjectionText, "LastForceRotateFallbackSegments = flashbackExport.LastForceRotateFallbackSegments,");
+        AssertContains(flashbackExportProjectionText, "LastExportId = lastResult.LastExportId,");
+        AssertContains(flashbackExportProjectionText, "LastExportMessage = lastResult.LastExportMessage");
+        AssertContains(flashbackExportProjectionText, "private readonly record struct FlashbackExportFlattenedProjection");
 
         AssertContains(flashbackExportProjectionText, "private static FlashbackExportProjection BuildFlashbackExportProjection(CaptureHealthSnapshot health)");
         AssertContains(flashbackExportProjectionText, "Active = health.FlashbackExportActive,");

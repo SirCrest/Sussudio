@@ -41,8 +41,6 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var snapshotFlatteningSettingsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.Settings.cs")
-            .Replace("\r\n", "\n");
         var userSettingsProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.UserSettings.cs")
             .Replace("\r\n", "\n");
 
@@ -54,13 +52,13 @@ static partial class Program
         AssertContains(snapshotFlatteningText, "SelectedRecordingFormat = settingsFlattening.SelectedRecordingFormat,");
         AssertContains(snapshotFlatteningText, "CustomBitrateMbps = settingsFlattening.CustomBitrateMbps,");
         AssertContains(snapshotFlatteningText, "IsStatsVisible = settingsFlattening.IsStatsVisible,");
-        AssertContains(snapshotFlatteningSettingsText, "private static SettingsFlattenedProjection BuildSettingsFlattenedProjection(");
-        AssertContains(snapshotFlatteningSettingsText, "SelectedDeviceId = userSettings.SelectedDeviceId,");
-        AssertContains(snapshotFlatteningSettingsText, "SelectedFriendlyFrameRate = userSettings.SelectedFriendlyFrameRate,");
-        AssertContains(snapshotFlatteningSettingsText, "SelectedRecordingFormat = recordingSettings.SelectedRecordingFormat,");
-        AssertContains(snapshotFlatteningSettingsText, "CustomBitrateMbps = recordingSettings.CustomBitrateMbps,");
-        AssertContains(snapshotFlatteningSettingsText, "IsStatsVisible = userSettings.IsStatsVisible");
-        AssertContains(snapshotFlatteningSettingsText, "private readonly record struct SettingsFlattenedProjection");
+        AssertContains(userSettingsProjectionText, "private static SettingsFlattenedProjection BuildSettingsFlattenedProjection(");
+        AssertContains(userSettingsProjectionText, "SelectedDeviceId = userSettings.SelectedDeviceId,");
+        AssertContains(userSettingsProjectionText, "SelectedFriendlyFrameRate = userSettings.SelectedFriendlyFrameRate,");
+        AssertContains(userSettingsProjectionText, "SelectedRecordingFormat = recordingSettings.SelectedRecordingFormat,");
+        AssertContains(userSettingsProjectionText, "CustomBitrateMbps = recordingSettings.CustomBitrateMbps,");
+        AssertContains(userSettingsProjectionText, "IsStatsVisible = userSettings.IsStatsVisible");
+        AssertContains(userSettingsProjectionText, "private readonly record struct SettingsFlattenedProjection");
         AssertDoesNotContain(snapshotFlatteningText, "SelectedDeviceId = viewModelSnapshot.SelectedDeviceId,");
         AssertDoesNotContain(snapshotFlatteningText, "SelectedDeviceId = userSettings.SelectedDeviceId,");
         AssertDoesNotContain(snapshotFlatteningText, "SelectedFriendlyFrameRate = viewModelSnapshot.SelectedFriendlyFrameRate ?? Math.Round(viewModelSnapshot.SelectedFrameRate),");

@@ -10,8 +10,6 @@ static partial class Program
         public string SnapshotProjectionFlatteningVisualCadenceText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSourceText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSourceSignalText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningSettingsText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningFlashbackExportText { get; init; } = string.Empty;
         public string SnapshotProjectionSnapshotStatusText { get; init; } = string.Empty;
         public string SnapshotProjectionSnapshotEvaluationText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningSnapshotEvaluationText { get; init; } = string.Empty;

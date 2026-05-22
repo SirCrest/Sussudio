@@ -268,10 +268,8 @@ snapshot DTO, plus final MJPEG packet duplicate-run / unique-frame
 projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs` owns active
 Flashback export progress, failure, force-rotate fallback, and last-result
-projection consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.FlashbackExport.cs`
-owns final Flashback export projection-to-`AutomationSnapshot` field
-flattening.
+projection consumed by the automation snapshot DTO, plus final Flashback export
+projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs` owns
 Flashback recording failure, cleanup, force-rotate, focused projection routing,
 and final projection-to-`AutomationSnapshot` flattening.
@@ -392,8 +390,7 @@ frame-rate, HDR, video/audio format, firmware, input, USB, HDCP, and raw timing
 field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.UserSettings.cs` owns selected
 device, selected capture/recording options, preview volume, and stats
-visibility projection consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.Settings.cs` owns final
+visibility projection consumed by the automation snapshot DTO, plus final
 selected device, selected capture/recording options, preview volume, and stats
 visibility projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.HdrPipeline.cs` owns HDR
