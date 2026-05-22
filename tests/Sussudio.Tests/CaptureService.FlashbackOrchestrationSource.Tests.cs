@@ -26,7 +26,6 @@ static partial class Program
         "Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs",
         "Sussudio/Services/Capture/CaptureService.PreviewStop.cs",
         "Sussudio/Services/Capture/CaptureService.PreviewReuse.cs",
-        "Sussudio/Services/Capture/CaptureService.PreviewDisposal.cs",
         "Sussudio/Services/Capture/CaptureVideoPipelineResources.cs",
         "Sussudio/Services/Capture/CaptureService.VideoPipelineLifecycle.cs"
     };

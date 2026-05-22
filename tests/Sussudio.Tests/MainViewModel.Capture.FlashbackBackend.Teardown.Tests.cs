@@ -9,7 +9,7 @@ static partial class Program
 {
     internal static Task CaptureService_DeviceSwitchTeardown_StopsVideoBeforeFlashbackDisposal()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewDisposal.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStop.cs")
             .Replace("\r\n", "\n");
         var unifiedVideoCaptureText = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Lifecycle.cs")
             .Replace("\r\n", "\n")

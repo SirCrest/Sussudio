@@ -96,7 +96,6 @@ static partial class Program
         var audioGraphText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs").Replace("\r\n", "\n");
         var stopText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStop.cs").Replace("\r\n", "\n");
         var reuseText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewReuse.cs").Replace("\r\n", "\n");
-        var disposalText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewDisposal.cs").Replace("\r\n", "\n");
         var videoPipelineLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.VideoPipelineLifecycle.cs").Replace("\r\n", "\n");
         var videoPipelineResourcesText = ReadRepoFile("Sussudio/Services/Capture/CaptureVideoPipelineResources.cs").Replace("\r\n", "\n");
         var flashbackPreviewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs").Replace("\r\n", "\n");
@@ -141,10 +140,10 @@ static partial class Program
         AssertContains(audioGraphText, "private async Task RollbackPreviewAudioCaptureStartupAsync(");
         AssertContains(stopText, "public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)");
         AssertContains(stopText, "private Task StopVideoPreviewCoreAsync(bool teardownPipeline, CancellationToken cancellationToken = default)");
+        AssertContains(stopText, "private async Task DisposePreviewPipelineAsync(");
         AssertContains(reuseText, "private bool CanReuseVideoCaptureForPreview(UnifiedVideoCapture capture, CaptureSettings settings)");
         AssertContains(reuseText, "private static bool CanReuseFlashbackBackend(CaptureSettings current, CaptureSettings next)");
         AssertContains(reuseText, "private static CaptureSettings CloneCaptureSettings(CaptureSettings source)");
-        AssertContains(disposalText, "private async Task DisposePreviewPipelineAsync(");
         AssertContains(videoPipelineResourcesText, "internal sealed class CaptureVideoPipelineResources");
         AssertContains(videoPipelineResourcesText, "public UnifiedVideoCapture? Capture { get; set; }");
         AssertContains(videoPipelineResourcesText, "public IPreviewFrameSink? PreviewFrameSink { get; set; }");
@@ -169,11 +168,11 @@ static partial class Program
         AssertDoesNotContain(videoPipelineLifecycleText, "private Task ScheduleDeferredUnifiedVideoCaptureCleanup(");
         AssertDoesNotContain(videoPipelineLifecycleText, "ThrowIfPendingLibAvDrainBlocksReentry");
         AssertDoesNotContain(videoPipelineLifecycleText, "PendingLibAvDrainTask");
-        AssertContains(disposalText, "_recordingBackend.ClearPendingLibAvDrainIfCompletedSuccessfully();");
+        AssertContains(stopText, "_recordingBackend.ClearPendingLibAvDrainIfCompletedSuccessfully();");
         AssertContains(videoPipelineLifecycleText, "private void TryApplySharedPreviewDevice(UnifiedVideoCapture? capture, IPreviewFrameSink? sink)");
         AssertContains(videoPipelineLifecycleText, "_videoPipeline.CacheMjpegTimingMetrics(unifiedVideoCapture);");
         AssertContains(cleanupText, "_videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(");
-        AssertContains(disposalText, "_videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(");
+        AssertContains(stopText, "_videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(");
         AssertContains(libAvFinalizeText, "_videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(");
         AssertContains(recordingRollbackText, "_videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(");
         AssertDoesNotContain(videoPipelineLifecycleText, "private UnifiedVideoCapture.MjpegPipelineTimingMetrics _lastMjpegPipelineTimingMetrics;");
@@ -189,12 +188,14 @@ static partial class Program
         AssertDoesNotContain(startText, "new WasapiAudioCapture()");
         AssertDoesNotContain(startText, "micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
         AssertDoesNotContain(stopText, "public Task StartVideoPreviewAsync(");
+        AssertDoesNotContain(stopText, "private bool CanReuseVideoCaptureForPreview(");
         AssertDoesNotContain(stopText, "private static CaptureSettings CloneCaptureSettings(");
         AssertDoesNotContain(reuseText, "public Task StartVideoPreviewAsync(");
         AssertDoesNotContain(reuseText, "private async Task DisposePreviewPipelineAsync(");
-        AssertDoesNotContain(disposalText, "public Task StartVideoPreviewAsync(");
-        AssertDoesNotContain(disposalText, "private bool CanReuseVideoCaptureForPreview(");
-        AssertDoesNotContain(disposalText, "private Task ScheduleDeferredUnifiedVideoCaptureCleanup(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewDisposal.cs")),
+            "old preview disposal partial removed");
 
         return Task.CompletedTask;
     }

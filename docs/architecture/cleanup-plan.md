@@ -1652,12 +1652,11 @@ attach, preview-time microphone monitor startup, and partially-started audio
 rollback;
 `Sussudio/Services/Capture/CaptureService.PreviewStop.cs` owns video-preview
 stop transitions, keep-pipeline-alive detach semantics, and stopped-state/
-telemetry commit; `Sussudio/Services/Capture/CaptureService.PreviewReuse.cs`
+telemetry commit plus preview pipeline disposal ordering, Flashback backend
+disposal, WASAPI disposal, and microphone cleanup while delegating shared
+unified-video cleanup mechanics to the video pipeline resource owner;
+`Sussudio/Services/Capture/CaptureService.PreviewReuse.cs`
 owns retained video/Flashback backend reuse checks and capture-settings cloning;
-`Sussudio/Services/Capture/CaptureService.PreviewDisposal.cs` owns preview
-pipeline disposal ordering, Flashback backend disposal, WASAPI disposal, and
-microphone cleanup while delegating shared unified-video cleanup mechanics to
-the video pipeline resource owner.
 
 Recording integrity policy is now split under
 `Sussudio/Services/Capture/CaptureService.RecordingIntegrity*.cs`. The root
