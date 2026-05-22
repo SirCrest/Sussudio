@@ -367,13 +367,12 @@ owns Flashback recording diagnostic condition assembly.
 Flashback playback command, performance, frametime, and submission diagnostic
 verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs` owns realtime
-diagnostic verdict ordering plus idle and warmup diagnostic verdicts.
+diagnostic verdict ordering plus idle, warmup, duplicate source-signal, and
+MJPEG decode/reorder diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Recording.cs` owns
 recording integrity and audio integrity diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Source.cs` owns
 source/capture cadence diagnostic verdicts.
-`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Mjpeg.cs` owns MJPEG
-duplicate source-signal and decode/reorder diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Preview.cs` owns realtime
 preview diagnostic verdict ordering plus preview scheduler and renderer pacing
 verdicts.

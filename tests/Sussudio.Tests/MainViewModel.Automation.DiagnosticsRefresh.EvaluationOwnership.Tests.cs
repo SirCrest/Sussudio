@@ -46,14 +46,14 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimePreviewDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimeStateDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"diagnostic_unavailable\"");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimeMjpegDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"source_signal\"");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"mjpeg_decode\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeRecordingText, "private static DiagnosticEvaluation? TryBuildRealtimeRecordingDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeRecordingText, "\"recording\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeRecordingText, "\"audio\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeSourceText, "private static DiagnosticEvaluation? TryBuildRealtimeSourceDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeSourceText, "\"source_capture\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeMjpegText, "private static DiagnosticEvaluation? TryBuildRealtimeMjpegDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeMjpegText, "\"source_signal\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeMjpegText, "\"mjpeg_decode\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "TryBuildRealtimePreviewSchedulerDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "TryBuildRealtimePreviewRendererDiagnosticEvaluation(lanes)");
@@ -66,8 +66,6 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewPresentText, "\"present_display\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimePreviewText, "\"present_display\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"source_capture\"");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"source_signal\"");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"mjpeg_decode\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "Recording integrity is the likely failure point.");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"preview_scheduler\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"renderer\"");
