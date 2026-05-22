@@ -2143,11 +2143,10 @@ classification there. FFmpeg error string formatting/throwing lives in
 math/saturated arithmetic lives in
 `Sussudio/Services/Flashback/FlashbackExporter.TimeMath.cs` so
 `FlashbackExporter.cs` stays focused on export native state and shared policy.
-Progress normalization/reporting and heartbeat cadence live in
-`Sussudio/Services/Flashback/FlashbackExporter.Progress.cs`. Export writer
-adaptive throttling, fixed sleep/yield pacing, and per-export throttle provider
-scoping live in
-`Sussudio/Services/Flashback/FlashbackExporter.WriterPacing.cs`. Packet timestamp
+Progress normalization/reporting, heartbeat cadence, export writer adaptive
+throttling, fixed sleep/yield pacing, and per-export throttle provider scoping
+live in
+`Sussudio/Services/Flashback/FlashbackExporter.RuntimePolicy.cs`. Packet timestamp
 normalization and segment boundary timestamp repair live in
 `Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs`. Packet clone/free
 helpers and buffered packet flushes live in
