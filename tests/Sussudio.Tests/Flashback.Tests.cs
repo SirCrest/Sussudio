@@ -93,9 +93,7 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.AudioQueueSubmission.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.QueueCleanup.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.State.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.Start.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.End.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.cs").Replace("\r\n", "\n")
         };
 
