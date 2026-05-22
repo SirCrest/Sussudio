@@ -8,10 +8,6 @@ static partial class Program
         var appType = RequireType("Sussudio.App");
         var appRootSource = ReadRepoFile("Sussudio/App.xaml.cs")
             .Replace("\r\n", "\n");
-        var exceptionPolicySource = ReadRepoFile("Sussudio/App.ExceptionPolicy.cs")
-            .Replace("\r\n", "\n");
-        var launchLifecycleSource = ReadRepoFile("Sussudio/App.LaunchLifecycle.cs")
-            .Replace("\r\n", "\n");
 
         // Verify crash handler methods exist on App
         var uiHandler = appType.GetMethod(
@@ -41,17 +37,24 @@ static partial class Program
         AssertContains(appRootSource, "LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);");
         AssertContains(appRootSource, "UnhandledException += App_UnhandledException;");
         AssertContains(appRootSource, "AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;");
-        AssertContains(exceptionPolicySource, "private static bool IsRecoverableUnhandled(Exception ex)");
-        AssertContains(exceptionPolicySource, "private void App_UnhandledException(");
-        AssertContains(exceptionPolicySource, "private void CurrentDomain_UnhandledException(");
-        AssertContains(exceptionPolicySource, "private void TryEmergencyStopRecording(string source)");
-        AssertContains(exceptionPolicySource, "var task = viewModel.StopRecordingForEmergencyAsync();");
-        AssertContains(launchLifecycleSource, "private const string SingleInstanceMutexName");
-        AssertContains(launchLifecycleSource, "protected override void OnLaunched(");
-        AssertContains(launchLifecycleSource, "SINGLE_INSTANCE_GUARD second instance detected");
-        AssertContains(launchLifecycleSource, "\"APP_START \" +");
-        AssertDoesNotContain(appRootSource, "private static bool IsRecoverableUnhandled(Exception ex)");
-        AssertDoesNotContain(appRootSource, "protected override void OnLaunched(");
+        AssertContains(appRootSource, "private static bool IsRecoverableUnhandled(Exception ex)");
+        AssertContains(appRootSource, "private void App_UnhandledException(");
+        AssertContains(appRootSource, "private void CurrentDomain_UnhandledException(");
+        AssertContains(appRootSource, "private void TryEmergencyStopRecording(string source)");
+        AssertContains(appRootSource, "var task = viewModel.StopRecordingForEmergencyAsync();");
+        AssertContains(appRootSource, "private const string SingleInstanceMutexName");
+        AssertContains(appRootSource, "protected override void OnLaunched(");
+        AssertContains(appRootSource, "SINGLE_INSTANCE_GUARD second instance detected");
+        AssertContains(appRootSource, "\"APP_START \" +");
+        AssertContains(appRootSource, "public partial class App : Application");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "App.ExceptionPolicy.cs")),
+            "old App exception policy partial removed");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "App.LaunchLifecycle.cs")),
+            "old App launch lifecycle partial removed");
 
         return Task.CompletedTask;
     }
