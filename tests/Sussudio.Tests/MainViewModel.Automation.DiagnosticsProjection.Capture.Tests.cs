@@ -7,8 +7,6 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var captureCommandFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureCommands.cs")
-            .Replace("\r\n", "\n");
         var captureCommandProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureCommands.cs")
             .Replace("\r\n", "\n");
 
@@ -24,17 +22,16 @@ static partial class Program
         AssertDoesNotContain(snapshotFlatteningText, "CaptureCommandLastError = viewModelSnapshot.CaptureCommandLastError,");
         AssertDoesNotContain(snapshotFlatteningText, "CaptureCommandLastError = captureCommands.LastError,");
 
-        AssertContains(captureCommandFlatteningText, "private static CaptureCommandFlattenedProjection BuildCaptureCommandFlattenedProjection(");
-        AssertContains(captureCommandFlatteningText, "CommandsEnqueued = captureCommands.CommandsEnqueued,");
-        AssertContains(captureCommandFlatteningText, "MaxQueueLatencyMs = captureCommands.MaxQueueLatencyMs,");
-        AssertContains(captureCommandFlatteningText, "LastError = captureCommands.LastError");
-        AssertContains(captureCommandFlatteningText, "private readonly record struct CaptureCommandFlattenedProjection");
-
         AssertContains(captureCommandProjectionText, "private static CaptureCommandProjection BuildCaptureCommandProjection(ViewModelRuntimeSnapshot viewModelSnapshot)");
         AssertContains(captureCommandProjectionText, "CommandsEnqueued = viewModelSnapshot.CaptureCommandCommandsEnqueued,");
         AssertContains(captureCommandProjectionText, "MaxQueueLatencyMs = viewModelSnapshot.CaptureCommandMaxQueueLatencyMs,");
         AssertContains(captureCommandProjectionText, "LastError = viewModelSnapshot.CaptureCommandLastError");
         AssertContains(captureCommandProjectionText, "private readonly record struct CaptureCommandProjection");
+        AssertContains(captureCommandProjectionText, "private static CaptureCommandFlattenedProjection BuildCaptureCommandFlattenedProjection(");
+        AssertContains(captureCommandProjectionText, "CommandsEnqueued = captureCommands.CommandsEnqueued,");
+        AssertContains(captureCommandProjectionText, "MaxQueueLatencyMs = captureCommands.MaxQueueLatencyMs,");
+        AssertContains(captureCommandProjectionText, "LastError = captureCommands.LastError");
+        AssertContains(captureCommandProjectionText, "private readonly record struct CaptureCommandFlattenedProjection");
 
         return Task.CompletedTask;
     }

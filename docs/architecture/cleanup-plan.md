@@ -209,9 +209,8 @@ flattened WASAPI capture/playback fields consumed by the automation snapshot
 DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureCommands.cs` owns capture
 session command queue counters, latency, last-command, and last-error
-projection inputs consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureCommands.cs`
-owns final capture-command projection-to-`AutomationSnapshot` field flattening.
+projection inputs consumed by the automation snapshot DTO, plus final
+capture-command projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns
 capture-format projection routing and groups requested, HDR-request, actual,
 negotiated, reader-observation, and encoder format modules consumed by the

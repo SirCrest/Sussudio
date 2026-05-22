@@ -160,7 +160,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildAudioDropsFlattenedProjection(audioDrops)");
         AssertContains(diagnostics.SnapshotProjectionAudioDropsText, "private static AudioDropsFlattenedProjection BuildAudioDropsFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureCommandFlattenedProjection(captureCommands)");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureCommandsText, "private static CaptureCommandFlattenedProjection BuildCaptureCommandFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionCaptureCommandsText, "private static CaptureCommandFlattenedProjection BuildCaptureCommandFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "new AutomationSnapshot");
     }
 }
