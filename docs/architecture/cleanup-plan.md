@@ -1487,11 +1487,9 @@ must not write session state directly.
 
 Flashback-facing capture controls now live in focused CaptureService partials:
 `Sussudio/Services/Capture/CaptureService.FlashbackState.cs` owns public
-Flashback state and segment access.
-`Sussudio/Services/Capture/CaptureService.FlashbackEnable.cs` owns
-enable/disable transition gating.
-`Sussudio/Services/Capture/CaptureService.FlashbackRestart.cs` owns restart
-entry points and committed restart orchestration after preview backend teardown.
+Flashback state, segment access, enable/disable transition gating, restart
+entry points, and committed restart orchestration after preview backend
+teardown.
 `Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs` owns
 buffer/GPU settings updates, live playback-controller GPU decode propagation,
 recording-format changes, active encoding-setting application, encoder-setting

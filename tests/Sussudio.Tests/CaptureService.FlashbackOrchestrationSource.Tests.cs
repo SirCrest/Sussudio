@@ -6,8 +6,6 @@ static partial class Program
     private static readonly string[] CaptureServiceFlashbackOrchestrationFiles =
     {
         "Sussudio/Services/Capture/CaptureService.FlashbackState.cs",
-        "Sussudio/Services/Capture/CaptureService.FlashbackEnable.cs",
-        "Sussudio/Services/Capture/CaptureService.FlashbackRestart.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackAudioInputs.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackBufferCycle.cs",
@@ -74,8 +72,6 @@ static partial class Program
     internal static Task CaptureService_FlashbackOrchestrationLivesInFocusedPartials()
     {
         var flashbackStateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackState.cs");
-        var flashbackEnableText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackEnable.cs");
-        var flashbackRestartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRestart.cs");
         var audioInputsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackAudioInputs.cs");
         var previewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs");
         var bufferCycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackBufferCycle.cs");
@@ -94,11 +90,11 @@ static partial class Program
 
         AssertContains(flashbackStateText, "public bool IsFlashbackActive => _flashbackBackend.Sink != null;");
         AssertContains(flashbackStateText, "internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()");
-        AssertContains(flashbackEnableText, "public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(flashbackEnableText, "FLASHBACK_ENABLE_DEFERRED");
-        AssertContains(flashbackRestartText, "public Task RestartFlashbackAsync(");
-        AssertContains(flashbackRestartText, "private async Task RestartFlashbackCoreAsync(");
-        AssertContains(flashbackRestartText, "UpdateEncodingSettings(settings);");
+        AssertContains(flashbackStateText, "public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(flashbackStateText, "FLASHBACK_ENABLE_DEFERRED");
+        AssertContains(flashbackStateText, "public Task RestartFlashbackAsync(");
+        AssertContains(flashbackStateText, "private async Task RestartFlashbackCoreAsync(");
+        AssertContains(flashbackStateText, "UpdateEncodingSettings(settings);");
         AssertContains(audioInputsText, "private async Task EnsureFlashbackAudioInputsAsync(");
         AssertContains(previewBackendText, "private async Task EnsureFlashbackPreviewBackendAsync(");
         AssertContains(previewBackendText, "private async Task DisposeFlashbackPreviewBackendAsync(");
@@ -122,14 +118,14 @@ static partial class Program
         AssertContains(settingsText, "public Task CycleFlashbackEncoderSettingsAsync(");
         AssertContains(settingsText, "FLASHBACK_ENCODER_SETTINGS_CHANGE_ROLLBACK");
         AssertContains(agentMapText, "CaptureService.FlashbackState.cs");
-        AssertContains(agentMapText, "CaptureService.FlashbackEnable.cs");
-        AssertContains(agentMapText, "CaptureService.FlashbackRestart.cs");
+        AssertDoesNotContain(agentMapText, "CaptureService.FlashbackEnable.cs");
+        AssertDoesNotContain(agentMapText, "CaptureService.FlashbackRestart.cs");
         AssertContains(agentMapText, "CaptureService.FlashbackSettings.cs");
         AssertDoesNotContain(agentMapText, "CaptureService.FlashbackControls.cs");
         AssertDoesNotContain(agentMapText, "CaptureService.FlashbackSettingsControls.cs");
         AssertContains(cleanupPlanText, "CaptureService.FlashbackState.cs");
-        AssertContains(cleanupPlanText, "CaptureService.FlashbackEnable.cs");
-        AssertContains(cleanupPlanText, "CaptureService.FlashbackRestart.cs");
+        AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackEnable.cs");
+        AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackRestart.cs");
         AssertContains(cleanupPlanText, "CaptureService.FlashbackSettings.cs");
         AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackControls.cs");
         AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackSettingsControls.cs");
@@ -154,13 +150,10 @@ static partial class Program
         AssertContains(backendResourcesText, "private static FinalizeResult PreserveEndArtifactsOnFailure(");
         AssertContains(backendResourcesText, "public void AttachProducers(FlashbackProducerAttachRequest request)");
         AssertContains(backendResourcesText, "public void DetachProducers(FlashbackProducerDetachRequest request)");
-        AssertDoesNotContain(flashbackEnableText, "private async Task RestartFlashbackCoreAsync(");
-        AssertDoesNotContain(flashbackRestartText, "public Task SetFlashbackEnabledAsync(");
-        AssertDoesNotContain(flashbackStateText, "RunTransitionAsync(CurrentSessionState,");
-        AssertDoesNotContain(flashbackEnableText, "private async Task EnsureFlashbackAudioInputsAsync(");
-        AssertDoesNotContain(flashbackEnableText, "private async Task EnsureFlashbackPreviewBackendAsync(");
-        AssertDoesNotContain(flashbackEnableText, "private async Task DisposeFlashbackPreviewBackendAsync(");
-        AssertDoesNotContain(flashbackEnableText, "private async Task CycleFlashbackBufferAsync(");
+        AssertDoesNotContain(flashbackStateText, "private async Task EnsureFlashbackAudioInputsAsync(");
+        AssertDoesNotContain(flashbackStateText, "private async Task EnsureFlashbackPreviewBackendAsync(");
+        AssertDoesNotContain(flashbackStateText, "private async Task DisposeFlashbackPreviewBackendAsync(");
+        AssertDoesNotContain(flashbackStateText, "private async Task CycleFlashbackBufferAsync(");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackControls.cs")),
