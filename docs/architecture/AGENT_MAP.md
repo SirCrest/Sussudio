@@ -733,10 +733,9 @@ Important entry points:
   sampler, including source-cadence metric projection, MJPEG timing, preview
   jitter, visual cadence, packet hash, per-decoder projection, and the matching
   health field records.
-- `CaptureService.HealthSnapshotAssemblyFields.cs` owns the private health
-  snapshot assembly handoff contract consumed by the final DTO assembler.
 - `CaptureService.HealthSnapshotAssembler.cs` owns final
-  pure `CaptureHealthSnapshot` DTO construction from captured fields. Keep this
+  pure `CaptureHealthSnapshot` DTO construction from captured fields and the
+  private assembly handoff record consumed by that map. Keep this
   allocation-neutral `init`-property map intact unless a deliberate snapshot
   construction pattern exists; sampling and domain projection belong in the
   focused health snapshot partials, not in post-construction mutators.

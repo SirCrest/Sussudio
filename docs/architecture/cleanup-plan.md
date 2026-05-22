@@ -2814,9 +2814,8 @@ the read-only sampler in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`; pure
 diagnostics/automation DTO construction lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs`.
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotAssemblyFields.cs`
-owns the private assembler field handoff contract, while cadence and MJPEG field
-records live beside their samplers. The assembler remains intentionally
+The private assembler field handoff contract lives with the assembler, while
+cadence and MJPEG field records live beside their samplers. The assembler remains intentionally
 allocation-neutral final DTO construction from captured fields; do not split it
 into post-construction mutators or shallow fragment records just to reduce line
 count.

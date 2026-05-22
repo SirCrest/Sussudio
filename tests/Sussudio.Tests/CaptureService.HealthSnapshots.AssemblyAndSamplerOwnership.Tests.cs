@@ -5,13 +5,11 @@ using Xunit;
 public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
 {
     [Fact]
-    public void CaptureService_HealthSnapshotAssemblyLivesInFocusedPartial()
+    public void CaptureService_HealthSnapshotAssemblyFields_LiveWithAssembler()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
-        var healthSnapshotAssemblyFieldsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssemblyFields.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "return CaptureHealthSnapshotAssembler.Build(new CaptureHealthSnapshotAssemblyFields");
@@ -20,11 +18,10 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(healthSnapshotText, "LastFrameArrivalMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),");
         AssertContains(healthSnapshotAssemblerText, "private static class CaptureHealthSnapshotAssembler");
         AssertContains(healthSnapshotAssemblerText, "public static CaptureHealthSnapshot Build(");
-        AssertContains(healthSnapshotAssemblyFieldsText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
-        AssertContains(healthSnapshotAssemblyFieldsText, "public CaptureCadenceHealthSnapshotFields CaptureCadence { get; init; }");
-        AssertContains(healthSnapshotAssemblyFieldsText, "public FlashbackPlaybackHealthSnapshotFields FlashbackPlayback { get; init; }");
+        AssertContains(healthSnapshotAssemblerText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
+        AssertContains(healthSnapshotAssemblerText, "public CaptureCadenceHealthSnapshotFields CaptureCadence { get; init; }");
+        AssertContains(healthSnapshotAssemblerText, "public FlashbackPlaybackHealthSnapshotFields FlashbackPlayback { get; init; }");
         AssertDoesNotContain(healthSnapshotText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
-        AssertDoesNotContain(healthSnapshotAssemblerText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
         AssertDoesNotContain(healthSnapshotAssemblerText, "private readonly record struct CaptureCadenceHealthSnapshotFields");
         AssertDoesNotContain(healthSnapshotAssemblerText, "private readonly record struct MjpegHealthSnapshotFields");
         AssertDoesNotContain(healthSnapshotAssemblerText, "LibAvRecordingSink? Sink");
@@ -36,6 +33,12 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
         AssertDoesNotContain(healthSnapshotAssemblerText, "ComputeTickAge(");
         AssertContains(healthSnapshotAssemblerText, "TimestampUtc = DateTimeOffset.FromUnixTimeMilliseconds(snapshotUtcUnixMs),");
         AssertDoesNotContain(healthSnapshotText, "return new CaptureHealthSnapshot");
+        Assert.False(File.Exists(Path.Combine(
+            FindRepoRoot(),
+            "Sussudio",
+            "Services",
+            "Capture",
+            "CaptureService.HealthSnapshotAssemblyFields.cs")));
 
     }
 
