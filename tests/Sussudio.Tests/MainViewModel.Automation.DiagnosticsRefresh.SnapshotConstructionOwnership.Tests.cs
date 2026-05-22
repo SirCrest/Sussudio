@@ -125,11 +125,11 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionRecordingPipelineIngestText, "private static RecordingPipelineIngestProjection BuildRecordingPipelineIngestProjection(");
         AssertContains(diagnostics.SnapshotProjectionRecordingPipelineVideoQueueText, "private static RecordingPipelineVideoQueueProjection BuildRecordingPipelineVideoQueueProjection(");
         AssertContains(diagnostics.SnapshotProjectionRecordingPipelineHardwareQueuesText, "private static RecordingPipelineHardwareQueuesProjection BuildRecordingPipelineHardwareQueuesProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingPipelineText, "private static RecordingPipelineFlattenedProjection BuildRecordingPipelineFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingPipelineEncoderText, "private static RecordingPipelineEncoderFlattenedProjection BuildRecordingPipelineEncoderFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingPipelineIngestText, "private static RecordingPipelineIngestFlattenedProjection BuildRecordingPipelineIngestFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingPipelineVideoQueueText, "private static RecordingPipelineVideoQueueFlattenedProjection BuildRecordingPipelineVideoQueueFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingPipelineHardwareQueuesText, "private static RecordingPipelineHardwareQueuesFlattenedProjection BuildRecordingPipelineHardwareQueuesFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingPipelineFlattenedProjection BuildRecordingPipelineFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineEncoderText, "private static RecordingPipelineEncoderFlattenedProjection BuildRecordingPipelineEncoderFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineIngestText, "private static RecordingPipelineIngestFlattenedProjection BuildRecordingPipelineIngestFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineVideoQueueText, "private static RecordingPipelineVideoQueueFlattenedProjection BuildRecordingPipelineVideoQueueFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineHardwareQueuesText, "private static RecordingPipelineHardwareQueuesFlattenedProjection BuildRecordingPipelineHardwareQueuesFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingOutputFlattenedProjection(recordingBackend, recordingOutput)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningRecordingOutputText, "private static RecordingOutputFlattenedProjection BuildRecordingOutputFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildProcessResourceFlattenedProjection(processResourceProjection)");

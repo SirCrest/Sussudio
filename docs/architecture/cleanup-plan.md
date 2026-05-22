@@ -429,29 +429,20 @@ plus final field flattening:
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.AvSync.cs`.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs` owns
 recording-pipeline projection routing and groups encoder, ingest, video-queue,
-and GPU/CUDA health input modules consumed by the automation snapshot DTO.
+and GPU/CUDA health modules consumed by the automation snapshot DTO, plus final
+recording-pipeline flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.Encoder.cs` owns
-encoder queue age/count/failure health input projection.
+encoder queue age/count/failure health input projection and final field
+flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.Ingest.cs` owns
-conversion, ffmpeg, and video ingest queue health input projection.
+conversion, ffmpeg, and video ingest queue health input projection and final
+field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.VideoQueue.cs`
 owns recording video queue latency, backpressure, and encoder-output health
-input projection.
+input projection and final field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.HardwareQueues.cs`
-owns recording GPU and CUDA queue health input projection.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingPipeline.cs`
-owns final recording-pipeline projection-to-`AutomationSnapshot` field
-flattening and routes the grouped encoder, ingest, video-queue, and GPU/CUDA
-queue flattening modules.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingPipeline.Encoder.cs`
-owns final encoder age/count/failure field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingPipeline.Ingest.cs`
-owns final conversion, ffmpeg, and video ingest queue field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingPipeline.VideoQueue.cs`
-owns final recording video queue latency, backpressure, and encoder-output field
+owns recording GPU and CUDA queue health input projection and final field
 flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.RecordingPipeline.HardwareQueues.cs`
-owns final recording GPU and CUDA queue field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingOutput.cs` owns recording
 backend/audio-path/mux-result projection, UI output text, accumulated recording
 bytes, file-growth state, last finalized output metadata, and last verification
