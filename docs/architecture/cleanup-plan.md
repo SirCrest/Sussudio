@@ -2776,15 +2776,13 @@ The automation model surface lives in the `CaptureRuntimeSnapshot*.cs` partial f
 so runtime fields stay grouped by the same domain as the sampled field groups.
 Video ingest, source-reader health, WASAPI capture, playback output counter,
 requested/negotiated reader transport, memory preference, frame-ledger, preview
-renderer-mode projection, and their private handoff models now live with the
-runtime snapshot sampler in
+renderer-mode projection, recording-integrity summary projection, and their
+private handoff models now live with the runtime snapshot sampler in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`,
 HDR pipeline parity/downgrade, warmup state/count projection, and their private handoff models now live in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs`,
-source telemetry detail/frame-rate-origin/age/alignment projection and its private handoff model now lives in
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs`,
-and recording-integrity summary projection and its private handoff model now lives in
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotRecordingIntegrity.cs`.
+and source telemetry detail/frame-rate-origin/age/alignment projection and its private handoff model now lives in
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs`.
 Recording-format and observed-frame helper policy live in focused snapshot
 partials.
 

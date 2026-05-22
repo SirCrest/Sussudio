@@ -95,8 +95,8 @@ public sealed class CoreRuntimeContractsTests
         => global::Program.CaptureService_RuntimeSourceTelemetryProjection_LivesInFocusedPartial();
 
     [Fact]
-    public Task CaptureServiceRuntimeRecordingIntegrityProjectionLivesInFocusedPartial()
-        => global::Program.CaptureService_RuntimeRecordingIntegrityProjection_LivesInFocusedPartial();
+    public Task CaptureServiceRuntimeRecordingIntegrityProjectionLivesWithRuntimeSnapshotSampler()
+        => global::Program.CaptureService_RuntimeRecordingIntegrityProjection_LivesWithRuntimeSnapshotSampler();
 
     [Fact]
     public Task CaptureServiceSnapshotHelperPolicyLivesInFocusedPartials()

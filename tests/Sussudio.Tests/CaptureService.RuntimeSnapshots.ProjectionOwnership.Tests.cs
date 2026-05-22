@@ -36,8 +36,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var sourceTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs")
             .Replace("\r\n", "\n");
-        var recordingIntegrityText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotRecordingIntegrity.cs")
-            .Replace("\r\n", "\n");
         var captureRuntimeModelText = ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.cs")
             .Replace("\r\n", "\n");
         var captureRuntimeIngestAudioModelText = ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.IngestAudio.cs")
@@ -76,11 +74,10 @@ static partial class Program
         AssertContains(hdrPipelineText, "private sealed class RuntimeHdrPipelineSnapshotFields");
         AssertContains(hdrPipelineText, "private sealed class RuntimeHdrWarmupSnapshotFields");
         AssertContains(sourceTelemetryText, "private sealed class RuntimeSourceTelemetrySnapshotFields");
-        AssertContains(recordingIntegrityText, "private sealed class RuntimeRecordingIntegritySnapshotFields");
+        AssertContains(runtimeText, "private sealed class RuntimeRecordingIntegritySnapshotFields");
         AssertDoesNotContain(runtimeText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
         AssertDoesNotContain(hdrPipelineText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
         AssertDoesNotContain(sourceTelemetryText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
-        AssertDoesNotContain(recordingIntegrityText, "private sealed class CaptureRuntimeSnapshotAssemblyFields");
         AssertDoesNotContain(assemblerText, "bool? ObservedP010Likely8BitUpscaled) ObservedTelemetry");
         AssertContains(assemblerText, "return new CaptureRuntimeSnapshot");
         AssertContains(assemblerText, "TimestampUtc = fields.TimestampUtc,");
@@ -116,10 +113,11 @@ static partial class Program
         AssertContains(agentMapText, "handoff contract consumed by that map.");
         AssertContains(agentMapText, "CaptureRuntimeSnapshot*.cs");
         AssertContains(agentMapText, "owns video ingest/source-reader/WASAPI playback");
-        AssertContains(agentMapText, "and reader/transport projections plus their private handoff models");
+        AssertContains(agentMapText, "and reader/transport projections, recording-integrity summary projection, and");
         AssertContains(agentMapText, "and its private HDR pipeline/warmup handoff models.");
         AssertContains(agentMapText, "and its private source-telemetry handoff model.");
-        AssertContains(agentMapText, "and its private recording-integrity handoff model.");
+        AssertContains(agentMapText, "recording-integrity summary projection, and");
+        AssertContains(agentMapText, "their private handoff models, then delegates final DTO construction.");
         AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples");
         AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs` owns final");
         AssertContains(cleanupPlanText, "The private runtime snapshot assembly handoff contract lives with the assembler");
@@ -133,7 +131,12 @@ static partial class Program
         AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`,");
         AssertContains(cleanupPlanText, "HDR pipeline parity/downgrade, warmup state/count projection, and their private handoff models now live in");
         AssertContains(cleanupPlanText, "source telemetry detail/frame-rate-origin/age/alignment projection and its private handoff model now lives in");
-        AssertContains(cleanupPlanText, "and recording-integrity summary projection and its private handoff model now lives in");
+        AssertContains(cleanupPlanText, "recording-integrity summary projection, and their");
+        AssertContains(cleanupPlanText, "private handoff models now live with the runtime snapshot sampler");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RuntimeSnapshotRecordingIntegrity.cs")),
+            "old runtime recording-integrity projection partial removed");
 
         return Task.CompletedTask;
     }
@@ -232,13 +235,11 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureService_RuntimeRecordingIntegrityProjection_LivesInFocusedPartial()
+    internal static Task CaptureService_RuntimeRecordingIntegrityProjection_LivesWithRuntimeSnapshotSampler()
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
         var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
-        var recordingIntegrityText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotRecordingIntegrity.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(runtimeText, "var recordingIntegrity = CaptureRuntimeRecordingIntegritySnapshotFields(");
@@ -247,12 +248,12 @@ static partial class Program
         AssertContains(assemblerText, "RecordingIntegrityAudioFramesWrittenToSink = recordingIntegrity.AudioFramesWrittenToSink,");
         AssertContains(assemblerText, "RecordingIntegrityEncoderAvSyncDriftMs = recordingIntegrity.EncoderAvSyncDriftMs,");
 
-        AssertContains(recordingIntegrityText, "private static RuntimeRecordingIntegritySnapshotFields CaptureRuntimeRecordingIntegritySnapshotFields(");
-        AssertContains(recordingIntegrityText, "private sealed class RuntimeRecordingIntegritySnapshotFields");
-        AssertContains(recordingIntegrityText, "Status = recordingIntegrity.Status,");
-        AssertContains(recordingIntegrityText, "AudioFramesWrittenToSink = recordingIntegrity.AudioFramesWrittenToSink,");
-        AssertContains(recordingIntegrityText, "EncoderAvSyncDriftMs = recordingIntegrity.EncoderAvSyncDriftMs,");
-        AssertContains(recordingIntegrityText, "Reason = recordingIntegrity.Reason");
+        AssertContains(runtimeText, "private static RuntimeRecordingIntegritySnapshotFields CaptureRuntimeRecordingIntegritySnapshotFields(");
+        AssertContains(runtimeText, "private sealed class RuntimeRecordingIntegritySnapshotFields");
+        AssertContains(runtimeText, "Status = recordingIntegrity.Status,");
+        AssertContains(runtimeText, "AudioFramesWrittenToSink = recordingIntegrity.AudioFramesWrittenToSink,");
+        AssertContains(runtimeText, "EncoderAvSyncDriftMs = recordingIntegrity.EncoderAvSyncDriftMs,");
+        AssertContains(runtimeText, "Reason = recordingIntegrity.Reason");
 
         AssertDoesNotContain(runtimeText, "var recordingIntegrity = ResolveRecordingIntegritySummary(");
 
