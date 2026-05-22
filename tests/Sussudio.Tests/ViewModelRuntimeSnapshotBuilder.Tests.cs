@@ -71,7 +71,6 @@ public sealed class ViewModelRuntimeSnapshotBuilderTests
             ("SelectedSplitEncodeMode", "Auto"),
             ("SelectedVideoFormat", "MJPG"),
             ("CustomBitrateMbps", 42d),
-            ("ShowAllCaptureOptions", true),
             ("PreviewVolume", 0.375d),
             ("IsStatsVisible", true),
             ("IsHdrAvailable", true),

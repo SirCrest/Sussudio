@@ -55,7 +55,6 @@ public interface IAutomationCaptureSettingsPort
     Task SetPresetAsync(string preset, CancellationToken cancellationToken = default);
     Task SetSplitEncodeModeAsync(string splitEncodeMode, CancellationToken cancellationToken = default);
     Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default);
-    Task SetShowAllCaptureOptionsAsync(bool enabled, CancellationToken cancellationToken = default);
     Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default);
     Task SetQualityAsync(string quality, CancellationToken cancellationToken = default);
     Task SetCustomBitrateAsync(double bitrateMbps, CancellationToken cancellationToken = default);

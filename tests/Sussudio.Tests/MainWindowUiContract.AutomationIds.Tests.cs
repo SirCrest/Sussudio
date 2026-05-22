@@ -30,7 +30,6 @@ static partial class Program
             "CustomBitrateNumberBox",
             "OutputPathTextBox",
             "BrowseButton",
-            "ShowAllCaptureOptionsToggle",
             "FlashbackEnabledToggle",
             "FlashbackBufferDurationCombo",
             "FlashbackApplyButton",

@@ -17,10 +17,6 @@ static partial class Program
         var previewVolume = vmType.GetProperty("PreviewVolume", BindingFlags.Instance | BindingFlags.Public);
         AssertNotNull(previewVolume, "MainViewModel.PreviewVolume");
 
-        // ShowAllCaptureOptions observable property must exist
-        var showAll = vmType.GetProperty("ShowAllCaptureOptions", BindingFlags.Instance | BindingFlags.Public);
-        AssertNotNull(showAll, "MainViewModel.ShowAllCaptureOptions");
-
         // IsAudioPreviewEnabled observable property must exist
         var audioPreview = vmType.GetProperty("IsAudioPreviewEnabled", BindingFlags.Instance | BindingFlags.Public);
         AssertNotNull(audioPreview, "MainViewModel.IsAudioPreviewEnabled");

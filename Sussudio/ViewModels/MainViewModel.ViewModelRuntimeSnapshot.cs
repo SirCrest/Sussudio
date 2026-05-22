@@ -57,7 +57,6 @@ public partial class MainViewModel
                 SelectedSplitEncodeMode = SelectedSplitEncodeMode,
                 SelectedVideoFormat = SelectedVideoFormat,
                 CustomBitrateMbps = CustomBitrateMbps,
-                ShowAllCaptureOptions = ShowAllCaptureOptions,
                 PreviewVolume = PreviewVolume,
                 IsStatsVisible = IsStatsVisible,
                 IsHdrAvailable = IsHdrAvailable,

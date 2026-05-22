@@ -131,7 +131,6 @@ public sealed partial class AutomationDiagnosticsHub
             SelectedSplitEncodeMode = settingsFlattening.SelectedSplitEncodeMode,
             SelectedVideoFormat = settingsFlattening.SelectedVideoFormat,
             CustomBitrateMbps = settingsFlattening.CustomBitrateMbps,
-            ShowAllCaptureOptions = settingsFlattening.ShowAllCaptureOptions,
             PreviewVolumePercent = settingsFlattening.PreviewVolumePercent,
             IsStatsVisible = settingsFlattening.IsStatsVisible,
             IsHdrAvailable = hdrPipelineFlattening.IsHdrAvailable,

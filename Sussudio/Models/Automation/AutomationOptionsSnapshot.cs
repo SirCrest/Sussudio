@@ -99,7 +99,6 @@ public sealed class AutomationOptionsSnapshot
     public string SelectedSplitEncodeMode { get; init; } = string.Empty;
     public string SelectedVideoFormat { get; init; } = string.Empty;
     public int MjpegDecoderCount { get; init; }
-    public bool ShowAllCaptureOptions { get; init; }
     public double PreviewVolumePercent { get; init; }
     public bool IsStatsVisible { get; init; }
 }

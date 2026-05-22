@@ -23,7 +23,6 @@ public sealed partial class MainWindow
             CustomBitrateNumberBox = CustomBitrateNumberBox,
             HdrToggle = HdrToggle,
             TrueHdrPreviewToggle = TrueHdrPreviewToggle,
-            ShowAllCaptureOptionsToggle = ShowAllCaptureOptionsToggle,
             ApplyInitialDecoderCountSelection = ApplyInitialDecoderCountSelection,
             ApplyBitrateVisibility = ApplyBitrateVisibility,
             ApplyHdrToggleEnabledState = ApplyHdrToggleEnabledState,
@@ -57,9 +56,6 @@ public sealed partial class MainWindow
     private void AttachRecordingOptionBindings()
         => _captureOptionBindingController.AttachRecordingOptionBindings();
 
-    private void AttachShowAllCaptureOptionsBinding()
-        => _captureOptionBindingController.AttachShowAllCaptureOptionsBinding();
-
     private void HandleCustomBitratePropertyChanged()
         => _captureOptionBindingController.HandleCustomBitratePropertyChanged();
 
@@ -68,9 +64,6 @@ public sealed partial class MainWindow
 
     private void HandleTrueHdrPreviewEnabledChanged()
         => _captureOptionBindingController.HandleTrueHdrPreviewEnabledChanged();
-
-    private void HandleShowAllCaptureOptionsChanged()
-        => _captureOptionBindingController.HandleShowAllCaptureOptionsChanged();
 
     private bool TryHandleCaptureOptionPropertyChanged(string propertyName)
         => _captureOptionBindingController.TryHandlePropertyChanged(propertyName);

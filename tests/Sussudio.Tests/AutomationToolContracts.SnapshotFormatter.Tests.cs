@@ -61,7 +61,6 @@ static partial class Program
                 "SelectedPreset": "P5",
                 "SelectedVideoFormat": "MJPG",
                 "SelectedSplitEncodeMode": "Auto",
-                "ShowAllCaptureOptions": true,
                 "PreviewVolumePercent": 42.5,
                 "IsStatsVisible": true,
                 "IsHdrEnabled": false,

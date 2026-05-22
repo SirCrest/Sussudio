@@ -24,7 +24,6 @@ internal static partial class MainViewModelSettingsPersistenceProjection
             SelectedMicrophoneDeviceId = input.SelectedMicrophoneDeviceId,
             MicrophoneVolume = input.MicrophoneVolume,
             PreviewVolume = input.PreviewVolume,
-            ShowAllCaptureOptions = input.ShowAllCaptureOptions,
             IsStatsVisible = input.IsStatsVisible,
             SelectedDeviceAudioMode = input.SelectedDeviceAudioMode,
             AnalogAudioGainPercent = input.AnalogAudioGainPercent,

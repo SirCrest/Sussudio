@@ -20,7 +20,6 @@ public sealed partial class AutomationSnapshot
     public string SelectedSplitEncodeMode { get; init; } = string.Empty;
     public string SelectedVideoFormat { get; init; } = string.Empty;
     public double CustomBitrateMbps { get; init; }
-    public bool ShowAllCaptureOptions { get; init; }
     public double PreviewVolumePercent { get; init; }
     public bool IsStatsVisible { get; init; }
 }

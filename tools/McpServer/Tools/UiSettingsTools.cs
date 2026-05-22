@@ -9,10 +9,10 @@ namespace McpServer.Tools;
 // MCP tools for UI-only settings like stats visibility and window layout.
 public static class UiSettingsTools
 {
-    [McpServerTool, Description("Configure UI-facing settings that matter to automation: show-all capture options, preview monitoring volume, and stats panel visibility. Only provided parameters are changed.")]
+    [McpServerTool, Description("Configure UI-facing settings that matter to automation: show-all compatibility, preview monitoring volume, and stats panel visibility. Only provided parameters are changed.")]
     public static async Task<CallToolResult> configure_ui(
         PipeClient pipeClient,
-        [Description("Enable or disable the expanded capture options view")] bool? showAllCaptureOptions = null,
+        [Description("Compatibility setting. Show-all capture options are always enabled; provided values are acknowledged as a no-op.")] bool? showAllCaptureOptions = null,
         [Description("Preview volume percentage from 0 to 100")] double? previewVolumePercent = null,
         [Description("Show or hide the stats panel")] bool? statsVisible = null)
         => await ToolCommandFormatter.ExecuteBatchResultAsync(

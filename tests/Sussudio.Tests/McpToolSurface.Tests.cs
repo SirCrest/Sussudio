@@ -31,7 +31,6 @@ static partial class Program
         AssertContains(captureOptionsToolText, "AutomationCommandKind.GetCaptureOptions");
         AssertContains(captureOptionsToolText, "UseStructuredContent = true");
         AssertContains(uiSettingsToolText, "configure_ui");
-        AssertContains(uiSettingsToolText, "\"SetShowAllCaptureOptions\"");
         AssertContains(uiSettingsToolText, "\"SetPreviewVolume\"");
         AssertContains(uiSettingsToolText, "\"SetStatsVisible\"");
         if (snapshotType.GetProperty("Options") != null)

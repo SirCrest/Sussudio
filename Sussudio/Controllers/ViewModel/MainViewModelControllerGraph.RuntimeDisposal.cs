@@ -7,15 +7,18 @@ public partial class MainViewModel
 {
     private sealed partial class MainViewModelControllerGraph
     {
-        private static MainViewModelDisposalController CreateDisposalController(MainViewModel viewModel)
+        private static MainViewModelDisposalController CreateDisposalController(
+            MainViewModel viewModel,
+            MainViewModelDeviceAudioRequestController deviceAudioRequestController,
+            MainViewModelRuntimeLifecycleController runtimeLifecycleController)
         {
             return new MainViewModelDisposalController(
                 new MainViewModelDisposalControllerContext
                 {
                     TryBeginDispose = () => Interlocked.Exchange(ref viewModel._disposeState, 1) == 0,
                     CancelActiveFlashbackExport = viewModel.CancelActiveFlashbackExportForDispose,
-                    CancelPendingAudioControlWork = viewModel._deviceAudioRequestController.CancelPendingAudioControlWork,
-                    StopRuntimeForDispose = viewModel._runtimeLifecycleController.StopForDispose,
+                    CancelPendingAudioControlWork = deviceAudioRequestController.CancelPendingAudioControlWork,
+                    StopRuntimeForDispose = runtimeLifecycleController.StopForDispose,
                     CleanupSessionCoordinatorAsync = () => viewModel._sessionCoordinator.CleanupAsync(),
                     DisposeSessionCoordinatorAsync = () => viewModel._sessionCoordinator.DisposeAsync().AsTask(),
                     DisposeCaptureServiceAsync = () => viewModel._captureService.DisposeAsync().AsTask(),

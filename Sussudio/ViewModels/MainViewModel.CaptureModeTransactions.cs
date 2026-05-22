@@ -112,17 +112,4 @@ public partial class MainViewModel
         SaveSettings();
     }
 
-    partial void OnShowAllCaptureOptionsChanged(bool value)
-    {
-        if (IsRecording)
-        {
-            _pendingModeOptionsRefresh = true;
-            SaveSettings();
-            return;
-        }
-
-        _pendingModeOptionsRefresh = false;
-        RebuildResolutionOptions();
-        SaveSettings();
-    }
 }

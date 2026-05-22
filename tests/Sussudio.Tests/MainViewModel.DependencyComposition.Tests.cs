@@ -84,7 +84,7 @@ static partial class Program
         AssertOccursBefore(
             controllerGraphText,
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
-            "var runtimeLifecycleController = CreateRuntimeLifecycleController(viewModel, previewLifecycleController);");
+            "var runtimeLifecycleController = CreateRuntimeLifecycleController(");
 
         AssertContains(stateText, "public partial bool IsStatsVisible");
         AssertContains(stateText, "public partial bool IsSettingsVisible");

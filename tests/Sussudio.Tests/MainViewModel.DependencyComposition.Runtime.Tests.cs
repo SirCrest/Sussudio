@@ -45,12 +45,16 @@ static partial class Program
         AssertContains(controllerGraphRuntimeText, "private sealed partial class MainViewModelControllerGraph");
         AssertContains(controllerGraphRuntimeText, "private static MainViewModelRuntimeLifecycleController CreateRuntimeLifecycleController(");
         AssertContains(controllerGraphRuntimeText, "new MainViewModelRuntimeLifecycleController(\n                new MainViewModelRuntimeLifecycleControllerContext");
-        AssertContains(controllerGraphRuntimeText, "CreateEventIngressController = () => CreateRuntimeEventIngressController(viewModel, previewLifecycleController),");
+        AssertContains(controllerGraphRuntimeText, "CreateEventIngressController = () => CreateRuntimeEventIngressController(");
+        AssertContains(controllerGraphRuntimeText, "deviceFormatProbeController,");
+        AssertContains(controllerGraphRuntimeText, "sourceTelemetryController),");
+        AssertContains(controllerGraphRuntimeText, "ApplySourceTelemetrySnapshot = sourceTelemetryController.ApplySourceTelemetrySnapshot,");
+        AssertContains(controllerGraphRuntimeText, "RefreshSourceTelemetrySummaryAge = sourceTelemetryController.RefreshSourceTelemetrySummaryAge,");
         AssertContains(controllerGraphRuntimeText, "GetRuntimeSnapshot = viewModel._captureService.GetRuntimeSnapshot,");
         AssertOccursBefore(
             controllerGraphText,
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
-            "var runtimeLifecycleController = CreateRuntimeLifecycleController(viewModel, previewLifecycleController);");
+            "var runtimeLifecycleController = CreateRuntimeLifecycleController(");
 
         AssertContains(runtimeLifecycleControllerText, "namespace Sussudio.Controllers;");
         AssertContains(runtimeLifecycleControllerText, "internal sealed class MainViewModelRuntimeLifecycleController");
@@ -111,9 +115,13 @@ static partial class Program
         AssertContains(runtimeEventIngressSubscriptionsText, "_context.DetachAudioLevelUpdated(_context.OnAudioLevelUpdated);");
         AssertContains(runtimeEventIngressSubscriptionsText, "SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;");
 
-        AssertContains(controllerGraphRuntimeDisposalText, "private static MainViewModelDisposalController CreateDisposalController(MainViewModel viewModel)");
+        AssertContains(controllerGraphRuntimeDisposalText, "private static MainViewModelDisposalController CreateDisposalController(");
+        AssertContains(controllerGraphRuntimeDisposalText, "MainViewModelDeviceAudioRequestController deviceAudioRequestController,");
+        AssertContains(controllerGraphRuntimeDisposalText, "MainViewModelRuntimeLifecycleController runtimeLifecycleController)");
         AssertContains(controllerGraphRuntimeDisposalText, "new MainViewModelDisposalController(\n                new MainViewModelDisposalControllerContext");
         AssertContains(controllerGraphRuntimeDisposalText, "TryBeginDispose = () => Interlocked.Exchange(ref viewModel._disposeState, 1) == 0,");
+        AssertContains(controllerGraphRuntimeDisposalText, "CancelPendingAudioControlWork = deviceAudioRequestController.CancelPendingAudioControlWork,");
+        AssertContains(controllerGraphRuntimeDisposalText, "StopRuntimeForDispose = runtimeLifecycleController.StopForDispose,");
         AssertContains(controllerGraphRuntimeDisposalText, "CleanupSessionCoordinatorAsync = () => viewModel._sessionCoordinator.CleanupAsync(),");
         AssertContains(controllerGraphRuntimeDisposalText, "AwaitWithTimeoutAsync = AwaitWithTimeoutAsync,");
         AssertContains(controllerGraphText, "public MainViewModelDisposalController DisposalController { get; }");

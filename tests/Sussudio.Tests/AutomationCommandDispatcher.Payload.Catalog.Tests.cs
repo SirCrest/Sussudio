@@ -48,7 +48,6 @@ static partial class Program
             .Concat(GetHandlerEntries(dispatcherType, "TrivialCaptureSettingsHandlers"))
             .Concat(GetHandlerEntries(dispatcherType, "TrivialAudioHandlers"))
             .Concat(GetHandlerEntries(dispatcherType, "TrivialPreviewRecordingHandlers"))
-            .Concat(GetHandlerEntries(dispatcherType, "UiCaptureSettingsHandlers"))
             .Concat(GetHandlerEntries(dispatcherType, "UiPreviewRecordingHandlers"))
             .Concat(GetHandlerEntries(dispatcherType, "UiStateHandlers"))
             .ToArray();

@@ -12,15 +12,6 @@ public partial class MainViewModel
     public Action<string, bool>? StatsSectionVisibilityHandler { get; set; }
     public Action<bool>? FrameTimeOverlayVisibilityHandler { get; set; }
 
-    public Task SetShowAllCaptureOptionsAsync(bool enabled, CancellationToken cancellationToken = default)
-    {
-        return InvokeOnUiThreadAsync(() =>
-        {
-            ShowAllCaptureOptions = enabled;
-            return Task.CompletedTask;
-        }, cancellationToken);
-    }
-
     public Task SetSettingsVisibleAsync(bool visible, CancellationToken cancellationToken = default)
     {
         return InvokeOnUiThreadAsync(() =>

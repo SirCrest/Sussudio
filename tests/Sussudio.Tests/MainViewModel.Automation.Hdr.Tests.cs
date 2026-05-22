@@ -7,10 +7,9 @@ static partial class Program
     {
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs")
             .Replace("\r\n", "\n");
-        var hdrChangeBlock = ExtractTextBetween(
+        var hdrChangeBlock = ExtractMemberCode(
             captureModeTransactionsText,
-            "partial void OnIsHdrEnabledChanged(bool value)",
-            "partial void OnShowAllCaptureOptionsChanged(bool value)");
+            "OnIsHdrEnabledChanged");
 
         AssertContains(captureModeTransactionsText, "public Task SetHdrEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(captureModeTransactionsText, "throw new InvalidOperationException(HdrToggleBlockedWhileRecordingMessage);");

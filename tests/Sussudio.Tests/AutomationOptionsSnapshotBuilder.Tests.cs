@@ -67,7 +67,6 @@ public sealed class AutomationOptionsSnapshotBuilderTests
             ("SelectedSplitEncodeMode", "disabled"),
             ("SelectedVideoFormat", "mjpg"),
             ("MjpegDecoderCount", 99),
-            ("ShowAllCaptureOptions", true),
             ("PreviewVolume", 0.425d),
             ("IsStatsVisible", true));
 
@@ -81,7 +80,6 @@ public sealed class AutomationOptionsSnapshotBuilderTests
         Assert.Equal(60d, Get(snapshot, "SelectedFrameRate"));
         Assert.Equal(8, Get(snapshot, "MjpegDecoderCount"));
         Assert.Equal(42.5d, Get(snapshot, "PreviewVolumePercent"));
-        Assert.True((bool)Get(snapshot, "ShowAllCaptureOptions")!);
         Assert.True((bool)Get(snapshot, "IsStatsVisible")!);
 
         var devices = (Array)Get(snapshot, "Devices")!;

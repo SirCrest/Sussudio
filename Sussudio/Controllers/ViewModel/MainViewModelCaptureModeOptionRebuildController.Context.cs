@@ -36,7 +36,6 @@ internal sealed class MainViewModelCaptureModeOptionRebuildControllerContext
     public required Action<MediaFormat?> SetSelectedFormat { get; init; }
     public required Func<bool> IsHdrEnabled { get; init; }
     public required Func<bool> IsPreviewing { get; init; }
-    public required Func<bool> ShowAllCaptureOptions { get; init; }
     public required Func<bool> IsAutoFrameRateSelected { get; init; }
     public required Action<bool> SetIsAutoFrameRateSelected { get; init; }
     public required Func<bool> HasUserOverriddenResolutionForCurrentMode { get; init; }

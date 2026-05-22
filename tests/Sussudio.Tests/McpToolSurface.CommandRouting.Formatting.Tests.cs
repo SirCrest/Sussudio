@@ -46,15 +46,6 @@ static partial class Program
         var emptyResult = await InvokeFormatterBatchAsync(executeBatch, pipeClient, "nothing to do", emptyCommands).ConfigureAwait(false);
         AssertEqual("nothing to do", emptyResult, "ToolCommandFormatter empty batch result");
 
-        var skipped = optional.Invoke(
-            null,
-            new object?[]
-            {
-                Enum.Parse(automationCommandKindType, "SetShowAllCaptureOptions"),
-                "SetShowAllCaptureOptions",
-                false,
-                new Dictionary<string, object?> { ["enabled"] = true }
-            });
         var firstPending = optional.Invoke(
             null,
             new object?[]
@@ -73,10 +64,9 @@ static partial class Program
                 true,
                 new Dictionary<string, object?> { ["visible"] = false }
             });
-        var commands = Array.CreateInstance(pendingType, 3);
-        commands.SetValue(skipped, 0);
-        commands.SetValue(firstPending, 1);
-        commands.SetValue(secondPending, 2);
+        var commands = Array.CreateInstance(pendingType, 2);
+        commands.SetValue(firstPending, 0);
+        commands.SetValue(secondPending, 1);
 
         string result = string.Empty;
         var requests = await CapturePipeRequestsAsync(

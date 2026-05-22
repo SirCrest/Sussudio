@@ -26,7 +26,6 @@ static partial class Program
         AssertContains(captureOptionBindingsText, "ResolutionComboBox = ResolutionComboBox,");
         AssertContains(captureOptionBindingsText, "VideoFormatComboBox = VideoFormatComboBox,");
         AssertContains(captureOptionBindingsText, "TrueHdrPreviewToggle = TrueHdrPreviewToggle,");
-        AssertContains(captureOptionBindingsText, "ShowAllCaptureOptionsToggle = ShowAllCaptureOptionsToggle,");
         AssertContains(captureOptionBindingsText, "ApplyInitialDecoderCountSelection = ApplyInitialDecoderCountSelection,");
         AssertContains(captureOptionBindingsText, "ApplyAudioClipVisibility = ApplyAudioClipVisibility,");
         AssertContains(captureOptionBindingsText, "RefreshHdrHintText = RefreshHdrHintText,");
@@ -42,16 +41,12 @@ static partial class Program
         AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.EnsureInitialSelections();");
         AssertContains(captureOptionBindingsText, "private void AttachCaptureModeSelectionBindings()");
         AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.AttachCaptureModeSelectionBindings();");
-        AssertContains(captureOptionBindingsText, "private void AttachShowAllCaptureOptionsBinding()");
-        AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.AttachShowAllCaptureOptionsBinding();");
         AssertContains(captureOptionBindingsText, "private void HandleCustomBitratePropertyChanged()");
         AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.HandleCustomBitratePropertyChanged();");
         AssertContains(captureOptionBindingsText, "private void HandleHdrEnabledChanged()");
         AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.HandleHdrEnabledChanged();");
         AssertContains(captureOptionBindingsText, "private void HandleTrueHdrPreviewEnabledChanged()");
         AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.HandleTrueHdrPreviewEnabledChanged();");
-        AssertContains(captureOptionBindingsText, "private void HandleShowAllCaptureOptionsChanged()");
-        AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.HandleShowAllCaptureOptionsChanged();");
         AssertContains(captureOptionBindingsText, "private bool TryHandleCaptureOptionPropertyChanged(string propertyName)");
         AssertContains(captureOptionPropertyChangedMethod, "=> _captureOptionBindingController.TryHandlePropertyChanged(propertyName);");
         AssertContains(captureOptionBindingsText, "private void AttachRecordingOptionBindings()");
@@ -70,7 +65,6 @@ static partial class Program
         AssertContains(controllerBindingsText, "public void ApplyInitialSelections()");
         AssertContains(controllerBindingsText, "_context.FormatComboBox.SelectedItem = _context.ViewModel.SelectedRecordingFormat;");
         AssertContains(controllerBindingsText, "_context.CustomBitrateNumberBox.Value = _context.ViewModel.CustomBitrateMbps;");
-        AssertContains(controllerBindingsText, "_context.ShowAllCaptureOptionsToggle.IsChecked = _context.ViewModel.ShowAllCaptureOptions;");
         AssertContains(controllerBindingsText, "_context.TrueHdrPreviewToggle.IsChecked = _context.ViewModel.IsTrueHdrPreviewEnabled;");
         AssertContains(controllerBindingsText, "_context.ApplyInitialDecoderCountSelection();");
         AssertContains(controllerBindingsText, "_context.ApplyBitrateVisibility();");
@@ -94,7 +88,6 @@ static partial class Program
         AssertContains(controllerBindingsText, "_context.CustomBitrateNumberBox.ValueChanged +=");
         AssertContains(controllerBindingsText, "_context.HdrToggle.Click +=");
         AssertContains(controllerBindingsText, "_context.TrueHdrPreviewToggle.Click +=");
-        AssertContains(controllerBindingsText, "_context.ShowAllCaptureOptionsToggle.Click +=");
         AssertContains(controllerPropertyChangesText, "public bool TryHandlePropertyChanged(string propertyName)");
         AssertContains(controllerPropertyChangesText, "case nameof(MainViewModel.AudioClipping):");
         AssertContains(controllerPropertyChangesText, "_context.ApplyAudioClipVisibility();");
@@ -118,11 +111,9 @@ static partial class Program
         AssertContains(controllerPropertyChangesText, "case nameof(MainViewModel.IsCustomBitrateVisible):");
         AssertContains(controllerPropertyChangesText, "_context.ApplyBitrateVisibility();");
         AssertContains(controllerPropertyChangesText, "case nameof(MainViewModel.CustomBitrateMbps):");
-        AssertContains(controllerPropertyChangesText, "case nameof(MainViewModel.ShowAllCaptureOptions):");
         AssertContains(controllerPropertyChangesText, "public void HandleCustomBitratePropertyChanged()");
         AssertContains(controllerPropertyChangesText, "public void HandleHdrEnabledChanged()");
         AssertContains(controllerPropertyChangesText, "public void HandleTrueHdrPreviewEnabledChanged()");
-        AssertContains(controllerPropertyChangesText, "public void HandleShowAllCaptureOptionsChanged()");
         AssertContains(controllerBindingsText, "private void AttachHdrToggleBindings()");
         AssertContains(controllerBindingsText, "private static void AttachStringSelection(ComboBox comboBox, Action<string> setVmProp)");
         AssertDoesNotContain(controllerText, "private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
@@ -133,13 +124,10 @@ static partial class Program
         AssertContains(bindingsText, "EnsureInitialCaptureOptionSelections();");
         AssertContains(bindingsText, "AttachCaptureModeSelectionBindings();");
         AssertContains(bindingsText, "AttachRecordingOptionBindings();");
-        AssertContains(bindingsText, "AttachShowAllCaptureOptionsBinding();");
         AssertOccursBefore(bindingsText, "InitializeCaptureOptionCollections();", "ApplyInitialCaptureOptionSelections();");
         AssertOccursBefore(bindingsText, "ApplyInitialCaptureOptionSelections();", "AttachRecordingOptionBindings();");
         AssertOccursBefore(bindingsText, "EnsureInitialCaptureOptionSelections();", "AttachCaptureModeSelectionBindings();");
         AssertOccursBefore(bindingsText, "AttachCaptureModeSelectionBindings();", "AttachRecordingOptionBindings();");
-        AssertOccursBefore(bindingsText, "AttachAudioInputToggleBindings();", "AttachShowAllCaptureOptionsBinding();");
-        AssertOccursBefore(bindingsText, "AttachShowAllCaptureOptionsBinding();", "AttachFlashbackSettingsBindings();");
         AssertDoesNotContain(selectionBindingFamilyText, "public void AttachRecordingStringSelectionBindings()");
         AssertDoesNotContain(selectionBindingFamilyText, "AttachStringSelection(_context.FormatComboBox, value => _context.ViewModel.SelectedRecordingFormat = value);");
         AssertDoesNotContain(selectionBindingFamilyText, "private static void AttachStringSelection(ComboBox comboBox, Action<string> setVmProp)");

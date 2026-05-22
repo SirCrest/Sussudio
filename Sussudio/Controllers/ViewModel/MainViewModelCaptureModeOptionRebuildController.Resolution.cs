@@ -18,7 +18,7 @@ internal sealed partial class MainViewModelCaptureModeOptionRebuildController
         var options = CaptureModeOptionsBuilder.BuildResolutionOptions(
                 _context.GetResolutionToFormats(),
                 _context.IsHdrEnabled(),
-                _context.ShowAllCaptureOptions(),
+                true,
                 _context.GetLatestSourceTelemetry())
             .ToList();
 

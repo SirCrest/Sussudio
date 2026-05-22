@@ -10,14 +10,16 @@ public partial class MainViewModel
     {
         private static MainViewModelRuntimeEventIngressController CreateRuntimeEventIngressController(
             MainViewModel viewModel,
-            MainViewModelPreviewLifecycleController previewLifecycleController)
+            MainViewModelPreviewLifecycleController previewLifecycleController,
+            MainViewModelDeviceFormatProbeController deviceFormatProbeController,
+            MainViewModelSourceTelemetryController sourceTelemetryController)
         {
             return new MainViewModelRuntimeEventIngressController(
                 new MainViewModelRuntimeEventIngressControllerContext
                 {
                     AttachFormatProbeCompleted = handler => viewModel._deviceService.FormatProbeCompleted += handler,
                     DetachFormatProbeCompleted = handler => viewModel._deviceService.FormatProbeCompleted -= handler,
-                    OnDeviceFormatProbeCompleted = viewModel._deviceFormatProbeController.OnDeviceFormatProbeCompleted,
+                    OnDeviceFormatProbeCompleted = deviceFormatProbeController.OnDeviceFormatProbeCompleted,
                     AttachCaptureStatusChanged = handler => viewModel._captureService.StatusChanged += handler,
                     DetachCaptureStatusChanged = handler => viewModel._captureService.StatusChanged -= handler,
                     AttachCaptureErrorOccurred = handler => viewModel._captureService.ErrorOccurred += handler,
@@ -34,7 +36,7 @@ public partial class MainViewModel
                     OnMicrophoneAudioLevelUpdated = viewModel.OnMicrophoneAudioLevelUpdated,
                     AttachSourceTelemetryUpdated = handler => viewModel._captureService.SourceTelemetryUpdated += handler,
                     DetachSourceTelemetryUpdated = handler => viewModel._captureService.SourceTelemetryUpdated -= handler,
-                    OnSourceTelemetryUpdated = viewModel._sourceTelemetryController.OnSourceTelemetryUpdated,
+                    OnSourceTelemetryUpdated = sourceTelemetryController.OnSourceTelemetryUpdated,
                     AttachAudioDevicesChanged = handler => viewModel._audioDeviceWatcher.DevicesChanged += handler,
                     DetachAudioDevicesChanged = handler => viewModel._audioDeviceWatcher.DevicesChanged -= handler,
                     OnAudioDevicesChanged = viewModel.OnAudioDevicesChanged,

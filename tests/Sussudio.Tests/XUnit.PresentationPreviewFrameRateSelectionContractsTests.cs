@@ -11,8 +11,8 @@ public sealed class PresentationPreviewFrameRateSelectionContractsTests
     }
 
     [Fact]
-    public Task ShowAllCaptureOptionsUnlocksSourceFilteredFrameRates()
-        => global::Program.ShowAllCaptureOptions_UnlocksSourceFilteredFrameRates();
+    public Task SourceFilteredFrameRatesAreAlwaysUnlocked()
+        => global::Program.SourceFilteredFrameRatesAreAlwaysUnlocked();
 
     [Fact]
     public Task FrameRateSourceFilterPolicyLivesInFocusedHelper()

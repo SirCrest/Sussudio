@@ -5296,8 +5296,8 @@ owner, fold it back into that owner and update the source-shape tests and
    Source-rate nearest match with timing-family tie-break, generic auto fallback,
    and previous/manual selection fallback, now lives in
    `Sussudio/ViewModels/FrameRateAutoSelectionPolicy.cs`. The ownership checks for
-   frame-rate source filtering, automatic selection, `ShowAllCaptureOptions`, and
-   timing-policy placement live in
+   frame-rate source filtering, automatic selection, always-on capture options,
+   and timing-policy placement live in
    `MainViewModel.Capture.SelectionPolicy.FrameRates.Ownership.Tests.cs`, while
    automatic-selection and pure timing-policy behavior checks live in
    `MainViewModel.Capture.SelectionPolicy.FrameRates.PolicyBehavior.Tests.cs`.
@@ -5307,11 +5307,11 @@ owner, fold it back into that owner and update the source-shape tests and
    Shared frame-rate selection reset,
    resolved automatic frame-rate application, disabled frame-rate reason
    projection, and capture-mode reset flags live in
-   `MainViewModel.ModeSelectionState.cs`. Source-rate filtering and
-   `ShowAllCaptureOptions` unlock policy live in
-   `Sussudio/ViewModels/FrameRateSourceFilterPolicy.cs`, while `ShowAllCaptureOptions`
-   change handling, deferred rebuild behavior, duplicate-reinit suppression,
-   and the active capture-mode automation gate live in
+   `MainViewModel.ModeSelectionState.cs`. Source-rate filtering now assumes
+   capture options are always visible in
+   `Sussudio/ViewModels/FrameRateSourceFilterPolicy.cs`, while deferred rebuild
+   behavior, duplicate-reinit suppression, and the active capture-mode automation
+   gate live in
    `MainViewModel.CaptureModeTransactions.cs`. Pure frame-rate timing family,
    timing-variant projection, rational parsing, friendly/exact frame-rate
    matching, and preferred-format ranking now live in
@@ -5470,8 +5470,9 @@ owner, fold it back into that owner and update the source-shape tests and
    the supported native-XU switch/gain command surface rather than the legacy
    AT input-source fallback path.
    UI-only automation mutators for settings visibility, Flashback timeline
-   visibility, show-all capture options, stats dock/section visibility, and
-   frame-time overlay display now live in `MainViewModel.AutomationUi.cs`.
+   visibility, stats dock/section visibility, and frame-time overlay display now
+   live in `MainViewModel.AutomationUi.cs`; the public show-all capture options
+   command remains accepted as a dispatcher-level compatibility no-op.
    Automation command entry points for app audio enablement, audio-preview
    enablement, and preview-volume clamp/persist now live in
    `MainViewModel.AutomationAudio.cs`; device-native mode/gain application

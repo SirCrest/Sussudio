@@ -25,7 +25,6 @@ public sealed partial class AutomationDiagnosticsHub
             SelectedSplitEncodeMode = viewModelSnapshot.SelectedSplitEncodeMode,
             SelectedVideoFormat = viewModelSnapshot.SelectedVideoFormat,
             CustomBitrateMbps = viewModelSnapshot.CustomBitrateMbps,
-            ShowAllCaptureOptions = viewModelSnapshot.ShowAllCaptureOptions,
             PreviewVolumePercent = viewModelSnapshot.PreviewVolumePercent,
             IsStatsVisible = viewModelSnapshot.IsStatsVisible
         };
@@ -49,7 +48,6 @@ public sealed partial class AutomationDiagnosticsHub
         public string SelectedSplitEncodeMode { get; init; }
         public string SelectedVideoFormat { get; init; }
         public double CustomBitrateMbps { get; init; }
-        public bool ShowAllCaptureOptions { get; init; }
         public double PreviewVolumePercent { get; init; }
         public bool IsStatsVisible { get; init; }
     }

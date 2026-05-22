@@ -46,9 +46,6 @@ public partial class MainViewModel
     [ObservableProperty]
     public partial double SelectedFrameRate { get; set; } = 60;
 
-    [ObservableProperty]
-    public partial bool ShowAllCaptureOptions { get; set; }
-
     public bool IsAutoFrameRateSelected
     {
         get => _isAutoFrameRateSelected;

@@ -66,8 +66,12 @@ public partial class MainViewModel
             var deviceFormatProbeController = CreateDeviceFormatProbeController(viewModel);
             var sourceTelemetryController = CreateSourceTelemetryController(viewModel);
             var deviceRefreshController = CreateDeviceRefreshController(viewModel, previewLifecycleController);
-            var runtimeLifecycleController = CreateRuntimeLifecycleController(viewModel, previewLifecycleController);
-            var disposalController = CreateDisposalController(viewModel);
+            var runtimeLifecycleController = CreateRuntimeLifecycleController(
+                viewModel,
+                previewLifecycleController,
+                deviceFormatProbeController,
+                sourceTelemetryController);
+            var disposalController = CreateDisposalController(viewModel, deviceAudioRequestController, runtimeLifecycleController);
 
             return new MainViewModelControllerGraph(
                 uiDispatchController,

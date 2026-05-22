@@ -191,7 +191,6 @@ static partial class Program
             "SetDeviceAudioMode",
             "SetAnalogAudioGain",
             "SetOutputPath",
-            "SetShowAllCaptureOptions",
             "SetMicrophoneEnabled"
         })
         {

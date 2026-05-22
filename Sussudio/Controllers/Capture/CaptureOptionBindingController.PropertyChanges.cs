@@ -50,10 +50,6 @@ internal sealed partial class CaptureOptionBindingController
                 HandleCustomBitratePropertyChanged();
                 return true;
 
-            case nameof(MainViewModel.ShowAllCaptureOptions):
-                HandleShowAllCaptureOptionsChanged();
-                return true;
-
             default:
                 return false;
         }
@@ -88,11 +84,4 @@ internal sealed partial class CaptureOptionBindingController
         _context.SetHdrPassthroughEnabled(_context.ViewModel.IsTrueHdrPreviewEnabled);
     }
 
-    public void HandleShowAllCaptureOptionsChanged()
-    {
-        if ((_context.ShowAllCaptureOptionsToggle.IsChecked == true) != _context.ViewModel.ShowAllCaptureOptions)
-        {
-            _context.ShowAllCaptureOptionsToggle.IsChecked = _context.ViewModel.ShowAllCaptureOptions;
-        }
-    }
 }

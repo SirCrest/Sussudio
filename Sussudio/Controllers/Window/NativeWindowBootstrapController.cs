@@ -11,8 +11,8 @@ internal readonly record struct NativeWindowBootstrapResult(IntPtr Hwnd, AppWind
 
 internal sealed class NativeWindowBootstrapController
 {
-    private const int MinWindowWidth = 900;
-    private const int MinWindowHeight = 500;
+    private const int MinWindowWidth = 1500;
+    private const int MinWindowHeight = 900;
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
     private const int DWMWA_CLOAK = 13;
 

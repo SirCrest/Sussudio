@@ -37,7 +37,6 @@ public sealed partial class MainWindow
         AttachAudioRecordPreviewToggleBindings();
         AttachStatsOverlayToggleBindings();
         AttachAudioInputToggleBindings();
-        AttachShowAllCaptureOptionsBinding();
         AttachFlashbackSettingsBindings();
         AttachDeviceAudioGainAndMeterBindings();
         SetupResponsiveShellLayoutBindings();

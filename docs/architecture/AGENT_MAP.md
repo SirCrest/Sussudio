@@ -224,10 +224,10 @@ Automation diagnostics ownership:
   owns the custom automation command router for multi-field payloads, special
   response shapes, capture routing, and domain command handoff.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.UiSettingsCommands.cs`
-  owns UI/settings automation command application, including show-all capture
-  options, preview volume, stats visibility, settings visibility, frame-time
-  overlay visibility, Flashback timeline visibility, and stats-section
-  expand/collapse response text.
+  owns UI/settings automation command application, including the compatibility
+  no-op for the public show-all capture options command, preview volume, stats
+  visibility, settings visibility, frame-time overlay visibility, Flashback
+  timeline visibility, and stats-section expand/collapse response text.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.DiagnosticCommands.cs`
   owns diagnostic readback command bodies for recent events, performance
   timeline, and audio ramp traces behind the custom command router.
@@ -2412,7 +2412,7 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.TestHelpers.cs` owns shared
   MainViewModel source-inspection helpers for capture-facing tests.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.Ownership.Tests.cs`
-  owns frame-rate source-filter, automatic-selection, `ShowAllCaptureOptions`,
+  owns frame-rate source-filter, automatic-selection, always-on capture-option,
   and timing-policy ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.PolicyBehavior.Tests.cs`
   owns automatic frame-rate choice and pure timing-policy behavior assertions.
@@ -4027,10 +4027,10 @@ Primary current owners:
   `MainViewModel.ModeSelectionState.cs` owns shared frame-rate selection reset,
   resolved automatic frame-rate application, disabled frame-rate reason
   projection, and capture-mode reset flags.
-  `Sussudio/ViewModels/FrameRateSourceFilterPolicy.cs` owns source-rate filtering and
-  `ShowAllCaptureOptions` unlock policy. `MainViewModel.CaptureModeTransactions.cs`
-  owns `ShowAllCaptureOptions` change handling, deferred rebuild behavior,
-  capture-mode reinitialization serialization, and duplicate-reinit suppression.
+  `Sussudio/ViewModels/FrameRateSourceFilterPolicy.cs` owns source-rate filtering
+  with capture options always visible. `MainViewModel.CaptureModeTransactions.cs`
+  owns deferred rebuild behavior, capture-mode reinitialization serialization,
+  and duplicate-reinit suppression.
   `Sussudio/ViewModels/FrameRateTimingPolicy.cs` owns pure frame-rate timing
   family and variant models, rational parsing, friendly/exact frame-rate
   matching, timing-family ranking, and preferred-format ranking helpers used by

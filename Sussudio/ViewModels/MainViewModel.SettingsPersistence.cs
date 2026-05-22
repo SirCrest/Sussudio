@@ -87,7 +87,6 @@ public partial class MainViewModel
                     SelectedMicrophoneDevice?.Id,
                     MicrophoneVolume,
                     VolumeSaveOverride ?? PreviewVolume,
-                    ShowAllCaptureOptions,
                     IsStatsVisible,
                     SelectedDeviceAudioMode,
                     AnalogAudioGainPercent,

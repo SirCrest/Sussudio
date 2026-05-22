@@ -19,7 +19,6 @@ internal sealed class CaptureOptionBindingControllerContext
     public required NumberBox CustomBitrateNumberBox { get; init; }
     public required ToggleButton HdrToggle { get; init; }
     public required ToggleButton TrueHdrPreviewToggle { get; init; }
-    public required ToggleButton ShowAllCaptureOptionsToggle { get; init; }
     public required Action ApplyInitialDecoderCountSelection { get; init; }
     public required Action ApplyBitrateVisibility { get; init; }
     public required Action ApplyHdrToggleEnabledState { get; init; }

@@ -68,7 +68,7 @@ internal sealed partial class MainViewModelCaptureModeOptionRebuildController
             sourceRate.Rate,
             sourceRate.Arg,
             _frameRateTimingResolver.BuildFrameRateTimingVariants(selectedResolutionKey),
-            _context.ShowAllCaptureOptions());
+            true);
         var sourceTimingFamilyKnown = sourceFilter.SourceTimingFamilyKnown;
         var sourceTimingFamily = sourceFilter.SourceTimingFamily;
         options = sourceFilter.Options.ToList();

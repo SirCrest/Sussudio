@@ -73,7 +73,6 @@ internal static class AutomationOptionsSnapshotBuilder
             SelectedSplitEncodeMode = input.SelectedSplitEncodeMode,
             SelectedVideoFormat = input.SelectedVideoFormat,
             MjpegDecoderCount = clampedDecoderCount,
-            ShowAllCaptureOptions = input.ShowAllCaptureOptions,
             PreviewVolumePercent = input.PreviewVolume * 100.0,
             IsStatsVisible = input.IsStatsVisible
         };
@@ -118,7 +117,6 @@ internal sealed class AutomationOptionsSnapshotInput
     public string SelectedSplitEncodeMode { get; init; } = string.Empty;
     public string SelectedVideoFormat { get; init; } = string.Empty;
     public int MjpegDecoderCount { get; init; }
-    public bool ShowAllCaptureOptions { get; init; }
     public double PreviewVolume { get; init; }
     public bool IsStatsVisible { get; init; }
 }

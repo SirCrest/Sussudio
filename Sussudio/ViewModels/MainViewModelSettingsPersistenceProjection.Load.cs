@@ -48,7 +48,6 @@ internal static partial class MainViewModelSettingsPersistenceProjection
             MicrophoneVolume: microphoneVolume,
             PendingMicrophoneVolumeDeviceId: microphoneVolume.HasValue ? settings.SelectedMicrophoneDeviceId : null,
             PreviewVolume: settings.PreviewVolume.HasValue ? Math.Clamp(settings.PreviewVolume.Value, 0.0, 1.0) : null,
-            ShowAllCaptureOptions: settings.ShowAllCaptureOptions,
             IsStatsVisible: settings.IsStatsVisible,
             SelectedDeviceAudioMode: ResolveAvailableValue(
                 settings.SelectedDeviceAudioMode,

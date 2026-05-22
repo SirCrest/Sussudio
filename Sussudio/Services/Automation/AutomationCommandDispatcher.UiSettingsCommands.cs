@@ -8,15 +8,6 @@ namespace Sussudio.Services.Automation;
 
 public sealed partial class AutomationCommandDispatcher
 {
-    // UI/settings automation commands live together because callers treat them
-    // as ready-independent app-state toggles, even when their payload shapes vary.
-    private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationCaptureSettingsPort>> UiCaptureSettingsHandlers =
-        new Dictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationCaptureSettingsPort>>
-        {
-            [AutomationCommandKind.SetShowAllCaptureOptions] = AutomationCommandHandler<IAutomationCaptureSettingsPort>.Bool(
-                (vm, v, ct) => vm.SetShowAllCaptureOptionsAsync(v, ct), "enabled"),
-        };
-
     private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationPreviewRecordingPort>> UiPreviewRecordingHandlers =
         new Dictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationPreviewRecordingPort>>
         {
@@ -43,10 +34,10 @@ public sealed partial class AutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        if (UiCaptureSettingsHandlers.TryGetValue(command, out var captureSettingsHandler))
+        if (command == AutomationCommandKind.SetShowAllCaptureOptions)
         {
-            await captureSettingsHandler.InvokeAsync(_captureSettingsPort, payload, cancellationToken).ConfigureAwait(false);
-            return CreateAcknowledgedResponse(correlationId, captureSettingsHandler.AcknowledgeMessage(command, payload));
+            _ = RequireBool(payload, "enabled");
+            return CreateAcknowledgedResponse(correlationId, "Show-all capture options are always enabled.");
         }
 
         if (UiPreviewRecordingHandlers.TryGetValue(command, out var previewRecordingHandler))

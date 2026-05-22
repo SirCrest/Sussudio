@@ -3,32 +3,17 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    internal static Task ShowAllCaptureOptions_UnlocksSourceFilteredFrameRates()
+    internal static Task SourceFilteredFrameRatesAreAlwaysUnlocked()
     {
         var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var frameRateRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.FrameRate.cs").Replace("\r\n", "\n");
         var sourceFilterPolicyText = ReadRepoFile("Sussudio/ViewModels/FrameRateSourceFilterPolicy.cs").Replace("\r\n", "\n");
-        var showAllCaptureOptionsChanged = ExtractTextBetween(
-            captureModeTransactionsText,
-            "partial void OnShowAllCaptureOptionsChanged(bool value)",
-            "\n}");
 
         AssertContains(captureModeTransactionsText, "=> _captureModeOptionRebuildController.RebuildFrameRateOptions();");
         AssertContains(frameRateRebuildControllerText, "FrameRateSourceFilterPolicy.Apply(");
-        AssertContains(frameRateRebuildControllerText, "_context.ShowAllCaptureOptions());");
+        AssertContains(frameRateRebuildControllerText, "true);");
         AssertContains(mainViewModelText, "RebuildFrameRateOptions();");
-        AssertContains(showAllCaptureOptionsChanged, "if (IsRecording)");
-        AssertContains(showAllCaptureOptionsChanged, "_pendingModeOptionsRefresh = true;");
-        AssertContains(showAllCaptureOptionsChanged, "_pendingModeOptionsRefresh = false;");
-        AssertContains(showAllCaptureOptionsChanged, "RebuildResolutionOptions();");
-        AssertContains(showAllCaptureOptionsChanged, "SaveSettings();");
-        AssertOccursBefore(showAllCaptureOptionsChanged, "if (IsRecording)", "_pendingModeOptionsRefresh = true;");
-        AssertOccursBefore(showAllCaptureOptionsChanged, "_pendingModeOptionsRefresh = true;", "SaveSettings();");
-        AssertOccursBefore(showAllCaptureOptionsChanged, "SaveSettings();", "return;");
-        AssertOccursBefore(showAllCaptureOptionsChanged, "return;", "_pendingModeOptionsRefresh = false;");
-        AssertOccursBefore(showAllCaptureOptionsChanged, "_pendingModeOptionsRefresh = false;", "RebuildResolutionOptions();");
-        AssertOccursBefore(showAllCaptureOptionsChanged, "RebuildResolutionOptions();", "SaveSettings();\n    }");
         AssertContains(sourceFilterPolicyText, "showAllCaptureOptions");
         AssertContains(sourceFilterPolicyText, "!IsSourceFilteredFrameRateDisableReason(option.DisableReason)");
         AssertContains(sourceFilterPolicyText, "CloneOption(option, isEnabled: true, disableReason: string.Empty)");

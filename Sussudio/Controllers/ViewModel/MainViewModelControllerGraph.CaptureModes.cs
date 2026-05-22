@@ -49,7 +49,6 @@ public partial class MainViewModel
                     SetSelectedFormat = value => viewModel.SelectedFormat = value,
                     IsHdrEnabled = () => viewModel.IsHdrEnabled,
                     IsPreviewing = () => viewModel.IsPreviewing,
-                    ShowAllCaptureOptions = () => viewModel.ShowAllCaptureOptions,
                     IsAutoFrameRateSelected = () => viewModel.IsAutoFrameRateSelected,
                     SetIsAutoFrameRateSelected = value => viewModel.IsAutoFrameRateSelected = value,
                     HasUserOverriddenResolutionForCurrentMode = () => viewModel._hasUserOverriddenResolutionForCurrentMode,

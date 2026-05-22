@@ -70,7 +70,6 @@ public partial class MainViewModel
                 SelectedSplitEncodeMode = SelectedSplitEncodeMode,
                 SelectedVideoFormat = SelectedVideoFormat,
                 MjpegDecoderCount = MjpegDecoderCount,
-                ShowAllCaptureOptions = ShowAllCaptureOptions,
                 PreviewVolume = PreviewVolume,
                 IsStatsVisible = IsStatsVisible
             };

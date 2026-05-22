@@ -8,24 +8,30 @@ public partial class MainViewModel
     {
         private static MainViewModelRuntimeLifecycleController CreateRuntimeLifecycleController(
             MainViewModel viewModel,
-            MainViewModelPreviewLifecycleController previewLifecycleController)
+            MainViewModelPreviewLifecycleController previewLifecycleController,
+            MainViewModelDeviceFormatProbeController deviceFormatProbeController,
+            MainViewModelSourceTelemetryController sourceTelemetryController)
         {
             return new MainViewModelRuntimeLifecycleController(
                 new MainViewModelRuntimeLifecycleControllerContext
                 {
-                    CreateEventIngressController = () => CreateRuntimeEventIngressController(viewModel, previewLifecycleController),
+                    CreateEventIngressController = () => CreateRuntimeEventIngressController(
+                        viewModel,
+                        previewLifecycleController,
+                        deviceFormatProbeController,
+                        sourceTelemetryController),
                     CreateTimer = viewModel._dispatcherQueue.CreateTimer,
                     GetRuntimeSnapshot = viewModel._captureService.GetRuntimeSnapshot,
                     GetLatestSourceTelemetrySnapshot = viewModel._captureService.GetLatestSourceTelemetrySnapshot,
                     SetLatestSourceTelemetrySnapshot = snapshot => viewModel._latestSourceTelemetry = snapshot,
-                    ApplySourceTelemetrySnapshot = viewModel._sourceTelemetryController.ApplySourceTelemetrySnapshot,
+                    ApplySourceTelemetrySnapshot = sourceTelemetryController.ApplySourceTelemetrySnapshot,
                     UpdateHdrRuntimeStatusFromCaptureWithoutSnapshot = () => viewModel.UpdateHdrRuntimeStatusFromCapture(),
                     UpdateHdrRuntimeStatusFromCaptureWithSnapshot = snapshot => viewModel.UpdateHdrRuntimeStatusFromCapture(snapshot),
                     UpdateLiveCaptureInfoWithoutSnapshot = () => viewModel.UpdateLiveCaptureInfo(),
                     UpdateLiveCaptureInfoWithSnapshot = snapshot => viewModel.UpdateLiveCaptureInfo(snapshot),
                     ResetLiveCaptureInfo = viewModel.ResetLiveCaptureInfo,
                     UpdateDiskSpace = viewModel.UpdateDiskSpace,
-                    RefreshSourceTelemetrySummaryAge = viewModel._sourceTelemetryController.RefreshSourceTelemetrySummaryAge,
+                    RefreshSourceTelemetrySummaryAge = sourceTelemetryController.RefreshSourceTelemetrySummaryAge,
                     IsRecording = () => viewModel.IsRecording,
                     IsPreviewing = () => viewModel.IsPreviewing,
                     IsFlashbackActive = () => viewModel._captureService.IsFlashbackActive,

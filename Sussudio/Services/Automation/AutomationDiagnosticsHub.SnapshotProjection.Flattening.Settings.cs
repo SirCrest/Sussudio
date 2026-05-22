@@ -24,7 +24,6 @@ public sealed partial class AutomationDiagnosticsHub
             SelectedSplitEncodeMode = recordingSettings.SelectedSplitEncodeMode,
             SelectedVideoFormat = recordingSettings.SelectedVideoFormat,
             CustomBitrateMbps = recordingSettings.CustomBitrateMbps,
-            ShowAllCaptureOptions = userSettings.ShowAllCaptureOptions,
             PreviewVolumePercent = userSettings.PreviewVolumePercent,
             IsStatsVisible = userSettings.IsStatsVisible
         };
@@ -48,7 +47,6 @@ public sealed partial class AutomationDiagnosticsHub
         public string SelectedSplitEncodeMode { get; init; }
         public string SelectedVideoFormat { get; init; }
         public double CustomBitrateMbps { get; init; }
-        public bool ShowAllCaptureOptions { get; init; }
         public double PreviewVolumePercent { get; init; }
         public bool IsStatsVisible { get; init; }
     }

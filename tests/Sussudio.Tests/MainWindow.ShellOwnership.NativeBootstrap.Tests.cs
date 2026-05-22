@@ -53,8 +53,8 @@ static partial class Program
 
         AssertContains(nativeWindowControllerText, "internal readonly record struct NativeWindowBootstrapResult(IntPtr Hwnd, AppWindow AppWindow);");
         AssertContains(nativeWindowControllerText, "internal sealed class NativeWindowBootstrapController");
-        AssertContains(nativeWindowControllerText, "private const int MinWindowWidth = 900;");
-        AssertContains(nativeWindowControllerText, "private const int MinWindowHeight = 500;");
+        AssertContains(nativeWindowControllerText, "private const int MinWindowWidth = 1500;");
+        AssertContains(nativeWindowControllerText, "private const int MinWindowHeight = 900;");
         AssertContains(nativeWindowControllerText, "private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;");
         AssertContains(nativeWindowControllerText, "private const int DWMWA_CLOAK = 13;");
         AssertContains(nativeWindowControllerText, "private MinSizeWindowSubclass.MinSizeHandle? _minSizeHandle;");

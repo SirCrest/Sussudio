@@ -45,7 +45,6 @@ static partial class Program
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/SettingsService.cs").Replace("\r\n", "\n");
 
-        AssertContains(settingsServiceText, "public bool? ShowAllCaptureOptions { get; set; }");
         AssertContains(settingsServiceText, "public bool? IsStatsVisible { get; set; }");
         AssertContains(settingsPersistenceText, "private void LoadSettings()");
         AssertContains(settingsPersistenceText, "private void SaveSettings()");
@@ -94,9 +93,7 @@ static partial class Program
         AssertDoesNotContain(settingsProjectionText, "Logger");
         AssertDoesNotContain(settingsProjectionText, "Directory.");
         AssertDoesNotContain(settingsProjectionText, "MainViewModel.");
-        AssertContains(settingsLoadProjectionText, "ShowAllCaptureOptions: settings.ShowAllCaptureOptions,");
         AssertContains(settingsLoadProjectionText, "IsStatsVisible: settings.IsStatsVisible,");
-        AssertContains(settingsSaveProjectionText, "ShowAllCaptureOptions = input.ShowAllCaptureOptions,");
         AssertContains(settingsSaveProjectionText, "IsStatsVisible = input.IsStatsVisible,");
         AssertContains(settingsLoadProjectionText, "Math.Clamp(settings.PreviewVolume.Value, 0.0, 1.0)");
         AssertContains(settingsLoadProjectionText, "Math.Clamp(settings.FlashbackBufferMinutes.Value, 1, 30)");
@@ -108,9 +105,6 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Settings.cs")),
             "old settings pass-through partial removed");
-        AssertContains(captureModeTransactionsText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
-        AssertContains(captureModeTransactionsText, "RebuildResolutionOptions();\n        SaveSettings();");
-        AssertDoesNotContain(settingsPersistenceText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
         AssertDoesNotContain(settingsPersistenceText, "RebuildResolutionOptions();\n        SaveSettings();");
 
         return Task.CompletedTask;
@@ -135,7 +129,6 @@ static partial class Program
             ("SelectedMicrophoneDeviceId", "mic-1"),
             ("MicrophoneVolume", 150d),
             ("PreviewVolume", -0.25d),
-            ("ShowAllCaptureOptions", true),
             ("IsStatsVisible", false),
             ("SelectedDeviceAudioMode", "Analog"),
             ("AnalogAudioGainPercent", -5d),
@@ -162,7 +155,6 @@ static partial class Program
         AssertEqual(100d, GetPropertyValue(plan, "MicrophoneVolume"), "settings load microphone volume clamp");
         AssertEqual("mic-1", GetPropertyValue(plan, "PendingMicrophoneVolumeDeviceId"), "settings load microphone volume device");
         AssertEqual(0d, GetPropertyValue(plan, "PreviewVolume"), "settings load preview volume clamp");
-        AssertEqual(true, GetPropertyValue(plan, "ShowAllCaptureOptions"), "settings load show all options");
         AssertEqual(false, GetPropertyValue(plan, "IsStatsVisible"), "settings load stats visible");
         AssertEqual("Analog", GetPropertyValue(plan, "SelectedDeviceAudioMode"), "settings load selected device audio mode");
         AssertEqual(0d, GetPropertyValue(plan, "AnalogAudioGainPercent"), "settings load analog gain clamp");
@@ -196,7 +188,6 @@ static partial class Program
             selectedMicrophoneDeviceId: "mic-2",
             microphoneVolume: 75d,
             previewVolume: 0.625d,
-            showAllCaptureOptions: true,
             isStatsVisible: true,
             selectedDeviceAudioMode: "Embedded",
             analogAudioGainPercent: 33d,
@@ -219,7 +210,6 @@ static partial class Program
         AssertEqual("mic-2", GetPropertyValue(settings, "SelectedMicrophoneDeviceId"), "settings save selected microphone");
         AssertEqual(75d, GetPropertyValue(settings, "MicrophoneVolume"), "settings save microphone volume");
         AssertEqual(0.625d, GetPropertyValue(settings, "PreviewVolume"), "settings save preview volume");
-        AssertEqual(true, GetPropertyValue(settings, "ShowAllCaptureOptions"), "settings save show all options");
         AssertEqual(true, GetPropertyValue(settings, "IsStatsVisible"), "settings save stats visible");
         AssertEqual("Embedded", GetPropertyValue(settings, "SelectedDeviceAudioMode"), "settings save selected device audio mode");
         AssertEqual(33d, GetPropertyValue(settings, "AnalogAudioGainPercent"), "settings save analog gain");
@@ -281,7 +271,6 @@ static partial class Program
         string? selectedMicrophoneDeviceId,
         double microphoneVolume,
         double previewVolume,
-        bool showAllCaptureOptions,
         bool isStatsVisible,
         string selectedDeviceAudioMode,
         double analogAudioGainPercent,
@@ -306,7 +295,6 @@ static partial class Program
             selectedMicrophoneDeviceId,
             microphoneVolume,
             previewVolume,
-            showAllCaptureOptions,
             isStatsVisible,
             selectedDeviceAudioMode,
             analogAudioGainPercent,
