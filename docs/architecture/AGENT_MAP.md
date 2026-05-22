@@ -4459,13 +4459,8 @@ Primary owners:
   snapshot text: video ingest, recording queue, encoder/GPU-CUDA, freshness,
   and diagnostics lines.
 - `tools/ssctl/Formatters.Snapshot.ThreadHealth.cs` owns thread-health section
-  order.
-- `tools/ssctl/Formatters.Snapshot.ThreadHealth.SourceReader.cs` owns
-  source-reader thread-health snapshot text.
-- `tools/ssctl/Formatters.Snapshot.ThreadHealth.WasapiCapture.cs` owns WASAPI
-  capture thread-health snapshot text.
-- `tools/ssctl/Formatters.Snapshot.ThreadHealth.WasapiPlayback.cs` owns WASAPI
-  playback thread-health snapshot text.
+  order plus source-reader, WASAPI capture, and WASAPI playback thread-health
+  snapshot text.
 - `tools/ssctl/Formatters.Diagnostics.cs` owns recent diagnostic-event output.
 - `tools/ssctl/Formatters.Options.cs` owns capture option and device lists.
 - `tools/ssctl/Formatters.Timeline.cs` owns performance timeline response
@@ -5230,14 +5225,8 @@ Primary owners:
   `tools/Common/AutomationSnapshotFormatter.PreviewD3D.FrameFlow.cs`,
   `tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs`,
   and `tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs` own the named
-  snapshot sections. Within the thread-health formatter family,
-  `tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs` keeps section
-  ordering, `tools/Common/AutomationSnapshotFormatter.ThreadHealth.SourceReader.cs`
-  owns source-reader text,
-  `tools/Common/AutomationSnapshotFormatter.ThreadHealth.WasapiCapture.cs` owns
-  WASAPI capture text, and
-  `tools/Common/AutomationSnapshotFormatter.ThreadHealth.WasapiPlayback.cs`
-  owns WASAPI playback text. Within the D3D formatter family, `.PreviewD3D.cs` keeps
+  snapshot sections. The thread-health formatter now keeps its section order and
+  source-reader/WASAPI row text together in one file. Within the D3D formatter family, `.PreviewD3D.cs` keeps
   routing/header order, `.PreviewD3D.Timing.cs` owns CPU timing,
   pipeline-latency, and frame-latency wait text, `.PreviewD3D.FrameFlow.cs`
   owns frame-ownership and DXGI frame-stat text, while `.SlowFrames.cs` owns
