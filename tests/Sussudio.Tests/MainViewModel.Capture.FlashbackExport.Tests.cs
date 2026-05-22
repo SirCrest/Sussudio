@@ -11,8 +11,6 @@ static partial class Program
     {
         var exportOperationsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
             .Replace("\r\n", "\n");
-        var exportBackendSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportBackendSnapshot.cs")
-            .Replace("\r\n", "\n");
         var exportRangeResolutionText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRangeResolution.cs")
             .Replace("\r\n", "\n");
         var exportCoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
@@ -20,7 +18,6 @@ static partial class Program
         var exportForceRotateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportForceRotate.cs")
             .Replace("\r\n", "\n");
         var captureServiceText = exportOperationsText
-            + "\n" + exportBackendSnapshotText
             + "\n" + exportRangeResolutionText
             + "\n" + exportCoreText
             + "\n" + exportForceRotateText
@@ -53,10 +50,12 @@ static partial class Program
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
         AssertDoesNotContain(exportOperationsText, "resolveRangeAfterEvictionPaused: manager =>");
-        AssertDoesNotContain(exportOperationsText, "private readonly record struct FlashbackExportBackendSnapshot(");
-        AssertDoesNotContain(exportOperationsText, "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync(");
-        AssertContains(exportBackendSnapshotText, "private readonly record struct FlashbackExportBackendSnapshot(");
-        AssertContains(exportBackendSnapshotText, "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync(");
+        AssertContains(exportOperationsText, "private readonly record struct FlashbackExportBackendSnapshot(");
+        AssertContains(exportOperationsText, "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackExportBackendSnapshot.cs")),
+            "old Flashback export backend snapshot partial removed");
         AssertContains(exportRangeResolutionText, "private delegate (bool Succeeded, TimeSpan InPoint, TimeSpan OutPoint, string? FailureMessage)");
         AssertContains(exportRangeResolutionText, "private static FlashbackExportRangeResolver CreateFlashbackExportRangeResolver(");
         AssertContains(exportRangeResolutionText, "private static FlashbackExportRangeResolver CreateFlashbackExportLastNRangeResolver(double seconds)");
@@ -95,7 +94,7 @@ static partial class Program
         AssertContains(lastNExport, "exportOperationLockAlreadyHeld: true,");
         AssertContains(lastNExport, "resolveRangeAfterEvictionPaused: CreateFlashbackExportLastNRangeResolver(seconds)");
 
-        var backendSnapshot = ExtractMemberCode(exportBackendSnapshotText, "SnapshotFlashbackExportBackendAsync");
+        var backendSnapshot = ExtractMemberCode(exportOperationsText, "SnapshotFlashbackExportBackendAsync");
         AssertContains(backendSnapshot, "var bufferManager = _flashbackBackend.BufferManager;");
         AssertContains(backendSnapshot, "var flashbackSink = _flashbackBackend.Sink;");
         AssertContains(backendSnapshot, "var flashbackExporter = bufferManager != null\n                ? _flashbackBackend.Exporter ??= new FlashbackExporter()\n                : _flashbackBackend.Exporter;");

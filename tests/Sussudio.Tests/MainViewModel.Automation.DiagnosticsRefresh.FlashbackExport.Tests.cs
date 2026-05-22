@@ -5,7 +5,6 @@ static partial class Program
         var captureServiceText = ReadCaptureServiceDiagnosticsRefreshSource();
         var flashbackBackendText = ReadFlashbackBackendResourcesSource();
         var exportOperationsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs");
-        var exportBackendSnapshotText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportBackendSnapshot.cs");
         var exportRangeResolutionText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRangeResolution.cs");
         var exportCoreText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs");
         var exportForceRotateText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportForceRotate.cs");
@@ -15,8 +14,7 @@ static partial class Program
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
         AssertDoesNotContain(exportOperationsText, "resolveRangeAfterEvictionPaused: manager =>");
-        AssertDoesNotContain(exportOperationsText, "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync(");
-        AssertContains(exportBackendSnapshotText, "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync(");
+        AssertContains(exportOperationsText, "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync(");
         AssertContains(exportRangeResolutionText, "private static FlashbackExportRangeResolver CreateFlashbackExportRangeResolver(");
         AssertContains(exportRangeResolutionText, "private static FlashbackExportRangeResolver CreateFlashbackExportLastNRangeResolver(double seconds)");
         AssertContains(exportOperationsText, "return await ExportFlashbackCoreAsync(");
@@ -61,7 +59,7 @@ static partial class Program
         AssertContains(exportLastNMethod, "operationName: \"last_n\",");
         AssertContains(exportLastNMethod, "snapshotExporter: snapshot.Exporter,");
         AssertContains(exportLastNMethod, "resolveRangeAfterEvictionPaused: CreateFlashbackExportLastNRangeResolver(seconds)");
-        var backendSnapshotMethod = ExtractMemberCode(exportBackendSnapshotText, "SnapshotFlashbackExportBackendAsync");
+        var backendSnapshotMethod = ExtractMemberCode(exportOperationsText, "SnapshotFlashbackExportBackendAsync");
         AssertContains(backendSnapshotMethod, "new FlashbackExporter()");
         AssertContains(backendSnapshotMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
         AssertOccursBefore(backendSnapshotMethod, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);", "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
