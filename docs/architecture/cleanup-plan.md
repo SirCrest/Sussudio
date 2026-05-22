@@ -3311,9 +3311,8 @@ in `Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs`.
 
 Preview button glyph/tooltip presentation for Start Preview and Stop Preview
 now lives in `Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs`.
-`Sussudio/MainWindow.PropertyChangedPreview.Button.cs`
-wires preview button presentation callbacks, and
-`Sussudio/MainWindow.PropertyChangedPreview.Lifecycle.cs` wires preview
+`Sussudio/MainWindow.PropertyChangedPreview.Composition.cs`
+wires preview button presentation callbacks and preview
 lifecycle property/event routing. Preview
 button command choreography now lives in
 `Sussudio/Controllers/Preview/PreviewButtonActionController.cs`, while
@@ -3423,9 +3422,8 @@ start/stop/shutdown, and reinit-unsafe-window adapters; reinit renderer-stop/tim
 
 Preview-specific ViewModel event lifecycle and preview property-change routing
 now live in `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`.
-`Sussudio/MainWindow.PropertyChangedPreview.Button.cs`
-wires button presentation callbacks, and
-`Sussudio/MainWindow.PropertyChangedPreview.Lifecycle.cs` preserves event
+`Sussudio/MainWindow.PropertyChangedPreview.Composition.cs`
+wires button presentation callbacks and preserves event
 handler signatures and delegates into the controller. The broad
 `MainWindow.PropertyChanged.cs` dispatcher now owns only the `PropertyChanged`
 event envelope, property-name normalization, and visible route order. Preview

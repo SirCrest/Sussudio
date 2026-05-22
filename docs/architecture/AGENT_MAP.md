@@ -2109,8 +2109,8 @@ Primary current owners:
   shared source reader for the split `MainWindow.ShutdownCleanup.*.cs` adapter
   family.
 - `tests/Sussudio.Tests/MainWindow.PropertyChangedPreviewOwnership.Helpers.cs`
-  owns the shared source reader for the split
-  `MainWindow.PropertyChangedPreview.*.cs` adapter family.
+  owns the shared source reader for the consolidated
+  `MainWindow.PropertyChangedPreview.Composition.cs` adapter.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
   Flashback export backend-lease, export-operation lock, ViewModel export
   routing, and export CTS lifecycle assertions.
@@ -3160,8 +3160,7 @@ Primary current owners:
   through `PreviewSurfaceShadowController` and `PreviewShadowFadeAnimator`.
 - `Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs` owns preview
   button glyph and tooltip presentation for Start Preview and Stop Preview.
-  `Sussudio/MainWindow.PropertyChangedPreview.Button.cs` wires preview button presentation callbacks, and
-  `Sussudio/MainWindow.PropertyChangedPreview.Lifecycle.cs` wires preview
+  `Sussudio/MainWindow.PropertyChangedPreview.Composition.cs` wires preview button presentation callbacks and preview
   lifecycle property/event routing.
 - `Sussudio/Controllers/Preview/PreviewButtonActionController.cs` owns preview button
   command choreography: pending-reinit cancel, user stop intent, audio/visual
@@ -3232,8 +3231,8 @@ Primary current owners:
   `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview-
   specific ViewModel event lifecycle and the preview property-change router for
   preview start/stop/reinit state.
-  `Sussudio/MainWindow.PropertyChangedPreview.Button.cs` wires preview button
-  presentation callbacks, and `Sussudio/MainWindow.PropertyChangedPreview.Lifecycle.cs`
+  `Sussudio/MainWindow.PropertyChangedPreview.Composition.cs` wires preview button
+  presentation callbacks and
   preserves preview event-handler signatures and delegates into the controller.
   `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs` owns preview
   reinit animation active state, first-visual transition clears, startup-reset
