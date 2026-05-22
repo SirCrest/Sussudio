@@ -7,9 +7,6 @@ static partial class Program
         public string SignalAlertsCaptureText { get; init; } = string.Empty;
         public string SignalAlertsAudioRecordingText { get; init; } = string.Empty;
         public string FlashbackRecordingAlertsText { get; init; } = string.Empty;
-        public string FlashbackRecordingAlertsExportText { get; init; } = string.Empty;
-        public string FlashbackRecordingAlertsStorageText { get; init; } = string.Empty;
-        public string FlashbackRecordingAlertsEncoderText { get; init; } = string.Empty;
         public string FlashbackRecordingAlertsDegradationText { get; init; } = string.Empty;
         public string FlashbackPlaybackAlertsCommandsText { get; init; } = string.Empty;
         public string FlashbackPlaybackPerformanceAlertsText { get; init; } = string.Empty;

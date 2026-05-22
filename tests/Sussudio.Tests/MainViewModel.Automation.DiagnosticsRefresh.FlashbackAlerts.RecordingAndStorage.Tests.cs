@@ -1,4 +1,4 @@
-static partial class Program
+﻿static partial class Program
 {
     private static void AssertDiagnosticsRefreshFlashbackRecordingAndStorageAlertCoverage(
         AutomationDiagnosticsHubSourceFamily diagnostics,
@@ -13,7 +13,7 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "throughputBps={health.FlashbackExportThroughputBytesPerSec:0.##}");
         AssertContains(diagnostics.SourceFamilyText, "kind={exportFailureKind}");
         AssertContains(diagnostics.SourceFamilyText, "private const int FlashbackExportStallThresholdMs = 30000;");
-        AssertContains(diagnostics.FlashbackRecordingAlertsExportText, "exportLastProgressAgeMs >= FlashbackExportStallThresholdMs");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "exportLastProgressAgeMs >= FlashbackExportStallThresholdMs");
         AssertContains(diagnostics.SourceFamilyText, "\"Flashback export progress is stalled.\"");
         AssertContains(diagnostics.SourceFamilyText, "$\"{lanes.Export} progressAgeMs={exportLastProgressAgeMs}\"");
         AssertContains(diagnostics.SourceFamilyText, "private long _lastFlashbackExportCompletionEventId;");
@@ -35,14 +35,14 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "private const double FlashbackRecordingQueueDepthWarningRatio = 0.75;");
         AssertContains(diagnostics.SourceFamilyText, "private const double FlashbackAudioQueueDepthWarningRatio = 0.90;");
         AssertContains(diagnostics.SourceFamilyText, "private const long FlashbackRecordingQueueAgeWarningMs = 500;");
-        AssertContains(diagnostics.FlashbackRecordingAlertsStorageText, "\"flashback-temp-cache-pressure\"");
-        AssertContains(diagnostics.FlashbackRecordingAlertsStorageText, "snapshot.FlashbackStartupCacheOverBudget");
-        AssertContains(diagnostics.FlashbackRecordingAlertsStorageText, "snapshot.FlashbackTempDriveFreeBytes < FlashbackTempDriveLowFreeBytes");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-temp-cache-pressure\"");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "snapshot.FlashbackStartupCacheOverBudget");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "snapshot.FlashbackTempDriveFreeBytes < FlashbackTempDriveLowFreeBytes");
         AssertContains(diagnostics.SourceFamilyText, "\"flashback_storage\"");
         AssertContains(diagnostics.SourceFamilyText, "\"Flashback temp storage is under pressure.\"");
-        AssertContains(diagnostics.FlashbackRecordingAlertsEncoderText, "\"flashback-encoding-failed\"");
-        AssertContains(diagnostics.FlashbackRecordingAlertsEncoderText, "snapshot.FlashbackEncodingFailed");
-        AssertContains(diagnostics.FlashbackRecordingAlertsEncoderText, "Flashback encoder failed: type={snapshot.FlashbackEncodingFailureType ?? \"Unknown\"}");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-encoding-failed\"");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "snapshot.FlashbackEncodingFailed");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "Flashback encoder failed: type={snapshot.FlashbackEncodingFailureType ?? \"Unknown\"}");
         AssertContains(diagnostics.FlashbackRecordingAlertsDegradationText, "\"flashback-recording-degraded\"");
         AssertContains(counters.FlashbackRecordingText, "private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(");
         AssertContains(counters.FlashbackRecordingText, "Interlocked.Exchange(ref _lastFlashbackVideoSequenceGaps, sequenceGaps)");
@@ -67,8 +67,8 @@ static partial class Program
         AssertContains(diagnostics.FlashbackRecordingAlertsDegradationText, "flashbackAudioQueueBacklog");
         AssertContains(diagnostics.FlashbackRecordingAlertsText, "snapshot.FlashbackVideoBackpressureLastWaitMs >= FlashbackRecordingBackpressureWarningMs");
         AssertContains(diagnostics.FlashbackRecordingAlertsDegradationText, "Flashback recording path degraded:");
-        AssertContains(diagnostics.FlashbackRecordingAlertsExportText, "\"flashback-export-rotation-gap\"");
-        AssertContains(diagnostics.FlashbackRecordingAlertsExportText, "Flashback export rotation skipped live-edge frames:");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-export-rotation-gap\"");
+        AssertContains(diagnostics.FlashbackRecordingAlertsText, "Flashback export rotation skipped live-edge frames:");
         AssertContains(diagnostics.SourceFamilyText, "forceRotate={snapshot.FlashbackForceRotateActive}");
         AssertContains(diagnostics.SourceFamilyText, "requested={snapshot.FlashbackForceRotateRequested} draining={snapshot.FlashbackForceRotateDraining}");
         AssertContains(diagnostics.SourceFamilyText, "FatalCleanupInProgress = flashbackRecordingFlattening.FatalCleanupInProgress");
