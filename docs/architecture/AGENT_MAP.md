@@ -4236,12 +4236,10 @@ Primary owners:
   baseline/end snapshots, command, cadence, 1% low, decode, audio-master, and
   stage metric fields. `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs` owns
   playback session metric orchestration plus end-of-session playback counter
-  deltas. `tools/Common/DiagnosticSessionFlashbackMetrics.Export.Model.cs`
-  owns the `FlashbackExportSessionMetrics` handoff shape,
-  `tools/Common/DiagnosticSessionFlashbackMetrics.ExportObservation.cs` owns
-  export-relevance and snapshot max aggregation, and
-  `tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs` owns export metric
-  orchestration plus final force-rotate fallback counters.
+  deltas. `tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs` owns the
+  `FlashbackExportSessionMetrics` handoff shape, export-relevance and snapshot
+  max aggregation, export metric orchestration, and final force-rotate fallback
+  counters.
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs` owns
   playback snapshot observation dispatch.
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.Relevance.cs`

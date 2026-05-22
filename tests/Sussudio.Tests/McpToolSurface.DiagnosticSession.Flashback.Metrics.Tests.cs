@@ -31,10 +31,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackResultText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs")
             .Replace("\r\n", "\n");
-        var exportModelText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.Export.Model.cs")
-            .Replace("\r\n", "\n");
-        var exportObservationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.ExportObservation.cs")
-            .Replace("\r\n", "\n");
         var exportText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs")
             .Replace("\r\n", "\n");
 
@@ -42,7 +38,7 @@ static partial class Program
         AssertContains(recordingModelText, "internal sealed class FlashbackRecordingSessionMetrics");
         AssertContains(playbackSessionModelText, "internal sealed partial class FlashbackPlaybackSessionMetrics");
         AssertContains(playbackResultModelText, "internal sealed partial class FlashbackPlaybackResultMetrics");
-        AssertContains(exportModelText, "internal sealed class FlashbackExportSessionMetrics");
+        AssertContains(exportText, "internal sealed class FlashbackExportSessionMetrics");
         AssertContains(playbackSessionModelText, "public JsonElement BaselineSnapshot { get; init; }");
         AssertContains(playbackSessionModelText, "public int MaxCommandQueueLatencyMsObserved { get; set; }");
         AssertContains(playbackSessionModelText, "public double MaxSlowFramePercentObserved { get; set; }");
@@ -56,14 +52,13 @@ static partial class Program
         AssertContains(playbackResultModelText, "public string MaxDecodePhaseAtEnd { get; init; } = string.Empty;");
         AssertContains(playbackResultModelText, "public long AudioMasterFallbacksAtEnd { get; init; }");
         AssertContains(playbackResultModelText, "public long SeekForwardDecodeCapHitsDelta { get; init; }");
-        AssertContains(exportModelText, "public long ForceRotateFallbacksAtEnd { get; set; }");
+        AssertContains(exportText, "public long ForceRotateFallbacksAtEnd { get; set; }");
         AssertDoesNotContain(recordingText, "internal sealed class FlashbackRecordingSessionMetrics");
         AssertDoesNotContain(recordingText, "internal sealed class FlashbackPlaybackSessionMetrics");
         AssertDoesNotContain(playbackSessionText, "internal sealed class FlashbackPlaybackResultMetrics");
         AssertDoesNotContain(playbackSessionText, "internal sealed class FlashbackPlaybackSessionMetrics");
         AssertDoesNotContain(playbackResultText, "internal sealed class FlashbackPlaybackResultMetrics");
         AssertDoesNotContain(playbackResultText, "internal sealed class FlashbackExportSessionMetrics");
-        AssertDoesNotContain(exportText, "internal sealed class FlashbackExportSessionMetrics");
         AssertContains(metricsText, "internal static FlashbackRecordingSessionMetrics BuildFlashbackRecordingMetrics(");
         AssertContains(playbackSessionText, "internal static FlashbackPlaybackSessionMetrics BuildFlashbackPlaybackSessionMetrics(");
         AssertContains(playbackObservationText, "private static void ObservePlaybackSnapshot(");
@@ -106,10 +101,9 @@ static partial class Program
         AssertContains(metricsText, "metrics.ForceRotateFallbacksAtEnd = GetNullableLong(lastSnapshot, \"FlashbackExportForceRotateFallbacks\") ?? 0;");
         AssertContains(metricsText, "metrics.ForceRotateFallbacksDelta = GetCounterDelta(");
         AssertContains(metricsText, "metrics.LastForceRotateFallbackSegmentsAtEnd =");
-        AssertContains(exportObservationText, "private static void ObserveExportSnapshot(");
-        AssertContains(exportObservationText, "var relevantToSession =");
-        AssertContains(exportObservationText, "metrics.MaxThroughputBytesPerSecObserved = Math.Max(");
-        AssertDoesNotContain(exportText, "private static void ObserveExportSnapshot(");
+        AssertContains(exportText, "private static void ObserveExportSnapshot(");
+        AssertContains(exportText, "var relevantToSession =");
+        AssertContains(exportText, "metrics.MaxThroughputBytesPerSecObserved = Math.Max(");
         AssertDoesNotContain(playbackObservationText, "private static bool IsPlaybackSnapshotActive(");
         AssertDoesNotContain(playbackObservationText, "GetInt(snapshot, \"FlashbackPlaybackPendingCommands\") > 0");
         AssertDoesNotContain(playbackObservationText, "private static void ObservePlaybackOnePercentLow(");

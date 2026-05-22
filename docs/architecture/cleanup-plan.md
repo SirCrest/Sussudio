@@ -3917,11 +3917,10 @@ snapshot handoff identity in
 audio-master, and stage metric handoff fields.
 `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs` owns playback session
 metric orchestration and end-of-session playback counter deltas. Flashback
-export metrics keep the `FlashbackExportSessionMetrics` handoff shape in
-`DiagnosticSessionFlashbackMetrics.Export.Model.cs`, export-relevance and
-snapshot max aggregation in
-`DiagnosticSessionFlashbackMetrics.ExportObservation.cs`, and final
-force-rotate fallback counters in `DiagnosticSessionFlashbackMetrics.Export.cs`.
+export metrics live in `DiagnosticSessionFlashbackMetrics.Export.cs`, including
+the `FlashbackExportSessionMetrics` handoff shape, export-relevance and
+snapshot max aggregation, metric orchestration, and final force-rotate fallback
+counters.
 
 Diagnostic-session Flashback playback result metrics now keep the
 `FlashbackPlaybackResultMetrics` handoff shape in
@@ -4060,9 +4059,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackLifecycleScenarios.Validation.cs`
 - `DiagnosticSessionFlashbackMetrics.Recording.Model.cs`
 - `DiagnosticSessionFlashbackMetrics.Recording.cs`
-- `DiagnosticSessionFlashbackMetrics.Export.Model.cs`
 - `DiagnosticSessionFlashbackMetrics.Export.cs`
-- `DiagnosticSessionFlashbackMetrics.ExportObservation.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs`
