@@ -21,7 +21,6 @@ static partial class Program
             "Sussudio/Controllers/Window/WindowShutdownCleanupController.cs",
             "Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs",
             "Sussudio/MainWindow.CloseLifecycle.cs",
-            "Sussudio/MainWindow.ShutdownCleanup.cs",
             "Sussudio/MainWindow.ShutdownCleanup.Composition.cs",
             "Sussudio/MainWindow.ShutdownCleanup.Event.cs",
             "Sussudio/MainWindow.ShutdownCleanup.Adapters.cs",

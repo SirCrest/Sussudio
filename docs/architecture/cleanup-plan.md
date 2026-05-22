@@ -1141,8 +1141,7 @@ recording-aware close finalization now lives in
 
 Top-level shell resize telemetry throttling for preview compositor transforms
 now lives in `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs`.
-`Sussudio/MainWindow.PreviewRenderer.cs` is the XAML-facing preview renderer
-adapter-family marker. `Sussudio/MainWindow.PreviewRenderer.Composition.cs`
+`Sussudio/MainWindow.PreviewRenderer.Composition.cs`
 wires renderer-host context callbacks,
 `Sussudio/MainWindow.PreviewRenderer.ResizeTelemetry.cs` owns the `SizeChanged`
 adapter and renderer-host reset handoff, and
@@ -1165,7 +1164,6 @@ startup and event/failure handling.
 owns D3D reinit renderer-stop/timeout policy, disposal, unsafe-window
 telemetry, stop tick accounting, fresh SwapChainPanel replacement, and
 retired-renderer handoff during D3D renderer mode switches.
-`MainWindow.PreviewRenderer.cs` is the XAML-facing host adapter-family marker.
 `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the stable automation
 preview snapshot adapter and context wiring.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotSamplingController.cs`
@@ -1264,8 +1262,7 @@ keeps `RegisterCloseLifecycle`, `CloseAsync`, and `RequestWindowClose()` stable.
 cleanup order: cleanup latch, close completion, closing-state mark, timer stops,
 event detaches, preview shutdown, post-close recording finalization handoff,
 automation diagnostics disposal, NVML disposal, and ViewModel disposal.
-`Sussudio/MainWindow.ShutdownCleanup.cs` is the XAML-facing shutdown cleanup
-adapter-family marker. `Sussudio/MainWindow.ShutdownCleanup.Composition.cs`
+`Sussudio/MainWindow.ShutdownCleanup.Composition.cs`
 wires MainWindow cleanup delegates into the controller,
 `Sussudio/MainWindow.ShutdownCleanup.Event.cs` owns the stable `Closed` event
 adapter, and `Sussudio/MainWindow.ShutdownCleanup.Adapters.cs` owns the timer,
@@ -2987,7 +2984,6 @@ storyboard state, immediate collapse, and fullscreen animation reset live in
 The sibling `MainWindow.Flashback.*.cs` partials own the focused XAML adapter
 surfaces for commands, polling, playhead motion, scrub input, settings,
 timeline visibility, and presentation. The presentation surface is split across
-`Sussudio/MainWindow.Flashback.Presentation.cs`,
 `Sussudio/MainWindow.Flashback.Presentation.Markers.cs`,
 `Sussudio/MainWindow.Flashback.Presentation.Playback.cs`, and
 `Sussudio/MainWindow.Flashback.Presentation.Export.cs`. Command semantics live in
@@ -3017,8 +3013,7 @@ controller.
 Flashback marker placement and compact duration text now live in
 `Sussudio/Controllers/Flashback/FlashbackMarkerPresentationController.cs`, including
 in/out marker visibility, selection-region layout, and `m:ss` formatting.
-`Sussudio/MainWindow.Flashback.Presentation.cs` is the XAML-facing presentation
-adapter-family marker, and `Sussudio/MainWindow.Flashback.Presentation.Markers.cs`
+`Sussudio/MainWindow.Flashback.Presentation.Markers.cs`
 wires marker presentation callbacks.
 
 Flashback playback presentation now lives in
@@ -3331,8 +3326,7 @@ in `Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs`.
 
 Preview button glyph/tooltip presentation for Start Preview and Stop Preview
 now lives in `Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs`.
-`Sussudio/MainWindow.PropertyChangedPreview.cs` is the preview property-change
-adapter-family marker, `Sussudio/MainWindow.PropertyChangedPreview.Button.cs`
+`Sussudio/MainWindow.PropertyChangedPreview.Button.cs`
 wires preview button presentation callbacks, and
 `Sussudio/MainWindow.PropertyChangedPreview.Lifecycle.cs` wires preview
 lifecycle property/event routing. Preview
@@ -3435,9 +3429,8 @@ Preview startup loading overlay presentation now lives in
 timeout recovery stay in `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`.
 Top-level preview resize telemetry throttling now lives in
 `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs`.
-`Sussudio/MainWindow.PreviewRenderer.cs` is the preview renderer adapter-family
-marker, `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires renderer-host
-context callbacks, `Sussudio/MainWindow.PreviewRenderer.ResizeTelemetry.cs`
+`Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires renderer-host context
+callbacks, `Sussudio/MainWindow.PreviewRenderer.ResizeTelemetry.cs`
 owns the `SizeChanged` adapter and renderer-host reset handoff, and
 `Sussudio/MainWindow.PreviewRenderer.Lifecycle.cs` owns renderer start, stop,
 shutdown, and reinit-unsafe-window adapters; reinit renderer-stop/timeout policy lives with
@@ -3447,8 +3440,7 @@ shutdown, and reinit-unsafe-window adapters; reinit renderer-stop/timeout policy
 
 Preview-specific ViewModel event lifecycle and preview property-change routing
 now live in `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`.
-`Sussudio/MainWindow.PropertyChangedPreview.cs` is the XAML/MainWindow-facing
-adapter-family marker, `Sussudio/MainWindow.PropertyChangedPreview.Button.cs`
+`Sussudio/MainWindow.PropertyChangedPreview.Button.cs`
 wires button presentation callbacks, and
 `Sussudio/MainWindow.PropertyChangedPreview.Lifecycle.cs` preserves event
 handler signatures and delegates into the controller. The broad

@@ -29,7 +29,7 @@ static partial class Program
         AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
         AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.HandlePreviewStartRequested();");
         AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.HandlePreviewStopRequested();");
-        AssertContains(previewPropertyChangedText, "Preview-specific ViewModel event adapter");
+        AssertContains(previewPropertyChangedText, "private PreviewLifecycleEventController _previewLifecycleEventController = null!;");
         AssertContains(previewLifecycleControllerText, "await HandlePreviewingChangedAsync();");
         AssertContains(previewLifecycleControllerText, "_context.HandlePreviewReinitializingChanged();");
         AssertContains(previewLifecycleControllerText, "if (_context.ShouldBeginPreviewStartupAttempt())");

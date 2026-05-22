@@ -7,7 +7,6 @@ static partial class Program
             "\n",
             new[]
             {
-                "Sussudio/MainWindow.ShutdownCleanup.cs",
                 "Sussudio/MainWindow.ShutdownCleanup.Composition.cs",
                 "Sussudio/MainWindow.ShutdownCleanup.Event.cs",
                 "Sussudio/MainWindow.ShutdownCleanup.Adapters.cs",

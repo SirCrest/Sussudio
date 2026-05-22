@@ -7,7 +7,6 @@ static partial class Program
             "\n",
             new[]
             {
-                "Sussudio/MainWindow.PreviewRenderer.cs",
                 "Sussudio/MainWindow.PreviewRenderer.Composition.cs",
                 "Sussudio/MainWindow.PreviewRenderer.ResizeTelemetry.cs",
                 "Sussudio/MainWindow.PreviewRenderer.Lifecycle.cs",
