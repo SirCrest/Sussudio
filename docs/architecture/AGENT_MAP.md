@@ -137,11 +137,9 @@ Preview renderer notes:
   exchange, GPU readback, and BMP/PNG dispatch before present.
   `D3D11PreviewRenderer.ScreenshotPngCompletion.cs` owns off-thread PNG
   completion and encode-gate state/release.
-- `Sussudio/Services/Preview/PreviewScreenshotCapture.cs` owns shared
-  preview-frame screenshot pixel analysis and mapped-frame buffer copying.
-  `Sussudio/Services/Preview/PreviewScreenshotCapture.Png.cs` owns 16-bit PNG
-  frame capture, `Sussudio/Services/Preview/PreviewScreenshotCapture.Bmp.cs`
-  owns BMP capture/header writing, and `Sussudio/Services/Preview/PreviewPng16Encoder.cs`
+- `Sussudio/Services/Preview/PreviewScreenshotCapture.cs` owns preview-frame
+  screenshot pixel analysis, mapped-frame buffer copying, BMP capture/header
+  writing, and 16-bit PNG frame capture. `Sussudio/Services/Preview/PreviewPng16Encoder.cs`
   owns the PNG container and CRC helpers.
 
 ## Automation

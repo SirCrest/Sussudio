@@ -1084,11 +1084,9 @@ Render-thread GPU readback and before-present screenshot dispatch stay in
 off-thread PNG completion gate state in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotPngCompletion.cs`.
 Preview-frame BMP/PNG pixel conversion, mapped-frame buffer copying, luminance
-analysis, and letterbox/pillarbox measurement live in the
-`Sussudio/Services/Preview/PreviewScreenshotCapture*.cs` family:
-`PreviewScreenshotCapture.cs` owns mapped-frame copying and shared pixel
-analysis, `PreviewScreenshotCapture.Png.cs` owns 16-bit PNG frame capture,
-`PreviewScreenshotCapture.Bmp.cs` owns BMP capture/header writing, while
+analysis, and letterbox/pillarbox measurement live in
+`Sussudio/Services/Preview/PreviewScreenshotCapture.cs`: mapped-frame copying,
+shared pixel analysis, 16-bit PNG frame capture, and BMP capture/header writing, while
 `Sussudio/Services/Preview/PreviewPng16Encoder.cs` owns the 16-bit PNG file
 container, chunk writing, output-directory creation, and CRC helpers.
 

@@ -88,13 +88,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
-        var previewScreenshotCaptureText =
-            ReadRepoFile("Sussudio/Services/Preview/PreviewScreenshotCapture.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Preview/PreviewScreenshotCapture.Png.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Preview/PreviewScreenshotCapture.Bmp.cs")
-                .Replace("\r\n", "\n");
+        var previewScreenshotCaptureText = ReadRepoFile("Sussudio/Services/Preview/PreviewScreenshotCapture.cs")
+            .Replace("\r\n", "\n");
         var previewPngEncoderText = ReadRepoFile("Sussudio/Services/Preview/PreviewPng16Encoder.cs")
             .Replace("\r\n", "\n");
 
@@ -152,6 +147,7 @@ static partial class Program
         AssertDoesNotContain(captureText, "private static void WriteBitmapHeaders(");
         AssertDoesNotContain(resourcesText, "_captureStagingTexture?.Dispose();");
         AssertContains(previewScreenshotCaptureText, "PreviewPng16Encoder.WriteCompressedRgb16Png(");
+        AssertContains(previewScreenshotCaptureText, "internal static class PreviewScreenshotCapture");
         AssertContains(previewPngEncoderText, "internal static class PreviewPng16Encoder");
         AssertContains(previewPngEncoderText, "internal static void WriteCompressedRgb16Png(");
         AssertContains(previewPngEncoderText, "internal static uint[] InitPngCrc32Table()");
@@ -159,6 +155,14 @@ static partial class Program
         AssertContains(previewPngEncoderText, "private static uint UpdatePngCrc32(");
         AssertDoesNotContain(previewScreenshotCaptureText, "private static void WritePngChunk(");
         AssertDoesNotContain(previewScreenshotCaptureText, "private static uint UpdatePngCrc32(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "PreviewScreenshotCapture.Png.cs")),
+            "preview PNG capture is consolidated into PreviewScreenshotCapture.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "PreviewScreenshotCapture.Bmp.cs")),
+            "preview BMP capture is consolidated into PreviewScreenshotCapture.cs");
 
         return Task.CompletedTask;
     }
