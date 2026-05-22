@@ -35,8 +35,8 @@ public sealed class CoreRuntimeContractsTests
         => global::Program.NativeXuTelemetry_AcceptsKnown4kXProductRevisions();
 
     [Fact]
-    public Task KsExtensionUnitNativeHelperIsSplitByBoundary()
-        => global::Program.KsExtensionUnitNative_SourceOwnership_IsSplitByNativeBoundary();
+    public Task KsExtensionUnitNativeHelperIsCohesiveNativeBridge()
+        => global::Program.KsExtensionUnitNative_SourceOwnership_IsCohesiveNativeBridge();
 
     [Fact]
     public Task NativeXuTelemetryRollingPollLivesInFocusedPartial()

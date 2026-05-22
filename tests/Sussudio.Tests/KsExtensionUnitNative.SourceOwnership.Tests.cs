@@ -3,32 +3,24 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    internal static Task KsExtensionUnitNative_SourceOwnership_IsSplitByNativeBoundary()
+    internal static Task KsExtensionUnitNative_SourceOwnership_IsCohesiveNativeBridge()
     {
         var rootText = ReadKsExtensionUnitNativeFile("KsExtensionUnitNative.cs");
-        var interfacesText = ReadKsExtensionUnitNativeFile("KsExtensionUnitNative.Interfaces.cs");
-        var handlesText = ReadKsExtensionUnitNativeFile("KsExtensionUnitNative.Handles.cs");
-        var topologyText = ReadKsExtensionUnitNativeFile("KsExtensionUnitNative.Topology.cs");
-        var transfersText = ReadKsExtensionUnitNativeFile("KsExtensionUnitNative.Transfers.cs");
-        var interopText = ReadKsExtensionUnitNativeFile("KsExtensionUnitNative.Interop.cs");
 
-        AssertContains(rootText, "internal static partial class KsExtensionUnitNative");
+        AssertContains(rootText, "internal static class KsExtensionUnitNative");
+        AssertDoesNotContain(rootText, "partial class KsExtensionUnitNative");
         AssertContains(rootText, "internal readonly record struct KsInterfacePath");
         AssertContains(rootText, "internal readonly record struct KsTopologyNode");
-        AssertDoesNotContain(rootText, "DeviceIoControl(");
-        AssertDoesNotContain(rootText, "[DllImport(");
-        AssertDoesNotContain(rootText, "TryReadTopologyNodes(");
-        AssertDoesNotContain(rootText, "TryXuGetDirect(");
-
-        AssertContains(interfacesText, "internal static IReadOnlyList<KsInterfacePath> EnumerateKsInterfaces(");
-        AssertContains(handlesText, "internal static SafeFileHandle? TryOpen(");
-        AssertContains(topologyText, "internal static bool TryReadTopologyNodes(");
-        AssertContains(transfersText, "internal static bool TryXuGetDirect(");
-        AssertContains(transfersText, "internal static bool TryXuSetViaOutput(");
-        AssertContains(transfersText, "internal static bool TryXuSetViaInput(");
-        AssertContains(interopText, "[DllImport(\"setupapi.dll\", SetLastError = true)]");
-        AssertContains(interopText, "[DllImport(\"kernel32.dll\", SetLastError = true)]");
-        AssertContains(interopText, "[StructLayout(LayoutKind.Sequential)]");
+        AssertContains(rootText, "internal static IReadOnlyList<KsInterfacePath> EnumerateKsInterfaces(");
+        AssertContains(rootText, "internal static SafeFileHandle? TryOpen(");
+        AssertContains(rootText, "internal static bool TryReadTopologyNodes(");
+        AssertContains(rootText, "internal static bool TryXuGetDirect(");
+        AssertContains(rootText, "internal static bool TryXuSetViaOutput(");
+        AssertContains(rootText, "internal static bool TryXuSetViaInput(");
+        AssertContains(rootText, "DeviceIoControl(");
+        AssertContains(rootText, "[DllImport(\"setupapi.dll\", SetLastError = true)]");
+        AssertContains(rootText, "[DllImport(\"kernel32.dll\", SetLastError = true)]");
+        AssertContains(rootText, "[StructLayout(LayoutKind.Sequential)]");
 
         var probeIncludes = ReadCompileIncludes(Path.Combine(
             GetRepoRoot(),
@@ -38,15 +30,29 @@ static partial class Program
         foreach (var include in new[]
         {
             @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.cs",
-            @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Handles.cs",
-            @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Interfaces.cs",
-            @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Interop.cs",
-            @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Topology.cs",
-            @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Transfers.cs",
             @"..\..\Sussudio\Services\Capture\NativeXu\NativeXuDeviceSupport.cs"
         })
         {
             AssertEqual(1, CountCompileInclude(probeIncludes, include), $"NativeXuAudioProbe links {include}");
+        }
+
+        foreach (var removedFile in new[]
+        {
+            "KsExtensionUnitNative.Handles.cs",
+            "KsExtensionUnitNative.Interfaces.cs",
+            "KsExtensionUnitNative.Interop.cs",
+            "KsExtensionUnitNative.Topology.cs",
+            "KsExtensionUnitNative.Transfers.cs"
+        })
+        {
+            AssertEqual(
+                false,
+                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "NativeXu", removedFile)),
+                $"{removedFile} removed");
+            AssertEqual(
+                0,
+                CountCompileInclude(probeIncludes, $@"..\..\Sussudio\Services\Capture\NativeXu\{removedFile}"),
+                $"NativeXuAudioProbe no longer links {removedFile}");
         }
 
         return Task.CompletedTask;

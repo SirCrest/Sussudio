@@ -1330,14 +1330,13 @@ capture/audio enumeration orchestration and the combined discovery result in
 `DeviceService.NativeXu.cs`.
 
 Native XU Kernel Streaming calls are grouped under
-`Sussudio/Services/Capture/NativeXu/`. Keep constants and DTOs in the root,
-shared 4K X identity, selected-interface projection, and native transport gate
-ownership in `NativeXuDeviceSupport.cs`, SetupAPI interface enumeration in
-`.Interfaces.cs`, handle opening in `.Handles.cs`, topology node parsing in
-`.Topology.cs`, XU GET/SET transfer shapes in `.Transfers.cs`, and P/Invoke
-struct declarations in `.Interop.cs`.
-`tools/NativeXuAudioProbe` links this whole partial family explicitly, so
-update its project file with every new partial.
+`Sussudio/Services/Capture/NativeXu/`. Keep KS category constants, DTOs,
+SetupAPI interface enumeration, handle opening, topology node parsing, XU
+GET/SET transfer shapes, and P/Invoke struct declarations in
+`KsExtensionUnitNative.cs`. Keep shared 4K X identity, selected-interface
+projection, and native transport gate ownership in `NativeXuDeviceSupport.cs`.
+`tools/NativeXuAudioProbe` links both files explicitly, so update its project
+file when this bridge changes.
 
 Native device enumeration ownership is grouped under
 `Sussudio/Services/Capture/DeviceDiscovery/`. Keep shared Media Foundation
