@@ -20,9 +20,6 @@ static partial class Program
     {
         "Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs",
-        "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvVideoBoundary.cs",
-        "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvSink.cs",
-        "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvIdlePreview.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs"
@@ -199,10 +196,7 @@ static partial class Program
         var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs");
         var flashbackBackendFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs");
         var libAvBackendFinalizationText =
-            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvVideoBoundary.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvSink.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvIdlePreview.cs");
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs");
         var libAvPreviewRestoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs");
         var flashbackFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs");
         var outcomeStateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs");
@@ -244,6 +238,18 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeLibAvResources.cs")),
             "old broad LibAv resource finalization partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeLibAvVideoBoundary.cs")),
+            "old LibAv video-boundary finalization partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeLibAvSink.cs")),
+            "old LibAv sink finalization partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeLibAvIdlePreview.cs")),
+            "old LibAv idle-preview finalization partial removed");
         AssertContains(libAvBackendFinalizationText, "RestoreLibAvPreviewFeaturesAfterRecordingAsync(");
         AssertContains(libAvBackendFinalizationText, "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
         AssertDoesNotContain(libAvBackendFinalizationText, "if (_pendingFlashbackEnableAfterRecording)");
