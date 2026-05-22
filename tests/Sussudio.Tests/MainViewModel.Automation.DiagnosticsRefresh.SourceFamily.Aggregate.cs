@@ -32,7 +32,6 @@ static partial class Program
                 EventsText,
                 VerificationText,
                 VerificationAutoText,
-                VerificationProfileText,
                 LifecycleText,
                 HdrText,
                 SnapshotsText,

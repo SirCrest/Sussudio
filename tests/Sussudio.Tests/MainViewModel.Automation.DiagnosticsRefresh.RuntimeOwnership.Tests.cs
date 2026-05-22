@@ -8,12 +8,10 @@ static partial class Program
         AssertContains(diagnostics.VerificationAutoText, "private RecordingVerificationResult? CaptureLastVerificationForSnapshot(");
         AssertContains(diagnostics.VerificationAutoText, "private void ScheduleAutoVerificationIfNeeded(");
         AssertContains(diagnostics.VerificationAutoText, "Automatic recording verification started.");
-        AssertContains(diagnostics.VerificationProfileText, "private static CaptureRuntimeSnapshot ApplyVerificationProfile(");
-        AssertContains(diagnostics.VerificationProfileText, "string.Equals(verificationProfile, \"flashback-export\"");
+        AssertContains(diagnostics.VerificationText, "private static CaptureRuntimeSnapshot ApplyVerificationProfile(");
+        AssertContains(diagnostics.VerificationText, "string.Equals(verificationProfile, \"flashback-export\"");
         AssertDoesNotContain(diagnostics.VerificationText, "private bool ShouldAutoVerifySnapshot(");
-        AssertDoesNotContain(diagnostics.VerificationText, "private static CaptureRuntimeSnapshot ApplyVerificationProfile(");
         AssertDoesNotContain(diagnostics.VerificationAutoText, "public async Task<RecordingVerificationResult> VerifyFileAsync");
-        AssertDoesNotContain(diagnostics.VerificationProfileText, "private void ScheduleAutoVerificationIfNeeded(");
         AssertDoesNotContain(diagnostics.HubText, "public async Task<RecordingVerificationResult> VerifyLastRecordingAsync");
         AssertContains(diagnostics.HubText, "private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;");
         AssertContains(diagnostics.HubText, "IAutomationSnapshotQueryPort snapshotQueryPort,");

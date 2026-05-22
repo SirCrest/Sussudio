@@ -30,7 +30,6 @@ static partial class Program
             EventsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvents.cs"),
             VerificationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Verification.cs"),
             VerificationAutoText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Verification.Auto.cs"),
-            VerificationProfileText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Verification.Profile.cs"),
             LifecycleText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Lifecycle.cs"),
             HdrText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Hdr.cs"),
             SnapshotsText = ReadAutomationDiagnosticsHubSnapshotsSource(),
@@ -142,7 +141,6 @@ static partial class Program
         public string EventsText { get; init; } = string.Empty;
         public string VerificationText { get; init; } = string.Empty;
         public string VerificationAutoText { get; init; } = string.Empty;
-        public string VerificationProfileText { get; init; } = string.Empty;
         public string LifecycleText { get; init; } = string.Empty;
         public string HdrText { get; init; } = string.Empty;
         public string SnapshotsText { get; init; } = string.Empty;
