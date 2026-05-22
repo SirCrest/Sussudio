@@ -8,17 +8,9 @@ namespace Sussudio.Tests;
 public sealed class PreviewPacingOwnershipTests
 {
     [Fact]
-    public void PreviewPacingClassifier_SourceOwnershipIsSplit()
+    public void PreviewPacingClassifier_SourceOwnershipIsCohesive()
     {
         var classifierText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.cs")
-            .Replace("\r\n", "\n");
-        var d3dPolicyText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.D3D.cs")
-            .Replace("\r\n", "\n");
-        var sourceVisualLanePolicyText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.Lanes.SourceVisual.cs")
-            .Replace("\r\n", "\n");
-        var decodeJitterLanePolicyText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.Lanes.DecodeJitter.cs")
-            .Replace("\r\n", "\n");
-        var renderLanePolicyText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.Lanes.Render.cs")
             .Replace("\r\n", "\n");
         var modelText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingClassificationModels.cs")
             .Replace("\r\n", "\n");
@@ -26,35 +18,36 @@ public sealed class PreviewPacingOwnershipTests
 
         Assert.Contains("public sealed class PreviewPacingClassificationInput", modelText);
         Assert.Contains("public readonly record struct PreviewPacingClassification(", modelText);
-        Assert.Contains("public static partial class PreviewPacingSlowStageClassifier", classifierText);
+        Assert.Contains("public static class PreviewPacingSlowStageClassifier", classifierText);
+        Assert.DoesNotContain("partial class PreviewPacingSlowStageClassifier", classifierText);
         Assert.DoesNotContain("public sealed class PreviewPacingClassificationInput", classifierText);
         Assert.DoesNotContain("public readonly record struct PreviewPacingClassification(", classifierText);
         Assert.Contains("var dominantStage = ResolveDominantD3DStage(input, targetFrameMs);", classifierText);
-        Assert.DoesNotContain("private static string ResolveDominantD3DStage(", classifierText);
+        Assert.Contains("private static string ResolveDominantD3DStage(", classifierText);
         Assert.Contains("TryClassifySourceCapture(input, sourceSampleReady, targetFps", classifierText);
         Assert.Contains("TryClassifyPreviewJitterScheduler(input, targetFrameMs", classifierText);
         Assert.Contains("TryClassifyRenderSubmit(input, out var renderSubmitClassification)", classifierText);
-        Assert.DoesNotContain("private static bool IsSourceCaptureSuspect(", classifierText);
-        Assert.Contains("private static bool TryClassifySourceCapture(", sourceVisualLanePolicyText);
-        Assert.Contains("private static bool TryClassifyVisualDuplicateOrLowMotion(", sourceVisualLanePolicyText);
-        Assert.Contains("private static bool IsSourceCaptureSuspect(", sourceVisualLanePolicyText);
-        Assert.Contains("private static bool IsVisualDuplicateOrLowMotionSuspect(", sourceVisualLanePolicyText);
-        Assert.DoesNotContain("TryClassifyMjpegDecode(", sourceVisualLanePolicyText);
-        Assert.Contains("private static bool TryClassifyMjpegDecode(", decodeJitterLanePolicyText);
-        Assert.Contains("private static bool TryClassifyPreviewJitterScheduler(", decodeJitterLanePolicyText);
-        Assert.Contains("private static bool IsMjpegDecodeSuspect(", decodeJitterLanePolicyText);
-        Assert.Contains("private static bool IsPreviewJitterSuspect(", decodeJitterLanePolicyText);
-        Assert.DoesNotContain("TryClassifyRenderSubmit(", decodeJitterLanePolicyText);
-        Assert.Contains("private static bool TryClassifyCompositorMiss(", renderLanePolicyText);
-        Assert.Contains("private static bool TryClassifyRenderSubmit(", renderLanePolicyText);
-        Assert.Contains("private static double CalculatePercent(", renderLanePolicyText);
-        Assert.Contains("private static string ResolveDominantD3DStage(", d3dPolicyText);
-        Assert.Contains("private static bool IsDominant(", d3dPolicyText);
-        Assert.Contains("private static double Positive(double value)", d3dPolicyText);
-        Assert.Contains("PreviewPacingSlowStageClassifier.D3D.cs", agentMapText);
-        Assert.Contains("PreviewPacingSlowStageClassifier.Lanes.SourceVisual.cs", agentMapText);
-        Assert.Contains("PreviewPacingSlowStageClassifier.Lanes.DecodeJitter.cs", agentMapText);
-        Assert.Contains("PreviewPacingSlowStageClassifier.Lanes.Render.cs", agentMapText);
+        Assert.Contains("private static bool IsSourceCaptureSuspect(", classifierText);
+        Assert.Contains("private static bool TryClassifySourceCapture(", classifierText);
+        Assert.Contains("private static bool TryClassifyVisualDuplicateOrLowMotion(", classifierText);
+        Assert.Contains("private static bool IsVisualDuplicateOrLowMotionSuspect(", classifierText);
+        Assert.Contains("private static bool TryClassifyMjpegDecode(", classifierText);
+        Assert.Contains("private static bool TryClassifyPreviewJitterScheduler(", classifierText);
+        Assert.Contains("private static bool IsMjpegDecodeSuspect(", classifierText);
+        Assert.Contains("private static bool IsPreviewJitterSuspect(", classifierText);
+        Assert.Contains("private static bool TryClassifyCompositorMiss(", classifierText);
+        Assert.Contains("private static bool TryClassifyRenderSubmit(", classifierText);
+        Assert.Contains("private static double CalculatePercent(", classifierText);
+        Assert.Contains("private static bool IsDominant(", classifierText);
+        Assert.Contains("private static double Positive(double value)", classifierText);
+        Assert.DoesNotContain("PreviewPacingSlowStageClassifier.D3D.cs", agentMapText);
+        Assert.DoesNotContain("PreviewPacingSlowStageClassifier.Lanes.SourceVisual.cs", agentMapText);
+        Assert.DoesNotContain("PreviewPacingSlowStageClassifier.Lanes.DecodeJitter.cs", agentMapText);
+        Assert.DoesNotContain("PreviewPacingSlowStageClassifier.Lanes.Render.cs", agentMapText);
+        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingSlowStageClassifier.D3D.cs")));
+        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingSlowStageClassifier.Lanes.SourceVisual.cs")));
+        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingSlowStageClassifier.Lanes.DecodeJitter.cs")));
+        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingSlowStageClassifier.Lanes.Render.cs")));
     }
 
     [Fact]
