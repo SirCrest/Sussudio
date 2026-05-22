@@ -4118,30 +4118,10 @@ Primary owners:
 - `tools/Common/DiagnosticSessionCleanupPolicy.cs` owns cleanup restore
   validation after diagnostic sessions stop recording, preview, Flashback, or
   playback state.
-- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.Restart.cs` owns the
-  restart-cycle command choreography, including playback priming, restart, buffer
-  refill, and delegation to focused validation/export owners.
-- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.RestartValidation.cs`
-  owns restart-cycle post-restart active-state, playback-worker, and
-  pending-command warning policy.
-- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.RestartExport.cs`
-  owns restart-cycle export request, strict verification payload, timeout, and
-  export warning/action strings.
-- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.Encoder.cs` owns the
-  encoder-cycle command choreography, including preset cycling, buffer
-  readiness, and delegation to focused validation/export/restore owners.
-- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.EncoderValidation.cs`
-  owns encoder-cycle post-cycle snapshot warnings for encoder readiness,
-  Flashback file rotation, and playback-state cleanliness.
-- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.EncoderExport.cs`
-  owns encoder-cycle export request, strict verification payload, timeout, and
-  export warning/action strings.
-- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.EncoderRestore.cs`
-  owns encoder-cycle original-preset restore, restore warning, and post-restore
-  buffer readiness check.
-- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.Registrations.cs` owns
-  Flashback restart/encoder cycle diagnostic task registration, priorities,
-  task labels, and started action strings.
+- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs` owns Flashback
+  restart/encoder cycle diagnostic task registration, restart-cycle playback
+  priming/restart/refill/export verification, and encoder-cycle preset cycling,
+  snapshot validation, export verification, and original-preset restore.
 - `tools/Common/DiagnosticSessionMetrics.cs` owns read-only diagnostic-session
   metric DTOs and projections: source/preview/visual cadence aggregation,
   visual-cadence health classification, D3D metric aggregation, playback

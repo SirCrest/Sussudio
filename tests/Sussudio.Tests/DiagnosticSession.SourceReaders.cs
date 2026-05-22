@@ -20,14 +20,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionFlashbackCycleScenariosSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackCycleScenarios.Restart.cs",
-            "tools/Common/DiagnosticSessionFlashbackCycleScenarios.RestartValidation.cs",
-            "tools/Common/DiagnosticSessionFlashbackCycleScenarios.RestartExport.cs",
-            "tools/Common/DiagnosticSessionFlashbackCycleScenarios.Encoder.cs",
-            "tools/Common/DiagnosticSessionFlashbackCycleScenarios.EncoderValidation.cs",
-            "tools/Common/DiagnosticSessionFlashbackCycleScenarios.EncoderExport.cs",
-            "tools/Common/DiagnosticSessionFlashbackCycleScenarios.EncoderRestore.cs",
-            "tools/Common/DiagnosticSessionFlashbackCycleScenarios.Registrations.cs");
+            "tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs");
 
     private static string ReadDiagnosticSessionFlashbackExportScenariosSource()
         => ReadNormalizedSourceFiles(

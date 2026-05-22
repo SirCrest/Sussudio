@@ -6,59 +6,30 @@ static partial class Program
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
-        var restartText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.Restart.cs")
-            .Replace("\r\n", "\n");
-        var restartValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.RestartValidation.cs")
-            .Replace("\r\n", "\n");
-        var restartExportText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.RestartExport.cs")
-            .Replace("\r\n", "\n");
-        var encoderText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.Encoder.cs")
-            .Replace("\r\n", "\n");
-        var encoderValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.EncoderValidation.cs")
-            .Replace("\r\n", "\n");
-        var encoderExportText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.EncoderExport.cs")
-            .Replace("\r\n", "\n");
-        var encoderRestoreText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.EncoderRestore.cs")
-            .Replace("\r\n", "\n");
-        var registrationsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.Registrations.cs")
-            .Replace("\r\n", "\n");
         var cyclesText = ReadDiagnosticSessionFlashbackCycleScenariosSource();
 
-        AssertContains(restartText, "internal static partial class DiagnosticSessionFlashbackCycleScenarios");
-        AssertContains(restartText, "internal static async Task RunFlashbackRestartCycleAsync(");
-        AssertContains(restartText, "\"RestartFlashback\"");
-        AssertContains(restartText, "ValidateFlashbackRestartCycleActiveStateAsync(");
-        AssertContains(restartText, "VerifyFlashbackRestartCycleExportAsync(");
-        AssertDoesNotContain(restartText, "FlashbackPlaybackThreadAlive");
-        AssertDoesNotContain(restartText, "\"flashback-restart-cycle-export.mp4\"");
-        AssertDoesNotContain(restartText, "flashback restart cycle export verified");
-        AssertContains(restartValidationText, "private static async Task<bool> ValidateFlashbackRestartCycleActiveStateAsync(");
-        AssertContains(restartValidationText, "FlashbackPlaybackThreadAlive");
-        AssertContains(restartValidationText, "pending playback commands remained after restart");
-        AssertContains(restartExportText, "private static async Task VerifyFlashbackRestartCycleExportAsync(");
-        AssertContains(restartExportText, "\"flashback-restart-cycle-export.mp4\"");
-        AssertContains(restartExportText, "flashback restart cycle export verified");
-        AssertContains(encoderText, "internal static partial class DiagnosticSessionFlashbackCycleScenarios");
-        AssertContains(encoderText, "internal static async Task RunFlashbackEncoderCycleAsync(");
-        AssertContains(encoderText, "var cycledPreset = string.Equals(originalPreset, \"P1\", StringComparison.OrdinalIgnoreCase) ? \"P2\" : \"P1\";");
-        AssertContains(encoderText, "ValidateFlashbackEncoderCycleSnapshot(afterSnapshot, originalFilePath, warnings);");
-        AssertContains(encoderText, "VerifyFlashbackEncoderCycleExportAsync(");
-        AssertContains(encoderText, "RestoreFlashbackEncoderCyclePresetAsync(");
-        AssertDoesNotContain(encoderText, "post-cycle encoder did not reach readiness frame count");
-        AssertDoesNotContain(encoderText, "\"flashback-encoder-cycle-export.mp4\"");
-        AssertDoesNotContain(encoderText, "flashback encoder preset restored to");
-        AssertContains(encoderValidationText, "private static void ValidateFlashbackEncoderCycleSnapshot(");
-        AssertContains(encoderValidationText, "post-cycle encoder did not reach readiness frame count");
-        AssertContains(encoderValidationText, "playback state not clean after preset cycle");
-        AssertContains(encoderExportText, "private static async Task VerifyFlashbackEncoderCycleExportAsync(");
-        AssertContains(encoderExportText, "\"flashback-encoder-cycle-export.mp4\"");
-        AssertContains(encoderExportText, "flashback encoder cycle export verified");
-        AssertContains(encoderRestoreText, "private static async Task RestoreFlashbackEncoderCyclePresetAsync(");
-        AssertContains(encoderRestoreText, "flashback encoder preset restored to");
-        AssertContains(encoderRestoreText, "Flashback buffer did not become ready after preset restore");
-        AssertContains(registrationsText, "internal static partial class DiagnosticSessionFlashbackCycleScenarios");
-        AssertDoesNotContain(registrationsText, "internal static async Task RunFlashbackRestartCycleAsync(");
-        AssertDoesNotContain(registrationsText, "internal static async Task RunFlashbackEncoderCycleAsync(");
+        AssertContains(cyclesText, "internal static class DiagnosticSessionFlashbackCycleScenarios");
+        AssertDoesNotContain(cyclesText, "internal static partial class DiagnosticSessionFlashbackCycleScenarios");
+        AssertContains(cyclesText, "internal static async Task RunFlashbackRestartCycleAsync(");
+        AssertContains(cyclesText, "\"RestartFlashback\"");
+        AssertContains(cyclesText, "private static async Task<bool> ValidateFlashbackRestartCycleActiveStateAsync(");
+        AssertContains(cyclesText, "FlashbackPlaybackThreadAlive");
+        AssertContains(cyclesText, "pending playback commands remained after restart");
+        AssertContains(cyclesText, "private static async Task VerifyFlashbackRestartCycleExportAsync(");
+        AssertContains(cyclesText, "\"flashback-restart-cycle-export.mp4\"");
+        AssertContains(cyclesText, "flashback restart cycle export verified");
+        AssertContains(cyclesText, "internal static async Task RunFlashbackEncoderCycleAsync(");
+        AssertContains(cyclesText, "var cycledPreset = string.Equals(originalPreset, \"P1\", StringComparison.OrdinalIgnoreCase) ? \"P2\" : \"P1\";");
+        AssertContains(cyclesText, "ValidateFlashbackEncoderCycleSnapshot(afterSnapshot, originalFilePath, warnings);");
+        AssertContains(cyclesText, "private static void ValidateFlashbackEncoderCycleSnapshot(");
+        AssertContains(cyclesText, "post-cycle encoder did not reach readiness frame count");
+        AssertContains(cyclesText, "playback state not clean after preset cycle");
+        AssertContains(cyclesText, "private static async Task VerifyFlashbackEncoderCycleExportAsync(");
+        AssertContains(cyclesText, "\"flashback-encoder-cycle-export.mp4\"");
+        AssertContains(cyclesText, "flashback encoder cycle export verified");
+        AssertContains(cyclesText, "private static async Task RestoreFlashbackEncoderCyclePresetAsync(");
+        AssertContains(cyclesText, "flashback encoder preset restored to");
+        AssertContains(cyclesText, "Flashback buffer did not become ready after preset restore");
         AssertContains(cyclesText, "internal static void RegisterSelectedFlashbackCycleScenarioTasks(");
         AssertContains(cyclesText, "4,\n                \"flashback-restart-cycle-task\",");
         AssertContains(cyclesText, "5,\n                \"flashback-encoder-cycle-task\",");

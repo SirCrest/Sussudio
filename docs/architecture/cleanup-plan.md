@@ -3725,20 +3725,12 @@ Diagnostic-session cleanup restore validation now lives in
 Flashback, and playback state that remain active after the runner attempts
 cleanup.
 
-Diagnostic-session Flashback cycle scenarios now live in named partial owners.
-`DiagnosticSessionFlashbackCycleScenarios.Restart.cs` owns the restart-cycle
-command choreography, playback priming, restart, buffer refill, and delegation
-to focused validation/export owners. Restart-cycle post-restart active-state,
-playback-worker, and pending-command warning policy live in `.RestartValidation.cs`,
-while restart-cycle export request and verification live in `.RestartExport.cs`.
-`DiagnosticSessionFlashbackCycleScenarios.Encoder.cs`
-owns preset cycling and buffer-readiness command choreography. Encoder-cycle
-post-cycle snapshot warnings live in `.EncoderValidation.cs`, export request and
-verification live in `.EncoderExport.cs`, and original-preset restore plus
-post-restore readiness live in `.EncoderRestore.cs`. `.Registrations.cs` owns
-task registration, priority, task-label, and started-action wiring while startup
-only delegates selected cycle scenario registration. Do not reintroduce an empty
-family root.
+Diagnostic-session Flashback cycle scenarios now live in
+`DiagnosticSessionFlashbackCycleScenarios.cs`, which owns restart/encoder cycle
+task registration, restart-cycle playback priming/restart/refill/export
+verification, and encoder-cycle preset cycling, snapshot validation, export
+verification, and original-preset restore. Startup only delegates selected cycle
+scenario registration.
 
 Diagnostic-session sampling now lives in
 `tools/Common/DiagnosticSessionSampler.cs`. Keep the sample append before the
@@ -3982,14 +3974,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionCleanupPolicy.cs`
 - `DiagnosticSessionRecordingChecks.cs`
 - `DiagnosticSessionRecordingVerification.cs`
-- `DiagnosticSessionFlashbackCycleScenarios.Restart.cs`
-- `DiagnosticSessionFlashbackCycleScenarios.RestartValidation.cs`
-- `DiagnosticSessionFlashbackCycleScenarios.RestartExport.cs`
-- `DiagnosticSessionFlashbackCycleScenarios.Encoder.cs`
-- `DiagnosticSessionFlashbackCycleScenarios.EncoderValidation.cs`
-- `DiagnosticSessionFlashbackCycleScenarios.EncoderExport.cs`
-- `DiagnosticSessionFlashbackCycleScenarios.EncoderRestore.cs`
-- `DiagnosticSessionFlashbackCycleScenarios.Registrations.cs`
+- `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`
 - `DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
