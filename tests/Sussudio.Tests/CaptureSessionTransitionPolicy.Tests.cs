@@ -163,7 +163,7 @@ static partial class Program
             "Sussudio/Services/Capture/CaptureService.PreviewStart.cs",
             "Sussudio/Services/Capture/CaptureService.PreviewStop.cs",
             "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs",
-            "Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs"
+            "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs"
         };
 
         foreach (var owner in lifecycleTransitionOwners)

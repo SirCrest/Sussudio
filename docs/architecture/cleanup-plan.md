@@ -1552,7 +1552,7 @@ startup, WASAPI sink attachment, preview playback preservation, and recording
 microphone capture wiring.
 Recording
 stop lifecycle now lives in
-`Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs`, including
+`Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`, including
 normal stop routing, the emergency stop overload that feeds finalization, and
 the stop/finalize dispatcher for active Flashback and LibAv backends.
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs`

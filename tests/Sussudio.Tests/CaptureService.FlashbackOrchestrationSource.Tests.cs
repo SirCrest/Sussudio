@@ -16,7 +16,6 @@ static partial class Program
 
     private static readonly string[] CaptureServiceRecordingFinalizationFiles =
     {
-        "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs",
@@ -176,7 +175,7 @@ static partial class Program
 
     internal static Task CaptureService_RecordingFinalizationLivesInFocusedPartials()
     {
-        var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs");
+        var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs");
         var flashbackBackendFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs");
         var libAvBackendFinalizationText =
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs");
@@ -265,9 +264,6 @@ static partial class Program
         AssertDoesNotContain(stopLifecycleText, "private void CaptureFlashbackRecordingBoundarySnapshot(");
         AssertDoesNotContain(stopLifecycleText, "Unified video recording stop failed");
         AssertDoesNotContain(stopLifecycleText, "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL");
-        AssertDoesNotContain(stopLifecycleText, "_lastOutputPath = result.OutputPath;");
-        AssertDoesNotContain(stopLifecycleText, "_lastFinalizeStatus = result.StatusMessage;");
-        AssertDoesNotContain(stopLifecycleText, "_lastPreservedArtifacts = result.PreservedArtifacts;");
 
         return Task.CompletedTask;
     }

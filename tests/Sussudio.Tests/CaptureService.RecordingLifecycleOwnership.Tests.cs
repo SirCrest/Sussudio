@@ -40,7 +40,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var libAvStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
             .Replace("\r\n", "\n");
-        var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs")
+        var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
         var libAvFinalizeText = (
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"))
@@ -151,11 +151,17 @@ static partial class Program
         AssertDoesNotContain(libAvStartText, "StorageFolder.GetFolderFromPathAsync");
         AssertDoesNotContain(libAvStartText, "new RecordingContextRequest");
         AssertDoesNotContain(libAvStartText, "FLASHBACK_UNIFIED_RECORDING_START");
-        AssertDoesNotContain(lifecycleText, "public Task StopRecordingAsync(");
-        AssertDoesNotContain(lifecycleText, "internal Task StopRecordingAsync(bool emergency");
-        AssertContains(stopLifecycleText, "public Task StopRecordingAsync(");
-        AssertContains(stopLifecycleText, "internal Task StopRecordingAsync(bool emergency");
-        AssertContains(stopLifecycleText, "await StopAndDisposeRecordingBackendAsync(\"Stopped\", emergency, transitionToken)");
+        AssertContains(lifecycleText, "public Task StopRecordingAsync(");
+        AssertContains(lifecycleText, "internal Task StopRecordingAsync(bool emergency");
+        AssertContains(lifecycleText, "await StopAndDisposeRecordingBackendAsync(\"Stopped\", emergency, transitionToken)");
+        AssertContains(lifecycleText, "private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(");
+        AssertEqual(false, System.IO.File.Exists(System.IO.Path.Combine(
+            GetRepoRoot(),
+            "Sussudio",
+            "Services",
+            "Capture",
+            "CaptureService.RecordingStopLifecycle.cs")),
+            "old recording stop lifecycle partial removed");
         AssertContains(libAvFinalizeText, "var detachedBackend = _recordingBackend.DetachLibAvBackend();");
         AssertContains(libAvFinalizeText, "private async Task<LibAvVideoBoundaryStopResult> StopUnifiedVideoRecordingForLibAvFinalizeAsync(");
         AssertContains(libAvFinalizeText, "private async Task DetachLibAvRecordingAudioBeforeSinkStopAsync()");
