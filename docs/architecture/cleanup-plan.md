@@ -1,4 +1,4 @@
-# Architecture Cleanup Plan
+﻿# Architecture Cleanup Plan
 
 Last reviewed: 2026-05-16.
 
@@ -2176,12 +2176,11 @@ updates live in `D3D11PreviewRenderer.MetricsTracking.cs`; expected-frame-rate
 window resizing and metric reset/clear lifecycle live in
 `D3D11PreviewRenderer.MetricWindows.cs`. Renderer implementation
 fields should live with the partial that mutates or projects them: keep
-slow-frame diagnostic ring/write state in
-`D3D11PreviewRenderer.SlowFrameDiagnostics.cs`, startup/disposal lifecycle state
-in `D3D11PreviewRenderer.Lifecycle.cs`, stop/unbind/native-call fence state in
-`D3D11PreviewRenderer.StopLifecycle.cs`, render-thread failure state in
-`D3D11PreviewRenderer.RenderThreadFailures.cs`, first-frame notification state in
-`D3D11PreviewRenderer.FirstFrameNotifications.cs`, render-loop shell orchestration,
+renderer diagnostic ring/write state, render-thread failure state, first-frame
+notification state, and slow-frame reason classification in
+`D3D11PreviewRenderer.Diagnostics.cs`, startup/disposal lifecycle state in
+`D3D11PreviewRenderer.Lifecycle.cs`, stop/unbind/native-call fence state in
+`D3D11PreviewRenderer.StopLifecycle.cs`, render-loop shell orchestration,
 shared-device reset/rebind consumption, composition-transform wake handling,
 pending-frame render dispatch, final render-thread drain, and renderer-mode
 reset in `D3D11PreviewRenderer.RenderThread.cs`,
@@ -2254,9 +2253,8 @@ consumption/rebind, composition-transform wake handling, pending-frame
 consumption, stale-generation drops, frame-latency wait, render dispatch,
 device-lost handoff, failure notification handoff, final pending-frame
 drain/frame-capture failure, and renderer-mode reset there; keep render-thread
-failure telemetry in
-`D3D11PreviewRenderer.RenderThreadFailures.cs`, first-frame notification reset
-and UI enqueue in `D3D11PreviewRenderer.FirstFrameNotifications.cs`, render-pass
+failure telemetry and first-frame notification reset/UI enqueue in
+`D3D11PreviewRenderer.Diagnostics.cs`, render-pass
 selection and VideoProcessor execution in `D3D11PreviewRenderer.RenderPasses.cs`, shader draw
 execution in `D3D11PreviewRenderer.Nv12ShaderPass.cs` and
 `D3D11PreviewRenderer.HdrShaderPass.cs`, shared present accounting in
@@ -2287,12 +2285,12 @@ render-thread orchestration in `D3D11PreviewRenderer.RenderThread.cs`, and keep
 present accounting and slow-frame diagnostic call sites in
 `D3D11PreviewRenderer.Present.cs`.
 
-D3D preview renderer slow-frame diagnostics now live in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.SlowFrameDiagnostics.cs`. Keep
-recent slow-frame snapshot access, diagnostic thresholding, and the slow-frame
-ring buffer writer there. Keep DXGI refresh-slip capture in
-`D3D11PreviewRenderer.SlowFrameDxgiSlip.cs` and slow-frame reason token
-classification in `D3D11PreviewRenderer.SlowFrameReasons.cs`; keep cadence
+D3D preview renderer diagnostics now live in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.Diagnostics.cs`. Keep
+recent slow-frame snapshot access, diagnostic thresholding, the slow-frame
+ring buffer writer, slow-frame reason token classification, render-thread
+failure telemetry, and first-frame UI notification there. Keep DXGI refresh-slip
+capture in `D3D11PreviewRenderer.SlowFrameDxgiSlip.cs`; keep cadence
 windows in `D3D11PreviewRenderer.PresentCadenceMetrics.cs` and CPU timing
 windows in `D3D11PreviewRenderer.Metrics.cs`.
 
@@ -2309,7 +2307,7 @@ Keep frame ownership snapshot projection and submitted/presented/dropped
 ownership state updates there; keep cadence, latency, DXGI, and slow-frame
 timing in `D3D11PreviewRenderer.PresentCadenceMetrics.cs`,
 `D3D11PreviewRenderer.Metrics.cs`, and `D3D11PreviewRenderer.DxgiFrameStatistics.cs`,
-with slow-frame diagnostic projection in `D3D11PreviewRenderer.SlowFrameDiagnostics.cs`.
+with slow-frame diagnostic projection in `D3D11PreviewRenderer.Diagnostics.cs`.
 
 D3D preview renderer DXGI frame statistics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs`.
@@ -2318,7 +2316,7 @@ refresh accounting there. Display-clock projection now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.DisplayClock.cs`; keep
 visible-frame tick estimation and `IPreviewDisplayClock` snapshot construction
 there. Keep slow-frame diagnostic consumption of the latest DXGI counters in
-`D3D11PreviewRenderer.SlowFrameDiagnostics.cs`.
+`D3D11PreviewRenderer.Diagnostics.cs`.
 
 D3D preview renderer frame-latency waitable swap-chain setup now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.FrameLatency.cs`. Keep

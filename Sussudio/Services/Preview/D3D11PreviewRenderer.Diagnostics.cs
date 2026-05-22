@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Sussudio.Models;
 
 namespace Sussudio.Services.Preview;
@@ -7,8 +8,13 @@ internal sealed partial class D3D11PreviewRenderer
 {
     private readonly object _slowFrameDiagnosticsLock = new();
     private readonly PreviewSlowFrameDiagnostic[] _slowFrameDiagnostics = new PreviewSlowFrameDiagnostic[64];
+    private string _lastRenderThreadFailureType = string.Empty;
+    private string _lastRenderThreadFailureMessage = string.Empty;
+    private int _firstFrameRaised;
+    private int _lastRenderThreadFailureHResult;
     private int _slowFrameDiagnosticsCount;
     private int _slowFrameDiagnosticsIndex;
+    private long _renderThreadFailureCount;
 
     public PreviewSlowFrameDiagnostic[] GetRecentSlowFrameDiagnostics(int maxEntries = 16)
     {
@@ -28,6 +34,37 @@ internal sealed partial class D3D11PreviewRenderer
             }
 
             return result;
+        }
+    }
+
+    private void ResetFirstFrameNotification()
+        => Interlocked.Exchange(ref _firstFrameRaised, 0);
+
+    private void NotifyFirstFrameRendered(string message)
+    {
+        if (Interlocked.Exchange(ref _firstFrameRaised, 1) != 0)
+        {
+            return;
+        }
+
+        Logger.Log(message);
+        if (!_dispatcherQueue.TryEnqueue(() => FirstFrameRendered?.Invoke()))
+        {
+            Logger.Log("D3D_FIRST_FRAME_UI_ENQUEUE_FAILED");
+        }
+    }
+
+    private void NotifyRenderThreadFailed(Exception ex)
+    {
+        Interlocked.Increment(ref _renderThreadFailureCount);
+        Volatile.Write(ref _lastRenderThreadFailureType, ex.GetType().Name);
+        Volatile.Write(ref _lastRenderThreadFailureMessage, ex.Message);
+        Volatile.Write(ref _lastRenderThreadFailureHResult, ex.HResult);
+
+        var reason = $"{ex.GetType().Name}: {ex.Message}";
+        if (!_dispatcherQueue.TryEnqueue(() => RenderThreadFailed?.Invoke(reason)))
+        {
+            Logger.Log("D3D_RENDER_THREAD_FAILURE_UI_ENQUEUE_FAILED");
         }
     }
 
@@ -115,4 +152,28 @@ internal sealed partial class D3D11PreviewRenderer
         }
     }
 
+    private static string BuildSlowFrameDiagnosticReason(
+        double presentIntervalMs,
+        double totalFrameCpuMs,
+        double presentCallMs,
+        bool dxgiRefreshSlip,
+        double thresholdMs)
+    {
+        var reason = string.Empty;
+        AppendSlowFrameReason(ref reason, presentIntervalMs >= thresholdMs, "present_interval");
+        AppendSlowFrameReason(ref reason, totalFrameCpuMs >= thresholdMs, "total_cpu");
+        AppendSlowFrameReason(ref reason, presentCallMs >= thresholdMs, "present_call");
+        AppendSlowFrameReason(ref reason, dxgiRefreshSlip, "dxgi_refresh_slip");
+        return reason.Length > 0 ? reason : "unknown";
+    }
+
+    private static void AppendSlowFrameReason(ref string reason, bool condition, string token)
+    {
+        if (!condition)
+        {
+            return;
+        }
+
+        reason = reason.Length == 0 ? token : $"{reason}+{token}";
+    }
 }

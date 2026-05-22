@@ -10,9 +10,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
             .Replace("\r\n", "\n");
-        var renderThreadFailuresText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThreadFailures.cs")
-            .Replace("\r\n", "\n");
-        var firstFrameNotificationsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FirstFrameNotifications.cs")
+        var diagnosticsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Diagnostics.cs")
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs")
             .Replace("\r\n", "\n");
@@ -55,14 +53,14 @@ static partial class Program
         AssertContains(cleanupPlanText, "D3D11PreviewRenderer.RenderThread.cs");
         AssertContains(cleanupPlanText, "shared-device reset/rebind consumption");
         AssertContains(cleanupPlanText, "pending-frame render dispatch");
-        AssertContains(renderThreadFailuresText, "private string _lastRenderThreadFailureType = string.Empty;");
-        AssertContains(renderThreadFailuresText, "private long _renderThreadFailureCount;");
-        AssertContains(renderThreadFailuresText, "private void NotifyRenderThreadFailed(Exception ex)");
-        AssertContains(renderThreadFailuresText, "RenderThreadFailed?.Invoke(reason)");
-        AssertContains(firstFrameNotificationsText, "private int _firstFrameRaised;");
-        AssertContains(firstFrameNotificationsText, "private void ResetFirstFrameNotification()");
-        AssertContains(firstFrameNotificationsText, "private void NotifyFirstFrameRendered(string message)");
-        AssertContains(firstFrameNotificationsText, "FirstFrameRendered?.Invoke()");
+        AssertContains(diagnosticsText, "private string _lastRenderThreadFailureType = string.Empty;");
+        AssertContains(diagnosticsText, "private long _renderThreadFailureCount;");
+        AssertContains(diagnosticsText, "private void NotifyRenderThreadFailed(Exception ex)");
+        AssertContains(diagnosticsText, "RenderThreadFailed?.Invoke(reason)");
+        AssertContains(diagnosticsText, "private int _firstFrameRaised;");
+        AssertContains(diagnosticsText, "private void ResetFirstFrameNotification()");
+        AssertContains(diagnosticsText, "private void NotifyFirstFrameRendered(string message)");
+        AssertContains(diagnosticsText, "FirstFrameRendered?.Invoke()");
         AssertContains(lifecycleText, "ResetFirstFrameNotification();");
         AssertContains(presentText, "NotifyFirstFrameRendered(firstFrameMessage);");
         var waitIndex = renderThreadText.IndexOf("WaitForFrameLatencySignal();", StringComparison.Ordinal);
