@@ -15,17 +15,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackPlaybackCommandsText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs")
             .Replace("\r\n", "\n");
-        var flashbackPlaybackCadenceText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Cadence.cs")
-            .Replace("\r\n", "\n");
-        var flashbackPlaybackOnePercentLowText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.OnePercentLow.cs")
-            .Replace("\r\n", "\n");
         var flashbackRecordingText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackRecording.cs")
             .Replace("\r\n", "\n");
         var flashbackExportText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackExport.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackPerformanceText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs")
-            .Replace("\r\n", "\n");
-        var flashbackPlaybackAudioMasterText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.AudioMaster.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackDecodeText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs")
             .Replace("\r\n", "\n");
@@ -119,21 +113,15 @@ static partial class Program
         AssertContains(flashbackPlaybackPerformanceText, "BuildFlashbackPlaybackAudioMasterPerformanceText(result)");
         AssertContains(flashbackPlaybackPerformanceText, "BuildFlashbackPlaybackSubmitPerformanceText(result)");
         AssertContains(flashbackPlaybackPerformanceText, "submitFailuresDelta={result.FlashbackPlaybackSubmitFailuresDelta}");
-        AssertContains(flashbackPlaybackCadenceText, "private static string BuildFlashbackPlaybackCadencePerformanceText(");
-        AssertContains(flashbackPlaybackCadenceText, "BuildFlashbackPlaybackOnePercentLowPerformanceText(result)");
-        AssertContains(flashbackPlaybackCadenceText, "droppedFramesDelta={result.FlashbackPlaybackDroppedFramesDelta}");
-        AssertContains(flashbackPlaybackOnePercentLowText, "private static string BuildFlashbackPlaybackOnePercentLowPerformanceText(");
-        AssertContains(flashbackPlaybackOnePercentLowText, "onePercentLowMinAvDriftMs={result.FlashbackPlaybackMinOnePercentLowAvDriftMs:0.##}");
-        AssertContains(flashbackPlaybackOnePercentLowText, "onePercentLowMinAudioFallbacks={result.FlashbackPlaybackMinOnePercentLowAudioMasterFallbacks}");
-        AssertContains(flashbackPlaybackAudioMasterText, "private static string BuildFlashbackPlaybackAudioMasterPerformanceText(");
-        AssertContains(flashbackPlaybackAudioMasterText, "FormatOptional(result.FlashbackPlaybackAudioMasterLastFallbackReasonAtEnd)");
-        AssertContains(flashbackPlaybackAudioMasterText, "absAvDriftMsMax={result.FlashbackPlaybackMaxAbsAvDriftMsObserved:0.##}");
-        AssertDoesNotContain(flashbackPlaybackPerformanceText, "FlashbackPlaybackObservedFpsAtEnd");
-        AssertDoesNotContain(flashbackPlaybackPerformanceText, "FlashbackPlaybackAudioMasterLastFallbackReasonAtEnd");
-        AssertDoesNotContain(flashbackPlaybackCadenceText, "onePercentLowMinAvDriftMs={result.FlashbackPlaybackMinOnePercentLowAvDriftMs:0.##}");
-        AssertDoesNotContain(flashbackPlaybackOnePercentLowText, "droppedFramesDelta={result.FlashbackPlaybackDroppedFramesDelta}");
-        AssertDoesNotContain(flashbackPlaybackCadenceText, "AudioMasterLastFallback");
-        AssertDoesNotContain(flashbackPlaybackAudioMasterText, "ObservedFpsAtEnd");
+        AssertContains(flashbackPlaybackPerformanceText, "private static string BuildFlashbackPlaybackCadencePerformanceText(");
+        AssertContains(flashbackPlaybackPerformanceText, "BuildFlashbackPlaybackOnePercentLowPerformanceText(result)");
+        AssertContains(flashbackPlaybackPerformanceText, "droppedFramesDelta={result.FlashbackPlaybackDroppedFramesDelta}");
+        AssertContains(flashbackPlaybackPerformanceText, "private static string BuildFlashbackPlaybackOnePercentLowPerformanceText(");
+        AssertContains(flashbackPlaybackPerformanceText, "onePercentLowMinAvDriftMs={result.FlashbackPlaybackMinOnePercentLowAvDriftMs:0.##}");
+        AssertContains(flashbackPlaybackPerformanceText, "onePercentLowMinAudioFallbacks={result.FlashbackPlaybackMinOnePercentLowAudioMasterFallbacks}");
+        AssertContains(flashbackPlaybackPerformanceText, "private static string BuildFlashbackPlaybackAudioMasterPerformanceText(");
+        AssertContains(flashbackPlaybackPerformanceText, "FormatOptional(result.FlashbackPlaybackAudioMasterLastFallbackReasonAtEnd)");
+        AssertContains(flashbackPlaybackPerformanceText, "absAvDriftMsMax={result.FlashbackPlaybackMaxAbsAvDriftMsObserved:0.##}");
         AssertDoesNotContain(flashbackPlaybackPerformanceText, "\"Flashback Playback Decode: \"");
         AssertContains(flashbackPlaybackDecodeText, "private static void AppendFlashbackPlaybackDecode(");
         AssertContains(flashbackPlaybackDecodeText, "\"Flashback Playback Decode: \"");

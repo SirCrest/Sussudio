@@ -5122,12 +5122,7 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs` owns
   playback command lines.
   `DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs` owns
-  playback performance row assembly and submit-failure fields.
-  `DiagnosticSessionResultFormatter.FlashbackPlayback.Cadence.cs` owns
-  playback cadence, slow-frame, and dropped-frame performance text.
-  `DiagnosticSessionResultFormatter.FlashbackPlayback.OnePercentLow.cs` owns
-  playback 1% low performance text.
-  `DiagnosticSessionResultFormatter.FlashbackPlayback.AudioMaster.cs` owns
+  playback performance row assembly, cadence, 1% low, submit-failure,
   audio-master fallback, buffering, queue, and A/V-drift performance text.
   `DiagnosticSessionResultFormatter.FlashbackPlayback.Stages.cs` owns playback
   stage/seek-cap lines.

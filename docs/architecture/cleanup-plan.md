@@ -4026,22 +4026,17 @@ recording verification, and PresentMon fields.
 
 Diagnostic-session result text now lives in a focused partial family rooted at
 `tools/Common/DiagnosticSessionResultFormatter.cs`. The root owns the public
-`Format(...)` flow and section ordering. `.Overview.cs` owns the
-header/summary/evidence section, `.CaptureMode.cs` owns the capture-mode row and
-frame-rate text formatting, `.RecordingVerification.cs` owns recording
-verification text, `.PresentMon.cs` owns PresentMon text, and
-`.ProcessPerformance.cs` owns process-performance text. `.Flashback.cs` owns
-Flashback section ordering. `.FlashbackPlayback.Commands.cs` owns playback
-command rows, `.FlashbackPlayback.Performance.cs` owns playback performance row
-assembly, `.FlashbackPlayback.Cadence.cs` owns playback cadence/slow-frame/
-dropped-frame performance text, `.FlashbackPlayback.OnePercentLow.cs` owns
-playback 1% low performance text, `.FlashbackPlayback.AudioMaster.cs` owns audio-master
-performance text, and `.FlashbackPlayback.Stages.cs` owns playback
-stage/seek-cap rows.
+`Format(...)` flow, Flashback section ordering, preview section ordering,
+recording verification text, PresentMon text, and process-performance text.
+`.Overview.cs` owns the header/summary/evidence section. `.CaptureMode.cs` owns
+the capture-mode row and frame-rate text formatting. `.FlashbackPlayback.Commands.cs`
+owns playback command rows. `.FlashbackPlayback.Performance.cs` owns playback
+performance row assembly plus cadence, 1% low, submit-failure, and audio-master
+performance text. `.FlashbackPlayback.Stages.cs` owns playback stage/seek-cap rows.
 `.FlashbackRecording.cs` owns Flashback recording summary text,
 `.FlashbackExport.cs` owns Flashback export summary text, and
 `.FlashbackPlayback.Decode.cs` owns playback decode text,
-`.Preview.cs` owns preview section ordering, `.PreviewScheduler.cs` owns
+`.PreviewScheduler.cs` owns
 preview scheduler text, `.PreviewD3D.Performance.cs` owns D3D
 performance/slow-frame text, `.PreviewD3D.CpuTiming.cs` owns D3D CPU timing
 text, and `.PreviewVisualCadence.cs` owns visual cadence text. `.Artifacts.cs` owns
@@ -4837,12 +4832,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultFormatter.Overview.cs`
 - `DiagnosticSessionResultFormatter.CaptureMode.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs`
-- `DiagnosticSessionResultFormatter.FlashbackPlayback.Cadence.cs`
-- `DiagnosticSessionResultFormatter.FlashbackPlayback.OnePercentLow.cs`
 - `DiagnosticSessionResultFormatter.FlashbackRecording.cs`
 - `DiagnosticSessionResultFormatter.FlashbackExport.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs`
-- `DiagnosticSessionResultFormatter.FlashbackPlayback.AudioMaster.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Stages.cs`
 - `DiagnosticSessionResultFormatter.PreviewScheduler.cs`
