@@ -500,15 +500,9 @@ Automation diagnostics ownership:
   `AutomationSnapshot`, plus final CPU MJPEG timing
   projection-to-`AutomationSnapshot` field flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.cs`
-  owns MJPEG preview jitter projection routing and final projection-to-
-  `AutomationSnapshot` flattening. Its focused owners split queue counters,
-  timing samples, adaptive drop/depth counters, and last scheduler event
-  projection plus flattening inputs:
-  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Queue.cs`,
-  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Timing.cs`,
-  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Adaptive.cs`,
-  and
-  `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Events.cs`.
+  owns MJPEG preview jitter projection routing, queue counters, timing samples,
+  adaptive drop/depth counters, last scheduler event projection, and final
+  projection-to-`AutomationSnapshot` flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPacketHash.cs`
   owns MJPEG packet duplicate-run / unique-frame projection inputs consumed by
   `AutomationSnapshot`, plus final MJPEG packet duplicate-run / unique-frame

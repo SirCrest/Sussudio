@@ -13,14 +13,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var mjpegPreviewJitterProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.cs")
             .Replace("\r\n", "\n");
-        var mjpegPreviewJitterQueueProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Queue.cs")
-            .Replace("\r\n", "\n");
-        var mjpegPreviewJitterTimingProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Timing.cs")
-            .Replace("\r\n", "\n");
-        var mjpegPreviewJitterAdaptiveProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Adaptive.cs")
-            .Replace("\r\n", "\n");
-        var mjpegPreviewJitterEventsProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Events.cs")
-            .Replace("\r\n", "\n");
         var mjpegPacketHashProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPacketHash.cs")
             .Replace("\r\n", "\n");
 
@@ -88,30 +80,30 @@ static partial class Program
         AssertContains(mjpegPreviewJitterProjectionText, "Adaptive = BuildMjpegPreviewJitterAdaptiveFlattenedProjection(previewJitter.Adaptive),");
         AssertContains(mjpegPreviewJitterProjectionText, "Events = BuildMjpegPreviewJitterEventFlattenedProjection(previewJitter.Events)");
         AssertContains(mjpegPreviewJitterProjectionText, "private readonly record struct MjpegPreviewJitterFlattenedProjection");
-        AssertContains(mjpegPreviewJitterQueueProjectionText, "private static MjpegPreviewJitterQueueProjection BuildMjpegPreviewJitterQueueProjection(");
-        AssertContains(mjpegPreviewJitterQueueProjectionText, "Enabled = health.MjpegPreviewJitterEnabled,");
-        AssertContains(mjpegPreviewJitterQueueProjectionText, "ResumeReprimeCount = health.MjpegPreviewJitterResumeReprimeCount");
-        AssertContains(mjpegPreviewJitterQueueProjectionText, "private static MjpegPreviewJitterQueueFlattenedProjection BuildMjpegPreviewJitterQueueFlattenedProjection(");
-        AssertContains(mjpegPreviewJitterQueueProjectionText, "Enabled = queue.Enabled,");
-        AssertContains(mjpegPreviewJitterQueueProjectionText, "ResumeReprimeCount = queue.ResumeReprimeCount");
-        AssertContains(mjpegPreviewJitterTimingProjectionText, "private static MjpegPreviewJitterTimingProjection BuildMjpegPreviewJitterTimingProjection(");
-        AssertContains(mjpegPreviewJitterTimingProjectionText, "InputSampleCount = health.MjpegPreviewJitterInputSampleCount,");
-        AssertContains(mjpegPreviewJitterTimingProjectionText, "LatencyMaxMs = health.MjpegPreviewJitterLatencyMaxMs");
-        AssertContains(mjpegPreviewJitterTimingProjectionText, "private static MjpegPreviewJitterTimingFlattenedProjection BuildMjpegPreviewJitterTimingFlattenedProjection(");
-        AssertContains(mjpegPreviewJitterTimingProjectionText, "InputSampleCount = timing.InputSampleCount,");
-        AssertContains(mjpegPreviewJitterTimingProjectionText, "LatencyMaxMs = timing.LatencyMaxMs");
-        AssertContains(mjpegPreviewJitterAdaptiveProjectionText, "private static MjpegPreviewJitterAdaptiveProjection BuildMjpegPreviewJitterAdaptiveProjection(");
-        AssertContains(mjpegPreviewJitterAdaptiveProjectionText, "DeadlineDropCount = health.MjpegPreviewJitterDeadlineDropCount,");
-        AssertContains(mjpegPreviewJitterAdaptiveProjectionText, "TargetDecreaseCount = health.MjpegPreviewJitterTargetDecreaseCount");
-        AssertContains(mjpegPreviewJitterAdaptiveProjectionText, "private static MjpegPreviewJitterAdaptiveFlattenedProjection BuildMjpegPreviewJitterAdaptiveFlattenedProjection(");
-        AssertContains(mjpegPreviewJitterAdaptiveProjectionText, "DeadlineDropCount = adaptive.DeadlineDropCount,");
-        AssertContains(mjpegPreviewJitterAdaptiveProjectionText, "TargetDecreaseCount = adaptive.TargetDecreaseCount");
-        AssertContains(mjpegPreviewJitterEventsProjectionText, "private static MjpegPreviewJitterEventProjection BuildMjpegPreviewJitterEventProjection(");
-        AssertContains(mjpegPreviewJitterEventsProjectionText, "LastDropReason = health.MjpegPreviewJitterLastDropReason,");
-        AssertContains(mjpegPreviewJitterEventsProjectionText, "ScheduleLateCount = health.MjpegPreviewJitterScheduleLateCount");
-        AssertContains(mjpegPreviewJitterEventsProjectionText, "private static MjpegPreviewJitterEventFlattenedProjection BuildMjpegPreviewJitterEventFlattenedProjection(");
-        AssertContains(mjpegPreviewJitterEventsProjectionText, "LastDropReason = events.LastDropReason,");
-        AssertContains(mjpegPreviewJitterEventsProjectionText, "ScheduleLateCount = events.ScheduleLateCount");
+        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterQueueProjection BuildMjpegPreviewJitterQueueProjection(");
+        AssertContains(mjpegPreviewJitterProjectionText, "Enabled = health.MjpegPreviewJitterEnabled,");
+        AssertContains(mjpegPreviewJitterProjectionText, "ResumeReprimeCount = health.MjpegPreviewJitterResumeReprimeCount");
+        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterQueueFlattenedProjection BuildMjpegPreviewJitterQueueFlattenedProjection(");
+        AssertContains(mjpegPreviewJitterProjectionText, "Enabled = queue.Enabled,");
+        AssertContains(mjpegPreviewJitterProjectionText, "ResumeReprimeCount = queue.ResumeReprimeCount");
+        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterTimingProjection BuildMjpegPreviewJitterTimingProjection(");
+        AssertContains(mjpegPreviewJitterProjectionText, "InputSampleCount = health.MjpegPreviewJitterInputSampleCount,");
+        AssertContains(mjpegPreviewJitterProjectionText, "LatencyMaxMs = health.MjpegPreviewJitterLatencyMaxMs");
+        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterTimingFlattenedProjection BuildMjpegPreviewJitterTimingFlattenedProjection(");
+        AssertContains(mjpegPreviewJitterProjectionText, "InputSampleCount = timing.InputSampleCount,");
+        AssertContains(mjpegPreviewJitterProjectionText, "LatencyMaxMs = timing.LatencyMaxMs");
+        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterAdaptiveProjection BuildMjpegPreviewJitterAdaptiveProjection(");
+        AssertContains(mjpegPreviewJitterProjectionText, "DeadlineDropCount = health.MjpegPreviewJitterDeadlineDropCount,");
+        AssertContains(mjpegPreviewJitterProjectionText, "TargetDecreaseCount = health.MjpegPreviewJitterTargetDecreaseCount");
+        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterAdaptiveFlattenedProjection BuildMjpegPreviewJitterAdaptiveFlattenedProjection(");
+        AssertContains(mjpegPreviewJitterProjectionText, "DeadlineDropCount = adaptive.DeadlineDropCount,");
+        AssertContains(mjpegPreviewJitterProjectionText, "TargetDecreaseCount = adaptive.TargetDecreaseCount");
+        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterEventProjection BuildMjpegPreviewJitterEventProjection(");
+        AssertContains(mjpegPreviewJitterProjectionText, "LastDropReason = health.MjpegPreviewJitterLastDropReason,");
+        AssertContains(mjpegPreviewJitterProjectionText, "ScheduleLateCount = health.MjpegPreviewJitterScheduleLateCount");
+        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterEventFlattenedProjection BuildMjpegPreviewJitterEventFlattenedProjection(");
+        AssertContains(mjpegPreviewJitterProjectionText, "LastDropReason = events.LastDropReason,");
+        AssertContains(mjpegPreviewJitterProjectionText, "ScheduleLateCount = events.ScheduleLateCount");
 
         AssertContains(mjpegPacketHashProjectionText, "private static MjpegPacketHashProjection BuildMjpegPacketHashProjection(CaptureHealthSnapshot health)");
         AssertContains(mjpegPacketHashProjectionText, "SampleCount = health.MjpegPacketHashSampleCount,");

@@ -26,10 +26,6 @@ static partial class Program
         public string SnapshotProjectionMjpegText { get; init; } = string.Empty;
         public string SnapshotProjectionMjpegTimingText { get; init; } = string.Empty;
         public string SnapshotProjectionMjpegPreviewJitterText { get; init; } = string.Empty;
-        public string SnapshotProjectionMjpegPreviewJitterQueueText { get; init; } = string.Empty;
-        public string SnapshotProjectionMjpegPreviewJitterTimingText { get; init; } = string.Empty;
-        public string SnapshotProjectionMjpegPreviewJitterAdaptiveText { get; init; } = string.Empty;
-        public string SnapshotProjectionMjpegPreviewJitterEventsText { get; init; } = string.Empty;
         public string SnapshotProjectionMjpegPacketHashText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackExportText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackPlaybackText { get; init; } = string.Empty;

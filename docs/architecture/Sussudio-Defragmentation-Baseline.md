@@ -157,6 +157,18 @@ Behavior preserved: recording integrity status, reason, video counters, backpres
 Notes for future agents: keep recording integrity DTO mapping groups with `RecordingIntegrity.cs` unless a group grows independent policy or a reusable collaborator boundary
 
 Date: 2026-05-21
+Area: Automation diagnostics MJPEG preview jitter projection
+Problem: MJPEG preview jitter queue, timing, adaptive, and event projection mappings lived in four tiny partials even though the preview jitter projection owner immediately composes and flattens all four groups.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Queue.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Timing.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Adaptive.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.Events.cs`
+Files added: none
+Net production .cs delta: -4
+Partial clusters reduced: `AutomationDiagnosticsHub` -4 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics MJPEG projection ownership tests and runtime snapshot regression tests
+Behavior preserved: MJPEG preview jitter queue, timing, adaptive, and scheduler event fields still map into the same flattened automation snapshot fields
+Notes for future agents: keep MJPEG preview jitter DTO mapping groups with `MjpegPreviewJitter.cs` unless a group grows independent policy or a reusable collaborator boundary
+
+Date: 2026-05-21
 Area: Automation diagnostics signal alerts
 Problem: Capture cadence, audio muted, and recording growth signal alert rules lived in tiny partials separate from the signal alert owner even though they all update alert state from the same automation snapshot surface.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.Capture.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.AudioRecording.cs`
