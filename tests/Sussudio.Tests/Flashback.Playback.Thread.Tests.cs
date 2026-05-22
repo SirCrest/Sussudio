@@ -40,11 +40,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var commandTelemetryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandTelemetry.cs")
             .Replace("\r\n", "\n");
-        var commandMetricsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandMetrics.cs")
-            .Replace("\r\n", "\n");
-        var commandFailuresText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandFailures.cs")
-            .Replace("\r\n", "\n");
-        var commandModelsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandModels.cs")
+        var commandQueueText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs")
             .Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
@@ -54,10 +50,10 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(threadLoopText, "private void PlaybackThreadEntry(CancellationTokenSource cts, Channel<PlaybackCommand> commandChannel)");
-        AssertContains(commandModelsText, "private enum CommandKind");
-        AssertContains(commandModelsText, "private readonly struct PlaybackCommand");
-        AssertContains(commandModelsText, "public SeekIntentSlot? SeekSlot { get; init; }");
-        AssertContains(commandModelsText, "public ScrubUpdateIntentSlot? ScrubUpdateSlot { get; init; }");
+        AssertContains(commandQueueText, "private enum CommandKind");
+        AssertContains(commandQueueText, "private readonly struct PlaybackCommand");
+        AssertContains(commandQueueText, "public SeekIntentSlot? SeekSlot { get; init; }");
+        AssertContains(commandQueueText, "public ScrubUpdateIntentSlot? ScrubUpdateSlot { get; init; }");
         AssertDoesNotContain(rootText, "private enum CommandKind");
         AssertDoesNotContain(rootText, "private readonly struct PlaybackCommand");
         AssertContains(threadSchedulingText, "[DllImport(\"winmm.dll\", ExactSpelling = true)]");
@@ -147,28 +143,27 @@ static partial class Program
         AssertDoesNotContain(threadLifecycleText, "private bool StopPlaybackThread(");
         AssertContains(sourceText, "ObjectDisposedException.ThrowIf(_disposedFlag != 0, this);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_UPDATE_SKIP reason=disposed");
-        AssertContains(commandMetricsText, "public int CommandQueueCapacityCommands => CommandQueueCapacity;");
-        AssertContains(commandMetricsText, "public long CommandsEnqueued => Interlocked.Read(ref _commandsEnqueued);");
-        AssertContains(commandMetricsText, "public long CommandsSkippedNotReady => Interlocked.Read(ref _commandsSkippedNotReady);");
-        AssertContains(commandMetricsText, "public string LastCommandFailure => Volatile.Read(ref _lastCommandFailure);");
-        AssertContains(commandMetricsText, "public bool PlaybackThreadAlive => _playbackThread is { IsAlive: true };");
+        AssertContains(commandQueueText, "public int CommandQueueCapacityCommands => CommandQueueCapacity;");
+        AssertContains(commandQueueText, "public long CommandsEnqueued => Interlocked.Read(ref _commandsEnqueued);");
+        AssertContains(commandQueueText, "public long CommandsSkippedNotReady => Interlocked.Read(ref _commandsSkippedNotReady);");
+        AssertContains(commandQueueText, "public string LastCommandFailure => Volatile.Read(ref _lastCommandFailure);");
+        AssertContains(commandQueueText, "public bool PlaybackThreadAlive => _playbackThread is { IsAlive: true };");
         AssertDoesNotContain(commandTelemetryText, "public int CommandQueueCapacityCommands => CommandQueueCapacity;");
-        AssertDoesNotContain(commandFailuresText, "public string LastCommandFailure => Volatile.Read(ref _lastCommandFailure);");
         AssertContains(commandTelemetryText, "private long _commandsEnqueued;");
         AssertContains(commandTelemetryText, "private long _commandsProcessed;");
         AssertContains(commandTelemetryText, "private long _commandsDropped;");
-        AssertContains(commandFailuresText, "private long _commandsSkippedNotReady;");
+        AssertContains(commandQueueText, "private long _commandsSkippedNotReady;");
         AssertContains(commandTelemetryText, "private int _pendingCommands;");
         AssertContains(commandTelemetryText, "private int _maxPendingCommands;");
         AssertContains(commandTelemetryText, "private long _lastCommandQueueLatencyMs;");
         AssertContains(commandTelemetryText, "private long _maxCommandQueueLatencyMs;");
-        AssertContains(commandFailuresText, "private string _lastCommandFailure = string.Empty;");
-        AssertContains(commandFailuresText, "private bool IsReady => _initialized && _disposedFlag == 0;");
-        AssertContains(commandFailuresText, "private bool IsNotReady(CommandKind kind, TimeSpan? position = null)");
-        AssertContains(commandFailuresText, "private bool RejectCommand(");
-        AssertContains(commandFailuresText, "private static string FormatCommandDetail(PlaybackCommand command)");
-        AssertContains(commandFailuresText, "private void SetLastCommandFailure(string failure)");
-        AssertContains(commandFailuresText, "private void MarkCommandNoOp(CommandKind kind, string reason, TimeSpan? position = null, TimeSpan? delta = null)");
+        AssertContains(commandQueueText, "private string _lastCommandFailure = string.Empty;");
+        AssertContains(commandQueueText, "private bool IsReady => _initialized && _disposedFlag == 0;");
+        AssertContains(commandQueueText, "private bool IsNotReady(CommandKind kind, TimeSpan? position = null)");
+        AssertContains(commandQueueText, "private bool RejectCommand(");
+        AssertContains(commandQueueText, "private static string FormatCommandDetail(PlaybackCommand command)");
+        AssertContains(commandQueueText, "private void SetLastCommandFailure(string failure)");
+        AssertContains(commandQueueText, "private void MarkCommandNoOp(CommandKind kind, string reason, TimeSpan? position = null, TimeSpan? delta = null)");
         AssertDoesNotContain(commandTelemetryText, "private string _lastCommandFailure = string.Empty;");
         AssertDoesNotContain(commandTelemetryText, "private bool IsNotReady(CommandKind kind, TimeSpan? position = null)");
         AssertDoesNotContain(commandTelemetryText, "private bool RejectCommand(");

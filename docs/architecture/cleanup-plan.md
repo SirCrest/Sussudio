@@ -3066,28 +3066,20 @@ now live in
 Flashback playback public command entry points now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Commands.cs`. Keep
 scrub, seek, play/pause, go-live, and nudge request gating there; keep raw
-queue writes/drop policy in the queue partial and playback-thread execution in
-the thread partials. Playback-thread command identity and payload shape live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.CommandModels.cs`;
-keep new command fields there so queue, coalescing, telemetry, and thread
-owners share one private payload contract. Seek/scrub coalesced command admission now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.CommandCoalescing.cs`.
-Seek/scrub coalescing slot state, queued-position resolution, and queued-slot
-barriers now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.CommandCoalescingSlots.cs`.
-Playback-thread control-yield peek policy now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.CommandControlYieldPolicy.cs`.
-Do not grow the root controller with new coalescing slot fields.
+queue writes/drop policy, command identity and payload shape, seek/scrub
+coalesced command admission, queued-position resolution, queued-slot barriers,
+and playback-thread control-yield peek policy in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs`.
+Keep playback-thread execution in the thread partials. Do not grow the root
+controller with new coalescing slot fields.
 Command status counters, pending-command accounting, active-command timing, and
 queue telemetry bookkeeping live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.CommandTelemetry.cs`.
 Public read-only command counters, command queue latency/timestamps, last
-command failure projection, and playback-thread liveness now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.CommandMetrics.cs`.
-Command readiness guards, skipped-not-ready accounting, failure-detail
-formatting, last-command failure state, and no-op logging now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.CommandFailures.cs`.
-Keep command failure updates there instead of growing command channel mechanics.
+command failure projection, playback-thread liveness, command readiness guards,
+skipped-not-ready accounting, failure-detail formatting, last-command failure
+state, and no-op logging now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs`.
 Playback thread state fields and stop timeout policy now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs`.
 Playback thread start/recovery and start-failure rollback now live in

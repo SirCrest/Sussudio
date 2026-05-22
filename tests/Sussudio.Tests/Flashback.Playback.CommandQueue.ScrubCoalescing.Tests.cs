@@ -10,13 +10,7 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
-        var coalescingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandCoalescing.cs")
-            .Replace("\r\n", "\n");
-        var coalescingSlotsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandCoalescingSlots.cs")
-            .Replace("\r\n", "\n");
-        var controlYieldPolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandControlYieldPolicy.cs")
-            .Replace("\r\n", "\n");
-        var commandFailuresText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandFailures.cs")
+        var commandQueueText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs")
             .Replace("\r\n", "\n");
 
         var seekBlock = ExtractTextBetween(
@@ -51,19 +45,16 @@ static partial class Program
             "private void DrainAbandonedCommandsOnThreadExit(Channel<PlaybackCommand> commandChannel)",
             "    private static void CompleteCommandChannelForThreadExit");
 
-        AssertContains(coalescingSlotsText, "private long _latestScrubUpdateTicks;");
-        AssertContains(coalescingSlotsText, "private sealed class SeekIntentSlot");
-        AssertContains(coalescingSlotsText, "private sealed class ScrubUpdateIntentSlot");
+        AssertContains(commandQueueText, "private long _latestScrubUpdateTicks;");
+        AssertContains(commandQueueText, "private sealed class SeekIntentSlot");
+        AssertContains(commandQueueText, "private sealed class ScrubUpdateIntentSlot");
         AssertContains(sourceText, "public SeekIntentSlot? SeekSlot { get; init; }");
         AssertContains(sourceText, "public ScrubUpdateIntentSlot? ScrubUpdateSlot { get; init; }");
-        AssertContains(coalescingSlotsText, "private readonly object _seekSlotSync = new();");
-        AssertContains(coalescingSlotsText, "private SeekIntentSlot? _queuedSeekSlot;");
-        AssertContains(coalescingSlotsText, "private ScrubUpdateIntentSlot? _queuedScrubUpdateSlot;");
-        AssertContains(coalescingText, "private long _scrubUpdatesCoalesced;");
-        AssertContains(coalescingText, "private long _seekCommandsCoalesced;");
-        AssertDoesNotContain(coalescingText, "private sealed class SeekIntentSlot");
-        AssertDoesNotContain(coalescingText, "private sealed class ScrubUpdateIntentSlot");
-        AssertDoesNotContain(coalescingText, "private readonly object _seekSlotSync = new();");
+        AssertContains(commandQueueText, "private readonly object _seekSlotSync = new();");
+        AssertContains(commandQueueText, "private SeekIntentSlot? _queuedSeekSlot;");
+        AssertContains(commandQueueText, "private ScrubUpdateIntentSlot? _queuedScrubUpdateSlot;");
+        AssertContains(commandQueueText, "private long _scrubUpdatesCoalesced;");
+        AssertContains(commandQueueText, "private long _seekCommandsCoalesced;");
         AssertDoesNotContain(rootText, "private sealed class SeekIntentSlot");
         AssertDoesNotContain(rootText, "private sealed class ScrubUpdateIntentSlot");
         AssertDoesNotContain(rootText, "private long _latestScrubUpdateTicks;");
@@ -126,15 +117,12 @@ static partial class Program
         AssertContains(updateScrubBlock, "FLASHBACK_PLAYBACK_SCRUB_UPDATE_NO_FILE");
         AssertContains(updateScrubBlock, "SafeResumePreviewSubmission(\"scrub_update_no_file\")");
         AssertContains(updateScrubBlock, "SetState(FlashbackPlaybackState.Live)");
-        AssertContains(controlYieldPolicyText, "private static bool ShouldYieldScrubUpdateToQueuedControl(Channel<PlaybackCommand> commandChannel)");
+        AssertContains(commandQueueText, "private static bool ShouldYieldScrubUpdateToQueuedControl(Channel<PlaybackCommand> commandChannel)");
         AssertContains(sourceText, "return next.Kind is CommandKind.EndScrub or CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;");
-        AssertContains(controlYieldPolicyText, "private static bool ShouldYieldSeekToQueuedPlay(Channel<PlaybackCommand> commandChannel)");
+        AssertContains(commandQueueText, "private static bool ShouldYieldSeekToQueuedPlay(Channel<PlaybackCommand> commandChannel)");
         AssertContains(sourceText, "return next.Kind is CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;");
-        AssertContains(controlYieldPolicyText, "private static bool ShouldYieldPauseFromLiveToQueuedSeekOrPlay(Channel<PlaybackCommand> commandChannel)");
+        AssertContains(commandQueueText, "private static bool ShouldYieldPauseFromLiveToQueuedSeekOrPlay(Channel<PlaybackCommand> commandChannel)");
         AssertContains(sourceText, "return next.Kind is CommandKind.Seek or CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;");
-        AssertDoesNotContain(coalescingText, "private static bool ShouldYieldScrubUpdateToQueuedControl(Channel<PlaybackCommand> commandChannel)");
-        AssertDoesNotContain(coalescingText, "private static bool ShouldYieldSeekToQueuedPlay(Channel<PlaybackCommand> commandChannel)");
-        AssertDoesNotContain(coalescingText, "private static bool ShouldYieldPauseFromLiveToQueuedSeekOrPlay(Channel<PlaybackCommand> commandChannel)");
         AssertContains(drainAbandonedCommands, "ClearQueuedCommandSlotsBarrier();");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)\n        {\n            MarkCommandNoOp(CommandKind.EndScrub, \"live_thread_not_running\", position);\n            return false;\n        }");
         var endScrubBlock = ExtractTextBetween(
@@ -147,23 +135,23 @@ static partial class Program
         AssertContains(endScrubBlock, "var endScrubTarget = SaturatingAdd(endScrubPosition, frozenValidStart);");
         AssertDoesNotContain(endScrubBlock, "var endScrubTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);");
         AssertContains(sourceText, "private bool RejectCommand(\n        CommandKind kind,\n        string failure,\n        string reason,\n        bool returnValue,\n        TimeSpan? position = null)");
-        AssertContains(commandFailuresText, "private bool RejectCommand(\n        CommandKind kind,\n        string failure,\n        string reason,\n        bool returnValue,\n        TimeSpan? position = null)");
+        AssertContains(commandQueueText, "private bool RejectCommand(\n        CommandKind kind,\n        string failure,\n        string reason,\n        bool returnValue,\n        TimeSpan? position = null)");
         AssertContains(sourceText, "SetLastCommandFailure($\"{failure}:{kind}{detail}\");");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}{detail}\");");
         AssertContains(sourceText, "private void SetNoFileFailure(CommandKind kind, TimeSpan position)");
-        AssertContains(commandFailuresText, "private void SetNoFileFailure(CommandKind kind, TimeSpan position)");
+        AssertContains(commandQueueText, "private void SetNoFileFailure(CommandKind kind, TimeSpan position)");
         AssertContains(sourceText, "SetLastCommandFailure($\"no_file:{kind}{FormatCommandDetail(position: position)}\");");
         AssertContains(sourceText, "private static string FormatCommandDetail(PlaybackCommand command)");
-        AssertContains(commandFailuresText, "private static string FormatCommandDetail(PlaybackCommand command)");
+        AssertContains(commandQueueText, "private static string FormatCommandDetail(PlaybackCommand command)");
         AssertContains(sourceText, "return $\" pos_ms={position.Value.TotalMilliseconds.ToString(\"0.###\", CultureInfo.InvariantCulture)}\";");
         AssertContains(sourceText, "return $\" delta_ms={delta.Value.TotalMilliseconds.ToString(\"0.###\", CultureInfo.InvariantCulture)}\";");
         AssertContains(sourceText, "private void SetLastCommandFailure(string failure)\n    {\n        Volatile.Write(ref _lastCommandFailure, failure);\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());\n    }");
-        AssertContains(commandFailuresText, "private void SetLastCommandFailure(string failure)");
+        AssertContains(commandQueueText, "private void SetLastCommandFailure(string failure)");
         AssertContains(sourceText, "private void MarkCommandQueued(CommandKind kind)");
         AssertContains(sourceText, "private void MarkCommandNoOp(CommandKind kind, string reason, TimeSpan? position = null, TimeSpan? delta = null)");
-        AssertContains(commandFailuresText, "private void MarkCommandNoOp(CommandKind kind, string reason, TimeSpan? position = null, TimeSpan? delta = null)");
+        AssertContains(commandQueueText, "private void MarkCommandNoOp(CommandKind kind, string reason, TimeSpan? position = null, TimeSpan? delta = null)");
         AssertContains(sourceText, "private void ClearLastCommandFailure()\n    {\n        Volatile.Write(ref _lastCommandFailure, string.Empty);\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, 0);\n    }");
-        AssertContains(commandFailuresText, "private void ClearLastCommandFailure()");
+        AssertContains(commandQueueText, "private void ClearLastCommandFailure()");
         AssertContains(sourceText, "private void TrackCoalescedScrubUpdate()");
         AssertContains(sourceText, "Interlocked.Increment(ref _scrubUpdatesCoalesced);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SCRUB_COALESCED");
@@ -174,13 +162,11 @@ static partial class Program
         AssertContains(coalescedSeekMethod, "Interlocked.Increment(ref _seekCommandsCoalesced);");
         AssertContains(coalescedSeekMethod, "FLASHBACK_PLAYBACK_SEEK_COALESCED");
         AssertDoesNotContain(coalescedSeekMethod, "_commandsDropped");
-        AssertContains(coalescingSlotsText, "private PlaybackCommand ResolveSeekCommandPosition(PlaybackCommand command)");
+        AssertContains(commandQueueText, "private PlaybackCommand ResolveSeekCommandPosition(PlaybackCommand command)");
         AssertContains(sourceText, "if (ReferenceEquals(_queuedSeekSlot, slot))\n            {\n                _queuedSeekSlot = null;\n            }");
-        AssertContains(coalescingSlotsText, "private PlaybackCommand ResolveScrubUpdateCommandPosition(PlaybackCommand command)");
+        AssertContains(commandQueueText, "private PlaybackCommand ResolveScrubUpdateCommandPosition(PlaybackCommand command)");
         AssertContains(sourceText, "if (ReferenceEquals(_queuedScrubUpdateSlot, slot))\n            {\n                _queuedScrubUpdateSlot = null;\n            }");
-        AssertContains(coalescingSlotsText, "private void ClearQueuedCommandSlotsBarrier()");
-        AssertDoesNotContain(coalescingText, "private PlaybackCommand ResolveSeekCommandPosition(PlaybackCommand command)");
-        AssertDoesNotContain(coalescingText, "private void ClearQueuedCommandSlotsBarrier()");
+        AssertContains(commandQueueText, "private void ClearQueuedCommandSlotsBarrier()");
         AssertDoesNotContain(updateScrubBlock, "SendCommand(newer)");
         AssertDoesNotContain(updateScrubBlock, "Non-scrub command consumed");
 
