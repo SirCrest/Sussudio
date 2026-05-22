@@ -41,7 +41,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatReaderObservationText, "private static CaptureFormatReaderObservationFlattenedProjection BuildCaptureFormatReaderObservationFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatEncoderText, "private static CaptureFormatEncoderFlattenedProjection BuildCaptureFormatEncoderFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureTransportFlattenedProjection(captureTransport)");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureTransportText, "private static CaptureTransportFlattenedProjection BuildCaptureTransportFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionCaptureTransportText, "private static CaptureTransportFlattenedProjection BuildCaptureTransportFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureCadenceFlattenedProjection(captureCadence)");
         AssertContains(diagnostics.SnapshotProjectionFlatteningCaptureCadenceText, "private static CaptureCadenceFlattenedProjection BuildCaptureCadenceFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildVisualCadenceFlattenedProjection(visualCadence)");

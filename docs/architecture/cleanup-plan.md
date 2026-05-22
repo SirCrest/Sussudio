@@ -235,10 +235,8 @@ encoder format, codec, profile, and ten-bit confirmation projection inputs and
 final field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureTransport.cs` owns capture
 memory preference, requested/negotiated video subtype, and frame-ledger
-projection consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureTransport.cs`
-owns final capture transport projection-to-`AutomationSnapshot` field
-flattening.
+projection consumed by the automation snapshot DTO, plus final capture
+transport projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs` owns source
 capture cadence projection inputs consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.Flattening.CaptureCadence.cs`
