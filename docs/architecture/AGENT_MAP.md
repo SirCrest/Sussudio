@@ -4444,15 +4444,10 @@ Primary owners:
 - `tools/Common/DiagnosticSessionCommandChannel.cs` owns serialized
   diagnostic-session automation command sending, command failure accounting,
   and `AutomationCommandKind`-to-catalog command-name resolution for fixed
-  channel-owned commands, including setup and cleanup lifecycle mutations. Keep
-  the underlying runner delegate string-compatible.
-- `tools/Common/DiagnosticSessionCommandChannel.RawSending.cs` owns raw
-  command send overloads, connect-retry wrapping, and local failure-response
-  fallback when connect retry returns no response.
-- `tools/Common/DiagnosticSessionCommandChannel.WaitConditions.cs` owns
-  diagnostic-session wait command helpers, `WaitForCondition` payload shaping,
-  and routing that fixed wait command through the channel's
-  `AutomationCommandKind` overload.
+  channel-owned commands, including setup and cleanup lifecycle mutations, raw
+  command send overloads, connect-retry wrapping, local failure-response
+  fallback when connect retry returns no response, and fixed wait command
+  payload shaping. Keep the underlying runner delegate string-compatible.
 - `tools/Common/DiagnosticSessionScenarioPlan.cs` owns the scenario plan DTO,
   creation factory, and catalog lookup handoff.
   `tools/Common/DiagnosticSessionScenarioPlan.Policies.cs` owns grouped
