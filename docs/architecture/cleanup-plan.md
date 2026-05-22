@@ -3656,15 +3656,12 @@ interrupted-session observation.
 orchestration, generic scenario-task warning collection, and the drain handoff
 record.
 
-Diagnostic-session scenario startup now lives in a focused partial family.
-`tools/Common/DiagnosticSessionScenarioStartup.cs` owns the public startup
-orchestration call. `DiagnosticSessionScenarioStartup.Registrations.cs` owns
-Flashback scenario registration orchestration and delegates task registration to
-the focused scenario owners, including deferred Flashback recording-settings
-task registration, and
-`DiagnosticSessionScenarioStartup.Playback.cs` owns the direct Flashback
-playback start command and playback-state wait. The runner now delegates
-startup and keeps the setup/sampling/cleanup/summary phase flow.
+Diagnostic-session scenario startup now lives in
+`tools/Common/DiagnosticSessionScenarioStartup.cs`, which owns the public
+startup orchestration call, Flashback scenario registration delegation, deferred
+Flashback recording-settings task registration, and the direct Flashback
+playback start command/playback-state wait. The runner now delegates startup
+and keeps the setup/sampling/cleanup/summary phase flow.
 
 Diagnostic-session PresentMon startup now lives in
 `tools/Common/DiagnosticSessionPresentMonStartup.cs`. It owns optional
@@ -4119,8 +4116,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioPlan.cs`
 - `DiagnosticSessionScenarioSetup.cs`
 - `DiagnosticSessionScenarioStartup.cs`
-- `DiagnosticSessionScenarioStartup.Registrations.cs`
-- `DiagnosticSessionScenarioStartup.Playback.cs`
 - `DiagnosticSessionPresentMonStartup.cs`
 - `DiagnosticSessionOptionalTextFormatter.cs`
 - `DiagnosticSessionRunner.cs`

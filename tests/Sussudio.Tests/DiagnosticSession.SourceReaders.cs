@@ -198,9 +198,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionScenarioStartupSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionScenarioStartup.cs",
-            "tools/Common/DiagnosticSessionScenarioStartup.Registrations.cs",
-            "tools/Common/DiagnosticSessionScenarioStartup.Playback.cs");
+            "tools/Common/DiagnosticSessionScenarioStartup.cs");
 
     private static string ReadNormalizedSourceFiles(params string[] paths)
     {
