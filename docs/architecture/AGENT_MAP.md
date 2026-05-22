@@ -355,10 +355,8 @@ Automation diagnostics ownership:
   diagnostic verdicts.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs`
   owns realtime diagnostic verdict ordering plus idle, warmup, recording
-  integrity, audio integrity, duplicate source-signal, and MJPEG decode/reorder
-  diagnostic verdicts.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Source.cs`
-  owns source/capture cadence diagnostic verdicts.
+  integrity, audio integrity, source/capture cadence, duplicate source-signal,
+  and MJPEG decode/reorder diagnostic verdicts.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Preview.cs`
   owns realtime preview diagnostic verdict ordering plus preview scheduler and
   renderer pacing verdicts.
