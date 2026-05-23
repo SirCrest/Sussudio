@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
@@ -7,7 +8,7 @@ using Sussudio.Services.Gpu;
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Automation-facing capture, health, recording snapshot, and probe entry points.
+/// Automation-facing capture, health, recording, options, and probe snapshot entry points.
 /// </summary>
 public partial class MainViewModel
 {
@@ -31,6 +32,72 @@ public partial class MainViewModel
         => FromSynchronousSnapshot(ProbePreviewColor, cancellationToken);
     public Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath, CancellationToken cancellationToken = default)
         => _captureService.CapturePreviewFrameAsync(outputPath, cancellationToken);
+
+    public Task<AutomationOptionsSnapshot> GetAutomationOptionsSnapshotAsync(CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            var selectedFrameRate = SelectedFrameRate;
+            var input = new AutomationOptionsSnapshotInput
+            {
+                TimestampUtc = DateTimeOffset.UtcNow,
+                Devices = Devices
+                    .Select(device => new AutomationOptionsDeviceInput
+                    {
+                        Id = device.Id,
+                        Name = device.Name
+                    })
+                    .ToArray(),
+                AudioInputDevices = AudioInputDevices
+                    .Select(device => new AutomationOptionsDeviceInput
+                    {
+                        Id = device.Id,
+                        Name = device.Name
+                    })
+                    .ToArray(),
+                Resolutions = AvailableResolutions
+                    .Select(option => new AutomationOptionsResolutionInput
+                    {
+                        Value = option.Value,
+                        Width = option.Width,
+                        Height = option.Height,
+                        IsEnabled = option.IsEnabled,
+                        DisableReason = option.DisableReason
+                    })
+                    .ToArray(),
+                FrameRates = AvailableFrameRates
+                    .Select(option => new AutomationOptionsFrameRateInput
+                    {
+                        Value = option.Value,
+                        FriendlyValue = option.FriendlyValue,
+                        ExactValueArg = option.Rational,
+                        IsEnabled = option.IsEnabled,
+                        DisableReason = option.DisableReason,
+                        IsSelected = FrameRateTimingPolicy.IsFrameRateMatch(option.Value, selectedFrameRate)
+                    })
+                    .ToArray(),
+                RecordingFormats = AvailableRecordingFormats.ToArray(),
+                Qualities = AvailableQualities.ToArray(),
+                Presets = AvailablePresets.ToArray(),
+                SplitEncodeModes = AvailableSplitEncodeModes.ToArray(),
+                VideoFormats = AvailableVideoFormats.ToArray(),
+                SelectedDeviceId = SelectedDevice?.Id,
+                SelectedAudioInputDeviceId = SelectedAudioInputDevice?.Id,
+                SelectedResolution = SelectedResolution,
+                SelectedFrameRate = selectedFrameRate,
+                SelectedRecordingFormat = SelectedRecordingFormat,
+                SelectedQuality = SelectedQuality,
+                SelectedPreset = SelectedPreset,
+                SelectedSplitEncodeMode = SelectedSplitEncodeMode,
+                SelectedVideoFormat = SelectedVideoFormat,
+                MjpegDecoderCount = MjpegDecoderCount,
+                PreviewVolume = PreviewVolume,
+                IsStatsVisible = IsStatsVisible
+            };
+
+            return AutomationOptionsSnapshotBuilder.Build(input);
+        }, cancellationToken);
+    }
 
     private static Task<T> FromSynchronousSnapshot<T>(Func<T> snapshotFactory, CancellationToken cancellationToken)
     {

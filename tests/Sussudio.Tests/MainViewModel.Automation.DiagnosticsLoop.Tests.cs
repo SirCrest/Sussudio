@@ -1,3 +1,4 @@
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -7,12 +8,11 @@ static partial class Program
         var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
         var automationSnapshotText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSnapshots.cs");
-        var automationOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationOptionsSnapshot.cs");
+        var automationOptionsText = automationSnapshotText;
         var automationOptionsBuilderText = ReadRepoFile("Sussudio/ViewModels/AutomationOptionsSnapshotBuilder.cs");
 
         AssertDoesNotContain(diagnosticsHubText, "GetAutomationOptionsSnapshotAsync(cancellationToken)");
         AssertDoesNotContain(diagnosticsHubText, "Options = optionsSnapshot");
-        AssertDoesNotContain(automationSnapshotText, "GetAutomationOptionsSnapshotAsync");
         AssertDoesNotContain(automationSnapshotText, "BuildStringOptions(");
         AssertContains(automationOptionsText, "GetAutomationOptionsSnapshotAsync");
         AssertContains(automationOptionsText, "InvokeOnUiThreadAsync(() =>");
@@ -29,6 +29,10 @@ static partial class Program
         AssertContains(automationOptionsBuilderText, "MjpegDecoderCounts = Enumerable.Range(1, 8)");
         AssertContains(automationOptionsBuilderText, "DisableReason = option.DisableReason ?? string.Empty");
         AssertContains(automationOptionsBuilderText, "PreviewVolumePercent = input.PreviewVolume * 100.0");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationOptionsSnapshot.cs")),
+            "MainViewModel.AutomationOptionsSnapshot.cs folded into MainViewModel.AutomationSnapshots.cs");
 
         return Task.CompletedTask;
     }

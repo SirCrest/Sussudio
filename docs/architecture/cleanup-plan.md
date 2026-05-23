@@ -4115,7 +4115,7 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.ViewModelRuntimeSnapshot.cs`; pure view-model runtime snapshot DTO
    construction lives in `ViewModelRuntimeSnapshotBuilder.cs`;
    automation options UI-thread snapshot capture now lives in
-   `MainViewModel.AutomationOptionsSnapshot.cs`; pure selected-control-state DTO
+   `MainViewModel.AutomationSnapshots.cs`; pure selected-control-state DTO
    construction lives in `AutomationOptionsSnapshotBuilder.cs`.
    `tests/Sussudio.Tests/XUnit.AutomationDiagnosticsLoopContractsTests.cs`
    owns xUnit execution for the diagnostics-loop polling check after its removal
