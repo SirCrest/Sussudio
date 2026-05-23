@@ -3482,8 +3482,7 @@ Primary current owners:
   reconciliation, format collection mutation, capability refresh after
   background probes, enqueue/failure logging, and handoff to the retarget
   applier.
-  `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.Context.cs`
-  owns the top-level late-probe reconciliation graph-port contract for UI
+  It also owns the late-probe reconciliation graph-port contract for UI
   enqueue, device-scan generation, selected-device lookup/state, active capture
   guards, suppress-format-change state, capability rebuild, and retarget
   applier construction.
