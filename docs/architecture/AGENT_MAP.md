@@ -1084,11 +1084,10 @@ Entry points:
 - `FlashbackPlaybackController.ThreadCommands.cs` owns playback-thread
   nudge command execution, including frame-step decode, no-file recovery, and
   seek-display failure recovery.
-- `FlashbackPlaybackController.AudioCallback.cs` owns decoder audio callback
-  wiring, playback chunk validation/return, playback PTS gate handling, and
-  pooled audio-buffer return warnings.
 - `FlashbackPlaybackController.AudioRouting.cs` owns live audio
-  suppress/restore, playback-state audio/preview routing, best-effort preview
+  suppress/restore, decoder audio callback wiring, playback chunk
+  validation/return, playback PTS gate handling, pooled audio-buffer return
+  warnings, playback-state audio/preview routing, best-effort preview
   submission guards, and audio renderer pause/resume/flush guards.
 - `FlashbackPlaybackController.AudioPrebuffer.cs` owns playback startup/seek audio prebuffering, target/timeout/frame-budget policy, and decoder rewind after decode-ahead audio priming.
 - `FlashbackPlaybackController.AudioMasterPacing.cs` owns audio-master pacing
