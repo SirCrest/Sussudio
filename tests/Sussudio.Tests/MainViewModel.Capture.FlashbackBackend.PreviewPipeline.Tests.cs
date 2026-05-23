@@ -211,7 +211,7 @@ static partial class Program
         var stopVideoPreviewCore = ExtractTextBetween(
             captureServiceText,
             "private Task StopVideoPreviewCoreAsync",
-            "private bool CanReuseVideoCaptureForPreview");
+            "private async Task DisposePreviewPipelineAsync");
         AssertContains(stopVideoPreviewCore, "var commitStoppedState = false;");
         AssertContains(stopVideoPreviewCore, "catch (OperationCanceledException) when (transitionToken.IsCancellationRequested)");
         AssertContains(stopVideoPreviewCore, "commitStoppedState = true;");
