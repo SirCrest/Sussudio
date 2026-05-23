@@ -623,11 +623,7 @@ MJPEG preview jitter, MJPEG packet hash, preview diagnostics, capture commands,
 recording, Flashback recording/backend, Flashback playback, Flashback export,
 and visual cadence owner files.
 
-`Sussudio/Models/Automation/AutomationSnapshot.CaptureCadence.cs`,
-`AutomationSnapshot.MjpegTiming.cs`,
-`AutomationSnapshot.MjpegPreviewJitter.cs`,
-`AutomationSnapshot.MjpegPacketHash.cs`,
-`AutomationSnapshot.VisualCadence.cs`,
+`Sussudio/Models/Automation/AutomationSnapshot.FrameDiagnostics.cs`,
 `AutomationSnapshot.FlashbackRecording.cs`,
 `AutomationSnapshot.FlashbackPlayback.cs`, and
 `AutomationSnapshot.FlashbackExport.cs` own the flattened automation snapshot

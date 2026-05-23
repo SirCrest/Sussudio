@@ -38,12 +38,12 @@ public partial class SnapshotModelsTests
 
     private static void AssertAutomationSnapshotCpuMjpegMetricContract(Type snapshotType)
     {
-        var mjpegTimingText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.MjpegTiming.cs");
+        var frameDiagnosticsText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.FrameDiagnostics.cs");
 
-        AssertContains(mjpegTimingText, "public int MjpegDecodeSampleCount { get; init; }");
-        AssertContains(mjpegTimingText, "public int MjpegDecoderCount { get; init; }");
-        AssertContains(mjpegTimingText, "public MjpegDecoderAutomationSnapshot[] MjpegPerDecoder { get; init; } = Array.Empty<MjpegDecoderAutomationSnapshot>();");
-        AssertDoesNotContain(mjpegTimingText, "public bool MjpegPreviewJitterEnabled { get; init; }");
+        AssertContains(frameDiagnosticsText, "public int MjpegDecodeSampleCount { get; init; }");
+        AssertContains(frameDiagnosticsText, "public int MjpegDecoderCount { get; init; }");
+        AssertContains(frameDiagnosticsText, "public MjpegDecoderAutomationSnapshot[] MjpegPerDecoder { get; init; } = Array.Empty<MjpegDecoderAutomationSnapshot>();");
+        AssertContains(frameDiagnosticsText, "public bool MjpegPreviewJitterEnabled { get; init; }");
 
         foreach (var propertyName in AutomationSnapshotCpuMjpegMetricProperties)
         {

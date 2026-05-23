@@ -8,7 +8,7 @@ public partial class SnapshotModelsTests
     public void AutomationSnapshot_ExposesCaptureCadenceMetrics()
     {
         var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
-        var captureCadenceText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.CaptureCadence.cs");
+        var frameDiagnosticsText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.FrameDiagnostics.cs");
 
         AssertAutomationSnapshotProperties(
             snapshotType,
@@ -23,8 +23,8 @@ public partial class SnapshotModelsTests
             "CaptureCadenceRecentIntervalsMs",
             "CaptureCadenceEstimatedDroppedFrames",
             "CaptureCadenceEstimatedDropPercent");
-        AssertContains(captureCadenceText, "public long EstimatedPipelineLatencyMs { get; init; }");
-        AssertContains(captureCadenceText, "public double[] CaptureCadenceRecentIntervalsMs { get; init; } = Array.Empty<double>();");
-        AssertDoesNotContain(captureCadenceText, "public int MjpegDecodeSampleCount { get; init; }");
+        AssertContains(frameDiagnosticsText, "public long EstimatedPipelineLatencyMs { get; init; }");
+        AssertContains(frameDiagnosticsText, "public double[] CaptureCadenceRecentIntervalsMs { get; init; } = Array.Empty<double>();");
+        AssertContains(frameDiagnosticsText, "public int MjpegDecodeSampleCount { get; init; }");
     }
 }

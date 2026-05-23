@@ -8,8 +8,7 @@ public partial class SnapshotModelsTests
     public void AutomationSnapshot_ExposesMjpegPreviewMetrics()
     {
         var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
-        var previewJitterText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.MjpegPreviewJitter.cs");
-        var packetHashText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.MjpegPacketHash.cs");
+        var frameDiagnosticsText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.FrameDiagnostics.cs");
 
         AssertAutomationSnapshotProperties(
             snapshotType,
@@ -26,11 +25,10 @@ public partial class SnapshotModelsTests
             "MjpegPacketHashDuplicateFramePercent",
             "MjpegPacketHashPattern",
             "MjpegPacketHashRecentDuplicateFlags");
-        AssertContains(previewJitterText, "public bool MjpegPreviewJitterEnabled { get; init; }");
-        AssertContains(previewJitterText, "public string MjpegPreviewJitterLastDropReason { get; init; } = string.Empty;");
-        AssertDoesNotContain(previewJitterText, "public int MjpegPacketHashSampleCount { get; init; }");
-        AssertContains(packetHashText, "public int MjpegPacketHashSampleCount { get; init; }");
-        AssertContains(packetHashText, "public int[] MjpegPacketHashRecentDuplicateFlags { get; init; } = Array.Empty<int>();");
-        AssertDoesNotContain(packetHashText, "public int VisualCadenceSampleCount { get; init; }");
+        AssertContains(frameDiagnosticsText, "public bool MjpegPreviewJitterEnabled { get; init; }");
+        AssertContains(frameDiagnosticsText, "public string MjpegPreviewJitterLastDropReason { get; init; } = string.Empty;");
+        AssertContains(frameDiagnosticsText, "public int MjpegPacketHashSampleCount { get; init; }");
+        AssertContains(frameDiagnosticsText, "public int[] MjpegPacketHashRecentDuplicateFlags { get; init; } = Array.Empty<int>();");
+        AssertContains(frameDiagnosticsText, "public int VisualCadenceSampleCount { get; init; }");
     }
 }
