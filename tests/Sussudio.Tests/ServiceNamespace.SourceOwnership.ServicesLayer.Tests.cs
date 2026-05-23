@@ -62,23 +62,25 @@ static partial class Program
         AssertContains(nativeXuAudioServiceText, "TryXuGetDirect(");
         AssertContains(nativeXuAudioServiceText, "TryXuSetViaOutput(");
 
-        var cudaInteropText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.cs"));
         var cudaInteropInitializationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Initialization.cs"));
         var cudaInteropCopyText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Copy.cs"));
         var cudaInteropLifetimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Lifetime.cs"));
         var cudaInteropNativeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Native.cs"));
-        AssertContains(cudaInteropText, "internal sealed unsafe partial class CudaD3D11InteropBridge");
-        AssertDoesNotContain(cudaInteropText, "public CudaD3D11InteropBridge(");
-        AssertDoesNotContain(cudaInteropText, "public void CopyFrameToTexture");
-        AssertDoesNotContain(cudaInteropText, "public void Dispose()");
-        AssertDoesNotContain(cudaInteropText, "TryInitializeZeroCopyResources");
-        AssertDoesNotContain(cudaInteropText, "TryUnregisterResource");
-        AssertDoesNotContain(cudaInteropText, "DllImport(\"nvcuda.dll\")");
-        AssertDoesNotContain(cudaInteropText, "private struct CUDA_MEMCPY2D");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.cs")),
+            "CUDA/D3D11 interop state-only partial");
+        AssertContains(cudaInteropInitializationText, "internal sealed unsafe partial class CudaD3D11InteropBridge : IDisposable");
+        AssertContains(cudaInteropInitializationText, "private static readonly object D3D11InteropLock");
+        AssertContains(cudaInteropInitializationText, "public IntPtr TextureNativePointer");
         AssertContains(cudaInteropInitializationText, "public CudaD3D11InteropBridge(");
         AssertContains(cudaInteropInitializationText, "private bool TryInitializeZeroCopyResources");
         AssertContains(cudaInteropInitializationText, "CUDA_D3D11_INTEROP_CTX_INIT");
         AssertContains(cudaInteropInitializationText, "CUDA_D3D11_ZEROCOPY_REGISTER_OK");
+        AssertDoesNotContain(cudaInteropInitializationText, "public void CopyFrameToTexture");
+        AssertDoesNotContain(cudaInteropInitializationText, "public void Dispose()");
+        AssertDoesNotContain(cudaInteropInitializationText, "DllImport(\"nvcuda.dll\")");
+        AssertDoesNotContain(cudaInteropInitializationText, "private struct CUDA_MEMCPY2D");
         AssertContains(cudaInteropCopyText, "public void CopyFrameToTexture");
         AssertContains(cudaInteropCopyText, "private void CopyFrameZeroCopy");
         AssertContains(cudaInteropCopyText, "private void CopyFrameStaging");
