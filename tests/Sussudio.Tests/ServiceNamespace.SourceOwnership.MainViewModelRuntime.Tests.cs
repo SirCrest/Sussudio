@@ -5,7 +5,7 @@ static partial class Program
     {
         var mainViewModelText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
         var mainViewModelAudioCapturePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioCapturePropertyChanges.cs"));
-        var mainViewModelAudioPreviewPropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioPreviewPropertyChanges.cs"));
+        var mainViewModelAudioStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioState.cs"));
         var mainViewModelAudioInputSelectionText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioInputSelection.cs"));
         var mainViewModelMicrophonePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.MicrophonePropertyChanges.cs"));
         var mainViewModelDeviceAudioRequestControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceAudioRequestController.cs"));
@@ -41,7 +41,11 @@ static partial class Program
         AssertDoesNotContain(mainViewModelDispatchingText, "_dispatcherQueue.TryEnqueue");
         AssertDoesNotContain(mainViewModelText, "private bool EnqueueUiOperation");
         AssertContains(mainViewModelAudioCapturePropertyChangesText, "OnIsAudioEnabledChanged");
-        AssertContains(mainViewModelAudioPreviewPropertyChangesText, "OnIsAudioPreviewEnabledChanged");
+        AssertContains(mainViewModelAudioStateText, "OnIsAudioPreviewEnabledChanged");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioPreviewPropertyChanges.cs")),
+            "MainViewModel audio-preview property-change partial");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioPropertyChanges.cs")),
@@ -82,9 +86,9 @@ static partial class Program
         AssertDoesNotContain(mainViewModelAudioCapturePropertyChangesText, "OnSelectedDeviceAudioModeChanged");
         AssertDoesNotContain(mainViewModelAudioCapturePropertyChangesText, "OnSelectedMicrophoneDeviceChanged");
         AssertDoesNotContain(mainViewModelAudioCapturePropertyChangesText, "OnSelectedAudioInputDeviceChanged");
-        AssertDoesNotContain(mainViewModelAudioPreviewPropertyChangesText, "OnSelectedDeviceAudioModeChanged");
-        AssertDoesNotContain(mainViewModelAudioPreviewPropertyChangesText, "OnSelectedMicrophoneDeviceChanged");
-        AssertDoesNotContain(mainViewModelAudioPreviewPropertyChangesText, "OnSelectedAudioInputDeviceChanged");
+        AssertDoesNotContain(mainViewModelAudioStateText, "OnSelectedDeviceAudioModeChanged");
+        AssertDoesNotContain(mainViewModelAudioStateText, "OnSelectedMicrophoneDeviceChanged");
+        AssertDoesNotContain(mainViewModelAudioStateText, "OnSelectedAudioInputDeviceChanged");
         AssertDoesNotContain(
             File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioMonitoring.cs")),
             "OnIsAudioPreviewEnabledChanged");

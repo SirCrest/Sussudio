@@ -3075,7 +3075,7 @@ orchestration and coordinator sequencing remain in
 enablement and Flashback restart/teardown routing live in
 `Sussudio/ViewModels/MainViewModel.AudioCapturePropertyChanges.cs`, while
 audio-preview monitoring toggles live in
-`Sussudio/ViewModels/MainViewModel.AudioPreviewPropertyChanges.cs`.
+`Sussudio/ViewModels/MainViewModel.AudioState.cs`.
 
 Preview reinit animation active state, first-visual transition clears,
 startup-reset preservation, completion presentation decisions, and
@@ -4055,7 +4055,7 @@ owner, fold it back into that owner and update the source-shape tests and
    coordinator sequencing in
    `MainViewModel.AudioMonitoring.cs`, audio capture property handlers in
    `MainViewModel.AudioCapturePropertyChanges.cs`, audio-preview property
-   handlers in `MainViewModel.AudioPreviewPropertyChanges.cs`, while custom audio-input property
+   handlers in `MainViewModel.AudioState.cs`, while custom audio-input property
    handlers, retargeting, and preview-monitoring ramp handoff live in
    `MainViewModel.AudioInputSelection.cs`.
    Microphone endpoint volume synchronization and persistence now live in
@@ -4079,7 +4079,8 @@ owner, fold it back into that owner and update the source-shape tests and
    state, option collections, and HDR capture/runtime presentation state,
    `MainViewModel.CaptureSourceState.cs` owns
    source signal/source-telemetry presentation state, and `MainViewModel.AudioState.cs` owns audio/microphone
-   state, `MainViewModel.DeviceAudioState.cs` owns device-native audio/XU UI
+   state plus audio-preview property-change routing,
+   `MainViewModel.DeviceAudioState.cs` owns device-native audio/XU UI
    state, and `MainViewModel.FlashbackState.cs` owns Flashback timeline/export
    state. Keep `MainViewModel.cs` focused on the public compatibility-facade
    shell and small bridge methods; `MainViewModel.Composition.cs` owns
@@ -4093,7 +4094,7 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModelDependencies.cs` continues to own service construction. Audio
    capture property handlers now live in
    `MainViewModel.AudioCapturePropertyChanges.cs`, audio-preview property
-   handlers live in `MainViewModel.AudioPreviewPropertyChanges.cs`, microphone monitor/device
+   handlers live in `MainViewModel.AudioState.cs`, microphone monitor/device
    selection handlers live in `MainViewModel.MicrophonePropertyChanges.cs`,
    capture-mode property handlers live in `MainViewModel.CaptureModePropertyChanges.cs`. Shared
    view-model UI dispatcher enqueue/invoke policy now lives in

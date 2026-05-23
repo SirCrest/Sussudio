@@ -3160,7 +3160,7 @@ Primary current owners:
   preview reinitialize coordination, and preview request events; `MainViewModel.CaptureState.cs` owns capture-selection
   state, option collections, and HDR capture/runtime presentation state; `MainViewModel.CaptureSourceState.cs` owns
   source signal/source-telemetry presentation state; `MainViewModel.AudioState.cs` owns audio and
-  microphone state; `MainViewModel.DeviceAudioState.cs` owns device-native
+  microphone state plus audio-preview property-change routing; `MainViewModel.DeviceAudioState.cs` owns device-native
   audio/XU UI state; `MainViewModel.FlashbackState.cs` owns Flashback
   timeline/export state. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets
@@ -3181,8 +3181,7 @@ Primary current owners:
   `MainViewModel.AudioMonitoring.cs` owns preview monitoring
   coordinator sequencing. `MainViewModel.AudioCapturePropertyChanges.cs` owns
   audio capture enablement and Flashback restart/teardown routing.
-  `MainViewModel.AudioPreviewPropertyChanges.cs` owns audio-preview monitoring
-  toggle routing.
+  `MainViewModel.AudioState.cs` owns audio-preview monitoring toggle routing.
   `MainViewModel.AudioInputSelection.cs`
   owns custom audio-input property handlers, retargeting, and
   preview-monitoring ramp handoff.
@@ -3207,8 +3206,8 @@ Primary current owners:
   `Sussudio/ViewModels/DeviceAudioGainMapper.cs` owns the pure percent-to-XU-
   byte analog gain curve used by device-native gain application.
   `MainViewModel.AudioCapturePropertyChanges.cs` owns audio capture property
-  handlers. `MainViewModel.AudioPreviewPropertyChanges.cs` owns audio-preview
-  property handlers. `MainViewModel.MicrophonePropertyChanges.cs` owns microphone
+  handlers. `MainViewModel.AudioState.cs` owns audio-preview property
+  handlers. `MainViewModel.MicrophonePropertyChanges.cs` owns microphone
   monitor and selected-microphone property handlers.
   `MainViewModel.CaptureModePropertyChanges.cs`
   owns capture-mode property handlers for selected resolution, selected format,
