@@ -28,8 +28,7 @@ static partial class Program
     internal static Task AutomationUiSettings_PersistThroughSettingsPath()
     {
         var settingsPersistenceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs").Replace("\r\n", "\n");
-        var settingsLoadApplicationRootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.cs").Replace("\r\n", "\n");
-        var settingsLoadApplicationText = settingsLoadApplicationRootText;
+        var settingsLoadApplicationText = settingsPersistenceText;
         var settingsProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/SettingsService.cs").Replace("\r\n", "\n");
@@ -44,19 +43,18 @@ static partial class Program
         AssertContains(settingsPersistenceText, "_isLoadingSettings = false;");
         AssertContains(settingsPersistenceText, "MainViewModelSettingsPersistenceProjection.BuildLoadPlan(");
         AssertContains(settingsPersistenceText, "MainViewModelSettingsPersistenceProjection.BuildSaveSettings(");
-        AssertDoesNotContain(settingsPersistenceText, "private void ApplySettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
-        AssertContains(settingsLoadApplicationRootText, "private void ApplySettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
-        AssertContains(settingsLoadApplicationRootText, "ApplyRecordingSettingsLoadPlan(loadPlan);");
-        AssertContains(settingsLoadApplicationRootText, "ApplyAudioSettingsLoadPlan(loadPlan);");
-        AssertContains(settingsLoadApplicationRootText, "ApplyUiSettingsLoadPlan(loadPlan);");
-        AssertContains(settingsLoadApplicationRootText, "ApplyDeviceAudioSettingsLoadPlan(loadPlan);");
-        AssertContains(settingsLoadApplicationRootText, "ApplyFlashbackSettingsLoadPlan(loadPlan);");
-        AssertContains(settingsLoadApplicationRootText, "StageDeferredDeviceSettingsLoadPlan(loadPlan);");
-        AssertOccursBefore(settingsLoadApplicationRootText, "ApplyRecordingSettingsLoadPlan(loadPlan);", "ApplyAudioSettingsLoadPlan(loadPlan);");
-        AssertOccursBefore(settingsLoadApplicationRootText, "ApplyAudioSettingsLoadPlan(loadPlan);", "ApplyUiSettingsLoadPlan(loadPlan);");
-        AssertOccursBefore(settingsLoadApplicationRootText, "ApplyUiSettingsLoadPlan(loadPlan);", "ApplyDeviceAudioSettingsLoadPlan(loadPlan);");
-        AssertOccursBefore(settingsLoadApplicationRootText, "ApplyDeviceAudioSettingsLoadPlan(loadPlan);", "ApplyFlashbackSettingsLoadPlan(loadPlan);");
-        AssertOccursBefore(settingsLoadApplicationRootText, "ApplyFlashbackSettingsLoadPlan(loadPlan);", "StageDeferredDeviceSettingsLoadPlan(loadPlan);");
+        AssertContains(settingsPersistenceText, "private void ApplySettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
+        AssertContains(settingsPersistenceText, "ApplyRecordingSettingsLoadPlan(loadPlan);");
+        AssertContains(settingsPersistenceText, "ApplyAudioSettingsLoadPlan(loadPlan);");
+        AssertContains(settingsPersistenceText, "ApplyUiSettingsLoadPlan(loadPlan);");
+        AssertContains(settingsPersistenceText, "ApplyDeviceAudioSettingsLoadPlan(loadPlan);");
+        AssertContains(settingsPersistenceText, "ApplyFlashbackSettingsLoadPlan(loadPlan);");
+        AssertContains(settingsPersistenceText, "StageDeferredDeviceSettingsLoadPlan(loadPlan);");
+        AssertOccursBefore(settingsPersistenceText, "ApplyRecordingSettingsLoadPlan(loadPlan);", "ApplyAudioSettingsLoadPlan(loadPlan);");
+        AssertOccursBefore(settingsPersistenceText, "ApplyAudioSettingsLoadPlan(loadPlan);", "ApplyUiSettingsLoadPlan(loadPlan);");
+        AssertOccursBefore(settingsPersistenceText, "ApplyUiSettingsLoadPlan(loadPlan);", "ApplyDeviceAudioSettingsLoadPlan(loadPlan);");
+        AssertOccursBefore(settingsPersistenceText, "ApplyDeviceAudioSettingsLoadPlan(loadPlan);", "ApplyFlashbackSettingsLoadPlan(loadPlan);");
+        AssertOccursBefore(settingsPersistenceText, "ApplyFlashbackSettingsLoadPlan(loadPlan);", "StageDeferredDeviceSettingsLoadPlan(loadPlan);");
         AssertContains(settingsLoadApplicationText, "private void ApplyRecordingSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
         AssertContains(settingsLoadApplicationText, "private void ApplyAudioSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
         AssertContains(settingsLoadApplicationText, "private void ApplyUiSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
@@ -68,6 +66,7 @@ static partial class Program
         AssertContains(settingsLoadApplicationText, "_pendingSavedMicrophoneDeviceId = loadPlan.PendingMicrophoneDeviceId;");
         foreach (var removedFile in new[]
         {
+            "MainViewModel.SettingsLoadApplication.cs",
             "MainViewModel.SettingsLoadApplication.Recording.cs",
             "MainViewModel.SettingsLoadApplication.Audio.cs",
             "MainViewModel.SettingsLoadApplication.Ui.cs",
@@ -79,7 +78,7 @@ static partial class Program
             AssertEqual(
                 false,
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", removedFile)),
-                $"{removedFile} folded into MainViewModel.SettingsLoadApplication.cs");
+                $"{removedFile} folded into MainViewModel.SettingsPersistence.cs");
         }
         AssertContains(settingsProjectionText, "internal static class MainViewModelSettingsPersistenceProjection");
         AssertContains(settingsProjectionText, "internal static MainViewModelSettingsLoadPlan BuildLoadPlan(");

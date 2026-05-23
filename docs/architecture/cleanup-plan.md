@@ -4272,11 +4272,10 @@ owner, fold it back into that owner and update the source-shape tests and
    enum-string caching, source-aware auto-retargeting, and source telemetry
    graph-port contract in
    `Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs`.
-   Settings initialization, simple persistence reactions, and the impure
-   settings load/save adapter stay in `MainViewModel.SettingsPersistence.cs`.
-   `MainViewModel.SettingsLoadApplication.cs` owns the validated load-plan
-   application order, feature-specific state assignment, and deferred
-   device/audio/microphone selection staging.
+   Settings initialization, simple persistence reactions, the impure settings
+   load/save adapter, validated load-plan application order, feature-specific
+   state assignment, and deferred device/audio/microphone selection staging stay
+   in `MainViewModel.SettingsPersistence.cs`.
    `MainViewModelSettingsPersistenceProjection.cs` owns persisted-settings
    validation, clamping, deferred-selection projection, save DTO projection,
    and load/save projection contracts;
