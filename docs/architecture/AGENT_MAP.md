@@ -255,11 +255,10 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.Responses.cs`
   owns response shaping, acknowledged responses, and Flashback rejection
   diagnostics.
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.WindowActions.cs`
-  owns window automation action execution.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.WindowCommands.cs`
   owns full-screen, recordings-folder, arm-close, and window-action command
-  bodies, including close-arm gating, behind the custom command router.
+  bodies, including close-arm gating and low-level window action execution,
+  behind the custom command router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.WaitConditions.cs`
   owns WaitForCondition command response shaping, wait-condition polling, and
   snapshot predicates.

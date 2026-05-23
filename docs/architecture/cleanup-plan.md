@@ -423,11 +423,9 @@ constant-time comparison;
 `AutomationCommandDispatcher.CommandParsing.cs` handles command metadata,
 path-validation forwarding, and enum payload parsing;
 `AutomationCommandDispatcher.Responses.cs` handles response shaping and
-Flashback rejection diagnostics; `AutomationCommandDispatcher.WindowActions.cs`
-handles low-level window automation action execution;
-`AutomationCommandDispatcher.WindowCommands.cs` handles full-screen,
-recordings-folder, arm-close, and window-action command bodies, including
-close-arm gating; `AutomationCommandDispatcher.WaitConditions.cs` handles
+Flashback rejection diagnostics; `AutomationCommandDispatcher.WindowCommands.cs`
+handles full-screen, recordings-folder, arm-close, close-arm gating, and
+low-level window automation action execution; `AutomationCommandDispatcher.WaitConditions.cs` handles
 WaitForCondition response shaping, wait polling, and snapshot predicates; and
 `AutomationCommandDispatcher.Assertions.cs` handles AssertSnapshot response
 shaping, parsing, and comparison helpers. `AutomationCommandDispatcher.Payload.cs` owns JSON payload

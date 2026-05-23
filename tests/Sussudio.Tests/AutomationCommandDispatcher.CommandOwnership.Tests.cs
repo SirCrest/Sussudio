@@ -117,8 +117,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var windowCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.WindowCommands.cs")
             .Replace("\r\n", "\n");
-        var windowActionsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.WindowActions.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(customCommandsText, "case AutomationCommandKind.SetFullScreenEnabled:");
         AssertContains(customCommandsText, "ExecuteSetFullScreenEnabledCommandAsync(payload, correlationId, cancellationToken)");
@@ -146,8 +144,14 @@ static partial class Program
         AssertContains(windowCommandsText, "await ExecuteWindowActionAsync(action, cancellationToken).ConfigureAwait(false);");
         AssertContains(windowCommandsText, "await ExecuteWindowActionAsync(action, cancellationToken, payload).ConfigureAwait(false);");
 
-        AssertContains(windowActionsText, "private async Task ExecuteWindowActionAsync(");
-        AssertDoesNotContain(windowActionsText, "Window close is disallowed until ArmClose is requested.");
+        AssertContains(windowCommandsText, "private async Task ExecuteWindowActionAsync(");
+        AssertContains(windowCommandsText, "_windowControl.MoveToAsync(mx, my, cancellationToken)");
+        AssertContains(windowCommandsText, "_windowControl.ResizeToAsync(rw, rh, cancellationToken)");
+        AssertContains(windowCommandsText, "_windowControl.SnapToRegionAsync(action, cancellationToken)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.WindowActions.cs")),
+            "window action executor folded into AutomationCommandDispatcher.WindowCommands.cs");
 
         return Task.CompletedTask;
     }
