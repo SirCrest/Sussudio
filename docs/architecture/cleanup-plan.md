@@ -223,13 +223,9 @@ projections consumed by the automation snapshot DTO, plus final D3D
 projection-to-`AutomationSnapshot` flattening, renderer-state fields, and D3D
 pipeline-latency projection, waitable frame-latency projection, and DXGI
 frame-statistics projection including recent missed-refresh and stats failure
-deltas consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DCpuTiming.cs` owns D3D
-CPU upload/render/present/total-frame timing and flattened CPU timing fields
-consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.FrameFlow.cs` owns
-submitted/rendered/dropped frame ownership and recent slow-frame projection
-plus flattened frame-flow fields.
+deltas, D3D CPU upload/render/present/total-frame timing, and submitted/
+rendered/dropped frame ownership plus recent slow-frame projection consumed by
+the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs` owns preview
 runtime projection routing, preview frame counters, estimated pipeline latency,
 preview surface visibility, renderer attachment, GPU playback state/position,
