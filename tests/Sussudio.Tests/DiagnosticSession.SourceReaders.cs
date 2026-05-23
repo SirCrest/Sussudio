@@ -68,9 +68,8 @@ static partial class Program
 
     private static string ReadDiagnosticSessionModelsSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionOptions.cs",
-            "tools/Common/DiagnosticSessionResult.cs",
-            "tools/Common/DiagnosticSessionSample.cs");
+            "tools/Common/DiagnosticSessionModels.cs",
+            "tools/Common/DiagnosticSessionResult.cs");
 
     private static string ReadDiagnosticSessionResultBuilderSource()
         => ReadNormalizedSourceFiles(

@@ -120,7 +120,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 10 | Sussudio/MainWindow.Flashback.cs |
 | 10 | Sussudio/Models/Automation/PreviewRuntimeSnapshot.GpuPlayback.cs |
 | 10 | tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Cadence.Model.cs |
-| 10 | tools/Common/DiagnosticSessionSample.cs |
 | 11 | tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.AudioMaster.Model.cs |
 | 11 | tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs |
 | 12 | Sussudio/LoggingJsonContext.cs |

@@ -3251,10 +3251,10 @@ text policy stays in
 property changes, and button events.
 
 Diagnostic session DTOs live in feature-oriented model files:
-`tools/Common/DiagnosticSessionOptions.cs`,
+`tools/Common/DiagnosticSessionModels.cs` and
 `tools/Common/DiagnosticSessionResult.cs`,
-`tools/Common/DiagnosticSessionSample.cs`. `DiagnosticSessionOptions.cs` also owns
-shared tool invocation defaults and the ssctl diagnostic-session usage string,
+with `DiagnosticSessionModels.cs` owning run options, sampled snapshot DTOs,
+shared tool invocation defaults, and the ssctl diagnostic-session usage string,
 while `DiagnosticSessionScenarioCatalog.cs` owns scenario name constants, the
 MCP-compatible scenario description, the CLI help-list constant, normalization,
 entry lookup, requirement queries, and export verification artifact lookup.
@@ -3817,9 +3817,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionAutomationResponseJson.cs`
 - `DiagnosticSessionInitialSnapshot.cs`
 - `DiagnosticSessionMetrics.cs`
-- `DiagnosticSessionOptions.cs`
+- `DiagnosticSessionModels.cs`
 - `DiagnosticSessionResult.cs`
-- `DiagnosticSessionSample.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionCommandChannel.cs`
 - `DiagnosticSessionPostRunSnapshots.cs`

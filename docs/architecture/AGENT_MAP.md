@@ -3792,8 +3792,9 @@ Primary owners:
   `tools/McpServer/Tools/PresentMonTools.Correlation.cs` owns app-snapshot
   request/fallback behavior; shared option precedence and preview-present field
   extraction live in `tools/Common/PresentMon/PresentMonProbe.Options.cs`.
-- `tools/Common/DiagnosticSessionOptions.cs` owns diagnostic session run
-  options plus the shared tool invocation defaults and ssctl usage string.
+- `tools/Common/DiagnosticSessionModels.cs` owns diagnostic session run
+  options, sampled snapshot DTOs, shared tool invocation defaults, and the ssctl
+  usage string.
 - `tools/Common/DiagnosticSessionScenarioCatalog.cs` owns scenario name
   constants, MCP-compatible scenario description text, the CLI help-list
   constant, the `Names` projection, normalization, entry lookup, requirement
@@ -3805,7 +3806,6 @@ Primary owners:
   fields: core metadata, artifact paths, terminal state, actions, warnings,
   end-of-run overview, capture/source, Flashback playback/recording/export,
   preview cadence, preview scheduler, and preview D3D result fields.
-- `tools/Common/DiagnosticSessionSample.cs` owns sampled snapshot DTOs.
 - `tools/Common/DiagnosticSessionResultBuilder.cs` owns diagnostic-session
   result phase orchestration, artifact-write handoff, summary-write handoff,
   final summary emission, summary-write failure repair, and final-result
