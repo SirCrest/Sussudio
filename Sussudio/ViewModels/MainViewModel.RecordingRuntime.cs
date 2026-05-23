@@ -8,6 +8,12 @@ namespace Sussudio.ViewModels;
 /// </summary>
 public partial class MainViewModel
 {
+    private void StartRecordingCapabilityRefresh()
+        => _recordingCapabilityController.Start();
+
+    private void RebuildRecordingFormatOptions()
+        => _recordingCapabilityController.RebuildRecordingFormatOptions();
+
     partial void OnIsRecordingChanged(bool value)
     {
         if (!value)

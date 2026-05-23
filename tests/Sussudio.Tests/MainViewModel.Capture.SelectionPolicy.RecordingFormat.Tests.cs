@@ -6,7 +6,7 @@ static partial class Program
     internal static Task RecordingSettingsSelectionPolicy_LivesInFocusedHelper()
     {
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
-        var recordingCapabilityFacadeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingCapability.cs").Replace("\r\n", "\n");
+        var recordingRuntimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingRuntime.cs").Replace("\r\n", "\n");
         var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs").Replace("\r\n", "\n");
         var recordingCapabilityControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.Context.cs").Replace("\r\n", "\n");
         var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSettings.cs").Replace("\r\n", "\n");
@@ -14,8 +14,8 @@ static partial class Program
         var automationRecordingControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.Context.cs").Replace("\r\n", "\n");
         var recordingSettingsPolicyText = ReadRepoFile("Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs").Replace("\r\n", "\n");
 
-        AssertContains(recordingCapabilityFacadeText, "private void RebuildRecordingFormatOptions()");
-        AssertContains(recordingCapabilityFacadeText, "=> _recordingCapabilityController.RebuildRecordingFormatOptions();");
+        AssertContains(recordingRuntimeText, "private void RebuildRecordingFormatOptions()");
+        AssertContains(recordingRuntimeText, "=> _recordingCapabilityController.RebuildRecordingFormatOptions();");
         AssertDoesNotContain(recordingCapabilityControllerText, "private void RebuildRecordingFormatOptions()");
         AssertContains(recordingCapabilityControllerText, "public void RebuildRecordingFormatOptions()");
         AssertContains(recordingCapabilityControllerText, "namespace Sussudio.Controllers;");

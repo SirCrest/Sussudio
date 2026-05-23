@@ -4566,9 +4566,9 @@ owner, fold it back into that owner and update the source-shape tests and
    Startup FFmpeg capability probes for recording formats and split-encode modes
    plus observable recording-format option rebuilds now live in the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`.
-   `Sussudio/ViewModels/MainViewModel.RecordingCapability.cs` keeps only the
-   stable compatibility facade methods used by settings initialization and HDR
-   mode-change rebuild callers.
+   `Sussudio/ViewModels/MainViewModel.RecordingRuntime.cs` keeps recording-runtime
+   counters, disk-space assignment, and the stable recording-capability facade
+   methods used by settings initialization and HDR mode-change rebuild callers.
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.Context.cs`
    owns the top-level recording-capability graph-port contract for default
    encoder names, observable recording/split-encode option collections,
