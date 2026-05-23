@@ -21,8 +21,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var seekDisplayText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.SeekDisplay.cs")
             .Replace("\r\n", "\n");
-        var seekDisplayFramesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.SeekDisplayFrames.cs")
-            .Replace("\r\n", "\n");
         var metricsCollectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs")
             .Replace("\r\n", "\n");
         var seekCapTelemetryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs")
@@ -126,12 +124,10 @@ static partial class Program
         AssertContains(sourceText, "SetSeekDisplayFailure(kind, \"no_frame\", bufferPosition);");
         AssertContains(sourceText, "SetSeekDisplayFailure(kind, ex.GetType().Name, bufferPosition);");
         AssertContains(seekDisplayText, "private bool SeekAndDisplayKeyframe(");
-        AssertContains(seekDisplayFramesText, "private bool TryDecodeAndDisplaySeekFrame(");
-        AssertContains(seekDisplayFramesText, "private void RecordSeekDisplayDecodeFailure(");
-        AssertDoesNotContain(seekDisplayText, "private bool TryDecodeAndDisplaySeekFrame(");
-        AssertDoesNotContain(seekDisplayText, "private void RecordSeekDisplayDecodeFailure(");
-        AssertContains(agentMapText, "FlashbackPlaybackController.SeekDisplayFrames.cs");
-        AssertContains(cleanupPlanText, "FlashbackPlaybackController.SeekDisplayFrames.cs");
+        AssertContains(seekDisplayText, "private bool TryDecodeAndDisplaySeekFrame(");
+        AssertContains(seekDisplayText, "private void RecordSeekDisplayDecodeFailure(");
+        AssertContains(agentMapText, "FlashbackPlaybackController.SeekDisplay.cs");
+        AssertContains(cleanupPlanText, "FlashbackPlaybackController.SeekDisplay.cs");
         var seekDisplayBlock = ExtractTextBetween(
             seekDisplayText,
             "private bool SeekAndDisplayKeyframe(",
@@ -140,18 +136,18 @@ static partial class Program
         AssertContains(seekDisplayBlock, "cancellationToken.ThrowIfCancellationRequested();");
         AssertContains(seekDisplayBlock, "decoder.SeekToKeyframe(filePts, cancellationToken)");
         AssertContains(seekDisplayBlock, "TryDecodeAndDisplaySeekFrame(");
-        AssertContains(seekDisplayFramesText, "TryDecodeNextVideoFrameWithMetrics(decoder, out var frame, cancellationToken)");
-        AssertContains(seekDisplayFramesText, "var frameOwned = gotFrame;");
-        AssertContains(seekDisplayFramesText, "frameOwned = false;");
-        AssertContains(seekDisplayFramesText, "ReleaseHeldFrameBestEffort(frame, \"seek_cancelled\")");
-        AssertContains(seekDisplayFramesText, "if (frameOwned)\n            {\n                ReleaseHeldFrameBestEffort(frame, \"seek_cancelled\");\n            }");
+        AssertContains(seekDisplayText, "TryDecodeNextVideoFrameWithMetrics(decoder, out var frame, cancellationToken)");
+        AssertContains(seekDisplayText, "var frameOwned = gotFrame;");
+        AssertContains(seekDisplayText, "frameOwned = false;");
+        AssertContains(seekDisplayText, "ReleaseHeldFrameBestEffort(frame, \"seek_cancelled\")");
+        AssertContains(seekDisplayText, "if (frameOwned)\n            {\n                ReleaseHeldFrameBestEffort(frame, \"seek_cancelled\");\n            }");
         AssertContains(seekDisplayBlock, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
         AssertContains(seekDisplayBlock, "throw;");
         AssertOccursBefore(seekDisplayBlock, "cancellationToken.ThrowIfCancellationRequested();", "decoder.SeekToKeyframe(filePts, cancellationToken)");
         AssertOccursBefore(seekDisplayBlock, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)", "catch (Exception ex)");
-        AssertContains(seekDisplayFramesText, "TrySeekAdjacentSegmentStart(decoder, ref fileOpen, filePts, $\"seek_display:{kind}\", out var adjacentFilePts, cancellationToken)");
-        AssertContains(seekDisplayFramesText, "RecordSeekDisplayDecodeFailure(kind, bufferPosition, filePts);");
-        AssertContains(seekDisplayFramesText, "private void RecordSeekDisplayDecodeFailure(CommandKind kind, TimeSpan bufferPosition, TimeSpan filePts)");
+        AssertContains(seekDisplayText, "TrySeekAdjacentSegmentStart(decoder, ref fileOpen, filePts, $\"seek_display:{kind}\", out var adjacentFilePts, cancellationToken)");
+        AssertContains(seekDisplayText, "RecordSeekDisplayDecodeFailure(kind, bufferPosition, filePts);");
+        AssertContains(seekDisplayText, "private void RecordSeekDisplayDecodeFailure(CommandKind kind, TimeSpan bufferPosition, TimeSpan filePts)");
         AssertContains(sourceText, "RecordPlaybackDroppedFrame(\"seek_display_no_frame\");");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SEEK_NO_FRAME_SNAP_TO_LIVE");
         AssertContains(sourceText, "return gotFrame;");
