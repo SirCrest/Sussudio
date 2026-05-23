@@ -102,8 +102,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifetimeText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Lifetime.cs")
             .Replace("\r\n", "\n");
-        var optionsText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Options.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(diagnosticsText, "public long DroppedVideoFrames =>");
         AssertContains(diagnosticsText, "public bool TryGetEncoderAvSyncDrift(out double driftMs, out long correctionSamples)");
@@ -114,6 +112,8 @@ static partial class Program
         AssertContains(startupText, "_encodingTask = Task.Factory.StartNew(");
         AssertContains(startupText, "TaskCreationOptions.LongRunning");
         AssertContains(startupText, "LIBAV_SINK_START output='{context.FinalOutputPath}'");
+        AssertContains(startupText, "private LibAvEncoderOptions CreateOptions(RecordingContext context)");
+        AssertContains(startupText, "SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode)");
         AssertContains(videoSessionText, "private void InitializeVideoSessionQueues()");
         AssertContains(videoSessionText, "_cudaQueue = Channel.CreateBounded<CudaFramePacket>");
         AssertContains(videoSessionText, "_gpuQueue = Channel.CreateBounded<GpuFramePacket>");
@@ -145,8 +145,6 @@ static partial class Program
         AssertContains(stopText, "LIBAV_SINK_STOP output='{outputPath}' bytes={outputBytes}");
         AssertContains(lifetimeText, "public async ValueTask DisposeAsync()");
         AssertContains(lifetimeText, "private void ScheduleDeferredDisposeCleanup(Task encodingTask)");
-        AssertContains(optionsText, "private LibAvEncoderOptions CreateOptions(RecordingContext context)");
-        AssertContains(optionsText, "SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode)");
         AssertContains(rootText, "private void CompleteWriter<TPacket>(Channel<TPacket>? channel)");
         AssertContains(rootText, "SignalWork(\"complete_writer\");");
         AssertDoesNotContain(rootText, "public long DroppedVideoFrames =>");
@@ -169,6 +167,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.OutputValidation.cs")),
             "LibAvRecordingSink.OutputValidation.cs folded into LibAvRecordingSink.StopLifecycle.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Options.cs")),
+            "LibAvRecordingSink.Options.cs folded into LibAvRecordingSink.Startup.cs");
 
         return Task.CompletedTask;
     }

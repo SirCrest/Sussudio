@@ -1661,17 +1661,16 @@ per-recording video session setup: hardware-frame queue selection,
 video/GPU/CUDA channel creation, width/height session state, video/GPU/CUDA
 metric reset, and video diagnostics reset before the encoding task starts.
 `LibAvRecordingSink.Startup.cs` owns the `IRecordingSink.StartAsync` adapter,
-FFmpeg/runtime initialization, encoder option application, audio/microphone
-queue setup, startup sequencing, encoding-task creation, start logging, and
-startup rollback cleanup. `LibAvRecordingSink.StopLifecycle.cs` owns public and emergency
+FFmpeg/runtime initialization, encoder option creation/application,
+audio/microphone queue setup, startup sequencing, encoding-task creation, start
+logging, and startup rollback cleanup. `LibAvRecordingSink.StopLifecycle.cs` owns public and emergency
 `StopAsync` routing, `_started` clearing, encode-drain deadline selection,
 emergency cancellation/flush fallback, encoding-failure classification, HDR
 validation, stopped-output validation handoff, stop logging, and
 `FinalizeResult` shaping. Keep root state/construction in
 `LibAvRecordingSink.cs`, read-only telemetry and encoder drift accessors in
 `LibAvRecordingSink.Diagnostics.cs`, dispose/deferred cleanup in
-`LibAvRecordingSink.Lifetime.cs`, encoder option creation in
-`LibAvRecordingSink.Options.cs`, and stopped-output validation in
+`LibAvRecordingSink.Lifetime.cs`, and stopped-output validation in
 `LibAvRecordingSink.StopLifecycle.cs`.
 
 LibAv recording sink encode-loop ownership now lives in
