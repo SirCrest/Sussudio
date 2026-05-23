@@ -3486,10 +3486,10 @@ creation, and runner process metadata while the runner keeps command-channel
 lifetime and phase ordering.
 
 Diagnostic-session output locking now lives in
-`tools/Common/DiagnosticSessionOutputLock.cs`. It owns the
-`.sussudio-diag.lock` file, exclusive `FileShare.None` open, delete-on-close
-cleanup, and concurrent-output-directory failure message while the runner only
-acquires and disposes the lock.
+`tools/Common/DiagnosticSessionRunExecution.cs` beside the phase sequence that
+acquires it. It owns the `.sussudio-diag.lock` file, exclusive
+`FileShare.None` open, delete-on-close cleanup, and concurrent-output-directory
+failure message.
 
 Diagnostic-session background task tracking now lives in
 `tools/Common/DiagnosticSessionBackgroundTasks.cs`. It owns scenario task

@@ -86,7 +86,7 @@ static partial class Program
         AssertContains(contextText, "ScenarioCancellationSource.Dispose();");
 
         AssertContains(executionText, "using var runContext = new DiagnosticSessionRunContext(options, sendCommandAsync, cancellationToken);");
-        AssertContains(executionText, "using var sessionLock = DiagnosticSessionOutputLock.Acquire(runContext.OutputDirectory);");
+        AssertContains(executionText, "using var sessionLock = AcquireOutputLock(runContext.OutputDirectory);");
         AssertContains(executionText, "await runContext.CaptureInitialSnapshotAsync().ConfigureAwait(false);");
         AssertContains(executionText, "var scenarioPhaseContext = runContext.CreateScenarioPhaseContext(options, cancellationToken);");
         AssertContains(executionText, "runContext.CreateCompletionContext(options, scenarioPhase, stoppedRecordingForVerification, cancellationToken)");
@@ -124,7 +124,7 @@ static partial class Program
         AssertContains(bootstrapText, "Environment.ProcessId");
         AssertContains(contextText, "RunBootstrap = DiagnosticSessionRunBootstrap.Create(options);");
         AssertContains(contextText, "ScenarioPlan = RunBootstrap.ScenarioPlan;");
-        AssertContains(executionText, "using var sessionLock = DiagnosticSessionOutputLock.Acquire(runContext.OutputDirectory);");
+        AssertContains(executionText, "using var sessionLock = AcquireOutputLock(runContext.OutputDirectory);");
         AssertDoesNotContain(executionText, "DiagnosticSessionScenarioCatalog.Normalize(options.Scenario)");
         AssertDoesNotContain(executionText, "Math.Clamp(options.DurationSeconds");
         AssertDoesNotContain(executionText, "Math.Clamp(options.SampleIntervalMs");
@@ -137,21 +137,15 @@ static partial class Program
 
     internal static Task DiagnosticSessionOutputLock_OwnsExclusiveOutputDirectoryLock()
     {
-        var runnerText = ReadDiagnosticSessionRunnerSource();
-        var lockText = ReadRepoFile("tools/Common/DiagnosticSessionOutputLock.cs")
-            .Replace("\r\n", "\n");
+        var executionText = ReadDiagnosticSessionRunExecutionRootSource();
 
-        AssertContains(lockText, "internal static class DiagnosticSessionOutputLock");
-        AssertContains(lockText, "internal static FileStream Acquire(string outputDirectory)");
-        AssertContains(lockText, "\".sussudio-diag.lock\"");
-        AssertContains(lockText, "FileShare.None");
-        AssertContains(lockText, "FileOptions.DeleteOnClose");
-        AssertContains(lockText, "Another diagnostic session is already running");
-        AssertContains(runnerText, "using var sessionLock = DiagnosticSessionOutputLock.Acquire(runContext.OutputDirectory);");
-        AssertDoesNotContain(runnerText, "sessionLock.Dispose();");
-        AssertDoesNotContain(runnerText, "var lockPath = Path.Combine(outputDirectory, \".sussudio-diag.lock\")");
-        AssertDoesNotContain(runnerText, "FileShare.None");
-        AssertDoesNotContain(runnerText, "FileOptions.DeleteOnClose");
+        AssertContains(executionText, "private static FileStream AcquireOutputLock(string outputDirectory)");
+        AssertContains(executionText, "\".sussudio-diag.lock\"");
+        AssertContains(executionText, "FileShare.None");
+        AssertContains(executionText, "FileOptions.DeleteOnClose");
+        AssertContains(executionText, "Another diagnostic session is already running");
+        AssertContains(executionText, "using var sessionLock = AcquireOutputLock(runContext.OutputDirectory);");
+        AssertDoesNotContain(executionText, "sessionLock.Dispose();");
 
         return Task.CompletedTask;
     }

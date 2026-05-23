@@ -3879,6 +3879,8 @@ Primary owners:
   invocation, cleanup, post-cleanup evidence/result sequence, result-build
   request mapping, result-build invocation, terminal live-state write, and the
   completion context handoff consumed by the post-cleanup completion phase.
+  It also owns the per-output-directory exclusive lock that prevents concurrent
+  diagnostic sessions from writing the same artifact set.
 - `tools/Common/DiagnosticSessionScenarioPhaseRunner.cs` owns the named
   diagnostic-session scenario phase: state-mutation gating, setup/startup,
   scenario sampling, completion delegation, fault drain delegation, and the
@@ -3891,9 +3893,6 @@ Primary owners:
   delegation: registered background work before rejected-export handling,
   rejected-export handling before PresentMon completion, and interrupted drain
   handoff.
-- `tools/Common/DiagnosticSessionOutputLock.cs` owns the per-output-directory
-  exclusive lock that prevents concurrent diagnostic sessions from writing the
-  same artifact set.
 - `tools/Common/DiagnosticSessionBackgroundTasks.cs` owns diagnostic-session
   scenario background task registration, deterministic await order, normal
   registered scenario completion, PresentMon and deferred recording-settings
