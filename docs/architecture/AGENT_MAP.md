@@ -3417,14 +3417,10 @@ Primary current owners:
   `MainViewModel.AutomationUi.cs` owns UI-only automation mutators
   for settings visibility, Flashback timeline visibility, show-all capture
   options, stats dock/section visibility, and frame-time overlay display.
-  `MainViewModel.AutomationAudio.cs`
-  owns automation command entry points for app audio enablement,
-  audio-preview enablement, and preview-volume clamp/persist.
-  `MainViewModel.AutomationDeviceAudio.cs` owns automation command entry
-  points for device-native mode/gain application.
-  `MainViewModel.AutomationMicrophone.cs` owns automation command entry
-  points for microphone enablement with recording-time refusal and idempotent
-  handling.
+  `MainViewModel.AutomationAudio.cs` owns automation command entry points for
+  app audio enablement, audio-preview enablement, preview-volume
+  clamp/persist, device-native mode/gain application, and microphone
+  enablement with recording-time refusal and idempotent handling.
   `MainViewModelPreviewLifecycleController.cs` owns top-level automation preview
   enable/disable idempotence, pending-reinit cancellation, and start/stop
   routing behind the `MainViewModel.cs` compatibility facade.

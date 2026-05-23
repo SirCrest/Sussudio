@@ -4305,11 +4305,9 @@ owner, fold it back into that owner and update the source-shape tests and
    live in `MainViewModel.AutomationUi.cs`; the public show-all capture options
    command remains accepted as a dispatcher-level compatibility no-op.
    Automation command entry points for app audio enablement, audio-preview
-   enablement, and preview-volume clamp/persist now live in
-   `MainViewModel.AutomationAudio.cs`; device-native mode/gain application
-   lives in `MainViewModel.AutomationDeviceAudio.cs`; microphone enablement
-   with recording-time refusal/idempotent handling now lives in
-   `MainViewModel.AutomationMicrophone.cs`.
+   enablement, preview-volume clamp/persist, device-native mode/gain
+   application, and microphone enablement with recording-time
+   refusal/idempotent handling now live in `MainViewModel.AutomationAudio.cs`.
    Automation preview enable/disable idempotence, pending-reinit cancellation,
    and preview start/stop routing now live in
    top-level `MainViewModelPreviewLifecycleController.cs` plus graph-built
