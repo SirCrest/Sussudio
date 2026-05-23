@@ -3,12 +3,26 @@ using Sussudio.ViewModels;
 
 namespace Sussudio;
 
-// XAML-facing adapter for bottom status-strip text. The controller owns the
-// concrete control projection so the root property dispatcher stays declarative.
+// XAML-facing adapter for shell status presentation. The controllers own concrete
+// control projection so the root property dispatcher stays declarative.
 public sealed partial class MainWindow
 {
+    private LiveSignalInfoController _liveSignalInfoController = null!;
     private WindowTitleController _windowTitleController = null!;
     private StatusStripPresentationController _statusStripPresentationController = null!;
+
+    private void InitializeLiveSignalInfoController()
+    {
+        _liveSignalInfoController = new LiveSignalInfoController(new LiveSignalInfoControllerContext
+        {
+            DispatcherQueue = DispatcherQueue,
+            LiveSignalInfoPanel = LiveSignalInfoPanel,
+            LiveSignalInfoScale = LiveSignalInfoScale,
+            LiveResolutionTextBlock = LiveResolutionTextBlock,
+            LiveFrameRateTextBlock = LiveFrameRateTextBlock,
+            LivePixelFormatTextBlock = LivePixelFormatTextBlock,
+        });
+    }
 
     private void InitializeWindowTitleController()
         => _windowTitleController = new WindowTitleController();
@@ -28,6 +42,22 @@ public sealed partial class MainWindow
 
     private void ApplyInitialStatusStripPresentation()
         => _statusStripPresentationController.ApplyInitial(BuildStatusStripPresentationSnapshot());
+
+    private void UpdateLiveSignalInfoVisibility()
+        => _liveSignalInfoController.Update(
+            ViewModel.LiveResolution,
+            ViewModel.LiveFrameRate,
+            ViewModel.LivePixelFormat);
+
+    private void StopLiveSignalInfoTimers()
+        => _liveSignalInfoController.StopTimers();
+
+    private bool TryHandleLiveSignalPropertyChanged(string propertyName)
+        => _liveSignalInfoController.TryHandlePropertyChanged(
+            propertyName,
+            ViewModel.LiveResolution,
+            ViewModel.LiveFrameRate,
+            ViewModel.LivePixelFormat);
 
     private bool TryHandleStatusStripPropertyChanged(string? propertyName)
         => _statusStripPresentationController.TryHandlePropertyChanged(

@@ -3051,7 +3051,7 @@ Primary current owners:
   capture-device button workflows.
 - `Sussudio/Controllers/Shell/LiveSignalInfoController.cs` owns live-signal pill
   text application, visibility state, show/hide debounce timers, and the small
-  scale/fade animation. `MainWindow.LiveSignalInfo.cs` is the XAML-facing
+  scale/fade animation. `MainWindow.StatusStripPresentation.cs` is the XAML-facing
   adapter. `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs` owns the
   view-model live-signal label formatting and pixel-format/codec suffix policy.
 - `Sussudio/Controllers/Preview/PreviewAudioFadeController.cs` owns preview-volume
@@ -3138,7 +3138,7 @@ Primary current owners:
   `SettingsShelfController`; stats visibility behavior still lives in the stats
   composition controller, while settings visibility behavior still lives in the
   settings shelf controller.
-- `Sussudio/MainWindow.LiveSignalInfo.cs` is the XAML-facing live signal
+- `Sussudio/MainWindow.StatusStripPresentation.cs` is the XAML-facing live signal
   adapter. `LiveSignalInfoController` owns live source-signal property-change
   routing and pill presentation.
 - `Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs` owns
