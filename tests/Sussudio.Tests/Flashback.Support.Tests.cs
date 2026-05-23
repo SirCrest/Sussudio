@@ -10,7 +10,6 @@ static partial class Program
         var decoderText = ReadFlashbackDecoderSource();
         var d3d11Text = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs").Replace("\r\n", "\n");
         var d3d11DiscoveryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.D3D11Discovery.cs").Replace("\r\n", "\n");
-        var sinkText = ReadFlashbackEncoderSinkSource();
 
         var openFileBlock = ExtractTextBetween(
             decoderText,
@@ -39,14 +38,6 @@ static partial class Program
         AssertContains(d3d11DiscoveryText, "private static string FormatHardwareConfigMethods(int methods)");
         AssertContains(d3d11DiscoveryText, "private static string GetPixelFormatName(AVPixelFormat pixelFormat)");
         AssertContains(d3d11DiscoveryText, "private static string GetHardwareDeviceName(AVHWDeviceType deviceType)");
-
-        var fileSizeBlock = ExtractTextBetween(
-            sinkText,
-            "private static long GetFileSize(string path)",
-            "    private static string CreateSessionId()");
-        AssertContains(fileSizeBlock, "FLASHBACK_SINK_FILE_SIZE_WARN");
-        AssertContains(fileSizeBlock, "return 0;");
-        AssertDoesNotContain(fileSizeBlock, "System.Diagnostics.Trace.TraceWarning");
 
         return Task.CompletedTask;
     }

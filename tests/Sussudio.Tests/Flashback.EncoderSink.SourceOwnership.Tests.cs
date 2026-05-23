@@ -461,11 +461,11 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
+        var startupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs")
+            .Replace("\r\n", "\n");
         var optionsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs")
             .Replace("\r\n", "\n");
         var sessionContextText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.SessionContext.cs")
-            .Replace("\r\n", "\n");
-        var fileSessionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.FileSessionHelpers.cs")
             .Replace("\r\n", "\n");
         var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.PacketBuffers.cs")
             .Replace("\r\n", "\n");
@@ -488,9 +488,8 @@ static partial class Program
         AssertContains(sessionContextText, "private static string MapCodecName(RecordingFormat format)");
         AssertContains(sessionContextText, "SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode)");
 
-        AssertContains(fileSessionText, "private static long GetFileSize(string path)");
-        AssertContains(fileSessionText, "private static string CreateSessionId()");
-        AssertContains(fileSessionText, "FLASHBACK_SINK_FILE_SIZE_WARN");
+        AssertContains(startupText, "private static string CreateSessionId()");
+        AssertContains(startupText, "DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()");
 
         AssertContains(packetBuffersText, "private static byte[] GetBuffer(int size)");
         AssertContains(packetBuffersText, "private static void ReturnBuffer(byte[] buffer)");
@@ -510,6 +509,7 @@ static partial class Program
         AssertDoesNotContain(rootText, "private static FlashbackSessionContext CreateSessionContext");
         AssertDoesNotContain(rootText, "private static byte[] GetBuffer");
         AssertContains(docsText, "FlashbackEncoderSink.SessionContext.cs");
+        AssertContains(docsText, "generated session ID formatting");
         AssertContains(docsText, "FlashbackEncoderSink.PacketBuffers.cs");
         AssertContains(docsText, "FlashbackEncoderSink.PacketBuffers.cs");
         AssertContains(docsText, "packet DTOs");

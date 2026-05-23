@@ -105,4 +105,9 @@ internal sealed partial class FlashbackEncoderSink
             throw;
         }
     }
+
+    private static string CreateSessionId()
+    {
+        return $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds():x}_{Guid.NewGuid():N}";
+    }
 }

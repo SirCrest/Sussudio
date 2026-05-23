@@ -1830,9 +1830,8 @@ Flashback encoder recording-context mapping now lives in
 codec mapping, split-encode mode wire mapping, and recording frame-rate argument
 parsing there.
 
-Flashback encoder file/session helpers now live in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.FileSessionHelpers.cs`. Keep
-best-effort file-size probing and generated session ID formatting there.
+Flashback encoder startup orchestration now owns generated session ID formatting
+in `Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs`.
 
 Flashback encoder packet buffer ownership now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.PacketBuffers.cs`. Keep
