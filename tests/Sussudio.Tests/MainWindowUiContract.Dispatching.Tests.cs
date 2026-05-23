@@ -1,12 +1,10 @@
 static partial class Program
 {
-    internal static Task MainWindowUiDispatching_LivesInDispatchingPartial()
+    internal static Task MainWindowUiDispatching_LivesInWindowShellPartial()
     {
-        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Dispatching.cs")
+        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.WindowShell.cs")
             .Replace("\r\n", "\n");
         var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowUiDispatchController.cs")
-            .Replace("\r\n", "\n");
-        var closeLifecycleSource = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs")
             .Replace("\r\n", "\n");
         var previewActionsSource = ReadMainWindowPreviewTransitionsAdapterSource();
         var flashbackSource = ReadMainWindowFlashbackAdapterSource();
@@ -43,8 +41,6 @@ static partial class Program
         AssertContains(flashbackControllerSource, "=> _ = _context.RunUiEventHandlerAsync(() => _context.ViewModel.SaveFlashbackLast5mAsync(), operationName);");
         AssertDoesNotContain(dispatchingSource, "CompleteWindowCloseRequest(new OperationCanceledException(cancellationToken));");
         AssertDoesNotContain(dispatchingSource, "ViewModel.StatusText = $\"{operationName} failed: {ex.Message}\";");
-        AssertDoesNotContain(closeLifecycleSource, "private Task InvokeOnUiThreadAsync(Action action, CancellationToken cancellationToken = default)");
-        AssertDoesNotContain(closeLifecycleSource, "private Task RunUiEventHandlerAsync(Func<Task> operation, string operationName)");
 
         return Task.CompletedTask;
     }

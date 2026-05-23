@@ -44,7 +44,7 @@ public sealed class AutomationAppSurfaceContractsTests
 
     [Fact]
     public Task MainWindowUiDispatchingLivesInDispatchingPartial()
-        => global::Program.MainWindowUiDispatching_LivesInDispatchingPartial();
+        => global::Program.MainWindowUiDispatching_LivesInWindowShellPartial();
 
     [Fact]
     public Task AutomationPipeServerGatesDefaultSecurityFallbackOnAuthToken()

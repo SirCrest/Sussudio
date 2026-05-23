@@ -1,4 +1,4 @@
-﻿# Architecture Cleanup Plan
+# Architecture Cleanup Plan
 
 Last reviewed: 2026-05-16.
 
@@ -1046,7 +1046,7 @@ Window geometry automation and the recordings-folder command now live in
 access, UI-thread dispatch, presenter restore, and side effects stay there, while
 `Sussudio/Controllers/Window/WindowSnapRegionLayoutPolicy.cs` owns the pure snap-region
 rectangle math for window actions.
-`MainWindow.WindowAutomation.cs` is the `IAutomationWindowControl` adapter.
+`MainWindow.WindowShell.cs` is the `IAutomationWindowControl` adapter.
 Close lifecycle state remains separate from geometry automation; see the
 explicit window close lifecycle section below for the close-state and recording
 finalization owners.
@@ -1054,7 +1054,7 @@ finalization owners.
 UI-thread dispatching helpers, preview-snapshot-style result dispatch with
 three-attempt enqueue retry, and guarded async event-handler execution now live
 in `Sussudio/Controllers/Window/WindowUiDispatchController.cs`.
-`Sussudio/MainWindow.Dispatching.cs` keeps the stable private MainWindow adapter
+`Sussudio/MainWindow.WindowShell.cs` keeps the stable private MainWindow adapter
 names for callers. Window close completion, close-request dispatch, and
 recording finalization are covered by the explicit window close lifecycle
 section below.
@@ -1153,7 +1153,7 @@ failure breadcrumbs, status text, and shutdown-content dim/restore policy.
 `AppWindow.Closing` decision choreography: trigger logging, recording-aware
 close cancellation, duplicate-stop guard, pre-close recording stop handoff,
 completion, and second-close request.
-`Sussudio/MainWindow.CloseLifecycle.cs` is the XAML/AppWindow close adapter and
+`Sussudio/MainWindow.WindowShell.cs` is the XAML/AppWindow close adapter and
 keeps `RegisterCloseLifecycle`, `CloseAsync`, and `RequestWindowClose()` stable.
 `Sussudio/Controllers/Window/WindowShutdownCleanupController.cs` owns post-`Closed`
 cleanup order: cleanup latch, close completion, closing-state mark, timer stops,

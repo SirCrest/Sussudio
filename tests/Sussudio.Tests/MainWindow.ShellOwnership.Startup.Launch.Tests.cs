@@ -79,7 +79,7 @@ static partial class Program
         var startupText = ReadMainWindowShellChromeAdapterSource();
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs").Replace("\r\n", "\n");
         var launchStartupControllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchStartupController.cs").Replace("\r\n", "\n");
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.WindowShell.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 

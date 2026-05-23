@@ -20,7 +20,7 @@ static partial class Program
             "Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs",
             "Sussudio/Controllers/Window/WindowShutdownCleanupController.cs",
             "Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs",
-            "Sussudio/MainWindow.CloseLifecycle.cs",
+            "Sussudio/MainWindow.WindowShell.cs",
             "Sussudio/MainWindow.ShutdownCleanup.Composition.cs",
         };
 

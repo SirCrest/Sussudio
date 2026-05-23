@@ -1279,7 +1279,7 @@ Primary current owners:
   automation plus the recordings-folder command: UI-thread dispatch, AppWindow
   and DisplayArea access, maximized presenter restore, and side effects.
   `Sussudio/Controllers/Window/WindowSnapRegionLayoutPolicy.cs` owns the pure
-  snap-region rectangle math. `MainWindow.WindowAutomation.cs` is the
+  snap-region rectangle math. `MainWindow.WindowShell.cs` is the
   `IAutomationWindowControl` adapter; recording-aware close handling stays with
   the close lifecycle/finalization owners.
 - `Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs` owns shell
@@ -1297,7 +1297,7 @@ Primary current owners:
   window close section below:
   `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`,
   `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs`,
-  `Sussudio/MainWindow.CloseLifecycle.cs`, and the
+  `Sussudio/MainWindow.WindowShell.cs`, and the
   `Sussudio/MainWindow.ShutdownCleanup.Composition.cs` adapter.
 - `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs` owns top-level
   preview resize telemetry throttling and reset state for preview compositor
@@ -1343,7 +1343,7 @@ Primary current owners:
   section below:
   `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`,
   `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs`,
-  `Sussudio/MainWindow.CloseLifecycle.cs`, and the
+  `Sussudio/MainWindow.WindowShell.cs`, and the
   `Sussudio/MainWindow.ShutdownCleanup.Composition.cs` adapter.
 - `Sussudio/MainWindow.StatusStripPresentation.cs` keeps the XAML-facing title
   update hook; `Sussudio/Controllers/Window/WindowTitleController.cs` owns window title
@@ -1377,7 +1377,7 @@ Primary current owners:
   mark, timer stops, event detaches, preview shutdown, post-close recording
   finalization handoff, automation disposal, NVML disposal, and ViewModel
   disposal.
-- `Sussudio/MainWindow.CloseLifecycle.cs` owns the XAML/AppWindow close adapter:
+- `Sussudio/MainWindow.WindowShell.cs` owns the XAML/AppWindow close adapter:
   `RegisterCloseLifecycle`, `CloseAsync`, and the stable
   `RequestWindowClose()` adapter.
 - `Sussudio/MainWindow.ShutdownCleanup.Composition.cs` wires MainWindow cleanup
@@ -1397,7 +1397,7 @@ Primary current owners:
   UI-thread direct execution, dispatcher enqueue/cancellation/error wrapping,
   preview-snapshot-style result dispatch with three-attempt enqueue retry, and
   guarded async event-handler status updates used by automation adapters and
-  XAML event handlers. `Sussudio/MainWindow.Dispatching.cs` keeps the stable
+  XAML event handlers. `Sussudio/MainWindow.WindowShell.cs` keeps the stable
   private MainWindow adapter names for callers.
 - `Sussudio/MainWindow.Bindings.cs` owns the root `SetupBindings()`
   startup binding sequence and leaves feature-specific binding clusters in

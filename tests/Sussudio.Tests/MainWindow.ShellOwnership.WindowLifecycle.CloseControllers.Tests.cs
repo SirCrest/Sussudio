@@ -4,7 +4,7 @@ static partial class Program
 {
     internal static Task MainWindowCloseLifecycleControllers_OwnCloseRequestAndAppClosing()
     {
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.WindowShell.cs").Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
         var appClosingControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAppClosingController.cs").Replace("\r\n", "\n");
         var closeRequestControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRequestController.cs").Replace("\r\n", "\n");

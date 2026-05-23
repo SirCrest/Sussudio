@@ -6,7 +6,7 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs").Replace("\r\n", "\n");
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.WindowShell.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadMainWindowShutdownCleanupAdapterSource();
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs").Replace("\r\n", "\n");
         var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();

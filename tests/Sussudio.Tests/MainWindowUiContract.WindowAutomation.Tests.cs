@@ -5,9 +5,7 @@ static partial class Program
         var fullScreenSource = ReadMainWindowFullScreenAdapterSource();
         var fullScreenControllerRootSource = ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.cs")
             .Replace("\r\n", "\n");
-        var closeLifecycleSource = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs")
-            .Replace("\r\n", "\n");
-        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Dispatching.cs")
+        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.WindowShell.cs")
             .Replace("\r\n", "\n");
         var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowUiDispatchController.cs")
             .Replace("\r\n", "\n");
@@ -38,20 +36,17 @@ static partial class Program
         AssertContains(dispatchingSource, "=> WindowUiDispatchController.InvokeAsync(action, cancellationToken);");
         AssertContains(dispatchControllerSource, "await action().ConfigureAwait(true);");
         AssertDoesNotContain(dispatchControllerSource, "registration.Dispose();\n                registration = default;\n\n                if (cancellationToken.IsCancellationRequested)");
-        AssertDoesNotContain(closeLifecycleSource, "private Task InvokeOnUiThreadAsync(Func<Task> action, CancellationToken cancellationToken = default)");
         return Task.CompletedTask;
     }
 
     internal static Task MainWindowWindowAutomationCommands_LiveInController()
     {
         var mainWindowSource = ReadMainWindowCompositionSource();
-        var closeLifecycleSource = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs")
-            .Replace("\r\n", "\n");
-        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Dispatching.cs")
+        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.WindowShell.cs")
             .Replace("\r\n", "\n");
         var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowUiDispatchController.cs")
             .Replace("\r\n", "\n");
-        var adapterSource = ReadRepoFile("Sussudio/MainWindow.WindowAutomation.cs")
+        var adapterSource = ReadRepoFile("Sussudio/MainWindow.WindowShell.cs")
             .Replace("\r\n", "\n");
         var controllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationController.cs")
             .Replace("\r\n", "\n");
@@ -84,10 +79,7 @@ static partial class Program
         AssertContains(snapPolicySource, "AutomationWindowAction.Center => new RectInt32(");
         AssertDoesNotContain(controllerSource, "case AutomationWindowAction.SnapLeft:");
         AssertDoesNotContain(controllerSource, "work.Width / 2");
-        AssertContains(closeLifecycleSource, "public Task CloseAsync(CancellationToken cancellationToken = default)");
-        AssertDoesNotContain(closeLifecycleSource, "public Task MinimizeAsync(");
-        AssertDoesNotContain(closeLifecycleSource, "public Task OpenRecordingsFolderAsync(");
-        AssertDoesNotContain(closeLifecycleSource, "public Task SnapToRegionAsync(");
+        AssertContains(adapterSource, "public Task CloseAsync(CancellationToken cancellationToken = default)");
         return Task.CompletedTask;
     }
 }
