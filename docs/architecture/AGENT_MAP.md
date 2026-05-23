@@ -3325,9 +3325,8 @@ Primary current owners:
   user-facing export result/status handling.
   `MainViewModel.FlashbackExportOperation.cs` owns shared Flashback export
   operation lifecycle: outcome classification, core export execution, progress
-  handoff, and stale-result classification.
-  `MainViewModel.FlashbackExportOperationState.cs` owns shared current-operation
-  checks plus CTS cancellation/disposal cleanup.
+  handoff, stale-result classification, current-operation checks, and CTS
+  cancellation/disposal cleanup.
   `MainViewModel.FlashbackExportAutomation.cs` owns automation-facing Flashback
   export command execution, linked cancellation, and dispatcher cleanup.
   `MainViewModel.FrameRateOptions.cs` owns frame-rate selection reactions and

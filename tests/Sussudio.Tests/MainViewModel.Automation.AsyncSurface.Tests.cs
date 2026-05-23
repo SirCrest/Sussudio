@@ -84,8 +84,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackExportOperationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExportOperation.cs")
             .Replace("\r\n", "\n");
-        var flashbackExportOperationStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExportOperationState.cs")
-            .Replace("\r\n", "\n");
         var flashbackExportAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExportAutomation.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackPlayback.cs")
@@ -103,7 +101,6 @@ static partial class Program
             flashbackSettingsText,
             flashbackExportText,
             flashbackExportOperationText,
-            flashbackExportOperationStateText,
             flashbackExportAutomationText,
             flashbackPlaybackText,
             flashbackBufferStatusText,

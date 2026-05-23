@@ -178,7 +178,6 @@ static partial class Program
         var disposalText = viewModelFiles["MainViewModel.Disposal.cs"];
         var flashbackExportText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
         var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackExportOperation.cs"];
-        var flashbackExportOperationStateText = viewModelFiles["MainViewModel.FlashbackExportOperationState.cs"];
         var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackExportAutomation.cs"];
         var rawDisposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs")
             .Replace("\r\n", "\n");
@@ -187,8 +186,6 @@ static partial class Program
         var rawFlashbackExportText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExport.cs")
             .Replace("\r\n", "\n");
         var rawFlashbackExportOperationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExportOperation.cs")
-            .Replace("\r\n", "\n");
-        var rawFlashbackExportOperationStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExportOperationState.cs")
             .Replace("\r\n", "\n");
         var rawFlashbackExportAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExportAutomation.cs")
             .Replace("\r\n", "\n");
@@ -222,11 +219,10 @@ static partial class Program
         AssertContains(flashbackExportOperationText, "CancelFlashbackExportCts(oldExportCts);");
         AssertContains(flashbackExportOperationText, "IsCurrentFlashbackExport(exportId, exportCts)");
         AssertContains(flashbackExportOperationText, "_exportCts = null;");
-        AssertContains(flashbackExportOperationStateText, "ReferenceEquals(_exportCts, exportCts)");
-        AssertContains(flashbackExportOperationStateText, "private static void CancelFlashbackExportCts(CancellationTokenSource? cts)");
-        AssertContains(flashbackExportOperationStateText, "catch (ObjectDisposedException)");
-        AssertContains(rawFlashbackExportOperationStateText, "FLASHBACK_EXPORT_CTS_CANCEL_WARN");
-        AssertDoesNotContain(flashbackExportOperationText, "private static void CancelFlashbackExportCts(CancellationTokenSource? cts)");
+        AssertContains(flashbackExportOperationText, "ReferenceEquals(_exportCts, exportCts)");
+        AssertContains(flashbackExportOperationText, "private static void CancelFlashbackExportCts(CancellationTokenSource? cts)");
+        AssertContains(flashbackExportOperationText, "catch (ObjectDisposedException)");
+        AssertContains(rawFlashbackExportOperationText, "FLASHBACK_EXPORT_CTS_CANCEL_WARN");
         AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "_sessionCoordinator.ExportFlashbackLastNSecondsAsync(");
         AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "var exportId = Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "CancelFlashbackExportCts(oldExportCts);");
@@ -238,14 +234,14 @@ static partial class Program
         AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "if (!_dispatcherQueue.TryEnqueue(");
         AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "finally");
         AssertContains(rawFlashbackExportAutomationText, "IsFlashbackExporting = false;\n                    FlashbackExportProgress = 0;\n                    _exportCts = null;");
-        AssertContains(flashbackExportOperationStateText, "private static void DisposeFlashbackExportCtsBestEffort(CancellationTokenSource cts, string operation)");
-        AssertContains(rawFlashbackExportOperationStateText, "FLASHBACK_EXPORT_CTS_DISPOSE_WARN");
+        AssertContains(flashbackExportOperationText, "private static void DisposeFlashbackExportCtsBestEffort(CancellationTokenSource cts, string operation)");
+        AssertContains(rawFlashbackExportOperationText, "FLASHBACK_EXPORT_CTS_DISPOSE_WARN");
         AssertContains(rawFlashbackExportOperationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"ui_current\");");
         AssertContains(rawFlashbackExportOperationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"ui_stale\");");
         AssertContains(rawFlashbackExportAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"automation_dispatcher_cleanup\");");
         AssertContains(rawFlashbackExportAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"automation_inline_cleanup\");");
         AssertDoesNotContain(
-            flashbackExportText + "\n" + flashbackExportOperationText + "\n" + flashbackExportOperationStateText + "\n" + flashbackExportAutomationText,
+            flashbackExportText + "\n" + flashbackExportOperationText + "\n" + flashbackExportAutomationText,
             "exportCts.Dispose();");
 
         return Task.CompletedTask;
