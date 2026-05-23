@@ -5,10 +5,68 @@ using Sussudio.Services.Runtime;
 
 namespace Sussudio.ViewModels;
 
+internal readonly record struct MainViewModelSettingsLoadInput(
+    IReadOnlyCollection<string> AvailableRecordingFormats,
+    IReadOnlyCollection<string> AvailableQualities,
+    IReadOnlyCollection<string> AvailablePresets,
+    IReadOnlyCollection<string> AvailableSplitEncodeModes,
+    IReadOnlyCollection<string> AvailableDeviceAudioModes,
+    Func<string, bool> OutputDirectoryExists);
+
+internal readonly record struct MainViewModelSettingsLoadPlan(
+    string? OutputPath,
+    string? SelectedRecordingFormat,
+    string? UnavailableRecordingFormat,
+    string? SelectedQuality,
+    string? SelectedPreset,
+    string? SelectedSplitEncodeMode,
+    double? CustomBitrateMbps,
+    bool? IsHdrEnabled,
+    bool? IsAudioEnabled,
+    bool? IsAudioPreviewEnabled,
+    bool? IsCustomAudioInputEnabled,
+    bool? IsMicrophoneEnabled,
+    double? MicrophoneVolume,
+    string? PendingMicrophoneVolumeDeviceId,
+    double? PreviewVolume,
+    bool? IsStatsVisible,
+    string? SelectedDeviceAudioMode,
+    double? AnalogAudioGainPercent,
+    bool? FlashbackGpuDecode,
+    int? FlashbackBufferMinutes,
+    string? PendingDeviceId,
+    string? PendingAudioDeviceId,
+    string? PendingMicrophoneDeviceId,
+    string? PendingDeviceAudioMode,
+    double? PendingAnalogAudioGainPercent);
+
+internal readonly record struct MainViewModelSettingsSaveInput(
+    string? SelectedDeviceId,
+    string OutputPath,
+    string SelectedRecordingFormat,
+    string SelectedQuality,
+    string SelectedPreset,
+    string SelectedSplitEncodeMode,
+    double CustomBitrateMbps,
+    bool IsHdrEnabled,
+    bool IsAudioEnabled,
+    bool IsAudioPreviewEnabled,
+    bool IsCustomAudioInputEnabled,
+    string? SelectedAudioInputDeviceId,
+    bool IsMicrophoneEnabled,
+    string? SelectedMicrophoneDeviceId,
+    double MicrophoneVolume,
+    double PreviewVolume,
+    bool IsStatsVisible,
+    string SelectedDeviceAudioMode,
+    double AnalogAudioGainPercent,
+    bool FlashbackGpuDecode,
+    int FlashbackBufferMinutes);
+
 /// <summary>
 /// Pure settings projection between persisted settings and MainViewModel load state.
 /// </summary>
-internal static partial class MainViewModelSettingsPersistenceProjection
+internal static class MainViewModelSettingsPersistenceProjection
 {
     internal static MainViewModelSettingsLoadPlan BuildLoadPlan(
         UserSettings settings,
@@ -65,6 +123,34 @@ internal static partial class MainViewModelSettingsPersistenceProjection
             PendingMicrophoneDeviceId: settings.SelectedMicrophoneDeviceId,
             PendingDeviceAudioMode: settings.SelectedDeviceAudioMode,
             PendingAnalogAudioGainPercent: settings.AnalogAudioGainPercent);
+    }
+
+    internal static UserSettings BuildSaveSettings(MainViewModelSettingsSaveInput input)
+    {
+        return new UserSettings
+        {
+            SelectedDeviceId = input.SelectedDeviceId,
+            OutputPath = input.OutputPath,
+            SelectedRecordingFormat = input.SelectedRecordingFormat,
+            SelectedQuality = input.SelectedQuality,
+            SelectedPreset = input.SelectedPreset,
+            SelectedSplitEncodeMode = input.SelectedSplitEncodeMode,
+            CustomBitrateMbps = input.CustomBitrateMbps,
+            IsHdrEnabled = input.IsHdrEnabled,
+            IsAudioEnabled = input.IsAudioEnabled,
+            IsAudioPreviewEnabled = input.IsAudioPreviewEnabled,
+            IsCustomAudioInputEnabled = input.IsCustomAudioInputEnabled,
+            SelectedAudioInputDeviceId = input.SelectedAudioInputDeviceId,
+            IsMicrophoneEnabled = input.IsMicrophoneEnabled,
+            SelectedMicrophoneDeviceId = input.SelectedMicrophoneDeviceId,
+            MicrophoneVolume = input.MicrophoneVolume,
+            PreviewVolume = input.PreviewVolume,
+            IsStatsVisible = input.IsStatsVisible,
+            SelectedDeviceAudioMode = input.SelectedDeviceAudioMode,
+            AnalogAudioGainPercent = input.AnalogAudioGainPercent,
+            FlashbackGpuDecode = input.FlashbackGpuDecode,
+            FlashbackBufferMinutes = input.FlashbackBufferMinutes,
+        };
     }
 
     private static string? ResolveAvailableValue(

@@ -3537,11 +3537,9 @@ Primary current owners:
   `MainViewModel.SettingsLoadApplication.cs` owns validated load-plan
   application order, feature-specific state assignment, and deferred
   device/audio/microphone selection staging.
-  `MainViewModelSettingsPersistenceProjection.Load.cs` owns persisted-settings
-  validation, clamping, and deferred-selection handoff, while
-  `MainViewModelSettingsPersistenceProjection.Save.cs` owns save DTO projection.
-  `MainViewModelSettingsPersistenceProjection.Models.cs` owns load/save
-  projection contracts.
+  `MainViewModelSettingsPersistenceProjection.cs` owns persisted-settings
+  validation, clamping, deferred-selection handoff, save DTO projection, and
+  load/save projection contracts.
   `MainViewModel.FlashbackEncoderSettings.cs` owns active
   Flashback reactions to recording-format, encoder quality/preset/split, and
   bitrate changes. `MainViewModel.FlashbackSettings.cs` owns active Flashback

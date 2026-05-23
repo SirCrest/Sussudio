@@ -4459,11 +4459,9 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.SettingsLoadApplication.cs` owns the validated load-plan
    application order, feature-specific state assignment, and deferred
    device/audio/microphone selection staging.
-   `MainViewModelSettingsPersistenceProjection.Load.cs` owns persisted-settings
-   validation, clamping, and deferred-selection projection,
-   `MainViewModelSettingsPersistenceProjection.Save.cs` owns save DTO projection,
-   and `MainViewModelSettingsPersistenceProjection.Models.cs` owns load/save
-   projection contracts;
+   `MainViewModelSettingsPersistenceProjection.cs` owns persisted-settings
+   validation, clamping, deferred-selection projection, save DTO projection,
+   and load/save projection contracts;
    active Flashback reactions to recording format
    and encoder quality/preset/split/bitrate now live in
    `MainViewModel.FlashbackEncoderSettings.cs`; buffer/GPU decode reactions stay

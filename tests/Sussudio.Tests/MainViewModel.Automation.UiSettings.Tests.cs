@@ -8,10 +8,10 @@ static partial class Program
     {
         var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationUi.cs").Replace("\r\n", "\n");
         var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudio.cs").Replace("\r\n", "\n");
-        var settingsSaveProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.Save.cs").Replace("\r\n", "\n");
+        var settingsProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.cs").Replace("\r\n", "\n");
 
         AssertContains(automationAudioText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SavePreviewVolume();");
-        AssertContains(settingsSaveProjectionText, "PreviewVolume = input.PreviewVolume,");
+        AssertContains(settingsProjectionText, "PreviewVolume = input.PreviewVolume,");
         AssertContains(automationAudioText, "public Task SetPreviewVolumeAsync(double previewVolumePercent, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(automationUiText, "public Task SetPreviewVolumeAsync");
         AssertContains(automationUiText, "public Action<string, bool>? StatsSectionVisibilityHandler { get; set; }");
@@ -30,10 +30,7 @@ static partial class Program
         var settingsPersistenceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs").Replace("\r\n", "\n");
         var settingsLoadApplicationRootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.cs").Replace("\r\n", "\n");
         var settingsLoadApplicationText = settingsLoadApplicationRootText;
-        var settingsLoadProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.Load.cs").Replace("\r\n", "\n");
-        var settingsSaveProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.Save.cs").Replace("\r\n", "\n");
-        var settingsProjectionModelsText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.Models.cs").Replace("\r\n", "\n");
-        var settingsProjectionText = settingsLoadProjectionText + "\n" + settingsSaveProjectionText + "\n" + settingsProjectionModelsText;
+        var settingsProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/SettingsService.cs").Replace("\r\n", "\n");
 
@@ -84,27 +81,33 @@ static partial class Program
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", removedFile)),
                 $"{removedFile} folded into MainViewModel.SettingsLoadApplication.cs");
         }
-        AssertContains(settingsLoadProjectionText, "internal static partial class MainViewModelSettingsPersistenceProjection");
-        AssertContains(settingsLoadProjectionText, "internal static MainViewModelSettingsLoadPlan BuildLoadPlan(");
-        AssertContains(settingsSaveProjectionText, "internal static UserSettings BuildSaveSettings(");
-        AssertContains(settingsProjectionModelsText, "internal readonly record struct MainViewModelSettingsLoadInput(");
-        AssertContains(settingsProjectionModelsText, "internal readonly record struct MainViewModelSettingsLoadPlan(");
-        AssertContains(settingsProjectionModelsText, "internal readonly record struct MainViewModelSettingsSaveInput(");
-        AssertDoesNotContain(settingsLoadProjectionText, "internal readonly record struct MainViewModelSettingsLoadInput(");
-        AssertDoesNotContain(settingsSaveProjectionText, "internal readonly record struct MainViewModelSettingsSaveInput(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModelSettingsPersistenceProjection.cs")),
-            "old combined settings projection file removed");
+        AssertContains(settingsProjectionText, "internal static class MainViewModelSettingsPersistenceProjection");
+        AssertContains(settingsProjectionText, "internal static MainViewModelSettingsLoadPlan BuildLoadPlan(");
+        AssertContains(settingsProjectionText, "internal static UserSettings BuildSaveSettings(");
+        AssertContains(settingsProjectionText, "internal readonly record struct MainViewModelSettingsLoadInput(");
+        AssertContains(settingsProjectionText, "internal readonly record struct MainViewModelSettingsLoadPlan(");
+        AssertContains(settingsProjectionText, "internal readonly record struct MainViewModelSettingsSaveInput(");
+        foreach (var removedProjectionFile in new[]
+        {
+            "MainViewModelSettingsPersistenceProjection.Load.cs",
+            "MainViewModelSettingsPersistenceProjection.Save.cs",
+            "MainViewModelSettingsPersistenceProjection.Models.cs"
+        })
+        {
+            AssertEqual(
+                false,
+                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", removedProjectionFile)),
+                $"{removedProjectionFile} folded into MainViewModelSettingsPersistenceProjection.cs");
+        }
         AssertDoesNotContain(settingsProjectionText, "SettingsService");
         AssertDoesNotContain(settingsProjectionText, "Logger");
         AssertDoesNotContain(settingsProjectionText, "Directory.");
         AssertDoesNotContain(settingsProjectionText, "MainViewModel.");
-        AssertContains(settingsLoadProjectionText, "IsStatsVisible: settings.IsStatsVisible,");
-        AssertContains(settingsSaveProjectionText, "IsStatsVisible = input.IsStatsVisible,");
-        AssertContains(settingsLoadProjectionText, "Math.Clamp(settings.PreviewVolume.Value, 0.0, 1.0)");
-        AssertContains(settingsLoadProjectionText, "Math.Clamp(settings.FlashbackBufferMinutes.Value, 1, 30)");
-        AssertContains(settingsLoadProjectionText, "ResolveAvailableValue(");
+        AssertContains(settingsProjectionText, "IsStatsVisible: settings.IsStatsVisible,");
+        AssertContains(settingsProjectionText, "IsStatsVisible = input.IsStatsVisible,");
+        AssertContains(settingsProjectionText, "Math.Clamp(settings.PreviewVolume.Value, 0.0, 1.0)");
+        AssertContains(settingsProjectionText, "Math.Clamp(settings.FlashbackBufferMinutes.Value, 1, 30)");
+        AssertContains(settingsProjectionText, "ResolveAvailableValue(");
         AssertDoesNotContain(settingsPersistenceText, "if (settings.ShowAllCaptureOptions.HasValue)");
         AssertDoesNotContain(settingsPersistenceText, "if (settings.IsStatsVisible.HasValue)");
         AssertContains(settingsPersistenceText, "partial void OnIsStatsVisibleChanged(bool value)");
