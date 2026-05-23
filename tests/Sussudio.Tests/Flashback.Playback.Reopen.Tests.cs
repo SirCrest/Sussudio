@@ -14,8 +14,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var decoderReopenText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs")
             .Replace("\r\n", "\n");
-        var decoderAdjacentSegmentSeekText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderAdjacentSegmentSeek.cs")
-            .Replace("\r\n", "\n");
         var decoderSegmentReopenText = segmentEdgesText;
         var seekDisplayText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.SeekDisplay.cs")
             .Replace("\r\n", "\n");
@@ -40,11 +38,9 @@ static partial class Program
         AssertContains(sourceText, "private static readonly TimeSpan ActiveFmp4ReopenNearLiveGuard = TimeSpan.FromMilliseconds(250);");
         AssertContains(sourceText, "private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);");
         AssertContains(decoderReopenText, "private static readonly TimeSpan ActiveFmp4ReopenNearLiveGuard = TimeSpan.FromMilliseconds(250);");
-        AssertContains(decoderAdjacentSegmentSeekText, "private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);");
-        AssertContains(decoderAdjacentSegmentSeekText, "private bool TrySeekAdjacentSegmentStart(");
-        AssertContains(decoderAdjacentSegmentSeekText, "FLASHBACK_PLAYBACK_ADJACENT_SEGMENT_SEEK");
-        AssertDoesNotContain(decoderReopenText, "private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);");
-        AssertDoesNotContain(decoderReopenText, "private bool TrySeekAdjacentSegmentStart(");
+        AssertContains(decoderReopenText, "private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);");
+        AssertContains(decoderReopenText, "private bool TrySeekAdjacentSegmentStart(");
+        AssertContains(decoderReopenText, "FLASHBACK_PLAYBACK_ADJACENT_SEGMENT_SEEK");
         AssertDoesNotContain(rootText, "private static readonly TimeSpan ActiveFmp4ReopenNearLiveGuard = TimeSpan.FromMilliseconds(250);");
         AssertDoesNotContain(rootText, "private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);");
         AssertContains(sourceText, "private bool ShouldSkipActiveFmp4ReopenNearLive(TimeSpan seekTarget, string reason)");

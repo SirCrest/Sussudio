@@ -2961,11 +2961,10 @@ Keep decoder creation, active segment file identity, file open checks, and
 decoder close/open identity transitions there, alongside best-effort decoder
 file close handling, held-frame release during teardown, decoder close/dispose
 timing, and cleanup telemetry.
-Active fMP4 reopen retry, keyframe-reopen recovery, and near-live reopen guards now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs`.
-Adjacent-segment seek fallback policy, segment-start probing, segment switch
+Active fMP4 reopen retry, keyframe-reopen recovery, near-live reopen guards,
+adjacent-segment seek fallback policy, segment-start probing, segment switch
 telemetry, and adjacent-seek failure handling now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderAdjacentSegmentSeek.cs`.
+`Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs`.
 Segment-edge fMP4 reopen/reseek recovery and fMP4 reopen audio-gate restoration
 now live with segment-edge playback handling in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs`.
