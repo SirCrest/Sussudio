@@ -148,12 +148,7 @@ static partial class Program
             "\n",
             new[]
             {
-                "AutomationCommandCatalog.Entries.cs",
-                "AutomationCommandCatalog.Entries.Core.cs",
-                "AutomationCommandCatalog.Entries.Capture.cs",
-                "AutomationCommandCatalog.Entries.Ui.cs",
-                "AutomationCommandCatalog.Entries.Flashback.cs",
-                "AutomationCommandCatalog.Entries.Verification.cs"
+                "AutomationCommandCatalog.Entries.cs"
             }.Select(file => ReadRepoFile($"Sussudio.Automation.Contracts/{file}").Replace("\r\n", "\n")));
 
     private static void AssertOptionalPayloadField(

@@ -133,7 +133,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 12 | tools/Common/DiagnosticSessionResult.Overview.cs |
 | 12 | tools/Common/DiagnosticSessionScenarioCatalog.Entries.Combined.cs |
 | 12 | tools/NativeXuAudioProbe/ToolCaptureDevice.cs |
-| 13 | Sussudio.Automation.Contracts/AutomationCommandCatalog.Entries.Verification.cs |
 | 13 | Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.Context.cs |
 | 13 | Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Realtime.Mjpeg.cs |
 | 13 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs |

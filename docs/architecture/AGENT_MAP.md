@@ -147,14 +147,10 @@ Entry points:
   renumber or reuse values.
 - `AutomationCommandCatalog.cs` owns command lookup, canonical name resolution,
   and default metadata helpers. `AutomationCommandCatalog.Entries.cs` owns the
-  command metadata table registration orchestration. Grouped metadata rows live
-  in `AutomationCommandCatalog.Entries.Core.cs`,
-  `AutomationCommandCatalog.Entries.Capture.cs`,
-  `AutomationCommandCatalog.Entries.Ui.cs`,
-  `AutomationCommandCatalog.Entries.Flashback.cs`, and
-  `AutomationCommandCatalog.Entries.Verification.cs`; keep payload shape,
-  readiness gating, timeout policy, CLI help, and MCP descriptions beside the
-  command family they describe.
+  command metadata table registration orchestration plus grouped core, capture,
+  UI, Flashback, and verification metadata rows; keep payload shape, readiness
+  gating, timeout policy, CLI help, and MCP descriptions beside the command
+  family they describe.
 - `AutomationCommandCatalog.Manifest.cs` owns manifest DTO projection and stable
   manifest JSON serialization.
 - `AutomationCommandCatalog.PathValidation.cs` owns path-policy types and path

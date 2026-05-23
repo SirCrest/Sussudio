@@ -36,9 +36,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
             "\n",
             new[]
             {
-                "AutomationCommandCatalog.Entries.cs",
-                "AutomationCommandCatalog.Entries.Capture.cs",
-                "AutomationCommandCatalog.Entries.Flashback.cs"
+                "AutomationCommandCatalog.Entries.cs"
             }.Select(file => RuntimeContractSource.ReadRepoFile($"Sussudio.Automation.Contracts/{file}").Replace("\r\n", "\n", StringComparison.Ordinal)));
         var clientText = RuntimeContractSource.ReadRepoFile("tools/AutomationClient/Program.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
