@@ -115,13 +115,13 @@ projection, AV-sync projection, capture command projection, and final
 status/evaluation/AV-sync/capture-command flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Audio.cs` owns audio/ingest
 projection routing, view-model audio peak/clipping and detected audio-signal
-projection inputs, capture-ingest and WASAPI projection groups, and flattened
-audio signal fields consumed by the automation snapshot DTO, plus audio drop
-counter projection, derived real-time/file-writer drop totals, and final
-audio-drop projection-to-`AutomationSnapshot` field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.CaptureIngest.cs` owns capture
-audio/video reader, source-reader, and ingest counter projection plus flattened
-ingest/source-reader fields consumed by the automation snapshot DTO.
+projection inputs, capture-ingest and WASAPI projection groups, capture
+audio/video reader, source-reader and ingest counters, WASAPI capture/playback
+callback, queue, gap, glitch, and latency projection, and flattened audio
+signal/ingest/source-reader/WASAPI fields consumed by the automation snapshot
+DTO, plus audio drop counter projection, derived real-time/file-writer drop
+totals, and final audio-drop projection-to-`AutomationSnapshot` field
+flattening.
 `WasapiAudioCapture.Initialization.cs` owns WASAPI endpoint binding, mix-format
 negotiation, AudioClient startup, capture event/client acquisition, and
 initialization-time metric resets. `WasapiAudioCapture.Conversion.cs` owns
@@ -163,10 +163,6 @@ payload read/update workflow, verification against mutated control bytes,
 dev-specific candidate enumeration, raw XU GET/SET, raw payload
 normalization/rehydration, and retrying the shared native transport gate from
 `NativeXuDeviceSupport.cs`.
-`AutomationDiagnosticsHub.SnapshotProjection.WasapiAudio.cs` owns WASAPI
-capture/playback callback, queue, gap, glitch, and latency projection plus
-flattened WASAPI capture/playback fields consumed by the automation snapshot
-DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.cs` owns snapshot construction
 routing, AV-sync projection/flattening, capture session command queue counters,
 latency, last-command, last-error projection inputs consumed by the automation

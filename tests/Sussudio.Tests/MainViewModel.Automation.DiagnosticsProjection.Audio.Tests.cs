@@ -9,10 +9,8 @@ static partial class Program
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
         var audioProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Audio.cs")
             .Replace("\r\n", "\n");
-        var captureIngestProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureIngest.cs")
-            .Replace("\r\n", "\n");
-        var wasapiAudioProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.WasapiAudio.cs")
-            .Replace("\r\n", "\n");
+        var captureIngestProjectionText = audioProjectionText;
+        var wasapiAudioProjectionText = audioProjectionText;
 
         AssertContains(snapshotProjectionText, "var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);");
         AssertContains(snapshotFlatteningText, "var audioAndIngestFlattening = BuildAudioAndIngestFlattenedProjection(audioAndIngest);");
@@ -51,8 +49,8 @@ static partial class Program
         AssertContains(audioProjectionText, "WasapiPlayback = BuildWasapiPlaybackFlattenedProjection(audioAndIngest.Wasapi)");
         AssertContains(audioProjectionText, "private readonly record struct AudioAndIngestFlattenedProjection");
         AssertDoesNotContain(audioProjectionText, "AudioPeak = viewModelSnapshot.AudioPeak,");
-        AssertDoesNotContain(audioProjectionText, "SourceReaderReadOutstanding = captureRuntime.SourceReaderReadOutstanding,");
-        AssertDoesNotContain(audioProjectionText, "WasapiCaptureAudioLevelEventsFired = captureRuntime.WasapiCaptureAudioLevelEventsFired,");
+        AssertDoesNotContain(snapshotFlatteningText, "SourceReaderReadOutstanding = captureRuntime.SourceReaderReadOutstanding,");
+        AssertDoesNotContain(snapshotFlatteningText, "WasapiCaptureAudioLevelEventsFired = captureRuntime.WasapiCaptureAudioLevelEventsFired,");
 
         AssertContains(audioProjectionText, "private static AudioSignalProjection BuildAudioSignalProjection(");
         AssertContains(audioProjectionText, "Peak = viewModelSnapshot.AudioPeak,");
