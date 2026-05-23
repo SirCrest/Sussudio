@@ -12,7 +12,6 @@ static partial class Program
         var mainViewModelDisposalText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Disposal.cs"));
         var mainViewModelDisposalControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDisposalController.cs"));
         var deviceRefreshControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceRefreshController.cs"));
-        var deviceRefreshControllerContextText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceRefreshController.Context.cs"));
         var deviceSelectionText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceSelection.cs"));
         var audioDeviceDiscoveryText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioDeviceDiscovery.cs"));
         var audioDeviceSelectionPolicyText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "AudioDeviceSelectionPolicy.cs"));
@@ -24,8 +23,7 @@ static partial class Program
             "shallow MainViewModel device-management partial");
         AssertContains(deviceRefreshControllerText, "namespace Sussudio.Controllers;");
         AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshController");
-        AssertContains(deviceRefreshControllerContextText, "namespace Sussudio.Controllers;");
-        AssertContains(deviceRefreshControllerContextText, "internal sealed class MainViewModelDeviceRefreshControllerContext");
+        AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshControllerContext");
         AssertContains(deviceRefreshControllerText, "private readonly MainViewModelDeviceRefreshControllerContext _context;");
         AssertDoesNotContain(deviceRefreshControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");

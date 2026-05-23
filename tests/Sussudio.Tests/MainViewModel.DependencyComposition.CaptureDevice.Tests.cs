@@ -8,7 +8,6 @@ static partial class Program
         var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var deviceAudioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs").Replace("\r\n", "\n");
         var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs").Replace("\r\n", "\n");
-        var deviceRefreshControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.Context.cs").Replace("\r\n", "\n");
         var deviceAudioRequestControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs").Replace("\r\n", "\n");
         var captureSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs").Replace("\r\n", "\n");
         var captureSettingsAutomationControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.Context.cs").Replace("\r\n", "\n");
@@ -55,8 +54,7 @@ static partial class Program
         AssertContains(deviceRefreshControllerText, "namespace Sussudio.Controllers;");
         AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshController");
         AssertContains(deviceRefreshControllerText, "private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;");
-        AssertContains(deviceRefreshControllerContextText, "namespace Sussudio.Controllers;");
-        AssertContains(deviceRefreshControllerContextText, "internal sealed class MainViewModelDeviceRefreshControllerContext");
+        AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshControllerContext");
         AssertContains(deviceRefreshControllerText, "private readonly MainViewModelDeviceRefreshControllerContext _context;");
         AssertDoesNotContain(deviceRefreshControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");

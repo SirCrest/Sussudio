@@ -4353,8 +4353,7 @@ owner, fold it back into that owner and update the source-shape tests and
    applying audio-device startup selection, replacing the capture-device collection,
    starting background format probes, restoring saved capture-device selection,
    and directly auto-starting preview through the preview lifecycle owner.
-   `Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.Context.cs`
-   owns the top-level device-refresh graph-port contract for discovery, startup
+   It also owns the device-refresh graph-port contract for discovery, startup
    audio selection, device collection mutation, background format probes,
    selection restore, and scan status projection. The shallow `MainViewModel.DeviceManagement.cs`
    partial was retired rather than preserving a sub-100-line facade. Selected
