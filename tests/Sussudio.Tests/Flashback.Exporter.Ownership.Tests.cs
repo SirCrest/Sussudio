@@ -29,14 +29,13 @@ static partial class Program
         var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs")
             .Replace("\r\n", "\n");
         var segmentInputPreflightText = segmentTemplateText;
-        var segmentValidationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentValidation.cs")
-            .Replace("\r\n", "\n");
         var runtimePolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.RuntimePolicy.cs")
             .Replace("\r\n", "\n");
         var outputFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs")
             .Replace("\r\n", "\n");
         var validationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Validation.cs")
             .Replace("\r\n", "\n");
+        var segmentValidationText = validationText;
         var libAvErrorsText = lifecycleText;
         var packetTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs")
             .Replace("\r\n", "\n");
@@ -237,6 +236,10 @@ static partial class Program
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
                 $"{removedFile} folded into FlashbackExporter.Validation.cs");
         }
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.SegmentValidation.cs")),
+            "FlashbackExporter.SegmentValidation.cs folded into FlashbackExporter.Validation.cs");
         foreach (var removedFile in new[]
         {
             "FlashbackExporter.Progress.cs",
