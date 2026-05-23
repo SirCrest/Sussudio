@@ -225,10 +225,10 @@ preview HDR/tone-map/color metadata, and the frame, cadence, surface, startup,
 GPU-playback, and color groups consumed by the automation snapshot DTO, plus
 preview display-cadence projection inputs, preview startup/readiness and
 renderer mode projection inputs, and final preview runtime flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs` owns process
-memory, CPU, GC, and thread-pool projection consumed by the automation snapshot
-DTO, plus final process resource projection-to-`AutomationSnapshot` field
-flattening.
+`AutomationDiagnosticsHub.SnapshotProjection.cs` owns process memory, CPU, GC,
+and thread-pool projection consumed by the automation snapshot DTO, plus final
+process resource projection-to-`AutomationSnapshot` field flattening alongside
+the core snapshot status/evaluation projections.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs` owns
 recording-integrity projection routing, status/reason, video-frame counters,
 queue/backpressure, audio integrity, A/V sync projection inputs, and final
