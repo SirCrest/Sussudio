@@ -21,9 +21,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs")
             .Replace("\r\n", "\n");
-        var rangeSelectionText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs")
-            .Replace("\r\n", "\n");
-        var rangeSelectionMarkersText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.Markers.cs")
+        var rangeText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs")
             .Replace("\r\n", "\n");
         var scenariosTextWithoutSpaces = scenariosText.Replace(" ", string.Empty);
 
@@ -59,12 +57,11 @@ static partial class Program
         AssertContains(playbackText, "BuildPlaybackCommandHealth(finalSnapshot, baselineSnapshot)");
         AssertContains(playbackText, "flashback export playback: pending commands remained after go-live");
         AssertContains(scenariosText, "internal static async Task RunFlashbackRangeExportAsync(");
-        AssertContains(rangeSelectionText, "private static async Task<FlashbackSelectionRange?> PrepareFlashbackSelectionRangeAsync(");
-        AssertContains(rangeSelectionText, "private readonly record struct FlashbackSelectionRange(");
-        AssertContains(rangeSelectionText, "WaitForFlashbackStressBufferReadyAsync(");
-        AssertContains(rangeSelectionMarkersText, "private static async Task MarkFlashbackSelectionPointAsync(");
-        AssertContains(rangeSelectionMarkersText, "WaitForFlashbackPlaybackPositionAsync(");
-        AssertDoesNotContain(rangeSelectionText, "WaitForFlashbackPlaybackPositionAsync(");
+        AssertContains(rangeText, "private static async Task<FlashbackSelectionRange?> PrepareFlashbackSelectionRangeAsync(");
+        AssertContains(rangeText, "private readonly record struct FlashbackSelectionRange(");
+        AssertContains(rangeText, "WaitForFlashbackStressBufferReadyAsync(");
+        AssertContains(rangeText, "private static async Task MarkFlashbackSelectionPointAsync(");
+        AssertContains(rangeText, "WaitForFlashbackPlaybackPositionAsync(");
         AssertContains(scenariosText, "\"clear-in-out-points\"");
         AssertContains(scenariosText, "\"set-in-point\"");
         AssertContains(scenariosText, "\"set-out-point\"");

@@ -3743,6 +3743,9 @@ live in `DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation
 Export-during-playback command choreography, pre-export Playing sampling,
 post-export playback continuity, and final go-live command-health validation now
 live together in `DiagnosticSessionFlashbackExportScenarios.Playback.cs`.
+Selection-range export orchestration, readiness waits, in/out marker mutation,
+range result validation, and post-cleanup command-health validation now live
+together in `DiagnosticSessionFlashbackExportScenarios.Range.cs`.
 `DiagnosticSessionFlashbackExportScenarios.Registrations.cs` owns export
 scenario task registration orchestration while diagnostic-session startup makes
 a single qualified call into that owner. Export playback registration lives in
@@ -3938,11 +3941,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
 - `DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Playback.cs`
-- `DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Range.cs`
-- `DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs`
-- `DiagnosticSessionFlashbackExportScenarios.RangeSelection.Markers.cs`
-- `DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Registrations.Playback.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Registrations.Range.cs`

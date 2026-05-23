@@ -26,11 +26,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.Coordination.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Rotated.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs",
-            "tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs",
-            "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs",
-            "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.Markers.cs",
-            "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs",
-            "tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs");
+            "tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs");
 
     private static string ReadDiagnosticSessionFlashbackLifecycleScenariosSource()
         => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs");

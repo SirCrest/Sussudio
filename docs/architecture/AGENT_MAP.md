@@ -4108,16 +4108,10 @@ Primary owners:
   sample, post-export playback continuity validation, and final go-live playback
   command-health validation, and
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs` owns
-  selection-range export orchestration.
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs`
-  owns range buffer-readiness waits, near-live range projection, and the
-  selection-range DTO.
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.Markers.cs`
-  owns playback seeking plus in/out marker mutation.
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs`
-  owns range duration/status validation, and
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs`
-  owns post-cleanup playback command-health validation.
+  selection-range export orchestration, range buffer-readiness waits, near-live
+  range projection, playback seeking plus in/out marker mutation, range
+  duration/status validation, and post-cleanup playback command-health
+  validation.
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
   owns the export scenario task registration handoff from diagnostic-session
   startup. `tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.Playback.cs`
