@@ -2006,10 +2006,9 @@ disposed-state guards now live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs`.
 Recovery-preserve state and marker files now live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.RecoveryPreserve.cs`.
-Flashback buffer segment file lookup, range selection, and start-PTS lookup now
-live in `Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs`.
-Shared segment path safety now lives in
-`Sussudio/Services/Flashback/FlashbackBufferManager.SegmentPathSafety.cs`.
+Flashback buffer segment file lookup, range selection, start-PTS lookup, and
+shared segment path safety now live in
+`Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs`.
 Segment counts, active-path projection, active segment start PTS calculation,
 and segment-info projection now live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.SegmentStatus.cs`.
