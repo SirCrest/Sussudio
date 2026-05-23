@@ -4181,9 +4181,7 @@ owner, fold it back into that owner and update the source-shape tests and
    construction, dependency assignment, collaborator fields, controller graph
    handoff, and startup lifecycle kick-off.
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs`
-   owns controller graph construction order, while
-   `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.UiDispatch.cs`
-   owns UI-dispatch graph ports,
+   owns controller graph construction order and UI-dispatch graph ports, while
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Presentation.cs`
    owns preview lifecycle graph ports,
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureSettingsAutomation.cs`
