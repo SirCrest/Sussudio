@@ -3479,10 +3479,11 @@ Diagnostic-session live breadcrumbs now live in
 terminal override mapping, and sampling live-state write throttle.
 
 Diagnostic-session run bootstrap now lives in
-`tools/Common/DiagnosticSessionRunBootstrap.cs`. It owns scenario
-normalization, scenario-plan selection, duration/sample clamping, session
-identity, output-directory creation, and runner process metadata while the
-runner keeps command-channel lifetime and phase ordering.
+`tools/Common/DiagnosticSessionRunContext.cs` beside the mutable per-run
+context that consumes it. It owns scenario normalization, scenario-plan
+selection, duration/sample clamping, session identity, output-directory
+creation, and runner process metadata while the runner keeps command-channel
+lifetime and phase ordering.
 
 Diagnostic-session output locking now lives in
 `tools/Common/DiagnosticSessionOutputLock.cs`. It owns the
@@ -3834,7 +3835,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionRunState.cs`
 - `DiagnosticSessionLiveStateWriter.cs`
-- `DiagnosticSessionRunBootstrap.cs`
 - `DiagnosticSessionRunContext.cs`
 - `DiagnosticSessionSampler.cs`
 - `DiagnosticSessionScenarioCatalog.cs`

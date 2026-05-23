@@ -106,9 +106,9 @@ static partial class Program
 
     internal static Task DiagnosticSessionRunBootstrap_OwnsNormalizedSessionIdentity()
     {
-        var runnerText = ReadDiagnosticSessionRunnerSource();
+        var executionText = ReadDiagnosticSessionRunExecutionRootSource();
         var contextText = ReadDiagnosticSessionRunContextSource();
-        var bootstrapText = ReadRepoFile("tools/Common/DiagnosticSessionRunBootstrap.cs")
+        var bootstrapText = ReadDiagnosticSessionRunContextSource()
             .Replace("\r\n", "\n");
 
         AssertContains(bootstrapText, "internal readonly record struct DiagnosticSessionRunBootstrap(");
@@ -124,13 +124,13 @@ static partial class Program
         AssertContains(bootstrapText, "Environment.ProcessId");
         AssertContains(contextText, "RunBootstrap = DiagnosticSessionRunBootstrap.Create(options);");
         AssertContains(contextText, "ScenarioPlan = RunBootstrap.ScenarioPlan;");
-        AssertContains(runnerText, "using var sessionLock = DiagnosticSessionOutputLock.Acquire(runContext.OutputDirectory);");
-        AssertDoesNotContain(runnerText, "DiagnosticSessionScenarioCatalog.Normalize(options.Scenario)");
-        AssertDoesNotContain(runnerText, "Math.Clamp(options.DurationSeconds");
-        AssertDoesNotContain(runnerText, "Math.Clamp(options.SampleIntervalMs");
-        AssertDoesNotContain(runnerText, "DateTimeOffset.UtcNow.ToString(\"yyyyMMdd_HHmmss\"");
-        AssertDoesNotContain(runnerText, "Directory.CreateDirectory(outputDirectory);");
-        AssertDoesNotContain(runnerText, "var runFlashbackPlayback = scenarioPlan.RunFlashbackPlayback;");
+        AssertContains(executionText, "using var sessionLock = DiagnosticSessionOutputLock.Acquire(runContext.OutputDirectory);");
+        AssertDoesNotContain(executionText, "DiagnosticSessionScenarioCatalog.Normalize(options.Scenario)");
+        AssertDoesNotContain(executionText, "Math.Clamp(options.DurationSeconds");
+        AssertDoesNotContain(executionText, "Math.Clamp(options.SampleIntervalMs");
+        AssertDoesNotContain(executionText, "DateTimeOffset.UtcNow.ToString(\"yyyyMMdd_HHmmss\"");
+        AssertDoesNotContain(executionText, "Directory.CreateDirectory(outputDirectory);");
+        AssertDoesNotContain(executionText, "var runFlashbackPlayback = scenarioPlan.RunFlashbackPlayback;");
 
         return Task.CompletedTask;
     }

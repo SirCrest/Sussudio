@@ -39,8 +39,7 @@ static partial class Program
     internal static Task DiagnosticSessionScenarioPlan_OwnsScenarioFlags()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
-        var bootstrapText = ReadRepoFile("tools/Common/DiagnosticSessionRunBootstrap.cs")
-            .Replace("\r\n", "\n");
+        var bootstrapText = ReadDiagnosticSessionRunContextSource();
         var planText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs")
             .Replace("\r\n", "\n");
         var catalogText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs")

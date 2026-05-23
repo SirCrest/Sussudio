@@ -3868,11 +3868,10 @@ Primary owners:
   `session-live.json` breadcrumb path, payload shape, health projection,
   warning projection, terminal override mapping, and sampling live-state write
   throttle.
-- `tools/Common/DiagnosticSessionRunBootstrap.cs` owns diagnostic-session
-  scenario normalization, scenario-plan selection, duration/sample clamping,
-  session identity, output-directory creation, and runner process metadata.
 - `tools/Common/DiagnosticSessionRunContext.cs` owns diagnostic-session core mutable run infrastructure:
-  bootstrap, actions, warnings, samples, run state, command channel, scenario
+  bootstrap, scenario normalization, scenario-plan selection, duration/sample
+  clamping, session identity, output-directory creation, runner process
+  metadata, actions, warnings, samples, run state, command channel, scenario
   cancellation source, initial snapshot state, live-state handoff, run-context
   disposal, and scenario/completion context construction.
 - `tools/Common/DiagnosticSessionRunExecution.cs` owns diagnostic-session phase
