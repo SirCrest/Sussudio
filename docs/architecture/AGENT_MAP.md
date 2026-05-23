@@ -1112,9 +1112,6 @@ Entry points:
   handoff.
 - `FlashbackPlaybackController.PreviewFrameValidation.cs` owns decoded-frame
   validity checks, GPU/CPU skip reasons, and NV12/P010 byte-size policy.
-- `FlashbackPlaybackController.PlaybackFrameOwnership.cs` owns held playback
-  frame backing state, release-for-live reset policy, and best-effort decoded
-  frame release warnings.
 - `FlashbackPlaybackController.PlaybackLiveRecovery.cs` owns seek-display,
   playback-submit, decode-error snap, near-live snap, and software-decode-budget
   recovery back to live playback state.
@@ -1123,7 +1120,7 @@ Entry points:
 - `FlashbackPlaybackController.SeekDisplayFrames.cs` owns seek/scrub decoded
   frame acquisition, adjacent-segment fallback display, frame submission/held
   frame release, and no-frame seek-display failure accounting.
-- `FlashbackPlaybackController.PlaybackFrames.cs` owns playback-frame dequeue/decode selection, prebuffer cleanup, and A/V drift frame-skip catch-up policy.
+- `FlashbackPlaybackController.PlaybackFrames.cs` owns playback-frame dequeue/decode selection, prebuffer cleanup, A/V drift frame-skip catch-up policy, held playback frame backing state, release-for-live reset policy, and best-effort decoded frame release warnings.
 - `FlashbackPlaybackController.PlaybackLoop.cs` owns continuous playback frame
   progression, decoded-frame submission flow, live-recovery policy invocation,
   cadence pacing, and A/V drift diagnostics.

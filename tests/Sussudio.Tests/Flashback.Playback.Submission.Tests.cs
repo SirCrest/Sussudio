@@ -9,7 +9,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewFrameValidationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrameValidation.cs")
             .Replace("\r\n", "\n");
-        var playbackFrameOwnershipText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrameOwnership.cs")
+        var playbackFrameOwnershipText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
             .Replace("\r\n", "\n");
         var playbackLiveRecoveryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLiveRecovery.cs")
             .Replace("\r\n", "\n");

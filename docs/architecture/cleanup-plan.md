@@ -2953,7 +2953,7 @@ NV12/P010 byte-size policy now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrameValidation.cs`.
 Held playback frame backing state, release-for-live reset policy, and best-effort decoded
 frame release warnings now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrameOwnership.cs`;
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`;
 seek-display and playback-submit failure recovery plus decode-error snap,
 near-live snap, and software-decode-budget recovery back to live playback state
 now live in
