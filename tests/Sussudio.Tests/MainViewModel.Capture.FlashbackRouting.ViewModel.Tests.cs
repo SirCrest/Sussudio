@@ -54,7 +54,6 @@ static partial class Program
         var flashbackBufferStatusText = viewModelFiles["MainViewModel.FlashbackBufferStatus.cs"];
         var flashbackPlaybackCommandsText = viewModelFiles["MainViewModel.FlashbackPlaybackCommands.cs"];
         var flashbackPlaybackAutomationText = viewModelFiles["MainViewModel.FlashbackPlaybackAutomation.cs"];
-        var flashbackMarkersText = viewModelFiles["MainViewModel.FlashbackMarkers.cs"];
         var flashbackAutomationText = flashbackSettingsText
             + "\n" + flashbackExportText
             + "\n" + flashbackExportOperationText
@@ -62,8 +61,7 @@ static partial class Program
             + "\n" + flashbackPlaybackText
             + "\n" + flashbackBufferStatusText
             + "\n" + flashbackPlaybackCommandsText
-            + "\n" + flashbackPlaybackAutomationText
-            + "\n" + flashbackMarkersText;
+            + "\n" + flashbackPlaybackAutomationText;
         var audioCapturePropertyChangesText = viewModelFiles["MainViewModel.AudioCapturePropertyChanges.cs"];
         var rawViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
@@ -108,12 +106,15 @@ static partial class Program
         AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackPause", "_sessionCoordinator.FlashbackPause()");
         AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackGoLive", "_sessionCoordinator.FlashbackGoLive()");
         AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackNudge", "_sessionCoordinator.FlashbackNudge(delta)");
-        AssertDoesNotContain(flashbackPlaybackCommandsText, "FlashbackSetInPoint");
-        AssertMemberContains(flashbackMarkersText, "FlashbackSetInPoint", "_sessionCoordinator.FlashbackSetInPoint()");
-        AssertMemberContains(flashbackMarkersText, "FlashbackSetInPointAt", "_sessionCoordinator.FlashbackSetInPointAt(position)");
-        AssertMemberContains(flashbackMarkersText, "FlashbackSetOutPoint", "_sessionCoordinator.FlashbackSetOutPoint()");
-        AssertMemberContains(flashbackMarkersText, "FlashbackSetOutPointAt", "_sessionCoordinator.FlashbackSetOutPointAt(position)");
-        AssertMemberContains(flashbackMarkersText, "FlashbackClearInOutPoints", "=> _sessionCoordinator.FlashbackClearInOutPoints()");
+        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackSetInPoint", "_sessionCoordinator.FlashbackSetInPoint()");
+        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackSetInPointAt", "_sessionCoordinator.FlashbackSetInPointAt(position)");
+        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackSetOutPoint", "_sessionCoordinator.FlashbackSetOutPoint()");
+        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackSetOutPointAt", "_sessionCoordinator.FlashbackSetOutPointAt(position)");
+        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackClearInOutPoints", "=> _sessionCoordinator.FlashbackClearInOutPoints()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackMarkers.cs")),
+            "MainViewModel.FlashbackMarkers.cs folded into MainViewModel.FlashbackPlaybackCommands.cs");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "_sessionCoordinator.GetFlashbackBufferStatus()");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "FlashbackInPoint = playback.InPoint;");
