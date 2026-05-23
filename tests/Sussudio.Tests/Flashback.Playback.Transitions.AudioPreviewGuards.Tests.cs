@@ -18,15 +18,13 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioMasterText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs")
             .Replace("\r\n", "\n");
-        var audioMasterFallbacksText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterFallbacks.cs")
-            .Replace("\r\n", "\n");
+        var audioMasterFallbacksText = audioMasterText;
         var playbackTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs")
             .Replace("\r\n", "\n");
         var playbackSoftwareBudgetText = playbackTimingText;
         var playbackSegmentSwitchText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentSwitch.cs")
             .Replace("\r\n", "\n");
-        var audioMasterClockText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterClock.cs")
-            .Replace("\r\n", "\n");
+        var audioMasterClockText = audioMasterText;
         var wasapiPlaybackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs")
             .Replace("\r\n", "\n");
         var wasapiPlaybackQueueText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.Queue.cs")
@@ -146,11 +144,6 @@ static partial class Program
         AssertContains(audioMasterClockText, "return TimeSpan.FromTicks(renderingPts - videoPts).TotalMilliseconds;");
         AssertDoesNotContain(metricsCollectionText, "public double AvDriftMs");
         AssertDoesNotContain(metricsCollectionText, "RenderingPtsTicks");
-        AssertDoesNotContain(audioMasterText, "private long _audioClockPtsTicks;");
-        AssertDoesNotContain(audioMasterText, "private bool TryComputeAudioMasterDriftMs(long videoPtsTicks, out double driftMs)");
-        AssertDoesNotContain(audioMasterText, "private long _playbackAudioMasterFallbacks;");
-        AssertDoesNotContain(audioMasterText, "private string _playbackAudioMasterLastFallbackReason = string.Empty;");
-        AssertDoesNotContain(audioMasterText, "private string _pendingAudioMasterFallbackReason = string.Empty;");
         AssertContains(audioMasterText, "public long PlaybackAudioMasterDelayDoubles => Interlocked.Read(ref _playbackAudioMasterDelayDoubles);");
         AssertContains(audioMasterText, "public long PlaybackAudioMasterDelayShrinks => Interlocked.Read(ref _playbackAudioMasterDelayShrinks);");
         AssertContains(audioMasterFallbacksText, "private long _playbackAudioMasterFallbacks;");

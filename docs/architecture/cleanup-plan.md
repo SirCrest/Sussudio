@@ -3007,15 +3007,11 @@ there.
 The live-state recovery implementation remains in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLiveRecovery.cs`.
 Audio-master clock sample state, stale-clock detection, read-only A/V drift
-projection, and clock-drift computation now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterClock.cs`;
-audio-master pacing correction policy, delay-adjustment counters, and wall-clock
+projection, clock-drift computation, pacing correction policy, delay-adjustment
+counters, fallback accounting/classification, pending fallback suppression,
+read-only fallback reason/drift/clock-age telemetry projection, and wall-clock
 sleep/spin pacing now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs`.
-Audio-master fallback accounting state, fallback classification, pending
-fallback suppression, and read-only fallback reason/drift/clock-age telemetry
-projection and updates now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterFallbacks.cs`.
 Decoder close best-effort handling now lives with decoder file ownership, and
 decode-error snap-to-live recovery lives with the continuous playback loop, so
 the root controller can remain the construction and core state shell. Public
