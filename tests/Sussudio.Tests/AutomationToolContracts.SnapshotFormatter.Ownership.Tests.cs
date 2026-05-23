@@ -17,7 +17,7 @@ static partial class Program
         var sharedFormatterAvSyncSource = sharedFormatterCaptureCadenceSource;
         var sharedFormatterSourceSource = sharedFormatterCaptureCadenceSource;
         var sharedFormatterValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Values.cs");
-        var sharedFormatterDisplayValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.DisplayValues.cs");
+        var sharedFormatterDisplayValuesSource = sharedFormatterValuesSource;
         var sharedFormatterFlashbackSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.cs");
         var sharedFormatterMjpegTimingSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs");
         var sharedFormatterPreviewSource = sharedFormatterCaptureCadenceSource;
@@ -95,8 +95,8 @@ static partial class Program
         AssertContains(sharedFormatterValuesSource, "internal static long GetLong(JsonElement element, string propertyName, long fallback = 0)");
         AssertContains(sharedFormatterValuesSource, "internal static long? GetNullableLong(JsonElement element, string propertyName)");
         AssertContains(sharedFormatterValuesSource, "CultureInfo.InvariantCulture");
-        AssertDoesNotContain(sharedFormatterValuesSource, "internal static string FormatBytes(long bytes)");
-        AssertDoesNotContain(sharedFormatterValuesSource, "internal static long ComputeTickAgeMs(long tickMs)");
+        AssertContains(sharedFormatterValuesSource, "internal static string FormatBytes(long bytes)");
+        AssertContains(sharedFormatterValuesSource, "internal static long ComputeTickAgeMs(long tickMs)");
         AssertContains(sharedFormatterDisplayValuesSource, "internal static string FormatBytes(long bytes)");
         AssertContains(sharedFormatterDisplayValuesSource, "internal static string FormatIntervalMs(JsonElement element, string propertyName, string fallback = \"N/A\")");
         AssertContains(sharedFormatterDisplayValuesSource, "internal static string FormatFrameBudgetMs(JsonElement element, string fpsPropertyName, string fallback = \"N/A\")");

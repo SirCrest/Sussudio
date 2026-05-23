@@ -508,10 +508,9 @@ performance, and process CPU/Memory/GC/thread-pool text. Video pipeline and
 capture cadence text live in
 `AutomationSnapshotFormatter.VideoPipeline.cs`,
 `AutomationSnapshotFormatter.CaptureCadence.cs`. Snapshot response-success
-detection and tolerant JSON string, bool, and numeric accessors live in
-`AutomationSnapshotFormatter.Values.cs`; while
+detection, tolerant JSON string/bool/numeric accessors, and shared
 byte/number/interval, frame-budget, and tick-age display helpers live in
-`AutomationSnapshotFormatter.DisplayValues.cs`; the Flashback gate/header/order,
+`AutomationSnapshotFormatter.Values.cs`; the Flashback gate/header/order,
 encoding status/health text, export progress/result text, playback command text,
 and playback cadence/decode/frame/stage/A/V drift text now live together in
 `AutomationSnapshotFormatter.Flashback.cs`. Capture cadence owns the

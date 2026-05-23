@@ -4061,11 +4061,9 @@ Primary owners:
   dimensions, source frame-rate summary, HDR, source telemetry text, and routing
   to MJPEG/Preview D3D sections.
   `tools/Common/AutomationSnapshotFormatter.Values.cs` owns automation
-  response-success detection plus tolerant JSON string, bool, and numeric
-  accessors.
-  `tools/Common/AutomationSnapshotFormatter.DisplayValues.cs` owns shared
-  byte, number, interval, frame-budget, and tick-age display helpers, while
-  `tools/Common/AutomationSnapshotFormatter.Flashback.cs` owns the Flashback
+  response-success detection, tolerant JSON string/bool/numeric accessors, and
+  shared byte, number, interval, frame-budget, and tick-age display helpers,
+  while `tools/Common/AutomationSnapshotFormatter.Flashback.cs` owns the Flashback
   gate, header, subsection ordering, encoding status/health text, export
   progress/result text, playback command text, and playback cadence/decode/frame
   stage/A/V drift text.
