@@ -9,11 +9,7 @@ static partial class Program
         var scenarioText = ReadDiagnosticSessionRunExecutionScenarioSource();
         var phaseRunnerText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseRunner.cs")
             .Replace("\r\n", "\n");
-        var phaseContextText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseContext.cs")
-            .Replace("\r\n", "\n");
-        var phaseResultText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseResult.cs")
-            .Replace("\r\n", "\n");
-        var phaseStateText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseState.cs")
+        var phaseModelsText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseModels.cs")
             .Replace("\r\n", "\n");
         var completionText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseCompletion.cs")
             .Replace("\r\n", "\n");
@@ -21,9 +17,9 @@ static partial class Program
 
         AssertContains(executionText, "DiagnosticSessionScenarioPhaseRunner.RunAsync(scenarioPhaseContext)");
         AssertContains(phaseRunnerText, "internal static class DiagnosticSessionScenarioPhaseRunner");
-        AssertContains(phaseContextText, "internal sealed class DiagnosticSessionScenarioPhaseContext");
-        AssertContains(phaseResultText, "internal sealed record DiagnosticSessionScenarioPhaseResult(");
-        AssertContains(phaseStateText, "internal sealed class DiagnosticSessionScenarioPhaseState");
+        AssertContains(phaseModelsText, "internal sealed class DiagnosticSessionScenarioPhaseContext");
+        AssertContains(phaseModelsText, "internal sealed record DiagnosticSessionScenarioPhaseResult(");
+        AssertContains(phaseModelsText, "internal sealed class DiagnosticSessionScenarioPhaseState");
         AssertContains(scenarioText, "internal sealed class DiagnosticSessionScenarioPhaseContext");
         AssertContains(scenarioText, "internal sealed record DiagnosticSessionScenarioPhaseResult(");
         AssertContains(scenarioText, "internal sealed class DiagnosticSessionScenarioPhaseState");

@@ -3278,10 +3278,8 @@ handoff consumed by the post-cleanup phase. `DiagnosticSessionRunExecution.cs`
 hands scenario execution directly to
 `DiagnosticSessionScenarioPhaseRunner.cs`, which owns the main scenario phase
 for setup/startup, sampling, completion delegation, and fault drain delegation.
-`DiagnosticSessionScenarioPhaseContext.cs` owns the explicit phase input
-handoff from run context construction into the phase runner.
-`DiagnosticSessionScenarioPhaseResult.cs` owns the immutable completion handoff,
-and `DiagnosticSessionScenarioPhaseState.cs` owns mutable in-flight phase state.
+`DiagnosticSessionScenarioPhaseModels.cs` owns the explicit phase input handoff,
+the immutable completion handoff, and mutable in-flight phase state.
 `DiagnosticSessionScenarioPhaseCompletion.cs` owns post-sampling completion
 order and fault-drain delegation: registered background work before
 rejected-export handling, rejected-export handling before PresentMon
@@ -3852,9 +3850,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRunExecution.cs`
 - `DiagnosticSessionRunExecution.CompletionContext.cs`
 - `DiagnosticSessionScenarioPhaseRunner.cs`
-- `DiagnosticSessionScenarioPhaseContext.cs`
-- `DiagnosticSessionScenarioPhaseResult.cs`
-- `DiagnosticSessionScenarioPhaseState.cs`
+- `DiagnosticSessionScenarioPhaseModels.cs`
 - `ToolJsonOptions.cs`
 - `tools/Common/PresentMon/PresentMonProbe.cs`
 - `tools/Common/PresentMon/PresentMonProbe.Paths.cs`
@@ -3884,10 +3880,8 @@ owner, fold it back into that owner and update the source-shape tests and
    context handoff and `DiagnosticSessionRunExecution.cs` owning result-build
    request mapping, while
    `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario execution
-   phase including scenario sampling. `DiagnosticSessionScenarioPhaseContext.cs`,
-   `DiagnosticSessionScenarioPhaseResult.cs`, and
-   `DiagnosticSessionScenarioPhaseState.cs` own the explicit scenario
-   context/result/state handoffs, with
+   phase including scenario sampling. `DiagnosticSessionScenarioPhaseModels.cs`
+   owns the explicit scenario context/result/state handoffs, with
    `DiagnosticSessionScenarioPhaseCompletion.cs` owning post-sampling
    completion ordering and fault-drain delegation while background task
    completion lives in `DiagnosticSessionBackgroundTasks.cs`. Scenario catalog,
