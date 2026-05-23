@@ -2,6 +2,38 @@ using System;
 
 namespace Sussudio.Models;
 
+// Audio endpoint option displayed in the UI and persisted by settings.
+public class AudioInputDevice
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+
+    public string DisplayName => string.IsNullOrWhiteSpace(Name) ? "Unknown Audio Device" : Name;
+
+    public override string ToString() => DisplayName;
+}
+
+// Level-meter update payload from capture services to UI/view-model subscribers.
+public sealed class AudioLevelEventArgs : EventArgs
+{
+    public AudioLevelEventArgs(double peak, double rms, bool clipped)
+    {
+        Peak = peak;
+        Rms = rms;
+        Clipped = clipped;
+    }
+
+    public double Peak { get; }
+    public double Rms { get; }
+    public bool Clipped { get; }
+}
+
+// Recording/monitoring audio topology reported in diagnostics.
+public enum AudioPathMode
+{
+    PostMuxDefault
+}
+
 // Bounded audio-transition trace returned through automation for stutter/ramp
 // investigations.
 public sealed class AudioRampTraceSnapshot

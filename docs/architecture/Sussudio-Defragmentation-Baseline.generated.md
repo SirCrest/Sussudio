@@ -98,7 +98,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 7 | Sussudio/MainWindow.Flashback.Presentation.cs |
 | 7 | Sussudio/MainWindow.PreviewStartup.Signals.cs |
 | 7 | Sussudio/MainWindow.PropertyChangedPreview.cs |
-| 7 | Sussudio/Models/Audio/AudioPathMode.cs |
 | 8 | Sussudio/MainWindow.FullScreen.cs |
 | 8 | Sussudio/MainWindow.PreviewRenderer.cs |
 | 8 | Sussudio/MainWindow.ShutdownCleanup.cs |
@@ -127,7 +126,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 11 | tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Model.cs |
 | 12 | Sussudio/LoggingJsonContext.cs |
 | 12 | Sussudio/MainWindow.StatsOverlay.Sections.cs |
-| 12 | Sussudio/Models/Audio/AudioInputDevice.cs |
 | 12 | Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackPlaybackAlerts.cs |
 | 12 | Sussudio/Services/Preview/ILiveVideoSource.cs |
 | 12 | Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.cs |
