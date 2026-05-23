@@ -63,9 +63,6 @@ Changed ownership:
 - `AutomationCommandCatalog.PathValidation.cs`
 - `AutomationPipeClientModels.cs`
 - `AutomationPipeProtocol.cs`
-- `AutomationResponseState.cs`
-- `AutomationSyntheticErrorResponse.cs`
-- `AutomationUnknownCommandHandling.cs`
 - `AutomationPipeSecurityPolicy.cs`
 
 Diagnostic session scenario names, CLI help text, MCP-compatible description
@@ -3741,14 +3738,13 @@ typed `AutomationCommandKind` command-id routing plus `not_ready` retry policy,
 `AutomationCommandTransport.cs` owns command-specific timeout selection for
 string and typed commands, shared response-element validation, synthetic error
 shaping, and handoff to
-`Sussudio.Automation.Contracts/AutomationUnknownCommandHandling.cs`,
+`Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`,
 `AutomationPipeClient.Commands.cs` owns tolerant response-state parsing handoff
-to `Sussudio.Automation.Contracts/AutomationResponseState.cs`,
+to `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`,
 `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs` owns the command
-result handoff and pipe client exception taxonomy, and
-`Sussudio.Automation.Contracts/AutomationSyntheticErrorResponse.cs` owns shared
-structured error-envelope creation and common transport/protocol exception
-mapping for the shared command transport.
+result handoff, pipe client exception taxonomy, response-state parsing,
+unknown-command handling, structured error-envelope creation, and common
+transport/protocol exception mapping for the shared command transport.
 
 PresentMon model ownership and result formatting are split from the probe runner.
 `tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon options, result,

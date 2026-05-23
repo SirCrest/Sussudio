@@ -157,15 +157,11 @@ Entry points:
   validation for path-bearing automation commands.
 - `AutomationPipeProtocol.cs` owns pipe names, auth env var, manifest revision,
   command resolution, and request envelope shape.
-- `AutomationPipeClientModels.cs` owns the pipe command result handoff and pipe
-  client exception taxonomy shared by command transports and retry policy.
-- `AutomationResponseState.cs` owns tolerant parsing for automation response
-  `Success`, `Status`, and `RetryAfterMs` fields.
-- `AutomationSyntheticErrorResponse.cs` owns the structured automation
-  error-envelope factory and exception-to-error-code mapping shared by tool
-  clients.
-- `AutomationUnknownCommandHandling.cs` owns the shared throw-vs-synthetic
-  policy enum used by ssctl and MCP pipe callers.
+- `AutomationPipeClientModels.cs` owns the pipe command result handoff, pipe
+  client exception taxonomy, tolerant response-state parsing, synthetic
+  error-envelope factory, exception-to-error-code mapping, and
+  throw-vs-synthetic unknown-command policy shared by command transports and
+  retry policy.
 - `AutomationPipeSecurityPolicy.cs` owns the fallback-security predicate shared
   by app and tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.CommandKinds.Tests.cs` owns the
@@ -3566,11 +3562,11 @@ Primary owners:
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.Commands.cs` owns
   command envelope sending, typed `AutomationCommandKind` command-id routing,
   `not_ready` retry behavior, and response-state parsing handoff to
-  `Sussudio.Automation.Contracts/AutomationResponseState.cs`.
+  `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`.
 - `tools/Common/AutomationPipeClient/AutomationCommandTransport.cs` owns
   command-specific timeout selection for string and typed commands, shared
   response-element validation, synthetic error shaping, and the handoff to
-  `Sussudio.Automation.Contracts/AutomationUnknownCommandHandling.cs`.
+  `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`.
 - Fixed MCP routes whose commands exist in `AutomationCommandKind` should call
   the typed MCP `PipeClient.SendCommandAsync(AutomationCommandKind, ...)`
   overload at the pipe seam; fixed ssctl routes should do the same through

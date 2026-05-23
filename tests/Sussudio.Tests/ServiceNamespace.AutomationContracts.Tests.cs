@@ -18,9 +18,6 @@ static partial class Program
             "AutomationCommandCatalog.PathValidation.cs",
             "AutomationPipeProtocol.cs",
             "AutomationPipeClientModels.cs",
-            "AutomationResponseState.cs",
-            "AutomationSyntheticErrorResponse.cs",
-            "AutomationUnknownCommandHandling.cs",
             "AutomationPipeSecurityPolicy.cs"
         })
         {

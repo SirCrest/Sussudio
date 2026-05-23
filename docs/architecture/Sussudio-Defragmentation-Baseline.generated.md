@@ -92,7 +92,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 6 | Sussudio/GlobalUsings.cs |
 | 6 | Sussudio/MainWindow.PreviewStartup.Session.cs |
 | 6 | tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Stages.Model.cs |
-| 7 | Sussudio.Automation.Contracts/AutomationUnknownCommandHandling.cs |
 | 7 | Sussudio/MainWindow.CaptureSelectionBindings.CollectionSync.cs |
 | 7 | Sussudio/MainWindow.CaptureSelectionBindings.PropertyRouter.cs |
 | 7 | Sussudio/MainWindow.Flashback.Presentation.cs |
