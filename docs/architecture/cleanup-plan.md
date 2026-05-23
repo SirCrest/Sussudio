@@ -546,18 +546,10 @@ detection and tolerant JSON string/bool accessors live in
 `AutomationSnapshotFormatter.Values.cs`; numeric
 JSON parsing lives in `AutomationSnapshotFormatter.Values.Numeric.cs`; while
 byte/number/interval, frame-budget, and tick-age display helpers live in
-`AutomationSnapshotFormatter.DisplayValues.cs`; the Flashback gate/header/order
-and encoding subsection order live in `AutomationSnapshotFormatter.Flashback.cs`.
-Flashback encoder, buffer, temp-cache, and cleanup text lives in
-`AutomationSnapshotFormatter.Flashback.Encoding.Status.cs`, while Flashback
-queue-latency, backpressure, failure, and GPU queue text lives in
-`AutomationSnapshotFormatter.Flashback.Encoding.Health.cs`. Flashback export progress,
-result, throughput, force-rotate fallback, range, output path, and message text
-lives in `AutomationSnapshotFormatter.Flashback.Export.cs`. Flashback playback
-status and command text lives in
-`AutomationSnapshotFormatter.Flashback.Playback.Commands.cs`, while Flashback
-playback cadence, decode, frame, stage, and A/V drift text lives in
-`AutomationSnapshotFormatter.Flashback.Playback.Performance.cs`. Capture cadence owns the
+`AutomationSnapshotFormatter.DisplayValues.cs`; the Flashback gate/header/order,
+encoding status/health text, export progress/result text, playback command text,
+and playback cadence/decode/frame/stage/A/V drift text now live together in
+`AutomationSnapshotFormatter.Flashback.cs`. Capture cadence owns the
 capture cadence, MJPEG packet fingerprint, and visual cadence rows, while
 `AutomationSnapshotFormatter.AvSync.cs` owns AV-sync text and
 `AutomationSnapshotFormatter.Source.cs` owns source-signal text emitted from

@@ -4238,18 +4238,9 @@ Primary owners:
   `tools/Common/AutomationSnapshotFormatter.DisplayValues.cs` owns shared
   byte, number, interval, frame-budget, and tick-age display helpers, while
   `tools/Common/AutomationSnapshotFormatter.Flashback.cs` owns the Flashback
-  gate, header, subsection ordering, and encoding subsection ordering.
-  `tools/Common/AutomationSnapshotFormatter.Flashback.Encoding.Status.cs` owns
-  Flashback encoder, buffer, cache, and cleanup text.
-  `tools/Common/AutomationSnapshotFormatter.Flashback.Encoding.Health.cs` owns
-  Flashback queue-latency, backpressure, failure, and GPU queue text.
-  `tools/Common/AutomationSnapshotFormatter.Flashback.Export.cs` owns
-  Flashback export progress, result, throughput, force-rotate fallback, range,
-  output path, and message text.
-  `tools/Common/AutomationSnapshotFormatter.Flashback.Playback.Commands.cs`
-  owns Flashback playback status and command text.
-  `tools/Common/AutomationSnapshotFormatter.Flashback.Playback.Performance.cs`
-  owns Flashback playback cadence, decode, frame, stage, and A/V drift text.
+  gate, header, subsection ordering, encoding status/health text, export
+  progress/result text, playback command text, and playback cadence/decode/frame
+  stage/A/V drift text.
   `tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs` owns MJPEG timing
   activation, header, and output order.
   `tools/Common/AutomationSnapshotFormatter.MjpegTiming.Decode.cs` owns MJPEG
