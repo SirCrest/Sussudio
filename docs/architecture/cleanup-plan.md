@@ -4120,12 +4120,11 @@ owner, fold it back into that owner and update the source-shape tests and
    `tests/Sussudio.Tests/XUnit.AutomationDiagnosticsLoopContractsTests.cs`
    owns xUnit execution for the diagnostics-loop polling check after its removal
    from the legacy presentation-preview capture catalog.
-   Flashback playback, scrub, nudge, in/out marker command routing, and
-   automation-facing Flashback playback action dispatch now live in
-   `MainViewModel.FlashbackPlaybackCommands.cs`; read-only
-   Flashback playback snapshot access, read-only segment projection for UI,
-   CLI, and MCP callers, plus rejection status projection live in
-   `MainViewModel.FlashbackPlayback.cs`; buffer,
+   Read-only Flashback playback snapshot access, read-only segment projection
+   for UI, CLI, and MCP callers, rejection status projection, playback, scrub,
+   nudge, in/out marker command routing, and automation-facing Flashback
+   playback action dispatch now live in
+   `MainViewModel.FlashbackPlaybackCommands.cs`; buffer,
    bitrate, playback-state, in/out marker, and gap-from-live UI projection live
    in `MainViewModel.FlashbackBufferStatus.cs`.
    Flashback UI export commands, save-picker flow, active-export guard, and

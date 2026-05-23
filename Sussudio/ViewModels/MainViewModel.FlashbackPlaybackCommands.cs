@@ -1,15 +1,44 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
+using Sussudio.Services.Capture;
 
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Flashback playback, scrub, marker, and automation action command routing.
+/// Flashback playback snapshot, rejection, scrub, marker, and automation action routing.
 /// </summary>
 public partial class MainViewModel
 {
+    public IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()
+        => _sessionCoordinator.GetFlashbackSegments();
+
+    public Task<IReadOnlyList<FlashbackSegmentInfo>> GetFlashbackSegmentsAsync(CancellationToken cancellationToken = default)
+        => FromSynchronousSnapshot(GetFlashbackSegments, cancellationToken);
+
+    internal FlashbackPlaybackSnapshot GetFlashbackPlaybackSnapshot()
+        => _sessionCoordinator.GetFlashbackPlaybackSnapshot();
+
+    public void ReportFlashbackPlaybackRejection(string action, string logToken)
+    {
+        var playback = _sessionCoordinator.GetFlashbackPlaybackSnapshot();
+        var lastFailure = string.IsNullOrWhiteSpace(playback.LastCommandFailure)
+            ? "none"
+            : playback.LastCommandFailure;
+        var message =
+            $"Flashback {action} rejected (state={playback.State}, " +
+            $"threadAlive={playback.ThreadAlive}, pending={playback.PendingCommands}, " +
+            $"lastFailure={lastFailure}).";
+
+        Logger.Log(
+            $"{logToken} state={playback.State} threadAlive={playback.ThreadAlive} " +
+            $"pending={playback.PendingCommands} lastFailure='{lastFailure}' " +
+            $"failureUtc={playback.LastCommandFailureUtcUnixMs}");
+        StatusText = message;
+    }
+
     /// <summary>
     /// Forwards a scrub-begin command to the active flashback playback controller.
     /// Returns true when the controller accepted the command (timeline was

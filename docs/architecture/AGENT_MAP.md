@@ -3270,12 +3270,10 @@ Primary current owners:
   UI-thread snapshot capture for CLI/MCP clients, while
   `AutomationOptionsSnapshotBuilder.cs` owns the pure selected-control-state DTO
   construction.
-  `MainViewModel.FlashbackPlaybackCommands.cs` owns Flashback playback, scrub,
-  nudge, in/out marker command routing, and automation-facing Flashback
-  playback action dispatch.
-  `MainViewModel.FlashbackPlayback.cs`
-  owns read-only Flashback playback snapshot and segment access plus rejection
-  status projection for UI, CLI, and MCP callers.
+  `MainViewModel.FlashbackPlaybackCommands.cs` owns read-only Flashback
+  playback snapshot and segment access, rejection status projection for UI,
+  CLI, and MCP callers, scrub, nudge, in/out marker command routing, and
+  automation-facing Flashback playback action dispatch.
   `MainViewModel.FlashbackBufferStatus.cs` owns buffer, bitrate,
   playback-state, in/out marker, and gap-from-live UI projection.
   `MainViewModel.FlashbackExport.cs` owns

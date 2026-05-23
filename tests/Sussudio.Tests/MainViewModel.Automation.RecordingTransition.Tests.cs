@@ -27,8 +27,6 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExportAutomation.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackPlayback.cs")
-                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackBufferStatus.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackPlaybackCommands.cs")
