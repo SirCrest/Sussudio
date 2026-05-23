@@ -227,15 +227,11 @@ static partial class Program
         AssertContains(sourceText, "CancellationToken cancellationToken)\n    {\n        try\n        {\n            cancellationToken.ThrowIfCancellationRequested();");
         var playbackFramesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
             .Replace("\r\n", "\n");
-        var playbackLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLoop.cs")
-            .Replace("\r\n", "\n");
+        var playbackLoopText = playbackFramesText;
         AssertContains(playbackFramesText, "private bool TryReadNextPlaybackFrame(");
         AssertContains(playbackFramesText, "private void ClearPrebufferedFrames(");
         AssertContains(playbackFramesText, "private bool TryResolveAudioDriftFrameSkip(");
         AssertContains(playbackLoopText, "TryResolveAudioDriftFrameSkip(");
-        AssertDoesNotContain(playbackLoopText, "private bool TryReadNextPlaybackFrame(");
-        AssertDoesNotContain(playbackLoopText, "private void ClearPrebufferedFrames(");
-        AssertDoesNotContain(playbackLoopText, "private bool TryResolveAudioDriftFrameSkip(");
         AssertContains(sourceText, "while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)\n        {\n            cancellationToken.ThrowIfCancellationRequested();");
         AssertContains(sourceText, "if (commandChannel.Reader.TryPeek(out _))\n            {\n                ReleaseHeldFrameBestEffort(videoFrame, \"av_sync_skip_command_pending\");");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_FRAME_SKIP_COMMAND_PENDING count={skipped}");

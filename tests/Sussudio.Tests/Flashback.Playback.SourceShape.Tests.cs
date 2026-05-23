@@ -106,7 +106,7 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
-        var playbackLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLoop.cs")
+        var playbackLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
             .Replace("\r\n", "\n");
         var playbackLiveRecoveryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLiveRecovery.cs")
             .Replace("\r\n", "\n");

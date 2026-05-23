@@ -2885,14 +2885,12 @@ fallback display, frame submission/held-frame release, and no-frame
 seek-display failure accounting;
 keep continuous playback pacing in the controller core/thread partials.
 
-Flashback continuous playback progression now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLoop.cs`.
-Keep decoded-frame submission flow, live-recovery policy invocation, cadence
-pacing, and A/V drift diagnostics there; decode-error and near-live snap policy,
-including the recovery near-live snap threshold, belongs in the playback live
-recovery owner. Playback frame reads, prebuffer cleanup, and A/V drift
-frame-skip catch-up policy live in
+Flashback continuous playback progression now lives with playback frame reads in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`.
+Keep decoded-frame submission flow, live-recovery policy invocation, cadence
+pacing, A/V drift diagnostics, prebuffer cleanup, and A/V drift frame-skip
+catch-up policy there. Decode-error and near-live snap policy, including the
+recovery near-live snap threshold, belongs in the playback live recovery owner.
 Segment-edge routing decisions, write-head waits, next-segment switch
 transactions, next-file probing, decoder open/seek, switch counters, audio
 gates, cadence-baseline reset, and active fMP4 reopen/reseek recovery during
