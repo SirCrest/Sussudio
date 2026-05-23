@@ -2002,7 +2002,7 @@ helpers and buffered packet flushes live in
 output context setup, stream count validation, and output header writing live in
 `Sussudio/Services/Flashback/FlashbackExporter.Streams.cs`. Stream-template copying
 and segment stream-layout compatibility checks live in
-`Sussudio/Services/Flashback/FlashbackExporter.StreamTemplates.cs`. Temp output
+`Sussudio/Services/Flashback/FlashbackExporter.Streams.cs`. Temp output
 validation, active output trailer/IO close finalization, atomic replacement,
 overwrite policy, and invalid final-output cleanup live in
 `Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs`.

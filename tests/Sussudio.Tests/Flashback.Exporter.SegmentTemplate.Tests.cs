@@ -7,8 +7,7 @@ static partial class Program
         var sourceText = ReadFlashbackExporterSource();
         var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs")
             .Replace("\r\n", "\n");
-        var streamTemplatesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.StreamTemplates.cs")
-            .Replace("\r\n", "\n");
+        var streamTemplatesText = streamsText;
         var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs")
             .Replace("\r\n", "\n");
         var segmentInputPreflightText = segmentTemplateText;
@@ -42,8 +41,6 @@ static partial class Program
         AssertContains(streamTemplatesText, "inputCodec->sample_rate != templateCodec->sample_rate");
         AssertContains(streamTemplatesText, "inputCodec->ch_layout.nb_channels != templateCodec->ch_layout.nb_channels");
         AssertContains(streamTemplatesText, "inputCodec->format != templateCodec->format");
-        AssertDoesNotContain(streamsText, "private static string? FindSegmentStreamLayoutMismatch(");
-        AssertDoesNotContain(streamsText, "private static bool VideoDimensionsMatchOrCanUseTemplate(");
 
         return Task.CompletedTask;
     }

@@ -7,8 +7,7 @@ static partial class Program
         var sourceText = ReadFlashbackExporterSource();
         var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs")
             .Replace("\r\n", "\n");
-        var streamTemplatesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.StreamTemplates.cs")
-            .Replace("\r\n", "\n");
+        var streamTemplatesText = streamsText;
         var singleFileText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFile.cs")
             .Replace("\r\n", "\n");
         var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs")
@@ -28,7 +27,6 @@ static partial class Program
         AssertContains(singleFileText, "CopyTemplateStreams(_activeInputContext, _activeOutputContext, streamCount)");
         AssertContains(segmentTemplateText, "CopyTemplateStreams(_activeInputContext, _activeOutputContext, candidateStreamCount)");
         AssertContains(streamTemplatesText, "private static int[] CopyTemplateStreams(AVFormatContext* inputContext, AVFormatContext* outputContext, int inputStreamCount)");
-        AssertDoesNotContain(streamsText, "private static int[] CopyTemplateStreams(");
         AssertDoesNotContain(sourceText, "checked((int)_activeInputContext->nb_streams)");
         AssertDoesNotContain(sourceText, "checked((int)inputContext->nb_streams)");
 

@@ -44,8 +44,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs")
             .Replace("\r\n", "\n");
-        var streamTemplatesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.StreamTemplates.cs")
-            .Replace("\r\n", "\n");
+        var streamTemplatesText = streamsText;
         var timeMathText = packetTimingText;
 
         AssertContains(requestsText, "public Task<FinalizeResult> ExportAsync(");
@@ -198,8 +197,6 @@ static partial class Program
         AssertContains(streamsText, "private void OpenInput(string inputPath)");
         AssertContains(streamsText, "private void CreateOutputContext(string tmpPath, bool fastStart)");
         AssertContains(streamsText, "private static void OpenOutputIoAndWriteHeader(AVFormatContext* outputContext, string tmpPath, bool fastStart)");
-        AssertDoesNotContain(streamsText, "private static int[] CopyTemplateStreams(");
-        AssertDoesNotContain(streamsText, "private static string? FindSegmentStreamLayoutMismatch(");
         AssertContains(streamTemplatesText, "private static int[] CopyTemplateStreams(");
         AssertContains(streamTemplatesText, "private static string? FindSegmentStreamLayoutMismatch(");
         AssertContains(streamTemplatesText, "private static bool VideoDimensionsMatchOrCanUseTemplate(");
