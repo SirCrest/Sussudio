@@ -51,8 +51,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var streamTemplatesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.StreamTemplates.cs")
             .Replace("\r\n", "\n");
-        var timeMathText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.TimeMath.cs")
-            .Replace("\r\n", "\n");
+        var timeMathText = packetTimingText;
 
         AssertContains(requestsText, "public Task<FinalizeResult> ExportAsync(");
         AssertContains(requestsText, "request.SegmentPaths.Select(path => new FlashbackExportSegment");

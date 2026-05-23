@@ -2069,13 +2069,14 @@ validation, export-range validation, and segment/export-range overlap
 classification there. FFmpeg error string formatting/throwing lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs`, and timestamp
 math/saturated arithmetic lives in
-`Sussudio/Services/Flashback/FlashbackExporter.TimeMath.cs` so
+`Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs` so
 `FlashbackExporter.cs` stays focused on export native state and shared policy.
 Progress normalization/reporting, heartbeat cadence, export writer adaptive
 throttling, fixed sleep/yield pacing, and per-export throttle provider scoping
 live in
 `Sussudio/Services/Flashback/FlashbackExporter.RuntimePolicy.cs`. Packet timestamp
-normalization and segment boundary timestamp repair live in
+normalization, export time-span conversion, saturated time arithmetic, and
+segment boundary timestamp repair live in
 `Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs`. Packet clone/free
 helpers and buffered packet flushes live in
 `Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs`. FFmpeg input and
