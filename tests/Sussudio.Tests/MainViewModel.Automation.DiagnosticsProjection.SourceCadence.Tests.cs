@@ -90,8 +90,9 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var captureCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs")
+        var captureCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs")
             .Replace("\r\n", "\n");
+        var captureCadenceOnlyText = captureCadenceProjectionText[..captureCadenceProjectionText.IndexOf("private static VisualCadenceProjection", System.StringComparison.Ordinal)];
 
         AssertContains(snapshotProjectionText, "var captureCadence = BuildCaptureCadenceProjection(health);");
         AssertContains(snapshotFlatteningText, "var captureCadenceFlattening = BuildCaptureCadenceFlattenedProjection(captureCadence);");
@@ -110,8 +111,8 @@ static partial class Program
         AssertContains(captureCadenceProjectionText, "ExpectedFrameRate = captureCadence.ExpectedFrameRate,");
         AssertContains(captureCadenceProjectionText, "EstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames");
         AssertContains(captureCadenceProjectionText, "private readonly record struct CaptureCadenceFlattenedProjection");
-        AssertDoesNotContain(captureCadenceProjectionText, "VisualMotionConfidence");
-        AssertDoesNotContain(captureCadenceProjectionText, "VisualCenterRecentChangeIntervalsMs");
+        AssertDoesNotContain(captureCadenceOnlyText, "VisualMotionConfidence");
+        AssertDoesNotContain(captureCadenceOnlyText, "VisualCenterRecentChangeIntervalsMs");
 
         return Task.CompletedTask;
     }
@@ -123,8 +124,7 @@ static partial class Program
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
         var visualCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs")
             .Replace("\r\n", "\n");
-        var captureCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs")
-            .Replace("\r\n", "\n");
+        var captureCadenceOnlyText = visualCadenceProjectionText[..visualCadenceProjectionText.IndexOf("private static VisualCadenceProjection", System.StringComparison.Ordinal)];
 
         AssertContains(snapshotProjectionText, "var visualCadence = BuildVisualCadenceProjection(health);");
         AssertContains(snapshotFlatteningText, "var visualCadenceFlattening = BuildVisualCadenceFlattenedProjection(visualCadence);");
@@ -145,8 +145,8 @@ static partial class Program
         AssertContains(visualCadenceProjectionText, "MotionConfidence = health.VisualCadenceMotionConfidence,");
         AssertContains(visualCadenceProjectionText, "CenterRecentChangeIntervalsMs = health.VisualCenterCadenceRecentChangeIntervalsMs");
         AssertContains(visualCadenceProjectionText, "private readonly record struct VisualCadenceProjection");
-        AssertDoesNotContain(captureCadenceProjectionText, "VisualCadenceMotionConfidence");
-        AssertDoesNotContain(captureCadenceProjectionText, "VisualCenterCadenceRecentChangeIntervalsMs");
+        AssertDoesNotContain(captureCadenceOnlyText, "VisualCadenceMotionConfidence");
+        AssertDoesNotContain(captureCadenceOnlyText, "VisualCenterCadenceRecentChangeIntervalsMs");
 
         return Task.CompletedTask;
     }

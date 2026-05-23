@@ -183,14 +183,11 @@ encoder format/codec/profile/ten-bit confirmation projection, capture memory
 preference, requested/negotiated video subtype, frame-ledger projection, final
 capture-format flattening, and final capture-transport projection-to-
 `AutomationSnapshot` field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs` owns source
-capture cadence projection inputs consumed by the automation snapshot DTO, plus
-final source capture cadence projection-to-`AutomationSnapshot` field
-flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs` owns preview
-visual cadence and center-crop visual cadence projection inputs consumed by the
-automation snapshot DTO, plus final visual cadence and center-crop visual
-cadence projection-to-`AutomationSnapshot` field flattening.
+source capture cadence, visual cadence, and center-crop visual cadence
+projection inputs consumed by the automation snapshot DTO, plus final source
+capture cadence, visual cadence, and center-crop visual cadence projection-to-
+`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs` owns CPU MJPEG totals,
 compressed queue, failure, decode/interop-copy/callback/reorder/pipeline
 timing, decoder count, per-decoder, and packet duplicate-run / unique-frame
