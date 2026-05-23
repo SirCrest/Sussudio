@@ -121,8 +121,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs")
             .Replace("\r\n", "\n");
-        var playbackSoftwareBudgetText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSoftwareBudget.cs")
-            .Replace("\r\n", "\n");
+        var playbackSoftwareBudgetText = playbackTimingText;
 
         AssertContains(sourceText, "private const double ContinuousPlaybackNearLiveSnapFrames = 3.0;");
         AssertContains(sourceText, "private static readonly TimeSpan ContinuousPlaybackNearLiveSnapMinimum = TimeSpan.FromMilliseconds(100);");

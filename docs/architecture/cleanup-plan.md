@@ -3006,14 +3006,12 @@ shared decoder reopen transaction and post-seek audio gate, lives in
 Flashback playback timing policy now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs`.
 Keep frame-rate resolution, pause-from-live target calculation,
-continuous-playback snap policy, and rolling playback cadence metric updates
-there. Decoded PTS cadence state, read-only projection, tracking, mismatch
+continuous-playback snap policy, software-decode budget detection, decoder
+hardware-acceleration status refresh, over-budget snap telemetry, recovery
+handoff, and rolling playback cadence metric updates there. Decoded PTS cadence state, read-only projection, tracking, mismatch
 telemetry, and cadence-baseline reset now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackPtsCadence.cs`.
-Software-decode budget detection, decoder hardware-acceleration status refresh,
-over-budget snap telemetry, and recovery handoff now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSoftwareBudget.cs`;
-the live-state recovery implementation remains in
+The live-state recovery implementation remains in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLiveRecovery.cs`.
 Audio-master clock sample state, stale-clock detection, read-only A/V drift
 projection, and clock-drift computation now live in
