@@ -4107,7 +4107,7 @@ owner, fold it back into that owner and update the source-shape tests and
    The disposal graph-port contract for one-shot disposal entry, teardown
    cancellations, runtime stop, coordinator cleanup/dispose, and capture-service
    async/sync disposal fallback lives with that controller.
-   `MainViewModel.Disposal.cs` remains the public dispose adapter and active
+   `MainViewModel.cs` remains the public refresh/dispose adapter and active
    Flashback export cancellation owner. Automation-facing capture runtime, health,
    recording snapshot projection, source/preview probes, and preview
    frame capture also live in `MainViewModel.AutomationSnapshots.cs`; automation-facing

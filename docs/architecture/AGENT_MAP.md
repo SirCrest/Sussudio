@@ -3259,8 +3259,8 @@ Primary current owners:
   logging, and the disposal graph-port contract for one-shot disposal entry, teardown
   cancellations, runtime stop, coordinator cleanup/dispose, and capture-service
   async/sync disposal fallback, plus the bounded wait helper port that keeps
-  timeout behavior explicit. `MainViewModel.Disposal.cs` is the public dispose adapter and owns
-  active Flashback export cancellation during teardown.
+  timeout behavior explicit. `MainViewModel.cs` is the public refresh/dispose
+  adapter and owns active Flashback export cancellation during teardown.
   `MainViewModel.AutomationSnapshots.cs` owns automation-facing capture runtime,
   health, and recording snapshot projection. `MainViewModel.AutomationSnapshots.cs`
   also owns automation-facing source/preview probes and preview frame capture.

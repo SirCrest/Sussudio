@@ -20,7 +20,7 @@ static partial class Program
         var bitrateSampleWindowText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "BitrateSampleWindow.cs"));
         var outputDriveSpacePresentationBuilderText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "OutputDriveSpacePresentationBuilder.cs"));
         var mainViewModelCapturePresentationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CapturePresentation.cs"));
-        var mainViewModelDisposalText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Disposal.cs"));
+        var mainViewModelDisposalText = mainViewModelText;
         AssertContains(mainViewModelDispatchingText, "private bool EnqueueUiOperation");
         AssertContains(mainViewModelDispatchingText, "_uiDispatchController.Enqueue(operation, operationName, allowDuringDispose);");
         AssertContains(mainViewModelDispatchingText, "_uiDispatchController.InvokeAsync(operation, cancellationToken);");

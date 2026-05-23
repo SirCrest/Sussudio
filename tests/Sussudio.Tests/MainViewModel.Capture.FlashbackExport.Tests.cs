@@ -175,11 +175,11 @@ static partial class Program
     {
         var viewModelFiles = ReadMainViewModelCodeFiles();
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var disposalText = viewModelFiles["MainViewModel.Disposal.cs"];
+        var disposalText = viewModelFiles["MainViewModel.cs"];
         var flashbackExportText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
         var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackExportOperation.cs"];
         var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackExportAutomation.cs"];
-        var rawDisposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs")
+        var rawDisposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs")
             .Replace("\r\n", "\n");
