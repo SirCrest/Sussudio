@@ -546,13 +546,10 @@ and playback cadence/decode/frame/stage/A/V drift text now live together in
 capture cadence, MJPEG packet fingerprint, and visual cadence rows, while
 `AutomationSnapshotFormatter.AvSync.cs` owns AV-sync text and
 `AutomationSnapshotFormatter.Source.cs` owns source-signal text emitted from
-the cadence tail. MJPEG activation/header/order lives in
-`AutomationSnapshotFormatter.MjpegTiming.cs`; decode/copy/callback/per-decoder
-timing text lives in `AutomationSnapshotFormatter.MjpegTiming.Decode.cs`;
-compressed queue, drop-reason, reorder, and pipeline timing text lives in
-`AutomationSnapshotFormatter.MjpegTiming.Pipeline.cs`; MJPEG preview-jitter
-queue, latency, ownership, and underflow text lives in
-`AutomationSnapshotFormatter.MjpegTiming.PreviewJitter.cs`. Preview routing,
+the cadence tail. MJPEG activation/header/order, decode/copy/callback/per-decoder
+timing text, compressed queue/drop-reason/reorder/pipeline timing text, and
+MJPEG preview-jitter queue/latency/ownership/underflow text now live together in
+`AutomationSnapshotFormatter.MjpegTiming.cs`. Preview routing,
 D3D preview text, and thread-health live in the remaining focused formatter partials. The
 `AutomationSnapshotFormatter.PreviewD3D.cs` owner keeps D3D header/routing and
 output order; `AutomationSnapshotFormatter.PreviewD3D.Timing.cs` owns D3D CPU

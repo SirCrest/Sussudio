@@ -4234,14 +4234,9 @@ Primary owners:
   progress/result text, playback command text, and playback cadence/decode/frame
   stage/A/V drift text.
   `tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs` owns MJPEG timing
-  activation, header, and output order.
-  `tools/Common/AutomationSnapshotFormatter.MjpegTiming.Decode.cs` owns MJPEG
-  decode, interop copy, callback, and per-decoder timing text.
-  `tools/Common/AutomationSnapshotFormatter.MjpegTiming.Pipeline.cs` owns MJPEG
-  compressed queue, drop-reason, reorder, and pipeline timing text.
-  `tools/Common/AutomationSnapshotFormatter.MjpegTiming.PreviewJitter.cs`
-  owns MJPEG preview-jitter queue, input/output/latency, ownership, and
-  underflow text. The
+  activation, header, output order, decode/copy/callback/per-decoder timing
+  text, compressed queue/drop-reason/reorder/pipeline timing text, and MJPEG
+  preview-jitter queue/input/output/latency/ownership/underflow text. The
   `tools/Common/AutomationSnapshotFormatter.Preview.cs`,
   `tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs`,
   `tools/Common/AutomationSnapshotFormatter.PreviewD3D.Timing.cs`,
