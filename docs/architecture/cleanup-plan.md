@@ -3993,9 +3993,9 @@ owner, fold it back into that owner and update the source-shape tests and
    readback live in `MainViewModel.DeviceAudioMode.cs`; shared audio-control
    guards stay with device-native UI state in `MainViewModel.DeviceAudioState.cs`, while analog gain writes
    live in `MainViewModel.AnalogAudioGain.cs`. UI-facing state is
-   split by owner: `MainViewModel.State.cs` owns shared shell/status/live-info
-   flags, native window handle state, UI collection replacement, and
-   non-preview coordination gates, `MainViewModel.PreviewState.cs`
+   split by owner: `MainViewModel.cs` owns shared shell/status/live-info flags,
+   native window handle state, UI collection replacement, and non-preview
+   coordination gates, `MainViewModel.PreviewState.cs`
    owns preview lifecycle compatibility entry points, preview-sink handoff,
    preview lifecycle flags, preview reinitialize coordination, and preview
    request events, `MainViewModel.CaptureState.cs` owns capture-selection

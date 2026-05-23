@@ -5,7 +5,7 @@ static partial class Program
     internal static Task PreviewReinitialization_WaitsForPendingFlashbackCycle()
     {
         var viewModelFiles = ReadMainViewModelCodeFiles();
-        var viewModelSharedStateText = viewModelFiles["MainViewModel.State.cs"];
+        var viewModelSharedStateText = viewModelFiles["MainViewModel.cs"];
         var viewModelPreviewStateText = viewModelFiles["MainViewModel.PreviewState.cs"];
         var viewModelCaptureStateText = viewModelFiles["MainViewModel.CaptureState.cs"];
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];

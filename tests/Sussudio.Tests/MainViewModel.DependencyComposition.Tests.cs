@@ -6,7 +6,6 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var compositionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Composition.cs").Replace("\r\n", "\n");
-        var stateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.PreviewState.cs").Replace("\r\n", "\n");
         var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs").Replace("\r\n", "\n");
@@ -62,7 +61,6 @@ static partial class Program
         AssertDoesNotContain(compositionText, "_captureService.StatusChanged += OnCaptureStatusChanged;");
         AssertDoesNotContain(compositionText, "_captureService.AudioLevelUpdated += OnAudioLevelUpdated;");
         AssertDoesNotContain(compositionText, "SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;");
-        AssertDoesNotContain(rootText, "[ObservableProperty]");
 
         AssertContains(controllerGraphText, "private sealed partial class MainViewModelControllerGraph");
         AssertContains(controllerGraphText, "public static MainViewModelControllerGraph Create(MainViewModel viewModel)");
@@ -85,19 +83,21 @@ static partial class Program
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
             "var runtimeLifecycleController = CreateRuntimeLifecycleController(");
 
-        AssertContains(stateText, "public partial bool IsStatsVisible");
-        AssertContains(stateText, "public partial bool IsSettingsVisible");
-        AssertContains(stateText, "public partial string StatusText");
-        AssertContains(stateText, "private IntPtr _windowHandle;");
-        AssertContains(stateText, "public void SetWindowHandle(IntPtr handle)");
-        AssertContains(stateText, "_windowHandle = handle;");
-        AssertDoesNotContain(rootText, "public void SetWindowHandle(IntPtr handle)");
-        AssertContains(stateText, "private static void ReplaceCollection<T>(ObservableCollection<T> target, IReadOnlyList<T> source)");
-        AssertDoesNotContain(rootText, "private static void ReplaceCollection<T>(ObservableCollection<T> target, IReadOnlyList<T> source)");
-        AssertDoesNotContain(stateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
+        AssertContains(rootText, "public partial bool IsStatsVisible");
+        AssertContains(rootText, "public partial bool IsSettingsVisible");
+        AssertContains(rootText, "public partial string StatusText");
+        AssertContains(rootText, "private IntPtr _windowHandle;");
+        AssertContains(rootText, "public void SetWindowHandle(IntPtr handle)");
+        AssertContains(rootText, "_windowHandle = handle;");
+        AssertContains(rootText, "private static void ReplaceCollection<T>(ObservableCollection<T> target, IReadOnlyList<T> source)");
+        AssertDoesNotContain(rootText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.State.cs")),
+            "MainViewModel.State.cs folded into MainViewModel.cs");
         AssertDoesNotContain(captureModeTransactionsText, "_automationCaptureModeGate");
-        AssertDoesNotContain(stateText, "public partial bool IsPreviewing");
-        AssertDoesNotContain(stateText, "public event EventHandler? PreviewStartRequested");
+        AssertDoesNotContain(rootText, "public partial bool IsPreviewing");
+        AssertDoesNotContain(rootText, "public event EventHandler? PreviewStartRequested");
         AssertDoesNotContain(rootText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(rootText, "public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)");
         AssertDoesNotContain(rootText, "private Task ReinitializeDeviceAsync(string reason)");
