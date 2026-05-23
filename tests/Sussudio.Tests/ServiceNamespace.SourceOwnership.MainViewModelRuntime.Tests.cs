@@ -16,7 +16,6 @@ static partial class Program
         var mainViewModelRuntimeLifecycleControllerContextText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeLifecycleController.Context.cs"));
         var mainViewModelRuntimeEventIngressControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeEventIngressController.cs"));
         var mainViewModelDisposalControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDisposalController.cs"));
-        var mainViewModelDisposalControllerContextText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDisposalController.Context.cs"));
         var mainViewModelRecordingStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.RecordingState.cs"));
         var mainViewModelRecordingRuntimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.RecordingRuntime.cs"));
         var bitrateSampleWindowText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "BitrateSampleWindow.cs"));
@@ -170,11 +169,10 @@ static partial class Program
         AssertContains(mainViewModelDisposalText, "_disposalController.Dispose();");
         AssertContains(mainViewModelDisposalControllerText, "namespace Sussudio.Controllers;");
         AssertContains(mainViewModelDisposalControllerText, "internal sealed class MainViewModelDisposalController");
-        AssertContains(mainViewModelDisposalControllerContextText, "namespace Sussudio.Controllers;");
-        AssertContains(mainViewModelDisposalControllerContextText, "internal sealed class MainViewModelDisposalControllerContext");
+        AssertContains(mainViewModelDisposalControllerText, "internal sealed class MainViewModelDisposalControllerContext");
         AssertContains(mainViewModelDisposalControllerText, "private readonly MainViewModelDisposalControllerContext _context;");
         AssertContains(mainViewModelDisposalControllerText, "await _context.AwaitWithTimeoutAsync(");
-        AssertContains(mainViewModelDisposalControllerContextText, "public required Func<Task, int, string, Task> AwaitWithTimeoutAsync { get; init; }");
+        AssertContains(mainViewModelDisposalControllerText, "public required Func<Task, int, string, Task> AwaitWithTimeoutAsync { get; init; }");
         AssertDoesNotContain(mainViewModelDisposalControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(mainViewModelDisposalControllerText, "_viewModel.");
         AssertContains(mainViewModelDisposalControllerText, "_context.CancelActiveFlashbackExport();");

@@ -3373,9 +3373,8 @@ Primary current owners:
   the preview lifecycle owner for recording startup initialization.
   `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs` is a
   top-level `Sussudio.Controllers` owner for bounded teardown, dispose timeout policy, watcher disposal, coordinator
-  cleanup/dispose, capture-service async-dispose fallback, and disposal-step
-  logging through graph-built context ports. `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.Context.cs`
-  is a top-level `Sussudio.Controllers` owner for the disposal graph-port contract for one-shot disposal entry, teardown
+  cleanup/dispose, capture-service async-dispose fallback, disposal-step
+  logging, and the disposal graph-port contract for one-shot disposal entry, teardown
   cancellations, runtime stop, coordinator cleanup/dispose, and capture-service
   async/sync disposal fallback, plus the bounded wait helper port that keeps
   timeout behavior explicit. `MainViewModel.Disposal.cs` is the public dispose adapter and owns

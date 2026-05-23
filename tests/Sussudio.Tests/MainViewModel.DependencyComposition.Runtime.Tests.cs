@@ -12,7 +12,6 @@ static partial class Program
         var runtimeEventIngressControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs").Replace("\r\n", "\n");
         var disposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs").Replace("\r\n", "\n");
         var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs").Replace("\r\n", "\n");
-        var disposalControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.Context.cs").Replace("\r\n", "\n");
 
         AssertContains(sourceTelemetryControllerText, "namespace Sussudio.Controllers;");
         AssertContains(sourceTelemetryControllerText, "internal sealed class MainViewModelSourceTelemetryController");
@@ -122,10 +121,9 @@ static partial class Program
         AssertContains(disposalText, "=> await _disposalController.DisposeAsync().ConfigureAwait(false);");
         AssertContains(disposalControllerText, "namespace Sussudio.Controllers;");
         AssertContains(disposalControllerText, "internal sealed class MainViewModelDisposalController");
-        AssertContains(disposalControllerContextText, "namespace Sussudio.Controllers;");
-        AssertContains(disposalControllerContextText, "internal sealed class MainViewModelDisposalControllerContext");
+        AssertContains(disposalControllerText, "internal sealed class MainViewModelDisposalControllerContext");
         AssertContains(disposalControllerText, "private readonly MainViewModelDisposalControllerContext _context;");
-        AssertContains(disposalControllerContextText, "public required Func<Task, int, string, Task> AwaitWithTimeoutAsync { get; init; }");
+        AssertContains(disposalControllerText, "public required Func<Task, int, string, Task> AwaitWithTimeoutAsync { get; init; }");
         AssertDoesNotContain(disposalControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(disposalControllerText, "_viewModel.");
         AssertEqual(
