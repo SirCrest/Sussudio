@@ -3,7 +3,6 @@ static partial class Program
     private sealed partial class AutomationDiagnosticsHubSourceFamily
     {
         public string SnapshotProjectionText { get; init; } = string.Empty;
-        public string SnapshotProjectionCompositionText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningAutomationSnapshotText { get; init; } = string.Empty;
         public string SnapshotProjectionAudioText { get; init; } = string.Empty;

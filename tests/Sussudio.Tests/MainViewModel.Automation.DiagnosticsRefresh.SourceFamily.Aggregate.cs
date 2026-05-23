@@ -24,7 +24,6 @@ static partial class Program
                 HdrText,
                 SnapshotsText,
                 SnapshotProjectionText,
-                SnapshotProjectionCompositionText,
                 SnapshotProjectionFlatteningText,
                 SnapshotProjectionAudioText,
                 SnapshotProjectionCaptureIngestText,

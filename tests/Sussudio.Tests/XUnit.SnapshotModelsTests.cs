@@ -22,7 +22,7 @@ public partial class SnapshotModelsTests
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs"),
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs"),
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs"),
+            ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs"),
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs"),
             sourceSignalProjectionText,
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs"),

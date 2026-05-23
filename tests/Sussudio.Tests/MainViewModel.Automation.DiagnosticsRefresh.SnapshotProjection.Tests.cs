@@ -2,13 +2,13 @@ static partial class Program
 {
     private static void AssertDiagnosticsSnapshotStatusProjectionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var snapshotStatus = BuildSnapshotStatusProjection(viewModelSnapshot, captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var snapshotEvaluation = BuildSnapshotEvaluationProjection(performance, diagnostic, previewPacingClassification);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var snapshotStatus = BuildSnapshotStatusProjection(viewModelSnapshot, captureRuntime);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var snapshotEvaluation = BuildSnapshotEvaluationProjection(performance, diagnostic, previewPacingClassification);");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var snapshotStatusFlattening = BuildSnapshotStatusFlattenedProjection(snapshotStatus);");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var snapshotEvaluationFlattening = BuildSnapshotEvaluationFlattenedProjection(snapshotEvaluation);");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "TimestampUtc = snapshotStatusFlattening.TimestampUtc,");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "PerformanceScore = snapshotEvaluationFlattening.PerformanceScore,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "TimestampUtc = DateTimeOffset.UtcNow,");
+        AssertContains(diagnostics.SnapshotProjectionText, "TimestampUtc = DateTimeOffset.UtcNow,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "PerformanceScore = snapshotEvaluation.PerformanceScore,");
     }
 
@@ -22,37 +22,37 @@ static partial class Program
     {
         AssertContains(diagnostics.SnapshotProjectionText, "BuildAutomationSnapshotProjectionSet(");
         AssertContains(diagnostics.SnapshotProjectionText, "BuildAutomationSnapshotFromProjections(projections);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "return new AutomationSnapshotProjectionSet(");
+        AssertContains(diagnostics.SnapshotProjectionText, "return new AutomationSnapshotProjectionSet(");
 
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var audioDrops = BuildAudioDropsProjection(health);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var captureCommands = BuildCaptureCommandProjection(viewModelSnapshot);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var userSettings = BuildUserSettingsProjection(viewModelSnapshot);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var recordingSettings = BuildRecordingSettingsProjection(userSettings);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var recordingIntegrity = BuildRecordingIntegrityProjection(captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var captureFormat = BuildCaptureFormatProjection(captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var sourceSignal = BuildSourceSignalProjection(viewModelSnapshot, captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var sourceTelemetry = BuildSourceTelemetryProjection(viewModelSnapshot, captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var recordingOutput = BuildRecordingOutputProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var processResourceProjection = BuildProcessResourceProjection(processResources);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var avSync = BuildAvSyncProjection(captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var captureTransport = BuildCaptureTransportProjection(captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var recordingBackend = BuildRecordingBackendProjection(captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var recordingPipeline = BuildRecordingPipelineProjection(health);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var captureCadence = BuildCaptureCadenceProjection(health);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var visualCadence = BuildVisualCadenceProjection(health);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var mjpeg = BuildMjpegProjection(health);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var previewD3D = BuildPreviewD3DProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var hdrPipeline = BuildHdrPipelineProjection(viewModelSnapshot, captureRuntime, hdrTruthVerdict);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var flashbackExport = BuildFlashbackExportProjection(health);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var flashbackExportLastResult = BuildFlashbackExportLastResultProjection(health);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var flashbackRecording = BuildFlashbackRecordingProjection(captureRuntime, health);");
-        AssertContains(diagnostics.SnapshotProjectionCompositionText, "var flashbackPlayback = BuildFlashbackPlaybackProjection(health);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var audioDrops = BuildAudioDropsProjection(health);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var captureCommands = BuildCaptureCommandProjection(viewModelSnapshot);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var userSettings = BuildUserSettingsProjection(viewModelSnapshot);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var recordingSettings = BuildRecordingSettingsProjection(userSettings);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var recordingIntegrity = BuildRecordingIntegrityProjection(captureRuntime);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var captureFormat = BuildCaptureFormatProjection(captureRuntime);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var sourceSignal = BuildSourceSignalProjection(viewModelSnapshot, captureRuntime);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var sourceTelemetry = BuildSourceTelemetryProjection(viewModelSnapshot, captureRuntime);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var recordingOutput = BuildRecordingOutputProjection(");
+        AssertContains(diagnostics.SnapshotProjectionText, "var processResourceProjection = BuildProcessResourceProjection(processResources);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var avSync = BuildAvSyncProjection(captureRuntime);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var captureTransport = BuildCaptureTransportProjection(captureRuntime);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var recordingBackend = BuildRecordingBackendProjection(captureRuntime);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var recordingPipeline = BuildRecordingPipelineProjection(health);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var captureCadence = BuildCaptureCadenceProjection(health);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var visualCadence = BuildVisualCadenceProjection(health);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var mjpeg = BuildMjpegProjection(health);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var previewD3D = BuildPreviewD3DProjection(");
+        AssertContains(diagnostics.SnapshotProjectionText, "var hdrPipeline = BuildHdrPipelineProjection(viewModelSnapshot, captureRuntime, hdrTruthVerdict);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var flashbackExport = BuildFlashbackExportProjection(health);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var flashbackExportLastResult = BuildFlashbackExportLastResultProjection(health);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var flashbackRecording = BuildFlashbackRecordingProjection(captureRuntime, health);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var flashbackPlayback = BuildFlashbackPlaybackProjection(health);");
 
-        AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "AudioPeak = viewModelSnapshot.AudioPeak,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "FlashbackPlaybackTargetFps = health.FlashbackPlaybackTargetFps,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "RecordingVideoQueueCapacity = health.RecordingVideoQueueCapacity,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "AudioPeak = viewModelSnapshot.AudioPeak,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "FlashbackPlaybackTargetFps = health.FlashbackPlaybackTargetFps,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "RecordingVideoQueueCapacity = health.RecordingVideoQueueCapacity,");
     }
 
     private static void AssertDiagnosticsRefreshSnapshotFlatteningRoutesThroughFlattenedProjections(AutomationDiagnosticsHubSourceFamily diagnostics)

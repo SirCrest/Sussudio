@@ -58,10 +58,9 @@ public sealed class PreviewPacingOwnershipTests
             "\n",
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs"));
         var diagnosticsSnapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs");
-        var diagnosticsSnapshotProjectionCompositionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs");
         var diagnosticsSnapshotProjectionFlatteningText = string.Join(
             "\n",
-            diagnosticsSnapshotProjectionCompositionText,
+            diagnosticsSnapshotProjectionText,
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs"));
         var diagnosticsSnapshotProjectionSnapshotEvaluationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs");
         var diagnosticsSnapshotProjectionCaptureCadenceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs");
@@ -71,7 +70,6 @@ public sealed class PreviewPacingOwnershipTests
         var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             + "\n" + diagnosticsSnapshotsText
             + "\n" + diagnosticsSnapshotProjectionText
-            + "\n" + diagnosticsSnapshotProjectionCompositionText
             + "\n" + diagnosticsSnapshotProjectionFlatteningText
             + "\n" + diagnosticsSnapshotProjectionSnapshotEvaluationText
             + "\n" + diagnosticsSnapshotProjectionCaptureCadenceText
