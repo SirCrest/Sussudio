@@ -3576,8 +3576,7 @@ Primary current owners:
   HDR compatibility enforcement, Flashback cycle suppression, coordinator side
   effects, bitrate clamp policy, encoder preset, and output-path directory
   creation.
-  `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.Context.cs`
-  owns the top-level recording-settings automation graph-port contract for UI
+  It also owns the recording-settings automation graph-port contract for UI
   dispatch, option collections, suppression flags, selected encoder/output
   state, recording-format coordinator updates, and Flashback encoder setting
   cycles.

@@ -10,7 +10,6 @@ static partial class Program
         var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs").Replace("\r\n", "\n");
         var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSettings.cs").Replace("\r\n", "\n");
         var automationRecordingControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs").Replace("\r\n", "\n");
-        var automationRecordingControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.Context.cs").Replace("\r\n", "\n");
         var recordingSettingsPolicyText = ReadRepoFile("Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(recordingRuntimeText, "private void RebuildRecordingFormatOptions()");
@@ -35,8 +34,7 @@ static partial class Program
         AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.ParseVideoQuality(_context.GetSelectedQuality())");
         AssertContains(automationRecordingControllerText, "namespace Sussudio.Controllers;");
         AssertContains(automationRecordingControllerText, "internal sealed class MainViewModelRecordingSettingsAutomationController");
-        AssertContains(automationRecordingControllerContextText, "namespace Sussudio.Controllers;");
-        AssertContains(automationRecordingControllerContextText, "internal sealed class MainViewModelRecordingSettingsAutomationControllerContext");
+        AssertContains(automationRecordingControllerText, "internal sealed class MainViewModelRecordingSettingsAutomationControllerContext");
         AssertContains(automationRecordingControllerText, "private readonly MainViewModelRecordingSettingsAutomationControllerContext _context;");
         AssertDoesNotContain(automationRecordingControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(automationRecordingControllerText, "_viewModel.");
