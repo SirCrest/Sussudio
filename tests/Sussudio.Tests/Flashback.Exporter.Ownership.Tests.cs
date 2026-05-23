@@ -33,8 +33,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var runtimePolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.RuntimePolicy.cs")
             .Replace("\r\n", "\n");
-        var tempFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.TempFiles.cs")
-            .Replace("\r\n", "\n");
         var outputFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs")
             .Replace("\r\n", "\n");
         var validationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Validation.cs")
@@ -151,9 +149,9 @@ static partial class Program
         AssertContains(runtimePolicyText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
         AssertDoesNotContain(lifecycleText, "ExportWriterYieldPacketInterval");
         AssertDoesNotContain(lifecycleText, "_adaptiveThrottleSync");
-        AssertContains(tempFilesText, "private static void DeleteTempFileIfPresent(string tmpPath)");
-        AssertContains(tempFilesText, "private static bool TryPrepareTempOutputFile(string tmpPath, string outputPath, out string failureMessage)");
-        AssertContains(tempFilesText, "internal static void CleanupOrphanedTempFiles(string directory)");
+        AssertContains(outputFilesText, "private static void DeleteTempFileIfPresent(string tmpPath)");
+        AssertContains(outputFilesText, "private static bool TryPrepareTempOutputFile(string tmpPath, string outputPath, out string failureMessage)");
+        AssertContains(outputFilesText, "internal static void CleanupOrphanedTempFiles(string directory)");
         AssertContains(outputFilesText, "private bool TryFinalizeActiveOutputFile(");
         AssertContains(outputFilesText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\");");
         AssertContains(outputFilesText, "CloseOutputIo();");

@@ -2007,7 +2007,7 @@ validation, active output trailer/IO close finalization, atomic replacement,
 overwrite policy, and invalid final-output cleanup live in
 `Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs`.
 Temp output cleanup, stale temp preparation, and orphan `.mp4.tmp` cleanup live
-in `Sussudio/Services/Flashback/FlashbackExporter.TempFiles.cs`.
+in `Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs`.
 
 D3D preview renderer metrics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.PresentCadenceMetrics.cs` and
