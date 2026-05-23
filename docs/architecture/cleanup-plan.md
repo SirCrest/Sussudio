@@ -3415,14 +3415,12 @@ samples, run state, command channel, scenario cancellation source, initial
 snapshot state and capture, live-state writer handoff, disposal, and
 scenario/completion context construction with the callback/token handoffs passed
 into those phases.
-`DiagnosticSessionRunExecution.Completion.cs` owns the
-post-cleanup evidence/result sequence for recording checks, post-run timeline
-and final snapshot capture, result-build invocation, and terminal live-state
-write. `DiagnosticSessionRunExecution.CompletionContext.cs` owns the completion
-context handoff consumed by the post-cleanup phase, while
-`DiagnosticSessionRunExecution.Completion.cs` owns result-build request
-mapping from completion evidence and run bootstrap metadata.
-`DiagnosticSessionRunExecution.cs` hands scenario execution directly to
+`DiagnosticSessionRunExecution.cs` owns the post-cleanup evidence/result sequence
+for recording checks, post-run timeline and final snapshot capture, result-build
+request mapping, result-build invocation, and terminal live-state write.
+`DiagnosticSessionRunExecution.CompletionContext.cs` owns the completion context
+handoff consumed by the post-cleanup phase. `DiagnosticSessionRunExecution.cs`
+hands scenario execution directly to
 `DiagnosticSessionScenarioPhaseRunner.cs`, which owns the main scenario phase
 for setup/startup, sampling, completion delegation, and fault drain delegation.
 `DiagnosticSessionScenarioPhaseContext.cs` owns the explicit phase input
@@ -3433,7 +3431,7 @@ and `DiagnosticSessionScenarioPhaseState.cs` owns mutable in-flight phase state.
 order and fault-drain delegation: registered background work before
 rejected-export handling, rejected-export handling before PresentMon
 completion, and interrupted drain handoff.
-`DiagnosticSessionRunExecution.Completion.cs` owns the final result-build
+`DiagnosticSessionRunExecution.cs` owns the final result-build
 request mapping consumed by the completion phase.
 The public options/result/sample contracts are separated from runner behavior. The result
 DTO root owns core session metadata, terminal state, artifacts, actions, and
@@ -3475,7 +3473,7 @@ Flashback playback/export analysis warning text, thresholds, and tolerated
 Flashback scenario warning classification live in
 `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`; the top-level
 `DiagnosticSessionResultBuildRequest.cs` owns the result-build request handoff
-created by `DiagnosticSessionRunExecution.Completion.cs`. Diagnostic
+created by `DiagnosticSessionRunExecution.cs`. Diagnostic
 health summary snapshot selection, health summary text projection, verdict
 composition, diagnostic-health warning tolerance, sparse source-cadence warning
 tolerance, sparse preview-scheduler warning tolerance, source-reader/ingest
@@ -4027,7 +4025,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionOptionalTextFormatter.cs`
 - `DiagnosticSessionRunner.cs`
 - `DiagnosticSessionRunExecution.cs`
-- `DiagnosticSessionRunExecution.Completion.cs`
 - `DiagnosticSessionRunExecution.CompletionContext.cs`
 - `DiagnosticSessionScenarioPhaseRunner.cs`
 - `DiagnosticSessionScenarioPhaseContext.cs`
@@ -4056,11 +4053,11 @@ owner, fold it back into that owner and update the source-shape tests and
    phase sequence and `tools/Common/DiagnosticSessionRunContext.cs` owns the
    cohesive mutable per-run context: snapshot, live-state, disposal, and
    explicit scenario/completion context construction.
-   `DiagnosticSessionRunExecution.Completion.cs` owns the
+   `DiagnosticSessionRunExecution.cs` owns the
    post-cleanup evidence/result sequence, with
    `DiagnosticSessionRunExecution.CompletionContext.cs` owning the completion
-   context handoff and `DiagnosticSessionRunExecution.Completion.cs` owning
-   result-build request mapping, while
+   context handoff and `DiagnosticSessionRunExecution.cs` owning result-build
+   request mapping, while
    `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario execution
    phase including scenario sampling. `DiagnosticSessionScenarioPhaseContext.cs`,
    `DiagnosticSessionScenarioPhaseResult.cs`, and

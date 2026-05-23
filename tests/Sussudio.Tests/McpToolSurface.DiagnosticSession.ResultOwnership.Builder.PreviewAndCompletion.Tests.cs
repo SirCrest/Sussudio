@@ -140,8 +140,7 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var runExecutionText = ReadRepoFile("tools/Common/DiagnosticSessionRunExecution.cs")
             .Replace("\r\n", "\n");
-        var completionText = ReadRepoFile("tools/Common/DiagnosticSessionRunExecution.Completion.cs")
-            .Replace("\r\n", "\n");
+        var completionText = runExecutionText;
         var builderText = ReadDiagnosticSessionResultBuilderSource();
 
         AssertContains(builderText, "var artifactPaths = await WritePreSummaryAsync(");
@@ -154,8 +153,8 @@ static partial class Program
         AssertContains(completionText, "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
         AssertContains(completionText, "CreateResultBuildRequest(");
         AssertContains(runExecutionText, "RunCompletionPhaseAsync(");
-        AssertDoesNotContain(runExecutionText, "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
-        AssertDoesNotContain(runExecutionText, "new DiagnosticSessionResultBuildRequest(");
+        AssertContains(runExecutionText, "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
+        AssertContains(runExecutionText, "new DiagnosticSessionResultBuildRequest(");
         AssertContains(completionText, "private static DiagnosticSessionResultBuildRequest CreateResultBuildRequest(");
         AssertContains(completionText, "return new DiagnosticSessionResultBuildRequest(");
         AssertContains(completionText, "runBootstrap.ScenarioPlan");
