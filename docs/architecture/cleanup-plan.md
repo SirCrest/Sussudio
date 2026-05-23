@@ -4344,8 +4344,8 @@ owner, fold it back into that owner and update the source-shape tests and
    `Sussudio/ViewModels/FrameRateTimingPolicy.cs`, while
    `Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.cs`
    owns the stateful resolver over resolution capabilities, runtime snapshots,
-   source telemetry, selected formats, and UI selection state through
-   `Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.Context.cs`;
+   source telemetry, selected formats, UI selection state, and its graph-built
+   context ports;
    the root `MainViewModel.cs` keeps the public capture-device refresh
    compatibility facade, while the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs`

@@ -21,7 +21,6 @@ static partial class Program
         var captureModeOptionFrameRateRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.FrameRate.cs").Replace("\r\n", "\n");
         var captureModeOptionResolutionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.Resolution.cs").Replace("\r\n", "\n");
         var frameRateTimingResolverText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.cs").Replace("\r\n", "\n");
-        var frameRateTimingResolverContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.Context.cs").Replace("\r\n", "\n");
         var deviceFormatProbeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
         var deviceFormatProbeControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.Context.cs").Replace("\r\n", "\n");
         var deviceFormatProbeRetargetApplierText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs").Replace("\r\n", "\n");
@@ -146,7 +145,7 @@ static partial class Program
         AssertContains(frameRateTimingResolverText, "public FrameRateTimingFamily ResolvePreferredTimingFamily(");
         AssertContains(frameRateTimingResolverText, "public (double? Rate, string? Arg, string Origin) ResolveDetectedSourceFrameRate(");
         AssertContains(frameRateTimingResolverText, "public IReadOnlyList<FrameRateTimingVariant> BuildFrameRateTimingVariants(string? resolutionKey)");
-        AssertContains(frameRateTimingResolverContextText, "internal sealed class MainViewModelFrameRateTimingResolverContext");
+        AssertContains(frameRateTimingResolverText, "internal sealed class MainViewModelFrameRateTimingResolverContext");
         AssertContains(captureModeOptionRebuildControllerContextText, "public required string AutoResolutionValue { get; init; }");
         AssertContains(captureModeOptionRebuildControllerContextText, "public required double AutoFrameRateValue { get; init; }");
         AssertContains(controllerGraphText, "AutoResolutionValue = AutoResolutionValue,");

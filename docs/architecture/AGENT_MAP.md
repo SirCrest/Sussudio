@@ -3433,8 +3433,7 @@ Primary current owners:
   `Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.cs`
   owns the stateful resolver that resolves timing variants and source/preferred
   timing from resolution capabilities, runtime snapshots, selected formats,
-  source telemetry, and UI selection state through
-  `Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.Context.cs`.
+  source telemetry, UI selection state, and its graph-built context ports.
   `MainViewModel.CaptureModeTransactions.cs` keeps selected-format and video-format
   rebuild compatibility adapters, while
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`

@@ -117,7 +117,6 @@ static partial class Program
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var timingResolverText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.cs").Replace("\r\n", "\n");
-        var timingResolverContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.Context.cs").Replace("\r\n", "\n");
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var compositionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Composition.cs").Replace("\r\n", "\n");
@@ -141,10 +140,10 @@ static partial class Program
         AssertContains(compositionText, "private readonly MainViewModelFrameRateTimingResolver _frameRateTimingResolver;");
         AssertContains(controllerGraphText, "internal static MainViewModelFrameRateTimingResolver CreateFrameRateTimingResolver(MainViewModel viewModel)");
         AssertContains(controllerGraphText, "new MainViewModelFrameRateTimingResolverContext");
-        AssertContains(timingResolverContextText, "internal sealed class MainViewModelFrameRateTimingResolverContext");
-        AssertContains(timingResolverContextText, "public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }");
-        AssertContains(timingResolverContextText, "public required Func<SourceSignalTelemetrySnapshot> GetLatestSourceTelemetry { get; init; }");
         AssertContains(timingResolverText, "namespace Sussudio.Controllers;");
+        AssertContains(timingResolverText, "internal sealed class MainViewModelFrameRateTimingResolverContext");
+        AssertContains(timingResolverText, "public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }");
+        AssertContains(timingResolverText, "public required Func<SourceSignalTelemetrySnapshot> GetLatestSourceTelemetry { get; init; }");
         AssertContains(timingResolverText, "internal sealed class MainViewModelFrameRateTimingResolver");
         AssertContains(timingResolverText, "public FrameRateTimingFamily ResolvePreferredTimingFamily(");
         AssertContains(timingResolverText, "public (double? Rate, string? Arg, string Origin) ResolveDetectedSourceFrameRate(");
