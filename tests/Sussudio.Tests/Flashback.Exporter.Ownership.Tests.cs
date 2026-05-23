@@ -4,8 +4,6 @@ static partial class Program
 {
     internal static Task FlashbackExporter_OwnershipIsSplitAcrossFocusedPartials()
     {
-        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
         var requestsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Execution.cs")
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs")
@@ -54,6 +52,10 @@ static partial class Program
 
         AssertContains(requestsText, "public Task<FinalizeResult> ExportAsync(");
         AssertContains(requestsText, "request.SegmentPaths.Select(path => new FlashbackExportSegment");
+        AssertContains(lifecycleText, "internal sealed unsafe partial class FlashbackExporter : IDisposable");
+        AssertContains(lifecycleText, "private const int MaxSupportedInputStreams = 64;");
+        AssertContains(lifecycleText, "private readonly SemaphoreSlim _exportLock = new(1, 1);");
+        AssertContains(lifecycleText, "private AVFormatContext* _activeInputContext;");
         AssertContains(lifecycleText, "public void Dispose()");
         AssertContains(lifecycleText, "FLASHBACK_EXPORT_DISPOSE_TIMEOUT_OK");
         AssertContains(singleFileText, "private FinalizeResult ExportCore(");
@@ -147,8 +149,8 @@ static partial class Program
         AssertContains(runtimePolicyText, "private Func<int>? ConsumeNextAdaptiveThrottleDelayProvider()");
         AssertContains(runtimePolicyText, "private static FinalizeResult RunWithAdaptiveThrottle(");
         AssertContains(runtimePolicyText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
-        AssertDoesNotContain(rootText, "ExportWriterYieldPacketInterval");
-        AssertDoesNotContain(rootText, "_adaptiveThrottleSync");
+        AssertDoesNotContain(lifecycleText, "ExportWriterYieldPacketInterval");
+        AssertDoesNotContain(lifecycleText, "_adaptiveThrottleSync");
         AssertContains(tempFilesText, "private static void DeleteTempFileIfPresent(string tmpPath)");
         AssertContains(tempFilesText, "private static bool TryPrepareTempOutputFile(string tmpPath, string outputPath, out string failureMessage)");
         AssertContains(tempFilesText, "internal static void CleanupOrphanedTempFiles(string directory)");
@@ -208,10 +210,13 @@ static partial class Program
         AssertContains(timeMathText, "private static long ToAvTimeBaseTimestamp(TimeSpan value)");
         AssertContains(timeMathText, "private static long ToMicrosecondsSaturated(TimeSpan value)");
         AssertContains(timeMathText, "private static TimeSpan SaturatingSubtract(TimeSpan left, TimeSpan right)");
-        AssertDoesNotContain(rootText, "public Task<FinalizeResult> ExportAsync(");
-        AssertDoesNotContain(rootText, "public void Dispose()");
-        AssertDoesNotContain(rootText, "private FinalizeResult ExportCore(");
-        AssertDoesNotContain(rootText, "private FinalizeResult ExportSegmentsCore(");
+        AssertDoesNotContain(lifecycleText, "public Task<FinalizeResult> ExportAsync(");
+        AssertDoesNotContain(lifecycleText, "private FinalizeResult ExportCore(");
+        AssertDoesNotContain(lifecycleText, "private FinalizeResult ExportSegmentsCore(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.cs")),
+            "FlashbackExporter state-only partial folded into FlashbackExporter.Lifecycle.cs");
         foreach (var removedFile in new[]
         {
             "FlashbackExporter.Lifetime.cs",
