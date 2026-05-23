@@ -2765,7 +2765,7 @@ decode pacing, seek, and segment-opening flow in the playback controller
 core/thread partials.
 
 Flashback playback position/file-PTS mapping now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PositionMapping.cs`.
+`Sussudio/Services/Flashback/FlashbackPlaybackController.Markers.cs`.
 It owns scrub/seek clamping, marker-bound range limits, saturating timestamp
 math, active fMP4 segment detection, and playback path comparison.
 
