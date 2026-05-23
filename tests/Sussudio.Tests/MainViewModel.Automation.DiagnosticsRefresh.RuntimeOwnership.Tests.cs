@@ -21,9 +21,8 @@ static partial class Program
         AssertContains(diagnostics.VerificationText, "await _snapshotQueryPort\n                .GetCaptureRuntimeSnapshotAsync(cancellationToken)");
         AssertContains(diagnostics.SnapshotsText, "var shouldAutoVerify = ShouldAutoVerifySnapshot(snapshot);");
         AssertContains(diagnostics.SnapshotsText, "ScheduleAutoVerificationIfNeeded(shouldAutoVerify);");
-        AssertContains(diagnostics.PreviewPacingText, "private static PreviewPacingClassification ClassifyPreviewPacing(");
+        AssertContains(diagnostics.SnapshotsText, "private static PreviewPacingClassification ClassifyPreviewPacing(");
         AssertContains(diagnostics.SnapshotsText, "ClassifyPreviewPacing(");
-        AssertDoesNotContain(diagnostics.SnapshotsText, "new PreviewPacingClassificationInput");
         AssertContains(diagnostics.LifecycleText, "public void Start()");
         AssertContains(diagnostics.LifecycleText, "private async Task RunLoopAsync(CancellationToken cancellationToken)");
         AssertDoesNotContain(diagnostics.HubText, "public void Start()");

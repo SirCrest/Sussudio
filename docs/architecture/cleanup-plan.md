@@ -320,8 +320,8 @@ loop. `AutomationDiagnosticsHub.Snapshots.cs` owns public snapshot read/refresh
 APIs, refresh-gate serialization, core snapshot refresh orchestration, cached
 last-output file existence/size probing, process CPU/memory/GC/thread-pool
 sampling, latest-snapshot publication, timeline append, event notification, and
-auto-verification handoff. `AutomationDiagnosticsHub.PreviewPacing.cs` owns
-automation snapshot input projection for preview pacing stage classification.
+auto-verification handoff plus automation snapshot input projection for preview
+pacing stage classification.
 `PreviewPacingClassificationModels.cs` owns the preview pacing DTOs, while
 `PreviewPacingSlowStageClassifier.cs` owns pure slow-stage classification
 ordering plus source capture, visual duplicate/low-motion, MJPEG decode,
