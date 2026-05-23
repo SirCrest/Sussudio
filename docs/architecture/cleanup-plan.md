@@ -202,9 +202,8 @@ Flashback recording failure, cleanup, force-rotate, temp-drive/startup-cache,
 active output/runtime, backend settings drift, export-verification, codec
 downgrade, encoder identity/bitrate/dimensions/frame-rate, focused projection
 routing, and final projection-to-`AutomationSnapshot` flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecordingQueues.cs` owns
-Flashback video, GPU, and audio queue/backpressure projection plus flattened
-queue/backpressure fields consumed by the automation snapshot DTO.
+It also owns Flashback video, GPU, and audio queue/backpressure projection plus
+flattened queue/backpressure fields consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs` owns
 Flashback playback state/frame summary, audio-master delay/fallback projection,
 playback event/cadence/PTS-cadence/A/V drift projection, seek-cap/decode timing
