@@ -1919,8 +1919,8 @@ Segment counts, active-path projection, active segment start PTS calculation,
 and segment-info projection now live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs`.
 Flashback buffer saturated math, PTS range clamps, completed-segment byte
-summation, and normalized segment-path comparisons now live in
-`Sussudio/Services/Flashback/FlashbackBufferManager.Math.cs`.
+summation, and normalized segment-path comparisons now live with shared buffer
+state in `Sussudio/Services/Flashback/FlashbackBufferManager.cs`.
 
 Flashback startup cleanup now lives in
 `Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs`. Keep stale root

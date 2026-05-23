@@ -54,8 +54,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
-        var mathText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Math.cs")
-            .Replace("\r\n", "\n");
+        var mathText = rootText;
 
         AssertContains(mathText, "private static long AddNonNegativeSaturated(long left, long right)");
         AssertContains(mathText, "private static long SubtractNonNegative(long left, long right)");
@@ -64,9 +63,10 @@ static partial class Program
         AssertContains(mathText, "private static TimeSpan ClampEndPtsToStart(TimeSpan startPts, TimeSpan endPts)");
         AssertContains(mathText, "private static bool IsSameSegmentPath(string? left, string? right)");
         AssertContains(mathText, "private static long ToNonNegativeLongSaturated(double value)");
-        AssertDoesNotContain(rootText, "private static long AddNonNegativeSaturated(long left, long right)");
-        AssertDoesNotContain(rootText, "private long GetCompletedSegmentBytesSaturated()");
-        AssertDoesNotContain(rootText, "private static bool IsSameSegmentPath(string? left, string? right)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Math.cs")),
+            "FlashbackBufferManager.Math.cs folded into FlashbackBufferManager.cs");
 
         return Task.CompletedTask;
     }
