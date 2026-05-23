@@ -561,15 +561,12 @@ Important entry points:
   latency accounting.
 - `CaptureSessionCoordinator.Disposal.cs` owns dispose/drain/cancel lifecycle
   for the worker queue and cancellation token source.
-- `CaptureSessionCoordinator.Flashback.cs` owns queued Flashback mutations.
-- `CaptureSessionCoordinator.Flashback.Status.cs` owns read-only Flashback
-  status and playback snapshot projection.
+- `CaptureSessionCoordinator.Flashback.cs` owns queued Flashback mutations,
+  read-only Flashback status, playback snapshot projection, Flashback export
+  and segment query forwarding, and active playback-controller readiness checks
+  and rejection logging.
 - `CaptureSessionCoordinator.Flashback.Playback.cs` owns playback, scrub,
   marker, and go-live command adapters.
-- `CaptureSessionCoordinator.Flashback.Export.cs` owns Flashback export and
-  segment query forwarding.
-- `CaptureSessionCoordinator.Flashback.Guards.cs` owns active playback-controller
-  readiness checks and rejection logging.
 - `CaptureSessionTransitionPolicy.cs` owns pure transition legality and
   steady-state resolution for `CaptureService`;
   `Sussudio/Services/Capture/CaptureSessionStateMachine.cs` owns mutable

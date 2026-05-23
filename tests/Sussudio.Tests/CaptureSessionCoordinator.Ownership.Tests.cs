@@ -39,14 +39,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs")
             .Replace("\r\n", "\n");
-        var flashbackStatusText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.Status.cs")
-            .Replace("\r\n", "\n");
+        var flashbackStatusText = flashbackText;
         var flashbackPlaybackText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.Playback.cs")
             .Replace("\r\n", "\n");
-        var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.Export.cs")
-            .Replace("\r\n", "\n");
-        var flashbackGuardsText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.Guards.cs")
-            .Replace("\r\n", "\n");
+        var flashbackExportText = flashbackText;
+        var flashbackGuardsText = flashbackText;
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
             .Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md")
@@ -56,10 +53,7 @@ static partial class Program
         AssertContains(flashbackText, "public Task CycleFlashbackEncoderSettingsAsync(");
         AssertContains(flashbackText, "public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(flashbackText, "public Task UpdateFlashbackSettingsAsync(int bufferMinutes, bool gpuDecode, CancellationToken cancellationToken = default)");
-        AssertDoesNotContain(flashbackText, "internal FlashbackBufferStatus GetFlashbackBufferStatus()");
         AssertDoesNotContain(flashbackText, "internal bool FlashbackBeginScrub(TimeSpan position)");
-        AssertDoesNotContain(flashbackText, "internal Task<FinalizeResult> ExportFlashbackRangeAsync(");
-        AssertDoesNotContain(flashbackText, "private bool TryGetActiveFlashback(");
 
         AssertContains(flashbackStatusText, "internal bool IsFlashbackActive => _captureService.IsFlashbackActive;");
         AssertContains(flashbackStatusText, "internal FlashbackBufferStatus GetFlashbackBufferStatus()");
@@ -76,14 +70,14 @@ static partial class Program
 
         AssertDoesNotContain(rootText, "RestartFlashbackAsync");
         AssertDoesNotContain(rootText, "FlashbackBeginScrub");
-        AssertContains(agentMapText, "`CaptureSessionCoordinator.Flashback.Status.cs`");
+        AssertContains(agentMapText, "`CaptureSessionCoordinator.Flashback.cs`");
         AssertContains(agentMapText, "`CaptureSessionCoordinator.Flashback.Playback.cs`");
-        AssertContains(agentMapText, "`CaptureSessionCoordinator.Flashback.Export.cs`");
-        AssertContains(agentMapText, "`CaptureSessionCoordinator.Flashback.Guards.cs`");
-        AssertContains(cleanupPlanText, "`CaptureSessionCoordinator.Flashback.Status.cs`");
+        AssertContains(agentMapText, "read-only Flashback status");
+        AssertContains(agentMapText, "active playback-controller guard");
+        AssertContains(cleanupPlanText, "`CaptureSessionCoordinator.Flashback.cs`");
         AssertContains(cleanupPlanText, "`CaptureSessionCoordinator.Flashback.Playback.cs`");
-        AssertContains(cleanupPlanText, "`CaptureSessionCoordinator.Flashback.Export.cs`");
-        AssertContains(cleanupPlanText, "`CaptureSessionCoordinator.Flashback.Guards.cs`");
+        AssertContains(cleanupPlanText, "read-only Flashback status");
+        AssertContains(cleanupPlanText, "active playback-controller guard");
 
         return Task.CompletedTask;
     }

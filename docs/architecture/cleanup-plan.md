@@ -1240,14 +1240,12 @@ Capture session coordinator API/command/snapshot contracts, focused
 source-ownership contracts, queue behavior, Flashback/cancellation behavior,
 transition policy, and shared reflection harness helpers now live in separate
 named files.
-Queued Flashback mutations now live in
+Queued Flashback mutations, read-only Flashback status, playback snapshot
+projection, export and segment query forwarding, and active playback-controller
+readiness/rejection logging now live in
 `Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs`.
-Read-only Flashback status and playback snapshot projection live in
-`CaptureSessionCoordinator.Flashback.Status.cs`, playback/scrub/marker command
-adapters live in `CaptureSessionCoordinator.Flashback.Playback.cs`, export and
-segment query forwarding lives in `CaptureSessionCoordinator.Flashback.Export.cs`,
-and active playback-controller readiness/rejection logging lives in
-`CaptureSessionCoordinator.Flashback.Guards.cs`.
+Playback/scrub/marker command adapters live in
+`CaptureSessionCoordinator.Flashback.Playback.cs`.
 
 Device discovery ownership is split across `DeviceService.*.cs`. Keep root
 capture/audio enumeration orchestration and the combined discovery result in

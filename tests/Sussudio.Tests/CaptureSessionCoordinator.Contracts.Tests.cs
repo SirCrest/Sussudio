@@ -31,12 +31,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs")
             .Replace("\r\n", "\n");
-        var flashbackStatusText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.Status.cs")
-            .Replace("\r\n", "\n");
-        var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.Export.cs")
-            .Replace("\r\n", "\n");
-        var flashbackGuardsText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.Guards.cs")
-            .Replace("\r\n", "\n");
+        var flashbackStatusText = flashbackText;
+        var flashbackExportText = flashbackText;
+        var flashbackGuardsText = flashbackText;
 
         AssertContains(flashbackText, "public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)");
         AssertContains(flashbackText, "public Task UpdateRecordingFormatAsync(RecordingFormat format, CancellationToken cancellationToken = default)");
