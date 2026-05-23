@@ -15,10 +15,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackSegmentEdgesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs")
             .Replace("\r\n", "\n");
-        var playbackSegmentSwitchText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentSwitch.cs")
-            .Replace("\r\n", "\n");
-        var decoderSegmentReopenText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderSegmentReopen.cs")
-            .Replace("\r\n", "\n");
+        var playbackSegmentSwitchText = playbackSegmentEdgesText;
+        var decoderSegmentReopenText = playbackSegmentEdgesText;
 
         // Constants/definitions now live in the extracted helper classes
         AssertContains(cleanupText, "internal static readonly TimeSpan StaleSessionMinAge = TimeSpan.FromHours(12);");

@@ -88,4 +88,202 @@ internal sealed partial class FlashbackPlaybackController
         pacingStopwatch.Restart();
         return true;
     }
+
+    private bool TrySwitchToNextSegment(
+        FlashbackDecoder decoder,
+        Stopwatch pacingStopwatch,
+        string? currentOpenFilePath,
+        TimeSpan lastFrameAbsPts,
+        TimeSpan pos,
+        TimeSpan frozenValidStart,
+        ref bool fileOpen,
+        CancellationToken cancellationToken,
+        out bool playbackContinues)
+    {
+        playbackContinues = false;
+        var nextFile = currentOpenFilePath != null
+            ? _bufferManager.GetNextSegmentFile(currentOpenFilePath)
+            : null;
+        if (nextFile == null || IsSamePlaybackPath(nextFile, currentOpenFilePath))
+        {
+            return false;
+        }
+
+        var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);
+        if (currentOpenFilePath != null &&
+            nextSegmentStart.HasValue &&
+            nextSegmentStart.Value - lastFrameAbsPts > TimeSpan.FromMilliseconds(250))
+        {
+            if (TryReopenCurrentFmp4BeforeSegmentSwitch(
+                decoder,
+                pacingStopwatch,
+                currentOpenFilePath,
+                pos,
+                lastFrameAbsPts,
+                nextSegmentStart.Value,
+                ref fileOpen,
+                cancellationToken))
+            {
+                playbackContinues = true;
+                return true;
+            }
+        }
+
+        Interlocked.Increment(ref _playbackSegmentSwitches);
+        Interlocked.Exchange(ref _lastSegmentSwitchUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        Logger.Log($"FLASHBACK_PLAYBACK_SEGMENT_SWITCH pos_ms={(long)pos.TotalMilliseconds} next='{System.IO.Path.GetFileName(nextFile)}'");
+        try
+        {
+            decoder.CloseFile();
+            fileOpen = false;
+            decoder.OpenFile(nextFile);
+            fileOpen = true;
+            _currentOpenFilePath = nextFile;
+            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
+            // Gate audio at last played position, not seek target - audio between
+            // the last played sample and the seek point would otherwise be dropped,
+            // causing an audible gap at segment boundaries.
+            var audioGate = Interlocked.Read(ref _lastAudioPtsTicks);
+            decoder.AudioChunkCallback = null;
+            var segSwitchTarget = SaturatingAdd(pos, frozenValidStart);
+            if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)
+                segSwitchTarget = nextSegmentStart.Value;
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!SeekToWithCapTelemetry(decoder, segSwitchTarget, "segment_switch", cancellationToken))
+            {
+                SetReopenFailure("segment_switch", "seek_failed", segSwitchTarget);
+                Logger.Log($"FLASHBACK_PLAYBACK_SEGMENT_SWITCH_SEEK_FAIL path='{nextFile}' offset_ms={(long)segSwitchTarget.TotalMilliseconds}");
+                RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "segment_switch_seek_failed");
+                return true;
+            }
+            RestoreAudioCallback(decoder, audioGate);
+            ResetPlaybackPtsCadenceBaseline();
+            pacingStopwatch.Restart();
+            playbackContinues = true;
+            return true;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_SEGMENT_SWITCH_ERROR path='{nextFile}' type={ex.GetType().Name} msg='{ex.Message}'");
+            SnapToLiveOnError(decoder, ex, ref fileOpen);
+            return true;
+        }
+    }
+
+    private bool TryReopenCurrentFmp4BeforeSegmentSwitch(
+        FlashbackDecoder decoder,
+        Stopwatch pacingStopwatch,
+        string currentOpenFilePath,
+        TimeSpan playbackPosition,
+        TimeSpan lastFrameAbsPts,
+        TimeSpan nextSegmentStart,
+        ref bool fileOpen,
+        CancellationToken cancellationToken)
+    {
+        Interlocked.Increment(ref _playbackFmp4Reopens);
+        Interlocked.Exchange(ref _lastFmp4ReopenUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN_BEFORE_SEGMENT_SWITCH pos_ms={(long)playbackPosition.TotalMilliseconds} resumePts_ms={(long)lastFrameAbsPts.TotalMilliseconds} nextStart_ms={(long)nextSegmentStart.TotalMilliseconds}");
+        try
+        {
+            ReopenDecoderPlaybackFile(
+                decoder,
+                currentOpenFilePath,
+                ref fileOpen,
+                updateCurrentOpenPath: false,
+                closeOnlyWhenOpen: false);
+            var preReopenLastAudioPts = SuppressAudioForFmp4Reopen(decoder);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (SeekToWithCapTelemetry(decoder, lastFrameAbsPts, "fmp4_reopen_before_segment_switch", cancellationToken))
+            {
+                RestoreAudioAfterFmp4Reopen(decoder, lastFrameAbsPts, preReopenLastAudioPts);
+                pacingStopwatch.Restart();
+                return true;
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN_BEFORE_SEGMENT_SWITCH_ERROR path='{currentOpenFilePath}' type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+
+        return false;
+    }
+
+    private bool HandleActiveFmp4ReopenAtSegmentEdge(
+        FlashbackDecoder decoder,
+        Stopwatch pacingStopwatch,
+        string currentOpenFilePath,
+        TimeSpan playbackPosition,
+        TimeSpan lastFrameAbsPts,
+        ref bool fileOpen,
+        CancellationToken cancellationToken)
+    {
+        Interlocked.Increment(ref _playbackFmp4Reopens);
+        Interlocked.Exchange(ref _lastFmp4ReopenUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        var resumeTarget = lastFrameAbsPts;
+        var currentSegmentStart = _bufferManager.GetSegmentStartPts(currentOpenFilePath);
+        if (currentSegmentStart.HasValue && resumeTarget < currentSegmentStart.Value)
+            resumeTarget = currentSegmentStart.Value;
+        Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN pos_ms={(long)playbackPosition.TotalMilliseconds} resumePts_ms={(long)resumeTarget.TotalMilliseconds}");
+        try
+        {
+            ReopenDecoderPlaybackFile(
+                decoder,
+                currentOpenFilePath,
+                ref fileOpen,
+                updateCurrentOpenPath: false,
+                closeOnlyWhenOpen: false);
+            var preReopenLastAudioPts = SuppressAudioForFmp4Reopen(decoder);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!SeekToWithCapTelemetry(decoder, resumeTarget, "fmp4_reopen", cancellationToken))
+            {
+                SetReopenFailure("fmp4_reopen", "seek_failed", resumeTarget);
+                Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN_SEEK_FAIL path='{currentOpenFilePath}' offset_ms={(long)resumeTarget.TotalMilliseconds}");
+                RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "fmp4_reopen_seek_failed");
+                return false;
+            }
+            RestoreAudioAfterFmp4Reopen(decoder, resumeTarget, preReopenLastAudioPts);
+            pacingStopwatch.Restart();
+            return true;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN_ERROR path='{currentOpenFilePath}' type={ex.GetType().Name} msg='{ex.Message}'");
+            SnapToLiveOnError(decoder, ex, ref fileOpen);
+            return false;
+        }
+    }
+
+    private long SuppressAudioForFmp4Reopen(FlashbackDecoder decoder)
+    {
+        var preReopenLastAudioPts = Interlocked.Read(ref _lastAudioPtsTicks);
+        Interlocked.Increment(ref _playbackReopenAudioNullWindowCount);
+        decoder.AudioChunkCallback = null;
+        return preReopenLastAudioPts;
+    }
+
+    private void RestoreAudioAfterFmp4Reopen(
+        FlashbackDecoder decoder,
+        TimeSpan resumeTarget,
+        long preReopenLastAudioPts)
+    {
+        // Gate audio at the post-seek video PTS (seek target), not at
+        // _lastAudioPtsTicks. _lastAudioPtsTicks reflects pre-seek state;
+        // using it suppresses audio if the seek lands earlier, or creates
+        // a gap if it lands later, causing WASAPI underruns and A/V desync.
+        var audioGateTicks = resumeTarget.Ticks;
+        Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_AUDIO_GATE gate_ms={(long)resumeTarget.TotalMilliseconds} source=PostSeekVideoPts last_audio_ms={preReopenLastAudioPts / TimeSpan.TicksPerMillisecond} seek_target_ms={(long)resumeTarget.TotalMilliseconds}");
+        RestoreAudioCallback(decoder, audioGateTicks);
+    }
 }

@@ -2967,8 +2967,8 @@ Adjacent-segment seek fallback policy, segment-start probing, segment switch
 telemetry, and adjacent-seek failure handling now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderAdjacentSegmentSeek.cs`.
 Segment-edge fMP4 reopen/reseek recovery and fMP4 reopen audio-gate restoration
-now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderSegmentReopen.cs`.
+now live with segment-edge playback handling in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs`.
 Keep seek-display and playback pacing in the controller core/thread partials.
 
 Flashback playback seek/scrub frame display now lives in
@@ -2987,14 +2987,11 @@ including the recovery near-live snap threshold, belongs in the playback live
 recovery owner. Playback frame reads, prebuffer cleanup, and A/V drift
 frame-skip catch-up policy live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`.
-Segment-edge routing decisions and write-head waits now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs`;
-the next-segment switch transaction, including next-file probing, decoder
-open/seek, switch counters, audio gate, and cadence-baseline reset, now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentSwitch.cs`.
-Active fMP4 reopen/reseek recovery during segment-edge handling, including the
-shared decoder reopen transaction and post-seek audio gate, lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderSegmentReopen.cs`.
+Segment-edge routing decisions, write-head waits, next-segment switch
+transactions, next-file probing, decoder open/seek, switch counters, audio
+gates, cadence-baseline reset, and active fMP4 reopen/reseek recovery during
+segment-edge handling now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs`.
 
 Flashback playback timing policy and decoded PTS cadence now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs`.

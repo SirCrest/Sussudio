@@ -76,7 +76,7 @@ static partial class Program
     internal static Task FlashbackPlaybackController_EndOfSegmentOpenFailuresSnapLive()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
-        var segmentSwitchText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentSwitch.cs")
+        var segmentSwitchText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "return HandleEndOfSegment(decoder, commandChannel, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);");
