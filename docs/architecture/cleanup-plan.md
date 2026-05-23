@@ -1391,10 +1391,9 @@ same Flashback recording owner.
 Preview-backend resource state now belongs to
 `Sussudio/Services/Flashback/FlashbackBackendResources.cs`, which owns the
 preview backend resource grouping, install/take/clear state, and
-recovery-preserve flag storage.
-`Sussudio/Services/Flashback/FlashbackBackendResources.Producers.cs` owns the
-video/audio/microphone attach and detach request shapes and feed wiring used by
-preview startup, buffer cycling, teardown, and rollback.
+recovery-preserve flag storage. It also owns the video/audio/microphone attach
+and detach request shapes and feed wiring used by preview startup, buffer
+cycling, teardown, and rollback.
 `Sussudio/Services/Flashback/FlashbackBackendResources.RecordingFinalize.cs`
 owns recovery-preserve policy and recording-finalize handoff.
 `Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs`
@@ -4462,9 +4461,8 @@ owner, fold it back into that owner and update the source-shape tests and
    Flashback backend resources, active recording backend resources, and active
    video pipeline resources.
    `FlashbackBackendResources.cs` now owns the preview backend resource set,
-   install/take/clear state, and recovery-preserve flag storage.
-   `FlashbackBackendResources.Producers.cs` owns producer attach/detach request
-   shapes plus video, audio, and microphone feed wiring.
+   install/take/clear state, recovery-preserve flag storage, producer
+   attach/detach request shapes, and video, audio, and microphone feed wiring.
    `FlashbackBackendResources.RecordingFinalize.cs` owns recovery-preserve
    policy and recording-finalize handoff.
    `FlashbackBackendResources.Startup.cs` owns startup construction,

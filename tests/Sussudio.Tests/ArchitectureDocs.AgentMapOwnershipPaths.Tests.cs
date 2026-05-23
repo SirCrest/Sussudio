@@ -174,8 +174,9 @@ static partial class Program
         AssertContains(previewBackendEntry, "preview backend disposal request construction");
         AssertContains(previewBackendEntry, "Startup construction, install, playback initialization, and rollback cleanup");
         AssertContains(previewBackendEntry, "`FlashbackBackendResources.Startup.cs`");
-        AssertContains(previewBackendEntry, "producer attach/detach request\n  contracts and feed wiring live in `FlashbackBackendResources.Producers.cs`");
-        AssertContains(previewBackendEntry, "`FlashbackBackendResources.Producers.cs`");
+        AssertContains(previewBackendEntry, "producer attach/detach request");
+        AssertContains(previewBackendEntry, "contracts and feed wiring live in `FlashbackBackendResources.cs`");
+        AssertContains(previewBackendEntry, "`FlashbackBackendResources.cs`");
         AssertContains(previewBackendEntry, "rollback cleanup");
         AssertDoesNotContain(previewBackendEntry, "startup: buffer manager, encoder sink, exporter, playback controller, and\n  producer attachment");
 

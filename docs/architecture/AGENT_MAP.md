@@ -658,7 +658,7 @@ Important entry points:
   preview backend disposal request construction.
   Startup construction, install, playback initialization, and rollback cleanup live in
   `FlashbackBackendResources.Startup.cs`; producer attach/detach request
-  contracts and feed wiring live in `FlashbackBackendResources.Producers.cs`;
+  contracts and feed wiring live in `FlashbackBackendResources.cs`;
   teardown mechanics live in `FlashbackBackendResources.PreviewDisposal.cs`; backend
   artifact cleanup lives in `FlashbackBackendResources.ArtifactCleanup.cs`.
 - `CaptureService.FlashbackBufferCycle.cs` owns buffer-cycle transition
@@ -978,9 +978,8 @@ Primary current owner: `Sussudio/Services/Flashback/`
 Entry points:
 
 - `FlashbackBackendResources.cs` owns preview backend resource grouping,
-  install/take/clear state, and recovery-preserve flag storage.
-  `FlashbackBackendResources.Producers.cs` owns producer attach/detach request
-  shapes plus video, audio, and microphone feed wiring.
+  install/take/clear state, recovery-preserve flag storage, producer
+  attach/detach request shapes, and video, audio, and microphone feed wiring.
   `FlashbackBackendResources.RecordingFinalize.cs` owns recovery-preserve policy
   and recording-finalize handoff.
   `FlashbackBackendResources.Startup.cs` owns preview backend startup
