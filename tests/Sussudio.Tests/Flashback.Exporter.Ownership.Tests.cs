@@ -23,8 +23,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentPacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketReadLoop.cs")
             .Replace("\r\n", "\n");
-        var segmentPacketWriteStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriteState.cs")
-            .Replace("\r\n", "\n");
+        var segmentPacketWriteStateText = segmentPacketReadLoopText;
         var segmentPacketRebasingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketRebasing.cs")
             .Replace("\r\n", "\n");
         var segmentRangeProjectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentRangeProjection.cs")

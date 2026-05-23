@@ -2049,11 +2049,9 @@ active segment packet pump lives in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketReadLoop.cs`; keep
 native frame reads, per-read packet unref, stream filtering, timestamp-base
 discovery, buffered packet transition, rebased packet writes, writer throttling,
-and EOF partial-base rescue/freeing there.
-Per-segment packet write state and decisions live in
-`Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriteState.cs`; keep
-timestamp-base discovery, buffered-packet rescue/flush, and native packet
-write outcome state there. Segment timestamp rebasing, segment-boundary repair,
+and EOF partial-base rescue/freeing there, along with the per-segment packet
+write state, buffered-packet rescue/flush, and native packet write outcome
+state. Segment timestamp rebasing, segment-boundary repair,
 DTS monotonicity, and native packet writes live in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketRebasing.cs`.
 Per-segment export range/window projection, empty effective-range skip
