@@ -6,7 +6,6 @@ static partial class Program
     {
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
         var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs").Replace("\r\n", "\n");
-        var uiDispatchControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.Context.cs").Replace("\r\n", "\n");
 
         AssertContains(controllerGraphText, "private sealed partial class MainViewModelControllerGraph");
         AssertContains(controllerGraphText, "private static MainViewModelUiDispatchController CreateUiDispatchController(MainViewModel viewModel)");
@@ -18,9 +17,9 @@ static partial class Program
         AssertContains(uiDispatchControllerText, "private readonly MainViewModelUiDispatchControllerContext _context;");
         AssertDoesNotContain(uiDispatchControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(uiDispatchControllerText, "_viewModel.");
-        AssertContains(uiDispatchControllerContextText, "internal sealed class MainViewModelUiDispatchControllerContext");
-        AssertContains(uiDispatchControllerContextText, "public required DispatcherQueue DispatcherQueue { get; init; }");
-        AssertContains(uiDispatchControllerContextText, "public required Func<bool> IsDisposing { get; init; }");
+        AssertContains(uiDispatchControllerText, "internal sealed class MainViewModelUiDispatchControllerContext");
+        AssertContains(uiDispatchControllerText, "public required DispatcherQueue DispatcherQueue { get; init; }");
+        AssertContains(uiDispatchControllerText, "public required Func<bool> IsDisposing { get; init; }");
 
         return Task.CompletedTask;
     }

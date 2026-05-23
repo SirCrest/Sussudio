@@ -3288,10 +3288,9 @@ Primary current owners:
   selected video format, and MJPEG decoder count changes.
   `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs` owns
   shared view-model UI dispatcher enqueue/invoke policy, disposal skip logging,
-  cancellation handoff, enqueue-failure logging, and status projection.
-  `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.Context.cs`
-  owns the UI dispatch graph-port contract for dispatcher access, disposal
-  state, logging, exception logging, and status text projection.
+  cancellation handoff, enqueue-failure logging, status projection, and the UI
+  dispatch graph-port contract for dispatcher access, disposal state, logging,
+  exception logging, and status text projection.
   `MainViewModel.Dispatching.cs` owns the stable private adapter names plus
   preview event fan-out for the partial family.
   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs`
