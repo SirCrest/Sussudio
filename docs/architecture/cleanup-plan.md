@@ -1860,13 +1860,9 @@ there.
 
 Flashback encoder progress publication now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingProgress.cs`. Keep
-encoder PTS resolution, latest-PTS and disk-byte refresh, segment-rotation
-triggering, and frame-encoded event dispatch there.
-
-Flashback encoder rolling segment rotation now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.SegmentRotation.cs`. Keep
-active-segment completion/registration, disk-byte refresh after rotation, and
-rotation-failure recovery there.
+encoder PTS resolution, latest-PTS and disk-byte refresh, frame-encoded event
+dispatch, segment-rotation triggering, active-segment completion/registration,
+and rotation-failure recovery there.
 
 Flashback encoder export force-rotation requests now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateRequests.cs`. Keep

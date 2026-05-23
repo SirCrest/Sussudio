@@ -114,8 +114,11 @@ static partial class Program
 
         AssertContains(encodingProgressText, "private void OnVideoFrameEncoded()");
         AssertContains(encodingProgressText, "private TimeSpan ResolveEncoderPts()");
+        AssertContains(encodingProgressText, "private bool RotateSegment(TimeSpan currentPts)");
         AssertContains(encodingProgressText, "_bufferManager.UpdateLatestPts(pts);");
         AssertContains(encodingProgressText, "FrameEncoded?.Invoke(this, encoded);");
+        AssertContains(encodingProgressText, "FLASHBACK_SINK_ROTATE");
+        AssertContains(encodingProgressText, "FLASHBACK_SINK_ROTATE_FAIL");
         AssertContains(docsText, "FlashbackEncoderSink.PacketDrain.cs");
         AssertContains(docsText, "FlashbackEncoderSink.EncodingProgress.cs");
 
