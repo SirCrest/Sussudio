@@ -502,11 +502,10 @@ model, table output, and trend summaries in `Formatters.Timeline.cs`, standalone
 
 `tools/Common/AutomationSnapshotFormatter.cs` is now the shared automation
 snapshot formatter owner for top-level text flow plus the small root sections:
-state/capture-command summary, audio signal, recording output/backend/
-integrity/audio-integrity/last-finalize, diagnostics, legacy performance, and
-process CPU/Memory/GC/thread-pool text. Capture settings, video pipeline, and
+state/capture-command summary, capture settings, audio signal, recording
+output/backend/integrity/audio-integrity/last-finalize, diagnostics, legacy
+performance, and process CPU/Memory/GC/thread-pool text. Video pipeline and
 capture cadence text live in
-`AutomationSnapshotFormatter.CaptureSettings.cs`,
 `AutomationSnapshotFormatter.VideoPipeline.cs`,
 `AutomationSnapshotFormatter.CaptureCadence.cs`. Snapshot response-success
 detection and tolerant JSON string, bool, and numeric accessors live in

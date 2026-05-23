@@ -10,7 +10,7 @@ static partial class Program
         var sharedFormatterAudioSource = sharedFormatterRootSource;
         var sharedFormatterRecordingSource = sharedFormatterRootSource;
         var sharedFormatterProcessResourcesSource = sharedFormatterRootSource;
-        var sharedFormatterCaptureSettingsSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.CaptureSettings.cs");
+        var sharedFormatterCaptureSettingsSource = sharedFormatterRootSource;
         var sharedFormatterVideoPipelineSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs");
         var sharedFormatterDiagnosticsSource = sharedFormatterRootSource;
         var sharedFormatterCaptureCadenceSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs");
@@ -35,7 +35,7 @@ static partial class Program
         AssertContains(sharedFormatterRootSource, "AppendMemorySection(builder, snapshot);");
         AssertContains(sharedFormatterRootSource, "AppendCaptureCadenceSection(builder, snapshot);");
         AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Sussudio State ==\");");
-        AssertDoesNotContain(sharedFormatterRootSource, "var selectedFriendlyFrameRate = Get(snapshot, \"SelectedFriendlyFrameRate\", string.Empty);");
+        AssertContains(sharedFormatterRootSource, "var selectedFriendlyFrameRate = Get(snapshot, \"SelectedFriendlyFrameRate\", string.Empty);");
         AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Audio ==\");");
         AssertDoesNotContain(sharedFormatterRootSource, "builder.AppendLine(\"== Video Pipeline ==\");");
         AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Recording ==\");");

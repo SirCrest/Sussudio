@@ -4046,12 +4046,11 @@ Primary owners:
 - `tools/Common/AutomationSnapshotFormatter.cs` owns the top-level shared
   automation snapshot console text flow, state/capture-command queue,
   selected-device and initialized/preview/recording text, audio enablement,
+  capture option, recording format, HDR, pipeline, compact UI setting text,
   preview, signal, clipping, reader and audio-frame text, recording output,
   backend, integrity, audio-integrity and last-finalize text, diagnostic health,
   summary, evidence and frame-lane text, plus legacy performance, process CPU,
   memory, GC, and thread-pool text.
-  `tools/Common/AutomationSnapshotFormatter.CaptureSettings.cs` owns capture
-  option, recording format, HDR, pipeline, and compact UI setting text.
   `tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs` owns video reader,
   encoder queue, queue-latency, backpressure, failure, GPU/CUDA queue,
   freshness, diagnostics, thread-health section order, and source-reader/WASAPI
