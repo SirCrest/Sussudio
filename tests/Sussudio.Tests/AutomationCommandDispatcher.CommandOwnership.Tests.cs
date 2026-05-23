@@ -44,7 +44,7 @@ static partial class Program
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
-        var introspectionCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.IntrospectionCommands.cs")
+        var readbackCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.ReadbackCommands.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(customCommandsText, "case AutomationCommandKind.GetSnapshot:");
@@ -54,13 +54,17 @@ static partial class Program
         AssertDoesNotContain(customCommandsText, "_diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken)");
         AssertDoesNotContain(customCommandsText, "AutomationCommandCatalog.CreateManifest()");
 
-        AssertContains(introspectionCommandsText, "private async Task<AutomationCommandResponse> ExecuteGetSnapshotCommandAsync(");
-        AssertContains(introspectionCommandsText, "_diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken)");
-        AssertContains(introspectionCommandsText, "Snapshot retrieved.");
-        AssertContains(introspectionCommandsText, "private AutomationCommandResponse ExecuteGetAutomationManifestCommand(string correlationId)");
-        AssertContains(introspectionCommandsText, "Automation manifest retrieved.");
-        AssertContains(introspectionCommandsText, "AutomationCommandCatalog.CreateManifest()");
-        AssertContains(introspectionCommandsText, "includeSnapshot: false");
+        AssertContains(readbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteGetSnapshotCommandAsync(");
+        AssertContains(readbackCommandsText, "_diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken)");
+        AssertContains(readbackCommandsText, "Snapshot retrieved.");
+        AssertContains(readbackCommandsText, "private AutomationCommandResponse ExecuteGetAutomationManifestCommand(string correlationId)");
+        AssertContains(readbackCommandsText, "Automation manifest retrieved.");
+        AssertContains(readbackCommandsText, "AutomationCommandCatalog.CreateManifest()");
+        AssertContains(readbackCommandsText, "includeSnapshot: false");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.IntrospectionCommands.cs")),
+            "introspection readback folded into AutomationCommandDispatcher.ReadbackCommands.cs");
 
         return Task.CompletedTask;
     }
