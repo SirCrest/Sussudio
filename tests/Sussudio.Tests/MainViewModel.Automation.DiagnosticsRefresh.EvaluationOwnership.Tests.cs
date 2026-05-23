@@ -19,6 +19,12 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "private static DiagnosticEvaluation? TryBuildFlashbackExportDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "\"Flashback export progress is stalled.\"");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "\"Flashback export is running.\"");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "private static DiagnosticEvaluation? TryBuildFlashbackPlaybackDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "\"flashback_playback\"");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Playback.cs")),
+            "Flashback playback diagnostic evaluation partial folded into Flashback evaluation owner");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "private static DiagnosticEvaluation? TryBuildFlashbackRecordingDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "BuildFlashbackRecordingDiagnosticConditions(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "TryBuildFlashbackEncoderFailureDiagnosticEvaluation(health, lanes)");
@@ -34,10 +40,7 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "\"Flashback backend settings differ from requested settings.\"");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "private static DiagnosticEvaluation? TryBuildFlashbackRecordingDegradationDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "\"Flashback recording path is dropping or backing up.\"");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackPlaybackText, "private static DiagnosticEvaluation? TryBuildFlashbackPlaybackDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackPlaybackText, "\"flashback_playback\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationFlashbackText, "\"flashback_recording\"");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationFlashbackText, "\"flashback_playback\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimeDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimeStateDiagnosticEvaluation(health, isPreviewing, isRecording, lanes)");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimeRecordingDiagnosticEvaluation(captureRuntime, health, isRecording, lanes)");

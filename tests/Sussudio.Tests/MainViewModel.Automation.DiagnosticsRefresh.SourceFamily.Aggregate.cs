@@ -12,7 +12,6 @@ static partial class Program
                 DiagnosticEvaluationText,
                 DiagnosticEvaluationFlashbackText,
                 DiagnosticEvaluationFlashbackRecordingText,
-                DiagnosticEvaluationFlashbackPlaybackText,
                 DiagnosticEvaluationRealtimeText,
                 DiagnosticEvaluationRealtimePreviewText,
                 DiagnosticEvaluationLanesText,

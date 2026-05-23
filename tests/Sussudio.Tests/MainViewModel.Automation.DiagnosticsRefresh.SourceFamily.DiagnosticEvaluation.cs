@@ -5,7 +5,6 @@ static partial class Program
         public string DiagnosticEvaluationText { get; init; } = string.Empty;
         public string DiagnosticEvaluationFlashbackText { get; init; } = string.Empty;
         public string DiagnosticEvaluationFlashbackRecordingText { get; init; } = string.Empty;
-        public string DiagnosticEvaluationFlashbackPlaybackText { get; init; } = string.Empty;
         public string DiagnosticEvaluationRealtimeText { get; init; } = string.Empty;
         public string DiagnosticEvaluationRealtimePreviewText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesText { get; init; } = string.Empty;
