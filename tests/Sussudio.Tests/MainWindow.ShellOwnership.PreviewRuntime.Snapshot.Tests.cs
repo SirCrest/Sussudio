@@ -15,7 +15,6 @@ static partial class Program
         var previewRuntimeSnapshotGpuPlaybackProjectionPolicyText = previewRuntimeSnapshotMapperText;
         var previewRuntimeSnapshotHealthPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthPolicy.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotHealthInputFactoryText = previewRuntimeSnapshotHealthPolicyText;
-        var previewRuntimeSnapshotInputText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotInput.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotModelText = ReadRepoFile("Sussudio/Models/Automation/PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
@@ -56,13 +55,11 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "IsStartupWaitingForFirstVisual = startupSession.IsWaitingForFirstVisual,");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "StartupGpuSignalMediaOpened = startupSignalSnapshot.GpuSignalMediaOpened,");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "GpuPositionEventCount = startupSignals.PositionEventCount");
-        AssertContains(previewRuntimeSnapshotInputText, "internal sealed class PreviewRuntimeSnapshotInput");
-        AssertContains(previewRuntimeSnapshotInputText, "public D3D11PreviewRenderer? D3DRenderer { get; init; }");
-        AssertContains(previewRuntimeSnapshotInputText, "public PreviewStartupSignalFlags StartupRequiredSignals { get; init; }");
-        AssertContains(previewRuntimeSnapshotInputText, "public long GpuPositionEventCount { get; init; }");
-        AssertDoesNotContain(previewRuntimeSnapshotControllerText, "internal sealed class PreviewRuntimeSnapshotInput");
-
         AssertContains(previewRuntimeSnapshotControllerText, "internal static class PreviewRuntimeSnapshotController");
+        AssertContains(previewRuntimeSnapshotControllerText, "internal sealed class PreviewRuntimeSnapshotInput");
+        AssertContains(previewRuntimeSnapshotControllerText, "public D3D11PreviewRenderer? D3DRenderer { get; init; }");
+        AssertContains(previewRuntimeSnapshotControllerText, "public PreviewStartupSignalFlags StartupRequiredSignals { get; init; }");
+        AssertContains(previewRuntimeSnapshotControllerText, "public long GpuPositionEventCount { get; init; }");
         AssertContains(previewRuntimeSnapshotControllerText, "public static PreviewRuntimeSnapshot Build(PreviewRuntimeSnapshotInput input)");
         AssertContains(previewRuntimeSnapshotControllerText, "var d3dProjection = PreviewRuntimeD3DProjection.Build(input);");
         AssertContains(previewRuntimeSnapshotControllerText, "var healthInput = PreviewRuntimeSnapshotHealthInputFactory.Build(");
@@ -121,7 +118,7 @@ static partial class Program
 
         AssertContains(agentMapText, "PreviewRuntimeSnapshot.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotSamplingController.cs");
-        AssertContains(agentMapText, "PreviewRuntimeSnapshotInput.cs");
+        AssertContains(agentMapText, "PreviewRuntimeSnapshotController.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
         AssertContains(agentMapText, "surface/startup/GPU playback projection policies");
@@ -133,7 +130,7 @@ static partial class Program
         AssertContains(cleanupPlanText, "display cadence");
         AssertContains(cleanupPlanText, "D3D renderer diagnostics");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotSamplingController.cs");
-        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotInput.cs");
+        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotController.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotMapper.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotMapper.cs");
         AssertContains(cleanupPlanText, "surface/startup/GPU playback projection policies");

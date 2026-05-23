@@ -1323,10 +1323,9 @@ Primary current owners:
   owns the UI-dispatch handoff, UI-thread-only preview runtime field sampling,
   startup missing-signal refresh, and sampled-input assembly.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`
-  owns read-only preview runtime snapshot construction orchestration.
-  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotInput.cs`
-  owns the UI-thread sampled preview snapshot input contract shared by the
-  snapshot controller and D3D projection builder.
+  owns read-only preview runtime snapshot construction orchestration and the
+  UI-thread sampled preview snapshot input contract shared by the snapshot
+  controller and D3D projection builder.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotMapper.cs`
   owns final preview runtime snapshot DTO flattening from sampled input, D3D
   projection, and surface/startup/GPU playback projection policies.
