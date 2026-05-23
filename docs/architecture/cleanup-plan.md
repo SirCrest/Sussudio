@@ -3467,11 +3467,10 @@ records/builders for overview, capture, Flashback recording/export, preview
 cadence/scheduler, preview D3D, and visual cadence. Diagnostic metric gathering
 for validation/result projections and analysis warning emission live in
 `DiagnosticSessionResultBuilder.Analysis.cs`, which also owns the private
-analysis handoff record. Named validation handoff order lives in
-`DiagnosticSessionResultBuilder.AnalysisValidation.cs`.
-Flashback playback/export analysis warning text, thresholds, and tolerated
-Flashback scenario warning classification live in
-`DiagnosticSessionResultBuilder.FlashbackWarnings.cs`; the top-level
+analysis handoff record plus Flashback playback/export warning text, threshold
+guards, and tolerated Flashback scenario warning classification. Named
+validation handoff order lives in `DiagnosticSessionResultBuilder.AnalysisValidation.cs`.
+The top-level
 `DiagnosticSessionResultBuildRequest.cs` owns the result-build request handoff
 created by `DiagnosticSessionRunExecution.cs`. Diagnostic
 health summary snapshot selection, health summary text projection, verdict
@@ -3978,7 +3977,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.Projections.cs`
 - `DiagnosticSessionResultBuilder.Analysis.cs`
 - `DiagnosticSessionResultBuilder.AnalysisValidation.cs`
-- `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`

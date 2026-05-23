@@ -80,7 +80,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultBuilder.Flattening.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Analysis.cs",
             "tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs",
             "tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs",
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs");

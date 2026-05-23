@@ -60,8 +60,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var analysisValidationText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs")
             .Replace("\r\n", "\n");
-        var flashbackWarningsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(analysisText, "AddFlashbackPlaybackAnalysisWarnings(playbackResultMetrics, warnings);");
         AssertContains(analysisText, "AddFlashbackExportAnalysisWarnings(");
@@ -74,21 +72,19 @@ static partial class Program
         AssertDoesNotContain(analysisText, "var toleratesSparseScrubSchedulerTransitions =");
         AssertDoesNotContain(analysisText, "var flashbackExportForceRotateFallbacksAtEnd =");
         AssertDoesNotContain(analysisText, "FlashbackExportForceRotateFallbacksAtEnd =");
-        AssertDoesNotContain(analysisText, "private static void AddFlashbackPlaybackAnalysisWarnings(");
-        AssertDoesNotContain(analysisText, "private static void AddFlashbackExportAnalysisWarnings(");
-        AssertContains(flashbackWarningsText, "private static void AddFlashbackPlaybackAnalysisWarnings(");
-        AssertContains(flashbackWarningsText, "private static void AddFlashbackExportAnalysisWarnings(");
+        AssertContains(analysisText, "private static void AddFlashbackPlaybackAnalysisWarnings(");
+        AssertContains(analysisText, "private static void AddFlashbackExportAnalysisWarnings(");
         AssertContains(analysisValidationText, "EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
         AssertDoesNotContain(analysisValidationText, "IsToleratedFlashbackScenarioWarning(");
-        AssertContains(flashbackWarningsText, "private static bool EvaluateFlashbackWarningsSucceeded(");
-        AssertContains(flashbackWarningsText, "scenarioPlan.UsesFlashbackScenarioWarningPolicy");
-        AssertContains(flashbackWarningsText, "IsToleratedFlashbackScenarioWarning(");
-        AssertContains(flashbackWarningsText, "scenarioPlan.ToleratesSourceSignalHealthWarning");
-        AssertContains(flashbackWarningsText, "scenarioPlan.ToleratesFlashbackForceRotateDrainWarning");
-        AssertContains(flashbackWarningsText, "flashback playback seek forward-decode cap hit during session");
-        AssertContains(flashbackWarningsText, "flashback export used force-rotate partial fallback");
-        AssertContains(flashbackWarningsText, "playbackResultMetrics.SeekForwardDecodeCapHitsDelta <= 0");
-        AssertContains(flashbackWarningsText, "flashbackExportForceRotateFallbacksDelta <= 0");
+        AssertContains(analysisText, "private static bool EvaluateFlashbackWarningsSucceeded(");
+        AssertContains(analysisText, "scenarioPlan.UsesFlashbackScenarioWarningPolicy");
+        AssertContains(analysisText, "IsToleratedFlashbackScenarioWarning(");
+        AssertContains(analysisText, "scenarioPlan.ToleratesSourceSignalHealthWarning");
+        AssertContains(analysisText, "scenarioPlan.ToleratesFlashbackForceRotateDrainWarning");
+        AssertContains(analysisText, "flashback playback seek forward-decode cap hit during session");
+        AssertContains(analysisText, "flashback export used force-rotate partial fallback");
+        AssertContains(analysisText, "playbackResultMetrics.SeekForwardDecodeCapHitsDelta <= 0");
+        AssertContains(analysisText, "flashbackExportForceRotateFallbacksDelta <= 0");
     }
 
     internal static Task DiagnosticSessionResultBuilder_DiagnosticHealthVerdictLivesInFocusedPartial()

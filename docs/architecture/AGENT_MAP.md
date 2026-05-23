@@ -3964,17 +3964,15 @@ Primary owners:
   cadence.
 - `tools/Common/DiagnosticSessionResultBuilder.Analysis.cs` owns
   diagnostic-session metric preparation for validation/result projections,
-  analysis warning emission, and the handoff into the named
-  analysis-validation owner before summary construction. It also owns the
-  private analysis handoff record, including the single `PreviewScheduler`
-  record property used by preview-scheduler result projection.
+  analysis warning emission, Flashback playback/export analysis warning text,
+  threshold guards, tolerated Flashback scenario warning classification, and the
+  handoff into the named analysis-validation owner before summary construction.
+  It also owns the private analysis handoff record, including the single
+  `PreviewScheduler` record property used by preview-scheduler result
+  projection.
 - `tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs` owns
   diagnostic-session validation handoff order for Flashback playback, cleanup
   lifecycle restore, preview scheduler analysis, and diagnostic health.
-- `tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs` owns
-  Flashback playback/export analysis warning text, threshold guards emitted
-  during result construction, and tolerated Flashback scenario warning
-  classification.
 - `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs` owns
   diagnostic-session health summary snapshot selection, health verdict
   composition, source-reader/ingest warning deltas for sparse source-capture

@@ -29,8 +29,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var analysisValidationText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs")
             .Replace("\r\n", "\n");
-        var flashbackWarningsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs")
-            .Replace("\r\n", "\n");
         var diagnosticHealthText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs")
             .Replace("\r\n", "\n");
         var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs")
@@ -76,8 +74,8 @@ static partial class Program
         AssertContains(analysisValidationText, "ValidateFlashbackPreviewSchedulerAnalysis(");
         AssertContains(analysisValidationText, "AnalyzeDiagnosticHealth(");
         AssertContains(analysisValidationText, "EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
-        AssertContains(flashbackWarningsText, "private static bool EvaluateFlashbackWarningsSucceeded(");
-        AssertContains(flashbackWarningsText, "IsToleratedFlashbackScenarioWarning(");
+        AssertContains(analysisText, "private static bool EvaluateFlashbackWarningsSucceeded(");
+        AssertContains(analysisText, "IsToleratedFlashbackScenarioWarning(");
         AssertDoesNotContain(analysisText, "MfSourceReaderFramesDropped");
         AssertDoesNotContain(analysisText, "VideoIngestErrorCount");
         AssertDoesNotContain(analysisValidationText, "IsToleratedFlashbackScenarioWarning(");
@@ -87,7 +85,7 @@ static partial class Program
         AssertDoesNotContain(builderText, "return new DiagnosticSessionResult\n        {");
         AssertDoesNotContain(analysisText, "ValidateCleanupLifecycleRestored(");
         AssertDoesNotContain(analysisText, "ValidateFlashbackPlaybackSession(");
-        AssertDoesNotContain(analysisText, "IsToleratedFlashbackScenarioWarning(");
+        AssertContains(analysisText, "IsToleratedFlashbackScenarioWarning(");
     }
 
     private static void AssertDiagnosticSessionResultBuilderPreviewSchedulerOwnership()
