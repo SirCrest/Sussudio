@@ -469,8 +469,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.PacketBuffers.cs")
             .Replace("\r\n", "\n");
-        var packetTypesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.PacketTypes.cs")
-            .Replace("\r\n", "\n");
+        var packetTypesText = packetBuffersText;
         var audioInputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.Audio.cs")
             .Replace("\r\n", "\n");
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
@@ -512,7 +511,8 @@ static partial class Program
         AssertDoesNotContain(rootText, "private static byte[] GetBuffer");
         AssertContains(docsText, "FlashbackEncoderSink.SessionContext.cs");
         AssertContains(docsText, "FlashbackEncoderSink.PacketBuffers.cs");
-        AssertContains(docsText, "FlashbackEncoderSink.PacketTypes.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.PacketBuffers.cs");
+        AssertContains(docsText, "packet DTOs");
 
         return Task.CompletedTask;
     }

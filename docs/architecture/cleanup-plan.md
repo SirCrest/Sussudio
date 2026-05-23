@@ -1840,8 +1840,10 @@ ArrayPool rent/return helpers, leased video packet disposal, best-effort video
 packet cleanup, and GPU texture release helpers there.
 
 Flashback encoder packet records now live in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.PacketTypes.cs`. Keep
-video/audio/GPU packet DTOs and video enqueue result classification there.
+`Sussudio/Services/Flashback/FlashbackEncoderSink.PacketBuffers.cs`. Keep
+video/audio/GPU packet DTOs, video enqueue result classification, ArrayPool
+rent/return helpers, leased video packet disposal, best-effort video packet
+cleanup, and GPU texture release helpers there.
 
 Flashback encoder queue helpers now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs`. Keep queue
