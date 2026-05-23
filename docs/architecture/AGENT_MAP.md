@@ -3140,12 +3140,12 @@ Primary current owners:
   `MainViewModel.AudioMonitoring.cs` owns preview monitoring
   coordinator sequencing. `MainViewModel.AudioCapturePropertyChanges.cs` owns
   audio capture enablement and Flashback restart/teardown routing.
-  `MainViewModel.AudioState.cs` owns audio-preview monitoring toggle routing.
+  `MainViewModel.AudioState.cs` owns audio-preview monitoring toggle routing,
+  microphone observable state, endpoint volume synchronization, persistence,
+  and microphone property-change routing.
   `MainViewModel.AudioInputSelection.cs`
   owns custom audio-input property handlers, retargeting, and
   preview-monitoring ramp handoff.
-  `MainViewModel.MicrophoneVolume.cs` owns microphone endpoint volume
-  synchronization and persistence.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs`
   is a top-level `Sussudio.Controllers` owner for device-native audio request
   lifetime: selected-device refresh scheduling, mode-change scheduling, shared
@@ -3166,8 +3166,8 @@ Primary current owners:
   byte analog gain curve used by device-native gain application.
   `MainViewModel.AudioCapturePropertyChanges.cs` owns audio capture property
   handlers. `MainViewModel.AudioState.cs` owns audio-preview property
-  handlers. `MainViewModel.MicrophonePropertyChanges.cs` owns microphone
-  monitor and selected-microphone property handlers.
+  handlers, microphone monitor property handlers, and selected-microphone
+  property handlers.
   `MainViewModel.CaptureModePropertyChanges.cs`
   owns capture-mode property handlers for selected resolution, selected format,
   selected video format, and MJPEG decoder count changes.

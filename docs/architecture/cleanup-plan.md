@@ -3981,8 +3981,9 @@ owner, fold it back into that owner and update the source-shape tests and
    handlers in `MainViewModel.AudioState.cs`, while custom audio-input property
    handlers, retargeting, and preview-monitoring ramp handoff live in
    `MainViewModel.AudioInputSelection.cs`.
-   Microphone endpoint volume synchronization and persistence now live in
-   `MainViewModel.MicrophoneVolume.cs`; device-native audio request lifetime,
+   Microphone observable state, endpoint volume synchronization, persistence,
+   and property-change routing now live in `MainViewModel.AudioState.cs`;
+   device-native audio request lifetime,
    selected-device refresh, mode request scheduling, shared debounce CTS fields,
    cancellation cleanup, graph-built context ports, analog-gain request
    scheduling, UI/XU debounce, and flash-persist debounce now live in
@@ -4017,7 +4018,7 @@ owner, fold it back into that owner and update the source-shape tests and
    capture property handlers now live in
    `MainViewModel.AudioCapturePropertyChanges.cs`, audio-preview property
    handlers live in `MainViewModel.AudioState.cs`, microphone monitor/device
-   selection handlers live in `MainViewModel.MicrophonePropertyChanges.cs`,
+   selection handlers also live in `MainViewModel.AudioState.cs`,
    capture-mode property handlers live in `MainViewModel.CaptureModePropertyChanges.cs`. Shared
    view-model UI dispatcher enqueue/invoke policy now lives in
    `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs`.

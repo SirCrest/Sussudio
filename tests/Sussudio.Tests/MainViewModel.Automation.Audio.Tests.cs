@@ -20,8 +20,6 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioInputSelection.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.MicrophonePropertyChanges.cs")
-                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs")

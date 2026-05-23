@@ -1,3 +1,4 @@
+using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -17,7 +18,7 @@ static partial class Program
         var analogAudioGainCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AnalogAudioGain.cs");
         var deviceAudioRequestControllerCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs");
         var deviceAudioStateCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs");
-        var microphoneVolumeCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.MicrophoneVolume.cs");
+        var microphoneVolumeCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioState.cs");
         var audioCode = deviceAudioModeCode + "\n" + deviceAudioRefreshCode + "\n" + analogAudioGainCode + "\n" + deviceAudioRequestControllerCode + "\n" + deviceAudioStateCode + "\n" + microphoneVolumeCode;
         var setMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "SetMicrophoneEndpointVolume");
         var getMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "GetMicrophoneEndpointVolume");
@@ -30,6 +31,7 @@ static partial class Program
 
         AssertContains(microphoneVolumeCode, "internal void SaveMicrophoneVolume() => SaveSettings();");
         AssertContains(microphoneVolumeCode, "partial void OnMicrophoneVolumeChanged(double value)");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.MicrophoneVolume.cs")), "MainViewModel.MicrophoneVolume.cs folded into audio state");
         AssertDoesNotContain(deviceAudioStateCode, "SetMicrophoneEndpointVolume");
         AssertDoesNotContain(deviceAudioStateCode, "GetMicrophoneEndpointVolume");
         AssertDoesNotContain(deviceAudioStateCode, "private async Task RefreshDeviceAudioControlsAsync");
