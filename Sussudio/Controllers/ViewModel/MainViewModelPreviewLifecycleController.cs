@@ -7,6 +7,32 @@ using Sussudio.Services.Capture;
 namespace Sussudio.Controllers;
 
 /// <summary>
+/// Graph-built ports consumed by the preview lifecycle controller.
+/// </summary>
+internal sealed class MainViewModelPreviewLifecycleControllerContext
+{
+    public required CaptureSessionCoordinator SessionCoordinator { get; init; }
+    public required Func<CaptureSettings> BuildCaptureSettings { get; init; }
+    public required Func<Func<Task>, CancellationToken, Task> InvokeOnUiThreadAsync { get; init; }
+    public required Func<CancellationToken, Task> RampPreviewVolumeDownForStopAsync { get; init; }
+    public required Func<MainViewModelPreviewLifecycleController, MainViewModelPreviewReinitializeController> CreateReinitializeController { get; init; }
+    public required Func<CaptureDevice?> SelectedDevice { get; init; }
+    public required Action<CaptureDevice> SetSelectedDevice { get; init; }
+    public required Func<bool> IsInitialized { get; init; }
+    public required Action<bool> SetIsInitialized { get; init; }
+    public required Func<bool> IsPreviewing { get; init; }
+    public required Action<bool> SetIsPreviewing { get; init; }
+    public required Func<bool> IsPreviewReinitializing { get; init; }
+    public required Func<bool> IsRecording { get; init; }
+    public required Func<bool> ShouldStartAudioPreview { get; init; }
+    public required Func<bool> IsAudioPreviewActive { get; init; }
+    public required Action<string> SetStatusText { get; init; }
+    public required Action RaisePreviewStartRequested { get; init; }
+    public required Action RaisePreviewStopRequested { get; init; }
+    public required Action ApplyLatestSourceTelemetryForPreviewStart { get; init; }
+}
+
+/// <summary>
 /// Owns UI-facing preview lifecycle operations behind the MainViewModel compatibility facade.
 /// </summary>
 internal sealed class MainViewModelPreviewLifecycleController

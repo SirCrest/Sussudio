@@ -3344,8 +3344,7 @@ Primary current owners:
   is a top-level `Sussudio.Controllers` owner for the underlying preview
   lifecycle operations: device initialization, preview start/stop,
   selected-device apply, and the reinitialize facade.
-  `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.Context.cs`
-  owns the top-level preview lifecycle graph-port contract for preview
+  It also owns the preview lifecycle graph-port contract for preview
   state/events, capture/session operations, source telemetry refresh, UI
   dispatch, audio-preview activity, and preview-volume ramp-down.
   Sibling ViewModel controllers receive that preview lifecycle owner directly
