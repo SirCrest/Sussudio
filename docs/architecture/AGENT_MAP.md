@@ -3117,7 +3117,7 @@ Primary current owners:
   `MainViewModel.PreviewState.cs` owns preview lifecycle compatibility entry
   points, preview-sink handoff, preview lifecycle flags,
   preview reinitialize coordination, and preview request events; `MainViewModel.CaptureState.cs` owns capture-selection
-  state, option collections, and HDR capture/runtime presentation state; `MainViewModel.CaptureSourceState.cs` owns
+  state, option collections, HDR capture/runtime presentation state, and
   source signal/source-telemetry presentation state; `MainViewModel.AudioState.cs` owns audio and
   microphone state plus audio-preview property-change routing; `MainViewModel.DeviceAudioState.cs` owns device-native
   audio/XU UI state; `MainViewModel.FlashbackState.cs` owns Flashback
