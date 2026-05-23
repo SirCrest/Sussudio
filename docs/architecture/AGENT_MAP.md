@@ -3933,13 +3933,11 @@ Primary owners:
   extraction live in `tools/Common/PresentMon/PresentMonProbe.Options.cs`.
 - `tools/Common/DiagnosticSessionOptions.cs` owns diagnostic session run
   options plus the shared tool invocation defaults and ssctl usage string.
-- `tools/Common/DiagnosticSessionScenarioCatalog.cs` owns scenario normalization
-  and entry lookup.
+- `tools/Common/DiagnosticSessionScenarioCatalog.cs` owns scenario normalization,
+  entry lookup, requirement queries, and export-verification lookup.
   `tools/Common/DiagnosticSessionScenarioCatalog.Names.cs` owns scenario name
   constants, MCP-compatible scenario description text, the CLI help-list
   constant, and the `Names` projection.
-  `tools/Common/DiagnosticSessionScenarioCatalog.Requirements.cs` owns scenario
-  requirement queries and export-verification lookup.
   `tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs` owns scenario
   ordering plus core, Flashback playback, Flashback export/lifecycle, Flashback
   recording/rejection, and combined scenario metadata.
@@ -4400,12 +4398,12 @@ Invariants:
 - Preserve pipe error-code semantics when refactoring diagnostic-session retry:
   `pipe-access-denied` is permanent, while connect failed/timeout are retried.
 - Add new diagnostic-session scenario names in
-  `tools/Common/DiagnosticSessionScenarioCatalog.Names.cs`, then add requirement
-  queries in `tools/Common/DiagnosticSessionScenarioCatalog.Requirements.cs`
-  when a new entry shape needs them, plus export verification metadata and plan
-  metadata in `tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs` before
-  wiring scenario behavior into `DiagnosticSessionRunner`. Preserve the final
-  order there.
+  `tools/Common/DiagnosticSessionScenarioCatalog.Names.cs`, then add new
+  requirement/query helpers in `tools/Common/DiagnosticSessionScenarioCatalog.cs`
+  only when a new entry shape needs them, plus export verification metadata and
+  plan metadata in `tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs`
+  before wiring scenario behavior into `DiagnosticSessionRunner`. Preserve the
+  final order there.
 - Keep diagnostic-session grouped policy derivation in
   `tools/Common/DiagnosticSessionScenarioPlan.cs`; the runner should consume
   named properties instead of comparing normalized scenario strings directly.

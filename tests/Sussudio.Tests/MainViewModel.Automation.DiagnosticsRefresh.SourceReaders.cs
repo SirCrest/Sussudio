@@ -154,7 +154,6 @@ static partial class Program
     {
         return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs")
             + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Names.cs")
-            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Requirements.cs")
             + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs");
     }
 
