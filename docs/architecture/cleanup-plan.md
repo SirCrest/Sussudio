@@ -3740,11 +3740,9 @@ coordination, rotated export, export-during-playback command choreography, and
 selection-range export flows each have their own named file.
 Disable-during-export file verification and post-disable/re-enable state checks
 live in `DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation.cs`.
-Export-during-playback validation is split by runtime phase:
-`DiagnosticSessionFlashbackExportScenarios.PlaybackPreExport.cs` owns the
-pre-export Playing sample, `.PlaybackPostExport.cs` owns post-export playback
-continuity, and `.PlaybackFinalState.cs` owns final go-live command-health
-validation.
+Export-during-playback command choreography, pre-export Playing sampling,
+post-export playback continuity, and final go-live command-health validation now
+live together in `DiagnosticSessionFlashbackExportScenarios.Playback.cs`.
 `DiagnosticSessionFlashbackExportScenarios.Registrations.cs` owns export
 scenario task registration orchestration while diagnostic-session startup makes
 a single qualified call into that owner. Export playback registration lives in
@@ -3940,9 +3938,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
 - `DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Playback.cs`
-- `DiagnosticSessionFlashbackExportScenarios.PlaybackPreExport.cs`
-- `DiagnosticSessionFlashbackExportScenarios.PlaybackPostExport.cs`
-- `DiagnosticSessionFlashbackExportScenarios.PlaybackFinalState.cs`
 - `DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Range.cs`
 - `DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs`

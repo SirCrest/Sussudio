@@ -4104,13 +4104,9 @@ Primary owners:
   owns disable-during-export file verification and post-disable/re-enable
   state checks, `tools/Common/DiagnosticSessionFlashbackExportScenarios.Rotated.cs`
   owns rotated export, `tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs`
-  owns export-during-playback command choreography,
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.PlaybackPreExport.cs`
-  owns the pre-export Playing sample,
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.PlaybackPostExport.cs`
-  owns post-export playback continuity validation,
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.PlaybackFinalState.cs`
-  owns final go-live playback command-health validation, and
+  owns export-during-playback command choreography, the pre-export Playing
+  sample, post-export playback continuity validation, and final go-live playback
+  command-health validation, and
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs` owns
   selection-range export orchestration.
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs`

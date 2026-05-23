@@ -21,12 +21,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs")
             .Replace("\r\n", "\n");
-        var playbackPreExportText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.PlaybackPreExport.cs")
-            .Replace("\r\n", "\n");
-        var playbackPostExportText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.PlaybackPostExport.cs")
-            .Replace("\r\n", "\n");
-        var playbackFinalStateText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.PlaybackFinalState.cs")
-            .Replace("\r\n", "\n");
         var rangeSelectionText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs")
             .Replace("\r\n", "\n");
         var rangeSelectionMarkersText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.Markers.cs")
@@ -57,17 +51,13 @@ static partial class Program
         AssertContains(playbackText, "CaptureFlashbackExportPlaybackFrameCountBeforeExportAsync(");
         AssertContains(playbackText, "ValidateFlashbackExportPlaybackAfterExportAsync(");
         AssertContains(playbackText, "ValidateFlashbackExportPlaybackFinalStateAsync(");
-        AssertDoesNotContain(playbackText, "playback frame count did not advance during export");
-        AssertDoesNotContain(playbackText, "BuildPlaybackCommandHealth(finalSnapshot, baselineSnapshot)");
-        AssertContains(playbackPreExportText, "private static async Task<long> CaptureFlashbackExportPlaybackFrameCountBeforeExportAsync(");
-        AssertContains(playbackPreExportText, "flashback export playback: expected Playing before export");
-        AssertDoesNotContain(playbackPreExportText, "playback frame count did not advance during export");
-        AssertContains(playbackPostExportText, "private static async Task ValidateFlashbackExportPlaybackAfterExportAsync(");
-        AssertContains(playbackPostExportText, "flashback export playback: playback frame count did not advance during export");
-        AssertDoesNotContain(playbackPostExportText, "BuildPlaybackCommandHealth(finalSnapshot, baselineSnapshot)");
-        AssertContains(playbackFinalStateText, "private static async Task ValidateFlashbackExportPlaybackFinalStateAsync(");
-        AssertContains(playbackFinalStateText, "BuildPlaybackCommandHealth(finalSnapshot, baselineSnapshot)");
-        AssertContains(playbackFinalStateText, "flashback export playback: pending commands remained after go-live");
+        AssertContains(playbackText, "private static async Task<long> CaptureFlashbackExportPlaybackFrameCountBeforeExportAsync(");
+        AssertContains(playbackText, "flashback export playback: expected Playing before export");
+        AssertContains(playbackText, "private static async Task ValidateFlashbackExportPlaybackAfterExportAsync(");
+        AssertContains(playbackText, "flashback export playback: playback frame count did not advance during export");
+        AssertContains(playbackText, "private static async Task ValidateFlashbackExportPlaybackFinalStateAsync(");
+        AssertContains(playbackText, "BuildPlaybackCommandHealth(finalSnapshot, baselineSnapshot)");
+        AssertContains(playbackText, "flashback export playback: pending commands remained after go-live");
         AssertContains(scenariosText, "internal static async Task RunFlashbackRangeExportAsync(");
         AssertContains(rangeSelectionText, "private static async Task<FlashbackSelectionRange?> PrepareFlashbackSelectionRangeAsync(");
         AssertContains(rangeSelectionText, "private readonly record struct FlashbackSelectionRange(");
