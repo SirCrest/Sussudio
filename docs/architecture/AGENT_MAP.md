@@ -3199,7 +3199,7 @@ Primary current owners:
   probing, readback, and pending saved-state reconciliation.
   `MainViewModel.DeviceAudioMode.cs` owns device-native audio mode switching
   and failure readback through the supported native-XU switch command surface,
-  not the legacy AT input-source fallback path. `MainViewModel.AudioControls.cs`
+  not the legacy AT input-source fallback path. `MainViewModel.DeviceAudioState.cs`
   owns shared audio-control guards and mode normalization.
   `MainViewModel.AnalogAudioGain.cs` owns analog
   gain XU writes and settings persistence.

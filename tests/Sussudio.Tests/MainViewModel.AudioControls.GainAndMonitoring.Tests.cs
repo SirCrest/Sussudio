@@ -10,7 +10,7 @@ static partial class Program
             ?? throw new InvalidOperationException("DeviceAudioGainMapper.PercentToGainByte was not found.");
         var mapByte = mapperType.GetMethod("GainByteToPercent", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("DeviceAudioGainMapper.GainByteToPercent was not found.");
-        var audioControlsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioControls.cs")
+        var deviceAudioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs")
             .Replace("\r\n", "\n");
         var deviceAudioModeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioMode.cs")
             .Replace("\r\n", "\n");
@@ -22,8 +22,8 @@ static partial class Program
         AssertContains(deviceAudioModeText, "DeviceAudioGainMapper.PercentToGainByte(AnalogAudioGainPercent)");
         AssertContains(analogAudioGainText, "DeviceAudioGainMapper.PercentToGainByte(gainPercent)");
         AssertContains(analogAudioGainText, "Device-native analog gain application and deferred flash persistence.");
-        AssertDoesNotContain(audioControlsText, "private static byte MapPercentToGainByte");
-        AssertDoesNotContain(audioControlsText, "private static double MapGainByteToPercent");
+        AssertDoesNotContain(deviceAudioStateText, "private static byte MapPercentToGainByte");
+        AssertDoesNotContain(deviceAudioStateText, "private static double MapGainByteToPercent");
         AssertContains(gainMapperText, "private const double GainCurveK = 4.0;");
         AssertContains(gainMapperText, "internal static byte PercentToGainByte");
         AssertContains(gainMapperText, "internal static double GainByteToPercent");
