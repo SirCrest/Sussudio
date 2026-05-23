@@ -2137,7 +2137,7 @@ present cadence state/projection and recent present interval copies in
 CPU timing, frame-latency wait metric snapshots, recent non-present sample
 copies, and metric projection state in `D3D11PreviewRenderer.Metrics.cs`. Shared
 ring-copy, timing-summary, tick-to-ms, and render-stage validation helpers live
-in `D3D11PreviewRenderer.MetricSampleHelpers.cs`. Render-loop metric window
+in `D3D11PreviewRenderer.MetricTypes.cs`. Render-loop metric window
 updates live in `D3D11PreviewRenderer.MetricsTracking.cs`; expected-frame-rate
 window resizing and metric reset/clear lifecycle live in
 `D3D11PreviewRenderer.MetricWindows.cs`. Renderer implementation
@@ -2168,10 +2168,8 @@ public state toggles.
 D3D preview renderer nested frame and metrics model types now live in focused
 partials. Keep the `PendingFrame` lifetime wrapper in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrame.cs`, renderer
-metric record structs in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.MetricTypes.cs`, and shared
-metric sample helpers in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.MetricSampleHelpers.cs` so the
+metric record structs and shared metric sample helpers in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.MetricTypes.cs` so the
 root renderer stays focused on construction, constants, user-facing state
 accessors, and public state changes.
 

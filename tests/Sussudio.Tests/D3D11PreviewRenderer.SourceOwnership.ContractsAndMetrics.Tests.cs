@@ -60,8 +60,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var metricTypesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricTypes.cs")
             .Replace("\r\n", "\n");
-        var metricSampleHelpersText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricSampleHelpers.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(pendingFrameText, "private sealed class PendingFrame : IDisposable");
         AssertContains(pendingFrameText, "ArrayPool<byte>.Shared.Return(RawData);");
@@ -73,10 +71,10 @@ static partial class Program
         AssertContains(metricTypesText, "public readonly record struct FrameLatencyWaitMetrics(");
         AssertContains(metricTypesText, "public readonly record struct FrameOwnershipMetrics(");
         AssertContains(metricTypesText, "public readonly record struct DxgiFrameStatisticsMetrics(");
-        AssertContains(metricSampleHelpersText, "private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)");
-        AssertContains(metricSampleHelpersText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
-        AssertContains(metricSampleHelpersText, "private static double TicksToMs(long ticks)");
-        AssertContains(metricSampleHelpersText, "private static bool IsValidRenderCpuStageMs(double value)");
+        AssertContains(metricTypesText, "private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)");
+        AssertContains(metricTypesText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
+        AssertContains(metricTypesText, "private static double TicksToMs(long ticks)");
+        AssertContains(metricTypesText, "private static bool IsValidRenderCpuStageMs(double value)");
         AssertDoesNotContain(rootText, "private sealed class PendingFrame : IDisposable");
         AssertDoesNotContain(rootText, "public readonly record struct PresentCadenceMetrics(");
         AssertDoesNotContain(rootText, "public readonly record struct DxgiFrameStatisticsMetrics(");
@@ -199,7 +197,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var metricWindowsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricWindows.cs")
             .Replace("\r\n", "\n");
-        var metricSampleHelpersText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricSampleHelpers.cs")
+        var metricTypesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricTypes.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(presentCadenceMetricsText, "private readonly object _presentCadenceLock = new();");
@@ -223,10 +221,10 @@ static partial class Program
         AssertContains(metricWindowsText, "private void ResetPresentCadence()");
         AssertContains(metricWindowsText, "var targetSize = Math.Max(600, (int)Math.Ceiling(fps * CadenceWindowSeconds));");
         AssertContains(metricWindowsText, "Array.Clear(_slowFrameDiagnostics, 0, _slowFrameDiagnostics.Length);");
-        AssertContains(metricSampleHelpersText, "private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)");
-        AssertContains(metricSampleHelpersText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
-        AssertContains(metricSampleHelpersText, "private static double TicksToMs(long ticks)");
-        AssertContains(metricSampleHelpersText, "private static bool IsValidRenderCpuStageMs(double value)");
+        AssertContains(metricTypesText, "private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)");
+        AssertContains(metricTypesText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
+        AssertContains(metricTypesText, "private static double TicksToMs(long ticks)");
+        AssertContains(metricTypesText, "private static bool IsValidRenderCpuStageMs(double value)");
         AssertDoesNotContain(trackingText, "public void SetExpectedFrameRate(double fps)");
         AssertDoesNotContain(trackingText, "private void ResetPresentCadence()");
         AssertDoesNotContain(trackingText, "private static double TicksToMs(long ticks)");
