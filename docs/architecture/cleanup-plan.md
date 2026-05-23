@@ -509,11 +509,8 @@ slow-frame formatter in `Formatters.Snapshot.PreviewD3D.cs`, thread-health secti
 source-reader/WASAPI row text in `Formatters.Snapshot.ThreadHealth.cs`,
 diagnostic-event text in
 `Formatters.Diagnostics.cs`, capture option/device text in `Formatters.Options.cs`,
-performance timeline orchestration in `Formatters.Timeline.cs`, timeline row
-projection in `Formatters.Timeline.Rows.cs`, the private row model in
-`Formatters.Timeline.Rows.Model.cs`, table output in
-`Formatters.Timeline.Rendering.cs`, trend summaries in
-`Formatters.Timeline.Summaries.cs`, standalone memory/GC summaries in
+performance timeline response validation, JSON row projection, private row
+model, table output, and trend summaries in `Formatters.Timeline.cs`, standalone memory/GC summaries in
 `Formatters.Memory.cs`, and shared JSON/result helpers in
 `Formatters.Common.cs`.
 

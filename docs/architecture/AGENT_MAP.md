@@ -3834,14 +3834,8 @@ Primary owners:
 - `tools/ssctl/Formatters.Diagnostics.cs` owns recent diagnostic-event output.
 - `tools/ssctl/Formatters.Options.cs` owns capture option and device lists.
 - `tools/ssctl/Formatters.Timeline.cs` owns performance timeline response
-  validation and top-level orchestration.
-- `tools/ssctl/Formatters.Timeline.Rows.cs` owns performance timeline JSON row
-  projection; `tools/ssctl/Formatters.Timeline.Rows.Model.cs` owns the private
-  row model.
-- `tools/ssctl/Formatters.Timeline.Rendering.cs` owns performance timeline
-  table output.
-- `tools/ssctl/Formatters.Timeline.Summaries.cs` owns first-vs-last trend
-  summary text.
+  validation, JSON row projection, private row model, table output, and
+  first-vs-last trend summary text.
 - `tools/ssctl/Formatters.Memory.cs` owns standalone memory and GC summaries.
 - `tools/ssctl/Formatters.Common.cs` owns shared result/JSON helpers.
 - `tools/McpServer/Tools/PerformanceTimelineTools.cs` owns the public MCP
