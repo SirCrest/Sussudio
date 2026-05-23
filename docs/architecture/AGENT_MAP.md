@@ -3118,8 +3118,9 @@ Primary current owners:
 - `Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs` owns
   Flashback-specific property-change routing for timeline lockout, markers,
   playhead updates, export progress, and settings-control synchronization.
-  `Sussudio/MainWindow.PropertyChangedFlashback.cs` is the XAML/MainWindow
-  adapter that composes the route table callbacks.
+  `Sussudio/MainWindow.PropertyChanged.cs` is the XAML/MainWindow property-change
+  adapter that composes the Flashback route table callbacks alongside the root
+  ViewModel router.
 - `Sussudio/Controllers/Audio/AudioControlPresentationController.cs` owns audio and
   microphone property-change routing/projections: audio toggles, monitoring
   meter state, preview volume slider sync, microphone enablement, and microphone
