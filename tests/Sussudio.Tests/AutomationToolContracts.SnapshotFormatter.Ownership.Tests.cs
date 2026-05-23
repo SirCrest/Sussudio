@@ -23,7 +23,7 @@ static partial class Program
         var sharedFormatterPreviewSource = sharedFormatterCaptureCadenceSource;
         var sharedFormatterPreviewD3DSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs");
         var sharedFormatterPreviewD3DSlowFramesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs");
-        var sharedFormatterThreadHealthSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs");
+        var sharedFormatterThreadHealthSource = sharedFormatterVideoPipelineSource;
         AssertContains(sharedFormatterRootSource, "AppendStateSection(builder, snapshot);");
         AssertContains(sharedFormatterRootSource, "AppendCaptureSettingsSection(builder, snapshot);");
         AssertContains(sharedFormatterRootSource, "AppendAudioSection(builder, snapshot);");
@@ -60,6 +60,8 @@ static partial class Program
         AssertContains(sharedFormatterVideoPipelineSource, "builder.AppendLine(\"== Video Pipeline ==\");");
         AssertContains(sharedFormatterVideoPipelineSource, "RecordingVideoQueueLatencyP99Ms");
         AssertContains(sharedFormatterVideoPipelineSource, "AppendThreadHealthSection(builder, snapshot);");
+        AssertContains(sharedFormatterVideoPipelineSource, "private static void AppendThreadHealthSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterVideoPipelineSource, "builder.AppendLine(\"== Thread Health ==\");");
         AssertContains(sharedFormatterCoreSectionsSource, "private static void AppendRecordingSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterCoreSectionsSource, "RecordingIntegrityStatus");
         AssertContains(sharedFormatterRecordingSource, "private static void AppendRecordingSection(StringBuilder builder, JsonElement snapshot)");

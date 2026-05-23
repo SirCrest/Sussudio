@@ -4054,7 +4054,8 @@ Primary owners:
   option, recording format, HDR, pipeline, and compact UI setting text.
   `tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs` owns video reader,
   encoder queue, queue-latency, backpressure, failure, GPU/CUDA queue,
-  freshness, diagnostics, and thread-health routing text.
+  freshness, diagnostics, thread-health section order, and source-reader/WASAPI
+  row text.
   `tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs` owns capture
   cadence, low-FPS, jitter/drop, MJPEG packet fingerprint, sampled visual
   cadence, AV-sync drift and encoder correction text, preview routing, source
@@ -4073,11 +4074,10 @@ Primary owners:
   activation, header, output order, decode/copy/callback/per-decoder timing
   text, compressed queue/drop-reason/reorder/pipeline timing text, and MJPEG
   preview-jitter queue/input/output/latency/ownership/underflow text. The
-  `tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs`,
-  `tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs`,
-  and `tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs` own the named
-  snapshot sections. The thread-health formatter now keeps its section order and
-  source-reader/WASAPI row text together in one file. Within the D3D formatter family, `.PreviewD3D.cs` keeps
+  `tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs` and
+  `tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs` own the
+  remaining named D3D snapshot sections. Within the D3D formatter family,
+  `.PreviewD3D.cs` keeps
   routing/header order, CPU timing, pipeline-latency, frame-latency wait text,
   frame-ownership, and DXGI frame-stat text, while `.SlowFrames.cs` owns
   reusable slow-frame diagnostics and diagnostic millisecond formatting.

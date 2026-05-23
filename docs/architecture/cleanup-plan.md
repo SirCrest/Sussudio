@@ -520,15 +520,15 @@ capture cadence, MJPEG packet fingerprint, visual cadence, AV-sync, preview
 routing, and source-signal rows emitted from the cadence tail. MJPEG activation/header/order, decode/copy/callback/per-decoder
 timing text, compressed queue/drop-reason/reorder/pipeline timing text, and
 MJPEG preview-jitter queue/latency/ownership/underflow text now live together in
-`AutomationSnapshotFormatter.MjpegTiming.cs`. Preview routing,
-D3D preview text, and thread-health live in the remaining focused formatter partials. The
+`AutomationSnapshotFormatter.MjpegTiming.cs`. Preview routing and D3D preview
+text live in the remaining focused formatter partials. Thread-health section
+order plus source-reader, WASAPI capture, and WASAPI playback rows now live with
+the video-pipeline formatter that routes to them. The
 `AutomationSnapshotFormatter.PreviewD3D.cs` owner keeps D3D header/routing and
 output order, D3D CPU timing, pipeline latency, frame-latency wait text, D3D
 frame ownership, and DXGI frame-stat text. Slow-frame diagnostics stay in
 `AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs` because `ssctl` reuses
-that formatter directly. `AutomationSnapshotFormatter.ThreadHealth.cs` owns
-thread-health section order plus source-reader, WASAPI capture, and WASAPI
-playback text rows. Tests that reason about formatter source use the
+that formatter directly. Tests that reason about formatter source use the
 shared `RuntimeContractSource` snapshot formatter source-family readers so
 ownership checks cover the full partial family from both the legacy harness and
 xUnit formatter contracts.
