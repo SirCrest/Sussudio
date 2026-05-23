@@ -51,7 +51,7 @@ static partial class Program
         var startupPolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs")
             .Replace("\r\n", "\n");
         var diagnosticsResetText = startupPolicyText;
-        var recordingAccountingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.RecordingAccounting.cs")
+        var runtimeStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.cs")
             .Replace("\r\n", "\n");
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
@@ -73,16 +73,16 @@ static partial class Program
         AssertContains(diagnosticsResetText, "private void ResetVideoDiagnostics()");
         AssertContains(diagnosticsResetText, "Interlocked.Exchange(ref _segmentStartBytes, 0);");
 
-        AssertContains(recordingAccountingText, "private static long ToNonNegativeLongSaturated(double value)");
-        AssertContains(recordingAccountingText, "private static long NonNegativeByteDelta(long currentBytes, long startBytes)");
-        AssertContains(recordingAccountingText, "private static TimeSpan NonNegativeDuration(TimeSpan end, TimeSpan start)");
-        AssertContains(recordingAccountingText, "private static (TimeSpan StartPts, TimeSpan EndPts) ResumeEvictionBestEffort(");
-        AssertContains(recordingAccountingText, "FLASHBACK_SINK_EVICTION_RESUME_WARN");
+        AssertContains(runtimeStateText, "private static long ToNonNegativeLongSaturated(double value)");
+        AssertContains(runtimeStateText, "private static long NonNegativeByteDelta(long currentBytes, long startBytes)");
+        AssertContains(runtimeStateText, "private static TimeSpan NonNegativeDuration(TimeSpan end, TimeSpan start)");
+        AssertContains(runtimeStateText, "private static (TimeSpan StartPts, TimeSpan EndPts) ResumeEvictionBestEffort(");
+        AssertContains(runtimeStateText, "FLASHBACK_SINK_EVICTION_RESUME_WARN");
 
         AssertContains(docsText, "FlashbackEncoderSink.Startup.cs");
         AssertContains(docsText, "session validation");
         AssertContains(docsText, "startup metric/counter reset");
-        AssertContains(docsText, "FlashbackEncoderSink.RecordingAccounting.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.RuntimeState.cs");
 
         return Task.CompletedTask;
     }
@@ -384,6 +384,10 @@ static partial class Program
         AssertContains(runtimeStateText, "public void SetFatalErrorCallback(Action<Exception>? callback)");
         AssertContains(runtimeStateText, "public string? CodecName =>");
         AssertContains(runtimeStateText, "public bool? IsP010 =>");
+        AssertContains(runtimeStateText, "private static long ToNonNegativeLongSaturated(double value)");
+        AssertContains(runtimeStateText, "private static long NonNegativeByteDelta(long currentBytes, long startBytes)");
+        AssertContains(runtimeStateText, "private static TimeSpan NonNegativeDuration(TimeSpan end, TimeSpan start)");
+        AssertContains(runtimeStateText, "private static (TimeSpan StartPts, TimeSpan EndPts) ResumeEvictionBestEffort(");
         AssertContains(runtimeStateText, "internal Task EncodingCompletionTask =>");
 
         AssertDoesNotContain(rootText, "public event EventHandler<long>? FrameEncoded;");
@@ -392,7 +396,8 @@ static partial class Program
         {
             "FlashbackEncoderSink.RuntimeState.Counters.cs",
             "FlashbackEncoderSink.RuntimeState.QueueMetrics.cs",
-            "FlashbackEncoderSink.RuntimeState.Status.cs"
+            "FlashbackEncoderSink.RuntimeState.Status.cs",
+            "FlashbackEncoderSink.RecordingAccounting.cs"
         })
         {
             AssertEqual(

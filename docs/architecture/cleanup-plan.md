@@ -1787,10 +1787,11 @@ fallback/clamping, startup metric/counter reset, video diagnostics reset,
 start-failure rollback, PTS continuation, background task startup, and
 start-transaction orchestration there.
 
-Flashback encoder recording accounting helpers now live in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.RecordingAccounting.cs`.
-Keep saturated PTS conversion, non-negative byte/duration math, and best-effort
-eviction resume fallback there.
+Flashback encoder runtime state now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.cs`. Keep public
+runtime counters, queue telemetry, encoder status/format projections, saturated
+PTS conversion, non-negative byte/duration math, and best-effort eviction resume
+fallback there.
 
 Flashback encoder sink options now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs`. Keep encoder
