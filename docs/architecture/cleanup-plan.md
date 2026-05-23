@@ -2009,11 +2009,6 @@ enforcement now lives in
 startup cache budget calculation, session-directory stats, preserved-session
 skips, oldest-session deletion, and cache-budget cleanup telemetry there.
 
-Flashback exporter request routing now lives in
-`Sussudio/Services/Flashback/FlashbackExporter.Requests.cs`. Keep the public
-`ExportAsync` null/disposed guards, segment path normalization, adaptive
-throttle provider handoff, and single-versus-segment export selection there.
-
 Flashback exporter lifecycle behavior now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs`. Keep public
 `Dispose`, active export cancellation, linked export cancellation-source helpers,
@@ -2022,10 +2017,12 @@ native input/output cleanup, native-state cleanup on dispose, and dispose-timeou
 logging there.
 
 Flashback exporter execution scheduling now lives in
-`Sussudio/Services/Flashback/FlashbackExporter.Execution.cs`. Keep the
+`Sussudio/Services/Flashback/FlashbackExporter.Execution.cs`. Keep public
+`ExportAsync` null/disposed guards, segment path normalization, adaptive
+throttle provider handoff, single-versus-segment export selection,
 single/multi-segment task wrappers, linked cancellation source disposal,
-background thread priority, and segment
-snapshots there so native export cores stay behind focused entry points.
+background thread priority, and segment snapshots there so native export cores
+stay behind focused entry points.
 
 Flashback exporter single-file export shell now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.SingleFile.cs`. Keep the
