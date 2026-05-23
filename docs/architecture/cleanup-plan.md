@@ -2059,12 +2059,10 @@ DTS monotonicity, and native packet writes live in
 Per-segment export range/window projection, empty effective-range skip
 classification, and skipped-requested-segment failure-message policy live in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentRangeProjection.cs`.
-Output-template selection and template-skip diagnostics live in
-`Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs`. Per-segment
-input open, stream-info lookup, stream-count checks, and layout-mismatch skip
-tracking live in
-`Sussudio/Services/Flashback/FlashbackExporter.SegmentInputPreflight.cs`. The
-root exporter keeps shared native state, constants, and fields only.
+Output-template selection, template-skip diagnostics, per-segment input open,
+stream-info lookup, stream-count checks, and layout-mismatch skip tracking live
+in `Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs`. The root
+exporter keeps shared native state, constants, and fields only.
 
 Flashback exporter validation policy now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Validation.cs`. Keep

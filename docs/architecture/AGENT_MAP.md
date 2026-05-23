@@ -1177,11 +1177,10 @@ Entry points:
 - `FlashbackExporter.SegmentRangeProjection.cs` owns per-segment export
   range/window projection, empty effective-range skip classification, and
   requested-segment skip counting/failure-message policy.
-- `FlashbackExporter.SegmentInputPreflight.cs` owns per-segment input open,
-  stream-info lookup, stream-count checks, layout-mismatch skip tracking, and
-  close-on-failed-preflight behavior.
 - `FlashbackExporter.SegmentTemplate.cs` owns selection of the first usable
-  segment output template, stream-map initialization, and template-skip logs.
+  segment output template, stream-map initialization, template-skip logs,
+  per-segment input open, stream-info lookup, stream-count checks,
+  layout-mismatch skip tracking, and close-on-failed-preflight behavior.
 - `FlashbackExporter.SegmentValidation.cs` owns multi-segment export input
   validation and readable-segment byte estimation for progress.
 - `FlashbackExporter.Requests.cs` owns public export request routing.

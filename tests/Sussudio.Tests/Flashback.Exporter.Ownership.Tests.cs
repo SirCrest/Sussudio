@@ -32,8 +32,7 @@ static partial class Program
         var segmentSkipTrackingText = segmentRangeProjectionText;
         var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs")
             .Replace("\r\n", "\n");
-        var segmentInputPreflightText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentInputPreflight.cs")
-            .Replace("\r\n", "\n");
+        var segmentInputPreflightText = segmentTemplateText;
         var segmentValidationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentValidation.cs")
             .Replace("\r\n", "\n");
         var runtimePolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.RuntimePolicy.cs")

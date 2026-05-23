@@ -13,8 +13,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs")
             .Replace("\r\n", "\n");
-        var segmentInputPreflightText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentInputPreflight.cs")
-            .Replace("\r\n", "\n");
+        var segmentInputPreflightText = segmentTemplateText;
 
         AssertContains(sourceText, "private const int MaxSupportedInputStreams = 64;");
         AssertContains(streamsText, "private static bool TryGetInputStreamCount(");

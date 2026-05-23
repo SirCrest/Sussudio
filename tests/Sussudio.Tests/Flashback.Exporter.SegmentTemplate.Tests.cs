@@ -9,8 +9,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var streamTemplatesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.StreamTemplates.cs")
             .Replace("\r\n", "\n");
-        var segmentInputPreflightText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentInputPreflight.cs")
+        var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs")
             .Replace("\r\n", "\n");
+        var segmentInputPreflightText = segmentTemplateText;
 
         var templateSelectionBlock = ExtractTextBetween(
             sourceText,
@@ -55,8 +56,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var skipTrackingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentRangeProjection.cs")
             .Replace("\r\n", "\n");
-        var segmentInputPreflightText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentInputPreflight.cs")
+        var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs")
             .Replace("\r\n", "\n");
+        var segmentInputPreflightText = segmentTemplateText;
 
         AssertContains(segmentExportCore, "WriteSegmentPacketsToActiveOutput(");
         AssertDoesNotContain(segmentExportCore, "var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);");
