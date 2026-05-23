@@ -4043,11 +4043,11 @@ owner, fold it back into that owner and update the source-shape tests and
    capture pre-cleanup renderer stop fan-out, frame-captured callbacks, the
    graph-port contract, and event subscription/unsubscription ordering,
    output drive free-space assignment now lives in
-   `MainViewModel.RecordingRuntime.cs`, while output drive probing,
+   `MainViewModel.RecordingState.cs`, while output drive probing,
    fallback, formatting, and suppressed-warning logging now live in
    `OutputDriveSpacePresentationBuilder.cs`. Recording size/bitrate label
    assignment and recording-state reset reactions also live in
-   `MainViewModel.RecordingRuntime.cs`, while
+   `MainViewModel.RecordingState.cs`, while
    `Sussudio/ViewModels/BitrateSampleWindow.cs` owns bounded byte-sample
    smoothing shared by recording and Flashback bitrate presentation, and
    capture presentation adapters now live in
@@ -4351,7 +4351,7 @@ owner, fold it back into that owner and update the source-shape tests and
    Startup FFmpeg capability probes for recording formats and split-encode modes
    plus observable recording-format option rebuilds now live in the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`.
-   `Sussudio/ViewModels/MainViewModel.RecordingRuntime.cs` keeps recording-runtime
+   `Sussudio/ViewModels/MainViewModel.RecordingState.cs` keeps recording-runtime
    counters, disk-space assignment, and the stable recording-capability facade
    methods used by settings initialization and HDR mode-change rebuild callers.
    It also owns the recording-capability graph-port contract for default encoder

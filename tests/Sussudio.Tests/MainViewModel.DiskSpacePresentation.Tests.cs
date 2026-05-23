@@ -22,7 +22,7 @@ static partial class Program
 
     internal static Task OutputDriveSpacePresentationBuilder_LivesInFocusedHelper()
     {
-        var bridgeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingRuntime.cs")
+        var bridgeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingState.cs")
             .Replace("\r\n", "\n");
         var builderText = ReadRepoFile("Sussudio/ViewModels/OutputDriveSpacePresentationBuilder.cs")
             .Replace("\r\n", "\n");
@@ -44,7 +44,7 @@ static partial class Program
         AssertContains(builderText, "return \"\";");
         AssertDoesNotContain(builderText, "DiskSpaceInfo =");
 
-        AssertContains(agentMapText, "`MainViewModel.RecordingRuntime.cs` owns recording-runtime counters and the DiskSpaceInfo assignment bridge");
+        AssertContains(agentMapText, "`MainViewModel.RecordingState.cs` owns recording-runtime counters and the DiskSpaceInfo assignment bridge");
         AssertContains(agentMapText, "`Sussudio/ViewModels/OutputDriveSpacePresentationBuilder.cs` owns output drive probing");
         AssertContains(cleanupPlanText, "`OutputDriveSpacePresentationBuilder.cs`");
 
