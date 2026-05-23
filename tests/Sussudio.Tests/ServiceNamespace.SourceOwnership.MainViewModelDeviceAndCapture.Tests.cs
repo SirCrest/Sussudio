@@ -125,10 +125,8 @@ static partial class Program
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Telemetry.cs")),
             "old MainViewModel telemetry partial removed after controller extraction");
         var recordingCapabilityControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRecordingCapabilityController.cs"));
-        var recordingCapabilityControllerContextText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRecordingCapabilityController.Context.cs"));
-        AssertContains(recordingCapabilityControllerContextText, "namespace Sussudio.Controllers;");
-        AssertContains(recordingCapabilityControllerContextText, "internal sealed class MainViewModelRecordingCapabilityControllerContext");
         AssertContains(recordingCapabilityControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(recordingCapabilityControllerText, "internal sealed class MainViewModelRecordingCapabilityControllerContext");
         AssertContains(recordingCapabilityControllerText, "internal sealed class MainViewModelRecordingCapabilityController");
         AssertContains(recordingCapabilityControllerText, "private readonly MainViewModelRecordingCapabilityControllerContext _context;");
         AssertDoesNotContain(recordingCapabilityControllerText, "private readonly MainViewModel _viewModel;");

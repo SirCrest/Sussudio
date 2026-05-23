@@ -3591,11 +3591,10 @@ Primary current owners:
   `Sussudio/ViewModels/MainViewModel.RecordingRuntime.cs` keeps recording-runtime
   counters, disk-space assignment, and the stable recording-capability facade
   methods used by settings initialization and HDR mode-change rebuild callers.
-  `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.Context.cs`
-  owns the top-level recording-capability graph-port contract for default
-  encoder names, observable recording/split-encode option collections,
-  selected recording format state, HDR/status state, FFmpeg-missing state, and
-  UI dispatch.
+  It also owns the recording-capability graph-port contract for default encoder
+  names, observable recording/split-encode option collections, selected
+  recording format state, HDR/status state, FFmpeg-missing state, and UI
+  dispatch.
 
 Refactor direction:
 

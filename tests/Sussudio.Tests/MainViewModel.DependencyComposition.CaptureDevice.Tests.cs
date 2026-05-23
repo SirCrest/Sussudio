@@ -14,7 +14,6 @@ static partial class Program
         var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs").Replace("\r\n", "\n");
         var recordingSettingsAutomationControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.Context.cs").Replace("\r\n", "\n");
         var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs").Replace("\r\n", "\n");
-        var recordingCapabilityControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.Context.cs").Replace("\r\n", "\n");
         var captureModeOptionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var captureModeOptionRebuildControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.Context.cs").Replace("\r\n", "\n");
         var captureModeOptionFrameRateRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.FrameRate.cs").Replace("\r\n", "\n");
@@ -117,8 +116,7 @@ static partial class Program
 
         AssertContains(recordingCapabilityControllerText, "namespace Sussudio.Controllers;");
         AssertContains(recordingCapabilityControllerText, "internal sealed class MainViewModelRecordingCapabilityController");
-        AssertContains(recordingCapabilityControllerContextText, "namespace Sussudio.Controllers;");
-        AssertContains(recordingCapabilityControllerContextText, "internal sealed class MainViewModelRecordingCapabilityControllerContext");
+        AssertContains(recordingCapabilityControllerText, "internal sealed class MainViewModelRecordingCapabilityControllerContext");
         AssertContains(recordingCapabilityControllerText, "private readonly MainViewModelRecordingCapabilityControllerContext _context;");
         AssertDoesNotContain(recordingCapabilityControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(recordingCapabilityControllerText, "_viewModel.");
