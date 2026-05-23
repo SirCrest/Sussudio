@@ -3810,18 +3810,10 @@ Primary owners:
 - `tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs` owns diagnostic health,
   summary, evidence, and frame-lane snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot
-  active/failure gating plus section and encoding subsection ordering.
-- `tools/ssctl/Formatters.Snapshot.Flashback.Encoding.Status.cs` owns
-  Flashback encoder, buffer, temp-cache, and cleanup snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Flashback.Encoding.Health.cs` owns
-  Flashback queue-latency, backpressure, failure, and GPU queue snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Flashback.Export.cs` owns Flashback export
-  progress, result, throughput, force-rotate fallback, range, output path, and
-  message snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Flashback.Playback.Commands.cs` owns
-  Flashback playback state and command-queue snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Flashback.Playback.Performance.cs` owns
-  Flashback playback cadence, decode, frame, stage, and A/V drift snapshot text.
+  active/failure gating, section and encoding subsection ordering, Flashback
+  encoder/buffer/cache/cleanup text, queue-latency/backpressure/failure/GPU
+  queue text, export progress/result text, playback state/command-queue text,
+  and playback cadence/decode/frame/stage/A/V drift text.
 - `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG timing snapshot
   activation, header, and output order.
 - `tools/ssctl/Formatters.Snapshot.Mjpeg.Decode.cs` owns MJPEG decode, interop

@@ -497,16 +497,9 @@ embedded AV-sync drift, and source-signal text in
 `Formatters.Snapshot.Runtime.cs`, preview renderer-mode routing/non-D3D
 fallback text in `Formatters.Snapshot.Preview.cs`,
 diagnostic health/frame-lane text in `Formatters.Snapshot.DiagnosticLanes.cs`,
-Flashback snapshot gating/order and encoding subsection order in
-`Formatters.Snapshot.Flashback.cs`, Flashback encoder/buffer/cache text in
-`Formatters.Snapshot.Flashback.Encoding.Status.cs`, Flashback
-queue-latency, backpressure, failure, and GPU queue text in
-`Formatters.Snapshot.Flashback.Encoding.Health.cs`, Flashback export progress, result,
-throughput, force-rotate fallback, range, output path, and message text in
-`Formatters.Snapshot.Flashback.Export.cs`, Flashback playback status and
-command text in `Formatters.Snapshot.Flashback.Playback.Commands.cs`,
-Flashback playback cadence, decode, frame, stage, and A/V drift text in
-`Formatters.Snapshot.Flashback.Playback.Performance.cs`, MJPEG
+Flashback snapshot gating/order, encoding status/health text, export
+progress/result text, playback command text, and playback cadence/decode/frame/
+stage/A/V drift text in `Formatters.Snapshot.Flashback.cs`, MJPEG
 activation/header/order in `Formatters.Snapshot.Mjpeg.cs`,
 decode/copy/callback/per-decoder timing text in
 `Formatters.Snapshot.Mjpeg.Decode.cs`, compressed-queue, drop-reason, reorder,
