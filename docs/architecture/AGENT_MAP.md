@@ -4171,14 +4171,8 @@ Primary owners:
   export-while-preview-off verification, and restart frame-flow validation.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
   owns Flashback-recording-backed preview stop/restart diagnostic command
-  choreography.
-- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingCounters.cs`
-  owns recording-backed preview-cycle readiness and pre-stop encoder counter
-  capture.
-- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingValidation.cs`
-  owns recording-backed preview-off recording/backend/counter validation.
-- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingRestartValidation.cs`
-  owns recording-backed preview restart and frame-flow validation.
+  choreography, readiness and pre-stop encoder counter capture, preview-off
+  recording/backend/counter validation, and restart frame-flow validation.
 - `tools/Common/DiagnosticSessionFlashbackRejectedExports.cs` owns Flashback
   rejected-export diagnostic scenario dispatch, inactive-buffer failure-kind
   assertions, and active-Flashback-recording backend-stability assertions.
