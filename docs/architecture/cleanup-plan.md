@@ -3748,11 +3748,10 @@ range result validation, and post-cleanup command-health validation now live
 together in `DiagnosticSessionFlashbackExportScenarios.Range.cs`.
 `DiagnosticSessionFlashbackExportScenarios.Registrations.cs` owns export
 scenario task registration orchestration while diagnostic-session startup makes
-a single qualified call into that owner. Export playback registration lives in
-`.Registrations.Playback.cs`, range/audio-switch registration lives in
-`.Registrations.Range.cs`, and concurrent/disable/rotated coordination
-registration lives in `.Registrations.Coordination.cs`. Do not reintroduce an
-empty family root.
+a single qualified call into that owner. Export playback, range/audio-switch,
+and concurrent/disable/rotated coordination registration now live together in
+that file. Do not reintroduce an empty family root or one-method registration
+partials.
 
 Diagnostic-session Flashback lifecycle checks now live in
 `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs`. It owns
@@ -3943,9 +3942,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExportScenarios.Playback.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Range.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
-- `DiagnosticSessionFlashbackExportScenarios.Registrations.Playback.cs`
-- `DiagnosticSessionFlashbackExportScenarios.Registrations.Range.cs`
-- `DiagnosticSessionFlashbackExportScenarios.Registrations.Coordination.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Rotated.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.cs`
 - `DiagnosticSessionFlashbackMetrics.Recording.cs`

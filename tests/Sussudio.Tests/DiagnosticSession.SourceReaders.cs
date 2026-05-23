@@ -21,9 +21,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.cs",
-            "tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.Playback.cs",
-            "tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.Range.cs",
-            "tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.Coordination.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Rotated.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs");

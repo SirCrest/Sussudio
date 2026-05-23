@@ -4114,14 +4114,9 @@ Primary owners:
   validation.
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
   owns the export scenario task registration handoff from diagnostic-session
-  startup. `tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.Playback.cs`
-  owns export-during-playback task priority, label, and started action.
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.Range.cs`
-  owns range and audio-switch range export task priorities, labels, payload
-  variants, and started actions.
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.Coordination.cs`
-  owns concurrent, disable-during-export, and rotated export task priorities,
-  labels, send-channel selection, and started actions.
+  startup plus export-during-playback, range/audio-switch, concurrent,
+  disable-during-export, and rotated export task priorities, labels,
+  send-channel selection, payload variants, and started actions.
 - `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs` owns
   Flashback playback disable/re-enable lifecycle diagnostic command flow,
   scenario registration, priority, task label, started action, post-disable

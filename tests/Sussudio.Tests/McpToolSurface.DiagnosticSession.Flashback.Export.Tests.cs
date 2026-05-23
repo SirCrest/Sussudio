@@ -9,12 +9,6 @@ static partial class Program
         var scenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
         var registrationsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.cs")
             .Replace("\r\n", "\n");
-        var playbackRegistrationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.Playback.cs")
-            .Replace("\r\n", "\n");
-        var rangeRegistrationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.Range.cs")
-            .Replace("\r\n", "\n");
-        var coordinationRegistrationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.Coordination.cs")
-            .Replace("\r\n", "\n");
         var disableDuringExportText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs")
             .Replace("\r\n", "\n");
         var disableDuringExportValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation.cs")
@@ -72,22 +66,19 @@ static partial class Program
         AssertContains(registrationsText, "RegisterFlashbackExportPlaybackTask(");
         AssertContains(registrationsText, "RegisterFlashbackRangeExportTasks(");
         AssertContains(registrationsText, "RegisterFlashbackExportCoordinationTasks(");
-        AssertDoesNotContain(registrationsText, "backgroundTasks.AddScenario(");
-        AssertContains(playbackRegistrationText, "private static void RegisterFlashbackExportPlaybackTask(");
-        AssertContains(playbackRegistrationText, "6,\n            \"flashback-export-playback-task\",");
-        AssertContains(playbackRegistrationText, "flashback export playback started");
-        AssertDoesNotContain(playbackRegistrationText, "flashback-range-export-task");
-        AssertContains(rangeRegistrationText, "private static void RegisterFlashbackRangeExportTasks(");
-        AssertContains(rangeRegistrationText, "8,\n                \"flashback-range-export-task\",");
-        AssertContains(rangeRegistrationText, "9,\n                \"flashback-range-export-audio-switch-task\",");
-        AssertContains(rangeRegistrationText, "flashback range export audio switch started");
-        AssertDoesNotContain(rangeRegistrationText, "flashback-export-concurrent-task");
-        AssertContains(coordinationRegistrationText, "private static void RegisterFlashbackExportCoordinationTasks(");
-        AssertContains(coordinationRegistrationText, "10,\n                \"flashback-export-concurrent-task\",");
-        AssertContains(coordinationRegistrationText, "11,\n                \"flashback-disable-during-export-task\",");
-        AssertContains(coordinationRegistrationText, "12,\n                \"flashback-rotated-export-task\",");
-        AssertContains(coordinationRegistrationText, "flashback rotated export started");
-        AssertDoesNotContain(coordinationRegistrationText, "flashback-range-export-task");
+        AssertContains(registrationsText, "backgroundTasks.AddScenario(");
+        AssertContains(registrationsText, "private static void RegisterFlashbackExportPlaybackTask(");
+        AssertContains(registrationsText, "6,\n            \"flashback-export-playback-task\",");
+        AssertContains(registrationsText, "flashback export playback started");
+        AssertContains(registrationsText, "private static void RegisterFlashbackRangeExportTasks(");
+        AssertContains(registrationsText, "8,\n                \"flashback-range-export-task\",");
+        AssertContains(registrationsText, "9,\n                \"flashback-range-export-audio-switch-task\",");
+        AssertContains(registrationsText, "flashback range export audio switch started");
+        AssertContains(registrationsText, "private static void RegisterFlashbackExportCoordinationTasks(");
+        AssertContains(registrationsText, "10,\n                \"flashback-export-concurrent-task\",");
+        AssertContains(registrationsText, "11,\n                \"flashback-disable-during-export-task\",");
+        AssertContains(registrationsText, "12,\n                \"flashback-rotated-export-task\",");
+        AssertContains(registrationsText, "flashback rotated export started");
         AssertContains(scenariosTextWithoutSpaces, "6,\n\"flashback-export-playback-task\",");
         AssertContains(scenariosTextWithoutSpaces, "8,\n\"flashback-range-export-task\",");
         AssertContains(scenariosTextWithoutSpaces, "9,\n\"flashback-range-export-audio-switch-task\",");
