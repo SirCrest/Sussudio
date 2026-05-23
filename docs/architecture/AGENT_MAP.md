@@ -3408,10 +3408,11 @@ Primary current owners:
   auto-selection entry points. `MainViewModel.CaptureModeTransactions.cs` keeps
   the resolution, frame-rate, selected-format, and video-format rebuild
   compatibility adapters alongside capture-mode transaction state, while
-  `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.FrameRate.cs`
-  owns the frame-rate option rebuild transaction, source-rate filtering handoff,
-  auto/source option selection, observable frame-rate collection mutation, and
-  selected frame-rate application through graph-built context ports.
+  `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
+  owns the cohesive capture-mode option rebuild transaction, including
+  frame-rate option rebuilding, source-rate filtering handoff, auto/source
+  option selection, observable frame-rate collection mutation, and selected
+  frame-rate application through graph-built context ports.
   `Sussudio/ViewModels/FrameRateAutoSelectionPolicy.cs`
   owns pure frame-rate option choice: pending SDR bucket preference,
   Source-rate nearest match with timing-family tie-break, generic auto fallback,
@@ -3435,10 +3436,8 @@ Primary current owners:
   rebuild compatibility adapters, while
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
   is a top-level `Sussudio.Controllers` owner for selected-format assignment,
-  video-format option collection mutation, and capture-format request shaping
-  for the controller family.
-  `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.Context.cs`
-  owns the top-level capture-mode option rebuild graph-port contract for option
+  video-format option collection mutation, capture-format request shaping,
+  and the capture-mode option rebuild graph-port contract for option
   collections, stable Source/Auto sentinel values, source telemetry,
   resolution/frame-rate selection state, automatic retarget flags,
   format-change suppression, and projected status text.
@@ -3494,9 +3493,9 @@ Primary current owners:
   MJPG HFR preservation, session mismatch, and active-capture restore.
   `MainViewModel.CaptureModeTransactions.cs` keeps the compatibility adapter for
   resolution option rebuild callers.
-  `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.Resolution.cs`
-  owns resolution option rebuilds inside the promoted top-level capture option
-  rebuild controller family: automatic resolution dropdown option construction,
+  `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
+  owns resolution option rebuilds inside the top-level capture option
+  rebuild controller: automatic resolution dropdown option construction,
   automatic resolution-selection adaptation over current ViewModel state,
   auto-resolution state refresh, and resolution dropdown mutation through
   graph-built context ports.
@@ -3512,12 +3511,10 @@ Primary current owners:
   State-backed capability queries for callers that live across the ViewModel
   partial family stay in `MainViewModel.ResolutionOptions.cs`; observable
   resolution dropdown mutation routes through the top-level
-  `MainViewModelCaptureModeOptionRebuildController.Resolution.cs`.
+  `MainViewModelCaptureModeOptionRebuildController.cs`.
   `Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs`
   is a top-level `Sussudio.Controllers` owner for source telemetry ingress behavior, projection, enum-string caching,
-  summary-age refresh, and source-aware auto-retargeting hints.
-  `Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.Context.cs`
-  is a top-level `Sussudio.Controllers` owner for the source telemetry graph-port contract consumed by source telemetry
+  summary-age refresh, source-aware auto-retargeting hints, and the source telemetry graph-port contract consumed by source telemetry
   ingress and projection, including the pure summary builder and auto-resolution
   predicate ports that keep facade-private helpers explicit.
   `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`

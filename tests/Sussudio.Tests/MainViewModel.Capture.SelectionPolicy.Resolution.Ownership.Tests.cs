@@ -7,7 +7,7 @@ static partial class Program
         var resolutionOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionOptions.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
-        var resolutionOptionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.Resolution.cs").Replace("\r\n", "\n");
+        var resolutionOptionRebuildControllerText = captureModeOptionsControllerText;
         var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CapturePresentation.cs").Replace("\r\n", "\n");
         var autoCaptureSelectionPolicyText = ReadRepoFile("Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs").Replace("\r\n", "\n");
         var helperText = ReadRepoFile("Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs").Replace("\r\n", "\n");
@@ -15,7 +15,7 @@ static partial class Program
         AssertContains(captureModeTransactionsText, "private void RebuildResolutionOptions()");
         AssertContains(captureModeTransactionsText, "=> _captureModeOptionRebuildController.RebuildResolutionOptions();");
         AssertContains(resolutionOptionRebuildControllerText, "namespace Sussudio.Controllers;");
-        AssertContains(resolutionOptionRebuildControllerText, "internal sealed partial class MainViewModelCaptureModeOptionRebuildController");
+        AssertContains(resolutionOptionRebuildControllerText, "internal sealed class MainViewModelCaptureModeOptionRebuildController");
         AssertContains(resolutionOptionRebuildControllerText, "public void RebuildResolutionOptions()");
         AssertContains(resolutionOptionRebuildControllerText, "private AutoCaptureSelection? ResolveAutoCaptureSelection(");
         AssertContains(resolutionOptionRebuildControllerText, "AutoCaptureSelectionPolicy.Select(new AutoCaptureSelectionRequest(");
@@ -25,7 +25,7 @@ static partial class Program
         AssertDoesNotContain(captureModeOptionsControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(resolutionOptionRebuildControllerText, "_viewModel.");
         AssertContains(resolutionOptionRebuildControllerText, "=> RebuildFrameRateOptions();");
-        AssertDoesNotContain(captureModeOptionsControllerText, "public void RebuildResolutionOptions()");
+        AssertContains(captureModeOptionsControllerText, "public void RebuildResolutionOptions()");
         AssertDoesNotContain(captureModeOptionsControllerText, "_viewModel.AvailableResolutions.Clear();");
         AssertDoesNotContain(resolutionOptionsText, "private string GetSelectedResolutionDisplayText()");
         AssertContains(resolutionOptionRebuildControllerText, "private ResolutionOption CreateAutoResolutionOption()");

@@ -13,9 +13,6 @@ static partial class Program
         var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs").Replace("\r\n", "\n");
         var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs").Replace("\r\n", "\n");
         var captureModeOptionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
-        var captureModeOptionRebuildControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.Context.cs").Replace("\r\n", "\n");
-        var captureModeOptionFrameRateRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.FrameRate.cs").Replace("\r\n", "\n");
-        var captureModeOptionResolutionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.Resolution.cs").Replace("\r\n", "\n");
         var frameRateTimingResolverText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.cs").Replace("\r\n", "\n");
         var deviceFormatProbeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
         var deviceFormatProbeRetargetApplierText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs").Replace("\r\n", "\n");
@@ -122,46 +119,37 @@ static partial class Program
         AssertContains(controllerGraphText, "NotifySelectedRecordingFormatChanged = () => viewModel.OnPropertyChanged(nameof(SelectedRecordingFormat)),");
 
         AssertContains(captureModeOptionRebuildControllerText, "namespace Sussudio.Controllers;");
-        AssertContains(captureModeOptionRebuildControllerText, "internal sealed partial class MainViewModelCaptureModeOptionRebuildController");
-        AssertContains(captureModeOptionRebuildControllerContextText, "namespace Sussudio.Controllers;");
-        AssertContains(captureModeOptionRebuildControllerContextText, "internal sealed class MainViewModelCaptureModeOptionRebuildControllerContext");
+        AssertContains(captureModeOptionRebuildControllerText, "internal sealed class MainViewModelCaptureModeOptionRebuildController");
+        AssertContains(captureModeOptionRebuildControllerText, "internal sealed class MainViewModelCaptureModeOptionRebuildControllerContext");
         AssertContains(captureModeOptionRebuildControllerText, "private readonly MainViewModelCaptureModeOptionRebuildControllerContext _context;");
         AssertContains(captureModeOptionRebuildControllerText, "private readonly MainViewModelFrameRateTimingResolver _frameRateTimingResolver;");
-        AssertDoesNotContain(captureModeOptionRebuildControllerContextText, "ResolvePreferredTimingFamily");
-        AssertDoesNotContain(captureModeOptionRebuildControllerContextText, "ResolveDetectedSourceFrameRate");
-        AssertDoesNotContain(captureModeOptionRebuildControllerContextText, "BuildFrameRateTimingVariants");
+        AssertDoesNotContain(captureModeOptionRebuildControllerText, "public required Func<string?, double, FrameRateTimingFamily> ResolvePreferredTimingFamily");
+        AssertDoesNotContain(captureModeOptionRebuildControllerText, "public required Func<string?, IReadOnlyList<FrameRateOption>, double, (double? Rate, string? Arg, string Origin)> ResolveDetectedSourceFrameRate");
+        AssertDoesNotContain(captureModeOptionRebuildControllerText, "public required Func<string?, IReadOnlyList<FrameRateTimingVariant>> BuildFrameRateTimingVariants");
         AssertContains(frameRateTimingResolverText, "namespace Sussudio.Controllers;");
         AssertContains(frameRateTimingResolverText, "internal sealed class MainViewModelFrameRateTimingResolver");
         AssertContains(frameRateTimingResolverText, "public FrameRateTimingFamily ResolvePreferredTimingFamily(");
         AssertContains(frameRateTimingResolverText, "public (double? Rate, string? Arg, string Origin) ResolveDetectedSourceFrameRate(");
         AssertContains(frameRateTimingResolverText, "public IReadOnlyList<FrameRateTimingVariant> BuildFrameRateTimingVariants(string? resolutionKey)");
         AssertContains(frameRateTimingResolverText, "internal sealed class MainViewModelFrameRateTimingResolverContext");
-        AssertContains(captureModeOptionRebuildControllerContextText, "public required string AutoResolutionValue { get; init; }");
-        AssertContains(captureModeOptionRebuildControllerContextText, "public required double AutoFrameRateValue { get; init; }");
+        AssertContains(captureModeOptionRebuildControllerText, "public required string AutoResolutionValue { get; init; }");
+        AssertContains(captureModeOptionRebuildControllerText, "public required double AutoFrameRateValue { get; init; }");
         AssertContains(controllerGraphText, "AutoResolutionValue = AutoResolutionValue,");
         AssertContains(controllerGraphText, "AutoFrameRateValue = AutoFrameRateValue,");
         AssertDoesNotContain(captureModeOptionRebuildControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(captureModeOptionRebuildControllerText, "_viewModel.");
-        AssertDoesNotContain(captureModeOptionFrameRateRebuildControllerText, "_viewModel.");
-        AssertDoesNotContain(captureModeOptionResolutionRebuildControllerText, "_viewModel.");
-        AssertContains(captureModeOptionFrameRateRebuildControllerText, "internal sealed partial class MainViewModelCaptureModeOptionRebuildController");
+        AssertDoesNotContain(captureModeOptionRebuildControllerText, "_viewModel.");
+        AssertContains(captureModeOptionRebuildControllerText, "internal sealed class MainViewModelCaptureModeOptionRebuildController");
         AssertEqual(
             true,
-            captureModeOptionFrameRateRebuildControllerText.Split('\n').Length >= 100,
-            "capture mode option frame-rate rebuild partial is a substantial ownership file");
-        AssertContains(captureModeOptionFrameRateRebuildControllerText, "_frameRateTimingResolver.ResolveDetectedSourceFrameRate(");
-        AssertDoesNotContain(captureModeOptionRebuildControllerText, "public void RebuildFrameRateOptions()");
-        AssertContains(captureModeOptionFrameRateRebuildControllerText, "public void RebuildFrameRateOptions()");
+            captureModeOptionRebuildControllerText.Split('\n').Length >= 300,
+            "capture mode option rebuild controller is a substantial ownership file");
+        AssertContains(captureModeOptionRebuildControllerText, "_frameRateTimingResolver.ResolveDetectedSourceFrameRate(");
+        AssertContains(captureModeOptionRebuildControllerText, "public void RebuildFrameRateOptions()");
         AssertContains(captureModeOptionRebuildControllerText, "public void RebuildVideoFormatOptions()");
         AssertContains(captureModeOptionRebuildControllerText, "public void UpdateSelectedFormat()");
-        AssertDoesNotContain(captureModeOptionRebuildControllerText, "public void RebuildResolutionOptions()");
-        AssertContains(captureModeOptionResolutionRebuildControllerText, "internal sealed partial class MainViewModelCaptureModeOptionRebuildController");
-        AssertEqual(
-            true,
-            captureModeOptionResolutionRebuildControllerText.Split('\n').Length >= 100,
-            "capture mode option resolution rebuild partial is a substantial ownership file");
-        AssertContains(captureModeOptionResolutionRebuildControllerText, "public void RebuildResolutionOptions()");
-        AssertContains(captureModeOptionResolutionRebuildControllerText, "=> RebuildFrameRateOptions();");
+        AssertContains(captureModeOptionRebuildControllerText, "public void RebuildResolutionOptions()");
+        AssertContains(captureModeOptionRebuildControllerText, "=> RebuildFrameRateOptions();");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelResolutionOptionRebuildController.cs")),

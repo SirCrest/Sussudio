@@ -8,7 +8,6 @@ static partial class Program
         var mainViewModelDeviceFormatProbeControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceFormatProbeController.cs"));
         var mainViewModelDeviceFormatProbeRetargetApplierText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceFormatProbeRetargetApplier.cs"));
         var mainViewModelSourceTelemetryControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelSourceTelemetryController.cs"));
-        var mainViewModelSourceTelemetryControllerContextText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelSourceTelemetryController.Context.cs"));
         var mainViewModelDisposalText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Disposal.cs"));
         var mainViewModelDisposalControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDisposalController.cs"));
         var deviceRefreshControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceRefreshController.cs"));
@@ -106,13 +105,13 @@ static partial class Program
         AssertDoesNotContain(mainViewModelText, "private void OnDeviceFormatProbeCompleted");
         AssertContains(mainViewModelSourceTelemetryControllerText, "namespace Sussudio.Controllers;");
         AssertContains(mainViewModelSourceTelemetryControllerText, "internal sealed class MainViewModelSourceTelemetryController");
-        AssertContains(mainViewModelSourceTelemetryControllerContextText, "namespace Sussudio.Controllers;");
-        AssertContains(mainViewModelSourceTelemetryControllerContextText, "internal sealed class MainViewModelSourceTelemetryControllerContext");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "internal sealed class MainViewModelSourceTelemetryControllerContext");
         AssertContains(mainViewModelSourceTelemetryControllerText, "private readonly MainViewModelSourceTelemetryControllerContext _context;");
-        AssertContains(mainViewModelSourceTelemetryControllerContextText, "public required Func<SourceSignalTelemetrySnapshot> GetLatestSourceTelemetry { get; init; }");
-        AssertContains(mainViewModelSourceTelemetryControllerContextText, "public required Func<SourceSignalTelemetrySnapshot, DateTimeOffset, string> BuildSourceTelemetrySummary { get; init; }");
-        AssertContains(mainViewModelSourceTelemetryControllerContextText, "public required Func<string?, bool> IsAutoResolutionValue { get; init; }");
-        AssertContains(mainViewModelSourceTelemetryControllerContextText, "public required Action RebuildResolutionOptions { get; init; }");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "public required Func<SourceSignalTelemetrySnapshot> GetLatestSourceTelemetry { get; init; }");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "public required Func<SourceSignalTelemetrySnapshot, DateTimeOffset, string> BuildSourceTelemetrySummary { get; init; }");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "public required Func<string?, bool> IsAutoResolutionValue { get; init; }");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "public required Action RebuildResolutionOptions { get; init; }");
         AssertDoesNotContain(mainViewModelSourceTelemetryControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(mainViewModelSourceTelemetryControllerText, "_viewModel.");
         AssertContains(mainViewModelSourceTelemetryControllerText, "public void OnSourceTelemetryUpdated(object? sender, SourceSignalTelemetrySnapshot snapshot)");
