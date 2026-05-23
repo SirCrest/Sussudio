@@ -2712,9 +2712,8 @@ projection refresh adapter.
 Decode and GPU hardware stats row refresh/application over presentation inputs
 now lives in `Sussudio/Controllers/Stats/StatsHardwareRowsController.cs`;
 live MJPEG/NVML sampling and decode availability policy live in
-`Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs`;
-pure MJPEG/NVML telemetry-to-presentation-input projection lives in
-`Sussudio/Controllers/Stats/StatsHardwareRowsInputBuilder.cs`; pure row text
+`Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs`, alongside pure
+MJPEG/NVML telemetry-to-presentation-input projection; pure row text
 projection over presentation inputs lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs`;
 decode/GPU row element pooling and style application live in

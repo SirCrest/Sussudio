@@ -1492,8 +1492,7 @@ Primary current owners:
 - `Sussudio/Controllers/Stats/StatsHardwareRowsController.cs` owns hardware row
   refresh, availability, and decode/GPU minimum pool sizing before delegating row
   chrome. `Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs` owns
-  live MJPEG/NVML input acquisition and decode availability policy;
-  `Sussudio/Controllers/Stats/StatsHardwareRowsInputBuilder.cs` owns pure
+  live MJPEG/NVML input acquisition, decode availability policy, and pure
   telemetry projection into the hardware-row presentation input DTOs;
   `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs` owns pure
   decode/GPU row text projection over presentation inputs, and
@@ -1520,9 +1519,8 @@ Primary current owners:
   `Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticRows.cs` owns
   diagnostic row construction and source-summary parsing.
   `Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs` owns live
-  MJPEG/NVML sampling callbacks for hardware rows.
-  `Sussudio/Controllers/Stats/StatsHardwareRowsInputBuilder.cs` owns pure
-  telemetry-to-presentation-input projection for MJPEG/NVML hardware rows.
+  MJPEG/NVML sampling callbacks and pure telemetry-to-presentation-input
+  projection for hardware rows.
   `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs` owns decode
   and GPU row text projection over presentation inputs.
   `Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticSummary.cs` owns
