@@ -10,7 +10,6 @@ static partial class Program
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.PreviewState.cs").Replace("\r\n", "\n");
         var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs").Replace("\r\n", "\n");
-        var captureHdrStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureHdrState.cs").Replace("\r\n", "\n");
         var captureSourceStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSourceState.cs").Replace("\r\n", "\n");
         var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs").Replace("\r\n", "\n");
@@ -105,11 +104,14 @@ static partial class Program
         AssertContains(captureStateText, "public partial ObservableCollection<CaptureDevice> Devices");
         AssertContains(captureStateText, "public partial ObservableCollection<ResolutionOption> AvailableResolutions");
         AssertContains(captureStateText, "public partial ObservableCollection<FrameRateOption> AvailableFrameRates");
-        AssertDoesNotContain(captureStateText, "public partial bool IsHdrEnabled");
+        AssertContains(captureStateText, "private const string HdrToggleBlockedWhileRecordingMessage");
+        AssertContains(captureStateText, "public partial bool IsHdrEnabled");
+        AssertContains(captureStateText, "public partial string HdrRuntimeState");
         AssertDoesNotContain(captureStateText, "public partial string SourceTelemetryAvailability");
-        AssertContains(captureHdrStateText, "private const string HdrToggleBlockedWhileRecordingMessage");
-        AssertContains(captureHdrStateText, "public partial bool IsHdrEnabled");
-        AssertContains(captureHdrStateText, "public partial string HdrRuntimeState");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.CaptureHdrState.cs")),
+            "MainViewModel.CaptureHdrState.cs folded into MainViewModel.CaptureState.cs");
         AssertContains(captureSourceStateText, "private SourceSignalTelemetrySnapshot _latestSourceTelemetry");
         AssertContains(captureSourceStateText, "public partial double? DetectedSourceFrameRate");
         AssertContains(captureSourceStateText, "public partial string SourceTelemetryAvailability");

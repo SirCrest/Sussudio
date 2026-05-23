@@ -3158,9 +3158,8 @@ Primary current owners:
   coordination gates; `MainViewModel.PreviewState.cs` owns preview lifecycle
   compatibility entry points, preview-sink handoff, preview lifecycle flags,
   preview reinitialize coordination, and preview request events; `MainViewModel.CaptureState.cs` owns capture-selection
-  state and option collections; `MainViewModel.CaptureSourceState.cs` owns
-  source signal/source-telemetry presentation state; `MainViewModel.CaptureHdrState.cs` owns HDR capture-selection and
-  runtime presentation state; `MainViewModel.AudioState.cs` owns audio and
+  state, option collections, and HDR capture/runtime presentation state; `MainViewModel.CaptureSourceState.cs` owns
+  source signal/source-telemetry presentation state; `MainViewModel.AudioState.cs` owns audio and
   microphone state; `MainViewModel.DeviceAudioState.cs` owns device-native
   audio/XU UI state; `MainViewModel.FlashbackState.cs` owns Flashback
   timeline/export state. `MainViewModel.AudioMeters.cs` owns live

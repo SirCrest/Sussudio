@@ -12,6 +12,7 @@ public partial class MainViewModel
     private const int PreviewReinitializeDebounceMs = 250;
     private const string AutoResolutionValue = "Source";
     private const double AutoFrameRateValue = 0;
+    private const string HdrToggleBlockedWhileRecordingMessage = "Stop recording before switching between HDR and SDR pipelines.";
 
     [ObservableProperty]
     public partial ObservableCollection<CaptureDevice> Devices { get; set; } = new();
@@ -99,4 +100,22 @@ public partial class MainViewModel
 
     [ObservableProperty]
     public partial string DisabledFrameRateReason { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial bool IsHdrEnabled { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsHdrAvailable { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsTrueHdrPreviewEnabled { get; set; }
+
+    [ObservableProperty]
+    public partial string HdrResolutionSupportHint { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string HdrRuntimeState { get; set; } = "Inactive";
+
+    [ObservableProperty]
+    public partial string HdrReadinessReason { get; set; } = string.Empty;
 }

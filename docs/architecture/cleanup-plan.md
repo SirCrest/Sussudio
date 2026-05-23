@@ -4076,10 +4076,9 @@ owner, fold it back into that owner and update the source-shape tests and
    owns preview lifecycle compatibility entry points, preview-sink handoff,
    preview lifecycle flags, preview reinitialize coordination, and preview
    request events, `MainViewModel.CaptureState.cs` owns capture-selection
-   state and option collections, `MainViewModel.CaptureSourceState.cs` owns
-   source signal/source-telemetry presentation state, and
-   `MainViewModel.CaptureHdrState.cs` owns HDR capture-selection and runtime
-   presentation state. `MainViewModel.AudioState.cs` owns audio/microphone
+   state, option collections, and HDR capture/runtime presentation state,
+   `MainViewModel.CaptureSourceState.cs` owns
+   source signal/source-telemetry presentation state, and `MainViewModel.AudioState.cs` owns audio/microphone
    state, `MainViewModel.DeviceAudioState.cs` owns device-native audio/XU UI
    state, and `MainViewModel.FlashbackState.cs` owns Flashback timeline/export
    state. Keep `MainViewModel.cs` focused on the public compatibility-facade
