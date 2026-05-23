@@ -3791,15 +3791,13 @@ command choreography for normal Flashback, playback, and recording-backed
 diagnostics. Normal Flashback preview-cycle validation, pre-stop encoded-frame
 capture, export-while-preview-off verification, and restart frame-flow
 validation now live together in `.Flashback.cs`.
-Playback-preview-cycle validation is also split by runtime phase:
-`.PlaybackPreStop.cs` owns pre-stop frame warmup, `.PlaybackStopped.cs` owns
-preview-stopped state validation, and `.PlaybackRestart.cs` owns restart
-frame-flow validation. Playback-preview-cycle export-while-preview-off
-verification lives in `.PlaybackExport.cs`. Recording-backed readiness and pre-stop encoder counter
-capture live in `.RecordingCounters.cs`, preview-off recording/backend/counter
-validation lives in `.RecordingValidation.cs`, and restart frame-flow validation
-lives in `.RecordingRestartValidation.cs` while startup only delegates selected
-scenario registration.
+Playback-preview-cycle validation, pre-stop frame warmup, export-while-preview-off
+verification, and restart frame-flow validation now live together in
+`.Playback.cs`. Recording-backed readiness and pre-stop encoder counter capture
+live in `.RecordingCounters.cs`, preview-off recording/backend/counter validation
+lives in `.RecordingValidation.cs`, and restart frame-flow validation lives in
+`.RecordingRestartValidation.cs` while startup only delegates selected scenario
+registration.
 
 Diagnostic-session Flashback rejected-export scenarios now live in the
 `tools/Common/DiagnosticSessionFlashbackRejectedExports*.cs` partial family.
@@ -3965,10 +3963,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
-- `DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackPreStop.cs`
-- `DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackStopped.cs`
-- `DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackRestart.cs`
-- `DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackExport.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingCounters.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.RecordingValidation.cs`

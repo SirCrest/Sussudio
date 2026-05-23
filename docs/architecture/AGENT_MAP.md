@@ -4166,15 +4166,9 @@ Primary owners:
   pre-stop encoded-frame capture, preview-off Flashback/encoder validation,
   export-while-preview-off verification, and restart frame-flow validation.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
-  owns playback-under-preview-stop diagnostic command choreography.
-- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackPreStop.cs`
-  owns playback-preview-cycle pre-stop frame warmup.
-- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackStopped.cs`
-  owns playback-preview-cycle preview-stopped state validation.
-- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackRestart.cs`
-  owns playback-preview-cycle restart/frame-flow validation.
-- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackExport.cs`
-  owns playback-preview-cycle export-while-preview-off verification.
+  owns playback-under-preview-stop diagnostic command choreography, pre-stop
+  playback-frame warmup, preview-stopped playback/live-state validation,
+  export-while-preview-off verification, and restart frame-flow validation.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
   owns Flashback-recording-backed preview stop/restart diagnostic command
   choreography.
