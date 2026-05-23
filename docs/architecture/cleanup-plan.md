@@ -4157,7 +4157,7 @@ owner, fold it back into that owner and update the source-shape tests and
    Shared frame-rate selection reset,
    resolved automatic frame-rate application, disabled frame-rate reason
    projection, and capture-mode reset flags live in
-   `MainViewModel.ModeSelectionState.cs`. Source-rate filtering now assumes
+   `MainViewModel.CaptureState.cs`. Source-rate filtering now assumes
    capture options are always visible in
    `Sussudio/ViewModels/FrameRateSourceFilterPolicy.cs`, while deferred rebuild
    behavior, duplicate-reinit suppression, and the active capture-mode automation

@@ -10,7 +10,7 @@ static partial class Program
         var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var frameRateRebuildControllerText = captureModeOptionsControllerText;
         var resolutionOptionRebuildControllerText = captureModeOptionsControllerText;
-        var modeSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ModeSelectionState.cs").Replace("\r\n", "\n");
+        var modeSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs").Replace("\r\n", "\n");
 
         AssertContains(captureModeTransactionsText, "private void RebuildResolutionOptions()");
         AssertContains(captureModeTransactionsText, "=> _captureModeOptionRebuildController.RebuildResolutionOptions();");
@@ -45,6 +45,10 @@ static partial class Program
         AssertContains(modeSelectionText, "_lastSourceModeKey = null;");
         AssertContains(modeSelectionText, "_pendingSdrAutoSelectionForDeviceChange = false;");
         AssertContains(modeSelectionText, "_pendingSdrAutoFriendlyFrameRateBucket = null;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.ModeSelectionState.cs")),
+            "MainViewModel.ModeSelectionState.cs folded into MainViewModel.CaptureState.cs");
 
         return Task.CompletedTask;
     }

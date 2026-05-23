@@ -3298,7 +3298,7 @@ Primary current owners:
   owns pure frame-rate option choice: pending SDR bucket preference,
   Source-rate nearest match with timing-family tie-break, generic auto fallback,
   and previous/manual selection fallback.
-  `MainViewModel.ModeSelectionState.cs` owns shared frame-rate selection reset,
+  `MainViewModel.CaptureState.cs` owns shared frame-rate selection reset,
   resolved automatic frame-rate application, disabled frame-rate reason
   projection, and capture-mode reset flags.
   `Sussudio/ViewModels/FrameRateSourceFilterPolicy.cs` owns source-rate filtering
