@@ -3134,14 +3134,13 @@ Primary current owners:
   trace adapters, and property-to-session volume forwarding.
   `PreviewAudioVolumeTransitionController.Ramps.cs` owns preview-audio ramp
   constants, easing, and async ramp-down/ramp-up execution.
-  `MainViewModel.AudioMonitoring.cs` owns preview monitoring
-  coordinator sequencing. `MainViewModel.AudioCapturePropertyChanges.cs` owns
+  `MainViewModel.AudioCapturePropertyChanges.cs` owns
   audio capture enablement and Flashback restart/teardown routing.
   `MainViewModel.AudioState.cs` owns audio-preview monitoring toggle routing,
   preview-volume save suppression/override properties, change notification,
-  ramp adapter methods, persisted preview-volume save routing, microphone
-  observable state, endpoint volume synchronization, persistence, and
-  microphone property-change routing.
+  ramp adapter methods, persisted preview-volume save routing, preview
+  monitoring coordinator sequencing, microphone observable state, endpoint
+  volume synchronization, persistence, and microphone property-change routing.
   `MainViewModel.AudioInputSelection.cs`
   owns custom audio-input property handlers, retargeting, and
   preview-monitoring ramp handoff.

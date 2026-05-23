@@ -97,9 +97,11 @@ static partial class Program
         AssertDoesNotContain(mainViewModelAudioCapturePropertyChangesText, "OnSelectedAudioInputDeviceChanged");
         AssertDoesNotContain(mainViewModelAudioStateText, "OnSelectedDeviceAudioModeChanged");
         AssertDoesNotContain(mainViewModelAudioStateText, "OnSelectedAudioInputDeviceChanged");
-        AssertDoesNotContain(
-            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioMonitoring.cs")),
-            "OnIsAudioPreviewEnabledChanged");
+        AssertContains(mainViewModelAudioStateText, "SetAudioMonitoringEnabledWithVolumeTransitionAsync");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioMonitoring.cs")),
+            "MainViewModel.AudioMonitoring.cs folded into MainViewModel.AudioState.cs");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "private void SetupTimer()");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "namespace Sussudio.Controllers;");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "internal sealed class MainViewModelRuntimeLifecycleController");

@@ -3011,9 +3011,8 @@ property-to-session volume forwarding. `PreviewAudioVolumeTransitionController.R
 owns the ramp constants/easing and async ramp-down/ramp-up execution.
 `Sussudio/ViewModels/MainViewModel.AudioState.cs` is the
 view-model compatibility facade for preview-volume save suppression, override,
-change notification, and ramp adapter methods. Monitoring enable/disable
-orchestration and coordinator sequencing remain in
-`Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs`; audio capture
+change notification, ramp adapter methods, and monitoring enable/disable
+orchestration with coordinator sequencing. Audio capture
 enablement and Flashback restart/teardown routing live in
 `Sussudio/ViewModels/MainViewModel.AudioCapturePropertyChanges.cs`, while
 audio-preview monitoring toggles live in
@@ -3973,13 +3972,11 @@ owner, fold it back into that owner and update the source-shape tests and
    shutdown live in `Sussudio/ViewModels/AudioRampTraceRecorder.cs`, with
    `Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs` kept as the
    automation-facing adapter and trace/preview-volume controller wiring owner;
-   preview-volume save/override and ramp adapter methods now live in
-   `MainViewModel.AudioState.cs`; keep preview monitoring
-   coordinator sequencing in
-   `MainViewModel.AudioMonitoring.cs`, audio capture property handlers in
-   `MainViewModel.AudioCapturePropertyChanges.cs`, audio-preview property
-   handlers plus preview-volume ramp adapters in `MainViewModel.AudioState.cs`, while custom audio-input property
-   handlers, retargeting, and preview-monitoring ramp handoff live in
+   preview-volume save/override, ramp adapter methods, preview monitoring
+   coordinator sequencing, and audio-preview property handlers now live in
+   `MainViewModel.AudioState.cs`; keep audio capture property handlers in
+   `MainViewModel.AudioCapturePropertyChanges.cs`, while custom audio-input
+   property handlers, retargeting, and preview-monitoring ramp handoff live in
    `MainViewModel.AudioInputSelection.cs`.
    Microphone observable state, endpoint volume synchronization, persistence,
    and property-change routing now live in `MainViewModel.AudioState.cs`;

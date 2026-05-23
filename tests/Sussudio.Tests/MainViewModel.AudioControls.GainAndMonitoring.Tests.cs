@@ -53,7 +53,6 @@ static partial class Program
         AssertNotNull(viewModelType.GetProperty("VolumeSaveOverride", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.VolumeSaveOverride");
         AssertNotNull(viewModelType.GetMethod("SavePreviewVolume", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SavePreviewVolume");
 
-        var monitoringCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs");
         var audioStateCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioState.cs");
         var audioInputSelectionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioInputSelection.cs");
         var transitionCode =
@@ -66,7 +65,7 @@ static partial class Program
         var rampUp = ExtractMemberCode(transitionCode, "RampUpForAudioTransitionAsync");
         var primeTransition = ExtractMemberCode(transitionCode, "PrimeForAudioTransition");
         var restoreTransition = ExtractMemberCode(transitionCode, "RestoreAfterUnavailableAudio");
-        var monitoringTransition = ExtractMemberCode(monitoringCode, "SetAudioMonitoringEnabledWithVolumeTransitionAsync");
+        var monitoringTransition = ExtractMemberCode(audioStateCode, "SetAudioMonitoringEnabledWithVolumeTransitionAsync");
         var audioPreviewChanged = ExtractMemberCode(audioStateCode, "OnIsAudioPreviewEnabledChanged");
         var applyAudioInputSelection = ExtractMemberCode(audioInputSelectionCode, "ApplyAudioInputSelectionAsync");
 
@@ -78,10 +77,8 @@ static partial class Program
         AssertContains(audioStateCode, "internal void SavePreviewVolume() => SaveSettings();");
         AssertContains(audioStateCode, "private async Task RampPreviewVolumeDownForStopAsync(CancellationToken cancellationToken)");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.PreviewVolumeTransitions.cs")), "MainViewModel.PreviewVolumeTransitions.cs folded into audio state");
-        AssertDoesNotContain(monitoringCode, "SuppressVolumeSave");
-        AssertDoesNotContain(monitoringCode, "OnPreviewVolumeChanged");
-        AssertDoesNotContain(monitoringCode, "OnIsAudioPreviewEnabledChanged");
-        AssertDoesNotContain(monitoringCode, "private const int PreviewAudioRampDownSteps");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AudioMonitoring.cs")), "MainViewModel.AudioMonitoring.cs folded into audio state");
+        AssertDoesNotContain(audioStateCode, "private const int PreviewAudioRampDownSteps");
         AssertContains(transitionCode, "internal sealed partial class PreviewAudioVolumeTransitionController");
         AssertContains(transitionCode, "private const int RampDownSteps = 18;");
         AssertContains(transitionCode, "private const int RampDownDelayMs = 25;");
@@ -119,7 +116,7 @@ static partial class Program
         AssertContains(audioPreviewChanged, "if (!value && !IsRecording)");
         AssertContains(audioPreviewChanged, "if (IsPreviewing && IsInitialized)");
         AssertContains(audioPreviewChanged, "SetAudioMonitoringEnabledWithVolumeTransitionAsync(value, description, teardownCapture: false)");
-        AssertDoesNotContain(monitoringCode, "private async Task ApplyAudioInputSelectionAsync");
+        AssertDoesNotContain(audioStateCode, "private async Task ApplyAudioInputSelectionAsync");
         AssertContains(audioInputSelectionCode, "private async Task ApplyAudioInputSelectionAsync");
         AssertOccursBefore(audioPreviewChanged, "if (value && !IsAudioEnabled)", "IsAudioPreviewEnabled = false;");
         AssertOccursBefore(audioPreviewChanged, "if (_suppressAudioPreviewEnabledChangeOperation)", "if (!value && !IsRecording)");

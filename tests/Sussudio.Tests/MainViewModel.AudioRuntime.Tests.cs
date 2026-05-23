@@ -58,7 +58,7 @@ static partial class Program
     internal static Task AudioRampTrace_ExposesControlAndRenderEnvelopeTelemetry()
     {
         var traceModelsText = ReadRepoFile("Sussudio/Models/Audio/AudioModels.cs").Replace("\r\n", "\n");
-        var audioMonitoringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs").Replace("\r\n", "\n");
+        var audioMonitoringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var audioVolumeTransitionText = string.Join(
             "\n",
             ReadRepoFile("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs"),
