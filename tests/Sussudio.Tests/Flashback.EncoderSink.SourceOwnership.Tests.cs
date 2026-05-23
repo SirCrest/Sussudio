@@ -463,8 +463,9 @@ static partial class Program
         var optionsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs")
             .Replace("\r\n", "\n");
         var sessionContextText = optionsText;
-        var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.PacketBuffers.cs")
+        var queuesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs")
             .Replace("\r\n", "\n");
+        var packetBuffersText = queuesText;
         var packetTypesText = packetBuffersText;
         var audioInputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.Audio.cs")
             .Replace("\r\n", "\n");
@@ -509,9 +510,12 @@ static partial class Program
         AssertContains(docsText, "FlashbackEncoderSink.Options.cs");
         AssertContains(docsText, "recording-to-Flashback session mapping");
         AssertContains(docsText, "generated session ID formatting");
-        AssertContains(docsText, "FlashbackEncoderSink.PacketBuffers.cs");
-        AssertContains(docsText, "FlashbackEncoderSink.PacketBuffers.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.Queues.cs");
         AssertContains(docsText, "packet DTOs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.PacketBuffers.cs")),
+            "FlashbackEncoderSink.PacketBuffers.cs folded into FlashbackEncoderSink.Queues.cs");
 
         return Task.CompletedTask;
     }

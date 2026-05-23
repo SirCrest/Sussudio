@@ -1756,16 +1756,11 @@ split-encode mode wire mapping, and recording frame-rate argument parsing there.
 Flashback encoder startup orchestration now owns generated session ID formatting
 in `Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs`.
 
-Flashback encoder packet buffer ownership now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.PacketBuffers.cs`. Keep
-ArrayPool rent/return helpers, leased video packet disposal, best-effort video
-packet cleanup, and GPU texture release helpers there.
-
-Flashback encoder packet records now live in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.PacketBuffers.cs`. Keep
+Flashback encoder queue ownership now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs`. Keep
 video/audio/GPU packet DTOs, video enqueue result classification, ArrayPool
 rent/return helpers, leased video packet disposal, best-effort video packet
-cleanup, and GPU texture release helpers there.
+cleanup, GPU texture release helpers, and queued-buffer cleanup there.
 
 Flashback encoder queue helpers now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs`. Keep queue
