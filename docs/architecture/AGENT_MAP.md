@@ -2915,8 +2915,9 @@ Primary current owners:
   cleanup, fullscreen scrub termination, lockout clearing, and scrub visual
   updates. `Sussudio/MainWindow.Flashback.Interactions.cs` is the XAML-facing
   adapter.
-  `Sussudio/Controllers/Flashback/FlashbackTimelineGeometry.cs` owns pure timeline
-  fraction/duration math used by scrub and playhead presentation.
+  `Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs` also
+  owns pure timeline fraction/duration math used by scrub and playhead
+  presentation.
 - `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs` owns the
   Flashback playhead motion context, public entry points, shared state,
   playback-state sampling, scrub/window gating, live right-edge pinning,

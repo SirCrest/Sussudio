@@ -2790,8 +2790,9 @@ throttling, release/cancel/capture-lost cleanup, fullscreen scrub termination,
 lockout clearing, scrub visual updates, and pointer lifecycle around scrub
 commands. `Sussudio/MainWindow.Flashback.Interactions.cs` is the XAML-facing
 scrub adapter.
-Timeline fraction/duration math used by scrub and playhead presentation now lives in
-`Sussudio/Controllers/Flashback/FlashbackTimelineGeometry.cs`.
+Timeline fraction/duration math used by scrub and playhead presentation now lives
+beside scrub interaction in
+`Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs`.
 
 Flashback CTI/playhead compositor motion now lives in
 `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs`. The
