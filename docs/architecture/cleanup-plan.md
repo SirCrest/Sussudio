@@ -2096,7 +2096,7 @@ Flashback exporter validation policy now lives in
 completed-output length validation, normalized path comparison, output path
 validation, export-range validation, and segment/export-range overlap
 classification there. FFmpeg error string formatting/throwing lives in
-`Sussudio/Services/Flashback/FlashbackExporter.LibAvErrors.cs`, and timestamp
+`Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs`, and timestamp
 math/saturated arithmetic lives in
 `Sussudio/Services/Flashback/FlashbackExporter.TimeMath.cs` so
 `FlashbackExporter.cs` stays focused on export native state and shared policy.

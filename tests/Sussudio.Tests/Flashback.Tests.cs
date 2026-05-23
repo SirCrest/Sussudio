@@ -128,7 +128,6 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.RuntimePolicy.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.TempFiles.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Validation.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.LibAvErrors.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.TimeMath.cs").Replace("\r\n", "\n")
         };
 

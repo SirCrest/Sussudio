@@ -48,8 +48,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var validationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Validation.cs")
             .Replace("\r\n", "\n");
-        var libAvErrorsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.LibAvErrors.cs")
-            .Replace("\r\n", "\n");
+        var libAvErrorsText = lifecycleText;
         var packetTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs")
             .Replace("\r\n", "\n");
         var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs")
