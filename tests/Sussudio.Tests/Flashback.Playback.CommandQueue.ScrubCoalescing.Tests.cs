@@ -128,7 +128,7 @@ static partial class Program
         var endScrubBlock = ExtractTextBetween(
             sourceText,
             "private void HandleEndScrubCommand(",
-            "    private void HandlePlayCommand(");
+            "    private void HandleNudgeCommand(");
         AssertContains(endScrubBlock, "var endScrubPosition = ClampPosition(cmd.Position, frozenValidStart);");
         AssertContains(endScrubBlock, "PlaybackPosition = endScrubPosition;");
         AssertDoesNotContain(endScrubBlock, "TimeSpan.FromTicks(Interlocked.Read(ref _latestScrubUpdateTicks))");

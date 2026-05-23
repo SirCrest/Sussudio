@@ -2894,7 +2894,7 @@ The playback worker loop now lives in
 `PlaybackThreadEntry` queue waiting, cancellation exits, and playback pacing
 handoff there. Playback-thread command dispatch and active-command completion
 telemetry now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommandDispatch.cs`;
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`;
 keep the command switch and command-complete logging there instead of expanding
 the loop shell.
 Playback-thread seek command execution now lives in
@@ -2907,20 +2907,20 @@ execution now lives in
 Keep frozen valid-start sampling, scrub update coalescing, and scrub-display
 failure recovery there. Playback-thread end-scrub resume and paused exact-resume
 target handling now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadEndScrubCommand.cs`.
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`.
 Keep end-scrub seek/reopen, playback audio prebuffer priming, and rendering
 resume ordering there.
 Playback-thread play command execution now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadPlayCommand.cs`.
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`.
 Keep exact resume, file-open/reopen, audio prebuffer, and rendering resume
 ordering there. Pause command execution now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadPauseCommand.cs`;
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`;
 keep pause-from-live freeze/display ordering, exact resume targets, and
 audio/preview suppression there. Nudge command execution now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadNudgeCommand.cs`;
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`;
 keep frame-step decode, no-file recovery, and seek-display failure recovery
 there. Terminal go-live/stop command execution lives with the dispatch switch in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommandDispatch.cs`.
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`.
 Flashback playback audio routing now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs`.
 Keep live audio suppress/restore and playback-state audio/preview routing

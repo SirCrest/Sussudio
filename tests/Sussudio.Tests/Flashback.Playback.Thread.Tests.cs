@@ -10,19 +10,19 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var threadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs")
             .Replace("\r\n", "\n");
-        var threadCommandDispatchText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommandDispatch.cs")
+        var threadCommandDispatchText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
             .Replace("\r\n", "\n");
         var threadSeekCommandsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekCommands.cs")
             .Replace("\r\n", "\n");
         var threadSeekScrubCommandsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekScrubCommands.cs")
             .Replace("\r\n", "\n");
-        var threadEndScrubCommandText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadEndScrubCommand.cs")
+        var threadEndScrubCommandText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
             .Replace("\r\n", "\n");
-        var threadPlayCommandText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadPlayCommand.cs")
+        var threadPlayCommandText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
             .Replace("\r\n", "\n");
-        var threadPauseCommandText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadPauseCommand.cs")
+        var threadPauseCommandText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
             .Replace("\r\n", "\n");
-        var threadNudgeCommandText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadNudgeCommand.cs")
+        var threadNudgeCommandText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
             .Replace("\r\n", "\n");
         var threadLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs")
             .Replace("\r\n", "\n");
@@ -59,24 +59,20 @@ static partial class Program
         AssertDoesNotContain(threadCommandDispatchText, "private void HandleSeekCommand(");
         AssertDoesNotContain(threadCommandDispatchText, "private void HandleBeginScrubCommand(");
         AssertDoesNotContain(threadCommandDispatchText, "private void HandleUpdateScrubCommand(");
-        AssertDoesNotContain(threadCommandDispatchText, "private void HandleEndScrubCommand(");
         AssertContains(threadPlayCommandText, "private void HandlePlayCommand(");
         AssertContains(threadPlayCommandText, "PrimePlaybackAudioBuffer(decoder, prebufferedFrames, ref fileOpen, seekTarget, \"play\", cts.Token);");
-        AssertDoesNotContain(threadCommandDispatchText, "private void HandlePlayCommand(");
         AssertContains(threadPauseCommandText, "private void HandlePauseCommand(");
         AssertContains(threadCommandDispatchText, "private void HandleGoLiveCommand(");
         AssertContains(threadNudgeCommandText, "private void HandleNudgeCommand(");
-        AssertDoesNotContain(threadCommandDispatchText, "private void HandlePauseCommand(");
-        AssertDoesNotContain(threadCommandDispatchText, "private void HandleNudgeCommand(");
         AssertContains(threadSeekCommandsText, "cmd = ResolveSeekCommandPosition(cmd);");
         AssertContains(threadSeekScrubCommandsText, "SafeSuppressPreviewSubmission(\"begin_scrub\")");
         AssertContains(threadCommandDispatchText, "Logger.Log(\"FLASHBACK_PLAYBACK_GO_LIVE\");");
-        AssertContains(agentMapText, "FlashbackPlaybackController.ThreadCommandDispatch.cs");
-        AssertContains(agentMapText, "FlashbackPlaybackController.ThreadPauseCommand.cs");
-        AssertContains(agentMapText, "FlashbackPlaybackController.ThreadNudgeCommand.cs");
-        AssertContains(cleanupPlanText, "FlashbackPlaybackController.ThreadCommandDispatch.cs");
-        AssertContains(cleanupPlanText, "FlashbackPlaybackController.ThreadPauseCommand.cs");
-        AssertContains(cleanupPlanText, "FlashbackPlaybackController.ThreadNudgeCommand.cs");
+        AssertContains(agentMapText, "FlashbackPlaybackController.ThreadCommands.cs");
+        AssertContains(agentMapText, "FlashbackPlaybackController.ThreadCommands.cs");
+        AssertContains(agentMapText, "FlashbackPlaybackController.ThreadCommands.cs");
+        AssertContains(cleanupPlanText, "FlashbackPlaybackController.ThreadCommands.cs");
+        AssertContains(cleanupPlanText, "FlashbackPlaybackController.ThreadCommands.cs");
+        AssertContains(cleanupPlanText, "FlashbackPlaybackController.ThreadCommands.cs");
         AssertContains(agentMapText, "FlashbackPlaybackController.ThreadLifecycle.cs");
         AssertContains(cleanupPlanText, "FlashbackPlaybackController.ThreadLifecycle.cs");
         AssertContains(threadCommandDispatchText, "HandleSeekCommand(ref cmd, commandChannel, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch);");
