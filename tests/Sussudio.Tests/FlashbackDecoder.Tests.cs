@@ -105,8 +105,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Diagnostics.cs")
             .Replace("\r\n", "\n");
-        var guardsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Guards.cs")
-            .Replace("\r\n", "\n");
+        var guardsText = diagnosticsText;
 
         AssertContains(diagnosticsText, "private void AddLastDecodeReceiveMs(double elapsedMs)");
         AssertContains(diagnosticsText, "private static double ElapsedMsSince(long startTimestamp)");
