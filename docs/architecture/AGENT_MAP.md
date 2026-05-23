@@ -1316,7 +1316,7 @@ Primary current owners:
   `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`,
   `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs`,
   `Sussudio/MainWindow.CloseLifecycle.cs`, and the
-  `Sussudio/MainWindow.ShutdownCleanup.*.cs` adapter family.
+  `Sussudio/MainWindow.ShutdownCleanup.Composition.cs` adapter.
 - `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs` owns top-level
   preview resize telemetry throttling and reset state for preview compositor
   transforms. `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires the
@@ -1373,7 +1373,7 @@ Primary current owners:
   `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`,
   `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs`,
   `Sussudio/MainWindow.CloseLifecycle.cs`, and the
-  `Sussudio/MainWindow.ShutdownCleanup.*.cs` adapter family.
+  `Sussudio/MainWindow.ShutdownCleanup.Composition.cs` adapter.
 - `Sussudio/MainWindow.StatusStripPresentation.cs` keeps the XAML-facing title
   update hook; `Sussudio/Controllers/Window/WindowTitleController.cs` owns window title
   base/build-stamp formatting and the recording-time suffix used by property
@@ -1411,8 +1411,7 @@ Primary current owners:
   `RequestWindowClose()` adapter.
 - `Sussudio/MainWindow.ShutdownCleanup.Composition.cs` wires MainWindow cleanup
   delegates and the stable `Closed` event adapter into
-  `WindowShutdownCleanupController`, and
-  `Sussudio/MainWindow.ShutdownCleanup.Adapters.cs` owns the timer,
+  `WindowShutdownCleanupController`, and owns the timer,
   event-detach, stats, recording-visual, and preview-size cleanup delegate
   adapters.
 - `Sussudio/Controllers/Window/NativeWindowBootstrapController.cs` owns native window
@@ -1984,8 +1983,8 @@ Primary current owners:
   shared source reader for the consolidated `MainWindow.PreviewRenderer.Composition.cs`
   adapter.
 - `tests/Sussudio.Tests/MainWindow.ShutdownCleanupOwnership.Helpers.cs` owns the
-  shared source reader for the split `MainWindow.ShutdownCleanup.*.cs` adapter
-  family.
+  shared source reader for the `MainWindow.ShutdownCleanup.Composition.cs`
+  adapter.
 - `tests/Sussudio.Tests/MainWindow.PropertyChangedPreviewOwnership.Helpers.cs`
   owns the shared source reader for the consolidated
   `MainWindow.PropertyChangedPreview.Composition.cs` adapter.

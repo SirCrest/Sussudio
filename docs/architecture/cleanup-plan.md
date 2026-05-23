@@ -1172,7 +1172,7 @@ event detaches, preview shutdown, post-close recording finalization handoff,
 automation diagnostics disposal, NVML disposal, and ViewModel disposal.
 `Sussudio/MainWindow.ShutdownCleanup.Composition.cs`
 wires MainWindow cleanup delegates and the stable `Closed` event adapter into
-the controller, and `Sussudio/MainWindow.ShutdownCleanup.Adapters.cs` owns the timer,
+the controller, and owns the timer,
 event-detach, stats, recording-visual, and preview-size cleanup delegate
 adapters.
 Native `AppWindow` lookup, ViewModel window handle handoff, minimum-size

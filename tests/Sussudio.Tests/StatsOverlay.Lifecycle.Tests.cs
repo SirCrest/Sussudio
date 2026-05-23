@@ -13,7 +13,7 @@ public class StatsOverlayLifecycleTests
         var frameTimeOverlayText = statsOverlayCompositionText;
         var statsDockGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockControllerGraph.cs");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs");
-        var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.Adapters.cs");
+        var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.Composition.cs");
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs");
         var mainWindowText = MainWindowCompositionSource.Read();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.cs");
