@@ -501,17 +501,13 @@ model, table output, and trend summaries in `Formatters.Timeline.cs`, standalone
 `Formatters.Common.cs`.
 
 `tools/Common/AutomationSnapshotFormatter.cs` is now the shared automation
-snapshot formatter facade for top-level text flow. State and capture-command
-summary text lives in `AutomationSnapshotFormatter.CoreSections.cs`; audio
-signal text lives in `AutomationSnapshotFormatter.Audio.cs`; recording output,
-backend, integrity, audio-integrity, and last-finalize text lives in
-`AutomationSnapshotFormatter.Recording.cs`; legacy performance plus process
-CPU, Memory/GC, and thread-pool text lives in
-`AutomationSnapshotFormatter.ProcessResources.cs`; capture settings, video
-pipeline, diagnostics, and capture cadence text live in
+snapshot formatter owner for top-level text flow plus the small root sections:
+state/capture-command summary, audio signal, recording output/backend/
+integrity/audio-integrity/last-finalize, diagnostics, legacy performance, and
+process CPU/Memory/GC/thread-pool text. Capture settings, video pipeline, and
+capture cadence text live in
 `AutomationSnapshotFormatter.CaptureSettings.cs`,
 `AutomationSnapshotFormatter.VideoPipeline.cs`,
-`AutomationSnapshotFormatter.Diagnostics.cs`,
 `AutomationSnapshotFormatter.CaptureCadence.cs`. Snapshot response-success
 detection and tolerant JSON string, bool, and numeric accessors live in
 `AutomationSnapshotFormatter.Values.cs`; while

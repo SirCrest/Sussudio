@@ -4044,24 +4044,17 @@ Primary owners:
   diagnostic-session optional text formatting used by scenarios, result
   builders, result formatters, and validation policies.
 - `tools/Common/AutomationSnapshotFormatter.cs` owns the top-level shared
-  automation snapshot console text flow and delegates each named output
-  section to a focused partial.
-  `tools/Common/AutomationSnapshotFormatter.CoreSections.cs` owns the state,
-  capture-command queue, selected-device, and initialized/preview/recording
-  text.
-  `tools/Common/AutomationSnapshotFormatter.Audio.cs` owns audio enablement,
-  preview, signal, clipping, reader, and audio-frame text.
-  `tools/Common/AutomationSnapshotFormatter.Recording.cs` owns recording
-  output, backend, integrity, audio-integrity, and last-finalize text.
-  `tools/Common/AutomationSnapshotFormatter.ProcessResources.cs` owns legacy
-  performance, process CPU, memory, GC, and thread-pool text.
+  automation snapshot console text flow, state/capture-command queue,
+  selected-device and initialized/preview/recording text, audio enablement,
+  preview, signal, clipping, reader and audio-frame text, recording output,
+  backend, integrity, audio-integrity and last-finalize text, diagnostic health,
+  summary, evidence and frame-lane text, plus legacy performance, process CPU,
+  memory, GC, and thread-pool text.
   `tools/Common/AutomationSnapshotFormatter.CaptureSettings.cs` owns capture
   option, recording format, HDR, pipeline, and compact UI setting text.
   `tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs` owns video reader,
   encoder queue, queue-latency, backpressure, failure, GPU/CUDA queue,
   freshness, diagnostics, and thread-health routing text.
-  `tools/Common/AutomationSnapshotFormatter.Diagnostics.cs` owns diagnostic
-  health, summary, evidence, and frame-lane text.
   `tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs` owns capture
   cadence, low-FPS, jitter/drop, MJPEG packet fingerprint, sampled visual
   cadence, and routing to MJPEG/AV-sync/preview/source sections.

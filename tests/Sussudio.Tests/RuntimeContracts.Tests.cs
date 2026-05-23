@@ -194,13 +194,8 @@ internal static class RuntimeContractSource
         => ReadSourceFamily(new[]
         {
             "tools/Common/AutomationSnapshotFormatter.cs",
-            "tools/Common/AutomationSnapshotFormatter.CoreSections.cs",
-            "tools/Common/AutomationSnapshotFormatter.Audio.cs",
-            "tools/Common/AutomationSnapshotFormatter.Recording.cs",
-            "tools/Common/AutomationSnapshotFormatter.ProcessResources.cs",
             "tools/Common/AutomationSnapshotFormatter.CaptureSettings.cs",
             "tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs",
-            "tools/Common/AutomationSnapshotFormatter.Diagnostics.cs",
             "tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs",
             "tools/Common/AutomationSnapshotFormatter.AvSync.cs",
             "tools/Common/AutomationSnapshotFormatter.Source.cs",
