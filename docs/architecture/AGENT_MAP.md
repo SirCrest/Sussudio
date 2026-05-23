@@ -4057,11 +4057,9 @@ Primary owners:
   freshness, diagnostics, and thread-health routing text.
   `tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs` owns capture
   cadence, low-FPS, jitter/drop, MJPEG packet fingerprint, sampled visual
-  cadence, and routing to MJPEG/AV-sync/preview/source sections.
-  `tools/Common/AutomationSnapshotFormatter.AvSync.cs` owns AV-sync drift and
-  encoder correction text.
-  `tools/Common/AutomationSnapshotFormatter.Source.cs` owns source dimensions,
-  source frame-rate summary, HDR, and source telemetry text.
+  cadence, AV-sync drift and encoder correction text, preview routing, source
+  dimensions, source frame-rate summary, HDR, source telemetry text, and routing
+  to MJPEG/Preview D3D sections.
   `tools/Common/AutomationSnapshotFormatter.Values.cs` owns automation
   response-success detection plus tolerant JSON string, bool, and numeric
   accessors.
@@ -4075,7 +4073,6 @@ Primary owners:
   activation, header, output order, decode/copy/callback/per-decoder timing
   text, compressed queue/drop-reason/reorder/pipeline timing text, and MJPEG
   preview-jitter queue/input/output/latency/ownership/underflow text. The
-  `tools/Common/AutomationSnapshotFormatter.Preview.cs`,
   `tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs`,
   `tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs`,
   and `tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs` own the named

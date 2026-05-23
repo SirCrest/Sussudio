@@ -516,10 +516,8 @@ byte/number/interval, frame-budget, and tick-age display helpers live in
 encoding status/health text, export progress/result text, playback command text,
 and playback cadence/decode/frame/stage/A/V drift text now live together in
 `AutomationSnapshotFormatter.Flashback.cs`. Capture cadence owns the
-capture cadence, MJPEG packet fingerprint, and visual cadence rows, while
-`AutomationSnapshotFormatter.AvSync.cs` owns AV-sync text and
-`AutomationSnapshotFormatter.Source.cs` owns source-signal text emitted from
-the cadence tail. MJPEG activation/header/order, decode/copy/callback/per-decoder
+capture cadence, MJPEG packet fingerprint, visual cadence, AV-sync, preview
+routing, and source-signal rows emitted from the cadence tail. MJPEG activation/header/order, decode/copy/callback/per-decoder
 timing text, compressed queue/drop-reason/reorder/pipeline timing text, and
 MJPEG preview-jitter queue/latency/ownership/underflow text now live together in
 `AutomationSnapshotFormatter.MjpegTiming.cs`. Preview routing,

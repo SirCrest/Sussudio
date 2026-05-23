@@ -14,13 +14,13 @@ static partial class Program
         var sharedFormatterVideoPipelineSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs");
         var sharedFormatterDiagnosticsSource = sharedFormatterRootSource;
         var sharedFormatterCaptureCadenceSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs");
-        var sharedFormatterAvSyncSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.AvSync.cs");
-        var sharedFormatterSourceSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Source.cs");
+        var sharedFormatterAvSyncSource = sharedFormatterCaptureCadenceSource;
+        var sharedFormatterSourceSource = sharedFormatterCaptureCadenceSource;
         var sharedFormatterValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Values.cs");
         var sharedFormatterDisplayValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.DisplayValues.cs");
         var sharedFormatterFlashbackSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.cs");
         var sharedFormatterMjpegTimingSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs");
-        var sharedFormatterPreviewSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Preview.cs");
+        var sharedFormatterPreviewSource = sharedFormatterCaptureCadenceSource;
         var sharedFormatterPreviewD3DSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs");
         var sharedFormatterPreviewD3DSlowFramesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs");
         var sharedFormatterThreadHealthSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs");
@@ -159,8 +159,8 @@ static partial class Program
         AssertContains(sharedFormatterMjpegTimingSource, "Preview Jitter Underflow:");
         AssertContains(sharedFormatterCaptureCadenceSource, "AppendAvSyncSection(builder, snapshot);");
         AssertContains(sharedFormatterCaptureCadenceSource, "AppendSourceSection(builder, snapshot);");
-        AssertDoesNotContain(sharedFormatterCaptureCadenceSource, "private static void AppendAvSyncSection(StringBuilder builder, JsonElement snapshot)");
-        AssertDoesNotContain(sharedFormatterCaptureCadenceSource, "private static void AppendSourceSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterCaptureCadenceSource, "private static void AppendAvSyncSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterCaptureCadenceSource, "private static void AppendSourceSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterAvSyncSource, "private static void AppendAvSyncSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterAvSyncSource, "var avSyncDrift = Get(snapshot, \"AvSyncCaptureDriftMs\", string.Empty);");
         AssertContains(sharedFormatterPreviewSource, "private static void AppendPreviewSection(StringBuilder builder, JsonElement snapshot)");

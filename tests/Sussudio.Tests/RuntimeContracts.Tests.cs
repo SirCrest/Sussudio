@@ -197,13 +197,10 @@ internal static class RuntimeContractSource
             "tools/Common/AutomationSnapshotFormatter.CaptureSettings.cs",
             "tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs",
             "tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs",
-            "tools/Common/AutomationSnapshotFormatter.AvSync.cs",
-            "tools/Common/AutomationSnapshotFormatter.Source.cs",
             "tools/Common/AutomationSnapshotFormatter.Values.cs",
             "tools/Common/AutomationSnapshotFormatter.DisplayValues.cs",
             "tools/Common/AutomationSnapshotFormatter.Flashback.cs",
             "tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs",
-            "tools/Common/AutomationSnapshotFormatter.Preview.cs",
             "tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs",
             "tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs",
             "tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs"
