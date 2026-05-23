@@ -3150,11 +3150,12 @@ Primary current owners:
 - `Sussudio/Controllers/Audio/AudioControlPresentationController.cs` owns audio and
   microphone property-change routing/projections: audio toggles, monitoring
   meter state, preview volume slider sync, microphone enablement, and microphone
-  volume sync. `Sussudio/MainWindow.PropertyChangedAudio.cs` is the
-  XAML-facing adapter.
+  volume sync. `Sussudio/MainWindow.MicrophoneControls.cs` is the
+  XAML-facing audio/microphone presentation adapter.
 - `Sussudio/Controllers/Audio/MicrophoneControlsController.cs` owns microphone volume
   slider synchronization, save triggers, shelf enablement, and mic-meter row
-  animation state. `MainWindow.MicrophoneControls.cs` is the XAML-facing adapter.
+  animation state. `MainWindow.MicrophoneControls.cs` is the XAML-facing
+  audio/microphone presentation adapter.
 - `Sussudio/Controllers/Shell/ControlBarLabelVisibilityController.cs` owns applying
   responsive visibility for the complete control-bar label set.
   `Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs` owns applying
