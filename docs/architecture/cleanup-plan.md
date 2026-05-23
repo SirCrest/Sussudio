@@ -2863,13 +2863,13 @@ metric counters, read-only projections, cadence/decode sample rings, metric
 reset behavior, seek-cap telemetry, decode timing wrappers, max decode phase
 state, and dominant decode phase resolution.
 
-Flashback playback public command entry points now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.Commands.cs`. Keep
-scrub, seek, play/pause, go-live, and nudge request gating there; keep raw
-queue writes/drop policy, command identity and payload shape, seek/scrub
-coalesced command admission, queued-position resolution, queued-slot barriers,
-and playback-thread control-yield peek policy in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs`.
+Flashback playback public command entry points now live with command queue
+ownership in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs`. Keep
+scrub, seek, play/pause, go-live, and nudge request gating there with raw queue
+writes/drop policy, command identity and payload shape, seek/scrub coalesced
+command admission, queued-position resolution, queued-slot barriers, and
+playback-thread control-yield peek policy.
 Keep playback-thread execution in the thread partials. Do not grow the root
 controller with new coalescing slot fields.
 Command status counters, pending-command accounting, active-command timing, and
