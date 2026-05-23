@@ -120,6 +120,18 @@ CLI/MCP/pipe checks, if applicable: covered by diagnostic-session formatter owne
 Behavior preserved: preview diagnostic-session section order and subsection text remain unchanged
 Notes for future agents: keep one-method formatter routers with the report orchestration unless the router grows real policy
 
+Date: 2026-05-23
+Area: Automation diagnostics timeline projection locality
+Problem: Preview and Flashback playback performance timeline projection still lived in separate partial files after their smaller projection fragments had already been consolidated, forcing readers to leave the timeline ring/builder file to understand direct `AutomationSnapshot` to `PerformanceTimelineEntry` field flow.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.Preview.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `AutomationDiagnosticsHub` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics refresh-pipeline ownership tests, diagnostic-session preview tests, MCP performance timeline projection contract tests, preview pacing ownership tests, snapshot model projection checks, and runtime snapshot regression tests
+Behavior preserved: Preview and Flashback playback timeline entries still flow through the same typed projection records before final DTO initialization
+Notes for future agents: keep direct timeline projection records beside `BuildPerformanceTimelineEntry` unless a group grows independent policy or reusable ownership
+
 Date: 2026-05-21
 Area: Automation diagnostics Flashback evaluation
 Problem: Active/stalled Flashback export diagnostic verdict construction lived in a small partial even though it is only called by the Flashback diagnostic owner that orders storage, recording, export, and playback verdicts.

@@ -47,8 +47,8 @@ static partial class Program
             SnapshotProjectionUserSettingsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.UserSettings.cs"),
             PreviewPacingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
             TimelineText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Timeline.cs"),
-            TimelineProjectionPreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.Preview.cs"),
-            TimelineProjectionFlashbackPlaybackText = ReadAutomationDiagnosticsHubTimelineProjectionFlashbackPlaybackSource(),
+            TimelineProjectionPreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Timeline.cs"),
+            TimelineProjectionFlashbackPlaybackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Timeline.cs"),
         };
     }
 
@@ -75,16 +75,6 @@ static partial class Program
             new[]
             {
                 ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
-            });
-    }
-
-    private static string ReadAutomationDiagnosticsHubTimelineProjectionFlashbackPlaybackSource()
-    {
-        return string.Join(
-            "\n",
-            new[]
-            {
-                ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs"),
             });
     }
 

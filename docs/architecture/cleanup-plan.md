@@ -96,16 +96,12 @@ tracking. `AutomationDiagnosticsHub.Timeline.cs` owns performance-timeline ring
 reads, append mechanics, final `AutomationSnapshot` to
 `PerformanceTimelineEntry` assignment, timestamp, observed capture/preview FPS,
 encoder video queue depth/drop, capture cadence, process, memory, GC,
-thread-pool, pipeline-latency, Flashback export progress, and force-rotate
-fallback timeline projection.
-`AutomationDiagnosticsHub.TimelineProjection.Preview.cs` owns preview cadence,
-visual cadence, MJPEG packet/jitter, D3D preview, and preview-pacing timeline
-projection.
-`AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs` owns root
-Flashback playback timeline projection composition, final grouped handoff,
-playback cadence, decode timing, command queue/coalescing, audio-master
-fallback, playback stage/failure, backend settings, queue reject, cleanup, and
-force-rotate timeline projection.
+thread-pool, pipeline-latency, Flashback export progress, force-rotate fallback,
+preview cadence, visual cadence, MJPEG packet/jitter, D3D preview,
+preview-pacing, root Flashback playback timeline projection composition, final
+grouped handoff, playback cadence, decode timing, command queue/coalescing,
+audio-master fallback, playback stage/failure, backend settings, queue reject,
+cleanup, and force-rotate timeline projection.
 `AutomationDiagnosticsHub.SnapshotProjection.cs` owns root snapshot construction,
 timestamp/status projection, view-model lifecycle/audio flags,
 verification-in-progress, session state, status-text projection, performance
