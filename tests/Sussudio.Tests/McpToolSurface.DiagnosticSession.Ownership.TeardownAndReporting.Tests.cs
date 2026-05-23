@@ -61,20 +61,18 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var recordingChecksText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
             .Replace("\r\n", "\n");
-        var recordingVerificationText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingVerification.cs")
-            .Replace("\r\n", "\n");
+        var recordingVerificationText = recordingChecksText;
 
         AssertContains(recordingChecksText, "internal static class DiagnosticSessionRecordingChecks");
         AssertContains(recordingChecksText, "internal static async Task<DiagnosticSessionRecordingCheckResult> RunAsync(");
         AssertContains(recordingChecksText, "internal readonly record struct DiagnosticSessionRecordingCheckResult(JsonElement? Verification)");
         AssertContains(recordingChecksText, "setStage(\"settings-deferred-restore\")");
         AssertContains(recordingChecksText, "VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(");
-        AssertContains(recordingChecksText, "DiagnosticSessionRecordingVerification.RunAsync(");
-        AssertContains(recordingChecksText, "verification = await DiagnosticSessionRecordingVerification.RunAsync(");
+        AssertContains(recordingChecksText, "RunRecordingVerificationAsync(");
+        AssertContains(recordingChecksText, "verification = await RunRecordingVerificationAsync(");
         AssertContains(recordingChecksText, "setStage(\"recording-validation\")");
         AssertContains(recordingChecksText, "ValidateFlashbackRecordingSession(initialSnapshot, samples, warnings)");
-        AssertContains(recordingVerificationText, "internal static class DiagnosticSessionRecordingVerification");
-        AssertContains(recordingVerificationText, "internal static async Task<JsonElement?> RunAsync(");
+        AssertContains(recordingVerificationText, "private static async Task<JsonElement?> RunRecordingVerificationAsync(");
         AssertContains(recordingVerificationText, "DiagnosticSessionScenarioCatalog.TryGetFlashbackExportVerificationPath(");
         AssertContains(recordingVerificationText, "setStage(\"recording-verification\")");
         AssertContains(recordingVerificationText, "var verificationCommand = \"VerifyLastRecording\";");
@@ -87,9 +85,9 @@ static partial class Program
         AssertContains(recordingVerificationText, "recordTerminalException(ex, \"recording-verification\")");
         AssertContains(runnerText, "DiagnosticSessionRecordingChecks.RunAsync(");
         AssertDoesNotContain(runnerText, "SetStage(\"settings-deferred-restore\")");
-        AssertDoesNotContain(recordingChecksText, "var verificationCommand = \"VerifyLastRecording\"");
+        AssertContains(recordingChecksText, "var verificationCommand = \"VerifyLastRecording\"");
         AssertDoesNotContain(runnerText, "DiagnosticSessionScenarioCatalog.TryGetFlashbackExportVerificationPath(");
-        AssertDoesNotContain(recordingChecksText, "[\"verificationProfile\"] = \"flashback-export\"");
+        AssertContains(recordingChecksText, "[\"verificationProfile\"] = \"flashback-export\"");
         AssertDoesNotContain(runnerText, "ValidateFlashbackRecordingSession(initialSnapshot, samples, warnings)");
 
         return Task.CompletedTask;

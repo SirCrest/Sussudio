@@ -86,8 +86,7 @@ static partial class Program
         var completionContextText = ReadDiagnosticSessionRunExecutionCompletionContextSource();
         var recordingChecksText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
             .Replace("\r\n", "\n");
-        var recordingVerificationText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingVerification.cs")
-            .Replace("\r\n", "\n");
+        var recordingVerificationText = recordingChecksText;
         var postRunText = ReadRepoFile("tools/Common/DiagnosticSessionPostRunSnapshots.cs")
             .Replace("\r\n", "\n");
         var resultBuilderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")

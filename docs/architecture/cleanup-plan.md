@@ -3529,12 +3529,10 @@ sends, and the cleanup result record, while
 
 Diagnostic-session recording checks now live in
 `tools/Common/DiagnosticSessionRecordingChecks.cs`. It owns deferred Flashback
-recording-settings restore, verification handoff, and Flashback recording
-validation while the runner keeps the high-level post-cleanup phase order.
-Post-cleanup last-recording or Flashback export verification command selection,
-payload shape, 60-second timeout, cloned verification result, and skipped-
-verification action text now live in
-`tools/Common/DiagnosticSessionRecordingVerification.cs`.
+recording-settings restore, last-recording or Flashback export verification
+command selection, payload shape, 60-second timeout, cloned verification
+result, skipped-verification action text, and Flashback recording validation
+while the runner keeps the high-level post-cleanup phase order.
 
 Diagnostic-session post-run snapshot fetches now live in
 `tools/Common/DiagnosticSessionPostRunSnapshots.cs`. It owns performance
@@ -3785,7 +3783,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionCleanupActions.cs`
 - `DiagnosticSessionCleanupPolicy.cs`
 - `DiagnosticSessionRecordingChecks.cs`
-- `DiagnosticSessionRecordingVerification.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`

@@ -3912,13 +3912,11 @@ Primary owners:
   Flashback enable-state restore through typed automation commands.
 - `tools/Common/DiagnosticSessionRecordingChecks.cs` owns post-cleanup
   diagnostic-session recording checks: deferred Flashback recording-settings
-  restore, verification handoff, and Flashback recording validation. Keep the
-  `settings-deferred-restore` and `recording-validation` stage names stable
-  there.
-- `tools/Common/DiagnosticSessionRecordingVerification.cs` owns post-cleanup
-  last-recording or Flashback export verification command selection, payload
-  shape, 60-second timeout, cloned verification result, and skipped-verification
-  action text. Keep the `recording-verification` stage name stable there.
+  restore, last-recording or Flashback export verification command selection,
+  payload shape, 60-second timeout, cloned verification result, skipped-
+  verification action text, and Flashback recording validation. Keep the
+  `settings-deferred-restore`, `recording-verification`, and
+  `recording-validation` stage names stable there.
 - `tools/Common/DiagnosticSessionPostRunSnapshots.cs` owns post-run
   diagnostic-session snapshot fetches: performance timeline collection and
   final health snapshot refresh. Keep the `timeline` and `final-snapshot` stage
