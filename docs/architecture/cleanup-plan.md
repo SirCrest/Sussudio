@@ -245,17 +245,13 @@ bytes, file-growth state, last finalized output metadata, and last verification
 result projection consumed by the automation snapshot DTO, plus final recording
 backend and output projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs` owns detected
-source frame-rate fallback, source dimensions/HDR, and raw source signal
-metadata projection consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.SourceTelemetry.cs` owns source
-telemetry fallback policy, age calculation, and source-target summary inputs
-consumed by the automation snapshot DTO, plus final source telemetry
-availability, confidence, detail, age, backend, suppression, circuit-state,
-summary, and target-summary field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs` also owns final
-source projection flattening orchestration plus source dimensions, frame-rate,
-HDR, video/audio format, firmware, input, USB, HDCP, and raw timing field
-flattening.
+source frame-rate fallback, source dimensions/HDR, raw source signal metadata
+projection, source telemetry fallback policy, age calculation, source-target
+summary inputs, final source projection flattening orchestration, source
+dimensions, frame-rate, HDR, video/audio format, firmware, input, USB, HDCP, raw
+timing field flattening, and final source telemetry availability, confidence,
+detail, age, backend, suppression, circuit-state, summary, and target-summary
+field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.UserSettings.cs` owns selected
 device, selected capture/recording options, preview volume, and stats
 visibility projection consumed by the automation snapshot DTO, plus final
