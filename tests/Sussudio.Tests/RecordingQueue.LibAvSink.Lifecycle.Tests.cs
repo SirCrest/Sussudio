@@ -1,3 +1,4 @@
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -103,8 +104,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var optionsText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Options.cs")
             .Replace("\r\n", "\n");
-        var outputValidationText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.OutputValidation.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(diagnosticsText, "public long DroppedVideoFrames =>");
         AssertContains(diagnosticsText, "public bool TryGetEncoderAvSyncDrift(out double driftMs, out long correctionSamples)");
@@ -141,13 +140,13 @@ static partial class Program
         AssertContains(stopText, "LIBAV_SINK_STOP_DRAIN_FLUSH_SKIPPED reason=encoder_task_still_running");
         AssertContains(stopText, "return FinalizeResult.Failure(outputPath, \"Stopped (libav encode drain timed out; emergency flush attempted)\");");
         AssertContains(stopText, "TryValidateStoppedOutputFile(outputPath, out var outputBytes, out var outputFailure)");
+        AssertContains(stopText, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
         AssertContains(stopText, "if (context?.HdrPipelineActive == true)");
         AssertContains(stopText, "LIBAV_SINK_STOP output='{outputPath}' bytes={outputBytes}");
         AssertContains(lifetimeText, "public async ValueTask DisposeAsync()");
         AssertContains(lifetimeText, "private void ScheduleDeferredDisposeCleanup(Task encodingTask)");
         AssertContains(optionsText, "private LibAvEncoderOptions CreateOptions(RecordingContext context)");
         AssertContains(optionsText, "SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode)");
-        AssertContains(outputValidationText, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
         AssertContains(rootText, "private void CompleteWriter<TPacket>(Channel<TPacket>? channel)");
         AssertContains(rootText, "SignalWork(\"complete_writer\");");
         AssertDoesNotContain(rootText, "public long DroppedVideoFrames =>");
@@ -165,6 +164,11 @@ static partial class Program
         AssertDoesNotContain(rootText, "public async ValueTask DisposeAsync()");
         AssertDoesNotContain(rootText, "private LibAvEncoderOptions CreateOptions(RecordingContext context)");
         AssertDoesNotContain(rootText, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
+
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.OutputValidation.cs")),
+            "LibAvRecordingSink.OutputValidation.cs folded into LibAvRecordingSink.StopLifecycle.cs");
 
         return Task.CompletedTask;
     }

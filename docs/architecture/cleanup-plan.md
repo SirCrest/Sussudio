@@ -1672,7 +1672,7 @@ validation, stopped-output validation handoff, stop logging, and
 `LibAvRecordingSink.Diagnostics.cs`, dispose/deferred cleanup in
 `LibAvRecordingSink.Lifetime.cs`, encoder option creation in
 `LibAvRecordingSink.Options.cs`, and stopped-output validation in
-`LibAvRecordingSink.OutputValidation.cs`.
+`LibAvRecordingSink.StopLifecycle.cs`.
 
 LibAv recording sink encode-loop ownership now lives in
 `Sussudio/Services/Recording/LibAvRecordingSink.EncodingLoop.cs`. Keep the
