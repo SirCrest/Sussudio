@@ -2187,11 +2187,11 @@ leave `WaitForSingleObject` in `D3D11PreviewRenderer.FrameLatency.cs`.
 D3D preview renderer shader compilation now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderCompilation.cs`, with
 D3DCompiler blob extraction in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderBlobInterop.cs`. Keep
+`Sussudio/Services/Preview/D3D11PreviewRenderer.NativeInterop.cs`. Keep
 shader bytecode creation, sampler creation, viewport constant-buffer creation,
 and compile-fallback logging in the compilation partial; keep
 `D3DCompileNative` invocation, `ID3DBlob` byte extraction, and compile-error
-string extraction in the blob interop partial. HLSL text and renderer mode
+string extraction in the native interop partial. HLSL text and renderer mode
 labels stay in `Sussudio/Services/Preview/PreviewShaderSources.cs`.
 
 D3D preview renderer frame submission now lives in

@@ -159,7 +159,7 @@ static partial class Program
                 .Replace("\r\n", "\n");
         var shaderCompilationText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderCompilation.cs")
             .Replace("\r\n", "\n");
-        var shaderBlobInteropText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderBlobInterop.cs")
+        var nativeInteropText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.NativeInterop.cs")
             .Replace("\r\n", "\n");
         var previewShaderSourcesText = ReadRepoFile("Sussudio/Services/Preview/PreviewShaderSources.cs")
             .Replace("\r\n", "\n");
@@ -178,10 +178,10 @@ static partial class Program
         AssertContains(shaderCompilationText, "PreviewShaderSources.HdrTonemapPixel");
         AssertContains(shaderCompilationText, "PreviewShaderSources.HdrPassthroughPixel");
         AssertContains(shaderCompilationText, "PreviewShaderSources.Nv12Pixel");
-        AssertContains(shaderBlobInteropText, "private static byte[] CompileShader(string hlslSource, string entryPoint, string profile)");
-        AssertContains(shaderBlobInteropText, "private static byte[] ReadBlobBytes(IntPtr blobPtr)");
-        AssertContains(shaderBlobInteropText, "private static string ReadBlobString(IntPtr blobPtr)");
-        AssertContains(shaderBlobInteropText, "D3DCompileNative(");
+        AssertContains(nativeInteropText, "private static byte[] CompileShader(string hlslSource, string entryPoint, string profile)");
+        AssertContains(nativeInteropText, "private static byte[] ReadBlobBytes(IntPtr blobPtr)");
+        AssertContains(nativeInteropText, "private static string ReadBlobString(IntPtr blobPtr)");
+        AssertContains(nativeInteropText, "D3DCompileNative(");
 
         AssertDoesNotContain(rootText, "internal const string FullscreenVertex");
         AssertDoesNotContain(rootText, "static const float PQ_m1");
@@ -192,7 +192,7 @@ static partial class Program
         AssertDoesNotContain(shaderCompilationText, "D3DCompileNative(");
         AssertDoesNotContain(shaderCompilationText, "static const float PQ_m1");
         AssertDoesNotContain(shaderCompilationText, "Texture2D<float> yPlane : register(t0);");
-        AssertDoesNotContain(shaderBlobInteropText, "PreviewShaderSources.FullscreenVertex");
+        AssertDoesNotContain(nativeInteropText, "PreviewShaderSources.FullscreenVertex");
 
         return Task.CompletedTask;
     }

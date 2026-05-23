@@ -32,8 +32,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var panelBindingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs")
             .Replace("\r\n", "\n");
-        var shaderBlobInteropText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderBlobInterop.cs")
-            .Replace("\r\n", "\n");
         var dxgiStatisticsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs")
             .Replace("\r\n", "\n");
 
@@ -42,7 +40,9 @@ static partial class Program
         AssertContains(nativeInteropText, "private static extern int D3DCompileNative(");
         AssertContains(nativeInteropText, "private static extern int DwmFlush()");
         AssertContains(panelBindingText, "WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel)");
-        AssertContains(shaderBlobInteropText, "D3DCompileNative(");
+        AssertContains(nativeInteropText, "D3DCompileNative(");
+        AssertContains(nativeInteropText, "private static byte[] CompileShader(string hlslSource, string entryPoint, string profile)");
+        AssertContains(nativeInteropText, "private static string ReadBlobString(IntPtr blobPtr)");
         AssertContains(dxgiStatisticsText, "_ = DwmFlush();");
         AssertDoesNotContain(rootText, "private interface ISwapChainPanelNative");
         AssertDoesNotContain(rootText, "private interface ID3DBlob");
