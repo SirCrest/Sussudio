@@ -3280,10 +3280,10 @@ hands scenario execution directly to
 for setup/startup, sampling, completion delegation, and fault drain delegation.
 `DiagnosticSessionScenarioPhaseModels.cs` owns the explicit phase input handoff,
 the immutable completion handoff, and mutable in-flight phase state.
-`DiagnosticSessionScenarioPhaseCompletion.cs` owns post-sampling completion
-order and fault-drain delegation: registered background work before
-rejected-export handling, rejected-export handling before PresentMon
-completion, and interrupted drain handoff.
+`DiagnosticSessionScenarioPhaseRunner.cs` owns post-sampling completion order
+and fault-drain delegation beside the scenario phase sequence: registered
+background work before rejected-export handling, rejected-export handling
+before PresentMon completion, and interrupted drain handoff.
 `DiagnosticSessionRunExecution.cs` owns the final result-build
 request mapping consumed by the completion phase.
 The public options/result/sample contracts are separated from runner behavior. The result
@@ -3876,7 +3876,7 @@ owner, fold it back into that owner and update the source-shape tests and
    `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario execution
    phase including scenario sampling. `DiagnosticSessionScenarioPhaseModels.cs`
    owns the explicit scenario context/result/state handoffs, with
-   `DiagnosticSessionScenarioPhaseCompletion.cs` owning post-sampling
+   `DiagnosticSessionScenarioPhaseRunner.cs` owning post-sampling
    completion ordering and fault-drain delegation while background task
    completion lives in `DiagnosticSessionBackgroundTasks.cs`. Scenario catalog,
    initial scenario setup, optional scenario
