@@ -1917,7 +1917,7 @@ shared segment path safety now live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs`.
 Segment counts, active-path projection, active segment start PTS calculation,
 and segment-info projection now live in
-`Sussudio/Services/Flashback/FlashbackBufferManager.SegmentStatus.cs`.
+`Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs`.
 Flashback buffer saturated math, PTS range clamps, completed-segment byte
 summation, and normalized segment-path comparisons now live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Math.cs`.
