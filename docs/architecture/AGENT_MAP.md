@@ -552,10 +552,10 @@ Important entry points:
 - `CaptureSessionCoordinator.Models.cs` owns command enums, queue receipts,
   session snapshots, and Flashback playback/buffer status projections.
 - `CaptureSessionCoordinator.Queue.cs` owns work-item creation, command
-  enqueueing, enqueue-failure handling, and disposed-state ingress guards.
-- `CaptureSessionCoordinator.QueueExecution.cs` owns worker-loop execution,
-  command coalescing, operation cancellation/failure accounting, pending-command
-  failure drain, and pending-command counter decrement policy.
+  enqueueing, enqueue-failure handling, disposed-state ingress guards,
+  worker-loop execution, command coalescing, operation cancellation/failure
+  accounting, pending-command failure drain, and pending-command counter
+  decrement policy.
 - `CaptureSessionCoordinator.Snapshot.cs` owns queue/session snapshot
   projection, last-command state, pending-command age bookkeeping, and queue
   latency accounting.

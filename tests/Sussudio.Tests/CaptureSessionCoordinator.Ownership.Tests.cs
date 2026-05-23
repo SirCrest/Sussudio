@@ -88,8 +88,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var queueText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Queue.cs")
             .Replace("\r\n", "\n");
-        var queueExecutionText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.QueueExecution.cs")
-            .Replace("\r\n", "\n");
+        var queueExecutionText = queueText;
 
         AssertContains(queueText, "private sealed class CoordinatorWorkItem");
         AssertContains(queueText, "private Task EnqueueAsync(");
@@ -99,8 +98,6 @@ static partial class Program
         AssertContains(queueExecutionText, "private void DecrementPendingCommands(string operation)");
         AssertContains(queueExecutionText, "Logger.LogEvent(\"CAP-COORD-START\"");
         AssertContains(queueExecutionText, "Logger.LogEvent(\"CAP-COORD-DONE\"");
-        AssertDoesNotContain(queueText, "private async Task ProcessQueueAsync()");
-        AssertDoesNotContain(queueText, "private void FailPendingCommands(Exception ex)");
         AssertDoesNotContain(rootText, "private sealed class CoordinatorWorkItem");
         AssertDoesNotContain(rootText, "private async Task ProcessQueueAsync()");
         AssertDoesNotContain(rootText, "private void FailPendingCommands(Exception ex)");
