@@ -104,6 +104,7 @@ static partial class Program
         AssertContains(completionRootText, "private static async Task<DiagnosticSessionResult> RunCompletionPhaseAsync(DiagnosticSessionCompletionContext context)");
         AssertContains(completionContextText, "internal sealed class DiagnosticSessionCompletionContext");
         AssertContains(completionRootText, "private static DiagnosticSessionResultBuildRequest CreateResultBuildRequest(");
+        AssertContains(completionRootText, "internal sealed class DiagnosticSessionCompletionContext");
         AssertContains(completionRootText, "DiagnosticSessionRecordingChecks.RunAsync(");
         AssertContains(completionRootText, "var verification = recordingCheckResult.Verification;");
         AssertContains(completionRootText, "context.ScenarioPhase.FlashbackRecordingSettingsDeferredPresetState");
@@ -115,8 +116,6 @@ static partial class Program
         AssertContains(completionRootText, "postRunSnapshots.HealthSnapshot");
         AssertContains(completionRootText, "postRunSnapshots.Timeline");
         AssertContains(completionRootText, "runBootstrap.RunnerProcessId");
-        AssertDoesNotContain(completionRootText, "internal sealed class DiagnosticSessionCompletionContext");
-        AssertDoesNotContain(completionContextText, "DiagnosticSessionRecordingChecks.RunAsync(");
         AssertContains(contextText, "new DiagnosticSessionCompletionContext");
         AssertContains(executionText, "return await RunCompletionPhaseAsync(");
         AssertContains(executionText, "runContext.CreateCompletionContext(options, scenarioPhase, stoppedRecordingForVerification, cancellationToken)");
@@ -127,9 +126,9 @@ static partial class Program
         AssertContains(postRunText, "setStage(\"timeline\")");
         AssertContains(postRunText, "setStage(\"final-snapshot\")");
         AssertContains(resultBuilderText, "runState.SetStage(\"summary\")");
-        AssertContains(agentMapText, "`tools/Common/DiagnosticSessionRunExecution.CompletionContext.cs` owns the");
+        AssertContains(agentMapText, "completion context handoff consumed by the post-cleanup completion phase");
         AssertContains(agentMapText, "post-cleanup evidence/result sequence, result-build");
-        AssertContains(cleanupPlanText, "`DiagnosticSessionRunExecution.CompletionContext.cs` owns the completion");
+        AssertContains(cleanupPlanText, "`DiagnosticSessionRunExecution.cs` owns the completion context handoff");
         AssertContains(cleanupPlanText, "`DiagnosticSessionRunExecution.cs` owns the post-cleanup evidence/result sequence");
         AssertOccursBefore(completionRootText, "DiagnosticSessionRecordingChecks.RunAsync(", "DiagnosticSessionPostRunSnapshots.CaptureAsync(");
         AssertOccursBefore(completionRootText, "DiagnosticSessionPostRunSnapshots.CaptureAsync(", "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");

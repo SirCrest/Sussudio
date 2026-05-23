@@ -3273,8 +3273,8 @@ into those phases.
 `DiagnosticSessionRunExecution.cs` owns the post-cleanup evidence/result sequence
 for recording checks, post-run timeline and final snapshot capture, result-build
 request mapping, result-build invocation, and terminal live-state write.
-`DiagnosticSessionRunExecution.CompletionContext.cs` owns the completion context
-handoff consumed by the post-cleanup phase. `DiagnosticSessionRunExecution.cs`
+`DiagnosticSessionRunExecution.cs` owns the completion context handoff consumed
+by the post-cleanup phase. `DiagnosticSessionRunExecution.cs`
 hands scenario execution directly to
 `DiagnosticSessionScenarioPhaseRunner.cs`, which owns the main scenario phase
 for setup/startup, sampling, completion delegation, and fault drain delegation.
@@ -3323,9 +3323,9 @@ for validation/result projections and analysis warning emission live in
 analysis handoff record plus Flashback playback/export warning text, threshold
 guards, and tolerated Flashback scenario warning classification. Named
 validation handoff order lives in `DiagnosticSessionResultBuilder.AnalysisValidation.cs`.
-The top-level
-`DiagnosticSessionResultBuildRequest.cs` owns the result-build request handoff
-created by `DiagnosticSessionRunExecution.cs`. Diagnostic
+`DiagnosticSessionResultBuilder.cs` owns the result-build request handoff
+created by `DiagnosticSessionRunExecution.cs` beside the summary orchestration
+that consumes it. Diagnostic
 health summary snapshot selection, health summary text projection, verdict
 composition, diagnostic-health warning tolerance, sparse source-cadence warning
 tolerance, sparse preview-scheduler warning tolerance, source-reader/ingest
@@ -3831,7 +3831,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
-- `DiagnosticSessionResultBuildRequest.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionRunState.cs`
 - `DiagnosticSessionLiveStateWriter.cs`
@@ -3847,7 +3846,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionOptionalTextFormatter.cs`
 - `DiagnosticSessionRunner.cs`
 - `DiagnosticSessionRunExecution.cs`
-- `DiagnosticSessionRunExecution.CompletionContext.cs`
 - `DiagnosticSessionScenarioPhaseRunner.cs`
 - `DiagnosticSessionScenarioPhaseModels.cs`
 - `ToolJsonOptions.cs`
@@ -3874,10 +3872,8 @@ owner, fold it back into that owner and update the source-shape tests and
    cohesive mutable per-run context: snapshot, live-state, disposal, and
    explicit scenario/completion context construction.
    `DiagnosticSessionRunExecution.cs` owns the
-   post-cleanup evidence/result sequence, with
-   `DiagnosticSessionRunExecution.CompletionContext.cs` owning the completion
-   context handoff and `DiagnosticSessionRunExecution.cs` owning result-build
-   request mapping, while
+   post-cleanup evidence/result sequence, completion context handoff, and
+   result-build request mapping, while
    `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario execution
    phase including scenario sampling. `DiagnosticSessionScenarioPhaseModels.cs`
    owns the explicit scenario context/result/state handoffs, with

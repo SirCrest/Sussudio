@@ -23,7 +23,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
             .Replace("\r\n", "\n");
-        var resultBuildRequestText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuildRequest.cs")
+        var resultBuildRequestText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");

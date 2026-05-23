@@ -73,7 +73,6 @@ static partial class Program
 
     private static string ReadDiagnosticSessionResultBuilderSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionResultBuildRequest.cs",
             "tools/Common/DiagnosticSessionResultBuilder.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Projections.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Flattening.cs",
@@ -92,7 +91,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionRunner.cs",
             "tools/Common/DiagnosticSessionRunExecution.cs",
             "tools/Common/DiagnosticSessionRunContext.cs",
-            "tools/Common/DiagnosticSessionRunExecution.CompletionContext.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseRunner.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseModels.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseCompletion.cs");
@@ -114,14 +112,13 @@ static partial class Program
 
     private static string ReadDiagnosticSessionRunExecutionCompletionSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionRunExecution.cs",
-            "tools/Common/DiagnosticSessionRunExecution.CompletionContext.cs");
+            "tools/Common/DiagnosticSessionRunExecution.cs");
 
     private static string ReadDiagnosticSessionRunExecutionCompletionRootSource()
         => ReadDiagnosticSessionRunExecutionRootSource();
 
     private static string ReadDiagnosticSessionRunExecutionCompletionContextSource()
-        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunExecution.CompletionContext.cs");
+        => ReadDiagnosticSessionRunExecutionRootSource();
 
     private static string ReadDiagnosticSessionScenarioStartupSource()
         => ReadNormalizedSourceFiles(
