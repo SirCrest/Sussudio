@@ -503,11 +503,9 @@ stage/A/V drift text in `Formatters.Snapshot.Flashback.cs`, MJPEG
 activation/header/order, decode/copy/callback/per-decoder timing,
 compressed-queue, drop-reason, reorder, pipeline timing, preview-jitter queue,
 latency, ownership, and underflow text in `Formatters.Snapshot.Mjpeg.cs`, D3D preview
-renderer routing/header text in `Formatters.Snapshot.PreviewD3D.cs`, D3D CPU
-timing, pipeline latency, and frame-latency wait text in
-`Formatters.Snapshot.PreviewD3D.Timing.cs`, D3D frame ownership and DXGI
-frame-stat text in `Formatters.Snapshot.PreviewD3D.FrameFlow.cs`, delegation to
-the shared slow-frame formatter in the D3D root, thread-health section order and
+renderer routing/header text, D3D CPU timing, pipeline latency, frame-latency
+wait, D3D frame ownership, DXGI frame-stat text, and delegation to the shared
+slow-frame formatter in `Formatters.Snapshot.PreviewD3D.cs`, thread-health section order and
 source-reader/WASAPI row text in `Formatters.Snapshot.ThreadHealth.cs`,
 diagnostic-event text in
 `Formatters.Diagnostics.cs`, capture option/device text in `Formatters.Options.cs`,
@@ -549,10 +547,8 @@ MJPEG preview-jitter queue/latency/ownership/underflow text now live together in
 `AutomationSnapshotFormatter.MjpegTiming.cs`. Preview routing,
 D3D preview text, and thread-health live in the remaining focused formatter partials. The
 `AutomationSnapshotFormatter.PreviewD3D.cs` owner keeps D3D header/routing and
-output order; `AutomationSnapshotFormatter.PreviewD3D.Timing.cs` owns D3D CPU
-timing, pipeline latency, and frame-latency wait text; and
-`AutomationSnapshotFormatter.PreviewD3D.FrameFlow.cs` owns D3D frame ownership
-and DXGI frame-stat text. Slow-frame diagnostics stay in
+output order, D3D CPU timing, pipeline latency, frame-latency wait text, D3D
+frame ownership, and DXGI frame-stat text. Slow-frame diagnostics stay in
 `AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs` because `ssctl` reuses
 that formatter directly. `AutomationSnapshotFormatter.ThreadHealth.cs` owns
 thread-health section order plus source-reader, WASAPI capture, and WASAPI

@@ -211,8 +211,6 @@ internal static class RuntimeContractSource
             "tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs",
             "tools/Common/AutomationSnapshotFormatter.Preview.cs",
             "tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs",
-            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.Timing.cs",
-            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.FrameFlow.cs",
             "tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs",
             "tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs"
         });
@@ -234,8 +232,6 @@ internal static class RuntimeContractSource
             "tools/ssctl/Formatters.Snapshot.Mjpeg.cs",
             "tools/ssctl/Formatters.Snapshot.Preview.cs",
             "tools/ssctl/Formatters.Snapshot.PreviewD3D.cs",
-            "tools/ssctl/Formatters.Snapshot.PreviewD3D.Timing.cs",
-            "tools/ssctl/Formatters.Snapshot.PreviewD3D.FrameFlow.cs",
             "tools/ssctl/Formatters.Snapshot.Runtime.cs",
             "tools/ssctl/Formatters.Snapshot.ThreadHealth.cs",
         });

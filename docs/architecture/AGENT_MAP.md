@@ -3822,12 +3822,9 @@ Primary owners:
   routing, GPU playback summary, non-D3D fallback frame/cadence text, and D3D
   renderer delegation.
 - `tools/ssctl/Formatters.Snapshot.PreviewD3D.cs` owns D3D preview renderer
-  snapshot text routing/header order and delegation to D3D timing, frame-flow,
-  and shared slow-frame formatters.
-- `tools/ssctl/Formatters.Snapshot.PreviewD3D.Timing.cs` owns D3D CPU timing,
-  pipeline-latency, and frame-latency wait snapshot text.
-- `tools/ssctl/Formatters.Snapshot.PreviewD3D.FrameFlow.cs` owns D3D frame
-  ownership and DXGI frame-stat snapshot text.
+  snapshot text routing/header order, D3D CPU timing, pipeline-latency,
+  frame-latency wait, frame ownership, DXGI frame-stat text, and delegation to
+  the shared slow-frame formatter.
 - `tools/ssctl/Formatters.Snapshot.Runtime.cs` owns runtime video-pipeline
   snapshot text: video ingest, recording queue, encoder/GPU-CUDA, freshness,
   and diagnostics lines.
@@ -4234,15 +4231,12 @@ Primary owners:
   preview-jitter queue/input/output/latency/ownership/underflow text. The
   `tools/Common/AutomationSnapshotFormatter.Preview.cs`,
   `tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs`,
-  `tools/Common/AutomationSnapshotFormatter.PreviewD3D.Timing.cs`,
-  `tools/Common/AutomationSnapshotFormatter.PreviewD3D.FrameFlow.cs`,
   `tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs`,
   and `tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs` own the named
   snapshot sections. The thread-health formatter now keeps its section order and
   source-reader/WASAPI row text together in one file. Within the D3D formatter family, `.PreviewD3D.cs` keeps
-  routing/header order, `.PreviewD3D.Timing.cs` owns CPU timing,
-  pipeline-latency, and frame-latency wait text, `.PreviewD3D.FrameFlow.cs`
-  owns frame-ownership and DXGI frame-stat text, while `.SlowFrames.cs` owns
+  routing/header order, CPU timing, pipeline-latency, frame-latency wait text,
+  frame-ownership, and DXGI frame-stat text, while `.SlowFrames.cs` owns
   reusable slow-frame diagnostics and diagnostic millisecond formatting.
 - `tools/Common/DiagnosticSessionPipeRetryPolicy.cs` owns diagnostic-session
   connect retry classification and local failure-response envelopes.
