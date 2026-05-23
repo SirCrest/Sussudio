@@ -160,18 +160,15 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Diagnostics.cs")
             .Replace("\r\n", "\n");
-        var slowFrameDxgiSlipText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.SlowFrameDxgiSlip.cs")
-            .Replace("\r\n", "\n");
-
         AssertContains(diagnosticsText, "private readonly object _slowFrameDiagnosticsLock = new();");
         AssertContains(diagnosticsText, "private readonly PreviewSlowFrameDiagnostic[] _slowFrameDiagnostics = new PreviewSlowFrameDiagnostic[64];");
         AssertContains(diagnosticsText, "public PreviewSlowFrameDiagnostic[] GetRecentSlowFrameDiagnostics(int maxEntries = 16)");
         AssertContains(diagnosticsText, "private void RecordSlowFrameDiagnostic(");
         AssertContains(diagnosticsText, "var dxgiSlip = CaptureSlowFrameDxgiSlipSnapshot();");
         AssertContains(diagnosticsText, "DxgiMissedRefreshCount = dxgiSlip.MissedRefreshCount");
-        AssertContains(slowFrameDxgiSlipText, "private readonly record struct SlowFrameDxgiSlipSnapshot(");
-        AssertContains(slowFrameDxgiSlipText, "private SlowFrameDxgiSlipSnapshot CaptureSlowFrameDxgiSlipSnapshot()");
-        AssertContains(slowFrameDxgiSlipText, "frameStatisticsLastSampleFrameCounter == frameStatisticsFrameCounter");
+        AssertContains(diagnosticsText, "private readonly record struct SlowFrameDxgiSlipSnapshot(");
+        AssertContains(diagnosticsText, "private SlowFrameDxgiSlipSnapshot CaptureSlowFrameDxgiSlipSnapshot()");
+        AssertContains(diagnosticsText, "frameStatisticsLastSampleFrameCounter == frameStatisticsFrameCounter");
         AssertContains(diagnosticsText, "private static string BuildSlowFrameDiagnosticReason(");
         AssertContains(diagnosticsText, "private static void AppendSlowFrameReason(");
         AssertContains(diagnosticsText, "\"dxgi_refresh_slip\"");
@@ -180,7 +177,6 @@ static partial class Program
         AssertDoesNotContain(metricsText, "public PreviewSlowFrameDiagnostic[] GetRecentSlowFrameDiagnostics(");
         AssertDoesNotContain(metricsText, "private void RecordSlowFrameDiagnostic(");
         AssertDoesNotContain(metricsText, "private static string BuildSlowFrameDiagnosticReason(");
-        AssertDoesNotContain(diagnosticsText, "frameStatisticsLastSampleFrameCounter == frameStatisticsFrameCounter");
 
         return Task.CompletedTask;
     }

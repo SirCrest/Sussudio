@@ -2253,8 +2253,8 @@ D3D preview renderer diagnostics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Diagnostics.cs`. Keep
 recent slow-frame snapshot access, diagnostic thresholding, the slow-frame
 ring buffer writer, slow-frame reason token classification, render-thread
-failure telemetry, and first-frame UI notification there. Keep DXGI refresh-slip
-capture in `D3D11PreviewRenderer.SlowFrameDxgiSlip.cs`; keep cadence
+failure telemetry, first-frame UI notification, and DXGI refresh-slip capture
+there; keep cadence
 windows in `D3D11PreviewRenderer.PresentCadenceMetrics.cs` and CPU timing
 windows in `D3D11PreviewRenderer.Metrics.cs`.
 
