@@ -3,6 +3,97 @@ using Sussudio.Models;
 
 namespace Sussudio.Controllers;
 
+internal readonly record struct PreviewRuntimeSnapshotSurfaceProjection(
+    bool IsPreviewing,
+    bool GpuActive,
+    bool PlaceholderVisible,
+    bool GpuElementVisible,
+    bool CpuElementVisible,
+    bool RendererAttached,
+    long FramesArrived,
+    long FramesDisplayed,
+    long FramesDropped,
+    bool BlankSuspected,
+    bool StallSuspected);
+
+internal static class PreviewRuntimeSnapshotSurfaceProjectionPolicy
+{
+    public static PreviewRuntimeSnapshotSurfaceProjection Evaluate(
+        PreviewRuntimeSnapshotInput input,
+        PreviewRuntimeD3DProjection d3dProjection,
+        PreviewRuntimeSnapshotHealth health)
+        => new(
+            IsPreviewing: input.IsPreviewing,
+            GpuActive: d3dProjection.GpuActive,
+            PlaceholderVisible: input.PlaceholderVisible,
+            GpuElementVisible: input.GpuElementVisible,
+            CpuElementVisible: input.CpuElementVisible,
+            RendererAttached: d3dProjection.RendererAttached,
+            FramesArrived: d3dProjection.FramesArrived,
+            FramesDisplayed: d3dProjection.FramesDisplayed,
+            FramesDropped: d3dProjection.FramesDropped,
+            BlankSuspected: health.BlankSuspected,
+            StallSuspected: health.StallSuspected);
+}
+
+internal readonly record struct PreviewRuntimeSnapshotStartupProjection(
+    string State,
+    string? AttemptId,
+    double? ElapsedMs,
+    int TimeoutMs,
+    bool GpuSignalMediaOpened,
+    bool GpuSignalFirstFrame,
+    bool GpuSignalPlaybackAdvancing,
+    PreviewStartupSignalFlags RequiredSignals,
+    PreviewStartupSignalFlags ReceivedSignals,
+    PreviewStartupStrategy Strategy,
+    string? MissingSignals,
+    int RecoveryAttemptCount,
+    string? LastFailureReason,
+    bool FirstVisualConfirmed);
+
+internal static class PreviewRuntimeSnapshotStartupProjectionPolicy
+{
+    public static PreviewRuntimeSnapshotStartupProjection Evaluate(
+        PreviewRuntimeSnapshotInput input,
+        PreviewRuntimeSnapshotHealth health)
+        => new(
+            State: input.StartupState,
+            AttemptId: input.StartupAttemptId,
+            ElapsedMs: health.StartupElapsedMs,
+            TimeoutMs: input.StartupTimeoutMs,
+            GpuSignalMediaOpened: input.StartupGpuSignalMediaOpened,
+            GpuSignalFirstFrame: input.StartupGpuSignalFirstFrame,
+            GpuSignalPlaybackAdvancing: input.StartupGpuSignalPlaybackAdvancing,
+            RequiredSignals: input.StartupRequiredSignals,
+            ReceivedSignals: input.StartupReceivedSignals,
+            Strategy: input.StartupStrategy,
+            MissingSignals: input.StartupMissingSignals,
+            RecoveryAttemptCount: input.StartupRecoveryAttemptCount,
+            LastFailureReason: input.StartupLastFailureReason,
+            FirstVisualConfirmed: input.FirstVisualConfirmed);
+}
+
+internal readonly record struct PreviewRuntimeSnapshotGpuPlaybackProjection(
+    string PlaybackState,
+    int NaturalVideoWidth,
+    int NaturalVideoHeight,
+    double PositionMs,
+    long PositionEventCount);
+
+internal static class PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy
+{
+    public static PreviewRuntimeSnapshotGpuPlaybackProjection Evaluate(
+        PreviewRuntimeSnapshotInput input,
+        PreviewRuntimeD3DProjection d3dProjection)
+        => new(
+            PlaybackState: d3dProjection.GpuPlaybackState,
+            NaturalVideoWidth: d3dProjection.GpuNaturalVideoWidth,
+            NaturalVideoHeight: d3dProjection.GpuNaturalVideoHeight,
+            PositionMs: d3dProjection.GpuPositionMs,
+            PositionEventCount: input.GpuPositionEventCount);
+}
+
 internal static class PreviewRuntimeSnapshotMapper
 {
     public static PreviewRuntimeSnapshot Build(

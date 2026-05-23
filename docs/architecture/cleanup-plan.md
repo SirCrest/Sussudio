@@ -1119,21 +1119,10 @@ the UI-thread sampled preview snapshot input contract shared by the snapshot
 controller and D3D projection builder.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotMapper.cs` owns
 final preview runtime snapshot DTO flattening from sampled input, D3D
-projection, and named projection policies.
-`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotSurfaceProjectionPolicy.cs`
-owns previewing, renderer attachment, visibility, frame-count, and blank/stall
-health projection into the runtime snapshot.
-`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotStartupProjectionPolicy.cs`
-owns sampled preview-startup field projection into the runtime snapshot,
-including startup health elapsed time.
-`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.cs`
-owns GPU playback fields in the runtime snapshot, including renderer-projected
-playback state/dimensions and sampled position event count.
-`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthInputFactory.cs`
-owns blank/stall suspicion input projection from sampled input, D3D projection,
-and controller-provided clock/tick values.
+projection, and surface/startup/GPU playback projection policies.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthPolicy.cs`
-owns preview startup elapsed timing plus blank/stall suspicion policy.
+owns the health input factory, preview startup elapsed timing, and blank/stall
+suspicion policy.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs` owns the
 renderer projection data contract, D3D policy records, policy evaluation order,
 and assignment from evaluated policy records. It keeps the named policy classes

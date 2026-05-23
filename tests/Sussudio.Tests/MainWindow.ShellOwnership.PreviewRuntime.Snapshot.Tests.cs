@@ -10,11 +10,11 @@ static partial class Program
         var previewRuntimeSnapshotSamplingControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotSamplingController.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotMapperText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotMapper.cs").Replace("\r\n", "\n");
-        var previewRuntimeSnapshotSurfaceProjectionPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotSurfaceProjectionPolicy.cs").Replace("\r\n", "\n");
-        var previewRuntimeSnapshotStartupProjectionPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotStartupProjectionPolicy.cs").Replace("\r\n", "\n");
-        var previewRuntimeSnapshotGpuPlaybackProjectionPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.cs").Replace("\r\n", "\n");
-        var previewRuntimeSnapshotHealthInputFactoryText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthInputFactory.cs").Replace("\r\n", "\n");
+        var previewRuntimeSnapshotSurfaceProjectionPolicyText = previewRuntimeSnapshotMapperText;
+        var previewRuntimeSnapshotStartupProjectionPolicyText = previewRuntimeSnapshotMapperText;
+        var previewRuntimeSnapshotGpuPlaybackProjectionPolicyText = previewRuntimeSnapshotMapperText;
         var previewRuntimeSnapshotHealthPolicyText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotHealthPolicy.cs").Replace("\r\n", "\n");
+        var previewRuntimeSnapshotHealthInputFactoryText = previewRuntimeSnapshotHealthPolicyText;
         var previewRuntimeSnapshotInputText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotInput.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotModelText = ReadRepoFile("Sussudio/Models/Automation/PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
@@ -123,10 +123,10 @@ static partial class Program
         AssertContains(agentMapText, "PreviewRuntimeSnapshotSamplingController.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotInput.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
-        AssertContains(agentMapText, "PreviewRuntimeSnapshotSurfaceProjectionPolicy.cs");
-        AssertContains(agentMapText, "PreviewRuntimeSnapshotStartupProjectionPolicy.cs");
-        AssertContains(agentMapText, "PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.cs");
-        AssertContains(agentMapText, "PreviewRuntimeSnapshotHealthInputFactory.cs");
+        AssertContains(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
+        AssertContains(agentMapText, "surface/startup/GPU playback projection policies");
+        AssertContains(agentMapText, "PreviewRuntimeSnapshotHealthPolicy.cs");
+        AssertContains(agentMapText, "health input factory");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotHealthPolicy.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshot.cs");
         AssertContains(cleanupPlanText, "surface/frame");
@@ -135,10 +135,10 @@ static partial class Program
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotSamplingController.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotInput.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotMapper.cs");
-        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotSurfaceProjectionPolicy.cs");
-        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotStartupProjectionPolicy.cs");
-        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.cs");
-        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotHealthInputFactory.cs");
+        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotMapper.cs");
+        AssertContains(cleanupPlanText, "surface/startup/GPU playback projection policies");
+        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotHealthPolicy.cs");
+        AssertContains(cleanupPlanText, "health input factory");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotHealthPolicy.cs");
 
         AssertDoesNotContain(previewRuntimeSnapshotMapperText, "GpuActive = d3dProjection.GpuActive,");
