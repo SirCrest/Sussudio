@@ -14,8 +14,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs")
             .Replace("\r\n", "\n");
-        var controllerGraphDeviceText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Device.cs")
-            .Replace("\r\n", "\n");
         var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs")
             .Replace("\r\n", "\n");
 
@@ -49,7 +47,7 @@ static partial class Program
 
         AssertContains(rootViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
         AssertContains(controllerGraphText, "var deviceRefreshController = CreateDeviceRefreshController(viewModel, previewLifecycleController);");
-        AssertContains(controllerGraphDeviceText, "viewModel._deviceService.EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)");
+        AssertContains(controllerGraphText, "viewModel._deviceService.EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)");
 
         var refreshDevices = ExtractMemberCode(deviceRefreshControllerText, "RefreshDevicesAsync");
         AssertContains(refreshDevices, "var discovery = await _context.EnumerateCaptureDeviceDiscoveryAsync()");

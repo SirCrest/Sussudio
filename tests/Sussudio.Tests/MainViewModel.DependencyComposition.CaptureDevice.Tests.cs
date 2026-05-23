@@ -9,9 +9,7 @@ static partial class Program
         var deviceAudioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs").Replace("\r\n", "\n");
         var controllerGraphCaptureSettingsAutomationText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureSettingsAutomation.cs").Replace("\r\n", "\n");
         var controllerGraphCaptureModesText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureModes.cs").Replace("\r\n", "\n");
-        var controllerGraphDeviceAudioText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.DeviceAudio.cs").Replace("\r\n", "\n");
         var controllerGraphDeviceFormatProbeText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.DeviceFormatProbe.cs").Replace("\r\n", "\n");
-        var controllerGraphDeviceText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Device.cs").Replace("\r\n", "\n");
         var controllerGraphRecordingCapabilityText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RecordingCapability.cs").Replace("\r\n", "\n");
         var controllerGraphRecordingSettingsAutomationText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RecordingSettingsAutomation.cs").Replace("\r\n", "\n");
         var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs").Replace("\r\n", "\n");
@@ -53,7 +51,6 @@ static partial class Program
             "var deviceRefreshController = CreateDeviceRefreshController(viewModel, previewLifecycleController);");
 
         AssertContains(controllerGraphCaptureModesText, "private sealed partial class MainViewModelControllerGraph");
-        AssertContains(controllerGraphDeviceText, "private sealed partial class MainViewModelControllerGraph");
         AssertContains(controllerGraphCaptureModesText, "internal static MainViewModelFrameRateTimingResolver CreateFrameRateTimingResolver(MainViewModel viewModel)");
         AssertContains(controllerGraphCaptureModesText, "new MainViewModelFrameRateTimingResolverContext");
         AssertContains(controllerGraphCaptureModesText, "GetRuntimeSnapshot = () => viewModel._captureService.GetRuntimeSnapshot(),");
@@ -74,10 +71,10 @@ static partial class Program
         AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");
         AssertContains(deviceRefreshControllerText, "await _previewLifecycleController.StartPreviewAsync(userInitiated: false, cancellationToken);");
         AssertDoesNotContain(deviceRefreshControllerText, "await _viewModel.StartPreviewAsync(userInitiated: false, cancellationToken);");
-        AssertContains(controllerGraphDeviceText, "private static MainViewModelDeviceRefreshController CreateDeviceRefreshController(");
-        AssertContains(controllerGraphDeviceText, "new MainViewModelDeviceRefreshControllerContext");
-        AssertContains(controllerGraphDeviceText, "viewModel._deviceService.EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)");
-        AssertContains(controllerGraphDeviceText, "BeginBackgroundFormatProbe = (device, scanGeneration) =>");
+        AssertContains(controllerGraphText, "private static MainViewModelDeviceRefreshController CreateDeviceRefreshController(");
+        AssertContains(controllerGraphText, "new MainViewModelDeviceRefreshControllerContext");
+        AssertContains(controllerGraphText, "viewModel._deviceService.EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)");
+        AssertContains(controllerGraphText, "BeginBackgroundFormatProbe = (device, scanGeneration) =>");
 
         AssertContains(deviceAudioRequestControllerText, "namespace Sussudio.Controllers;");
         AssertContains(deviceAudioRequestControllerText, "internal sealed class MainViewModelDeviceAudioRequestController");
@@ -90,10 +87,10 @@ static partial class Program
         AssertContains(deviceAudioRequestControllerText, "public void HandleAnalogAudioGainPercentChanged(double value)");
         AssertContains(deviceAudioRequestControllerText, "public void ScheduleAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
         AssertContains(deviceAudioRequestControllerText, "public void CancelPendingAudioControlWork()");
-        AssertContains(controllerGraphDeviceAudioText, "private static MainViewModelDeviceAudioRequestController CreateDeviceAudioRequestController(MainViewModel viewModel)");
-        AssertContains(controllerGraphDeviceAudioText, "new MainViewModelDeviceAudioRequestControllerContext");
-        AssertContains(controllerGraphDeviceAudioText, "ApplyDeviceAudioModeAsync = (reason, targetDevice, cancellationToken) =>");
-        AssertContains(controllerGraphDeviceAudioText, "ApplyAnalogAudioGainAsync = (reason, targetDevice, cancellationToken) =>");
+        AssertContains(controllerGraphText, "private static MainViewModelDeviceAudioRequestController CreateDeviceAudioRequestController(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelDeviceAudioRequestControllerContext");
+        AssertContains(controllerGraphText, "ApplyDeviceAudioModeAsync = (reason, targetDevice, cancellationToken) =>");
+        AssertContains(controllerGraphText, "ApplyAnalogAudioGainAsync = (reason, targetDevice, cancellationToken) =>");
 
         AssertContains(captureSettingsAutomationControllerText, "namespace Sussudio.Controllers;");
         AssertContains(captureSettingsAutomationControllerText, "internal sealed class MainViewModelCaptureSettingsAutomationController");

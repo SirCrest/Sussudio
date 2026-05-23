@@ -4181,19 +4181,16 @@ owner, fold it back into that owner and update the source-shape tests and
    construction, dependency assignment, collaborator fields, controller graph
    handoff, and startup lifecycle kick-off.
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs`
-   owns controller graph construction order plus UI-dispatch and disposal graph ports, while
+   owns controller graph construction order plus UI-dispatch, device-audio,
+   device-refresh, and disposal graph ports, while
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Presentation.cs`
    owns preview lifecycle graph ports,
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureSettingsAutomation.cs`
    owns capture settings automation graph ports, and
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureModes.cs`
    owns capture option rebuild graph ports, and
-   `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.DeviceAudio.cs`
-   owns device-native audio request graph ports, and
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.DeviceFormatProbe.cs`
    owns late format probe graph ports, and
-   `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Device.cs`
-   owns device refresh graph ports, and
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.SourceTelemetry.cs`
    owns source telemetry graph ports, and
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RecordingCapability.cs`

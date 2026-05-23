@@ -103,6 +103,58 @@ public partial class MainViewModel
                 });
         }
 
+        private static MainViewModelDeviceAudioRequestController CreateDeviceAudioRequestController(MainViewModel viewModel)
+        {
+            return new MainViewModelDeviceAudioRequestController(
+                new MainViewModelDeviceAudioRequestControllerContext
+                {
+                    EnqueueUiOperation = (operation, operationName, allowDuringDispose) =>
+                        viewModel.EnqueueUiOperation(operation, operationName, allowDuringDispose),
+                    IsDisposing = () => Volatile.Read(ref viewModel._disposeState) != 0,
+                    IsLoadingSettings = () => viewModel._isLoadingSettings,
+                    IsRefreshingDeviceAudioControls = () => viewModel._isRefreshingDeviceAudioControls,
+                    IsDeviceAudioControlSupported = () => viewModel.IsDeviceAudioControlSupported,
+                    IsRecording = () => viewModel.IsRecording,
+                    GetSelectedDeviceAudioMode = () => viewModel.SelectedDeviceAudioMode,
+                    GetSelectedDevice = () => viewModel.SelectedDevice,
+                    SaveSettings = viewModel.SaveSettings,
+                    RefreshDeviceAudioControlsAsync = viewModel.RefreshDeviceAudioControlsAsync,
+                    ApplyDeviceAudioModeAsync = (reason, targetDevice, cancellationToken) =>
+                        viewModel.ApplyDeviceAudioModeAsync(reason, targetDevice: targetDevice, cancellationToken: cancellationToken),
+                    ApplyAnalogAudioGainAsync = (reason, targetDevice, cancellationToken) =>
+                        viewModel.ApplyAnalogAudioGainAsync(reason, targetDevice: targetDevice, cancellationToken: cancellationToken),
+                    IsCurrentSelectedDevice = viewModel.IsCurrentSelectedDevice,
+                });
+        }
+
+        private static MainViewModelDeviceRefreshController CreateDeviceRefreshController(
+            MainViewModel viewModel,
+            MainViewModelPreviewLifecycleController previewLifecycleController)
+        {
+            return new MainViewModelDeviceRefreshController(
+                new MainViewModelDeviceRefreshControllerContext
+                {
+                    SetStatusText = value => viewModel.StatusText = value,
+                    IncrementDeviceScanGeneration = () => Interlocked.Increment(ref viewModel._deviceScanGeneration),
+                    GetSelectedAudioInputDeviceId = () => viewModel.SelectedAudioInputDevice?.Id,
+                    GetSelectedMicrophoneDeviceId = () => viewModel.SelectedMicrophoneDevice?.Id,
+                    GetSelectedDeviceId = () => viewModel.SelectedDevice?.Id,
+                    EnumerateCaptureDeviceDiscoveryAsync = () =>
+                        viewModel._deviceService.EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false),
+                    ApplyStartupAudioDeviceScan = viewModel.ApplyStartupAudioDeviceScan,
+                    ReplaceDevices = devices => ReplaceCollection(viewModel.Devices, devices),
+                    GetDevices = () => viewModel.Devices,
+                    BeginBackgroundFormatProbe = (device, scanGeneration) =>
+                        viewModel._deviceService.BeginBackgroundFormatProbe(device, scanGeneration),
+                    GetLastDiscoverySummary = () => viewModel._deviceService.LastDiscoverySummary,
+                    SetSelectedDevice = device => viewModel.SelectedDevice = device,
+                    GetSelectedDevice = () => viewModel.SelectedDevice,
+                    GetPendingSavedDeviceId = () => viewModel._pendingSavedDeviceId,
+                    SetPendingSavedDeviceId = value => viewModel._pendingSavedDeviceId = value,
+                },
+                previewLifecycleController);
+        }
+
         private static MainViewModelDisposalController CreateDisposalController(
             MainViewModel viewModel,
             MainViewModelDeviceAudioRequestController deviceAudioRequestController,
