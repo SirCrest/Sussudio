@@ -1819,12 +1819,11 @@ audio/microphone enqueue entry points, force-rotate input rejection guards, and
 hot WASAPI writer adapters there.
 
 Flashback encoder stop/dispose ownership now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.Lifetime.cs` and
 `Sussudio/Services/Flashback/FlashbackEncoderSink.DisposeLifecycle.cs`. Keep
-`StopAsync`, stop-drain timeout classification, and final stop result reporting
-in `FlashbackEncoderSink.Lifetime.cs`; keep `Dispose`/`DisposeAsync`, deferred
-cleanup, final dispose reset, cancellation/disposal helpers, and best-effort
-encoder/buffer manager disposal in `FlashbackEncoderSink.DisposeLifecycle.cs`.
+`StopAsync`, stop-drain timeout classification, final stop result reporting,
+`Dispose`/`DisposeAsync`, deferred cleanup, final dispose reset,
+cancellation/disposal helpers, and best-effort encoder/buffer manager disposal
+there.
 
 Flashback encoder recording lifecycle now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.cs`. Keep recording
