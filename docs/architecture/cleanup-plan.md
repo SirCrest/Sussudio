@@ -2923,9 +2923,8 @@ there. Terminal go-live/stop command execution lives with the dispatch switch in
 Flashback playback audio routing now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs`.
 Keep live audio suppress/restore and playback-state audio/preview routing
-there. Best-effort preview submission guards and audio renderer pause/resume/
-flush guards now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.AudioPreviewGuards.cs`.
+there alongside best-effort preview submission guards and audio renderer
+pause/resume/flush guards.
 Decoder audio callback wiring, playback chunk validation/return, playback PTS
 gate handling, and pooled audio-buffer return warnings now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioCallback.cs`;

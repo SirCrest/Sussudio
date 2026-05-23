@@ -1092,9 +1092,8 @@ Entry points:
   wiring, playback chunk validation/return, playback PTS gate handling, and
   pooled audio-buffer return warnings.
 - `FlashbackPlaybackController.AudioRouting.cs` owns live audio
-  suppress/restore and playback-state audio/preview routing.
-- `FlashbackPlaybackController.AudioPreviewGuards.cs` owns best-effort preview
-  submission guards and audio renderer pause/resume/flush guards.
+  suppress/restore, playback-state audio/preview routing, best-effort preview
+  submission guards, and audio renderer pause/resume/flush guards.
 - `FlashbackPlaybackController.AudioPrebuffer.cs` owns playback startup/seek audio prebuffering, target/timeout/frame-budget policy, and decoder rewind after decode-ahead audio priming.
 - `FlashbackPlaybackController.AudioMasterClock.cs` owns audio-master clock
   sample state, stale-clock detection, read-only A/V drift projection, and
