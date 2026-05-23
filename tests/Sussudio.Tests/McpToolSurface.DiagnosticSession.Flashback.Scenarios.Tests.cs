@@ -50,14 +50,6 @@ static partial class Program
         var cyclesText = ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource();
         var flashbackCycleText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs")
             .Replace("\r\n", "\n");
-        var flashbackPreStopText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackPreStop.cs")
-            .Replace("\r\n", "\n");
-        var flashbackStoppedText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackStopped.cs")
-            .Replace("\r\n", "\n");
-        var flashbackRestartValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackRestartValidation.cs")
-            .Replace("\r\n", "\n");
-        var flashbackExportText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackExport.cs")
-            .Replace("\r\n", "\n");
         var playbackCycleText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs")
             .Replace("\r\n", "\n");
         var playbackPreStopText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackPreStop.cs")
@@ -83,22 +75,16 @@ static partial class Program
         AssertContains(flashbackCycleText, "CaptureFlashbackPreviewCycleEncodedFramesBeforeStopAsync(");
         AssertContains(flashbackCycleText, "ValidateFlashbackPreviewCycleStoppedAsync(");
         AssertContains(flashbackCycleText, "ValidateFlashbackPreviewCycleRestartedAsync(");
-        AssertDoesNotContain(flashbackCycleText, "Flashback frames did not advance while preview was off");
-        AssertDoesNotContain(flashbackCycleText, "VideoFramesFlowing");
-        AssertContains(flashbackPreStopText, "private static async Task<long> CaptureFlashbackPreviewCycleEncodedFramesBeforeStopAsync(");
-        AssertDoesNotContain(flashbackPreStopText, "Flashback frames did not advance while preview was off");
-        AssertContains(flashbackStoppedText, "private static async Task<bool> ValidateFlashbackPreviewCycleStoppedAsync(");
-        AssertContains(flashbackStoppedText, "flashback preview cycle: Flashback frames did not advance while preview was off");
-        AssertDoesNotContain(flashbackStoppedText, "VideoFramesFlowing");
-        AssertContains(flashbackRestartValidationText, "private static async Task ValidateFlashbackPreviewCycleRestartedAsync(");
-        AssertContains(flashbackRestartValidationText, "VideoFramesFlowing");
-        AssertDoesNotContain(flashbackRestartValidationText, "Flashback frames did not advance while preview was off");
+        AssertContains(flashbackCycleText, "private static async Task<long> CaptureFlashbackPreviewCycleEncodedFramesBeforeStopAsync(");
+        AssertContains(flashbackCycleText, "private static async Task<bool> ValidateFlashbackPreviewCycleStoppedAsync(");
+        AssertContains(flashbackCycleText, "flashback preview cycle: Flashback frames did not advance while preview was off");
+        AssertContains(flashbackCycleText, "private static async Task ValidateFlashbackPreviewCycleRestartedAsync(");
+        AssertContains(flashbackCycleText, "VideoFramesFlowing");
         AssertContains(flashbackCycleText, "VerifyFlashbackPreviewCycleExportAsync(");
-        AssertDoesNotContain(flashbackCycleText, "CreateFlashbackExportVerifyPayload(exportPath)");
-        AssertContains(flashbackExportText, "private static async Task VerifyFlashbackPreviewCycleExportAsync(");
-        AssertContains(flashbackExportText, "\"flashback-preview-off-export.mp4\"");
-        AssertContains(flashbackExportText, "CreateFlashbackExportVerifyPayload(exportPath)");
-        AssertContains(flashbackExportText, "flashback preview cycle export verified");
+        AssertContains(flashbackCycleText, "private static async Task VerifyFlashbackPreviewCycleExportAsync(");
+        AssertContains(flashbackCycleText, "\"flashback-preview-off-export.mp4\"");
+        AssertContains(flashbackCycleText, "CreateFlashbackExportVerifyPayload(exportPath)");
+        AssertContains(flashbackCycleText, "flashback preview cycle export verified");
         AssertContains(cyclesText, "internal static async Task RunFlashbackPlaybackPreviewCycleAsync(");
         AssertContains(playbackCycleText, "flashback playback preview cycle preview stopped during playback");
         AssertContains(playbackCycleText, "CapturePlaybackPreviewCycleFrameCountBeforeStopAsync(");

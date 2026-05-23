@@ -50,10 +50,6 @@ static partial class Program
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs",
             "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs",
-            "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackPreStop.cs",
-            "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackStopped.cs",
-            "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackRestartValidation.cs",
-            "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackExport.cs",
             "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs",
             "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackPreStop.cs",
             "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackStopped.cs",

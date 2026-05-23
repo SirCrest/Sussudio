@@ -3788,16 +3788,14 @@ stays in the `DiagnosticSessionScenarioCatalog` family and grouped
 preview-cycle policy stays in `DiagnosticSessionScenarioPlan.cs`.
 `.Flashback.cs`, `.Playback.cs`, and `.Recording.cs` own preview stop/restart
 command choreography for normal Flashback, playback, and recording-backed
-diagnostics. Normal Flashback preview-cycle validation is split by runtime
-phase: `.FlashbackPreStop.cs` owns pre-stop encoded-frame capture,
-`.FlashbackStopped.cs` owns preview-off Flashback/encoder validation, and
-`.FlashbackRestartValidation.cs` owns restart frame-flow validation.
+diagnostics. Normal Flashback preview-cycle validation, pre-stop encoded-frame
+capture, export-while-preview-off verification, and restart frame-flow
+validation now live together in `.Flashback.cs`.
 Playback-preview-cycle validation is also split by runtime phase:
 `.PlaybackPreStop.cs` owns pre-stop frame warmup, `.PlaybackStopped.cs` owns
 preview-stopped state validation, and `.PlaybackRestart.cs` owns restart
-frame-flow validation. Normal Flashback and playback-preview-cycle
-export-while-preview-off verification live in `.FlashbackExport.cs` and
-`.PlaybackExport.cs`. Recording-backed readiness and pre-stop encoder counter
+frame-flow validation. Playback-preview-cycle export-while-preview-off
+verification lives in `.PlaybackExport.cs`. Recording-backed readiness and pre-stop encoder counter
 capture live in `.RecordingCounters.cs`, preview-off recording/backend/counter
 validation lives in `.RecordingValidation.cs`, and restart frame-flow validation
 lives in `.RecordingRestartValidation.cs` while startup only delegates selected
@@ -3966,10 +3964,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
-- `DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackPreStop.cs`
-- `DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackStopped.cs`
-- `DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackRestartValidation.cs`
-- `DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackExport.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackPreStop.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackStopped.cs`
