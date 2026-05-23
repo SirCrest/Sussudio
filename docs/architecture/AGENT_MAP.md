@@ -3294,10 +3294,9 @@ Primary current owners:
   `MainViewModel.Dispatching.cs` owns the stable private adapter names plus
   preview event fan-out for the partial family.
   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs`
-  is a top-level `Sussudio.Controllers` owner for periodic timer refresh orchestration and initial
-  source-telemetry/HDR/live-info/timer/disk-space bootstrap through
-  graph-built context ports. `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.Context.cs`
-  is a top-level `Sussudio.Controllers` owner for the runtime lifecycle graph-port contract for timer creation, runtime
+  is a top-level `Sussudio.Controllers` owner for periodic timer refresh orchestration, initial
+  source-telemetry/HDR/live-info/timer/disk-space bootstrap, and the
+  runtime lifecycle graph-port contract for timer creation, runtime
   snapshot sampling, telemetry bootstrap, live-info/HDR projection, recording
   stats refresh, Flashback bitrate refresh, disk-space refresh, and watcher
   disposal, while

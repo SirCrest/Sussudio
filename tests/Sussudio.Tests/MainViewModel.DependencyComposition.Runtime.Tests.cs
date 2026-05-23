@@ -8,7 +8,6 @@ static partial class Program
         var sourceTelemetryControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs").Replace("\r\n", "\n");
         var sourceTelemetryControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.Context.cs").Replace("\r\n", "\n");
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs").Replace("\r\n", "\n");
-        var runtimeLifecycleControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.Context.cs").Replace("\r\n", "\n");
         var runtimeEventIngressControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs").Replace("\r\n", "\n");
         var disposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs").Replace("\r\n", "\n");
         var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs").Replace("\r\n", "\n");
@@ -51,8 +50,7 @@ static partial class Program
         AssertContains(runtimeLifecycleControllerText, "namespace Sussudio.Controllers;");
         AssertContains(runtimeLifecycleControllerText, "internal sealed class MainViewModelRuntimeLifecycleController");
         AssertContains(runtimeLifecycleControllerText, "private readonly MainViewModelRuntimeEventIngressController _eventIngressController;");
-        AssertContains(runtimeLifecycleControllerContextText, "namespace Sussudio.Controllers;");
-        AssertContains(runtimeLifecycleControllerContextText, "internal sealed class MainViewModelRuntimeLifecycleControllerContext");
+        AssertContains(runtimeLifecycleControllerText, "internal sealed class MainViewModelRuntimeLifecycleControllerContext");
         AssertContains(runtimeLifecycleControllerText, "private readonly MainViewModelRuntimeLifecycleControllerContext _context;");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(runtimeLifecycleControllerText, "_viewModel.");
