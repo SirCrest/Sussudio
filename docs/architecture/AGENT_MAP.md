@@ -3200,7 +3200,7 @@ Primary current owners:
   delegation to pure policy/tooltip helpers.
   `Sussudio/Controllers/Capture/CaptureOptionTooltipFormatter.cs` owns pure HDR hint
   and FPS telemetry tooltip text policy.
-  `MainWindow.CaptureOptionPresentation.cs` is the XAML-facing adapter.
+  `MainWindow.CaptureOptionBindings.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Capture/CaptureOptionBindingController.cs` owns the
   capture option binding adapter context, setup, UI event attachment,
   initialization, resolution/frame-rate selection, recording option event

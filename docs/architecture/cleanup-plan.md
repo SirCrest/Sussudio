@@ -3327,7 +3327,7 @@ application, decoder-count selection handling, and delegation to policy/tooltip
 helpers live in `Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs`.
 Pure HDR readiness hint and FPS telemetry tooltip text policy now lives in
 `Sussudio/Controllers/Capture/CaptureOptionTooltipFormatter.cs`.
-`MainWindow.CaptureOptionPresentation.cs` is the XAML-facing adapter and keeps
+`MainWindow.CaptureOptionBindings.cs` is the XAML-facing adapter and keeps
 the existing method names for binding setup, property-change projection, and
 the XAML decoder-count selection event.
 
