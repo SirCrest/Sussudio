@@ -72,39 +72,42 @@ static partial class Program
     internal static Task CaptureService_RecordingIntegrityLivesInFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs");
-        var summaryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Summary.cs");
-        var countersText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Counters.cs");
-        var audioText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Audio.cs");
 
         AssertContains(rootText, "private RecordingIntegritySummary ResolveRecordingIntegritySummary(");
-        AssertDoesNotContain(rootText, "private sealed record RecordingIntegrityCounterSnapshot(");
-        AssertDoesNotContain(rootText, "private static RecordingIntegritySummary BuildRecordingIntegritySummary(");
-        AssertDoesNotContain(rootText, "private RecordingIntegrityCounterSnapshot GetRecordingIntegrityCountersSinceBaseline(");
-        AssertDoesNotContain(rootText, "private RecordingAudioIntegrityCounterSnapshot GetRecordingAudioCountersSinceBaseline(");
-        AssertDoesNotContain(rootText, "private static void LogRecordingIntegritySummary(");
-
-        AssertContains(countersText, "private sealed record RecordingIntegrityCounterSnapshot(");
-        AssertContains(audioText, "private sealed record RecordingAudioIntegrityCounterSnapshot(");
-        AssertContains(summaryText, "private static RecordingIntegritySummary BuildRecordingIntegritySummary(");
-        AssertContains(summaryText, "var videoFields = BuildRecordingIntegritySummaryVideoFields(");
-        AssertContains(summaryText, "var evaluation = EvaluateRecordingIntegritySummary(");
-        AssertContains(summaryText, "private static void LogRecordingIntegritySummary(");
-        AssertContains(summaryText, "RECORDING_INTEGRITY ");
-        AssertContains(summaryText, "private readonly record struct RecordingIntegritySummaryVideoFields");
-        AssertContains(summaryText, "private readonly record struct RecordingIntegritySummaryAudioFields");
-        AssertContains(summaryText, "private static RecordingIntegritySummaryVideoFields BuildRecordingIntegritySummaryVideoFields(");
-        AssertContains(summaryText, "PipelineDroppedFrames = recordingActive");
-        AssertContains(summaryText, "private static RecordingIntegritySummaryEvaluation EvaluateRecordingIntegritySummary(");
-        AssertContains(summaryText, "private static string EvaluateRecordingIntegrityAudioStatus(");
-        AssertContains(summaryText, "RecordingIntegrityAvSyncDriftWarningMs");
-        AssertContains(summaryText, "audio_boundary_drops=");
-        AssertContains(summaryText, "private static string FormatRecordingIntegrityDouble(");
-        AssertContains(countersText, "private RecordingIntegrityCounterSnapshot GetRecordingIntegrityCountersSinceBaseline(");
-        AssertContains(countersText, "private RecordingIntegrityCounterSnapshot CaptureFlashbackRecordingIntegrityCountersSinceBaseline(");
-        AssertContains(countersText, "private static long DeltaCounter(");
-        AssertContains(audioText, "private RecordingAudioIntegrityCounterSnapshot GetRecordingAudioCountersSinceBaseline(");
-        AssertContains(audioText, "private RecordingAudioIntegrityCounterSnapshot CaptureRecordingAudioCounters(");
-        AssertContains(audioText, "CreateRecordingAudioCounters(");
+        AssertContains(rootText, "private sealed record RecordingIntegrityCounterSnapshot(");
+        AssertContains(rootText, "private sealed record RecordingAudioIntegrityCounterSnapshot(");
+        AssertContains(rootText, "private static RecordingIntegritySummary BuildRecordingIntegritySummary(");
+        AssertContains(rootText, "var videoFields = BuildRecordingIntegritySummaryVideoFields(");
+        AssertContains(rootText, "var evaluation = EvaluateRecordingIntegritySummary(");
+        AssertContains(rootText, "private static void LogRecordingIntegritySummary(");
+        AssertContains(rootText, "RECORDING_INTEGRITY ");
+        AssertContains(rootText, "private readonly record struct RecordingIntegritySummaryVideoFields");
+        AssertContains(rootText, "private readonly record struct RecordingIntegritySummaryAudioFields");
+        AssertContains(rootText, "private static RecordingIntegritySummaryVideoFields BuildRecordingIntegritySummaryVideoFields(");
+        AssertContains(rootText, "PipelineDroppedFrames = recordingActive");
+        AssertContains(rootText, "private static RecordingIntegritySummaryEvaluation EvaluateRecordingIntegritySummary(");
+        AssertContains(rootText, "private static string EvaluateRecordingIntegrityAudioStatus(");
+        AssertContains(rootText, "RecordingIntegrityAvSyncDriftWarningMs");
+        AssertContains(rootText, "audio_boundary_drops=");
+        AssertContains(rootText, "private static string FormatRecordingIntegrityDouble(");
+        AssertContains(rootText, "private RecordingIntegrityCounterSnapshot GetRecordingIntegrityCountersSinceBaseline(");
+        AssertContains(rootText, "private RecordingIntegrityCounterSnapshot CaptureFlashbackRecordingIntegrityCountersSinceBaseline(");
+        AssertContains(rootText, "private static long DeltaCounter(");
+        AssertContains(rootText, "private RecordingAudioIntegrityCounterSnapshot GetRecordingAudioCountersSinceBaseline(");
+        AssertContains(rootText, "private RecordingAudioIntegrityCounterSnapshot CaptureRecordingAudioCounters(");
+        AssertContains(rootText, "CreateRecordingAudioCounters(");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingIntegrity.Summary.cs")),
+            "old recording integrity summary partial removed");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingIntegrity.Counters.cs")),
+            "old recording integrity counters partial removed");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingIntegrity.Audio.cs")),
+            "old recording integrity audio partial removed");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingIntegrity.Logging.cs")),

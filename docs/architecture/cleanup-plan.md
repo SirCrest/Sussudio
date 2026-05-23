@@ -1529,15 +1529,13 @@ unified-video cleanup mechanics to the video pipeline resource owner;
 `Sussudio/Services/Capture/CaptureService.PreviewReuse.cs`
 owns retained video/Flashback backend reuse checks and capture-settings cloning;
 
-Recording integrity policy is now split under
-`Sussudio/Services/Capture/CaptureService.RecordingIntegrity*.cs`. The root
-partial resolves the active backend, `.Models.cs` owns the private counter DTOs,
-`.Summary.cs` owns final `RecordingIntegritySummary` DTO construction plus the
-structured `RECORDING_INTEGRITY` log line, normalized video/audio summary
-handoff fields, integrity status, reason, and audio-status classification.
-`.Counters.cs` owns video/backend counter capture and baseline deltas, and
-`.Audio.cs` owns audio counter capture and baseline deltas. Snapshot
-partials consume that policy instead of containing it.
+Recording integrity policy now lives in
+`Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs`. That owner
+keeps active-backend resolution, private video/audio counter DTOs, baseline
+deltas, final `RecordingIntegritySummary` DTO construction, normalized
+video/audio summary handoff fields, integrity status, reason, audio-status
+classification, and the structured `RECORDING_INTEGRITY` log line together.
+Snapshot partials consume that policy instead of containing it.
 
 LibAv encoder option validation now lives in
 `Sussudio/Services/Recording/LibAvEncoder.OptionsValidation.cs`. Keep required
