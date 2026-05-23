@@ -15,8 +15,7 @@ static partial class Program
         var singleFilePacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketReadLoop.cs")
             .Replace("\r\n", "\n");
         var singleFilePacketWritingText = singleFilePacketReadLoopText;
-        var singleFilePacketWriteStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketWriteState.cs")
-            .Replace("\r\n", "\n");
+        var singleFilePacketWriteStateText = singleFilePacketReadLoopText;
         var singleFilePacketRebasingText = singleFilePacketReadLoopText;
         var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
             .Replace("\r\n", "\n");
@@ -73,8 +72,8 @@ static partial class Program
         AssertContains(singleFilePacketReadLoopText, "var packet = ffmpeg.av_packet_alloc();");
         AssertContains(singleFilePacketReadLoopText, "var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);");
         AssertContains(singleFilePacketReadLoopText, "FreeBufferedPackets(packetState.BufferedPackets, packetState.BufferedStreamIndices);");
-        AssertDoesNotContain(singleFilePacketReadLoopText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");
-        AssertDoesNotContain(singleFilePacketReadLoopText, "private struct SingleFilePacketWriteState");
+        AssertContains(singleFilePacketReadLoopText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");
+        AssertContains(singleFilePacketReadLoopText, "private struct SingleFilePacketWriteState");
         AssertContains(singleFilePacketWriteStateText, "private struct SingleFilePacketWriteState");
         AssertContains(singleFilePacketWriteStateText, "private static readonly AVRational SingleFilePacketUsTimeBase");
         AssertContains(singleFilePacketWriteStateText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");

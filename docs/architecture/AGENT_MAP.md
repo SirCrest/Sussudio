@@ -1156,10 +1156,8 @@ Entry points:
   result validation, read-loop dispatch, drift logging, the active input packet
   pump, stream filtering, out-point clipping, timestamp rebasing, native
   interleaved writes, writer throttling, per-read packet unref, progress
-  heartbeat, and final packet cleanup.
-- `FlashbackExporter.SingleFilePacketWriteState.cs` owns single-file packet
-  write state, timestamp-base discovery, early-packet buffering, and EOF
-  partial-base rescue.
+  heartbeat, final packet cleanup, write state, timestamp-base discovery,
+  early-packet buffering, and EOF partial-base rescue.
 - `FlashbackExporter.Segments.cs` owns multi-segment export validation
   dispatch, temp-output preparation, final output replacement, and export-lock
   release.

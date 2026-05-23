@@ -116,8 +116,7 @@ static partial class Program
         var singleFilePacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketReadLoop.cs")
             .Replace("\r\n", "\n");
         var singleFilePacketWritingText = singleFilePacketReadLoopText;
-        var singleFilePacketWriteStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketWriteState.cs")
-            .Replace("\r\n", "\n");
+        var singleFilePacketWriteStateText = singleFilePacketReadLoopText;
         var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
             .Replace("\r\n", "\n");
         var segmentPacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")

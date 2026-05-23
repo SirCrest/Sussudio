@@ -2033,12 +2033,10 @@ single `.ts` export validation, seek/setup, final output replacement, success
 result shaping, and single-export lock release there. Single-file packet result
 validation, active input packet pump, native frame reads, per-read packet unref,
 stream filtering, out-point clipping, timestamp rebasing, inline remux writes,
-writer throttling, progress heartbeat, and final packet cleanup now live in
-`Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketReadLoop.cs`.
-Single-file packet write state,
+writer throttling, progress heartbeat, final packet cleanup, packet write state,
 timestamp-base discovery, buffered packet transition, and EOF partial-base
-rescue live in
-`Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketWriteState.cs`.
+rescue now live in
+`Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketReadLoop.cs`.
 
 Flashback exporter multi-segment packet-copy/remux behavior now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Segments.cs`. Keep segment
