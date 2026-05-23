@@ -140,7 +140,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingPipelineVideoQueueFlattenedProjection BuildRecordingPipelineVideoQueueFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingPipelineHardwareQueuesFlattenedProjection BuildRecordingPipelineHardwareQueuesFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingOutputFlattenedProjection(recordingBackend, recordingOutput)");
-        AssertContains(diagnostics.SnapshotProjectionRecordingOutputText, "private static RecordingOutputFlattenedProjection BuildRecordingOutputFlattenedProjection(");
+        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingOutputFlattenedProjection BuildRecordingOutputFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildProcessResourceFlattenedProjection(processResourceProjection)");
         AssertContains(diagnostics.SnapshotProjectionProcessResourcesText, "private static ProcessResourceFlattenedProjection BuildProcessResourceFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildAvSyncFlattenedProjection(avSync)");

@@ -43,7 +43,6 @@ static partial class Program
                 SnapshotProjectionProcessResourcesText,
                 SnapshotProjectionRecordingIntegrityText,
                 SnapshotProjectionRecordingPipelineText,
-                SnapshotProjectionRecordingOutputText,
                 SnapshotProjectionSourceSignalText,
                 SnapshotProjectionSourceTelemetryText,
                 SnapshotProjectionUserSettingsText,

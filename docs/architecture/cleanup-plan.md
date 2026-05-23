@@ -236,13 +236,11 @@ flattening consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs` owns
 recording-pipeline projection routing, encoder queue age/count/failure health,
 conversion/ffmpeg/video ingest queue health, recording video queue latency,
-backpressure, encoder-output health, GPU/CUDA queue health, and final
-recording-pipeline flattening consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.RecordingOutput.cs` owns recording
+backpressure, encoder-output health, GPU/CUDA queue health, recording
 backend/audio-path/mux-result projection, UI output text, accumulated recording
-bytes, file-growth state, last finalized output metadata, and last verification
-result projection consumed by the automation snapshot DTO, plus final recording
-backend and output projection-to-`AutomationSnapshot` field flattening.
+bytes, file-growth state, last finalized output metadata, last verification
+result projection consumed by the automation snapshot DTO, and final recording
+pipeline/backend/output projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs` owns detected
 source frame-rate fallback, source dimensions/HDR, raw source signal metadata
 projection, source telemetry fallback policy, age calculation, source-target
