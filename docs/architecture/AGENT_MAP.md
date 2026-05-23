@@ -3497,7 +3497,7 @@ Refactor direction:
   screenshots remain on `IAutomationWindowControl`. `AutomationDiagnosticsHub`
   consumes the snapshot-query port for read-only diagnostic and verification
   snapshots.
-- `MainViewModelDependencies.cs` owns the default service graph for the root
+- `MainViewModel.Composition.cs` owns the default service graph for the root
   compatibility view model until a fuller app composition root injects feature
   view models and narrower ports.
 - `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs` owns
@@ -3506,7 +3506,7 @@ Refactor direction:
   runtime event-ingress, recording, preview lifecycle/reinitialize, capture
   option rebuild, device-format probe, runtime lifecycle, and disposal graph
   ports. Keep
-  service construction in `MainViewModelDependencies.cs`, and keep
+  service construction in `MainViewModel.Composition.cs`, and keep
   `_runtimeLifecycleController.Start()` plus initial presentation timing in the
   root constructor after all graph fields have been assigned.
 

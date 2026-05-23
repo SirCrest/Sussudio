@@ -13,7 +13,7 @@ static partial class Program
         var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs").Replace("\r\n", "\n");
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
-        var dependenciesText = ReadRepoFile("Sussudio/ViewModels/MainViewModelDependencies.cs").Replace("\r\n", "\n");
+        var dependenciesText = compositionText;
 
         AssertContains(rootText, "public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDisposable, IAutomationViewModel");
         AssertContains(rootText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
@@ -124,6 +124,10 @@ static partial class Program
         AssertContains(dependenciesText, "new CaptureSessionCoordinator(captureService)");
         AssertContains(dependenciesText, "DispatcherQueue.GetForCurrentThread()");
         AssertContains(dependenciesText, "new AudioDeviceWatcher()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModelDependencies.cs")),
+            "MainViewModelDependencies.cs folded into MainViewModel.Composition.cs");
 
         return Task.CompletedTask;
     }

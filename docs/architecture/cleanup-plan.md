@@ -3962,10 +3962,10 @@ owner, fold it back into that owner and update the source-shape tests and
 
    Preserve the root `MainViewModel` public surface while introducing feature
    view models or adapters for capture selection, recording, audio, Flashback,
-   diagnostics, and automation. `MainViewModelDependencies.cs` now owns the
-   default service graph for the root compatibility view model, which gives the
-   next facade slices a small construction seam without changing XAML bindings
-   or automation contracts. The live audio/microphone meter callback state
+   diagnostics, and automation. `MainViewModel.Composition.cs` owns the default
+   service graph for the root compatibility view model, which gives the next
+   facade slices a small construction seam without changing XAML bindings or
+   automation contracts. The live audio/microphone meter callback state
    now has a named owner in `MainViewModel.AudioMeters.cs`; keep future meter
    behavior there instead of growing the root facade file. Audio ramp trace
    state, bounded ring-buffer storage, snapshot projection, trace session
@@ -4014,7 +4014,7 @@ owner, fold it back into that owner and update the source-shape tests and
    device-refresh, capture-settings automation, source telemetry, runtime
    event-ingress, recording, preview lifecycle/reinitialize, capture option
    rebuild, device-format probe, runtime lifecycle, and disposal graph ports.
-   `MainViewModelDependencies.cs` continues to own service construction. Audio
+   `MainViewModel.Composition.cs` continues to own service construction. Audio
    capture property handlers now live in
    `MainViewModel.AudioCapturePropertyChanges.cs`, audio-preview property
    handlers live in `MainViewModel.AudioState.cs`, microphone monitor/device
