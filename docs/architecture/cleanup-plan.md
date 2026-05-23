@@ -623,10 +623,8 @@ MJPEG preview jitter, MJPEG packet hash, preview diagnostics, capture commands,
 recording, Flashback recording/backend, Flashback playback, Flashback export,
 and visual cadence owner files.
 
-`Sussudio/Models/Automation/AutomationSnapshot.FrameDiagnostics.cs`,
-`AutomationSnapshot.FlashbackRecording.cs`,
-`AutomationSnapshot.FlashbackPlayback.cs`, and
-`AutomationSnapshot.FlashbackExport.cs` own the flattened automation snapshot
+`Sussudio/Models/Automation/AutomationSnapshot.FrameDiagnostics.cs` and
+`AutomationSnapshot.Flashback.cs` own the flattened automation snapshot
 DTO properties for those domains. Keep broad model buckets from regrowing:
 new evidence fields should land beside the closest runtime or diagnostic
 surface and get a matching source-ownership assertion in the snapshot-model

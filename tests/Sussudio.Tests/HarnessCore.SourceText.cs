@@ -88,9 +88,7 @@ static partial class Program
             "Sussudio/Models/Automation/AutomationSnapshot.Preview.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.FrameDiagnostics.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.SystemHealth.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.FlashbackRecording.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.FlashbackPlayback.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.FlashbackExport.cs"
+            "Sussudio/Models/Automation/AutomationSnapshot.Flashback.cs"
         };
 
         var parts = new List<string>();

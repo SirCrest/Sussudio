@@ -8,7 +8,7 @@ public partial class SnapshotModelsTests
     public void AutomationSnapshot_ExposesFlashbackPlaybackMetrics()
     {
         var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
-        var flashbackPlaybackText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.FlashbackPlayback.cs");
+        var flashbackText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.Flashback.cs");
 
         AssertAutomationSnapshotProperties(
             snapshotType,
@@ -77,9 +77,9 @@ public partial class SnapshotModelsTests
             "FlashbackPlaybackLastCommandProcessedUtcUnixMs",
             "FlashbackPlaybackLastCommandFailureUtcUnixMs",
             "FlashbackPlaybackLastCommandFailure");
-        AssertContains(flashbackPlaybackText, "public string FlashbackPlaybackState { get; init; } = \"N/A\";");
-        AssertContains(flashbackPlaybackText, "public double[] FlashbackPlaybackRecentFrameIntervalsMs { get; init; } = Array.Empty<double>();");
-        AssertContains(flashbackPlaybackText, "public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;");
-        AssertDoesNotContain(flashbackPlaybackText, "public bool FlashbackExportActive { get; init; }");
+        AssertContains(flashbackText, "public string FlashbackPlaybackState { get; init; } = \"N/A\";");
+        AssertContains(flashbackText, "public double[] FlashbackPlaybackRecentFrameIntervalsMs { get; init; } = Array.Empty<double>();");
+        AssertContains(flashbackText, "public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;");
+        AssertContains(flashbackText, "public bool FlashbackExportActive { get; init; }");
     }
 }
