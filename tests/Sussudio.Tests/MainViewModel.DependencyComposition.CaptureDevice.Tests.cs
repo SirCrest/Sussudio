@@ -10,8 +10,6 @@ static partial class Program
         var controllerGraphCaptureSettingsAutomationText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureSettingsAutomation.cs").Replace("\r\n", "\n");
         var controllerGraphCaptureModesText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureModes.cs").Replace("\r\n", "\n");
         var controllerGraphDeviceFormatProbeText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.DeviceFormatProbe.cs").Replace("\r\n", "\n");
-        var controllerGraphRecordingCapabilityText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RecordingCapability.cs").Replace("\r\n", "\n");
-        var controllerGraphRecordingSettingsAutomationText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RecordingSettingsAutomation.cs").Replace("\r\n", "\n");
         var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs").Replace("\r\n", "\n");
         var deviceRefreshControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.Context.cs").Replace("\r\n", "\n");
         var deviceAudioRequestControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs").Replace("\r\n", "\n");
@@ -123,8 +121,8 @@ static partial class Program
         AssertDoesNotContain(recordingSettingsAutomationControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(recordingSettingsAutomationControllerText, "_viewModel.");
         AssertContains(recordingSettingsAutomationControllerText, "_context.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
-        AssertContains(controllerGraphRecordingSettingsAutomationText, "private static MainViewModelRecordingSettingsAutomationController CreateRecordingSettingsAutomationController(MainViewModel viewModel)");
-        AssertContains(controllerGraphRecordingSettingsAutomationText, "new MainViewModelRecordingSettingsAutomationControllerContext");
+        AssertContains(controllerGraphText, "private static MainViewModelRecordingSettingsAutomationController CreateRecordingSettingsAutomationController(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelRecordingSettingsAutomationControllerContext");
 
         AssertContains(recordingCapabilityControllerText, "namespace Sussudio.Controllers;");
         AssertContains(recordingCapabilityControllerText, "internal sealed class MainViewModelRecordingCapabilityController");
@@ -133,10 +131,10 @@ static partial class Program
         AssertContains(recordingCapabilityControllerText, "private readonly MainViewModelRecordingCapabilityControllerContext _context;");
         AssertDoesNotContain(recordingCapabilityControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(recordingCapabilityControllerText, "_viewModel.");
-        AssertContains(controllerGraphRecordingCapabilityText, "private static MainViewModelRecordingCapabilityController CreateRecordingCapabilityController(MainViewModel viewModel)");
-        AssertContains(controllerGraphRecordingCapabilityText, "new MainViewModelRecordingCapabilityControllerContext");
-        AssertContains(controllerGraphRecordingCapabilityText, "ReplaceAvailableRecordingFormats = formats =>");
-        AssertContains(controllerGraphRecordingCapabilityText, "NotifySelectedRecordingFormatChanged = () => viewModel.OnPropertyChanged(nameof(SelectedRecordingFormat)),");
+        AssertContains(controllerGraphText, "private static MainViewModelRecordingCapabilityController CreateRecordingCapabilityController(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelRecordingCapabilityControllerContext");
+        AssertContains(controllerGraphText, "ReplaceAvailableRecordingFormats = formats =>");
+        AssertContains(controllerGraphText, "NotifySelectedRecordingFormatChanged = () => viewModel.OnPropertyChanged(nameof(SelectedRecordingFormat)),");
 
         AssertContains(captureModeOptionRebuildControllerText, "namespace Sussudio.Controllers;");
         AssertContains(captureModeOptionRebuildControllerText, "internal sealed partial class MainViewModelCaptureModeOptionRebuildController");

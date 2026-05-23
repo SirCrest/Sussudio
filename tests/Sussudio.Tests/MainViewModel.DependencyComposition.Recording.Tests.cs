@@ -5,16 +5,14 @@ static partial class Program
     internal static Task MainViewModelRecordingTransition_UsesDependencyCompositionContext()
     {
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
-        var controllerGraphRecordingText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Recording.cs").Replace("\r\n", "\n");
         var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs").Replace("\r\n", "\n");
 
-        AssertContains(controllerGraphRecordingText, "private sealed partial class MainViewModelControllerGraph");
-        AssertContains(controllerGraphRecordingText, "private static MainViewModelRecordingTransitionController CreateRecordingTransitionController(");
-        AssertContains(controllerGraphRecordingText, "new MainViewModelRecordingTransitionController(\n                new MainViewModelRecordingTransitionControllerContext");
-        AssertContains(controllerGraphRecordingText, "StartRecordingAsync = (settings, cancellationToken) =>");
-        AssertContains(controllerGraphRecordingText, "viewModel._sessionCoordinator.StartRecordingAsync(settings, cancellationToken),");
-        AssertContains(controllerGraphRecordingText, "StopRecordingAsync = cancellationToken =>");
-        AssertContains(controllerGraphRecordingText, "viewModel._sessionCoordinator.StopRecordingAsync(cancellationToken),");
+        AssertContains(controllerGraphText, "private static MainViewModelRecordingTransitionController CreateRecordingTransitionController(");
+        AssertContains(controllerGraphText, "new MainViewModelRecordingTransitionController(\n                new MainViewModelRecordingTransitionControllerContext");
+        AssertContains(controllerGraphText, "StartRecordingAsync = (settings, cancellationToken) =>");
+        AssertContains(controllerGraphText, "viewModel._sessionCoordinator.StartRecordingAsync(settings, cancellationToken),");
+        AssertContains(controllerGraphText, "StopRecordingAsync = cancellationToken =>");
+        AssertContains(controllerGraphText, "viewModel._sessionCoordinator.StopRecordingAsync(cancellationToken),");
         AssertOccursBefore(
             controllerGraphText,
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
