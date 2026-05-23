@@ -3815,14 +3815,9 @@ Primary owners:
   queue text, export progress/result text, playback state/command-queue text,
   and playback cadence/decode/frame/stage/A/V drift text.
 - `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG timing snapshot
-  activation, header, and output order.
-- `tools/ssctl/Formatters.Snapshot.Mjpeg.Decode.cs` owns MJPEG decode, interop
-  copy, callback, and per-decoder timing snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Mjpeg.Pipeline.cs` owns MJPEG compressed
-  queue, drop-reason, reorder, and pipeline timing snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Mjpeg.PreviewJitter.cs` owns MJPEG
-  preview-jitter queue, input/output/latency, ownership, and underflow snapshot
-  text.
+  activation, header, output order, decode/copy/callback/per-decoder timing,
+  compressed queue/drop/reorder/pipeline timing, and preview-jitter queue,
+  input/output/latency, ownership, and underflow snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Preview.cs` owns preview renderer-mode
   routing, GPU playback summary, non-D3D fallback frame/cadence text, and D3D
   renderer delegation.

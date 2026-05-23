@@ -500,12 +500,9 @@ diagnostic health/frame-lane text in `Formatters.Snapshot.DiagnosticLanes.cs`,
 Flashback snapshot gating/order, encoding status/health text, export
 progress/result text, playback command text, and playback cadence/decode/frame/
 stage/A/V drift text in `Formatters.Snapshot.Flashback.cs`, MJPEG
-activation/header/order in `Formatters.Snapshot.Mjpeg.cs`,
-decode/copy/callback/per-decoder timing text in
-`Formatters.Snapshot.Mjpeg.Decode.cs`, compressed-queue, drop-reason, reorder,
-and pipeline timing text in `Formatters.Snapshot.Mjpeg.Pipeline.cs`, MJPEG
-preview-jitter queue, latency, ownership, and underflow text in
-`Formatters.Snapshot.Mjpeg.PreviewJitter.cs`, D3D preview
+activation/header/order, decode/copy/callback/per-decoder timing,
+compressed-queue, drop-reason, reorder, pipeline timing, preview-jitter queue,
+latency, ownership, and underflow text in `Formatters.Snapshot.Mjpeg.cs`, D3D preview
 renderer routing/header text in `Formatters.Snapshot.PreviewD3D.cs`, D3D CPU
 timing, pipeline latency, and frame-latency wait text in
 `Formatters.Snapshot.PreviewD3D.Timing.cs`, D3D frame ownership and DXGI
