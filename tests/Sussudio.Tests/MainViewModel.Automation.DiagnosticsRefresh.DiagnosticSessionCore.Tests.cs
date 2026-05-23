@@ -53,7 +53,7 @@ static partial class Program
         AssertContains(diagnosticSessionModelsText, "public sealed partial class DiagnosticSessionResult");
         AssertContains(diagnosticSessionModelsText, "public string TerminalState { get; set; }");
         AssertContains(diagnosticSessionText, "LivePath = _liveStateWriter.LivePath;");
-        AssertContains(diagnosticSessionText, "DiagnosticSessionInitialSnapshot.CreateUnknown()");
+        AssertContains(diagnosticSessionText, "CreateUnknownInitialSnapshot()");
         AssertContains(diagnosticSessionText, "InitialSnapshotKnown = initialSnapshotResult.Known;");
         AssertContains(diagnosticSessionText, "skipped state-mutating scenario");
         AssertContains(diagnosticSessionText, "CreateCleanupCts(TimeSpan.FromMilliseconds(recordingCleanupTimeoutMs))");

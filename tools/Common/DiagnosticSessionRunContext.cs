@@ -1,5 +1,8 @@
 using System.Globalization;
 using System.Text.Json;
+using Sussudio.Models;
+using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;
+using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 
 namespace Sussudio.Tools;
 
@@ -79,12 +82,7 @@ internal sealed class DiagnosticSessionRunContext : IDisposable
     internal async Task CaptureInitialSnapshotAsync()
     {
         await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
-        var initialSnapshotResult = await DiagnosticSessionInitialSnapshot.CaptureAsync(
-                CommandChannel,
-                SetStage,
-                RecordTerminalException,
-                () => WriteLiveStateBestEffortAsync())
-            .ConfigureAwait(false);
+        var initialSnapshotResult = await CaptureInitialSnapshotCoreAsync().ConfigureAwait(false);
         InitialSnapshot = initialSnapshotResult.Snapshot;
         InitialSnapshotKnown = initialSnapshotResult.Known;
     }
@@ -177,10 +175,56 @@ internal sealed class DiagnosticSessionRunContext : IDisposable
 
     private void InitializeUnknownSnapshotState()
     {
-        var unknownSnapshot = DiagnosticSessionInitialSnapshot.CreateUnknown();
+        var unknownSnapshot = CreateUnknownInitialSnapshot();
         InitialSnapshot = unknownSnapshot.Snapshot;
         InitialSnapshotKnown = unknownSnapshot.Known;
     }
+
+    private DiagnosticSessionInitialSnapshotResult CreateUnknownInitialSnapshot()
+    {
+        return new DiagnosticSessionInitialSnapshotResult(CreateEmptyJsonObject(), false);
+    }
+
+    private async Task<DiagnosticSessionInitialSnapshotResult> CaptureInitialSnapshotCoreAsync()
+    {
+        var unknownSnapshot = CreateUnknownInitialSnapshot();
+        var initialSnapshot = unknownSnapshot.Snapshot;
+        var initialSnapshotKnown = unknownSnapshot.Known;
+
+        try
+        {
+            SetStage("initial-snapshot");
+            var initialResponse = await CommandChannel.SendAsync(AutomationCommandKind.GetSnapshot, null, null).ConfigureAwait(false);
+            if (TryGetSnapshot(initialResponse, out var initial))
+            {
+                initialSnapshot = initial;
+                initialSnapshotKnown = true;
+            }
+            else
+            {
+                CommandChannel.RecordFailure("initial-snapshot: baseline snapshot unavailable; state-mutating scenarios will be skipped");
+            }
+        }
+        catch (Exception ex)
+        {
+            RecordTerminalException(ex, "initial-snapshot");
+            await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
+        }
+
+        return new DiagnosticSessionInitialSnapshotResult(initialSnapshot, initialSnapshotKnown);
+    }
+}
+
+internal sealed class DiagnosticSessionInitialSnapshotResult
+{
+    internal DiagnosticSessionInitialSnapshotResult(JsonElement snapshot, bool known)
+    {
+        Snapshot = snapshot;
+        Known = known;
+    }
+
+    internal JsonElement Snapshot { get; }
+    internal bool Known { get; }
 }
 
 internal readonly record struct DiagnosticSessionRunBootstrap(

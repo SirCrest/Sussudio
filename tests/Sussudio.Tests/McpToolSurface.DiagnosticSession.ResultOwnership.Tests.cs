@@ -82,8 +82,7 @@ static partial class Program
     internal static Task DiagnosticSessionJsonArtifacts_OwnsJsonWritingAndResponseExtractionSplit()
     {
         var executionText = ReadDiagnosticSessionRunExecutionRootSource();
-        var initialSnapshotText = ReadRepoFile("tools/Common/DiagnosticSessionInitialSnapshot.cs")
-            .Replace("\r\n", "\n");
+        var initialSnapshotText = ReadDiagnosticSessionRunContextSource();
         var jsonArtifactsText = ReadRepoFile("tools/Common/DiagnosticSessionJsonArtifacts.cs")
             .Replace("\r\n", "\n");
         var responseJsonText = ReadRepoFile("tools/Common/DiagnosticSessionAutomationResponseJson.cs")

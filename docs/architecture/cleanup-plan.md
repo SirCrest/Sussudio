@@ -3455,10 +3455,10 @@ frame-ledger trace construction lives next to pre-summary result artifact
 writes in `tools/Common/DiagnosticSessionResultArtifacts.cs`.
 
 Diagnostic-session initial snapshot capture now lives in
-`tools/Common/DiagnosticSessionInitialSnapshot.cs`. It owns the baseline
-snapshot capture through `AutomationCommandKind.GetSnapshot`, the unknown-state
-warning, and initial-snapshot exception recording while the runner keeps phase
-ordering.
+`tools/Common/DiagnosticSessionRunContext.cs` beside the mutable initial
+snapshot fields. It owns the baseline snapshot capture through
+`AutomationCommandKind.GetSnapshot`, the unknown-state warning, and
+initial-snapshot exception recording while the runner keeps phase ordering.
 
 Diagnostic-session run context now lives in
 `tools/Common/DiagnosticSessionRunContext.cs`. `DiagnosticSessionRunContext.cs`
@@ -3816,7 +3816,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionHealthTolerances.cs`
 - `DiagnosticSessionJsonArtifacts.cs`
 - `DiagnosticSessionAutomationResponseJson.cs`
-- `DiagnosticSessionInitialSnapshot.cs`
 - `DiagnosticSessionMetrics.cs`
 - `DiagnosticSessionModels.cs`
 - `DiagnosticSessionResult.cs`

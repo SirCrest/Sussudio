@@ -3858,9 +3858,6 @@ Primary owners:
 - `tools/Common/DiagnosticSessionAutomationResponseJson.cs` owns
   diagnostic-session automation response shape helpers for snapshot and
   verification envelopes.
-- `tools/Common/DiagnosticSessionInitialSnapshot.cs` owns the diagnostic-session
-  baseline snapshot capture via `AutomationCommandKind.GetSnapshot`,
-  unknown-state warning, and initial-snapshot exception recording.
 - `tools/Common/DiagnosticSessionRunState.cs` owns diagnostic-session terminal
   exception state, last-stage tracking, and best-effort artifact write failure
   recording.
@@ -3872,8 +3869,9 @@ Primary owners:
   bootstrap, scenario normalization, scenario-plan selection, duration/sample
   clamping, session identity, output-directory creation, runner process
   metadata, actions, warnings, samples, run state, command channel, scenario
-  cancellation source, initial snapshot state, live-state handoff, run-context
-  disposal, and scenario/completion context construction.
+  cancellation source, initial snapshot state, baseline snapshot capture,
+  unknown-state warning, live-state handoff, run-context disposal, and
+  scenario/completion context construction.
 - `tools/Common/DiagnosticSessionRunExecution.cs` owns diagnostic-session phase
   sequencing around context creation, initial snapshot capture, scenario phase
   invocation, cleanup, post-cleanup evidence/result sequence, result-build
