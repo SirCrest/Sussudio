@@ -133,8 +133,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var videoQueueSubmissionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.cs")
             .Replace("\r\n", "\n");
-        var queueCleanupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.QueueCleanup.cs")
-            .Replace("\r\n", "\n");
+        var queueCleanupText = queuesText;
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
             ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
@@ -184,10 +183,10 @@ static partial class Program
         AssertContains(queueCleanupText, "ReleaseGpuTextureBestEffort(packet.Texture);");
         AssertContains(queueCleanupText, "Interlocked.Exchange(ref queueDepth, 0);");
 
-        AssertDoesNotContain(queuesText, "private void ReturnAllRemainingQueuedBuffers()");
-        AssertDoesNotContain(queuesText, "private void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue, ref int queueDepth)");
-        AssertDoesNotContain(queuesText, "private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)");
-        AssertDoesNotContain(queuesText, "private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)");
+        AssertContains(queuesText, "private void ReturnAllRemainingQueuedBuffers()");
+        AssertContains(queuesText, "private void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue, ref int queueDepth)");
+        AssertContains(queuesText, "private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)");
+        AssertContains(queuesText, "private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)");
         AssertContains(queuesText, "private void CompleteWriter<TPacket>(Channel<TPacket>? channel)");
         AssertContains(queuesText, "private void SignalWork(string operation)");
         AssertContains(queuesText, "private bool WaitForCancellation(TimeSpan timeout)");
