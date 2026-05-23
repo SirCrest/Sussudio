@@ -16,6 +16,7 @@ namespace Sussudio.Services.Capture;
 public partial class DeviceService
 {
     private const int FormatProbeConcurrency = 2;
+    private const string PreferredNativeXuInterfaceFragment = "{65e8773d-8f56-11d0-a3b9-00a0c9223196}";
     private readonly SemaphoreSlim _formatProbeGate = new(FormatProbeConcurrency, FormatProbeConcurrency);
 
     private static readonly string[] PreferredDeviceNames =
@@ -144,6 +145,93 @@ public partial class DeviceService
         bool PreferredByName,
         bool LikelyByCapability,
         bool LikelyByName);
+
+    private static int GetDevicePriority(DeviceCandidate candidate)
+    {
+        var maxPixelCount = candidate.Device.SupportedFormats
+            .Select(f => (long)f.Width * f.Height)
+            .DefaultIfEmpty(0)
+            .Max();
+        var maxFrameRate = candidate.Device.SupportedFormats
+            .Select(f => f.FrameRate)
+            .DefaultIfEmpty(0)
+            .Max();
+
+        var priority = 0;
+        if (candidate.PreferredByName) priority += 400;
+        if (candidate.LikelyByCapability) priority += 200;
+        if (candidate.LikelyByName) priority += 100;
+        if (candidate.HasEnumeratedFormats) priority += 50;
+        priority += (int)Math.Min(maxFrameRate, 120);
+        priority += (int)Math.Min(maxPixelCount / 500_000, 40);
+        return priority;
+    }
+
+    private static bool LooksLikeHighBandwidthCapture(CaptureDevice device)
+    {
+        foreach (var format in device.SupportedFormats)
+        {
+            if ((format.Width >= 1920 && format.FrameRate >= 50) ||
+                (format.Width >= 2560 && format.FrameRate >= 30) ||
+                (format.Width >= 3840 && format.FrameRate >= 24))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string? ResolveNativeXuInterfacePath(string deviceId)
+    {
+        var probeDevice = new CaptureDevice { Id = deviceId };
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(probeDevice, out var vendorId, out var productId))
+        {
+            return null;
+        }
+
+        try
+        {
+            var interfaces = KsExtensionUnitNative.EnumerateKsInterfaces(vendorId, productId);
+            if (interfaces.Count == 0)
+            {
+                return null;
+            }
+
+            var deviceInstanceKey = GetDeviceInstanceKey(deviceId);
+            var sameDeviceInterfaces = interfaces
+                .Where(ksInterface => string.Equals(
+                    GetDeviceInstanceKey(ksInterface.Path),
+                    deviceInstanceKey,
+                    StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            if (sameDeviceInterfaces.Length == 0)
+            {
+                Logger.Log($"Native XU interface resolution found no matching interface for device '{deviceId}'");
+                return null;
+            }
+
+            return sameDeviceInterfaces
+                .Select(ksInterface => ksInterface.Path)
+                .OrderByDescending(path =>
+                    path.IndexOf(PreferredNativeXuInterfaceFragment, StringComparison.OrdinalIgnoreCase) >= 0)
+                .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Native XU interface resolution failed for device '{deviceId}': {ex.GetType().Name}: {ex.Message}");
+            return null;
+        }
+    }
+
+    private static string GetDeviceInstanceKey(string interfacePath)
+    {
+        var categoryStart = interfacePath.LastIndexOf("#{", StringComparison.Ordinal);
+        return categoryStart > 0
+            ? interfacePath[..categoryStart]
+            : interfacePath;
+    }
 
     public sealed record DeviceDiscoveryResult(
         ObservableCollection<CaptureDevice> CaptureDevices,

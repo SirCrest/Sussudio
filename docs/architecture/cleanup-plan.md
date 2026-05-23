@@ -1247,14 +1247,12 @@ readiness/rejection logging now live in
 Playback/scrub/marker command adapters live in
 `CaptureSessionCoordinator.Flashback.Playback.cs`.
 
-Device discovery ownership is split across `DeviceService.*.cs`. Keep root
-capture/audio enumeration orchestration and the combined discovery result in
-`DeviceService.cs`, format cache serialization in
-`DeviceService.FormatCache.cs`, inline/background format probing in
-`DeviceService.FormatProbe.cs`, device priority/capability scoring in
-`DeviceService.Scoring.cs`, audio endpoint association in
-`DeviceService.AudioAssociation.cs`, and native XU interface path resolution in
-`DeviceService.NativeXu.cs`.
+Device discovery ownership is split across a small `DeviceService` family. Keep
+capture/audio enumeration orchestration, the combined discovery result, device
+priority/capability scoring, and native XU interface path resolution in
+`DeviceService.cs`, format cache serialization in `DeviceService.FormatCache.cs`,
+inline/background format probing in `DeviceService.FormatProbe.cs`, and audio
+endpoint association in `DeviceService.AudioAssociation.cs`.
 
 Native XU Kernel Streaming calls are grouped under
 `Sussudio/Services/Capture/NativeXu/`. Keep KS category constants, DTOs,

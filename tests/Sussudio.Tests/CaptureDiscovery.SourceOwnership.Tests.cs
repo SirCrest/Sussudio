@@ -6,7 +6,6 @@ static partial class Program
     internal static Task CaptureDiscoverySourceOwnership_LivesInFocusedPartials()
     {
         var deviceRootText = ReadRepoFile("Sussudio/Services/Capture/DeviceService.cs").Replace("\r\n", "\n");
-        var deviceScoringText = ReadRepoFile("Sussudio/Services/Capture/DeviceService.Scoring.cs").Replace("\r\n", "\n");
         var sourceReaderRootText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs").Replace("\r\n", "\n");
         var sourceReaderNegotiationText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs").Replace("\r\n", "\n");
         var sourceReaderConvertedMediaTypeText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.ConvertedMediaType.cs").Replace("\r\n", "\n");
@@ -23,14 +22,11 @@ static partial class Program
         AssertContains(deviceRootText, "var audioTask = MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync();");
         AssertContains(deviceRootText, "return new DeviceDiscoveryResult(discovered, audioDevices);");
         AssertContains(deviceRootText, "foreach (var candidate in selected.OrderByDescending(GetDevicePriority))");
-        AssertContains(deviceScoringText, "private static int GetDevicePriority(DeviceCandidate candidate)");
-        AssertContains(deviceScoringText, "if (candidate.PreferredByName) priority += 400;");
-        AssertContains(deviceScoringText, "if (candidate.LikelyByCapability) priority += 200;");
-        AssertContains(deviceScoringText, "if (candidate.HasEnumeratedFormats) priority += 50;");
-        AssertContains(deviceScoringText, "private static bool LooksLikeHighBandwidthCapture(CaptureDevice device)");
-        AssertDoesNotContain(deviceRootText, "private static int GetDevicePriority(DeviceCandidate candidate)");
-        AssertDoesNotContain(deviceRootText, "private static bool LooksLikeHighBandwidthCapture(CaptureDevice device)");
-        AssertDoesNotContain(deviceRootText, "priority += 400");
+        AssertContains(deviceRootText, "private static int GetDevicePriority(DeviceCandidate candidate)");
+        AssertContains(deviceRootText, "if (candidate.PreferredByName) priority += 400;");
+        AssertContains(deviceRootText, "if (candidate.LikelyByCapability) priority += 200;");
+        AssertContains(deviceRootText, "if (candidate.HasEnumeratedFormats) priority += 50;");
+        AssertContains(deviceRootText, "private static bool LooksLikeHighBandwidthCapture(CaptureDevice device)");
 
         AssertContains(sourceReaderNegotiationText, "private bool TrySetSourceReaderD3DManager(");
         AssertContains(sourceReaderNegotiationText, "private IMFMediaSource CreateMediaSource(");
