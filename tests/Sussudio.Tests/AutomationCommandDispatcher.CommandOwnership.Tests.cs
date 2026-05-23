@@ -89,9 +89,15 @@ static partial class Program
         AssertContains(preflightText, "private AutomationCommandResponse? TryCreatePreflightResponse(");
         AssertContains(preflightText, "AUTOMATION_MANIFEST_MISMATCH");
         AssertContains(preflightText, "request.Command == AutomationCommandKind.Authenticate");
+        AssertContains(preflightText, "private bool IsAuthorized(AutomationCommandRequest request)");
+        AssertContains(preflightText, "CryptographicOperations.FixedTimeEquals(expected, actual)");
         AssertContains(preflightText, "RequiresReadyDevices(request.Command) && !IsAutomationReady()");
         AssertContains(preflightText, "_readinessPort.IsInitialized || _readinessPort.Devices.Count > 0");
         AssertDoesNotContain(preflightText, "TrivialDeviceSelectionHandlers.TryGetValue");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.Authorization.cs")),
+            "auth gate folded into AutomationCommandDispatcher.Preflight.cs");
 
         AssertContains(portMappedDispatchText, "private async Task<AutomationCommandResponse?> TryExecutePortMappedCommandAsync(");
         AssertContains(portMappedDispatchText, "private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationDeviceSelectionPort>> TrivialDeviceSelectionHandlers");

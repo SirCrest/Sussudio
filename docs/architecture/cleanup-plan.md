@@ -413,11 +413,10 @@ last-recording verification command bodies.
 preview-color probe, preview-frame capture, window screenshot capture, default
 capture output paths, and capture response status shaping behind the custom
 command router.
-`AutomationCommandDispatcher.PortMappedDispatch.cs` owns the simple one-property
-capture and pipeline command tables plus the ordered dispatch through those
-tables. Named partials own support responsibilities:
-`AutomationCommandDispatcher.Authorization.cs` handles auth-token lookup and
-constant-time comparison;
+`AutomationCommandDispatcher.Preflight.cs` owns manifest revision, auth-token,
+and readiness gating. `AutomationCommandDispatcher.PortMappedDispatch.cs` owns
+the simple one-property capture and pipeline command tables plus the ordered
+dispatch through those tables. Named partials own support responsibilities:
 `AutomationCommandDispatcher.CommandParsing.cs` handles command metadata,
 path-validation forwarding, and enum payload parsing;
 `AutomationCommandDispatcher.Responses.cs` handles response shaping and

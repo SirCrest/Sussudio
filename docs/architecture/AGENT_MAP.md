@@ -238,14 +238,11 @@ Automation diagnostics ownership:
   composition-time adapter from the aggregate compatibility contract to named
   port targets. Keep those ports grouped in this file until a consumer needs a
   separate file; do not create many tiny interface files for line-count optics.
-  `AutomationCommandDispatcher.Preflight.cs` consumes the readiness port for
-  device-ready gating, `AutomationCommandDispatcher.PortMappedDispatch.cs` owns
-  the port-grouped tables and ordered dispatch for simple one-property commands,
-  and `AutomationCommandDispatcher.DeviceCommands.cs` consumes the
+  `AutomationCommandDispatcher.Preflight.cs` owns manifest revision, auth-token,
+  and readiness gating, `AutomationCommandDispatcher.PortMappedDispatch.cs`
+  owns the port-grouped tables and ordered dispatch for simple one-property
+  commands, and `AutomationCommandDispatcher.DeviceCommands.cs` consumes the
   device-selection and snapshot-query ports.
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.Authorization.cs`
-  owns auth-token fallback lookup, constant-time token comparison, and auth
-  failure logging.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.CommandParsing.cs`
   owns command metadata lookups, path validation forwarding, and enum payload
   parsing.
