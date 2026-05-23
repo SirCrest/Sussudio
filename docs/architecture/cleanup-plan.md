@@ -2835,9 +2835,8 @@ Flashback playback audio routing now lives in
 Keep live audio suppress/restore, decoder audio callback wiring, playback
 chunk validation/return, playback PTS gate handling, pooled audio-buffer return
 warnings, and playback-state audio/preview routing there alongside best-effort
-preview submission guards and audio renderer pause/resume/flush guards;
-keep decode-ahead prebuffer target/timeout/frame-budget policy and rewind
-behavior in the audio prebuffer partial.
+preview submission guards, audio renderer pause/resume/flush guards,
+decode-ahead prebuffer target/timeout/frame-budget policy, and rewind behavior.
 
 Flashback playback component lifecycle now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs`. Keep

@@ -13,8 +13,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioCallbackText = audioRoutingText;
         var audioPreviewGuardsText = audioRoutingText;
-        var audioPrebufferText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioPrebuffer.cs")
-            .Replace("\r\n", "\n");
+        var audioPrebufferText = audioRoutingText;
         var audioMasterText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs")
             .Replace("\r\n", "\n");
         var audioMasterFallbacksText = audioMasterText;
