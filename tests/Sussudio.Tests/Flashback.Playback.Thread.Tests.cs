@@ -8,8 +8,9 @@ static partial class Program
     internal static Task FlashbackPlaybackController_PlaybackThreadExit_RearmsWorkerStart()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
-        var threadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs")
+        var threadLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs")
             .Replace("\r\n", "\n");
+        var threadLoopText = threadLifecycleText;
         var threadCommandDispatchText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
             .Replace("\r\n", "\n");
         var threadSeekCommandsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekCommands.cs")
@@ -22,8 +23,6 @@ static partial class Program
         var threadPauseCommandText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
             .Replace("\r\n", "\n");
         var threadNudgeCommandText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
-            .Replace("\r\n", "\n");
-        var threadLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs")
             .Replace("\r\n", "\n");
         var commandTelemetryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandTelemetry.cs")
             .Replace("\r\n", "\n");
@@ -46,7 +45,6 @@ static partial class Program
         AssertContains(threadLifecycleText, "[DllImport(\"winmm.dll\", ExactSpelling = true)]");
         AssertContains(threadLifecycleText, "private static extern uint timeBeginPeriod(uint uMilliseconds);");
         AssertContains(threadLifecycleText, "private static extern uint timeEndPeriod(uint uMilliseconds);");
-        AssertDoesNotContain(threadLoopText, "[DllImport(\"winmm.dll\", ExactSpelling = true)]");
         AssertContains(threadLoopText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_ENTER\");");
         AssertContains(threadCommandDispatchText, "private bool ExecutePlaybackCommand(");
         AssertContains(threadSeekCommandsText, "private void HandleSeekCommand(");
@@ -177,8 +175,6 @@ static partial class Program
         AssertContains(sourceText, "SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_PRIORITY");
         AssertContains(threadLifecycleText, "private readonly string _playbackMmcssTask = Environment.GetEnvironmentVariable(\"SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_TASK\") ?? \"Playback\";");
         AssertContains(threadLifecycleText, "private readonly int _playbackMmcssPriority = EnvironmentHelpers.GetIntFromEnv(\"SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_PRIORITY\", 1, -2, 2);");
-        AssertDoesNotContain(threadLoopText, "private readonly string _playbackMmcssTask");
-        AssertDoesNotContain(threadLoopText, "private readonly int _playbackMmcssPriority");
         AssertDoesNotContain(rootText, "private readonly string _playbackMmcssTask");
         AssertDoesNotContain(rootText, "private readonly int _playbackMmcssPriority");
         AssertContains(sourceText, "using var mmcss = MmcssThreadRegistration.TryRegister(_playbackMmcssTask, _playbackMmcssPriority, message => Logger.Log(message));");

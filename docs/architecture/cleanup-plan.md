@@ -2798,13 +2798,10 @@ Playback thread lifecycle now lives in
 state fields, stop timeout policy, start/recovery, start-failure rollback,
 stop/cancel/join diagnostics, post-stop cleanup, command-channel
 capacity/state, bounded-channel recreation/completion, abandoned-command
-draining, scheduling policy, exit transactions, live-restore cleanup, and CTS
-disposal warnings. Keep queue write/coalescing/drop policy in the command queue
-partial.
-The playback worker loop now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs`; keep
-`PlaybackThreadEntry` queue waiting, cancellation exits, and playback pacing
-handoff there. Playback-thread command dispatch and active-command completion
+draining, scheduling policy, exit transactions, live-restore cleanup, CTS
+disposal warnings, `PlaybackThreadEntry` queue waiting, cancellation exits, and
+playback pacing handoff. Keep queue write/coalescing/drop policy in the command
+queue partial. Playback-thread command dispatch and active-command completion
 telemetry now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`;
 keep the command switch and command-complete logging there instead of expanding
