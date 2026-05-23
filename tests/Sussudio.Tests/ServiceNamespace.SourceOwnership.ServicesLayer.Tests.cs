@@ -91,17 +91,20 @@ static partial class Program
         AssertContains(cudaInteropNativeText, "DllImport(\"nvcuda.dll\")");
         AssertContains(cudaInteropNativeText, "private struct CUDA_MEMCPY2D");
 
-        var nvdecText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.cs"));
         var nvdecInitializationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Initialization.cs"));
         var nvdecSharedInitializationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.SharedInitialization.cs"));
         var nvdecDecodeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Decode.cs"));
         var nvdecDownloadText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Download.cs"));
         var nvdecLifetimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Lifetime.cs"));
-        AssertContains(nvdecText, "internal sealed unsafe partial class NvdecMjpegDecoder");
-        AssertDoesNotContain(nvdecText, "public void Initialize(");
-        AssertDoesNotContain(nvdecText, "public AVFrame* DecodeFrame(");
-        AssertDoesNotContain(nvdecText, "public bool TryDownloadToCpu(");
-        AssertDoesNotContain(nvdecText, "public void Dispose()");
+        AssertContains(nvdecInitializationText, "internal sealed unsafe partial class NvdecMjpegDecoder : IDisposable");
+        AssertContains(nvdecInitializationText, "private AVCodecContext* _decoderCtx;");
+        AssertDoesNotContain(nvdecInitializationText, "public AVFrame* DecodeFrame(");
+        AssertDoesNotContain(nvdecInitializationText, "public bool TryDownloadToCpu(");
+        AssertDoesNotContain(nvdecInitializationText, "public void Dispose()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.cs")),
+            "NVDEC decoder state-only partial");
         AssertContains(nvdecInitializationText, "public void Initialize(int width, int height)");
         AssertContains(nvdecInitializationText, "av_hwdevice_ctx_create(&hwDeviceCtx");
         AssertContains(nvdecInitializationText, "NVDEC_MJPEG_FRAMES_CTX_OK");
