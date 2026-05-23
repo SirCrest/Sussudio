@@ -2845,7 +2845,7 @@ buffer-fill/position/marker refresh order, and position-label updates with CTI
 re-anchor gating.
 
 Flashback export progress presentation now lives in
-`Sussudio/Controllers/Flashback/FlashbackExportProgressPresentationController.cs`:
+`Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs`:
 progress-bar value, visibility, and reset-on-complete semantics.
 `Sussudio/MainWindow.Flashback.Presentation.cs` wires the export progress
 presentation controller.

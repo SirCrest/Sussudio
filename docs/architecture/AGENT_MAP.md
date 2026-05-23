@@ -2960,7 +2960,7 @@ Primary current owners:
   shortcuts including left/right nudge rejection logging, export, save-last-5m,
   enable-toggle rollback, and apply/restart. `Sussudio/MainWindow.Flashback.Interactions.cs`
   preserves the XAML command event-handler surface.
-- `Sussudio/Controllers/Flashback/FlashbackExportProgressPresentationController.cs` owns
+- `Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs` also owns
   Flashback export progress-bar value, visibility, and reset-on-complete
   semantics. `Sussudio/MainWindow.Flashback.Presentation.cs` wires the
   export progress presentation controller.
