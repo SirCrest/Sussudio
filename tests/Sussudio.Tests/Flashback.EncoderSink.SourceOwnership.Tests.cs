@@ -50,8 +50,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var startupPolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsResetText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.DiagnosticsReset.cs")
-            .Replace("\r\n", "\n");
+        var diagnosticsResetText = startupPolicyText;
         var recordingAccountingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.RecordingAccounting.cs")
             .Replace("\r\n", "\n");
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
@@ -82,7 +81,7 @@ static partial class Program
 
         AssertContains(docsText, "FlashbackEncoderSink.Startup.cs");
         AssertContains(docsText, "session validation");
-        AssertContains(docsText, "FlashbackEncoderSink.DiagnosticsReset.cs");
+        AssertContains(docsText, "startup metric/counter reset");
         AssertContains(docsText, "FlashbackEncoderSink.RecordingAccounting.cs");
 
         return Task.CompletedTask;
