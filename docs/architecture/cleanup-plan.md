@@ -260,12 +260,11 @@ telemetry-alignment, and HDR truth verdict projection consumed by the automation
 snapshot DTO plus final HDR pipeline projection-to-`AutomationSnapshot` field
 flattening.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation, active-alert
-transitions, Flashback alert group routing, and Flashback playback alert
-orchestration, Flashback playback performance alert routing, frame-submission
-failure alerts, plus signal alert orchestration.
-`AutomationDiagnosticsHub.SignalAlerts.Preview.cs` owns preview
-blank, stall, startup, cadence, display 1% low, capture cadence drop, capture
-1% low, audio muted signal, and recording output-growth signal alert rules.
+transitions, signal alert orchestration and rules for preview blank/stall/
+startup/cadence/display 1% low, capture cadence drop/1% low, audio muted
+signal, recording output growth, Flashback alert group routing, Flashback
+playback alert orchestration, Flashback playback performance alert routing, and
+frame-submission failure alerts.
 `AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs`
 owns Flashback recording alert orchestration, shared condition setup, export
 progress/force-rotation gap alerts, temp-cache pressure alerts, encoder failure

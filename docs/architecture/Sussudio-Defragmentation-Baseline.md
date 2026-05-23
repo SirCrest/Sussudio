@@ -346,7 +346,7 @@ Partial clusters reduced: `AutomationDiagnosticsHub` -2 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by automation diagnostics alert ownership tests and runtime snapshot regression tests
 Behavior preserved: capture, audio-muted, and recording-growth alert state transitions still call `SetAlertState` with the same IDs, severities, categories, messages, and throttle settings
-Notes for future agents: keep lightweight snapshot-driven signal alert rules with `SignalAlerts.Preview.cs` unless a rule family grows independent state or policy
+Notes for future agents: keep lightweight snapshot-driven signal alert rules with `AutomationDiagnosticsHub.Alerts.cs` unless a rule family grows independent state or policy
 
 Date: 2026-05-21
 Area: Automation diagnostics Flashback evaluation
