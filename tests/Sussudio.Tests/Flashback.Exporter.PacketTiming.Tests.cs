@@ -40,9 +40,9 @@ static partial class Program
         AssertContains(packetTimingText, "if (packet->pts != ffmpeg.AV_NOPTS_VALUE && packet->pts < 0)");
         AssertContains(packetTimingText, "if (packet->dts != ffmpeg.AV_NOPTS_VALUE && packet->dts < 0)");
         AssertContains(packetTimingText, "packet->pts != ffmpeg.AV_NOPTS_VALUE &&\n            packet->dts != ffmpeg.AV_NOPTS_VALUE &&\n            packet->pts < packet->dts");
-        AssertDoesNotContain(packetTimingText, "private long FlushBufferedPackets(");
-        AssertDoesNotContain(packetTimingText, "private static void FreeBufferedPackets(");
-        AssertDoesNotContain(packetTimingText, "private static AVPacket* ClonePacketOrThrow(");
+        AssertContains(packetTimingText, "private long FlushBufferedPackets(");
+        AssertContains(packetTimingText, "private static void FreeBufferedPackets(");
+        AssertContains(packetTimingText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
         AssertEqual(3, sourceText.Split("NormalizePacketTimestampsBeforeWrite(", StringSplitOptions.None).Length - 2, "All export packet write paths normalize timestamps");
         AssertDoesNotContain(sourceText, "if (packet->pts < 0) packet->pts = 0;");
         AssertDoesNotContain(sourceText, "if (packet->dts < 0) packet->dts = 0;");

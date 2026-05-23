@@ -1994,11 +1994,10 @@ Progress normalization/reporting, heartbeat cadence, export writer adaptive
 throttling, fixed sleep/yield pacing, and per-export throttle provider scoping
 live in
 `Sussudio/Services/Flashback/FlashbackExporter.RuntimePolicy.cs`. Packet timestamp
-normalization, export time-span conversion, saturated time arithmetic, and
-segment boundary timestamp repair live in
-`Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs`. Packet clone/free
-helpers and buffered packet flushes live in
-`Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs`. FFmpeg input and
+normalization, export time-span conversion, saturated time arithmetic, segment
+boundary timestamp repair, packet clone/free helpers, and buffered packet
+flushes live in
+`Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs`. FFmpeg input and
 output context setup, stream count validation, and output header writing live in
 `Sussudio/Services/Flashback/FlashbackExporter.Streams.cs`. Stream-template copying
 and segment stream-layout compatibility checks live in

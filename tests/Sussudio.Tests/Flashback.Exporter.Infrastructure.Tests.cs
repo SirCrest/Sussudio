@@ -5,7 +5,7 @@ static partial class Program
     internal static Task FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation()
     {
         var sourceText = ReadFlashbackExporterSource();
-        var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs")
+        var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs")
             .Replace("\r\n", "\n");
         var runtimePolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.RuntimePolicy.cs")
             .Replace("\r\n", "\n");
@@ -56,6 +56,10 @@ static partial class Program
         AssertContains(packetBuffersText, "ffmpeg.av_packet_free(&p);");
         AssertContains(packetBuffersText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
         AssertContains(packetBuffersText, "var clone = ffmpeg.av_packet_clone(packet);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.PacketBuffers.cs")),
+            "FlashbackExporter.PacketBuffers.cs folded into FlashbackExporter.PacketTiming.cs");
         AssertContains(sourceText, "ReleaseExportLockBestEffort(\"single_export\");");
         AssertContains(sourceText, "ReleaseExportLockBestEffort(\"segment_export\");");
         AssertContains(sourceText, "private void ReleaseExportLockBestEffort(string operation)");

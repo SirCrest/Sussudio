@@ -126,7 +126,7 @@ static partial class Program
         var segmentPacketWriteStateText = segmentPacketReadLoopText;
         var segmentPacketRebasingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketRebasing.cs")
             .Replace("\r\n", "\n");
-        var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs")
+        var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(packetBuffersText, "private static void FreeBufferedPackets(List<IntPtr> bufferedPackets, List<int>? bufferedStreamIndices = null)");
@@ -136,6 +136,10 @@ static partial class Program
         AssertContains(packetBuffersText, "bufferedStreamIndices?.Clear();");
         AssertContains(packetBuffersText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
         AssertContains(packetBuffersText, "FLASHBACK_EXPORT_PACKET_CLONE_FAIL operation={operation}");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.PacketBuffers.cs")),
+            "FlashbackExporter.PacketBuffers.cs folded into FlashbackExporter.PacketTiming.cs");
         AssertContains(singleFileText, "WriteSingleFilePacketsToActiveOutput(");
         AssertContains(singleFilePacketWritingText, "WriteSingleFilePacketReadLoop(");
         AssertContains(singleFilePacketReadLoopText, "FreeBufferedPackets(packetState.BufferedPackets, packetState.BufferedStreamIndices);");

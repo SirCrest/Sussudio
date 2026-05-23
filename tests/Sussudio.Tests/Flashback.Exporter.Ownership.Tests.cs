@@ -39,12 +39,11 @@ static partial class Program
         var libAvErrorsText = lifecycleText;
         var packetTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs")
             .Replace("\r\n", "\n");
-        var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs")
-            .Replace("\r\n", "\n");
         var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs")
             .Replace("\r\n", "\n");
         var streamTemplatesText = streamsText;
         var timeMathText = packetTimingText;
+        var packetBuffersText = packetTimingText;
 
         AssertContains(requestsText, "public Task<FinalizeResult> ExportAsync(");
         AssertContains(requestsText, "request.SegmentPaths.Select(path => new FlashbackExportSegment");
@@ -186,13 +185,14 @@ static partial class Program
         AssertContains(packetTimingText, "private static long ResolveFrameDurationUs(AVStream* videoStream)");
         AssertContains(packetTimingText, "private static long ResolveSegmentBoundaryTimestampRepairUs(");
         AssertContains(packetTimingText, "private static void NormalizePacketTimestampsBeforeWrite(AVPacket* packet)");
-        AssertDoesNotContain(packetTimingText, "private long FlushBufferedPackets(");
-        AssertDoesNotContain(packetTimingText, "private static void FreeBufferedPackets(");
-        AssertDoesNotContain(packetTimingText, "private static AVPacket* ClonePacketOrThrow(");
         AssertContains(packetBuffersText, "private long FlushBufferedPackets(");
         AssertContains(packetBuffersText, "private static void FreeBufferedPackets(");
         AssertContains(packetBuffersText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
         AssertContains(packetBuffersText, "finally\n        {\n            FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);\n        }");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.PacketBuffers.cs")),
+            "FlashbackExporter.PacketBuffers.cs folded into FlashbackExporter.PacketTiming.cs");
         AssertContains(streamsText, "private void OpenInput(string inputPath)");
         AssertContains(streamsText, "private void CreateOutputContext(string tmpPath, bool fastStart)");
         AssertContains(streamsText, "private static void OpenOutputIoAndWriteHeader(AVFormatContext* outputContext, string tmpPath, bool fastStart)");
