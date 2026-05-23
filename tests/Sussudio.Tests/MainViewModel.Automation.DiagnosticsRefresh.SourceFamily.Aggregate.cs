@@ -47,7 +47,7 @@ static partial class Program
                 SnapshotProjectionSourceSignalText,
                 SnapshotProjectionSourceTelemetryText,
                 SnapshotProjectionUserSettingsText,
-                SnapshotProjectionHdrPipelineText,
+                HdrText,
                 PreviewPacingText,
                 TimelineText,
                 TimelineProjectionPreviewText,

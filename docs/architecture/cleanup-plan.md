@@ -256,11 +256,12 @@ device, selected capture/recording options, preview volume, and stats
 visibility projection consumed by the automation snapshot DTO, plus final
 selected device, selected capture/recording options, preview volume, and stats
 visibility projection-to-`AutomationSnapshot` field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.HdrPipeline.cs` owns HDR
-availability/request state, runtime/readiness fallback, HDR warmup/downgrade,
-pipeline parity, telemetry-alignment, and HDR truth verdict projection consumed
-by the automation snapshot DTO plus final HDR pipeline projection-to-
-`AutomationSnapshot` field flattening.
+`AutomationDiagnosticsHub.Hdr.cs` owns HDR truth classification from capture
+runtime, UI state, and recording verification plus HDR availability/request
+state, runtime/readiness fallback, HDR warmup/downgrade, pipeline parity,
+telemetry-alignment, and HDR truth verdict projection consumed by the automation
+snapshot DTO plus final HDR pipeline projection-to-`AutomationSnapshot` field
+flattening.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation, active-alert
 transitions, Flashback alert group routing, and Flashback playback alert
 orchestration, Flashback playback performance alert routing, frame-submission

@@ -29,6 +29,5 @@ static partial class Program
         public string SnapshotProjectionSourceSignalText { get; init; } = string.Empty;
         public string SnapshotProjectionSourceTelemetryText { get; init; } = string.Empty;
         public string SnapshotProjectionUserSettingsText { get; init; } = string.Empty;
-        public string SnapshotProjectionHdrPipelineText { get; init; } = string.Empty;
     }
 }

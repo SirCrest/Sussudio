@@ -120,7 +120,7 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Composition.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var hdrPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.HdrPipeline.cs")
+        var hdrPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Hdr.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var hdrPipeline = BuildHdrPipelineProjection(viewModelSnapshot, captureRuntime, hdrTruthVerdict);");
@@ -160,6 +160,10 @@ static partial class Program
         AssertContains(hdrPipelineProjectionText, "TruthVerdict = truthVerdict");
         AssertContains(hdrPipelineProjectionText, "private static string PreferViewModelHdrText(string viewModelValue, string runtimeValue)");
         AssertContains(hdrPipelineProjectionText, "private readonly record struct HdrPipelineProjection");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.HdrPipeline.cs")),
+            "HDR pipeline projection partial folded into HDR diagnostics owner");
 
         return Task.CompletedTask;
     }
