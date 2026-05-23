@@ -3896,10 +3896,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionScenarioStartup.cs` owns diagnostic-session
   optional background startup orchestration, Flashback scenario registration
   delegation, deferred Flashback recording-settings task registration, and the
-  direct Flashback playback start command. Keep task stage names stable there.
-- `tools/Common/DiagnosticSessionPresentMonStartup.cs` owns optional PresentMon
+  direct Flashback playback start command. It also owns optional PresentMon
   launch, correlation snapshot capture, and `presentmon.csv` output selection
-  for diagnostic sessions.
+  for diagnostic sessions. Keep task stage names stable there.
 - `tools/Common/DiagnosticSessionScenarioSetup.cs` owns diagnostic-session
   initial setup ordering, Flashback enable/disable for scenario requirements,
   preview start and video-flow readiness wait, recording start and Flashback

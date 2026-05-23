@@ -1,5 +1,6 @@
 using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
+using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;
 using static Sussudio.Tools.DiagnosticSessionFlashbackRecordingSettingsScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackWaits;
 
@@ -20,7 +21,7 @@ internal static class DiagnosticSessionScenarioStartup
         Func<string, Dictionary<string, object?>?, int?, bool, Task<JsonElement>> sendAsyncWithFailurePolicy,
         CancellationToken cancellationToken)
     {
-        await DiagnosticSessionPresentMonStartup.StartAsync(
+        await StartPresentMonAsync(
                 options,
                 durationSeconds,
                 outputDirectory,
@@ -56,6 +57,31 @@ internal static class DiagnosticSessionScenarioStartup
             .ConfigureAwait(false);
 
         return new DiagnosticSessionScenarioStartupResult(startedFlashbackPlayback);
+    }
+
+    private static async Task StartPresentMonAsync(
+        DiagnosticSessionOptions options,
+        int durationSeconds,
+        string outputDirectory,
+        DiagnosticSessionBackgroundTasks backgroundTasks,
+        List<string> actions,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync)
+    {
+        if (!options.IncludePresentMon)
+        {
+            return;
+        }
+
+        var correlationSnapshotResponse = await sendAsync("GetSnapshot", null, null).ConfigureAwait(false);
+        TryGetSnapshot(correlationSnapshotResponse, out var correlationSnapshot);
+        backgroundTasks.SetPresentMon(PresentMonProbe.RunAsync(PresentMonProbe.CreateOptions(
+            durationSeconds: Math.Max(1, durationSeconds),
+            processName: "Sussudio",
+            presentMonPath: options.PresentMonPath,
+            outputFile: Path.Combine(outputDirectory, "presentmon.csv"),
+            keepCsv: true,
+            correlation: PresentMonProbe.ReadPreviewCorrelation(correlationSnapshot))));
+        actions.Add("presentmon capture started");
     }
 
     private static void RegisterFlashbackScenarioTasks(

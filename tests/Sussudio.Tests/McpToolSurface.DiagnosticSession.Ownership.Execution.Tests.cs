@@ -11,8 +11,7 @@ static partial class Program
         var stressScenariosText = ReadDiagnosticSessionFlashbackStressScenarioSource();
         var segmentPlaybackScenariosText = ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource();
         var previewCycleScenariosText = ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource();
-        var presentMonStartupText = ReadRepoFile("tools/Common/DiagnosticSessionPresentMonStartup.cs")
-            .Replace("\r\n", "\n");
+        var presentMonStartupText = startupText;
         var tasksText = ReadDiagnosticSessionBackgroundTasksSource();
 
         AssertContains(startupText, "internal static class DiagnosticSessionScenarioStartup");
@@ -48,7 +47,7 @@ static partial class Program
         AssertContains(startupText, "private static void RegisterDeferredFlashbackRecordingSettingsTask(");
         AssertContains(startupText, "private static async Task<bool> TryStartFlashbackPlaybackAsync(");
         AssertDoesNotContain(startupText, "backgroundTasks.AddScenario(");
-        AssertContains(startupText, "DiagnosticSessionPresentMonStartup.StartAsync(");
+        AssertContains(startupText, "StartPresentMonAsync(");
         AssertContains(presentMonStartupText, "backgroundTasks.SetPresentMon(");
         AssertContains(startupText, "backgroundTasks.SetRecordingSettingsDeferred(");
         AssertContains(startupText, "RunFlashbackRecordingSettingsDeferredAsync(");
@@ -102,11 +101,9 @@ static partial class Program
     internal static Task DiagnosticSessionPresentMonStartup_OwnsPresentMonLaunch()
     {
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
-        var presentMonStartupText = ReadRepoFile("tools/Common/DiagnosticSessionPresentMonStartup.cs")
-            .Replace("\r\n", "\n");
+        var presentMonStartupText = startupText;
 
-        AssertContains(presentMonStartupText, "internal static class DiagnosticSessionPresentMonStartup");
-        AssertContains(presentMonStartupText, "internal static async Task StartAsync(");
+        AssertContains(presentMonStartupText, "private static async Task StartPresentMonAsync(");
         AssertContains(presentMonStartupText, "if (!options.IncludePresentMon)");
         AssertContains(presentMonStartupText, "var correlationSnapshotResponse = await sendAsync(\"GetSnapshot\", null, null)");
         AssertContains(presentMonStartupText, "TryGetSnapshot(correlationSnapshotResponse, out var correlationSnapshot)");
@@ -117,7 +114,7 @@ static partial class Program
         AssertContains(presentMonStartupText, "actions.Add(\"presentmon capture started\")");
         AssertDoesNotContain(presentMonStartupText, "new PresentMonProbeOptions");
         AssertDoesNotContain(presentMonStartupText, "PreviewD3DSwapChainAddress");
-        AssertContains(startupText, "DiagnosticSessionPresentMonStartup.StartAsync(");
+        AssertContains(startupText, "StartPresentMonAsync(");
         AssertDoesNotContain(startupText, "PresentMonProbe.RunAsync(new PresentMonProbeOptions");
         AssertDoesNotContain(startupText, "PreviewD3DSwapChainAddress");
 

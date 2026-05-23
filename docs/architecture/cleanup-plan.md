@@ -3506,11 +3506,10 @@ playback start command/playback-state wait. The runner now delegates startup
 and keeps the setup/sampling/cleanup/summary phase flow.
 
 Diagnostic-session PresentMon startup now lives in
-`tools/Common/DiagnosticSessionPresentMonStartup.cs`. It owns optional
-PresentMon launch, correlation snapshot capture, and `presentmon.csv` output
-selection while delegating option/correlation policy to
-`tools/Common/PresentMon/PresentMonProbe.Options.cs`; scenario startup keeps
-scenario task registration.
+`tools/Common/DiagnosticSessionScenarioStartup.cs` beside the scenario task
+registration flow. It owns optional PresentMon launch, correlation snapshot
+capture, and `presentmon.csv` output selection while delegating
+option/correlation policy to `tools/Common/PresentMon/PresentMonProbe.Options.cs`.
 
 Diagnostic-session scenario setup now lives in
 `tools/Common/DiagnosticSessionScenarioSetup.cs`. It owns initial setup
@@ -3837,7 +3836,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioPlan.cs`
 - `DiagnosticSessionScenarioSetup.cs`
 - `DiagnosticSessionScenarioStartup.cs`
-- `DiagnosticSessionPresentMonStartup.cs`
 - `DiagnosticSessionOptionalTextFormatter.cs`
 - `DiagnosticSessionRunner.cs`
 - `DiagnosticSessionRunExecution.cs`
