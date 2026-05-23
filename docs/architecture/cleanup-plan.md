@@ -2997,14 +2997,14 @@ Active fMP4 reopen/reseek recovery during segment-edge handling, including the
 shared decoder reopen transaction and post-seek audio gate, lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderSegmentReopen.cs`.
 
-Flashback playback timing policy now lives in
+Flashback playback timing policy and decoded PTS cadence now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs`.
 Keep frame-rate resolution, pause-from-live target calculation,
 continuous-playback snap policy, software-decode budget detection, decoder
 hardware-acceleration status refresh, over-budget snap telemetry, recovery
-handoff, and rolling playback cadence metric updates there. Decoded PTS cadence state, read-only projection, tracking, mismatch
-telemetry, and cadence-baseline reset now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackPtsCadence.cs`.
+handoff, rolling playback cadence metric updates, decoded PTS cadence state,
+read-only projection, tracking, mismatch telemetry, and cadence-baseline reset
+there.
 The live-state recovery implementation remains in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLiveRecovery.cs`.
 Audio-master clock sample state, stale-clock detection, read-only A/V drift
