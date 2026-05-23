@@ -21,6 +21,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)
         => _deviceRefreshController.RefreshDevicesAsync(cancellationToken);
 
+    public Action<string, bool>? StatsSectionVisibilityHandler { get; set; }
+    public Action<bool>? FrameTimeOverlayVisibilityHandler { get; set; }
+
     public void SetWindowHandle(IntPtr handle)
     {
         _windowHandle = handle;
@@ -40,6 +43,51 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     [ObservableProperty]
     public partial bool IsSettingsVisible { get; set; }
+
+    public Task SetSettingsVisibleAsync(bool visible, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            IsSettingsVisible = visible;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetStatsVisibleAsync(bool visible, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            IsStatsVisible = visible;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetStatsSectionVisibleAsync(string section, bool visible, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            StatsSectionVisibilityHandler?.Invoke(section, visible);
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetFrameTimeOverlayVisibleAsync(bool visible, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            FrameTimeOverlayVisibilityHandler?.Invoke(visible);
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetFlashbackTimelineVisibleAsync(bool visible, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            IsFlashbackTimelineVisible = visible;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
 
     [ObservableProperty]
     public partial string StatusText { get; set; } = "Ready";

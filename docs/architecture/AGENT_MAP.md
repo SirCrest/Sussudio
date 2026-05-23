@@ -3410,7 +3410,7 @@ Primary current owners:
   Flashback reactions to recording-format, encoder quality/preset/split, and
   bitrate changes. `MainViewModel.FlashbackSettings.cs` owns active Flashback
   reactions to buffer-duration and GPU-decode setting changes.
-  `MainViewModel.AutomationUi.cs` owns UI-only automation mutators
+  `MainViewModel.cs` owns UI-only automation mutators
   for settings visibility, Flashback timeline visibility, show-all capture
   options, stats dock/section visibility, and frame-time overlay display.
   `MainViewModel.AutomationAudio.cs` owns automation command entry points for

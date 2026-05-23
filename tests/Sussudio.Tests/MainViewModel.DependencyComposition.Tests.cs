@@ -84,6 +84,12 @@ static partial class Program
 
         AssertContains(rootText, "public partial bool IsStatsVisible");
         AssertContains(rootText, "public partial bool IsSettingsVisible");
+        AssertContains(rootText, "public Action<string, bool>? StatsSectionVisibilityHandler { get; set; }");
+        AssertContains(rootText, "public Task SetStatsVisibleAsync(bool visible, CancellationToken cancellationToken = default)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationUi.cs")),
+            "MainViewModel.AutomationUi.cs folded into MainViewModel.cs");
         AssertContains(rootText, "public partial string StatusText");
         AssertContains(rootText, "private IntPtr _windowHandle;");
         AssertContains(rootText, "public void SetWindowHandle(IntPtr handle)");

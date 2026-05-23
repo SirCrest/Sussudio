@@ -4297,7 +4297,7 @@ owner, fold it back into that owner and update the source-shape tests and
    AT input-source fallback path.
    UI-only automation mutators for settings visibility, Flashback timeline
    visibility, stats dock/section visibility, and frame-time overlay display now
-   live in `MainViewModel.AutomationUi.cs`; the public show-all capture options
+   live in `MainViewModel.cs`; the public show-all capture options
    command remains accepted as a dispatcher-level compatibility no-op.
    Automation command entry points for app audio enablement, audio-preview
    enablement, preview-volume clamp/persist, device-native mode/gain
