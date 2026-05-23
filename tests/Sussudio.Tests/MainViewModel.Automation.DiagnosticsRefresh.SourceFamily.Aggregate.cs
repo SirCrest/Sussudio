@@ -8,7 +8,6 @@ static partial class Program
             {
                 HubText,
                 EvaluationText,
-                EvaluationPolicyText,
                 DiagnosticEvaluationText,
                 DiagnosticEvaluationFlashbackText,
                 DiagnosticEvaluationFlashbackRecordingText,

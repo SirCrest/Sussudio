@@ -6,7 +6,6 @@ static partial class Program
         {
             HubText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.cs"),
             EvaluationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
-            EvaluationPolicyText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.EvaluationPolicy.cs"),
             DiagnosticEvaluationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluation.cs"),
             DiagnosticEvaluationFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs"),
             DiagnosticEvaluationFlashbackRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Recording.cs"),
@@ -95,7 +94,6 @@ static partial class Program
 
         public string HubText { get; init; } = string.Empty;
         public string EvaluationText { get; init; } = string.Empty;
-        public string EvaluationPolicyText { get; init; } = string.Empty;
         public string EventsText { get; init; } = string.Empty;
         public string VerificationText { get; init; } = string.Empty;
         public string LifecycleText { get; init; } = string.Empty;

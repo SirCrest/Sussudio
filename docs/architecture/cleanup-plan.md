@@ -302,9 +302,8 @@ orchestration, MJPEG decode lane formatting, recording/audio lane formatting,
 source cadence/source-signal lane formatting, preview scheduler/renderer/
 present/display/visual-cadence lane formatting, Flashback recording/export/
 playback lane formatting, and lane DTOs used by diagnostic verdicts.
-`AutomationDiagnosticsHub.Evaluation.cs` owns performance scoring.
-`AutomationDiagnosticsHub.EvaluationPolicy.cs` owns shared alert-detail
-formatting and health classifiers used by both alerts and diagnostic
+`AutomationDiagnosticsHub.Evaluation.cs` owns performance scoring, shared
+alert-detail formatting, and health classifiers used by alerts and diagnostic
 evaluation.
 `AutomationDiagnosticsHub.Hdr.cs` owns HDR truth classification from capture
 pipeline, source-HDR, and verification metadata evidence, plus preview HDR

@@ -2,8 +2,8 @@ static partial class Program
 {
     private static void AssertDiagnosticsRefreshEvaluationOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
-        AssertContains(diagnostics.EvaluationPolicyText, "private static string FormatPreviewSlowFrameAlertDetail");
-        AssertDoesNotContain(diagnostics.EvaluationText, "private static string FormatPreviewSlowFrameAlertDetail");
+        AssertContains(diagnostics.EvaluationText, "private static string FormatPreviewSlowFrameAlertDetail");
+        AssertContains(diagnostics.EvaluationText, "private static bool IsCaptureOnePercentLowDegraded(");
         AssertContains(diagnostics.EvaluationText, "private PerformanceEvaluation EvaluatePerformance(");
         AssertContains(diagnostics.DiagnosticEvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationText, "var lanes = BuildDiagnosticEvaluationLanes(");
