@@ -4216,9 +4216,8 @@ Primary owners:
   `tools/Common/AutomationSnapshotFormatter.Source.cs` owns source dimensions,
   source frame-rate summary, HDR, and source telemetry text.
   `tools/Common/AutomationSnapshotFormatter.Values.cs` owns automation
-  response-success detection and tolerant JSON string/bool accessors.
-  `tools/Common/AutomationSnapshotFormatter.Values.Numeric.cs` owns tolerant
-  numeric JSON parsing.
+  response-success detection plus tolerant JSON string, bool, and numeric
+  accessors.
   `tools/Common/AutomationSnapshotFormatter.DisplayValues.cs` owns shared
   byte, number, interval, frame-budget, and tick-age display helpers, while
   `tools/Common/AutomationSnapshotFormatter.Flashback.cs` owns the Flashback
