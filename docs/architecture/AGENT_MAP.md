@@ -3124,9 +3124,10 @@ Primary current owners:
   adapter. Recording-specific property-name routing, record-button, glow, pulse,
   and recording-time lockout projection live in
   `RecordingStatePresentationController` and `RecordingStatePresentationPolicy`.
-- `Sussudio/MainWindow.OutputPath.cs` is the XAML-facing output-path
-  button/display adapter. `OutputPathController` owns output-path property-
-  change routing, textbox updates, and browse/open commands.
+- `Sussudio/MainWindow.ButtonActions.cs` is the XAML-facing recording,
+  device, and output-path button/display adapter. `OutputPathController` owns
+  output-path property-change routing, textbox updates, and browse/open
+  commands.
 - `Sussudio/MainWindow.CaptureOptionBindings.cs` is the XAML-facing adapter
   for capture option setup, event binding, and capture-option/source-signal
   property-change routing; the property-name router lives in
@@ -3189,7 +3190,8 @@ Primary current owners:
   `Sussudio/MainWindow.AudioBindings.cs` is its XAML-facing adapter.
 - `Sussudio/Controllers/Capture/CaptureDeviceActionController.cs` owns the capture-
   device refresh/apply button workflows and preserves the explicit apply/reinit
-  path. `MainWindow.ButtonActions.cs` is the XAML-facing adapter.
+  path. `MainWindow.ButtonActions.cs` is the XAML-facing adapter for
+  recording, capture-device, and output-path button/display bridges.
 - `Sussudio/Controllers/Capture/CaptureOptionPresentationPolicy.cs` owns pure
   capture-option presentation decisions: HDR toggle enablement, MJPEG decoder
   count visibility, bitrate/preset visibility, audio clipping visibility, and
@@ -3215,8 +3217,9 @@ Primary current owners:
   path textbox, tooltip, resize-event updates, and browse/open-recordings button
   workflows.
   `Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs` owns pure output-
-  path truncation text policy. `MainWindow.OutputPath.cs` is the XAML-facing
-  adapter used by binding setup and property changes.
+  path truncation text policy. `MainWindow.ButtonActions.cs` is the
+  XAML-facing adapter used by binding setup, property changes, and button
+  events.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.cs` owns the public
   compatibility-facade shell and small bridge methods, while

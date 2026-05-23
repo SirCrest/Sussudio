@@ -4,13 +4,14 @@ using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// XAML-facing adapter for MainWindow button workflows. The controllers own the
-// actual action policies; this partial keeps event handlers and private adapter
-// methods near the buttons that invoke them.
+// XAML-facing adapter for MainWindow button and output-path workflows. The
+// controllers own the actual action/display policies; this partial keeps event
+// handlers and private adapter methods near the buttons that invoke them.
 public sealed partial class MainWindow
 {
     private RecordingButtonActionController _recordingButtonActionController = null!;
     private CaptureDeviceActionController _captureDeviceActionController = null!;
+    private OutputPathController _outputPathController = null!;
 
     private void InitializeRecordingButtonActionController()
     {
@@ -36,6 +37,19 @@ public sealed partial class MainWindow
         });
     }
 
+    private void InitializeOutputPathController()
+    {
+        _outputPathController = new OutputPathController(new OutputPathControllerContext
+        {
+            OutputPathTextBox = OutputPathTextBox,
+            GetWindowHandle = () => _hwnd,
+            GetOutputPath = () => ViewModel.OutputPath,
+            SetOutputPath = path => ViewModel.OutputPath = path,
+            SetStatusText = text => ViewModel.StatusText = text,
+            OpenRecordingsFolderAsync = () => OpenRecordingsFolderAsync()
+        });
+    }
+
     private Task ToggleRecordingFromButtonAsync()
         => _recordingButtonActionController.ToggleRecordingAsync();
 
@@ -44,6 +58,18 @@ public sealed partial class MainWindow
 
     private Task ApplySelectedDeviceFromButtonAsync()
         => _captureDeviceActionController.ApplySelectedDeviceAsync();
+
+    private void AttachOutputPathDisplay()
+        => _outputPathController.AttachDisplay();
+
+    private void UpdateOutputPathDisplay()
+        => _outputPathController.UpdateDisplay();
+
+    private Task BrowseOutputPathFromButtonAsync()
+        => _outputPathController.BrowseAsync();
+
+    private Task OpenRecordingsFolderFromButtonAsync()
+        => _outputPathController.OpenRecordingsFolderIfAvailableAsync();
 
     private void RecordButton_Click(object sender, RoutedEventArgs e)
     {
@@ -59,4 +85,17 @@ public sealed partial class MainWindow
     {
         _ = RunUiEventHandlerAsync(() => ApplySelectedDeviceFromButtonAsync(), nameof(ApplyDeviceButton_Click));
     }
+
+    private void BrowseButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = RunUiEventHandlerAsync(() => BrowseOutputPathFromButtonAsync(), nameof(BrowseButton_Click));
+    }
+
+    private void OpenRecordingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = RunUiEventHandlerAsync(() => OpenRecordingsFolderFromButtonAsync(), nameof(OpenRecordingsButton_Click));
+    }
+
+    private bool TryHandleOutputPropertyChanged(string propertyName)
+        => _outputPathController.TryHandlePropertyChanged(propertyName);
 }

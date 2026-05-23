@@ -3360,8 +3360,8 @@ open-recordings button workflows now live in
 text policy stays in
 `Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs`.
 `OutputPathController` also owns the output-path property-change route;
-`MainWindow.OutputPath.cs` is the XAML-facing adapter used by binding setup and
-button events.
+`MainWindow.ButtonActions.cs` is the XAML-facing adapter used by binding setup,
+property changes, and button events.
 
 Diagnostic session DTOs live in feature-oriented model files:
 `tools/Common/DiagnosticSessionOptions.cs`,
