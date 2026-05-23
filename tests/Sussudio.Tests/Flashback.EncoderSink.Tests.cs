@@ -96,8 +96,7 @@ static partial class Program
         var sourceText = ReadFlashbackEncoderSinkSource();
         var startupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs")
             .Replace("\r\n", "\n");
-        var startupRollbackText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.StartupRollback.cs")
-            .Replace("\r\n", "\n");
+        var startupRollbackText = startupText;
 
         var startCatchBlock = ExtractTextBetween(
             startupText,

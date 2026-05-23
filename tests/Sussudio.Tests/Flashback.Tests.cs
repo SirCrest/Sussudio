@@ -66,10 +66,7 @@ static partial class Program
         var parts = new[]
         {
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.StartupQueues.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.StartupRollback.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.StartupPolicy.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.DiagnosticsReset.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.RecordingAccounting.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs").Replace("\r\n", "\n"),

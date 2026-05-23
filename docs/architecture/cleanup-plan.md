@@ -1791,23 +1791,10 @@ there.
 
 Flashback encoder sink startup now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs`. Keep buffer
-session creation, encoder initialization, active-segment setup, PTS continuation,
-background task startup, and start-transaction orchestration there.
-
-Flashback encoder startup queue construction now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.StartupQueues.cs`. Keep
-video/audio/microphone/GPU queue allocation, hardware queue enablement, queue
-capacity publication, and CPU-encoding warning logs there.
-
-Flashback encoder startup rollback now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.StartupRollback.cs`. Keep
-start-failure logging, partially initialized queue completion, state rollback,
-CTS/encoder cleanup, and generated-segment cleanup there.
-
-Flashback encoder sink startup policy now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.StartupPolicy.cs`. Keep
-session validation, frame-rate fallback/clamping, high-resolution queue
-capacity policy, and hardware-vs-CPU queue capacity resolution there.
+session creation, generated session ID formatting, encoder initialization,
+active-segment setup, startup queue allocation, session validation, frame-rate
+fallback/clamping, start-failure rollback, PTS continuation, background task
+startup, and start-transaction orchestration there.
 
 Flashback encoder diagnostics reset now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.DiagnosticsReset.cs`. Keep
