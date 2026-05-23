@@ -4253,8 +4253,7 @@ owner, fold it back into that owner and update the source-shape tests and
    is a top-level `Sussudio.Controllers` owner for debounced reinitialization, restart-cancellation state,
    Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
    and gate release.
-   `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.Context.cs`
-   owns the top-level graph-built reinitialization port contract for selected
+   It also owns the graph-built reinitialization port contract for selected
    device/format state, generation coalescing, pending Flashback-cycle waits,
    debounce/timeout policy, renderer notifications, restart cancellation, and
    reinit gate access.
