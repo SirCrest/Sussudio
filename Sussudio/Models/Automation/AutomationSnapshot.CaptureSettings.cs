@@ -2,6 +2,27 @@ namespace Sussudio.Models;
 
 public sealed partial class AutomationSnapshot
 {
+    public string? SelectedDeviceId { get; init; }
+    public string? SelectedDeviceName { get; init; }
+    public string? SelectedAudioInputDeviceId { get; init; }
+    public string? SelectedAudioInputDeviceName { get; init; }
+
+    public string? SelectedResolution { get; init; }
+    public double SelectedFrameRate { get; init; }
+    public double? SelectedFriendlyFrameRate { get; init; }
+    public double? SelectedExactFrameRate { get; init; }
+    public string? SelectedExactFrameRateArg { get; init; }
+    public string? DisabledResolutionReason { get; init; }
+    public string? DisabledFrameRateReason { get; init; }
+    public string SelectedRecordingFormat { get; init; } = string.Empty;
+    public string SelectedQuality { get; init; } = string.Empty;
+    public string SelectedPreset { get; init; } = string.Empty;
+    public string SelectedSplitEncodeMode { get; init; } = string.Empty;
+    public string SelectedVideoFormat { get; init; } = string.Empty;
+    public double CustomBitrateMbps { get; init; }
+    public double PreviewVolumePercent { get; init; }
+    public bool IsStatsVisible { get; init; }
+
     public uint? RequestedWidth { get; init; }
     public uint? RequestedHeight { get; init; }
     public double? RequestedFrameRate { get; init; }
@@ -49,4 +70,25 @@ public sealed partial class AutomationSnapshot
     public bool? EncoderTenBitPipelineConfirmed { get; init; }
     public bool? MfReadwriteDisableConverters { get; init; }
     public string? NegotiatedMediaSubtypeToken { get; init; }
+
+    public bool IsHdrAvailable { get; init; }
+    public bool IsHdrEnabled { get; init; }
+    public bool HdrOutputActive { get; init; }
+    public string HdrRuntimeState { get; init; } = "Inactive";
+    public string HdrReadinessReason { get; init; } = string.Empty;
+    public string HdrWarmupState { get; init; } = "NotStarted";
+    public int HdrWarmupRequiredP010Frames { get; init; }
+    public int HdrWarmupAllowedNonP010Frames { get; init; }
+    public int HdrWarmupObservedP010Frames { get; init; }
+    public int HdrWarmupObservedNonP010Frames { get; init; }
+    public string HdrDowngradeCode { get; init; } = string.Empty;
+    public string RequestedPipelineMode { get; init; } = "SDR";
+    public string ActivePipelineMode { get; init; } = "SDR";
+    public bool PipelineModeMatched { get; init; } = true;
+    public string PipelineModeStatus { get; init; } = "Ready";
+    public string PipelineModeReason { get; init; } = string.Empty;
+    public string TelemetryAlignmentStatus { get; init; } = "Unknown";
+    public string TelemetryAlignmentReason { get; init; } = string.Empty;
+
+    public HdrTruthVerdict? HdrTruthVerdict { get; init; }
 }

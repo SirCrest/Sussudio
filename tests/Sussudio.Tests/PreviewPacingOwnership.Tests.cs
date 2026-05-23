@@ -118,11 +118,9 @@ public sealed class PreviewPacingOwnershipTests
         var files = new[]
         {
             "Sussudio/Models/Automation/AutomationSnapshot.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.UserSettings.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.Hdr.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.CaptureSettings.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.AudioIngest.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.Recording.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.CaptureFormat.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.SourceTelemetry.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.Preview.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.FrameDiagnostics.cs",
