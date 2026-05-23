@@ -2005,7 +2005,7 @@ Flashback buffer initialization, segment-extension setup, disposal, and
 disposed-state guards now live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs`.
 Recovery-preserve state and marker files now live in
-`Sussudio/Services/Flashback/FlashbackBufferManager.RecoveryPreserve.cs`.
+`Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs`.
 Flashback buffer segment file lookup, range selection, start-PTS lookup, and
 shared segment path safety now live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs`.
