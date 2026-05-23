@@ -3883,8 +3883,10 @@ Primary owners:
   diagnostic sessions from writing the same artifact set.
 - `tools/Common/DiagnosticSessionScenarioPhaseRunner.cs` owns the named
   diagnostic-session scenario phase: state-mutation gating, setup/startup,
-  scenario sampling, completion delegation, fault drain delegation, and the
-  cleanup result consumed by `RunAsync`.
+  scenario sampling, snapshot sample collection, completion delegation, fault
+  drain delegation, and the cleanup result consumed by `RunAsync`. Preserve
+  sample-loop ordering: append the cloned sample before running checkpoint
+  callbacks.
 - `tools/Common/DiagnosticSessionScenarioPhaseModels.cs` owns the explicit
   scenario phase input handoff, mutable in-flight phase state, and immutable
   scenario phase result handoff consumed by completion.
@@ -4041,9 +4043,6 @@ Primary owners:
 - `tools/Common/DiagnosticSessionHealthTolerances.cs` owns diagnostic-session
   source/preview/Flashback health-observation classifiers, sparse-cadence
   tolerances, and tolerated Flashback warning classification.
-- `tools/Common/DiagnosticSessionSampler.cs` owns snapshot sample collection.
-  Preserve its ordering: append the cloned sample before running checkpoint
-  callbacks.
 - `tools/Common/DiagnosticSessionResultFormatter.cs` owns the public
   human-readable diagnostic-session text flow used by ssctl and MCP plus
   all rendered section rows: overview/health/evidence, capture mode, recording

@@ -3570,9 +3570,9 @@ verification, and original-preset restore. Startup only delegates selected cycle
 scenario registration.
 
 Diagnostic-session sampling now lives in
-`tools/Common/DiagnosticSessionSampler.cs`. Keep the sample append before the
-optional checkpoint callback so checkpoint failures cannot orphan an unseen
-sample.
+`tools/Common/DiagnosticSessionScenarioPhaseRunner.cs` beside the scenario
+phase sequence that invokes it. Keep the sample append before the optional
+checkpoint callback so checkpoint failures cannot orphan an unseen sample.
 
 Diagnostic-session metric projection now lives in
 `tools/Common/DiagnosticSessionMetrics.cs`. It owns read-only metric DTOs and
@@ -3836,7 +3836,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRunState.cs`
 - `DiagnosticSessionLiveStateWriter.cs`
 - `DiagnosticSessionRunContext.cs`
-- `DiagnosticSessionSampler.cs`
 - `DiagnosticSessionScenarioCatalog.cs`
 - `DiagnosticSessionScenarioCatalog.Entries.cs`
 - `DiagnosticSessionScenarioPlan.cs`

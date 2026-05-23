@@ -81,7 +81,7 @@ static partial class Program
 
     internal static Task DiagnosticSessionJsonArtifacts_OwnsJsonWritingAndResponseExtractionSplit()
     {
-        var runnerText = ReadDiagnosticSessionRunnerSource();
+        var executionText = ReadDiagnosticSessionRunExecutionRootSource();
         var initialSnapshotText = ReadRepoFile("tools/Common/DiagnosticSessionInitialSnapshot.cs")
             .Replace("\r\n", "\n");
         var jsonArtifactsText = ReadRepoFile("tools/Common/DiagnosticSessionJsonArtifacts.cs")
@@ -100,11 +100,11 @@ static partial class Program
         AssertDoesNotContain(jsonArtifactsText, "BuildFrameLedgerTrace(");
         AssertDoesNotContain(jsonArtifactsText, "TryGetSnapshot(");
         AssertDoesNotContain(jsonArtifactsText, "TryGetVerification(");
-        AssertDoesNotContain(runnerText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
-        AssertDoesNotContain(runnerText, "using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;");
-        AssertDoesNotContain(runnerText, "private static async Task WriteJsonAsync<T>(");
-        AssertDoesNotContain(runnerText, "private static bool TryGetSnapshot(");
-        AssertDoesNotContain(runnerText, "private static bool TryGetVerification(");
+        AssertDoesNotContain(executionText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
+        AssertDoesNotContain(executionText, "using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;");
+        AssertDoesNotContain(executionText, "private static async Task WriteJsonAsync<T>(");
+        AssertDoesNotContain(executionText, "private static bool TryGetSnapshot(");
+        AssertDoesNotContain(executionText, "private static bool TryGetVerification(");
 
         return Task.CompletedTask;
     }

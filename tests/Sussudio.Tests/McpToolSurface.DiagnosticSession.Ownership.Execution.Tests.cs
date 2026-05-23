@@ -126,18 +126,16 @@ static partial class Program
 
     internal static Task DiagnosticSessionSampler_OwnsSampleLoopOrdering()
     {
-        var runnerText = ReadDiagnosticSessionRunnerSource();
-        var samplerText = ReadRepoFile("tools/Common/DiagnosticSessionSampler.cs")
+        var executionText = ReadDiagnosticSessionRunExecutionRootSource();
+        var scenarioText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseRunner.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(samplerText, "internal static class DiagnosticSessionSampler");
-        AssertContains(samplerText, "internal static async Task SampleLoopAsync(");
-        AssertContains(samplerText, "var response = await sendCommandAsync(\"GetSnapshot\", null, null)");
-        AssertContains(samplerText, "samples.Add(new DiagnosticSessionSample");
-        AssertContains(samplerText, "await sampleCheckpointAsync().ConfigureAwait(false);");
-        AssertOccursBefore(samplerText, "samples.Add(new DiagnosticSessionSample", "await sampleCheckpointAsync().ConfigureAwait(false);");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionSampler;");
-        AssertDoesNotContain(runnerText, "private static async Task SampleLoopAsync(");
+        AssertContains(scenarioText, "private static async Task SampleLoopAsync(");
+        AssertContains(scenarioText, "var response = await sendCommandAsync(\"GetSnapshot\", null, null)");
+        AssertContains(scenarioText, "samples.Add(new DiagnosticSessionSample");
+        AssertContains(scenarioText, "await sampleCheckpointAsync().ConfigureAwait(false);");
+        AssertOccursBefore(scenarioText, "samples.Add(new DiagnosticSessionSample", "await sampleCheckpointAsync().ConfigureAwait(false);");
+        AssertDoesNotContain(executionText, "private static async Task SampleLoopAsync(");
 
         return Task.CompletedTask;
     }
