@@ -8,9 +8,8 @@ static partial class Program
     {
         var pipeServerText = (
             ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.Connections.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.ConnectionSession.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.Responses.cs"))
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.Lifecycle.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.ConnectionSession.cs"))
             .Replace("\r\n", "\n");
 
         AssertContains(pipeServerText, "private sealed class ConnectionSession");

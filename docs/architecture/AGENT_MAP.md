@@ -268,17 +268,14 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/NamedPipeAutomationServer.cs` owns automation
   pipe constructor/configuration state.
 - `Sussudio/Services/Automation/NamedPipeAutomationServer.Lifecycle.cs` owns
-  server start/stop/dispose and the accept loop.
-- `Sussudio/Services/Automation/NamedPipeAutomationServer.Connections.cs` owns
-  per-connection safety, disposal, and request-session handoff.
+  server start/stop/dispose, the accept loop, per-connection safety/disposal,
+  request-session handoff, error/timeout responses, and fallback trace logging.
 - `Sussudio/Services/Automation/NamedPipeAutomationServer.ConnectionSession.cs`
   owns per-request JSON framing, client PID logging, dispatch timeouts, late
   dispatch observation, and response writing.
 - `Sussudio/Services/Automation/NamedPipeAutomationServer.Security.cs` owns
   Windows pipe security descriptor setup, fallback policy, P/Invoke, and secure
   stream creation.
-- `Sussudio/Services/Automation/NamedPipeAutomationServer.Responses.cs` owns
-  error/timeout responses and fallback trace logging.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs` owns polling,
   field/constructor state, and timeline flow.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.RealtimePreview.cs`
@@ -901,7 +898,8 @@ Entry points:
 - `LibAvEncoder.AudioSetup.cs` owns AAC codec context configuration, resampler
   setup, frame allocation, accumulator allocation, and sample-queue allocation.
 - `LibAvEncoder.HdrSideData.cs` owns HDR mastering-display and content-light
-  side-data attachment for software and hardware video frames.
+  side-data attachment for software and hardware video frames, including
+  parsing/applying mastering-display metadata strings.
 - `LibAvEncoder.Models.cs` owns encoder option and rotation-result DTOs.
 - `LibAvEncoder.OptionsValidation.cs` owns encoder option validation, including
   audio/microphone field checks and HDR codec/P010 guards.

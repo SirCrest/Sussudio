@@ -432,13 +432,12 @@ against the shared automation command catalog.
 
 Automation pipe hosting is split across `NamedPipeAutomationServer.*.cs`.
 Keep constructor/configuration state in the root file, server start/stop and
-accept-loop behavior in `NamedPipeAutomationServer.Lifecycle.cs`,
-per-connection safety/disposal and request-session handoff in
-`NamedPipeAutomationServer.Connections.cs`, per-request JSON framing, client PID
+accept-loop behavior, per-connection safety/disposal, request-session handoff,
+error/timeout responses, and fallback tracing in
+`NamedPipeAutomationServer.Lifecycle.cs`, per-request JSON framing, client PID
 logging, dispatch timeouts, late-dispatch observation, and response writing in
-`NamedPipeAutomationServer.ConnectionSession.cs`, Windows pipe security/PInvoke
-in `NamedPipeAutomationServer.Security.cs`, and error/timeout responses plus
-fallback tracing in `NamedPipeAutomationServer.Responses.cs`.
+`NamedPipeAutomationServer.ConnectionSession.cs`, and Windows pipe
+security/PInvoke in `NamedPipeAutomationServer.Security.cs`.
 
 App project build workflow is split so `Sussudio/Sussudio.csproj` stays focused
 on app identity, assets, packages, runtime config, and project references, while
@@ -1593,7 +1592,7 @@ allocation, and sample-queue allocation there.
 LibAv encoder HDR frame side-data helpers now live in
 `Sussudio/Services/Recording/LibAvEncoder.HdrSideData.cs`. Keep software-frame
 and hardware-frame HDR mastering display and content-light metadata attachment
-there.
+there, including parsing/applying mastering-display metadata strings.
 
 LibAv encoder models now live in
 `Sussudio/Services/Recording/LibAvEncoder.Models.cs`. Keep `LibAvEncoderOptions`
