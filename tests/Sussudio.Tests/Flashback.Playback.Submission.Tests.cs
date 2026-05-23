@@ -7,8 +7,6 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var previewFramesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrames.cs")
             .Replace("\r\n", "\n");
-        var previewFrameValidationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrameValidation.cs")
-            .Replace("\r\n", "\n");
         var playbackFrameOwnershipText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
             .Replace("\r\n", "\n");
         var playbackLiveRecoveryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLiveRecovery.cs")
@@ -23,10 +21,8 @@ static partial class Program
         AssertContains(sourceText, "private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)");
         AssertContains(previewFramesText, "private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)");
         AssertContains(previewFramesText, "private static void SubmitFrame(");
-        AssertContains(previewFrameValidationText, "private static bool TryValidatePreviewFrame(DecodedVideoFrame frame, out string reason)");
-        AssertContains(previewFrameValidationText, "private static bool TryCalculatePreviewFrameBytes(int width, int height, bool isHdr, out int bytes)");
-        AssertDoesNotContain(previewFramesText, "private static bool TryValidatePreviewFrame(DecodedVideoFrame frame, out string reason)");
-        AssertDoesNotContain(previewFramesText, "private static bool TryCalculatePreviewFrameBytes(int width, int height, bool isHdr, out int bytes)");
+        AssertContains(previewFramesText, "private static bool TryValidatePreviewFrame(DecodedVideoFrame frame, out string reason)");
+        AssertContains(previewFramesText, "private static bool TryCalculatePreviewFrameBytes(int width, int height, bool isHdr, out int bytes)");
         AssertDoesNotContain(previewFramesText, "private void RestoreLiveAfterSeekDisplayFailure(");
         AssertDoesNotContain(previewFramesText, "private void RestoreLiveAfterPlaybackSubmitFailure(");
         AssertContains(playbackFrameOwnershipText, "private DecodedVideoFrame _previousHeldFrame;");

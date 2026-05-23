@@ -2844,10 +2844,9 @@ Flashback enable/disable rollback path and apply/restart command now live in
 `FlashbackCommandController`; `Sussudio/MainWindow.Flashback.Interactions.cs`
 is the settings XAML-facing adapter.
 
-Flashback playback in/out marker state and file-PTS restore now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.MarkersState.cs`.
-Marker commands, marker normalization, invalid-range clearing, and out-point
-pause checks stay in
+Flashback playback marker commands, in/out marker state, file-PTS restore,
+marker normalization, invalid-range clearing, and out-point pause checks now
+live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Markers.cs`; keep
 decode pacing, seek, and segment-opening flow in the playback controller
 core/thread partials.
@@ -2945,10 +2944,9 @@ partials.
 
 Flashback playback decoded-frame submission now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrames.cs`.
-Keep preview-sink selection, submission telemetry, renderer calls, and held-frame
-handoff there. Decoded-frame validity checks, GPU/CPU frame skip reasons, and
-NV12/P010 byte-size policy now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrameValidation.cs`.
+Keep preview-sink selection, submission telemetry, renderer calls,
+decoded-frame validity checks, GPU/CPU frame skip reasons, NV12/P010 byte-size
+policy, and held-frame handoff there.
 Held playback frame backing state, release-for-live reset policy, and best-effort decoded
 frame release warnings now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`;
