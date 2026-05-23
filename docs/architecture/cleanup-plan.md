@@ -2099,10 +2099,10 @@ metric record structs and shared metric sample helpers in
 root renderer stays focused on construction, constants, user-facing state
 accessors, and public state changes.
 
-D3D preview renderer runtime knobs now live in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.Configuration.cs`. Keep the
-measured 4K120 cadence defaults, swap-chain queue/latency env overrides,
-DXGI statistics toggles, MMCSS settings, and stop-fence timeouts there. Native
+D3D preview renderer runtime knobs live in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.cs` with the renderer facade.
+Keep the measured 4K120 cadence defaults, swap-chain queue/latency env
+overrides, DXGI statistics toggles, MMCSS settings, and stop-fence timeouts there. Native
 interop declarations now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.NativeInterop.cs`. Keep
 `ISwapChainPanelNative`, `ID3DBlob`, `D3DCompileNative`, and `DwmFlush` there;

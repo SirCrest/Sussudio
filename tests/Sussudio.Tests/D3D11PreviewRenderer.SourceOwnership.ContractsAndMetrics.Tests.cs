@@ -1,25 +1,26 @@
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
 {
-    internal static Task D3D11PreviewRenderer_ConfigurationLivesInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_ConfigurationLivesWithRendererFacade()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var configurationText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Configuration.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(configurationText, "SUSSUDIO_PREVIEW_PRESENT_SYNC_INTERVAL");
-        AssertContains(configurationText, "SUSSUDIO_PREVIEW_DXGI_MAX_FRAME_LATENCY");
-        AssertContains(configurationText, "SUSSUDIO_PREVIEW_SWAPCHAIN_BUFFER_COUNT");
-        AssertContains(configurationText, "SUSSUDIO_PREVIEW_RENDER_QUEUE_DEPTH");
-        AssertContains(configurationText, "SUSSUDIO_PREVIEW_WAITABLE_SWAPCHAIN");
-        AssertContains(configurationText, "SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL");
-        AssertContains(configurationText, "SUSSUDIO_PREVIEW_RENDER_MMCSS_TASK\") ?? \"Playback\"");
-        AssertContains(configurationText, "SUSSUDIO_PREVIEW_NATIVE_STOP_FENCE_TIMEOUT_MS");
-        AssertContains(configurationText, "SUSSUDIO_PREVIEW_RENDER_THREAD_STOP_TIMEOUT_MS");
-        AssertDoesNotContain(rootText, "SUSSUDIO_PREVIEW_PRESENT_SYNC_INTERVAL");
-        AssertDoesNotContain(rootText, "SUSSUDIO_PREVIEW_RENDER_MMCSS_TASK");
+        AssertContains(rootText, "SUSSUDIO_PREVIEW_PRESENT_SYNC_INTERVAL");
+        AssertContains(rootText, "SUSSUDIO_PREVIEW_DXGI_MAX_FRAME_LATENCY");
+        AssertContains(rootText, "SUSSUDIO_PREVIEW_SWAPCHAIN_BUFFER_COUNT");
+        AssertContains(rootText, "SUSSUDIO_PREVIEW_RENDER_QUEUE_DEPTH");
+        AssertContains(rootText, "SUSSUDIO_PREVIEW_WAITABLE_SWAPCHAIN");
+        AssertContains(rootText, "SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL");
+        AssertContains(rootText, "SUSSUDIO_PREVIEW_RENDER_MMCSS_TASK\") ?? \"Playback\"");
+        AssertContains(rootText, "SUSSUDIO_PREVIEW_NATIVE_STOP_FENCE_TIMEOUT_MS");
+        AssertContains(rootText, "SUSSUDIO_PREVIEW_RENDER_THREAD_STOP_TIMEOUT_MS");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Configuration.cs")),
+            "D3D11 preview renderer configuration partial");
 
         return Task.CompletedTask;
     }

@@ -11,8 +11,8 @@ public sealed class PresentationPreviewD3DContractsAndMetricsOwnershipTests
     }
 
     [Fact]
-    public Task ConfigurationLivesInFocusedPartial()
-        => global::Program.D3D11PreviewRenderer_ConfigurationLivesInFocusedPartial();
+    public Task ConfigurationLivesWithRendererFacade()
+        => global::Program.D3D11PreviewRenderer_ConfigurationLivesWithRendererFacade();
 
     [Fact]
     public Task NativeInteropLivesInFocusedPartial()
