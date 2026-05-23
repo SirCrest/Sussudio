@@ -90,12 +90,18 @@ static partial class Program
         AssertDoesNotContain(preflightText, "TrivialDeviceSelectionHandlers.TryGetValue");
 
         AssertContains(portMappedDispatchText, "private async Task<AutomationCommandResponse?> TryExecutePortMappedCommandAsync(");
+        AssertContains(portMappedDispatchText, "private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationDeviceSelectionPort>> TrivialDeviceSelectionHandlers");
+        AssertContains(portMappedDispatchText, "private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationCaptureSettingsPort>> TrivialCaptureSettingsHandlers");
         AssertContains(portMappedDispatchText, "TryExecuteUiSettingsCommandAsync(command, payload, correlationId, cancellationToken)");
         AssertContains(portMappedDispatchText, "TrivialDeviceSelectionHandlers.TryGetValue(command");
         AssertContains(portMappedDispatchText, "TrivialCaptureSettingsHandlers.TryGetValue(command");
         AssertContains(portMappedDispatchText, "TrivialAudioHandlers.TryGetValue(command");
         AssertContains(portMappedDispatchText, "TrivialPreviewRecordingHandlers.TryGetValue(command");
         AssertDoesNotContain(portMappedDispatchText, "ExecuteCustomCommandAsync");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.TrivialHandlers.cs")),
+            "trivial port handler tables folded into AutomationCommandDispatcher.PortMappedDispatch.cs");
 
         AssertContains(agentMapText, "`Sussudio/Services/Automation/AutomationCommandDispatcher.Preflight.cs`");
         AssertContains(agentMapText, "`Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs`");

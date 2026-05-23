@@ -234,9 +234,6 @@ Automation diagnostics ownership:
   owns video-source probe, preview-color probe, preview-frame capture, window
   screenshot capture, default capture output paths, and capture response
   status shaping behind the custom command router.
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.TrivialHandlers.cs`
-  owns the port-grouped tables of simple one-property capture and pipeline
-  commands that delegate straight to the matching automation ports.
 - `Sussudio/Services/Automation/IAutomationViewModel.cs` owns the aggregate
   automation ViewModel contract plus feature-shaped ports for readiness,
   snapshot queries, device selection, capture settings, audio, preview/recording,
@@ -245,8 +242,10 @@ Automation diagnostics ownership:
   port targets. Keep those ports grouped in this file until a consumer needs a
   separate file; do not create many tiny interface files for line-count optics.
   `AutomationCommandDispatcher.Preflight.cs` consumes the readiness port for
-  device-ready gating, while `AutomationCommandDispatcher.DeviceCommands.cs`
-  consumes the device-selection and snapshot-query ports.
+  device-ready gating, `AutomationCommandDispatcher.PortMappedDispatch.cs` owns
+  the port-grouped tables and ordered dispatch for simple one-property commands,
+  and `AutomationCommandDispatcher.DeviceCommands.cs` consumes the
+  device-selection and snapshot-query ports.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.Authorization.cs`
   owns auth-token fallback lookup, constant-time token comparison, and auth
   failure logging.
