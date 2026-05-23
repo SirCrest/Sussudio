@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Controllers;
@@ -395,6 +396,223 @@ public partial class MainViewModel
                     },
                     ReinitializeDeviceAsync = previewLifecycleController.ReinitializeDeviceAsync,
                     EnqueueUiOperation = (operation, operationName) => viewModel.EnqueueUiOperation(operation, operationName),
+                });
+        }
+
+        internal static MainViewModelFrameRateTimingResolver CreateFrameRateTimingResolver(MainViewModel viewModel)
+        {
+            return new MainViewModelFrameRateTimingResolver(
+                new MainViewModelFrameRateTimingResolverContext
+                {
+                    GetResolutionToFormats = () => viewModel._resolutionToFormats,
+                    GetRuntimeSnapshot = () => viewModel._captureService.GetRuntimeSnapshot(),
+                    GetLatestSourceTelemetry = () => viewModel._latestSourceTelemetry,
+                    GetSelectedFormat = () => viewModel.SelectedFormat,
+                    AvailableFrameRates = viewModel.AvailableFrameRates,
+                });
+        }
+
+        private static MainViewModelCaptureModeOptionRebuildController CreateCaptureModeOptionRebuildController(MainViewModel viewModel)
+        {
+            return new MainViewModelCaptureModeOptionRebuildController(
+                new MainViewModelCaptureModeOptionRebuildControllerContext
+                {
+                    AvailableFormats = viewModel.AvailableFormats,
+                    AvailableFrameRates = viewModel.AvailableFrameRates,
+                    AvailableResolutions = viewModel.AvailableResolutions,
+                    AvailableVideoFormats = viewModel.AvailableVideoFormats,
+                    AutoResolutionValue = AutoResolutionValue,
+                    AutoFrameRateValue = AutoFrameRateValue,
+                    GetResolutionToFormats = () => viewModel._resolutionToFormats,
+                    GetLatestSourceTelemetry = () => viewModel._latestSourceTelemetry,
+                    TryGetEffectiveResolutionSelection = viewModel.TryGetEffectiveResolutionSelection,
+                    TryResolveResolutionKey = viewModel.TryResolveResolutionKey,
+                    GetEffectiveResolutionKey = viewModel.GetEffectiveResolutionKey,
+                    ApplyResolvedFrameRateSelection = viewModel.ApplyResolvedFrameRateSelection,
+                    GetSelectedResolutionDisplayText = viewModel.GetSelectedResolutionDisplayText,
+                    BuildHdrSupportHintForResolution = viewModel.BuildHdrSupportHintForResolution,
+                    UpdateTargetSummary = viewModel.UpdateTargetSummary,
+                    NotifySelectedResolutionChanged = () => viewModel.OnPropertyChanged(nameof(SelectedResolution)),
+                    GetSelectedDevice = () => viewModel.SelectedDevice,
+                    GetSelectedResolution = () => viewModel.SelectedResolution,
+                    SetSelectedResolution = value => viewModel.SelectedResolution = value,
+                    GetSelectedFrameRate = () => viewModel.SelectedFrameRate,
+                    GetSelectedVideoFormat = () => viewModel.SelectedVideoFormat,
+                    SetSelectedVideoFormat = value => viewModel.SelectedVideoFormat = value,
+                    SetSelectedFormat = value => viewModel.SelectedFormat = value,
+                    IsHdrEnabled = () => viewModel.IsHdrEnabled,
+                    IsPreviewing = () => viewModel.IsPreviewing,
+                    IsAutoFrameRateSelected = () => viewModel.IsAutoFrameRateSelected,
+                    SetIsAutoFrameRateSelected = value => viewModel.IsAutoFrameRateSelected = value,
+                    HasUserOverriddenResolutionForCurrentMode = () => viewModel._hasUserOverriddenResolutionForCurrentMode,
+                    HasUserOverriddenFrameRateForCurrentMode = () => viewModel._hasUserOverriddenFrameRateForCurrentMode,
+                    IsPendingSdrAutoSelectionForDeviceChange = () => viewModel._pendingSdrAutoSelectionForDeviceChange,
+                    SetPendingSdrAutoSelectionForDeviceChange = value => viewModel._pendingSdrAutoSelectionForDeviceChange = value,
+                    GetPendingSdrAutoFriendlyFrameRateBucket = () => viewModel._pendingSdrAutoFriendlyFrameRateBucket,
+                    SetPendingSdrAutoFriendlyFrameRateBucket = value => viewModel._pendingSdrAutoFriendlyFrameRateBucket = value,
+                    IsForceSourceAutoRetarget = () => viewModel._forceSourceAutoRetarget,
+                    SetForceSourceAutoRetarget = value => viewModel._forceSourceAutoRetarget = value,
+                    GetLastKnownResolutionKey = () => viewModel._lastKnownResolutionKey,
+                    SetLastKnownResolutionKey = value => viewModel._lastKnownResolutionKey = value,
+                    SetIsRebuildingModeOptions = value => viewModel._isRebuildingModeOptions = value,
+                    SetIsApplyingAutomaticResolutionSelection = value => viewModel._isApplyingAutomaticResolutionSelection = value,
+                    SetIsApplyingAutomaticFrameRateSelection = value => viewModel._isApplyingAutomaticFrameRateSelection = value,
+                    IsSuppressFormatChangeReinitialize = () => viewModel._suppressFormatChangeReinitialize,
+                    SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,
+                    SetDetectedSourceFrameRate = value => viewModel.DetectedSourceFrameRate = value,
+                    SetDetectedSourceFrameRateArg = value => viewModel.DetectedSourceFrameRateArg = value,
+                    SetSourceFrameRateOrigin = value => viewModel.SourceFrameRateOrigin = value,
+                    SetAutoResolvedWidth = value => viewModel.AutoResolvedWidth = value,
+                    SetAutoResolvedHeight = value => viewModel.AutoResolvedHeight = value,
+                    SetAutoResolvedFrameRate = value => viewModel.AutoResolvedFrameRate = value,
+                    SetHdrResolutionSupportHint = value => viewModel.HdrResolutionSupportHint = value,
+                    SetDisabledResolutionReason = value => viewModel.DisabledResolutionReason = value,
+                    SetStatusText = value => viewModel.StatusText = value,
+                },
+                viewModel._frameRateTimingResolver);
+        }
+
+        private static MainViewModelDeviceFormatProbeController CreateDeviceFormatProbeController(MainViewModel viewModel)
+        {
+            return new MainViewModelDeviceFormatProbeController(
+                new MainViewModelDeviceFormatProbeControllerContext
+                {
+                    TryEnqueueOnUiThread = operation => viewModel._dispatcherQueue.TryEnqueue(() => operation()),
+                    ReadDeviceScanGeneration = () => Interlocked.Read(ref viewModel._deviceScanGeneration),
+                    FindDeviceById = deviceId => viewModel.Devices.FirstOrDefault(
+                        device => string.Equals(device.Id, deviceId, StringComparison.OrdinalIgnoreCase)),
+                    SetPendingSdrAutoSelectionForDeviceChange = value => viewModel._pendingSdrAutoSelectionForDeviceChange = value,
+                    SetPendingSdrAutoFriendlyFrameRateBucket = value => viewModel._pendingSdrAutoFriendlyFrameRateBucket = value,
+                    GetSelectedDevice = () => viewModel.SelectedDevice,
+                    IsPreviewing = () => viewModel.IsPreviewing,
+                    IsInitialized = () => viewModel.IsInitialized,
+                    IsRecording = () => viewModel.IsRecording,
+                    GetSelectedResolution = () => viewModel.SelectedResolution,
+                    GetSelectedFrameRate = () => viewModel.SelectedFrameRate,
+                    GetSelectedFormat = () => viewModel.SelectedFormat,
+                    SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,
+                    RebuildSelectedDeviceCapabilities = (device, resetTelemetryState) =>
+                        viewModel.RebuildSelectedDeviceCapabilities(device, resetTelemetryState),
+                    CreateRetargetApplier = () => new MainViewModelDeviceFormatProbeRetargetApplier(
+                        new MainViewModelDeviceFormatProbeRetargetApplierContext
+                        {
+                            IsHdrEnabled = () => viewModel.IsHdrEnabled,
+                            GetSelectedResolution = () => viewModel.SelectedResolution,
+                            SetSelectedResolution = value => viewModel.SelectedResolution = value,
+                            GetSelectedFrameRate = () => viewModel.SelectedFrameRate,
+                            SetSelectedFrameRate = value => viewModel.SelectedFrameRate = value,
+                            GetSelectedFormat = () => viewModel.SelectedFormat,
+                            AvailableResolutionsContains = value => viewModel.AvailableResolutions.Any(
+                                option => string.Equals(option.Value, value, StringComparison.OrdinalIgnoreCase)),
+                            SetIsRebuildingModeOptions = value => viewModel._isRebuildingModeOptions = value,
+                            SetIsApplyingAutomaticResolutionSelection = value => viewModel._isApplyingAutomaticResolutionSelection = value,
+                            SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,
+                            RebuildFrameRateOptions = viewModel.RebuildFrameRateOptions,
+                            ReinitializeDeviceAsync = viewModel.ReinitializeDeviceAsync,
+                            EnqueueUiOperation = (operation, operationName) => viewModel.EnqueueUiOperation(operation, operationName),
+                            GetCaptureRuntimeSnapshot = viewModel.GetCaptureRuntimeSnapshot,
+                            UpdateSelectedFormat = viewModel.UpdateSelectedFormat,
+                            UpdateTargetSummary = viewModel.UpdateTargetSummary,
+                        }),
+                });
+        }
+
+        private static MainViewModelPreviewLifecycleController CreatePreviewLifecycleController(MainViewModel viewModel)
+        {
+            return new MainViewModelPreviewLifecycleController(
+                new MainViewModelPreviewLifecycleControllerContext
+                {
+                    SessionCoordinator = viewModel._sessionCoordinator,
+                    BuildCaptureSettings = viewModel.BuildCaptureSettings,
+                    InvokeOnUiThreadAsync = (operation, cancellationToken) => viewModel.InvokeOnUiThreadAsync(operation, cancellationToken),
+                    RampPreviewVolumeDownForStopAsync = viewModel.RampPreviewVolumeDownForStopAsync,
+                    CreateReinitializeController = controller => new MainViewModelPreviewReinitializeController(
+                        new MainViewModelPreviewReinitializeControllerContext
+                        {
+                            SelectedDevice = () => viewModel.SelectedDevice,
+                            SelectedFormat = () => viewModel.SelectedFormat,
+                            IsRecording = () => viewModel.IsRecording,
+                            IsInitialized = () => viewModel.IsInitialized,
+                            SetIsInitialized = value => viewModel.IsInitialized = value,
+                            IsPreviewing = () => viewModel.IsPreviewing,
+                            IsPreviewReinitializing = () => viewModel.IsPreviewReinitializing,
+                            SetIsPreviewReinitializing = value => viewModel.IsPreviewReinitializing = value,
+                            SetStatusText = value => viewModel.StatusText = value,
+                            CancelPreviewRestartAfterReinitialize = () => viewModel._cancelPreviewRestartAfterReinitialize,
+                            SetCancelPreviewRestartAfterReinitialize = value => viewModel._cancelPreviewRestartAfterReinitialize = value,
+                            IncrementReinitializeGeneration = () => Interlocked.Increment(ref viewModel._previewReinitializeGeneration),
+                            ReadReinitializeGeneration = () => Volatile.Read(ref viewModel._previewReinitializeGeneration),
+                            PreviewReinitializeDebounceMs = PreviewReinitializeDebounceMs,
+                            PendingFlashbackCycleTask = () => viewModel._pendingFlashbackCycleTask,
+                            FlashbackCycleBeforeReinitializeTimeoutMs = FlashbackCycleBeforeReinitializeTimeoutMs,
+                            AwaitWithTimeoutAsync = AwaitWithTimeoutAsync,
+                            ClearPendingFlashbackCycleIfSameAndCompleted = task =>
+                            {
+                                if (ReferenceEquals(viewModel._pendingFlashbackCycleTask, task) && task.IsCompleted)
+                                {
+                                    viewModel._pendingFlashbackCycleTask = null;
+                                }
+                            },
+                            WaitReinitializeGateAsync = viewModel._previewReinitializeGate.WaitAsync,
+                            ReleaseReinitializeGate = () => viewModel._previewReinitializeGate.Release(),
+                            NotifyPreviewReinitRequestedAsync = viewModel.NotifyPreviewReinitRequestedAsync,
+                            NotifyRendererStopAsync = viewModel.NotifyRendererStopAsync,
+                        },
+                        controller),
+                    SelectedDevice = () => viewModel.SelectedDevice,
+                    SetSelectedDevice = device => viewModel.SelectedDevice = device,
+                    IsInitialized = () => viewModel.IsInitialized,
+                    SetIsInitialized = value => viewModel.IsInitialized = value,
+                    IsPreviewing = () => viewModel.IsPreviewing,
+                    SetIsPreviewing = value => viewModel.IsPreviewing = value,
+                    IsPreviewReinitializing = () => viewModel.IsPreviewReinitializing,
+                    IsRecording = () => viewModel.IsRecording,
+                    ShouldStartAudioPreview = () => viewModel.IsAudioPreviewEnabled && viewModel.IsAudioEnabled,
+                    IsAudioPreviewActive = () => viewModel._captureService.IsAudioPreviewActive,
+                    SetStatusText = value => viewModel.StatusText = value,
+                    RaisePreviewStartRequested = () => viewModel.PreviewStartRequested?.Invoke(viewModel, EventArgs.Empty),
+                    RaisePreviewStopRequested = () => viewModel.PreviewStopRequested?.Invoke(viewModel, EventArgs.Empty),
+                    ApplyLatestSourceTelemetryForPreviewStart = () =>
+                        viewModel._sourceTelemetryController.ApplySourceTelemetrySnapshot(
+                            viewModel._captureService.GetLatestSourceTelemetrySnapshot(),
+                            allowAutoRetarget: true),
+                });
+        }
+
+        private static MainViewModelRuntimeLifecycleController CreateRuntimeLifecycleController(
+            MainViewModel viewModel,
+            MainViewModelPreviewLifecycleController previewLifecycleController,
+            MainViewModelDeviceFormatProbeController deviceFormatProbeController,
+            MainViewModelSourceTelemetryController sourceTelemetryController)
+        {
+            return new MainViewModelRuntimeLifecycleController(
+                new MainViewModelRuntimeLifecycleControllerContext
+                {
+                    CreateEventIngressController = () => CreateRuntimeEventIngressController(
+                        viewModel,
+                        previewLifecycleController,
+                        deviceFormatProbeController,
+                        sourceTelemetryController),
+                    CreateTimer = viewModel._dispatcherQueue.CreateTimer,
+                    GetRuntimeSnapshot = viewModel._captureService.GetRuntimeSnapshot,
+                    GetLatestSourceTelemetrySnapshot = viewModel._captureService.GetLatestSourceTelemetrySnapshot,
+                    SetLatestSourceTelemetrySnapshot = snapshot => viewModel._latestSourceTelemetry = snapshot,
+                    ApplySourceTelemetrySnapshot = sourceTelemetryController.ApplySourceTelemetrySnapshot,
+                    UpdateHdrRuntimeStatusFromCaptureWithoutSnapshot = () => viewModel.UpdateHdrRuntimeStatusFromCapture(),
+                    UpdateHdrRuntimeStatusFromCaptureWithSnapshot = snapshot => viewModel.UpdateHdrRuntimeStatusFromCapture(snapshot),
+                    UpdateLiveCaptureInfoWithoutSnapshot = () => viewModel.UpdateLiveCaptureInfo(),
+                    UpdateLiveCaptureInfoWithSnapshot = snapshot => viewModel.UpdateLiveCaptureInfo(snapshot),
+                    ResetLiveCaptureInfo = viewModel.ResetLiveCaptureInfo,
+                    UpdateDiskSpace = viewModel.UpdateDiskSpace,
+                    RefreshSourceTelemetrySummaryAge = sourceTelemetryController.RefreshSourceTelemetrySummaryAge,
+                    IsRecording = () => viewModel.IsRecording,
+                    IsPreviewing = () => viewModel.IsPreviewing,
+                    IsFlashbackActive = () => viewModel._captureService.IsFlashbackActive,
+                    GetRecordingElapsed = () => viewModel._recordingStopwatch.Elapsed,
+                    SetRecordingTime = value => viewModel.RecordingTime = value,
+                    UpdateRecordingStats = viewModel.UpdateRecordingStats,
+                    UpdateFlashbackBitrate = viewModel.UpdateFlashbackBitrate,
+                    DisposeAudioDeviceWatcher = viewModel._audioDeviceWatcher.Dispose,
                 });
         }
 

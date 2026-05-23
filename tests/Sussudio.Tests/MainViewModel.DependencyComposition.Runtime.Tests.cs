@@ -5,7 +5,6 @@ static partial class Program
     internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionContexts()
     {
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
-        var controllerGraphRuntimeText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Runtime.cs").Replace("\r\n", "\n");
         var sourceTelemetryControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs").Replace("\r\n", "\n");
         var sourceTelemetryControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.Context.cs").Replace("\r\n", "\n");
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs").Replace("\r\n", "\n");
@@ -37,15 +36,14 @@ static partial class Program
         AssertContains(sourceTelemetryControllerText, "public void ApplySourceTelemetrySnapshot(SourceSignalTelemetrySnapshot snapshot, bool allowAutoRetarget)");
         AssertContains(sourceTelemetryControllerText, "public void RefreshSourceTelemetrySummaryAge()");
 
-        AssertContains(controllerGraphRuntimeText, "private sealed partial class MainViewModelControllerGraph");
-        AssertContains(controllerGraphRuntimeText, "private static MainViewModelRuntimeLifecycleController CreateRuntimeLifecycleController(");
-        AssertContains(controllerGraphRuntimeText, "new MainViewModelRuntimeLifecycleController(\n                new MainViewModelRuntimeLifecycleControllerContext");
-        AssertContains(controllerGraphRuntimeText, "CreateEventIngressController = () => CreateRuntimeEventIngressController(");
-        AssertContains(controllerGraphRuntimeText, "deviceFormatProbeController,");
-        AssertContains(controllerGraphRuntimeText, "sourceTelemetryController),");
-        AssertContains(controllerGraphRuntimeText, "ApplySourceTelemetrySnapshot = sourceTelemetryController.ApplySourceTelemetrySnapshot,");
-        AssertContains(controllerGraphRuntimeText, "RefreshSourceTelemetrySummaryAge = sourceTelemetryController.RefreshSourceTelemetrySummaryAge,");
-        AssertContains(controllerGraphRuntimeText, "GetRuntimeSnapshot = viewModel._captureService.GetRuntimeSnapshot,");
+        AssertContains(controllerGraphText, "private static MainViewModelRuntimeLifecycleController CreateRuntimeLifecycleController(");
+        AssertContains(controllerGraphText, "new MainViewModelRuntimeLifecycleController(\n                new MainViewModelRuntimeLifecycleControllerContext");
+        AssertContains(controllerGraphText, "CreateEventIngressController = () => CreateRuntimeEventIngressController(");
+        AssertContains(controllerGraphText, "deviceFormatProbeController,");
+        AssertContains(controllerGraphText, "sourceTelemetryController),");
+        AssertContains(controllerGraphText, "ApplySourceTelemetrySnapshot = sourceTelemetryController.ApplySourceTelemetrySnapshot,");
+        AssertContains(controllerGraphText, "RefreshSourceTelemetrySummaryAge = sourceTelemetryController.RefreshSourceTelemetrySummaryAge,");
+        AssertContains(controllerGraphText, "GetRuntimeSnapshot = viewModel._captureService.GetRuntimeSnapshot,");
         AssertOccursBefore(
             controllerGraphText,
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",

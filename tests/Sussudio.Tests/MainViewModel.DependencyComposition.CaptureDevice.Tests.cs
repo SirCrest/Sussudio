@@ -7,8 +7,6 @@ static partial class Program
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
         var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var deviceAudioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs").Replace("\r\n", "\n");
-        var controllerGraphCaptureModesText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureModes.cs").Replace("\r\n", "\n");
-        var controllerGraphDeviceFormatProbeText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.DeviceFormatProbe.cs").Replace("\r\n", "\n");
         var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs").Replace("\r\n", "\n");
         var deviceRefreshControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.Context.cs").Replace("\r\n", "\n");
         var deviceAudioRequestControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs").Replace("\r\n", "\n");
@@ -47,16 +45,15 @@ static partial class Program
             "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);",
             "var deviceRefreshController = CreateDeviceRefreshController(viewModel, previewLifecycleController);");
 
-        AssertContains(controllerGraphCaptureModesText, "private sealed partial class MainViewModelControllerGraph");
-        AssertContains(controllerGraphCaptureModesText, "internal static MainViewModelFrameRateTimingResolver CreateFrameRateTimingResolver(MainViewModel viewModel)");
-        AssertContains(controllerGraphCaptureModesText, "new MainViewModelFrameRateTimingResolverContext");
-        AssertContains(controllerGraphCaptureModesText, "GetRuntimeSnapshot = () => viewModel._captureService.GetRuntimeSnapshot(),");
-        AssertContains(controllerGraphCaptureModesText, "viewModel._frameRateTimingResolver);");
-        AssertContains(controllerGraphCaptureModesText, "private static MainViewModelCaptureModeOptionRebuildController CreateCaptureModeOptionRebuildController(MainViewModel viewModel)");
-        AssertContains(controllerGraphCaptureModesText, "new MainViewModelCaptureModeOptionRebuildController(\n                new MainViewModelCaptureModeOptionRebuildControllerContext");
-        AssertContains(controllerGraphCaptureModesText, "TryGetEffectiveResolutionSelection = viewModel.TryGetEffectiveResolutionSelection,");
-        AssertContains(controllerGraphCaptureModesText, "ApplyResolvedFrameRateSelection = viewModel.ApplyResolvedFrameRateSelection,");
-        AssertContains(controllerGraphCaptureModesText, "SetSelectedFormat = value => viewModel.SelectedFormat = value,");
+        AssertContains(controllerGraphText, "internal static MainViewModelFrameRateTimingResolver CreateFrameRateTimingResolver(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelFrameRateTimingResolverContext");
+        AssertContains(controllerGraphText, "GetRuntimeSnapshot = () => viewModel._captureService.GetRuntimeSnapshot(),");
+        AssertContains(controllerGraphText, "viewModel._frameRateTimingResolver);");
+        AssertContains(controllerGraphText, "private static MainViewModelCaptureModeOptionRebuildController CreateCaptureModeOptionRebuildController(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelCaptureModeOptionRebuildController(\n                new MainViewModelCaptureModeOptionRebuildControllerContext");
+        AssertContains(controllerGraphText, "TryGetEffectiveResolutionSelection = viewModel.TryGetEffectiveResolutionSelection,");
+        AssertContains(controllerGraphText, "ApplyResolvedFrameRateSelection = viewModel.ApplyResolvedFrameRateSelection,");
+        AssertContains(controllerGraphText, "SetSelectedFormat = value => viewModel.SelectedFormat = value,");
 
         AssertContains(deviceRefreshControllerText, "namespace Sussudio.Controllers;");
         AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshController");
@@ -152,8 +149,8 @@ static partial class Program
         AssertContains(frameRateTimingResolverContextText, "internal sealed class MainViewModelFrameRateTimingResolverContext");
         AssertContains(captureModeOptionRebuildControllerContextText, "public required string AutoResolutionValue { get; init; }");
         AssertContains(captureModeOptionRebuildControllerContextText, "public required double AutoFrameRateValue { get; init; }");
-        AssertContains(controllerGraphCaptureModesText, "AutoResolutionValue = AutoResolutionValue,");
-        AssertContains(controllerGraphCaptureModesText, "AutoFrameRateValue = AutoFrameRateValue,");
+        AssertContains(controllerGraphText, "AutoResolutionValue = AutoResolutionValue,");
+        AssertContains(controllerGraphText, "AutoFrameRateValue = AutoFrameRateValue,");
         AssertDoesNotContain(captureModeOptionRebuildControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(captureModeOptionRebuildControllerText, "_viewModel.");
         AssertDoesNotContain(captureModeOptionFrameRateRebuildControllerText, "_viewModel.");
@@ -204,9 +201,9 @@ static partial class Program
             deviceFormatProbeRetargetApplierText.Split('\n').Length >= 100,
             "device format probe retarget applier is a substantial ownership file");
         AssertContains(deviceFormatProbeRetargetApplierText, "public bool TryApplyDeviceFormatProbeRetarget(");
-        AssertContains(controllerGraphDeviceFormatProbeText, "private static MainViewModelDeviceFormatProbeController CreateDeviceFormatProbeController(MainViewModel viewModel)");
-        AssertContains(controllerGraphDeviceFormatProbeText, "new MainViewModelDeviceFormatProbeControllerContext");
-        AssertContains(controllerGraphDeviceFormatProbeText, "new MainViewModelDeviceFormatProbeRetargetApplierContext");
+        AssertContains(controllerGraphText, "private static MainViewModelDeviceFormatProbeController CreateDeviceFormatProbeController(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelDeviceFormatProbeControllerContext");
+        AssertContains(controllerGraphText, "new MainViewModelDeviceFormatProbeRetargetApplierContext");
 
         return Task.CompletedTask;
     }
