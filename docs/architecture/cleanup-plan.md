@@ -1817,19 +1817,16 @@ Flashback encoder queue helpers now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs`. Keep queue
 completion/signaling, shared queue-depth accounting, cancellation waits, and
 failure notification, remaining queued video/audio/microphone/GPU buffer return,
-and depth reset there. Flashback encoder audio/microphone queue admission now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.AudioQueueSubmission.cs`.
-Keep force-rotate audio queue guard policy, hot audio packet enqueue,
-backlog-eviction accounting, audio-drop diagnostics, and audio channel writes
-there.
-Flashback encoder video/GPU queue admission now lives in
+and depth reset there. Flashback encoder video/GPU/audio/microphone queue
+admission now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.cs`.
 Keep accepted/rejected/overloaded enqueue transactions, queue-full
-classification, producer wakeup signaling, disposed/not-started/cancelled/
-force-rotate/failure rejection reasons, video/GPU input validation, channel
-writes, queue-depth increments, max-depth updates, failed-write depth rollback,
-last-reason state, rejection counters, and throttled video/GPU queue rejection
-logs there.
+classification, force-rotate audio queue guard policy, producer wakeup
+signaling, disposed/not-started/cancelled/force-rotate/failure rejection
+reasons, video/GPU input validation, hot audio packet enqueue, channel writes,
+queue-depth increments, max-depth updates, failed-write depth rollback,
+last-reason state, backlog-eviction accounting, rejection counters, audio-drop
+diagnostics, and throttled queue rejection logs there.
 
 Flashback encoder loop orchestration now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs`. Keep the

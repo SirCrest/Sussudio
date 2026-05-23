@@ -129,8 +129,6 @@ static partial class Program
     {
         var queuesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs")
             .Replace("\r\n", "\n");
-        var audioQueueSubmissionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.AudioQueueSubmission.cs")
-            .Replace("\r\n", "\n");
         var videoQueueSubmissionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.cs")
             .Replace("\r\n", "\n");
         var queueCleanupText = queuesText;
@@ -162,6 +160,15 @@ static partial class Program
         AssertContains(videoQueueSubmissionText, "FLASHBACK_SINK_VIDEO_QUEUE_REJECT");
         AssertContains(videoQueueSubmissionText, "FLASHBACK_SINK_GPU_QUEUE_REJECT");
         AssertContains(videoQueueSubmissionText, "total == 1 || total % 30 == 0");
+        AssertContains(videoQueueSubmissionText, "private static bool IsForceRotateQueueGuarded(int queueDepth, int queueCapacity)");
+        AssertContains(videoQueueSubmissionText, "queueDepth >= Math.Ceiling(queueCapacity * ForceRotateQueueGuardRatio)");
+        AssertContains(videoQueueSubmissionText, "private bool TryEnqueueAudioPacket(");
+        AssertContains(videoQueueSubmissionText, "Volatile.Read(ref _forceRotateDraining)");
+        AssertContains(videoQueueSubmissionText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio\")");
+        AssertContains(videoQueueSubmissionText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio_after_evict\")");
+        AssertContains(videoQueueSubmissionText, "FLASHBACK_SINK_AUDIO_EVICT_PTS");
+        AssertContains(videoQueueSubmissionText, "private static bool TryWriteAudioPacket(");
+        AssertContains(videoQueueSubmissionText, "DecrementQueueDepth(ref queueDepth, $\"{queueName}_write_failed\");");
 
         AssertDoesNotContain(queuesText, "private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
         AssertDoesNotContain(queuesText, "private VideoEnqueueResult TryEnqueueGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
@@ -197,17 +204,6 @@ static partial class Program
         AssertDoesNotContain(queuesText, "private static bool IsForceRotateQueueGuarded(");
         AssertDoesNotContain(queuesText, "private void ResetVideoDiagnostics()");
 
-        AssertContains(audioQueueSubmissionText, "private static bool IsForceRotateQueueGuarded(int queueDepth, int queueCapacity)");
-        AssertContains(audioQueueSubmissionText, "queueDepth >= Math.Ceiling(queueCapacity * ForceRotateQueueGuardRatio)");
-        AssertContains(audioQueueSubmissionText, "private bool TryEnqueueAudioPacket(");
-        AssertContains(audioQueueSubmissionText, "Volatile.Read(ref _forceRotateDraining)");
-        AssertContains(audioQueueSubmissionText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio\")");
-        AssertContains(audioQueueSubmissionText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio_after_evict\")");
-        AssertContains(audioQueueSubmissionText, "FLASHBACK_SINK_AUDIO_EVICT_PTS");
-        AssertContains(audioQueueSubmissionText, "private static bool TryWriteAudioPacket(");
-        AssertContains(audioQueueSubmissionText, "DecrementQueueDepth(ref queueDepth, $\"{queueName}_write_failed\");");
-        AssertDoesNotContain(audioQueueSubmissionText, "private void CompleteWriter<TPacket>");
-        AssertDoesNotContain(audioQueueSubmissionText, "private void FailEncoding(Exception ex)");
         AssertContains(docsText, "FlashbackEncoderSink.VideoQueueSubmission.cs");
         foreach (var removedFile in new[]
         {
@@ -221,7 +217,10 @@ static partial class Program
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
                 $"{removedFile} folded into FlashbackEncoderSink.VideoQueueSubmission.cs");
         }
-        AssertContains(docsText, "FlashbackEncoderSink.AudioQueueSubmission.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.AudioQueueSubmission.cs")),
+            "FlashbackEncoderSink.AudioQueueSubmission.cs folded into FlashbackEncoderSink.VideoQueueSubmission.cs");
 
         return Task.CompletedTask;
     }
