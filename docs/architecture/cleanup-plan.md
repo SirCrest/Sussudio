@@ -2856,8 +2856,8 @@ frame release warnings now live in
 seek-display and playback-submit failure recovery plus decode-error snap,
 near-live snap, and software-decode-budget recovery back to live playback state
 now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLiveRecovery.cs`;
-keep seek and playback loops in the core/thread partials.
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`;
+keep seek commands and segment-edge handling in their named partials.
 
 Flashback playback decoder file handling now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs`.
@@ -2902,8 +2902,8 @@ hardware-acceleration status refresh, over-budget snap telemetry, recovery
 handoff, rolling playback cadence metric updates, decoded PTS cadence state,
 read-only projection, tracking, mismatch telemetry, and cadence-baseline reset
 there.
-The live-state recovery implementation remains in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLiveRecovery.cs`.
+The live-state recovery implementation is local to
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`.
 Audio-master clock sample state, stale-clock detection, read-only A/V drift
 projection, clock-drift computation, pacing correction policy, delay-adjustment
 counters, fallback accounting/classification, pending fallback suppression,

@@ -1057,9 +1057,9 @@ Entry points:
 - `FlashbackPlaybackController.PreviewFrames.cs` owns decoded frame
   preview-sink selection, submission telemetry, renderer calls, validation,
   GPU/CPU skip reasons, NV12/P010 byte-size policy, and held-frame handoff.
-- `FlashbackPlaybackController.PlaybackLiveRecovery.cs` owns seek-display,
-  playback-submit, decode-error snap, near-live snap, and software-decode-budget
-  recovery back to live playback state.
+- `FlashbackPlaybackController.PlaybackFrames.cs` owns continuous playback frame
+  decode/submit pacing, held-frame release, frame-skip catch-up, decode-error
+  snap, near-live snap, and playback failure recovery back to live state.
 - `FlashbackPlaybackController.SeekDisplay.cs` owns seek/scrub keyframe display,
   keyframe seek/reopen retry, file-PTS mapping for displayed seek frames,
   decoded-frame acquisition, adjacent-segment fallback display, frame

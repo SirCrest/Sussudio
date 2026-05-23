@@ -9,8 +9,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackFrameOwnershipText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
             .Replace("\r\n", "\n");
-        var playbackLiveRecoveryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLiveRecovery.cs")
-            .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs")
             .Replace("\r\n", "\n");
         var previewDetachLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewDetachLifecycle.cs")
@@ -31,18 +29,18 @@ static partial class Program
         AssertContains(playbackFrameOwnershipText, "private void HoldSubmittedFrame(DecodedVideoFrame frame)");
         AssertContains(playbackFrameOwnershipText, "private void ReleasePlaybackFrameForLive(string operation)");
         AssertContains(playbackFrameOwnershipText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
-        AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterSeekDisplayFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
-        AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterPlaybackSubmitFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
-        AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterPlaybackDecodeError(FlashbackDecoder decoder, ref bool fileOpen)");
-        AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterNearLiveSnap(FlashbackDecoder decoder, ref bool fileOpen)");
-        AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterSoftwarePlaybackBudgetSnap(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
-        AssertContains(playbackLiveRecoveryText, "private void RestoreLiveAfterDecoderPlaybackFailure(");
-        AssertContains(playbackLiveRecoveryText, "CloseDecoderFileBestEffort(decoder, operation);");
-        AssertContains(playbackLiveRecoveryText, "ReleasePlaybackFrameForLive(operation);");
-        AssertContains(playbackLiveRecoveryText, "RestoreLiveAudio();");
-        AssertContains(playbackLiveRecoveryText, "SafeResumePreviewSubmission(operation);");
-        AssertContains(playbackLiveRecoveryText, "SafeResumeRendering(operation);");
-        AssertContains(playbackLiveRecoveryText, "SetState(FlashbackPlaybackState.Live);");
+        AssertContains(playbackFrameOwnershipText, "private void RestoreLiveAfterSeekDisplayFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
+        AssertContains(playbackFrameOwnershipText, "private void RestoreLiveAfterPlaybackSubmitFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
+        AssertContains(playbackFrameOwnershipText, "private void RestoreLiveAfterPlaybackDecodeError(FlashbackDecoder decoder, ref bool fileOpen)");
+        AssertContains(playbackFrameOwnershipText, "private void RestoreLiveAfterNearLiveSnap(FlashbackDecoder decoder, ref bool fileOpen)");
+        AssertContains(playbackFrameOwnershipText, "private void RestoreLiveAfterSoftwarePlaybackBudgetSnap(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
+        AssertContains(playbackFrameOwnershipText, "private void RestoreLiveAfterDecoderPlaybackFailure(");
+        AssertContains(playbackFrameOwnershipText, "CloseDecoderFileBestEffort(decoder, operation);");
+        AssertContains(playbackFrameOwnershipText, "ReleasePlaybackFrameForLive(operation);");
+        AssertContains(playbackFrameOwnershipText, "RestoreLiveAudio();");
+        AssertContains(playbackFrameOwnershipText, "SafeResumePreviewSubmission(operation);");
+        AssertContains(playbackFrameOwnershipText, "SafeResumeRendering(operation);");
+        AssertContains(playbackFrameOwnershipText, "SetState(FlashbackPlaybackState.Live);");
         AssertDoesNotContain(previewFramesText, "private DecodedVideoFrame _previousHeldFrame;");
         AssertDoesNotContain(previewFramesText, "private bool _hasPreviousHeldFrame;");
         AssertDoesNotContain(previewFramesText, "_previousHeldFrame = frame;");
