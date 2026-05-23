@@ -53,15 +53,13 @@ static partial class Program
         var flashbackPlaybackText = viewModelFiles["MainViewModel.FlashbackPlayback.cs"];
         var flashbackBufferStatusText = viewModelFiles["MainViewModel.FlashbackBufferStatus.cs"];
         var flashbackPlaybackCommandsText = viewModelFiles["MainViewModel.FlashbackPlaybackCommands.cs"];
-        var flashbackPlaybackAutomationText = viewModelFiles["MainViewModel.FlashbackPlaybackAutomation.cs"];
         var flashbackAutomationText = flashbackSettingsText
             + "\n" + flashbackExportText
             + "\n" + flashbackExportOperationText
             + "\n" + flashbackExportAutomationText
             + "\n" + flashbackPlaybackText
             + "\n" + flashbackBufferStatusText
-            + "\n" + flashbackPlaybackCommandsText
-            + "\n" + flashbackPlaybackAutomationText;
+            + "\n" + flashbackPlaybackCommandsText;
         var audioCapturePropertyChangesText = viewModelFiles["MainViewModel.AudioCapturePropertyChanges.cs"];
         var rawViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
@@ -92,11 +90,10 @@ static partial class Program
         AssertMemberContains(flashbackPlaybackText, "ReportFlashbackPlaybackRejection", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
         AssertMemberContains(flashbackPlaybackText, "ReportFlashbackPlaybackRejection", "StatusText = message;");
         AssertDoesNotContain(flashbackPlaybackText, "UpdateFlashbackBufferStatus");
-        AssertDoesNotContain(flashbackPlaybackCommandsText, "ExecuteFlashbackActionAsync");
-        AssertMemberContains(flashbackPlaybackAutomationText, "ExecuteFlashbackActionAsync", "InvokeOnUiThreadAsync(() => ExecuteFlashbackAction(action, position), cancellationToken)");
-        AssertMemberContains(flashbackPlaybackAutomationText, "ExecuteFlashbackAction", "return FlashbackBeginScrub(position ?? TimeSpan.Zero)");
-        AssertMemberContains(flashbackPlaybackAutomationText, "ExecuteFlashbackAction", "return FlashbackSetInPoint().HasValue");
-        AssertDoesNotContain(flashbackPlaybackAutomationText, "_sessionCoordinator.FlashbackSetInPoint()");
+        AssertMemberContains(flashbackPlaybackCommandsText, "ExecuteFlashbackActionAsync", "InvokeOnUiThreadAsync(() => ExecuteFlashbackAction(action, position), cancellationToken)");
+        AssertMemberContains(flashbackPlaybackCommandsText, "ExecuteFlashbackAction", "return FlashbackBeginScrub(position ?? TimeSpan.Zero)");
+        AssertMemberContains(flashbackPlaybackCommandsText, "ExecuteFlashbackAction", "return FlashbackSetInPoint().HasValue");
+        AssertMemberDoesNotContain(flashbackPlaybackCommandsText, "ExecuteFlashbackAction", "_sessionCoordinator.FlashbackSetInPoint()");
         AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackBeginScrub", "_sessionCoordinator.FlashbackBeginScrub(position)");
         AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackSeek", "_sessionCoordinator.FlashbackSeek(position)");
         AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackUpdateScrub", "return _sessionCoordinator.FlashbackUpdateScrub(position)");
@@ -115,6 +112,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackMarkers.cs")),
             "MainViewModel.FlashbackMarkers.cs folded into MainViewModel.FlashbackPlaybackCommands.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackPlaybackAutomation.cs")),
+            "MainViewModel.FlashbackPlaybackAutomation.cs folded into MainViewModel.FlashbackPlaybackCommands.cs");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "_sessionCoordinator.GetFlashbackBufferStatus()");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "FlashbackInPoint = playback.InPoint;");
