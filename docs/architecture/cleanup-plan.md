@@ -1399,10 +1399,9 @@ preview startup, buffer cycling, teardown, and rollback.
 `Sussudio/Services/Flashback/FlashbackBackendResources.RecordingFinalize.cs`
 owns recovery-preserve policy and recording-finalize handoff.
 `Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs`
-owns preview backend startup construction/install/playback initialization.
-`Sussudio/Services/Flashback/FlashbackBackendResources.Startup.Rollback.cs`
-owns startup failure rollback cleanup: producer detach, playback/sink/exporter/
-buffer cleanup, deferred cleanup scheduling, and final backend clear.
+owns preview backend startup construction/install/playback initialization and
+startup failure rollback cleanup: producer detach, playback/sink/exporter/buffer
+cleanup, deferred cleanup scheduling, and final backend clear.
 `Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs`
 owns sink-only buffer-cycle orchestration, purge/finalize decisions, and
 full-rebuild fallback outcomes.
@@ -4518,10 +4517,9 @@ owner, fold it back into that owner and update the source-shape tests and
    `FlashbackBackendResources.RecordingFinalize.cs` owns recovery-preserve
    policy and recording-finalize handoff.
    `FlashbackBackendResources.Startup.cs` owns startup construction,
-   install/playback initialization.
-   `FlashbackBackendResources.Startup.Rollback.cs` owns startup failure
-   rollback cleanup: producer detach, playback/sink/exporter/buffer cleanup,
-   deferred cleanup scheduling, and final backend clear.
+   install/playback initialization, and startup failure rollback cleanup:
+   producer detach, playback/sink/exporter/buffer cleanup, deferred cleanup
+   scheduling, and final backend clear.
    `FlashbackBackendResources.BufferCycle.cs` owns sink-only buffer-cycle
    orchestration, purge/finalize decisions, and full-rebuild fallback outcomes.
    `FlashbackBackendResources.BufferCycle.Lifecycle.cs` owns playback disposal,

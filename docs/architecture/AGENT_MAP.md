@@ -656,11 +656,10 @@ Important entry points:
   artifact-cleanup export-lock delegation, teardown lock ordering, purge-policy
   resolution, service callback binding, cancellation-token choice, and
   preview backend disposal request construction.
-  Startup construction, install, and playback initialization live in
+  Startup construction, install, playback initialization, and rollback cleanup live in
   `FlashbackBackendResources.Startup.cs`; producer attach/detach request
   contracts and feed wiring live in `FlashbackBackendResources.Producers.cs`;
-  startup rollback cleanup lives in `FlashbackBackendResources.Startup.Rollback.cs`; teardown
-  mechanics live in `FlashbackBackendResources.PreviewDisposal.cs`; backend
+  teardown mechanics live in `FlashbackBackendResources.PreviewDisposal.cs`; backend
   artifact cleanup lives in `FlashbackBackendResources.ArtifactCleanup.cs`.
 - `CaptureService.FlashbackBufferCycle.cs` owns buffer-cycle transition
   coordination: backend/export lock ordering, purge-preserve decisions, and
@@ -985,8 +984,7 @@ Entry points:
   `FlashbackBackendResources.RecordingFinalize.cs` owns recovery-preserve policy
   and recording-finalize handoff.
   `FlashbackBackendResources.Startup.cs` owns preview backend startup
-  construction/install/playback initialization.
-  `FlashbackBackendResources.Startup.Rollback.cs` owns startup failure rollback
+  construction/install/playback initialization and startup failure rollback
   cleanup: producer detach, playback/sink/exporter/buffer cleanup, deferred
   cleanup scheduling, and final backend clear.
   `FlashbackBackendResources.BufferCycle.cs` owns sink-only buffer-cycle

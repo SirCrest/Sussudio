@@ -49,7 +49,7 @@ static partial class Program
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs")
             .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.Rollback.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs")
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.RecordingFinalize.cs")
             .Replace("\r\n", "\n")

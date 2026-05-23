@@ -81,7 +81,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.Lifecycle.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.Rollback.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.RecordingFinalize.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Producers.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
@@ -129,8 +129,10 @@ static partial class Program
         AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackSettingsControls.cs");
         AssertContains(agentMapText, "FlashbackBackendResources.BufferCycle.Lifecycle.cs");
         AssertContains(cleanupPlanText, "FlashbackBackendResources.BufferCycle.Lifecycle.cs");
-        AssertContains(agentMapText, "FlashbackBackendResources.Startup.Rollback.cs");
-        AssertContains(cleanupPlanText, "FlashbackBackendResources.Startup.Rollback.cs");
+        AssertContains(agentMapText, "FlashbackBackendResources.Startup.cs");
+        AssertContains(cleanupPlanText, "FlashbackBackendResources.Startup.cs");
+        AssertContains(agentMapText, "rollback cleanup");
+        AssertContains(cleanupPlanText, "startup failure rollback cleanup");
         AssertContains(agentMapText, "FlashbackBackendResources.RecordingFinalize.cs");
         AssertContains(cleanupPlanText, "FlashbackBackendResources.RecordingFinalize.cs");
         AssertContains(agentMapText, "FlashbackBackendResources.Producers.cs");
