@@ -4002,7 +4002,8 @@ owner, fold it back into that owner and update the source-shape tests and
    state plus audio-preview property-change routing,
    `MainViewModel.DeviceAudioState.cs` owns device-native audio/XU UI
    state, and `MainViewModel.FlashbackState.cs` owns Flashback timeline/export
-   state. Keep `MainViewModel.cs` focused on the public compatibility-facade
+   state plus buffer, bitrate, playback-state, in/out marker, and gap-from-live
+   UI projection. Keep `MainViewModel.cs` focused on the public compatibility-facade
    shell and small bridge methods; `MainViewModel.Composition.cs` owns
    construction, dependency assignment, collaborator fields, controller graph
    handoff, and startup lifecycle kick-off.
@@ -4123,7 +4124,7 @@ owner, fold it back into that owner and update the source-shape tests and
    playback action dispatch now live in
    `MainViewModel.FlashbackPlaybackCommands.cs`; buffer,
    bitrate, playback-state, in/out marker, and gap-from-live UI projection live
-   in `MainViewModel.FlashbackBufferStatus.cs`.
+   in `MainViewModel.FlashbackState.cs`.
    Flashback UI export commands, save-picker flow, active-export guard, and
    user-facing export result/status handling now live in
    `MainViewModel.FlashbackExport.cs`. Shared Flashback export operation

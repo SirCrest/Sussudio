@@ -50,7 +50,7 @@ static partial class Program
         var flashbackExportText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
         var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackExportOperation.cs"];
         var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackExportAutomation.cs"];
-        var flashbackBufferStatusText = viewModelFiles["MainViewModel.FlashbackBufferStatus.cs"];
+        var flashbackBufferStatusText = viewModelFlashbackStateText;
         var flashbackPlaybackCommandsText = viewModelFiles["MainViewModel.FlashbackPlaybackCommands.cs"];
         var flashbackPlaybackText = flashbackPlaybackCommandsText;
         var flashbackAutomationText = flashbackSettingsText
@@ -127,11 +127,15 @@ static partial class Program
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "FlashbackOutPoint = null;");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "if (FlashbackState != FlashbackPlaybackState.Live)");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "FlashbackState = FlashbackPlaybackState.Live;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackBufferStatus.cs")),
+            "MainViewModel.FlashbackBufferStatus.cs folded into MainViewModel.FlashbackState.cs");
         var updateFlashbackBufferStatus = ExtractMemberCode(flashbackBufferStatusText, "UpdateFlashbackBufferStatus");
         var inactivePlaybackSnapshotBranch = ExtractTextBetween(
             updateFlashbackBufferStatus,
             "else\n        {\n            if (FlashbackState != FlashbackPlaybackState.Live)",
-            "\n        }\n\n    }");
+            "\n        }\n    }");
         AssertDoesNotContain(inactivePlaybackSnapshotBranch, "FlashbackInPoint = null;");
         AssertDoesNotContain(inactivePlaybackSnapshotBranch, "FlashbackOutPoint = null;");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBitrate", "_sessionCoordinator.FlashbackTotalBytesWritten");

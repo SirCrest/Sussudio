@@ -119,6 +119,11 @@ static partial class Program
             "MainViewModel.CaptureSourceState.cs folded into MainViewModel.CaptureState.cs");
         AssertContains(audioStateText, "public partial bool IsAudioPreviewActive");
         AssertContains(flashbackStateText, "partial void OnIsFlashbackEnabledChanged(bool value)");
+        AssertContains(flashbackStateText, "public void UpdateFlashbackBufferStatus()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackBufferStatus.cs")),
+            "MainViewModel.FlashbackBufferStatus.cs folded into MainViewModel.FlashbackState.cs");
 
         AssertContains(dependenciesText, "internal sealed class MainViewModelDependencies");
         AssertContains(dependenciesText, "public static MainViewModelDependencies CreateDefault()");

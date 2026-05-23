@@ -3121,7 +3121,8 @@ Primary current owners:
   source signal/source-telemetry presentation state; `MainViewModel.AudioState.cs` owns audio and
   microphone state plus audio-preview property-change routing; `MainViewModel.DeviceAudioState.cs` owns device-native
   audio/XU UI state; `MainViewModel.FlashbackState.cs` owns Flashback
-  timeline/export state. `MainViewModel.AudioMeters.cs` owns live
+  timeline/export state plus buffer, bitrate, playback-state, in/out marker,
+  and gap-from-live UI projection. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets
   out of the root facade file. `Sussudio/ViewModels/AudioRampTraceRecorder.cs`
   owns audio ramp diagnostic state, bounded ring-buffer storage, snapshot
@@ -3272,7 +3273,7 @@ Primary current owners:
   playback snapshot and segment access, rejection status projection for UI,
   CLI, and MCP callers, scrub, nudge, in/out marker command routing, and
   automation-facing Flashback playback action dispatch.
-  `MainViewModel.FlashbackBufferStatus.cs` owns buffer, bitrate,
+  `MainViewModel.FlashbackState.cs` owns buffer, bitrate,
   playback-state, in/out marker, and gap-from-live UI projection.
   `MainViewModel.FlashbackExport.cs` owns
   Flashback UI export commands, save-picker flow, active-export guard, and
