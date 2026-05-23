@@ -6,8 +6,6 @@ static partial class Program
     {
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
         var controllerGraphRuntimeText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Runtime.cs").Replace("\r\n", "\n");
-        var controllerGraphSourceTelemetryText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.SourceTelemetry.cs").Replace("\r\n", "\n");
-        var controllerGraphRuntimeEventIngressText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RuntimeEventIngress.cs").Replace("\r\n", "\n");
         var sourceTelemetryControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs").Replace("\r\n", "\n");
         var sourceTelemetryControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.Context.cs").Replace("\r\n", "\n");
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs").Replace("\r\n", "\n");
@@ -24,17 +22,17 @@ static partial class Program
         AssertContains(sourceTelemetryControllerText, "private readonly MainViewModelSourceTelemetryControllerContext _context;");
         AssertDoesNotContain(sourceTelemetryControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(sourceTelemetryControllerText, "_viewModel.");
-        AssertContains(controllerGraphSourceTelemetryText, "private static MainViewModelSourceTelemetryController CreateSourceTelemetryController(MainViewModel viewModel)");
-        AssertContains(controllerGraphSourceTelemetryText, "new MainViewModelSourceTelemetryControllerContext");
+        AssertContains(controllerGraphText, "private static MainViewModelSourceTelemetryController CreateSourceTelemetryController(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelSourceTelemetryControllerContext");
         AssertContains(sourceTelemetryControllerContextText, "public required Func<SourceSignalTelemetrySnapshot> GetLatestSourceTelemetry { get; init; }");
         AssertContains(sourceTelemetryControllerContextText, "public required Func<SourceSignalTelemetrySnapshot, DateTimeOffset, string> BuildSourceTelemetrySummary { get; init; }");
         AssertContains(sourceTelemetryControllerContextText, "public required Func<string?, bool> IsAutoResolutionValue { get; init; }");
         AssertContains(sourceTelemetryControllerContextText, "public required Action RebuildResolutionOptions { get; init; }");
-        AssertContains(controllerGraphSourceTelemetryText, "SetLatestSourceTelemetry = snapshot => viewModel._latestSourceTelemetry = snapshot,");
-        AssertContains(controllerGraphSourceTelemetryText, "BuildSourceTelemetrySummary = SourceTelemetryPresentationBuilder.BuildSourceSummary,");
-        AssertContains(controllerGraphSourceTelemetryText, "IsAutoResolutionValue = MainViewModel.IsAutoResolutionValue,");
-        AssertContains(controllerGraphSourceTelemetryText, "RebuildResolutionOptions = viewModel.RebuildResolutionOptions,");
-        AssertContains(controllerGraphSourceTelemetryText, "UpdateTargetSummary = viewModel.UpdateTargetSummary,");
+        AssertContains(controllerGraphText, "SetLatestSourceTelemetry = snapshot => viewModel._latestSourceTelemetry = snapshot,");
+        AssertContains(controllerGraphText, "BuildSourceTelemetrySummary = SourceTelemetryPresentationBuilder.BuildSourceSummary,");
+        AssertContains(controllerGraphText, "IsAutoResolutionValue = MainViewModel.IsAutoResolutionValue,");
+        AssertContains(controllerGraphText, "RebuildResolutionOptions = viewModel.RebuildResolutionOptions,");
+        AssertContains(controllerGraphText, "UpdateTargetSummary = viewModel.UpdateTargetSummary,");
         AssertContains(sourceTelemetryControllerText, "public void OnSourceTelemetryUpdated(object? sender, SourceSignalTelemetrySnapshot snapshot)");
         AssertContains(sourceTelemetryControllerText, "public void ApplySourceTelemetrySnapshot(SourceSignalTelemetrySnapshot snapshot, bool allowAutoRetarget)");
         AssertContains(sourceTelemetryControllerText, "public void RefreshSourceTelemetrySummaryAge()");
@@ -83,8 +81,8 @@ static partial class Program
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.");
         AssertContains(runtimeEventIngressControllerText, "_context.ReinitializeDeviceAsync(\"audio device invalidated\")");
         AssertContains(runtimeEventIngressControllerText, "_context.ReinitializeDeviceAsync(\"system resume\")");
-        AssertContains(controllerGraphRuntimeEventIngressText, "private static MainViewModelRuntimeEventIngressController CreateRuntimeEventIngressController(");
-        AssertContains(controllerGraphRuntimeEventIngressText, "new MainViewModelRuntimeEventIngressControllerContext");
+        AssertContains(controllerGraphText, "private static MainViewModelRuntimeEventIngressController CreateRuntimeEventIngressController(");
+        AssertContains(controllerGraphText, "new MainViewModelRuntimeEventIngressControllerContext");
         AssertContains(runtimeEventIngressControllerText, "public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }");
         AssertContains(runtimeEventIngressControllerText, "public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }");
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"audio device invalidated\")");

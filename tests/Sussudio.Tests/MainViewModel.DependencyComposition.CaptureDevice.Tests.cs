@@ -7,7 +7,6 @@ static partial class Program
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
         var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var deviceAudioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs").Replace("\r\n", "\n");
-        var controllerGraphCaptureSettingsAutomationText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureSettingsAutomation.cs").Replace("\r\n", "\n");
         var controllerGraphCaptureModesText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureModes.cs").Replace("\r\n", "\n");
         var controllerGraphDeviceFormatProbeText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.DeviceFormatProbe.cs").Replace("\r\n", "\n");
         var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs").Replace("\r\n", "\n");
@@ -107,10 +106,10 @@ static partial class Program
         AssertContains(captureSettingsAutomationControllerText, "public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)");
         AssertContains(captureSettingsAutomationControllerText, "public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)");
         AssertContains(captureSettingsAutomationControllerText, "private async Task SetAutomationCaptureModeAsync(");
-        AssertContains(controllerGraphCaptureSettingsAutomationText, "private static MainViewModelCaptureSettingsAutomationController CreateCaptureSettingsAutomationController(MainViewModel viewModel)");
-        AssertContains(controllerGraphCaptureSettingsAutomationText, "new MainViewModelCaptureSettingsAutomationControllerContext");
-        AssertContains(controllerGraphCaptureSettingsAutomationText, "SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,");
-        AssertContains(controllerGraphCaptureSettingsAutomationText, "ReinitializeDeviceAsync = viewModel.ReinitializeDeviceAsync,");
+        AssertContains(controllerGraphText, "private static MainViewModelCaptureSettingsAutomationController CreateCaptureSettingsAutomationController(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelCaptureSettingsAutomationControllerContext");
+        AssertContains(controllerGraphText, "SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,");
+        AssertContains(controllerGraphText, "ReinitializeDeviceAsync = viewModel.ReinitializeDeviceAsync,");
 
         AssertContains(recordingSettingsAutomationControllerText, "namespace Sussudio.Controllers;");
         AssertContains(recordingSettingsAutomationControllerText, "internal sealed class MainViewModelRecordingSettingsAutomationController");
