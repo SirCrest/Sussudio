@@ -459,8 +459,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var optionsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs")
             .Replace("\r\n", "\n");
-        var sessionContextText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.SessionContext.cs")
-            .Replace("\r\n", "\n");
+        var sessionContextText = optionsText;
         var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.PacketBuffers.cs")
             .Replace("\r\n", "\n");
         var packetTypesText = packetBuffersText;
@@ -473,7 +472,9 @@ static partial class Program
         AssertContains(optionsText, "private static LibAvEncoderOptions CreateOptions(FlashbackSessionContext context, string outputPath)");
         AssertContains(optionsText, "internal static string GetSegmentExtension(string codecName)");
         AssertContains(optionsText, "private static (int? Numerator, int? Denominator) ResolveSessionFrameRateParts(int? numerator, int? denominator)");
-        AssertDoesNotContain(optionsText, "private static FlashbackSessionContext CreateSessionContext");
+        AssertContains(optionsText, "private static FlashbackSessionContext CreateSessionContext(RecordingContext context)");
+        AssertContains(optionsText, "private static (int? Numerator, int? Denominator) ResolveFrameRateParts(string frameRateArg)");
+        AssertContains(optionsText, "private static string MapCodecName(RecordingFormat format)");
         AssertDoesNotContain(optionsText, "private readonly record struct VideoFramePacket");
         AssertDoesNotContain(optionsText, "private static byte[] GetBuffer");
 
@@ -502,7 +503,8 @@ static partial class Program
         AssertContains(audioInputsText, "private static bool TryValidateAudioPacketLength(int byteLength, string source)");
         AssertDoesNotContain(rootText, "private static FlashbackSessionContext CreateSessionContext");
         AssertDoesNotContain(rootText, "private static byte[] GetBuffer");
-        AssertContains(docsText, "FlashbackEncoderSink.SessionContext.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.Options.cs");
+        AssertContains(docsText, "recording-to-Flashback session mapping");
         AssertContains(docsText, "generated session ID formatting");
         AssertContains(docsText, "FlashbackEncoderSink.PacketBuffers.cs");
         AssertContains(docsText, "FlashbackEncoderSink.PacketBuffers.cs");

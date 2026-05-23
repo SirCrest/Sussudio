@@ -1802,14 +1802,10 @@ eviction resume fallback there.
 
 Flashback encoder sink options now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs`. Keep encoder
-option creation, segment extension policy, transport container selection, and
-session frame-rate rational validation there.
-
-Flashback encoder recording-context mapping now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.SessionContext.cs`. Keep
-`RecordingContext` to `FlashbackSessionContext` projection, recording-format
-codec mapping, split-encode mode wire mapping, and recording frame-rate argument
-parsing there.
+option creation, segment extension policy, transport container selection,
+session frame-rate rational validation, `RecordingContext` to
+`FlashbackSessionContext` projection, recording-format codec mapping,
+split-encode mode wire mapping, and recording frame-rate argument parsing there.
 
 Flashback encoder startup orchestration now owns generated session ID formatting
 in `Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs`.
