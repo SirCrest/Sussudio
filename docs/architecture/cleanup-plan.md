@@ -1270,10 +1270,9 @@ endpoint enumeration and friendly-name reads, native video format probing,
 subtype/FourCC naming, and direct plus enumeration-fallback MF source
 activation in `MfDeviceEnumerator.cs`.
 
-Capture service source telemetry polling and provider reads now live in
-`Sussudio/Services/Capture/CaptureService.Telemetry.cs`, while fallback snapshot
-construction and merge policy live in
-`Sussudio/Services/Capture/CaptureService.TelemetryFallback.cs`. Capture-format
+Capture service source telemetry polling, provider reads, fallback snapshot
+construction, and merge policy now live in
+`Sussudio/Services/Capture/CaptureService.Telemetry.cs`. Capture-format
 runtime telemetry, NTSC frame-rate correction, and frame-rate argument formatting
 now live in
 `Sussudio/Services/Capture/CaptureService.CaptureFormatTelemetry.cs`, including
