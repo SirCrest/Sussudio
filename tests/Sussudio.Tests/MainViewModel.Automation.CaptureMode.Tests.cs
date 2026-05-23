@@ -8,7 +8,6 @@ static partial class Program
         var viewModelStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs").Replace("\r\n", "\n");
         var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSettings.cs").Replace("\r\n", "\n");
         var captureSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs").Replace("\r\n", "\n");
-        var captureSettingsAutomationControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.Context.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
 
         AssertDoesNotContain(viewModelStateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
@@ -23,8 +22,7 @@ static partial class Program
         AssertDoesNotContain(automationSettingsText, "private async Task SetAutomationCaptureModeAsync(");
         AssertContains(captureSettingsAutomationControllerText, "namespace Sussudio.Controllers;");
         AssertContains(captureSettingsAutomationControllerText, "internal sealed class MainViewModelCaptureSettingsAutomationController");
-        AssertContains(captureSettingsAutomationControllerContextText, "namespace Sussudio.Controllers;");
-        AssertContains(captureSettingsAutomationControllerContextText, "internal sealed class MainViewModelCaptureSettingsAutomationControllerContext");
+        AssertContains(captureSettingsAutomationControllerText, "internal sealed class MainViewModelCaptureSettingsAutomationControllerContext");
         AssertContains(captureSettingsAutomationControllerText, "private readonly MainViewModelCaptureSettingsAutomationControllerContext _context;");
         AssertDoesNotContain(captureSettingsAutomationControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(captureSettingsAutomationControllerText, "_viewModel.");

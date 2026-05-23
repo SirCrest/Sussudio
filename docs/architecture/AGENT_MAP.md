@@ -3567,8 +3567,7 @@ Primary current owners:
   is a top-level `Sussudio.Controllers` owner for UI-thread setting mutations,
   validation, MJPEG decoder clamping, and active capture-mode reinitialization
   routing.
-  `Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.Context.cs`
-  owns the top-level capture-settings automation graph-port contract for option
+  It also owns the capture-settings automation graph-port contract for option
   collections, selected capture-mode state, preview reinitialization checks,
   UI-thread dispatch, and format-change suppression.
   `MainViewModel.CaptureModeTransactions.cs` owns capture-mode/HDR
