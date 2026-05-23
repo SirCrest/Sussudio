@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Sussudio.Models;
 
@@ -6,6 +7,80 @@ namespace Sussudio.Services.Telemetry;
 
 public sealed partial class NativeXuAtCommandProvider
 {
+    private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap = new Dictionary<int, VicTiming>
+    {
+        [118] = new(3840, 2160, 120.0, false),
+        [119] = new(3840, 2160, 120.0, false),
+        [97] = new(3840, 2160, 60.0, false),
+        [96] = new(3840, 2160, 50.0, false),
+        [95] = new(3840, 2160, 30.0, false),
+        [94] = new(3840, 2160, 25.0, false),
+        [93] = new(3840, 2160, 24.0, false),
+        [63] = new(1920, 1080, 120.0, false),
+        [16] = new(1920, 1080, 60.0, false),
+        [31] = new(1920, 1080, 50.0, false),
+        [34] = new(1920, 1080, 30.0, false),
+        [32] = new(1920, 1080, 24.0, false),
+        [5] = new(1920, 1080, 60.0, true),
+        [4] = new(1280, 720, 60.0, false),
+        [19] = new(1280, 720, 50.0, false)
+    };
+
+    private static readonly double[] CanonicalFrameRates =
+    {
+        24000.0 / 1001.0,
+        24.0,
+        25.0,
+        30000.0 / 1001.0,
+        30.0,
+        50.0,
+        60000.0 / 1001.0,
+        60.0,
+        120000.0 / 1001.0,
+        120.0
+    };
+
+    private readonly record struct VicTiming(int Width, int Height, double NominalFrameRate, bool IsInterlaced);
+
+    private readonly record struct NativeXuSnapshotCommandResults(
+        AtCommandResult Vic,
+        AtCommandResult Vfreq,
+        AtCommandResult AviInfo,
+        AtCommandResult HdrMetadata,
+        AtCommandResult SystemInfo,
+        AtCommandResult Hdr2Sdr,
+        AtCommandResult AudioFormat,
+        AtCommandResult AudioSamplingRate,
+        AtCommandResult InputSource,
+        AtCommandResult FlashAudio,
+        AtCommandResult AdcOnOff,
+        AtCommandResult AdcVolumeGain,
+        AtCommandResult UacVolumeGain,
+        AtCommandResult UacOut1Mute,
+        AtCommandResult UacOut2Mute,
+        AtCommandResult UacOut2MixerSource,
+        AtCommandResult UsbHostProtocol,
+        AtCommandResult UsbCdc,
+        AtCommandResult UsbLinkState,
+        AtCommandResult UsbForceSpeed,
+        AtCommandResult TxHpd,
+        AtCommandResult TxVrr,
+        AtCommandResult TxEdidValid,
+        AtCommandResult UvcOutputTiming,
+        AtCommandResult UvcVideoFormat,
+        AtCommandResult UvcErrStatus,
+        AtCommandResult HdcpMode,
+        AtCommandResult HdcpVersion,
+        AtCommandResult RxTxHdcpVersion,
+        AtCommandResult Hdr2SdrExtended,
+        AtCommandResult CustomerVersion,
+        AtCommandResult RescueVersion,
+        AtCommandResult Hdr2SdrColorParam,
+        AtCommandResult ColorRangeSetting,
+        AtCommandResult Vtem,
+        AtCommandResult BitError,
+        AtCommandResult RawTiming);
+
     private static NodeReadAttempt BuildSnapshotFromCommandResults(
         NativeXuSnapshotCommandResults results,
         string interfacePath,

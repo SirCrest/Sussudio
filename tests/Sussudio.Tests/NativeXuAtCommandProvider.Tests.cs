@@ -17,10 +17,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var snapshotAssemblyText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs")
             .Replace("\r\n", "\n");
-        var snapshotCommandResultsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.CommandResults.cs")
-            .Replace("\r\n", "\n");
-        var snapshotTimingText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.Timing.cs")
-            .Replace("\r\n", "\n");
         var audioInputText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs")
             .Replace("\r\n", "\n");
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
@@ -64,21 +60,24 @@ static partial class Program
         AssertContains(rollingCommandGroupsText, "private void RefreshRollingGroup(");
         AssertContains(rollingCommandGroupsText, "case 5: // Diagnostics");
         AssertDoesNotContain(rollingCommandGroupsText, "private static bool IsUnsupportedNodeFailure(");
-        AssertDoesNotContain(snapshotAssemblyText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
-        AssertDoesNotContain(snapshotAssemblyText, "private static readonly double[] CanonicalFrameRates");
-        AssertDoesNotContain(snapshotAssemblyText, "private readonly record struct NativeXuSnapshotCommandResults(");
+        AssertContains(snapshotAssemblyText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
+        AssertContains(snapshotAssemblyText, "private static readonly double[] CanonicalFrameRates");
+        AssertContains(snapshotAssemblyText, "private readonly record struct VicTiming(");
+        AssertContains(snapshotAssemblyText, "private readonly record struct NativeXuSnapshotCommandResults(");
+        AssertContains(snapshotAssemblyText, "AtCommandResult RawTiming");
         AssertContains(snapshotAssemblyText, "private static NodeReadAttempt BuildSnapshotFromCommandResults(");
         AssertContains(snapshotAssemblyText, "BuildDetailEntries(");
         AssertContains(snapshotAssemblyText, "AppendFlashAudioAnalogGainDetail(detailEntries, results.FlashAudio)");
         AssertContains(snapshotAssemblyText, "new SourceSignalTelemetrySnapshot");
         AssertDoesNotContain(snapshotAssemblyText, "private static string ResolveSnapshotAudioInputOrigin(");
-        AssertContains(snapshotTimingText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
-        AssertContains(snapshotTimingText, "private static readonly double[] CanonicalFrameRates");
-        AssertContains(snapshotTimingText, "private readonly record struct VicTiming(");
-        AssertDoesNotContain(snapshotTimingText, "BuildSnapshotFromCommandResults(");
-        AssertContains(snapshotCommandResultsText, "private readonly record struct NativeXuSnapshotCommandResults(");
-        AssertContains(snapshotCommandResultsText, "AtCommandResult RawTiming");
-        AssertDoesNotContain(snapshotCommandResultsText, "BuildSnapshotFromCommandResults(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.SnapshotAssembly.CommandResults.cs")),
+            "snapshot command result DTO folded into NativeXuAtCommandProvider.SnapshotAssembly.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.SnapshotAssembly.Timing.cs")),
+            "snapshot timing policy folded into NativeXuAtCommandProvider.SnapshotAssembly.cs");
         AssertContains(audioInputText, "private static string ResolveSnapshotAudioInputOrigin(");
         AssertContains(audioInputText, "\"nativexu-flash-audio\"");
         AssertDoesNotContain(snapshotAssemblyText, "TelemetryLabels.AnalogGain");
@@ -87,8 +86,8 @@ static partial class Program
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.RollingCommandGroups.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.cs");
-        AssertContains(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.CommandResults.cs");
-        AssertContains(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.Timing.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.CommandResults.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.Timing.cs");
 
         return Task.CompletedTask;
     }

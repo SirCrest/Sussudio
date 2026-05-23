@@ -1758,15 +1758,13 @@ rolling-read iteration, and node-read failure classification there. The root
 provider keeps public `ReadAsync` validation, transport gate ownership, and
 interface enumeration.
 
-Native XU source snapshot assembly now lives in the focused
-`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly*.cs`
-family. `NativeXuAtCommandProvider.SnapshotAssembly.cs` owns AT-command-result
-decode into `SourceSignalTelemetrySnapshot`, diagnostic/detail assembly, and
-full-vs-rolling logging switches. `NativeXuAtCommandProvider.SnapshotAssembly.Timing.cs`
-owns VIC/frame-rate lookup policy, and `NativeXuAtCommandProvider.SnapshotAssembly.CommandResults.cs`
-owns the full/rolling AT-command-result handoff contract. Flash-audio
-analog-gain row insertion and snapshot audio-origin policy belong to the
-audio-input telemetry detail partial.
+Native XU source snapshot assembly now lives in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs`.
+Keep the full/rolling AT-command-result handoff contract, VIC/frame-rate lookup
+policy, AT-command-result decode into `SourceSignalTelemetrySnapshot`,
+diagnostic/detail assembly, and full-vs-rolling logging switches there.
+Flash-audio analog-gain row insertion and snapshot audio-origin policy belong
+to the audio-input telemetry detail partial.
 
 Native XU payload decoding now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.PayloadDecoding.cs`.
