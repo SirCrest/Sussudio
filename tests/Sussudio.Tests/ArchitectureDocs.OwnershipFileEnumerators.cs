@@ -96,7 +96,6 @@ static partial class Program
              string.Equals(fileName, "StatsPresentationModels.cs", StringComparison.Ordinal) ||
              string.Equals(fileName, "CaptureModeOptionsBuilder.cs", StringComparison.Ordinal) ||
              fileName.StartsWith("AudioRampTraceRecorder", StringComparison.Ordinal) ||
-             string.Equals(fileName, "MainViewModel.AudioRampTrace.cs", StringComparison.Ordinal) ||
              string.Equals(fileName, "LiveSignalTextPresentationBuilder.cs", StringComparison.Ordinal) ||
              string.Equals(fileName, "SourceTelemetryPresentationBuilder.cs", StringComparison.Ordinal));
     }

@@ -64,7 +64,7 @@ static partial class Program
             ReadRepoFile("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs"),
             ReadRepoFile("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.Ramps.cs"))
             .Replace("\r\n", "\n");
-        var audioRampTraceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs").Replace("\r\n", "\n");
+        var audioRampTraceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var audioRampTraceRecorderRootText = ReadRepoFile("Sussudio/ViewModels/AudioRampTraceRecorder.cs").Replace("\r\n", "\n");
         var audioRampTraceRecorderText = audioRampTraceRecorderRootText;
@@ -123,6 +123,10 @@ static partial class Program
         AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"monitoring-started\"");
         AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"monitoring-stopped\"");
         AssertContains(audioRampTraceText, "GetAudioRampTraceSnapshotAsync");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AudioRampTrace.cs")),
+            "MainViewModel.AudioRampTrace.cs folded into MainViewModel.AudioState.cs");
 
         AssertContains(playbackRenderText, "UpdateOutputLevel(destinationSpan);");
         AssertContains(playbackRenderText, "private unsafe void RenderAvailableFrames()");

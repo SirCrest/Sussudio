@@ -118,6 +118,12 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.CaptureSourceState.cs")),
             "MainViewModel.CaptureSourceState.cs folded into MainViewModel.CaptureState.cs");
         AssertContains(audioStateText, "public partial bool IsAudioPreviewActive");
+        AssertContains(audioStateText, "private AudioRampTraceRecorder CreateAudioRampTraceRecorder()");
+        AssertContains(audioStateText, "public Task<AudioRampTraceSnapshot> GetAudioRampTraceSnapshotAsync");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AudioRampTrace.cs")),
+            "MainViewModel.AudioRampTrace.cs folded into MainViewModel.AudioState.cs");
         AssertContains(flashbackStateText, "partial void OnIsFlashbackEnabledChanged(bool value)");
         AssertContains(flashbackStateText, "public void UpdateFlashbackBufferStatus()");
         AssertEqual(

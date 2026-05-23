@@ -3970,8 +3970,8 @@ owner, fold it back into that owner and update the source-shape tests and
    state, bounded ring-buffer storage, snapshot projection, trace session
    start/complete, trace-point capture, sampler loop, and delayed sampler
    shutdown live in `Sussudio/ViewModels/AudioRampTraceRecorder.cs`, with
-   `Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs` kept as the
-   automation-facing adapter and trace/preview-volume controller wiring owner;
+   `MainViewModel.AudioState.cs` kept as the automation-facing adapter and
+   trace/preview-volume controller wiring owner;
    preview-volume save/override, ramp adapter methods, preview monitoring
    coordinator sequencing, and audio-preview property handlers now live in
    `MainViewModel.AudioState.cs`; keep audio capture property handlers in
