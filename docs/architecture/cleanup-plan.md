@@ -4298,9 +4298,9 @@ owner, fold it back into that owner and update the source-shape tests and
    playback action dispatch now lives in
    `MainViewModel.FlashbackPlaybackAutomation.cs`; in/out marker command
    routing now lives in `MainViewModel.FlashbackMarkers.cs`; read-only
-   Flashback playback snapshot access plus rejection status projection live in
-   `MainViewModel.FlashbackPlayback.cs`; read-only segment projection for UI,
-   CLI, and MCP callers lives in `MainViewModel.FlashbackSegments.cs`; buffer,
+   Flashback playback snapshot access, read-only segment projection for UI,
+   CLI, and MCP callers, plus rejection status projection live in
+   `MainViewModel.FlashbackPlayback.cs`; buffer,
    bitrate, playback-state, in/out marker, and gap-from-live UI projection live
    in `MainViewModel.FlashbackBufferStatus.cs`.
    Flashback UI export commands, save-picker flow, active-export guard, and

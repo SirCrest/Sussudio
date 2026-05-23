@@ -3395,9 +3395,8 @@ Primary current owners:
   owns automation-facing Flashback playback action dispatch.
   `MainViewModel.FlashbackMarkers.cs` owns in/out marker command routing.
   `MainViewModel.FlashbackPlayback.cs`
-  owns read-only Flashback playback snapshot access plus rejection status
-  projection. `MainViewModel.FlashbackSegments.cs` owns read-only Flashback
-  segment projection for UI, CLI, and MCP callers.
+  owns read-only Flashback playback snapshot and segment access plus rejection
+  status projection for UI, CLI, and MCP callers.
   `MainViewModel.FlashbackBufferStatus.cs` owns buffer, bitrate,
   playback-state, in/out marker, and gap-from-live UI projection.
   `MainViewModel.FlashbackExport.cs` owns

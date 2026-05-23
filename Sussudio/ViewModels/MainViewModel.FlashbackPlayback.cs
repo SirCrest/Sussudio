@@ -1,3 +1,7 @@
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Sussudio.Models;
 using Sussudio.Services.Capture;
 
 namespace Sussudio.ViewModels;
@@ -7,6 +11,12 @@ namespace Sussudio.ViewModels;
 /// </summary>
 public partial class MainViewModel
 {
+    public IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()
+        => _sessionCoordinator.GetFlashbackSegments();
+
+    public Task<IReadOnlyList<FlashbackSegmentInfo>> GetFlashbackSegmentsAsync(CancellationToken cancellationToken = default)
+        => FromSynchronousSnapshot(GetFlashbackSegments, cancellationToken);
+
     internal FlashbackPlaybackSnapshot GetFlashbackPlaybackSnapshot()
         => _sessionCoordinator.GetFlashbackPlaybackSnapshot();
 

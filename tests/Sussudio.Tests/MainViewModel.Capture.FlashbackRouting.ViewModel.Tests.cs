@@ -51,7 +51,6 @@ static partial class Program
         var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackExportOperation.cs"];
         var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackExportAutomation.cs"];
         var flashbackPlaybackText = viewModelFiles["MainViewModel.FlashbackPlayback.cs"];
-        var flashbackSegmentsText = viewModelFiles["MainViewModel.FlashbackSegments.cs"];
         var flashbackBufferStatusText = viewModelFiles["MainViewModel.FlashbackBufferStatus.cs"];
         var flashbackPlaybackCommandsText = viewModelFiles["MainViewModel.FlashbackPlaybackCommands.cs"];
         var flashbackPlaybackAutomationText = viewModelFiles["MainViewModel.FlashbackPlaybackAutomation.cs"];
@@ -61,7 +60,6 @@ static partial class Program
             + "\n" + flashbackExportOperationText
             + "\n" + flashbackExportAutomationText
             + "\n" + flashbackPlaybackText
-            + "\n" + flashbackSegmentsText
             + "\n" + flashbackBufferStatusText
             + "\n" + flashbackPlaybackCommandsText
             + "\n" + flashbackPlaybackAutomationText
@@ -96,7 +94,6 @@ static partial class Program
         AssertMemberContains(flashbackPlaybackText, "ReportFlashbackPlaybackRejection", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
         AssertMemberContains(flashbackPlaybackText, "ReportFlashbackPlaybackRejection", "StatusText = message;");
         AssertDoesNotContain(flashbackPlaybackText, "UpdateFlashbackBufferStatus");
-        AssertDoesNotContain(flashbackPlaybackText, "GetFlashbackSegments");
         AssertDoesNotContain(flashbackPlaybackCommandsText, "ExecuteFlashbackActionAsync");
         AssertMemberContains(flashbackPlaybackAutomationText, "ExecuteFlashbackActionAsync", "InvokeOnUiThreadAsync(() => ExecuteFlashbackAction(action, position), cancellationToken)");
         AssertMemberContains(flashbackPlaybackAutomationText, "ExecuteFlashbackAction", "return FlashbackBeginScrub(position ?? TimeSpan.Zero)");
@@ -143,7 +140,7 @@ static partial class Program
         AssertContains(coordinatorText, "Volatile.Write(ref _isDisposed, true);");
         AssertContains(coordinatorText, "Exception failure = Volatile.Read(ref _isDisposed)");
         AssertContains(viewModelFlashbackStateText, "private int _flashbackExportOperationId;");
-        AssertMemberContains(flashbackSegmentsText, "GetFlashbackSegments", "_sessionCoordinator.GetFlashbackSegments()");
+        AssertMemberContains(flashbackPlaybackText, "GetFlashbackSegments", "_sessionCoordinator.GetFlashbackSegments()");
         AssertMemberContains(flashbackSettingsText, "SetFlashbackEnabledAsync", "_sessionCoordinator.SetFlashbackEnabledAsync(enabled, cancellationToken)");
         AssertMemberContains(flashbackSettingsText, "RestartFlashbackAsync", "InvokeOnUiThreadAsync(BuildCaptureSettings, cancellationToken)");
         AssertMemberContains(flashbackSettingsText, "RestartFlashbackAsync", "_sessionCoordinator.RestartFlashbackAsync(settings, cancellationToken)");
