@@ -2079,11 +2079,9 @@ timestamp-base discovery, buffered-packet rescue/flush, and native packet
 write outcome state there. Segment timestamp rebasing, segment-boundary repair,
 DTS monotonicity, and native packet writes live in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketRebasing.cs`.
-Per-segment export range/window
-projection and empty effective-range skip classification live in
+Per-segment export range/window projection, empty effective-range skip
+classification, and skipped-requested-segment failure-message policy live in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentRangeProjection.cs`.
-Skipped-requested-segment classification and failure-message policy live in
-`Sussudio/Services/Flashback/FlashbackExporter.SegmentSkipTracking.cs`.
 Output-template selection and template-skip diagnostics live in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs`. Per-segment
 input open, stream-info lookup, stream-count checks, and layout-mismatch skip
