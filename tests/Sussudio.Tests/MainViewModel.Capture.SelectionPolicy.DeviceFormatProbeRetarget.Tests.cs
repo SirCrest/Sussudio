@@ -6,7 +6,6 @@ static partial class Program
     {
         var probeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
         var retargetApplierText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs").Replace("\r\n", "\n");
-        var retargetApplierContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.Context.cs").Replace("\r\n", "\n");
         var retargetPolicyText = ReadRepoFile("Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(probeControllerText, "namespace Sussudio.Controllers;");
@@ -27,8 +26,7 @@ static partial class Program
         AssertDoesNotContain(probeControllerText, "EnqueueUiOperation(");
         AssertContains(retargetApplierText, "namespace Sussudio.Controllers;");
         AssertContains(retargetApplierText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplier");
-        AssertContains(retargetApplierContextText, "namespace Sussudio.Controllers;");
-        AssertContains(retargetApplierContextText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext");
+        AssertContains(retargetApplierText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext");
         AssertContains(retargetApplierText, "private readonly MainViewModelDeviceFormatProbeRetargetApplierContext _context;");
         AssertDoesNotContain(retargetApplierText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(retargetApplierText, "_viewModel.");

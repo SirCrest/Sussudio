@@ -3490,8 +3490,7 @@ Primary current owners:
   is a top-level `Sussudio.Controllers` owner for UI-side late-probe retarget
   application, HDR/SDR reinitialize dispatch, MJPG HFR preserve, session
   mismatch check, and active-capture restore behavior.
-  `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.Context.cs`
-  owns the top-level late-probe retarget graph-port contract for capture-mode
+  It also owns the late-probe retarget graph-port contract for capture-mode
   state, resolution/frame-rate mutation, reinitialize dispatch, runtime
   snapshot checks, frame-rate rebuild, and target-summary refresh.
   `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`

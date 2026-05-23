@@ -4394,8 +4394,7 @@ owner, fold it back into that owner and update the source-shape tests and
     UI-side late-probe retarget application, session mismatch checks, and
     active-capture restore live in the top-level
     `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs`;
-    its top-level graph-port contract now lives in
-    `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.Context.cs`, while
+    its graph-port contract now lives with that applier, while
     pure late-probe retarget decisions live in
     `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`.
     `tests/Sussudio.Tests/XUnit.PresentationPreviewDeviceFormatProbeRetargetContractsTests.cs`

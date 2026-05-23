@@ -23,7 +23,6 @@ static partial class Program
         var frameRateTimingResolverText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.cs").Replace("\r\n", "\n");
         var deviceFormatProbeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
         var deviceFormatProbeRetargetApplierText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs").Replace("\r\n", "\n");
-        var deviceFormatProbeRetargetApplierContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.Context.cs").Replace("\r\n", "\n");
 
         AssertContains(deviceAudioStateText, "public partial ObservableCollection<string> AvailableDeviceAudioModes");
         AssertContains(deviceAudioStateText, "public partial bool IsDeviceAudioControlSupported");
@@ -188,8 +187,7 @@ static partial class Program
         AssertDoesNotContain(deviceFormatProbeControllerText, "private bool TryApplyDeviceFormatProbeRetarget(");
         AssertContains(deviceFormatProbeRetargetApplierText, "namespace Sussudio.Controllers;");
         AssertContains(deviceFormatProbeRetargetApplierText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplier");
-        AssertContains(deviceFormatProbeRetargetApplierContextText, "namespace Sussudio.Controllers;");
-        AssertContains(deviceFormatProbeRetargetApplierContextText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext");
+        AssertContains(deviceFormatProbeRetargetApplierText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext");
         AssertContains(deviceFormatProbeRetargetApplierText, "private readonly MainViewModelDeviceFormatProbeRetargetApplierContext _context;");
         AssertDoesNotContain(deviceFormatProbeRetargetApplierText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceFormatProbeRetargetApplierText, "_viewModel.");

@@ -1,8 +1,32 @@
 using System;
+using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.ViewModels;
 
 namespace Sussudio.Controllers;
+
+/// <summary>
+/// Graph-built ports consumed by late device-format probe retarget application.
+/// </summary>
+internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext
+{
+    public required Func<bool> IsHdrEnabled { get; init; }
+    public required Func<string?> GetSelectedResolution { get; init; }
+    public required Action<string?> SetSelectedResolution { get; init; }
+    public required Func<double> GetSelectedFrameRate { get; init; }
+    public required Action<double> SetSelectedFrameRate { get; init; }
+    public required Func<MediaFormat?> GetSelectedFormat { get; init; }
+    public required Func<string, bool> AvailableResolutionsContains { get; init; }
+    public required Action<bool> SetIsRebuildingModeOptions { get; init; }
+    public required Action<bool> SetIsApplyingAutomaticResolutionSelection { get; init; }
+    public required Action<bool> SetSuppressFormatChangeReinitialize { get; init; }
+    public required Action RebuildFrameRateOptions { get; init; }
+    public required Func<string, Task> ReinitializeDeviceAsync { get; init; }
+    public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }
+    public required Func<CaptureRuntimeSnapshot> GetCaptureRuntimeSnapshot { get; init; }
+    public required Action UpdateSelectedFormat { get; init; }
+    public required Action UpdateTargetSummary { get; init; }
+}
 
 /// <summary>
 /// Applies late device-format probe retarget decisions to the compatibility ViewModel facade.
