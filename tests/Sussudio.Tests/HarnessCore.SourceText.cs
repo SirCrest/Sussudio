@@ -85,7 +85,6 @@ static partial class Program
             "Sussudio/Models/Automation/AutomationSnapshot.SourceTelemetry.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.Preview.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.FrameDiagnostics.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.SystemHealth.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.Flashback.cs"
         };
 
