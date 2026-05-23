@@ -133,7 +133,6 @@ static partial class Program
         AssertContains(seekDisplayFramesText, "private void RecordSeekDisplayDecodeFailure(");
         AssertDoesNotContain(seekDisplayText, "private bool TryDecodeAndDisplaySeekFrame(");
         AssertDoesNotContain(seekDisplayText, "private void RecordSeekDisplayDecodeFailure(");
-        AssertContains(sourceText, ".SeekDisplayFrames.cs");
         AssertContains(agentMapText, "FlashbackPlaybackController.SeekDisplayFrames.cs");
         AssertContains(cleanupPlanText, "FlashbackPlaybackController.SeekDisplayFrames.cs");
         var seekDisplayBlock = ExtractTextBetween(

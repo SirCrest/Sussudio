@@ -3023,10 +3023,10 @@ projection and updates now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterFallbacks.cs`.
 Decoder close best-effort handling now lives with decoder file ownership, and
 decode-error snap-to-live recovery lives with the continuous playback loop, so
-the root controller can remain a construction shell. Public playback state,
-GPU-decode toggling, live-gap projection, decoder HW state, playback PTS
-anchors, scrub resume state, and state-transition logging now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackState.cs`.
+the root controller can remain the construction and core state shell. Public
+playback state, GPU-decode toggling, live-gap projection, decoder HW state,
+playback PTS anchors, scrub resume state, and state-transition logging now live
+in `Sussudio/Services/Flashback/FlashbackPlaybackController.cs`.
 
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/Flashback/FlashbackPollingController.cs`.

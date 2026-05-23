@@ -1045,11 +1045,10 @@ Entry points:
 - `FlashbackPlaybackController.CommandQueue.cs` owns the playback-thread
   command enum and payload contract shared by queue, telemetry, and
   thread-command owners.
-- `FlashbackPlaybackController.cs` owns the construction shell and
-  `FlashbackBufferManager` dependency.
-- `FlashbackPlaybackController.PlaybackState.cs` owns the public playback state
-  surface, GPU-decode toggle, live-gap projection, decoder HW state, playback
-  PTS anchors, scrub resume state, and state-transition logging.
+- `FlashbackPlaybackController.cs` owns construction, the `FlashbackBufferManager`
+  dependency, public playback state surface, GPU-decode toggle, live-gap
+  projection, decoder HW state, playback PTS anchors, scrub resume state, and
+  state-transition logging.
 - `FlashbackPlaybackController.Commands.cs` owns public playback command entry points for scrub, seek, play/pause, go-live, and nudge.
 - `FlashbackPlaybackController.CommandQueue.cs` owns command queue writes/drop
   policy, seek/scrub coalesced command admission, queued-position resolution,

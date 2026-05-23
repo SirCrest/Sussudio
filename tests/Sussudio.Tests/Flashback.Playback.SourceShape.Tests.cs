@@ -2,12 +2,11 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task FlashbackPlaybackController_PublicPlaybackState_LivesInFocusedPartial()
+    private static Task FlashbackPlaybackController_PublicPlaybackState_LivesInRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
-        var playbackStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackState.cs")
-            .Replace("\r\n", "\n");
+        var playbackStateText = rootText;
 
         AssertContains(playbackStateText, "private volatile FlashbackPlaybackState _state = FlashbackPlaybackState.Live;");
         AssertContains(playbackStateText, "private long _playbackPositionTicks;");
@@ -24,14 +23,6 @@ static partial class Program
         AssertContains(playbackStateText, "public string DecoderHwAccel => _decoderHwAccel;");
         AssertContains(playbackStateText, "private void SetState(FlashbackPlaybackState newState)");
         AssertContains(rootText, "private readonly FlashbackBufferManager _bufferManager;");
-        AssertDoesNotContain(rootText, "private volatile FlashbackPlaybackState _state = FlashbackPlaybackState.Live;");
-        AssertDoesNotContain(rootText, "private long _playbackPositionTicks;");
-        AssertDoesNotContain(rootText, "private volatile string _decoderHwAccel = \"N/A\";");
-        AssertDoesNotContain(rootText, "private long _lastAudioPtsTicks;");
-        AssertDoesNotContain(rootText, "private long _lastVideoPtsTicks;");
-        AssertDoesNotContain(rootText, "private bool _wasPlayingBeforeScrub;");
-        AssertDoesNotContain(rootText, "public bool GpuDecodeEnabled { get; set; } = true;");
-        AssertDoesNotContain(rootText, "private void SetState(FlashbackPlaybackState newState)");
 
         return Task.CompletedTask;
     }
