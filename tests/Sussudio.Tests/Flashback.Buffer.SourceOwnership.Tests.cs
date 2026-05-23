@@ -156,6 +156,9 @@ static partial class Program
         AssertContains(purgeText, "FLASHBACK_PURGE_PARTIAL");
         AssertContains(purgeText, "FLASHBACK_BUFFER_PURGE_SKIP reason=recovery_preserved");
         AssertContains(purgeText, "FLASHBACK_BUFFER_DELETE_SKIP reason=outside_session");
+        AssertContains(retentionText, "public void PauseEviction()");
+        AssertContains(retentionText, "public (TimeSpan StartPts, TimeSpan EndPts) ResumeEviction()");
+        AssertContains(retentionText, "public bool IsDiskWarningActive");
         AssertContains(retentionText, "private void EvictOldestSegments()");
         AssertContains(retentionText, "private bool DeleteFileForEviction(string filePath, long sizeBytes, string reason)");
         AssertContains(retentionText, "private static bool DeleteEvictedFile(string fullPath, string sessionRoot, long sizeBytes, string reason)");

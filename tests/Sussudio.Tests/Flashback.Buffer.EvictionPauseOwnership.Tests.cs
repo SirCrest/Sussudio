@@ -12,19 +12,14 @@ public class FlashbackBufferEvictionPauseOwnershipTests
         var repoRoot = FindRepoRoot();
         var retentionText = ReadRepoFile(repoRoot, "Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs")
             .Replace("\r\n", "\n");
-        var evictionPauseText = ReadRepoFile(repoRoot, "Sussudio/Services/Flashback/FlashbackBufferManager.EvictionPause.cs")
-            .Replace("\r\n", "\n");
 
-        Assert.Contains("public bool IsDiskWarningActive", evictionPauseText);
-        Assert.Contains("public TimeSpan RecordingStartPts", evictionPauseText);
-        Assert.Contains("public TimeSpan RecordingEndPts", evictionPauseText);
-        Assert.Contains("public void PauseEviction()", evictionPauseText);
-        Assert.Contains("public (TimeSpan StartPts, TimeSpan EndPts) ResumeEviction()", evictionPauseText);
-        Assert.Contains("FLASHBACK_BUFFER_EVICTION_RESUME_UNBALANCED", evictionPauseText);
-
-        Assert.DoesNotContain("public bool IsDiskWarningActive", retentionText);
-        Assert.DoesNotContain("public void PauseEviction()", retentionText);
-        Assert.DoesNotContain("public (TimeSpan StartPts, TimeSpan EndPts) ResumeEviction()", retentionText);
+        Assert.Contains("public bool IsDiskWarningActive", retentionText);
+        Assert.Contains("public TimeSpan RecordingStartPts", retentionText);
+        Assert.Contains("public TimeSpan RecordingEndPts", retentionText);
+        Assert.Contains("public void PauseEviction()", retentionText);
+        Assert.Contains("public (TimeSpan StartPts, TimeSpan EndPts) ResumeEviction()", retentionText);
+        Assert.Contains("FLASHBACK_BUFFER_EVICTION_RESUME_UNBALANCED", retentionText);
+        Assert.Contains("private void EvictOldestSegments()", retentionText);
     }
 
     private static string ReadRepoFile(string repoRoot, string relativePath)
