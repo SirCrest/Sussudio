@@ -1852,15 +1852,11 @@ Flashback encoder loop orchestration now lives in
 background encode loop, normal drain ordering, force-rotate dispatch,
 cancellation handling, fatal cleanup, and final segment registration there.
 
-Flashback encoder video/GPU packet drains now live in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.PacketDrain.Video.cs`. Keep
-bounded video/GPU packet drains, frame-size defense, queue-depth accounting, and
-video packet cleanup there.
-
-Flashback encoder audio/microphone packet drains now live in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.PacketDrain.Audio.cs`. Keep
-bounded audio/microphone packet drains, queue-depth accounting, encoder audio
-submission, and pooled audio buffer return there.
+Flashback encoder packet drains now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.PacketDrain.cs`. Keep bounded
+video/GPU/audio/microphone packet drains, frame-size defense, queue-depth
+accounting, encoder submission, GPU texture release, and pooled buffer returns
+there.
 
 Flashback encoder progress publication now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingProgress.cs`. Keep

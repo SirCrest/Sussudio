@@ -90,8 +90,7 @@ static partial class Program
     internal static Task FlashbackEncoderSink_PacketDrainLivesInFocusedPartial()
     {
         var loopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs").Replace("\r\n", "\n");
-        var packetDrainVideoText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.PacketDrain.Video.cs").Replace("\r\n", "\n");
-        var packetDrainAudioText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.PacketDrain.Audio.cs").Replace("\r\n", "\n");
+        var packetDrainText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.PacketDrain.cs").Replace("\r\n", "\n");
         var encodingProgressText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingProgress.cs").Replace("\r\n", "\n");
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
@@ -106,22 +105,18 @@ static partial class Program
         AssertDoesNotContain(loopText, "private TimeSpan ResolveEncoderPts()");
         AssertDoesNotContain(loopText, "private void OnVideoFrameEncoded()");
 
-        AssertContains(packetDrainVideoText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
-        AssertContains(packetDrainVideoText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
-        AssertContains(packetDrainVideoText, "MfSourceReaderVideoCapture.GetFrameSizeBytes");
-        AssertContains(packetDrainVideoText, "OnVideoFrameEncoded();");
-        AssertDoesNotContain(packetDrainVideoText, "private bool DrainAudioPackets(");
-
-        AssertContains(packetDrainAudioText, "private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)");
-        AssertContains(packetDrainAudioText, "private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)");
-        AssertDoesNotContain(packetDrainAudioText, "private bool DrainVideoPackets(");
+        AssertContains(packetDrainText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
+        AssertContains(packetDrainText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
+        AssertContains(packetDrainText, "MfSourceReaderVideoCapture.GetFrameSizeBytes");
+        AssertContains(packetDrainText, "OnVideoFrameEncoded();");
+        AssertContains(packetDrainText, "private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)");
+        AssertContains(packetDrainText, "private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)");
 
         AssertContains(encodingProgressText, "private void OnVideoFrameEncoded()");
         AssertContains(encodingProgressText, "private TimeSpan ResolveEncoderPts()");
         AssertContains(encodingProgressText, "_bufferManager.UpdateLatestPts(pts);");
         AssertContains(encodingProgressText, "FrameEncoded?.Invoke(this, encoded);");
-        AssertContains(docsText, "FlashbackEncoderSink.PacketDrain.Video.cs");
-        AssertContains(docsText, "FlashbackEncoderSink.PacketDrain.Audio.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.PacketDrain.cs");
         AssertContains(docsText, "FlashbackEncoderSink.EncodingProgress.cs");
 
         return Task.CompletedTask;
