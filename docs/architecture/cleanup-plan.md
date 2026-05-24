@@ -2401,9 +2401,9 @@ the diagnostic-only runtime contract stays easy to audit.
 
 Automation snapshot contracts now live in named model files under
 `Sussudio/Models/Automation/`. The broad automation evidence DTO is split as an
-`AutomationSnapshot*.cs` partial family by domain: root lifecycle/diagnostics,
-user settings, HDR, audio/ingest, recording, capture format, source telemetry,
-preview, MJPEG/cadence, system health, and Flashback. Other snapshot contracts
+`AutomationSnapshot*.cs` partial family by domain: root lifecycle/diagnostics
+with source telemetry, user settings, HDR, audio/ingest, recording, capture
+format, preview, MJPEG/cadence, system health, and Flashback. Other snapshot contracts
 remain in `CaptureRuntimeSnapshot.cs`, `PerformanceTimelineEntry.cs`,
 `FlashbackSegmentInfo.cs`, and `ViewModelRuntimeSnapshot.cs`.
 `CaptureRuntimeSnapshot.cs` owns the capture runtime DTO surface: root

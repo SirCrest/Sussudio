@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T05:33:27Z
+Generated UTC: 2026-05-24T05:43:46Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 811 |
+| Production .cs files | 810 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 89 (11.0%) |
-| Production .cs files under 80 lines | 161 (19.9%) |
+| Production .cs files under 60 lines | 87 (10.7%) |
+| Production .cs files under 80 lines | 159 (19.6%) |
 
 ## Largest partial-type clusters
 
@@ -37,7 +37,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | AutomationSnapshotFormatter | 8 | 806 | tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs, tools/Common/AutomationSnapshotFormatter.cs, tools/Common/AutomationSnapshotFormatter.Flashback.cs, tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs, tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs, tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs, tools/Common/AutomationSnapshotFormatter.Values.cs, tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs |
 | DiagnosticSessionResultBuilder | 8 | 1425 | tools/Common/DiagnosticSessionResultBuilder.Analysis.cs, tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs, tools/Common/DiagnosticSessionResultBuilder.cs, tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs, tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs, tools/Common/DiagnosticSessionResultBuilder.Flattening.cs, tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs, tools/Common/DiagnosticSessionResultBuilder.Projections.cs |
 | ParallelMjpegDecodePipeline | 8 | 1252 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.CompressedQueue.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Metrics.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.ReorderEmission.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.ResourceCleanup.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Workers.cs |
-| AutomationSnapshot | 8 | 860 | Sussudio/Models/Automation/AutomationSnapshot.AudioIngest.cs, Sussudio/Models/Automation/AutomationSnapshot.CaptureSettings.cs, Sussudio/Models/Automation/AutomationSnapshot.cs, Sussudio/Models/Automation/AutomationSnapshot.Flashback.cs, Sussudio/Models/Automation/AutomationSnapshot.FrameDiagnostics.cs, Sussudio/Models/Automation/AutomationSnapshot.Preview.cs, Sussudio/Models/Automation/AutomationSnapshot.Recording.cs, Sussudio/Models/Automation/AutomationSnapshot.SourceTelemetry.cs |
+| AutomationSnapshot | 7 | 854 | Sussudio/Models/Automation/AutomationSnapshot.AudioIngest.cs, Sussudio/Models/Automation/AutomationSnapshot.CaptureSettings.cs, Sussudio/Models/Automation/AutomationSnapshot.cs, Sussudio/Models/Automation/AutomationSnapshot.Flashback.cs, Sussudio/Models/Automation/AutomationSnapshot.FrameDiagnostics.cs, Sussudio/Models/Automation/AutomationSnapshot.Preview.cs, Sussudio/Models/Automation/AutomationSnapshot.Recording.cs |
 | CaptureSessionCoordinator | 7 | 875 | Sussudio/Services/Capture/CaptureSessionCoordinator.Commands.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.Disposal.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.Playback.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.Queue.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.Snapshot.cs |
 | DiagnosticSessionFlashbackExportScenarios | 7 | 934 | tools/Common/DiagnosticSessionFlashbackExportScenarios.Concurrent.cs, tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs, tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation.cs, tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs, tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs, tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.cs, tools/Common/DiagnosticSessionFlashbackExportScenarios.Rotated.cs |
 | MjpegPreviewJitterBuffer | 7 | 1290 | Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Adaptive.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.EmitLoop.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FrameIngress.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FramePacing.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Queue.cs |
@@ -126,7 +126,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 40 | Sussudio/Controllers/Capture/CaptureOptionTooltipFormatter.cs |
 | 40 | Sussudio/ViewModels/MainViewModel.AutomationSettings.cs |
 | 40 | tools/NativeXuAudioProbe/Program.Commands.cs |
-| 41 | Sussudio/Models/Automation/AutomationSnapshot.SourceTelemetry.cs |
 | 41 | tools/Common/DiagnosticSessionAutomationResponseJson.cs |
 | 42 | Sussudio/Models/Automation/WindowAutomation.cs |
 | 43 | Sussudio/Services/Runtime/AtomicMax.cs |
@@ -146,6 +145,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 49 | tools/McpServer/Tools/WindowScreenshotTools.cs |
 | 50 | Sussudio/Controllers/Recording/Button/RecordingButtonActionController.cs |
 | 50 | Sussudio/Controllers/Shell/ResponsiveShellLayoutPolicy.cs |
+| 50 | Sussudio/ViewModels/MainViewModel.CaptureSettings.cs |
 
 ## Notes
 

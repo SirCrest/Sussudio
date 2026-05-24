@@ -82,7 +82,6 @@ static partial class Program
             "Sussudio/Models/Automation/AutomationSnapshot.CaptureSettings.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.AudioIngest.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.Recording.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.SourceTelemetry.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.Preview.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.FrameDiagnostics.cs",
             "Sussudio/Models/Automation/AutomationSnapshot.Flashback.cs"
