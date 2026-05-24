@@ -413,10 +413,10 @@ lines.
 helper. `CommandHandlers.Device.cs` owns device
 refresh/list/select, audio-input selection, and custom-audio enablement.
 `CommandHandlers.Window.cs` owns window close arming, state/geometry actions,
-fullscreen toggles, snap commands, and the recordings-folder CLI command.
+fullscreen toggles, snap commands, recordings-folder, stats visibility,
+settings visibility, and frame-time overlay CLI commands.
 `CommandHandlers.AutomationFlow.cs` owns
-wait/assert/probe and recording/file verification scripting flow commands. `CommandHandlers.UiVisibility.cs`
-owns stats, settings, and frame-time visibility commands.
+wait/assert/probe and recording/file verification scripting flow commands.
 `CommandHandlers.Flashback.cs` owns Flashback enablement, timeline, segment,
 restart, and top-level Flashback command routing.
 `CommandHandlers.Flashback.Actions.cs` owns Flashback playback/scrub/marker/

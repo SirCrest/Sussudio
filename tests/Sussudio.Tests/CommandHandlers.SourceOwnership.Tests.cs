@@ -43,6 +43,13 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.SetFullScreenEnabled");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "HandleRecordingsAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.OpenRecordingsFolder");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "HandleStatsAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "HandleSettingsAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "HandleFrameTimeAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.SetStatsVisible");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.SetStatsSectionVisible");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.SetSettingsVisible");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.SetFrameTimeOverlayVisible");
         AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "HandleDeviceAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleWaitAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "AutomationCommandKind.WaitForCondition");
@@ -59,13 +66,10 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "ConsumeFlag(context.Rest, \"--json\")");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "ParseOptionalStringFlag(context.Rest, \"--verification-profile\")");
         AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleStatsAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "HandleStatsAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "HandleSettingsAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "HandleFrameTimeAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "AutomationCommandKind.SetStatsVisible");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "AutomationCommandKind.SetStatsSectionVisible");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "AutomationCommandKind.SetSettingsVisible");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "AutomationCommandKind.SetFrameTimeOverlayVisible");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.UiVisibility.cs")),
+            "stats/settings/frame-time visibility commands live with the ssctl window and shell command owner");
         var flashbackRouterSource = ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs");
         AssertContains(flashbackRouterSource, "HandleFlashbackAsync");
         AssertContains(flashbackRouterSource, "return HandleFlashbackActionAsync(context, subcommand);");

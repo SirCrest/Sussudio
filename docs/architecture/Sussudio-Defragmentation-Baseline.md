@@ -1343,3 +1343,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: covered by ssctl snapshot formatter ownership tests, shared/ssctl field-alignment tests, and runtime snapshot regression tests
 Behavior preserved: D3D preview renderer detection, section order, CPU timing, pipeline latency, frame-latency wait, frame stats, frame ownership, and slow-frame diagnostics remain in the same `FormatSnapshot` output flow
 Notes for future agents: keep single-use ssctl D3D preview snapshot text with the parent preview-routing section unless it grows independent branching policy
+
+Date: 2026-05-24
+Area: ssctl shell command locality
+Problem: Stats, settings, and frame-time visibility commands lived in a 59-line partial even though they are shell visibility toggles beside fullscreen, recordings-folder, and window commands.
+Files consolidated: `tools/ssctl/CommandHandlers.UiVisibility.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `CommandHandlers` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: covered by ssctl command-handler source ownership, enum-command protocol, and routing tests
+Behavior preserved: `stats`, `stats section`, `settings`, `frametime`, and `frame-time` commands still send the same automation command IDs and payload fields
+Notes for future agents: keep shell visibility commands with `CommandHandlers.Window.cs` unless they grow non-shell policy or a shared UI-control command owner

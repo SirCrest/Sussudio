@@ -136,7 +136,6 @@ static partial class Program
             "tools/ssctl/CommandHandlers.Flashback.cs",
             "tools/ssctl/CommandHandlers.Flashback.Actions.cs",
             "tools/ssctl/CommandHandlers.Observability.cs",
-            "tools/ssctl/CommandHandlers.UiVisibility.cs",
             "tools/ssctl/CommandHandlers.Values.cs",
             "tools/ssctl/CommandHandlers.Window.cs",
         };

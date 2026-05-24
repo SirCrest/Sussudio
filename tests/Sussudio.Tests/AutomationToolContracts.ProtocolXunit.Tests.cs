@@ -126,7 +126,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var ssctlTransportText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var ssctlUiText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs")
+        var ssctlUiText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var ssctlFlashbackText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);

@@ -3492,12 +3492,11 @@ Primary owners:
 - `tools/ssctl/CommandHandlers.Device.cs` owns device refresh/list/select,
   audio-input selection, and custom-audio enablement.
 - `tools/ssctl/CommandHandlers.Window.cs` owns window close arming, window
-  state/geometry actions, fullscreen toggles, snap commands, and the
-  recordings-folder CLI command.
+  state/geometry actions, fullscreen toggles, snap commands, the
+  recordings-folder CLI command, stats visibility, settings visibility, and
+  frame-time overlay visibility commands.
 - `tools/ssctl/CommandHandlers.AutomationFlow.cs` owns wait/assert/probe and
   recording/file verification scripting flow commands.
-- `tools/ssctl/CommandHandlers.UiVisibility.cs` owns stats, settings, and
-  frame-time visibility commands.
 - `tools/ssctl/CommandHandlers.Flashback.cs` owns Flashback enablement,
   timeline, segment, restart, and top-level Flashback command routing.
   `tools/ssctl/CommandHandlers.Flashback.Actions.cs` owns Flashback playback,
