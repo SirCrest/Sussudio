@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
@@ -59,10 +59,10 @@ static partial class Program
             + "\n" + flashbackExportAutomationText
             + "\n" + flashbackBufferStatusText
             + "\n" + flashbackPlaybackCommandsText;
-        var audioCapturePropertyChangesText = viewModelFiles["MainViewModel.AudioCapturePropertyChanges.cs"];
+        var audioCapturePropertyChangesText = viewModelFiles["MainViewModel.AudioState.cs"];
         var rawViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var rawAudioCapturePropertyChangesText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioCapturePropertyChanges.cs")
+        var rawAudioCapturePropertyChangesText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
             .Replace("\r\n", "\n");
         var flashbackEncoderSettingsText = viewModelFiles["MainViewModel.FlashbackEncoderSettings.cs"];
         AssertEqual(

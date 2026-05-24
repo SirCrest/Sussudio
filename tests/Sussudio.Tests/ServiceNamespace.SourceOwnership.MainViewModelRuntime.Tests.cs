@@ -1,10 +1,10 @@
-// Tests that keep MainViewModel runtime source ownership from drifting back into catch-all partials.
+﻿// Tests that keep MainViewModel runtime source ownership from drifting back into catch-all partials.
 static partial class Program
 {
     private static void AssertServiceNamespaceMainViewModelRuntimeSourceOwnership(string repoRoot)
     {
         var mainViewModelText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
-        var mainViewModelAudioCapturePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioCapturePropertyChanges.cs"));
+        var mainViewModelAudioCapturePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioState.cs"));
         var mainViewModelAudioStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioState.cs"));
         var mainViewModelAudioInputSelectionText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioInputSelection.cs"));
         var mainViewModelDeviceAudioRequestControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceAudioRequestController.cs"));
@@ -44,6 +44,10 @@ static partial class Program
         AssertDoesNotContain(mainViewModelText, "private bool EnqueueUiOperation");
         AssertContains(mainViewModelAudioCapturePropertyChangesText, "OnIsAudioEnabledChanged");
         AssertContains(mainViewModelAudioStateText, "OnIsAudioPreviewEnabledChanged");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioCapturePropertyChanges.cs")),
+            "MainViewModel.AudioCapturePropertyChanges.cs folded into MainViewModel.AudioState.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioPreviewPropertyChanges.cs")),
@@ -96,7 +100,6 @@ static partial class Program
         AssertContains(mainViewModelCaptureModePropertyChangesText, "partial void OnMjpegDecoderCountChanged(int value)");
         AssertContains(mainViewModelCaptureModePropertyChangesText, "BuildCaptureSettings().UseMjpegHighFrameRateMode");
         AssertDoesNotContain(mainViewModelAudioCapturePropertyChangesText, "OnSelectedDeviceAudioModeChanged");
-        AssertDoesNotContain(mainViewModelAudioCapturePropertyChangesText, "OnSelectedMicrophoneDeviceChanged");
         AssertDoesNotContain(mainViewModelAudioCapturePropertyChangesText, "OnSelectedAudioInputDeviceChanged");
         AssertDoesNotContain(mainViewModelAudioStateText, "OnSelectedDeviceAudioModeChanged");
         AssertDoesNotContain(mainViewModelAudioStateText, "OnSelectedAudioInputDeviceChanged");

@@ -2903,7 +2903,7 @@ view-model compatibility facade for preview-volume save suppression, override,
 change notification, ramp adapter methods, and monitoring enable/disable
 orchestration with coordinator sequencing. Audio capture
 enablement and Flashback restart/teardown routing live in
-`Sussudio/ViewModels/MainViewModel.AudioCapturePropertyChanges.cs`, while
+`Sussudio/ViewModels/MainViewModel.AudioState.cs`, while
 audio-preview monitoring toggles live in
 `Sussudio/ViewModels/MainViewModel.AudioState.cs`.
 
@@ -3822,7 +3822,7 @@ owner, fold it back into that owner and update the source-shape tests and
    preview-volume save/override, ramp adapter methods, preview monitoring
    coordinator sequencing, and audio-preview property handlers now live in
    `MainViewModel.AudioState.cs`; keep audio capture property handlers in
-   `MainViewModel.AudioCapturePropertyChanges.cs`, while custom audio-input
+   `MainViewModel.AudioState.cs`, while custom audio-input
    property handlers, retargeting, and preview-monitoring ramp handoff live in
    `MainViewModel.AudioInputSelection.cs`.
    Microphone observable state, endpoint volume synchronization, persistence,
@@ -3861,7 +3861,7 @@ owner, fold it back into that owner and update the source-shape tests and
    rebuild, device-format probe, runtime lifecycle, and disposal graph ports.
    `MainViewModel.Composition.cs` continues to own service construction. Audio
    capture property handlers now live in
-   `MainViewModel.AudioCapturePropertyChanges.cs`, audio-preview property
+   `MainViewModel.AudioState.cs`, audio-preview property
    handlers live in `MainViewModel.AudioState.cs`, microphone monitor/device
    selection handlers also live in `MainViewModel.AudioState.cs`,
    capture-mode property handlers live in `MainViewModel.CaptureModePropertyChanges.cs`. Shared
