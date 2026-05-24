@@ -3447,10 +3447,9 @@ Primary owners:
 - `tools/Common/AutomationPipeClient/` owns the shared pipe-client helper family
   used by ssctl, MCP, diagnostic sessions, and smoke tools.
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.Transport.cs` owns
-  named-pipe connect orchestration, request/response framing, and response
+  named-pipe connect orchestration, pipe connect failure classification,
+  exact CLI/MCP diagnostic error codes, request/response framing, and response
   timeout.
-- `tools/Common/AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs` owns
-  pipe connect failure classification and exact CLI/MCP diagnostic error codes.
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.Commands.cs` owns
   command envelope sending, typed `AutomationCommandKind` command-id routing,
   `not_ready` retry behavior, and response-state parsing handoff to

@@ -3586,9 +3586,9 @@ classification while the runner still owns scenario execution and warning emissi
 Shared automation pipe client ownership is split from a single helper into a
 focused partial family under `tools/Common/AutomationPipeClient/`.
 `AutomationPipeClient.Transport.cs` owns named-pipe connect orchestration,
-write/read framing, and response timeout, `AutomationPipeClient.ConnectErrors.cs`
-owns pipe connect failure classification and exact CLI/MCP diagnostic error
-codes, `AutomationPipeClient.Commands.cs` owns command envelope sending and
+connect failure classification with exact CLI/MCP diagnostic error codes,
+write/read framing, and response timeout, `AutomationPipeClient.Commands.cs`
+owns command envelope sending and
 typed `AutomationCommandKind` command-id routing plus `not_ready` retry policy,
 `AutomationCommandTransport.cs` owns command-specific timeout selection for
 string and typed commands, shared response-element validation, synthetic error
@@ -3634,7 +3634,6 @@ DTOs live in `tools/EgavdsAudioProbe/Program.NativeInterop.cs`.
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient/AutomationPipeClient.Transport.cs`
-- `AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs`
 - `AutomationPipeClient/AutomationPipeClient.Commands.cs`
 - `AutomationPipeClient/AutomationCommandTransport.cs`
 - `DiagnosticSessionBackgroundTasks.cs`
