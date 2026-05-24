@@ -1024,7 +1024,8 @@ adapters. Preview surface sizing and GPU panel visibility now live in
 video/control-bar composition shadow visuals, bounds alignment, clear behavior,
 and compositor opacity fade routing live in
 `Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs`.
-`Sussudio/MainWindow.PreviewSurface.cs` is the XAML-facing adapter.
+`Sussudio/MainWindow.PreviewRenderer.Composition.cs` is the XAML-facing adapter
+for preview renderer and surface wiring.
 `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns renderer
 startup dimension/fps/HDR/min-present-interval planning.
 `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns hosted preview

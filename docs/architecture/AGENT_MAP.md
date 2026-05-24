@@ -1187,8 +1187,8 @@ Primary current owners:
   surface content-fit sizing and GPU panel visibility.
   `Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs` owns
   video/control-bar composition shadow visuals, bounds alignment, clear behavior,
-  and compositor opacity fade routing. `MainWindow.PreviewSurface.cs` is the
-  XAML-facing adapter.
+  and compositor opacity fade routing. `MainWindow.PreviewRenderer.Composition.cs`
+  is the XAML-facing adapter for preview renderer and surface wiring.
 - `Sussudio/MainWindow.PreviewRenderer.Composition.cs` owns the stable
   automation preview snapshot adapter and context wiring alongside preview
   renderer host composition.

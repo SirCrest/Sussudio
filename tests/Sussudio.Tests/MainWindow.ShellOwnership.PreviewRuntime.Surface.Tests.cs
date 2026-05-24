@@ -6,25 +6,28 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
-        var previewSurfaceText = ReadRepoFile("Sussudio/MainWindow.PreviewSurface.cs").Replace("\r\n", "\n");
         var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs").Replace("\r\n", "\n");
         var previewSurfaceShadowControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs").Replace("\r\n", "\n");
 
-        AssertContains(previewSurfaceText, "XAML-facing preview surface adapter");
-        AssertContains(previewSurfaceText, "private PreviewSurfacePresentationController _previewSurfacePresentationController = null!;");
-        AssertContains(previewSurfaceText, "private PreviewSurfaceShadowController _previewSurfaceShadowController = null!;");
-        AssertContains(previewSurfaceText, "private void InitializePreviewSurfacePresentationController()");
-        AssertContains(previewSurfaceText, "private void UpdateVideoContentOverlays()");
-        AssertContains(previewSurfaceText, "private void SetupVideoFrameShadow()");
-        AssertContains(previewSurfaceText, "private void SetupControlBarShadow()");
-        AssertContains(previewSurfaceText, "=> _previewSurfacePresentationController.UpdateVideoContentOverlays(ViewModel.SourceWidth, ViewModel.SourceHeight);");
-        AssertContains(previewSurfaceText, "=> _previewSurfacePresentationController.SetGpuPreviewVisibility(visibility);");
-        AssertContains(previewSurfaceText, "=> _previewSurfaceShadowController.SetupVideoFrameShadow();");
-        AssertContains(previewSurfaceText, "=> _previewSurfaceShadowController.SetupControlBarShadow();");
-        AssertContains(previewSurfaceText, "=> _previewSurfaceShadowController.ClearVideoFrameShadow();");
-        AssertContains(previewSurfaceText, "=> _previewSurfaceShadowController.FadeInVideoFrameShadow(delayMs, durationMs);");
-        AssertContains(previewSurfaceText, "var scale = PreviewSwapChainPanel.XamlRoot?.RasterizationScale ?? 1.0;");
-        AssertContains(previewSurfaceText, "_previewRendererHostController.OnPanelSizeChanged(e.NewSize.Width, e.NewSize.Height, scale);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewSurface.cs")),
+            "preview surface XAML adapter lives with preview renderer composition");
+        AssertContains(previewRendererText, "XAML-facing preview surface adapter");
+        AssertContains(previewRendererText, "private PreviewSurfacePresentationController _previewSurfacePresentationController = null!;");
+        AssertContains(previewRendererText, "private PreviewSurfaceShadowController _previewSurfaceShadowController = null!;");
+        AssertContains(previewRendererText, "private void InitializePreviewSurfacePresentationController()");
+        AssertContains(previewRendererText, "private void UpdateVideoContentOverlays()");
+        AssertContains(previewRendererText, "private void SetupVideoFrameShadow()");
+        AssertContains(previewRendererText, "private void SetupControlBarShadow()");
+        AssertContains(previewRendererText, "=> _previewSurfacePresentationController.UpdateVideoContentOverlays(ViewModel.SourceWidth, ViewModel.SourceHeight);");
+        AssertContains(previewRendererText, "=> _previewSurfacePresentationController.SetGpuPreviewVisibility(visibility);");
+        AssertContains(previewRendererText, "=> _previewSurfaceShadowController.SetupVideoFrameShadow();");
+        AssertContains(previewRendererText, "=> _previewSurfaceShadowController.SetupControlBarShadow();");
+        AssertContains(previewRendererText, "=> _previewSurfaceShadowController.ClearVideoFrameShadow();");
+        AssertContains(previewRendererText, "=> _previewSurfaceShadowController.FadeInVideoFrameShadow(delayMs, durationMs);");
+        AssertContains(previewRendererText, "var scale = PreviewSwapChainPanel.XamlRoot?.RasterizationScale ?? 1.0;");
+        AssertContains(previewRendererText, "_previewRendererHostController.OnPanelSizeChanged(e.NewSize.Width, e.NewSize.Height, scale);");
 
         AssertContains(previewSurfaceControllerText, "internal sealed class PreviewSurfacePresentationController");
         AssertContains(previewSurfaceControllerText, "public required Func<SwapChainPanel> GetPreviewSwapChainPanel { get; init; }");
@@ -49,8 +52,6 @@ static partial class Program
 
         AssertDoesNotContain(mainWindowText, "private SpriteVisual? _videoShadowVisual;");
         AssertDoesNotContain(mainWindowText, "private SpriteVisual? _controlBarShadowVisual;");
-        AssertDoesNotContain(previewSurfaceText, "private SpriteVisual? _videoShadowVisual;");
-        AssertDoesNotContain(previewSurfaceText, "private SpriteVisual? _controlBarShadowVisual;");
         AssertDoesNotContain(previewSurfaceControllerText, "private SpriteVisual? _videoShadowVisual;");
         AssertDoesNotContain(previewSurfaceControllerText, "private SpriteVisual? _controlBarShadowVisual;");
         AssertDoesNotContain(previewSurfaceControllerText, "ElementCompositionPreview.SetElementChildVisual");
