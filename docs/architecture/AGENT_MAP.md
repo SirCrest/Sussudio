@@ -3078,7 +3078,7 @@ Primary current owners:
   handlers. `MainViewModel.AudioState.cs` owns audio-preview property
   handlers, microphone monitor property handlers, and selected-microphone
   property handlers.
-  `MainViewModel.CaptureModePropertyChanges.cs`
+  `MainViewModel.CaptureModeTransactions.cs`
   owns capture-mode property handlers for selected resolution, selected format,
   selected video format, and MJPEG decoder count changes.
   `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs` owns
@@ -3261,7 +3261,7 @@ Primary current owners:
   partial was retired instead of keeping another sub-100-line facade. Selected
   capture-device reactions, capability projection, source telemetry reset, and
   device-native audio-control refresh handoff live in `MainViewModel.CaptureSelection.cs`; capture-mode property-change hooks live
-  in `MainViewModel.CaptureModePropertyChanges.cs`; startup audio-list and
+  in `MainViewModel.CaptureModeTransactions.cs`; startup audio-list and
   watcher-driven audio endpoint refresh adaptation lives in `MainViewModel.AudioDeviceDiscovery.cs`.
   `Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs` owns pure capture-card
   endpoint filtering plus previous/saved/default audio and microphone selection

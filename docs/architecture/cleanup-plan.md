@@ -3864,7 +3864,7 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.AudioState.cs`, audio-preview property
    handlers live in `MainViewModel.AudioState.cs`, microphone monitor/device
    selection handlers also live in `MainViewModel.AudioState.cs`,
-   capture-mode property handlers live in `MainViewModel.CaptureModePropertyChanges.cs`. Shared
+   capture-mode property handlers live in `MainViewModel.CaptureModeTransactions.cs`. Shared
    view-model UI dispatcher enqueue/invoke policy now lives in
    `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs`.
    The UI dispatch graph-port contract for dispatcher access, disposal state,
@@ -4028,7 +4028,7 @@ owner, fold it back into that owner and update the source-shape tests and
    partial was retired rather than preserving a sub-100-line facade. Selected
    capture-device reactions, capability projection, source telemetry reset, and
    device-native audio-control refresh handoff live in `MainViewModel.CaptureSelection.cs`. Capture-mode property-change
-   hooks live in `MainViewModel.CaptureModePropertyChanges.cs` and startup
+   hooks live in `MainViewModel.CaptureModeTransactions.cs` and startup
    audio-list and watcher-driven audio endpoint refresh adaptation live in
    `MainViewModel.AudioDeviceDiscovery.cs`. Pure audio-device filtering and
    previous/saved/default audio and microphone selection fallback policy now
