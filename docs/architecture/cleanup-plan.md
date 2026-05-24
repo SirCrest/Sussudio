@@ -1624,13 +1624,9 @@ ffprobe process/spec/side-data probing in
 `Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs`, probe
 scalar parsing in
 `Sussudio/Services/Recording/Verification/RecordingVerifier.ProbeParsing.cs`,
-dimensions, frame-rate, and cadence validation policy in
+dimensions, frame-rate, cadence, container/codec format, Flashback export
+verification format resolution, and HDR validation policy in
 `Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs`,
-container/codec format validation and Flashback export verification format
-resolution in
-`Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.Format.cs`,
-HDR verification policy in
-`Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.Hdr.cs`,
 result/taxonomy shaping in
 `Sussudio/Services/Recording/Verification/RecordingVerifier.Results.cs`, and
 ffprobe frame timestamp cadence analysis in
