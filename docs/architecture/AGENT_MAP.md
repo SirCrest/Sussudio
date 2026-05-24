@@ -3507,8 +3507,9 @@ Primary owners:
   `tools/ssctl/CommandHandlers.Flashback.cs` owns Flashback enable/timeline/export
   CLI routing, including export flag parsing, output-path defaulting,
   parent-directory creation, and `FlashbackExport` payload shaping.
-- `tools/NativeXuAudioProbe/Program.cs` owns probe command routing and command
-  workflows; `Program.Commands.cs` owns Native XU command IDs and shared
+- `tools/NativeXuAudioProbe/Program.cs` owns probe command routing, command
+  workflows, and probe-local runtime shims for linked app service sources;
+  `Program.Commands.cs` owns Native XU command IDs and shared
   raw-payload formatting;
   `Program.AtCommands.cs` owns direct AT read/write/input subcommands;
   `Program.DefaultExperiment.cs` owns the default baseline/experiment/restore

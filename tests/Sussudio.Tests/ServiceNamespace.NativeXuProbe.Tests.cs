@@ -31,7 +31,6 @@ static partial class Program
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs");
         AssertDoesNotContain(nativeXuProbeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.cs");
         AssertContains(File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Models", "Capture", "CaptureModels.cs")), "NativeXuInterfacePath");
-        AssertContains(File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "ToolRuntimeShims.cs")), "NativeXuInterfacePath");
 
         var nativeXuLocatorText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "NativeXuProbeDeviceLocator.cs"));
         AssertContains(nativeXuLocatorText, "NativeXuInterfacePath = interfacePath");
@@ -52,6 +51,8 @@ static partial class Program
             AssertDoesNotContain(code, "typeof(NativeXuAudioControlService)");
         }
         var probeProgramText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.cs"));
+        AssertContains(probeProgramText, "Probe-local runtime shims used by linked app service sources.");
+        AssertContains(probeProgramText, "NativeXuInterfacePath");
         AssertDoesNotContain(probeProgramText, "KsExtensionUnitNative.EnumerateKsInterfaces(");
         AssertContains(probeProgramText, "RTK_IO selects by name, not by native XU path");
         AssertContains(probeProgramText, "string.Equals(arg, \"--device\", StringComparison.OrdinalIgnoreCase)");
