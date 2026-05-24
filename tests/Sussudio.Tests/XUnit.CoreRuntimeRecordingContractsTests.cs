@@ -167,8 +167,8 @@ public sealed class CoreRuntimeRecordingContractsTests
         => global::Program.LibAvEncoder_InitializationLivesInFocusedPartial();
 
     [Fact]
-    public Task LibAvEncoderDiagnosticsHelpersLiveInFocusedPartial()
-        => global::Program.LibAvEncoder_DiagnosticsHelpersLiveInFocusedPartial();
+    public Task LibAvEncoderDiagnosticsHelpersLiveWithCoreState()
+        => global::Program.LibAvEncoder_DiagnosticsHelpersLiveWithCoreState();
 
     [Fact]
     public Task LibAvEncoderSetupAndModelsLiveInFocusedPartials()

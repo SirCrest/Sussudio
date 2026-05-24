@@ -1508,10 +1508,10 @@ packet drains, bitstream-filter packet drains, timestamp rescaling, packet
 stream-index assignment, packet write accounting, and interleaved video packet
 writes there.
 
-LibAv encoder diagnostics and error helpers now live in
-`Sussudio/Services/Recording/LibAvEncoder.Diagnostics.cs`. Keep open-state
-guards, FFmpeg error string conversion, structured libav exceptions, and
-D3D11 device-removed checks there.
+LibAv encoder core state now lives in
+`Sussudio/Services/Recording/LibAvEncoder.cs`. Keep encoder fields, stable
+public state, open-state guards, FFmpeg error string conversion, structured
+libav exceptions, and D3D11 device-removed checks there.
 
 LibAv encoder audio stream handling now lives in
 `Sussudio/Services/Recording/LibAvEncoder.Audio.cs`. Keep audio/microphone
@@ -1578,7 +1578,8 @@ and segment runtime resets. `LibAvEncoder.ResourceCleanup.cs` owns
 flush/final close, dispose, trailer writing, close-result logging, and final
 output telemetry. `LibAvEncoder.NativeResourceRelease.cs` owns native
 frame/context/buffer release, hardware texture pool release, and encoder state
-reset; keep generic error helpers in `LibAvEncoder.Diagnostics.cs`.
+reset; keep generic open/error helpers with the core encoder state in
+`LibAvEncoder.cs`.
 
 Recording artifact context creation stays in
 `Sussudio/Services/Recording/RecordingArtifactManager.cs`, including temp/final

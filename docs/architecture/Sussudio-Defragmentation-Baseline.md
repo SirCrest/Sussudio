@@ -145,6 +145,18 @@ Behavior preserved: Queue overload handling, depth accounting, remaining video/G
 Notes for future agents: keep video queue cleanup with `LibAvRecordingSink.VideoQueueSubmission.cs` unless queue cleanup grows an independent lifecycle policy shared beyond video/GPU/CUDA queues
 
 Date: 2026-05-23
+Area: Recording encoder core diagnostics
+Problem: Generic open-state guards, FFmpeg error helpers, structured libav exceptions, and D3D11 device-removed detection lived in a small partial even though they are core encoder invariants used across initialization, submission, rotation, cleanup, audio, and hardware paths.
+Files consolidated: `Sussudio/Services/Recording/LibAvEncoder.Diagnostics.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `LibAvEncoder` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by LibAvEncoder diagnostics reflection and source-ownership tests
+Behavior preserved: Open-state validation, FFmpeg error message formatting, exception logging, and D3D11 TDR detection logic are unchanged
+Notes for future agents: keep generic encoder guard/error helpers with `LibAvEncoder.cs`; only move device-specific policy out if it becomes a reusable collaborator with tests
+
+Date: 2026-05-23
 Area: Automation diagnostics timeline projection locality
 Problem: Preview and Flashback playback performance timeline projection still lived in separate partial files after their smaller projection fragments had already been consolidated, forcing readers to leave the timeline ring/builder file to understand direct `AutomationSnapshot` to `PerformanceTimelineEntry` field flow.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.Preview.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs`
