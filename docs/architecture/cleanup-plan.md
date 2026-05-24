@@ -2018,10 +2018,10 @@ queue state and signaling in `D3D11PreviewRenderer.PendingFrames.cs`, D3D device
 `D3D11PreviewRenderer.HdrInputResources.cs`, swap-chain panel binding state in
 `D3D11PreviewRenderer.PanelBinding.cs`, waitable frame-latency state in
 `D3D11PreviewRenderer.FrameLatency.cs`, render-pass selection plus
-VideoProcessor execution in `D3D11PreviewRenderer.RenderPasses.cs`, NV12 shader
-draw execution in `D3D11PreviewRenderer.Nv12ShaderPass.cs`, HDR shader draw
-execution in `D3D11PreviewRenderer.HdrShaderPass.cs`, shared present
-accounting in `D3D11PreviewRenderer.Present.cs`, and shader resource/cache state in
+VideoProcessor execution and shared present accounting in
+`D3D11PreviewRenderer.RenderPasses.cs`, NV12 shader draw execution in
+`D3D11PreviewRenderer.Nv12ShaderPass.cs`, HDR shader draw execution in
+`D3D11PreviewRenderer.HdrShaderPass.cs`, and shader resource/cache state in
 `D3D11PreviewRenderer.ShaderRendering.cs`. Do not re-centralize renderer
 implementation state in `D3D11PreviewRenderer.cs`; the root should keep the
 public facade, construction references, constants, user-facing accessors, and
@@ -2080,11 +2080,11 @@ consumption, stale-generation drops, frame-latency wait, render dispatch,
 device-lost handoff, failure notification handoff, final pending-frame
 drain/frame-capture failure, and renderer-mode reset there; keep render-thread
 failure telemetry and first-frame notification reset/UI enqueue in
-`D3D11PreviewRenderer.Diagnostics.cs`, render-pass
-selection and VideoProcessor execution in `D3D11PreviewRenderer.RenderPasses.cs`, shader draw
+`D3D11PreviewRenderer.Diagnostics.cs`, render-pass selection,
+VideoProcessor execution, and shared present accounting in
+`D3D11PreviewRenderer.RenderPasses.cs`, shader draw
 execution in `D3D11PreviewRenderer.Nv12ShaderPass.cs` and
-`D3D11PreviewRenderer.HdrShaderPass.cs`, shared present accounting in
-`D3D11PreviewRenderer.Present.cs`, and shader resource/cache state in
+`D3D11PreviewRenderer.HdrShaderPass.cs`, and shader resource/cache state in
 `D3D11PreviewRenderer.ShaderRendering.cs`.
 
 D3D preview renderer frame upload now lives in
@@ -2093,7 +2093,7 @@ VideoProcessor input view resolution and external texture input-view creation
 there. Raw frame byte/lease upload, direct texture update fallback, and staging
 copy mechanics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.RawFrameUpload.cs`; keep present
-tracking in `D3D11PreviewRenderer.Present.cs`.
+tracking in `D3D11PreviewRenderer.RenderPasses.cs`.
 
 D3D preview renderer render-pass selection now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`. Keep
@@ -2108,8 +2108,8 @@ and HDR shader-mode present messages there. Shader resource/cache state now live
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs`. Keep shader
 fields, reusable shader class-instance arrays, and NV12 SRV caching there; keep
 render-thread orchestration in `D3D11PreviewRenderer.RenderThread.cs`, and keep
-present accounting and slow-frame diagnostic call sites in
-`D3D11PreviewRenderer.Present.cs`.
+present accounting and slow-frame diagnostic call sites with render-pass
+completion in `D3D11PreviewRenderer.RenderPasses.cs`.
 
 D3D preview renderer diagnostics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Diagnostics.cs`. Keep
@@ -2192,9 +2192,9 @@ input texture cleanup there. HDR shader input texture allocation now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.HdrInputResources.cs`; keep HDR
 P010 shader input/staging textures, plane SRV creation, Device3 fallback, and
 HDR input cleanup there. Device-lost recovery has its own focused owner; keep render loop consumption in
-`D3D11PreviewRenderer.RenderThread.cs`, present paths in
-`D3D11PreviewRenderer.Present.cs`, and shader draw paths in
-`D3D11PreviewRenderer.RenderPasses.cs`.
+`D3D11PreviewRenderer.RenderThread.cs`, present paths with render-pass
+completion in `D3D11PreviewRenderer.RenderPasses.cs`, and shader draw paths in
+the focused shader pass files.
 
 D3D preview renderer swap-chain panel binding now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs`. Keep

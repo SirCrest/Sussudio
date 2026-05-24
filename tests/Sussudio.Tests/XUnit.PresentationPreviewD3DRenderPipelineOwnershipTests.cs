@@ -31,8 +31,8 @@ public sealed class PresentationPreviewD3DRenderPipelineOwnershipTests
         => global::Program.D3D11PreviewRenderer_RenderThreadLivesInFocusedPartial();
 
     [Fact]
-    public Task PresentAccountingLivesInFocusedPartial()
-        => global::Program.D3D11PreviewRenderer_PresentAccountingLivesInFocusedPartial();
+    public Task PresentAccountingLivesWithRenderPasses()
+        => global::Program.D3D11PreviewRenderer_PresentAccountingLivesWithRenderPasses();
 
     [Fact]
     public Task ViewportHelpersLiveInFocusedPartial()

@@ -157,6 +157,18 @@ Behavior preserved: Open-state validation, FFmpeg error message formatting, exce
 Notes for future agents: keep generic encoder guard/error helpers with `LibAvEncoder.cs`; only move device-specific policy out if it becomes a reusable collaborator with tests
 
 Date: 2026-05-23
+Area: D3D11 preview render-pass present accounting
+Problem: The shared swap-chain present/accounting transaction lived in a one-method partial even though it is called directly by the VideoProcessor, NV12 shader, and HDR shader render-pass paths.
+Files consolidated: `Sussudio/Services/Preview/D3D11PreviewRenderer.Present.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `D3D11PreviewRenderer` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by D3D11 preview renderer source-ownership and diagnostics contract tests
+Behavior preserved: Screenshot-before-present ordering, swap-chain present error handling, first-frame notification, present cadence, DXGI statistics, frame ownership, pipeline-latency tracking, render CPU timing, and slow-frame diagnostics are unchanged
+Notes for future agents: keep present/accounting with `D3D11PreviewRenderer.RenderPasses.cs` unless it grows independent policy beyond render-pass completion
+
+Date: 2026-05-23
 Area: Automation diagnostics timeline projection locality
 Problem: Preview and Flashback playback performance timeline projection still lived in separate partial files after their smaller projection fragments had already been consolidated, forcing readers to leave the timeline ring/builder file to understand direct `AutomationSnapshot` to `PerformanceTimelineEntry` field flow.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.Preview.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs`

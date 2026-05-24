@@ -1,3 +1,4 @@
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -13,8 +14,6 @@ static partial class Program
         var diagnosticsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Diagnostics.cs")
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs")
-            .Replace("\r\n", "\n");
-        var presentText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Present.cs")
             .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
             .Replace("\r\n", "\n");
@@ -62,7 +61,7 @@ static partial class Program
         AssertContains(diagnosticsText, "private void NotifyFirstFrameRendered(string message)");
         AssertContains(diagnosticsText, "FirstFrameRendered?.Invoke()");
         AssertContains(lifecycleText, "ResetFirstFrameNotification();");
-        AssertContains(presentText, "NotifyFirstFrameRendered(firstFrameMessage);");
+        AssertContains(renderPassesText, "NotifyFirstFrameRendered(firstFrameMessage);");
         var waitIndex = renderThreadText.IndexOf("WaitForFrameLatencySignal();", StringComparison.Ordinal);
         var renderIndex = renderThreadText.IndexOf("RenderFrame(frame);", StringComparison.Ordinal);
         if (waitIndex < 0 || renderIndex < 0 || waitIndex > renderIndex)
@@ -76,27 +75,28 @@ static partial class Program
         AssertDoesNotContain(renderThreadText, "private string _lastRenderThreadFailureType = string.Empty;");
         AssertDoesNotContain(renderPassesText, "private void RenderThreadMain()");
         AssertDoesNotContain(renderPassesText, "private void NotifyRenderThreadFailed(Exception ex)");
-        AssertDoesNotContain(presentText, "FirstFrameRendered?.Invoke()");
+        AssertDoesNotContain(renderPassesText, "FirstFrameRendered?.Invoke()");
 
         return Task.CompletedTask;
     }
 
-    internal static Task D3D11PreviewRenderer_PresentAccountingLivesInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_PresentAccountingLivesWithRenderPasses()
     {
         var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
-        var presentText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Present.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(presentText, "private void PresentAndTrackFrame(");
-        AssertContains(presentText, "TryCaptureFrameBeforePresent(rendererMode);");
-        AssertContains(presentText, "var presentResult = swapChain.Present((uint)_presentSyncInterval, PresentFlags.None);");
-        AssertContains(presentText, "TrackPresentCadence(frame.CountForPresentCadence);");
-        AssertContains(presentText, "var estimatedVisibleTick = EstimateVisibleTick(presentEnd);");
-        AssertContains(presentText, "RecordSlowFrameDiagnostic(frame, presentIntervalMs, inputUploadTicks, renderTicks, presentTicks, totalTicks, presentEnd, estimatedVisibleTick);");
-        AssertDoesNotContain(renderPassesText, "private void PresentAndTrackFrame(");
-        var captureIndex = presentText.IndexOf("TryCaptureFrameBeforePresent(rendererMode);", StringComparison.Ordinal);
-        var presentIndex = presentText.IndexOf("var presentResult = swapChain.Present((uint)_presentSyncInterval, PresentFlags.None);", StringComparison.Ordinal);
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Present.cs")),
+            "D3D11 preview present/accounting lives with render-pass execution");
+        AssertContains(renderPassesText, "private void PresentAndTrackFrame(");
+        AssertContains(renderPassesText, "TryCaptureFrameBeforePresent(rendererMode);");
+        AssertContains(renderPassesText, "var presentResult = swapChain.Present((uint)_presentSyncInterval, PresentFlags.None);");
+        AssertContains(renderPassesText, "TrackPresentCadence(frame.CountForPresentCadence);");
+        AssertContains(renderPassesText, "var estimatedVisibleTick = EstimateVisibleTick(presentEnd);");
+        AssertContains(renderPassesText, "RecordSlowFrameDiagnostic(frame, presentIntervalMs, inputUploadTicks, renderTicks, presentTicks, totalTicks, presentEnd, estimatedVisibleTick);");
+        var captureIndex = renderPassesText.IndexOf("TryCaptureFrameBeforePresent(rendererMode);", StringComparison.Ordinal);
+        var presentIndex = renderPassesText.IndexOf("var presentResult = swapChain.Present((uint)_presentSyncInterval, PresentFlags.None);", StringComparison.Ordinal);
         if (captureIndex < 0 || presentIndex < 0 || captureIndex > presentIndex)
         {
             throw new InvalidOperationException("Present transaction must capture screenshots before swap-chain Present.");
