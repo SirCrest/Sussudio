@@ -1506,10 +1506,9 @@ encoder family.
 LibAv encoder D3D11 hardware frames setup, CUDA hardware frame context
 adoption, and ArraySize=1 texture-pool creation now live in
 `Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs`.
-Output rotation now lives in `LibAvEncoder.OutputRotation.cs`; final close and
-trailer/logging now live in `LibAvEncoder.ResourceCleanup.cs`; native
-frame/context/buffer release and encoder state reset now live in
-`LibAvEncoder.NativeResourceRelease.cs`.
+Output rotation now lives in `LibAvEncoder.OutputRotation.cs`; final close,
+trailer/logging, native frame/context/buffer release, and encoder state reset
+now live in `LibAvEncoder.ResourceCleanup.cs`.
 
 LibAv encoder video submission now lives in
 `Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs`. Keep CPU packed
@@ -1527,10 +1526,9 @@ LibAv encoder output lifecycle is split across focused partials.
 close/reopen, stream reinitialization, bitstream-filter reset, segment runtime
 resets, and MP4 muxer option policy for open and rotated outputs.
 `LibAvEncoder.ResourceCleanup.cs` owns
-flush/final close, dispose, trailer writing, close-result logging, and final
-output telemetry. `LibAvEncoder.NativeResourceRelease.cs` owns native
-frame/context/buffer release, hardware texture pool release, and encoder state
-reset; keep generic open/error helpers with the core encoder state in
+flush/final close, dispose, trailer writing, close-result logging, final output
+telemetry, native frame/context/buffer release, hardware texture pool release,
+and encoder state reset; keep generic open/error helpers with the core encoder state in
 `LibAvEncoder.cs`.
 
 Recording artifact context creation stays in
