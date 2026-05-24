@@ -2195,10 +2195,11 @@ fatal-error callback dispatch there; keep initialization and frame delivery in
 their named source-reader partials.
 
 Unified capture diagnostic metric projection now lives in
-`Sussudio/Services/Capture/UnifiedVideoCapture.Metrics.cs`. Keep MJPEG timing
-records, source-reader cadence forwarding, MJPEG jitter/hash metrics, preview
-visual cadence metrics, and frame-ledger summary projection there; keep
-top-level frame arrival routing in `UnifiedVideoCapture.FrameIngress.cs`.
+`Sussudio/Services/Capture/UnifiedVideoCapture.cs` with the root counters and
+pipeline fields it samples. Keep MJPEG timing records, source-reader cadence
+forwarding, MJPEG jitter/hash metrics, preview visual cadence metrics, and
+frame-ledger summary projection there; keep top-level frame arrival routing in
+`UnifiedVideoCapture.FrameIngress.cs`.
 
 Unified capture frame ingress now lives in
 `Sussudio/Services/Capture/UnifiedVideoCapture.FrameIngress.cs`. Keep source
