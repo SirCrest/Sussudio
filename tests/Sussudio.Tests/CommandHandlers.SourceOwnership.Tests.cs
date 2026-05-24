@@ -7,6 +7,8 @@ static partial class Program
         AssertSsctlCommandRoutingTestsUseCommandIdHelper();
         var commandHandlersSource = ReadSsctlCommandHandlersFamilyText();
         var commandHandlersRootSource = ReadRepoFile("tools/ssctl/CommandHandlers.cs");
+        AssertContains(commandHandlersRootSource, "private sealed class CommandContext");
+        AssertContains(commandHandlersRootSource, "Rest = arguments.Skip(1).ToList();");
         AssertDoesNotContain(commandHandlersRootSource, "private static Task<int> HandleFlashbackAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"), "HandleAudioRampTraceAsync");
         AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"), "HandleDiagnosticSessionAsync");
@@ -116,6 +118,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.DeviceWindow.cs")),
             "old ssctl device/window grab-bag removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.Context.cs")),
+            "ssctl command context lives with the root command dispatcher");
 
         return Task.CompletedTask;
     }

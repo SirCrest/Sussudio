@@ -289,6 +289,18 @@ Behavior preserved: `verify_recording`, `assert_snapshot`, and `verify_file` com
 Notes for future agents: keep small root-only verification parsing helpers in `VerificationTools.cs`; keep verification response text in `VerificationTools.Formatting.cs` while it remains a cohesive rendering surface.
 
 Date: 2026-05-24
+Area: ssctl command context locality
+Problem: The per-invocation `CommandContext` wrapper lived in an 18-line partial even though it is constructed only by the root `CommandHandlers.ExecuteAsync` dispatcher.
+Files consolidated: `tools/ssctl/CommandHandlers.Context.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `CommandHandlers` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by ssctl command-handler source-ownership/routing tests and runtime snapshot regression tests
+Behavior preserved: `ExecuteAsync` still constructs the same context wrapper with transport, global JSON flag, and remaining arguments.
+Notes for future agents: keep tiny root-only dispatcher support types in `CommandHandlers.cs`; keep command-family handlers split only when they own command-specific payload or validation policy.
+
+Date: 2026-05-24
 Area: ssctl command argument parsing locality
 Problem: CLI usage validation, argument joining, flag consumption, optional flag parsing, and JSON detection/pretty-printing lived in three small `CommandHandlers` partials even though they are one command-line argument interpretation support surface.
 Files consolidated: `tools/ssctl/CommandHandlers.Flags.cs`; `tools/ssctl/CommandHandlers.Json.cs`

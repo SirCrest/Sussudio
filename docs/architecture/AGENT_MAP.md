@@ -3595,8 +3595,8 @@ Primary owners:
 - `tools/ssctl/SsctlHelpWriter.cs` owns the `ssctl` help facade.
   `tools/ssctl/SsctlHelpWriter.Sections.cs` owns operator-facing help section
   text and catalog-backed CLI help lines.
-- `tools/ssctl/CommandHandlers.Context.cs` owns the per-invocation command
-  context wrapper.
+- `tools/ssctl/CommandHandlers.cs` owns the root command dispatcher and the
+  per-invocation command context wrapper.
 - `tools/ssctl/CommandHandlers.Arguments.cs` owns usage validation, required
   words, argument joining, flag consumption, optional flag value parsing, and
   command-handler JSON detection/pretty-printing. `CommandHandlers.Values.cs`
