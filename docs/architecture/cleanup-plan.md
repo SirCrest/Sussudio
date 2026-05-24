@@ -1803,10 +1803,8 @@ decoder state reset, and held-frame best-effort release helpers now live in
 Open/disposed state guards and FFmpeg decoder error formatting now live in the
 root decoder; decode phase timing accumulation lives with
 `Sussudio/Services/Flashback/FlashbackDecoder.DecodeLoop.cs`.
-Decoded video/audio output DTOs now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.OutputTypes.cs` so the root
-decoder file ends at its control-flow owner instead of carrying trailing model
-types.
+Decoded video/audio output DTOs now live in the root decoder beside the
+decoder's public output surface, instead of a sub-40-line output-type fragment.
 Video codec setup, D3D11VA/software fallback selection, frame-rate metadata
 initialization, MJPEG single-thread decode policy, and software output-buffer
 allocation now live in

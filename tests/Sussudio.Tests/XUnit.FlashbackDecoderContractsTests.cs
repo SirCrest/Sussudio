@@ -31,8 +31,8 @@ public sealed class FlashbackDecoderContractsTests
         => global::Program.FlashbackDecoder_StateGuardsAndTimingLiveWithOwners();
 
     [Fact]
-    public Task FlashbackDecoderOutputTypesLiveInFocusedFile()
-        => global::Program.FlashbackDecoder_OutputTypesLiveInFocusedFile();
+    public Task FlashbackDecoderOutputTypesLiveWithDecoderRoot()
+        => global::Program.FlashbackDecoder_OutputTypesLiveWithDecoderRoot();
 
     [Fact]
     public Task FlashbackDecoderVideoSetupLivesInFocusedPartial()

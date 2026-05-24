@@ -122,17 +122,17 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackDecoder_OutputTypesLiveInFocusedFile()
+    internal static Task FlashbackDecoder_OutputTypesLiveWithDecoderRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var outputTypesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.OutputTypes.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(outputTypesText, "internal readonly struct DecodedVideoFrame");
-        AssertContains(outputTypesText, "internal readonly struct DecodedAudioChunk");
-        AssertDoesNotContain(rootText, "internal readonly struct DecodedVideoFrame");
-        AssertDoesNotContain(rootText, "internal readonly struct DecodedAudioChunk");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.OutputTypes.cs")),
+            "Flashback decoder output DTOs stay folded into the decoder root surface.");
+        AssertContains(rootText, "internal readonly struct DecodedVideoFrame");
+        AssertContains(rootText, "internal readonly struct DecodedAudioChunk");
 
         return Task.CompletedTask;
     }
