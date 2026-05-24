@@ -2671,16 +2671,13 @@ telemetry now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`;
 keep the command switch and command-complete logging there instead of expanding
 the loop shell.
-Playback-thread seek and scrub begin/update command execution now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekCommands.cs`.
-Keep coalesced seek/scrub resolution, exact resume targets, playback resume
-handoff, frozen valid-start sampling, scrub-display failure recovery, and
-audio/preview suppression/resume ordering there instead of growing the generic
-playback command partial. Playback-thread end-scrub resume and paused
+Playback-thread seek, scrub begin/update, end-scrub resume, and paused
 exact-resume target handling now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`.
-Keep end-scrub seek/reopen, playback audio prebuffer priming, and rendering
-resume ordering there.
+Keep coalesced seek/scrub resolution, exact resume targets, playback resume
+handoff, frozen valid-start sampling, scrub-display failure recovery,
+end-scrub seek/reopen, playback audio prebuffer priming, and audio/preview
+suppression/resume ordering there.
 Playback-thread play command execution now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`.
 Keep exact resume, file-open/reopen, audio prebuffer, and rendering resume
