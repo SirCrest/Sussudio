@@ -50,8 +50,8 @@ static partial class Program
         var deviceToolsText = ReadRepoFile("tools/McpServer/Tools/DeviceTools.cs");
         var diagnosticsToolsText = ReadRepoFile("tools/McpServer/Tools/DiagnosticsTools.cs");
         var flashbackToolsText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.cs");
-        var flashbackActionsText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.Actions.cs");
-        var flashbackExportText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.Export.cs");
+        var flashbackActionsText = flashbackToolsText;
+        var flashbackExportText = flashbackToolsText;
         var framePacingVerdictToolsText = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.cs");
         var memoryDiagnosticsToolsText = ReadRepoFile("tools/McpServer/Tools/MemoryDiagnosticsTools.cs");
         var pipelineSettingsToolsText = captureSettingsToolsText;

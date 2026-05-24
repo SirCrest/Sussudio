@@ -69,18 +69,14 @@ static partial class Program
 
         var flashbackToolsRootText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.cs")
             .Replace("\r\n", "\n");
-        var flashbackToolsActionText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.Actions.cs")
-            .Replace("\r\n", "\n");
-        var flashbackToolsExportText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.Export.cs")
-            .Replace("\r\n", "\n");
+        var flashbackToolsActionText = flashbackToolsRootText;
+        var flashbackToolsExportText = flashbackToolsRootText;
         AssertContains(flashbackToolsRootText, "[McpServerToolType]");
         AssertContains(flashbackToolsRootText, "public static partial class FlashbackTools");
         AssertContains(flashbackToolsRootText, "public static async Task<CallToolResult> flashback_enabled");
         AssertContains(flashbackToolsRootText, "public static async Task<CallToolResult> flashback_apply");
         AssertContains(flashbackToolsRootText, "public static async Task<CallToolResult> flashback_segments");
         AssertContains(flashbackToolsRootText, "FlashbackGetSegments");
-        AssertDoesNotContain(flashbackToolsRootText, "flashback_action");
-        AssertDoesNotContain(flashbackToolsRootText, "flashback_export");
         AssertContains(flashbackToolsActionText, "public static async Task<CallToolResult> flashback_action");
         AssertContains(flashbackToolsActionText, "if (string.IsNullOrWhiteSpace(action))");
         AssertContains(flashbackToolsActionText, "Flashback action is required. Expected play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, or clear_in_out_points.");
