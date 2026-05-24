@@ -131,7 +131,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task D3D11PreviewRenderer_InputResourcesLiveInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_InputResourcesLiveWithD3DResources()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
@@ -139,10 +139,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var videoProcessorPipelineText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.VideoProcessorPipeline.cs")
             .Replace("\r\n", "\n");
-        var inputResourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.InputResources.cs")
-            .Replace("\r\n", "\n");
-        var hdrInputResourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.HdrInputResources.cs")
-            .Replace("\r\n", "\n");
+        var inputResourcesText = resourcesText;
+        var hdrInputResourcesText = resourcesText;
 
         AssertContains(inputResourcesText, "private ID3D11Texture2D? _inputTexture;");
         AssertContains(inputResourcesText, "private void EnsureInputResources(int width, int height, bool isHdr)");
@@ -159,15 +157,8 @@ static partial class Program
         AssertContains(hdrInputResourcesText, "_hdrYPlaneSRV = CreateHdrPlaneView(Format.R16_UNorm, planeSlice: 0);");
         AssertDoesNotContain(rootText, "private ID3D11Texture2D? _inputTexture;");
         AssertDoesNotContain(rootText, "private ID3D11ShaderResourceView? _hdrYPlaneSRV;");
-        AssertDoesNotContain(resourcesText, "private void EnsureInputResources(int width, int height, bool isHdr)");
-        AssertDoesNotContain(resourcesText, "private void EnsureHdrInputResources(int width, int height)");
-        AssertDoesNotContain(resourcesText, "private ID3D11ShaderResourceView? CreateHdrPlaneView");
-        AssertDoesNotContain(inputResourcesText, "private void EnsureHdrInputResources(int width, int height)");
-        AssertDoesNotContain(inputResourcesText, "private ID3D11ShaderResourceView? CreateHdrPlaneView");
-        AssertDoesNotContain(inputResourcesText, "_hdrYPlaneSRV?.Dispose();");
-        AssertDoesNotContain(resourcesText, "_inputView?.Dispose();");
-        AssertDoesNotContain(resourcesText, "_hdrYPlaneSRV?.Dispose();");
-        AssertDoesNotContain(resourcesText, "_stagingTexture?.Dispose();");
+        AssertDoesNotContain(rootText, "private void EnsureInputResources(int width, int height, bool isHdr)");
+        AssertDoesNotContain(rootText, "private void EnsureHdrInputResources(int width, int height)");
 
         return Task.CompletedTask;
     }
