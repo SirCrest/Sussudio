@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 // Tests for recording sink queue limits, drops, and latency accounting.
@@ -59,7 +60,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioQueueText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.AudioQueues.cs")
             .Replace("\r\n", "\n");
-        var queueCleanupText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.QueueCleanup.cs")
+        var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.VideoQueueSubmission.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(audioQueueText, "public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
@@ -68,10 +69,14 @@ static partial class Program
         AssertContains(audioQueueText, "private bool TryEnqueueMicrophonePacket(Channel<AudioSamplePacket> queue, AudioSamplePacket packet)");
         AssertContains(audioQueueText, "private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)");
         AssertContains(audioQueueText, "private readonly record struct AudioSamplePacket(byte[] Buffer, int Length);");
-        AssertContains(queueCleanupText, "private void ReturnRemainingVideoBuffers(Channel<VideoFramePacket>? queue)");
-        AssertContains(queueCleanupText, "private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)");
-        AssertContains(queueCleanupText, "private static unsafe void ReturnRemainingCudaFrames(Channel<CudaFramePacket>? queue, ref int queueDepth)");
-        AssertContains(queueCleanupText, "private static void ReturnVideoPacket(VideoFramePacket packet)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.QueueCleanup.cs")),
+            "LibAvRecordingSink queue cleanup lives with video queue submission and packet ownership");
+        AssertContains(videoSubmissionText, "private void ReturnRemainingVideoBuffers(Channel<VideoFramePacket>? queue)");
+        AssertContains(videoSubmissionText, "private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)");
+        AssertContains(videoSubmissionText, "private static unsafe void ReturnRemainingCudaFrames(Channel<CudaFramePacket>? queue, ref int queueDepth)");
+        AssertContains(videoSubmissionText, "private static void ReturnVideoPacket(VideoFramePacket packet)");
         AssertDoesNotContain(queueText, "public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(queueText, "private bool TryEnqueueAudioPacket(Channel<AudioSamplePacket> queue, AudioSamplePacket packet)");
         AssertDoesNotContain(queueText, "private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)");

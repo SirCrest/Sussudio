@@ -1593,10 +1593,9 @@ work-signal/fatal-failure/queue-depth-underflow helpers there.
 `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Queue.Tests.cs` owns the queue,
 submission, and cleanup assertions for this family.
 Video/GPU/CUDA queue admission policy, TryWrite depth accounting, overload
-fatal signaling, and video packet records now live in
-`LibAvRecordingSink.VideoQueueSubmission.cs`. Video/GPU/CUDA queue cleanup,
-pooled video buffer leasing, and pooled packet return helpers now live in
-`LibAvRecordingSink.QueueCleanup.cs`. Hot audio/microphone WASAPI write
+fatal signaling, queue cleanup, pooled video buffer leasing, pooled packet
+return helpers, and video packet records now live in
+`LibAvRecordingSink.VideoQueueSubmission.cs`. Hot audio/microphone WASAPI write
 adapters, audio queue eviction, audio remaining-buffer cleanup, and
 `AudioSamplePacket` now live in
 `LibAvRecordingSink.AudioQueues.cs`. `LibAvRecordingSink.VideoSession.cs` owns

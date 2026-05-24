@@ -133,6 +133,18 @@ Behavior preserved: CPU packed-frame validation, copy, PTS assignment, HDR side-
 Notes for future agents: keep CPU packed-frame copy helpers with `LibAvEncoder.VideoSubmission.cs` unless they become a reusable copy policy shared by another encoder path
 
 Date: 2026-05-23
+Area: Recording sink video queue ownership
+Problem: Video/GPU/CUDA remaining-buffer cleanup and pooled packet return helpers lived in a separate small partial even though they operate on the packet records and queue-depth state owned by video queue submission.
+Files consolidated: `Sussudio/Services/Recording/LibAvRecordingSink.QueueCleanup.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `LibAvRecordingSink` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by recording queue source-ownership and runtime recording contract tests
+Behavior preserved: Queue overload handling, depth accounting, remaining video/GPU/CUDA buffer return, pooled byte-buffer return, and lease disposal logic are unchanged
+Notes for future agents: keep video queue cleanup with `LibAvRecordingSink.VideoQueueSubmission.cs` unless queue cleanup grows an independent lifecycle policy shared beyond video/GPU/CUDA queues
+
+Date: 2026-05-23
 Area: Automation diagnostics timeline projection locality
 Problem: Preview and Flashback playback performance timeline projection still lived in separate partial files after their smaller projection fragments had already been consolidated, forcing readers to leave the timeline ring/builder file to understand direct `AutomationSnapshot` to `PerformanceTimelineEntry` field flow.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.Preview.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs`
