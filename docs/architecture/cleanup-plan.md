@@ -1258,9 +1258,10 @@ artifact cleanup request/retry/dispose/purge mechanics live in
 `Sussudio/Services/Flashback/FlashbackBackendResources.Teardown.cs`.
 
 Capture read-only automation probes now live in
-`Sussudio/Services/Capture/CaptureService.Probes.cs`. Video source probing,
-preview color probing, and preview-frame screenshot waits are separated from
-runtime lifecycle mutation code.
+`Sussudio/Services/Capture/CaptureService.Snapshots.cs` alongside diagnostics
+and automation snapshot projection. Video source probing, preview color probing,
+and preview-frame screenshot waits stay separated from runtime lifecycle
+mutation code.
 
 Fatal capture and backend failure handling now lives in
 `Sussudio/Services/Capture/CaptureService.Failures.cs`. That file owns fatal

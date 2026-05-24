@@ -120,7 +120,7 @@ static partial class Program
             "    private void TryCaptureFrameBeforePresent");
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Probes.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
                 .Replace("\r\n", "\n");
 
         AssertContains(captureMethod, "if (cancellationToken.IsCancellationRequested)");
