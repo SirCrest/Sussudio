@@ -57,9 +57,10 @@ static partial class Program
         AssertContains(sources.FlashbackTrendSource, "private static void AppendFlashbackTrendSummary(StringBuilder builder, TimelineRow first, TimelineRow last)");
         AssertContains(sources.FlashbackTrendSource, "Flashback Cmd Counters:");
         AssertContains(sources.FlashbackTrendSource, "AppendFlashbackExportTrendSummary(builder, first, last);");
-        AssertDoesNotContain(sources.FlashbackTrendSource, "Export Output:");
-        AssertContains(sources.FlashbackExportTrendSource, "private static void AppendFlashbackExportTrendSummary(StringBuilder builder, TimelineRow first, TimelineRow last)");
-        AssertContains(sources.FlashbackExportTrendSource, "Export Output:");
+        AssertContains(sources.FlashbackTrendSource, "private static void AppendFlashbackExportTrendSummary(StringBuilder builder, TimelineRow first, TimelineRow last)");
+        AssertContains(sources.FlashbackTrendSource, "Export Output:");
+        AssertOccursBefore(sources.FlashbackTrendSource, "Cleanup State:", "AppendFlashbackExportTrendSummary(builder, first, last);");
+        AssertOccursBefore(sources.FlashbackTrendSource, "AppendFlashbackExportTrendSummary(builder, first, last);", "private static void AppendFlashbackExportTrendSummary");
         AssertContains(sources.SummariesSource, "AppendOnePercentLowTargetSummary");
         AssertDoesNotContain(sources.SummariesSource, "== Pressure Summary ==");
         AssertContains(sources.PressureSummariesSource, "private static void AppendPressureSummary(");

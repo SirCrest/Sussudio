@@ -3686,9 +3686,8 @@ Primary owners:
   owns preview cadence, visual/MJPEG fingerprint, jitter, D3D, and slow-stage
   trend text.
   `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.cs`
-  owns Flashback playback, command, failure, cleanup, and stage trend text.
-  `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.Export.cs`
-  owns Flashback export trend text.
+  owns Flashback playback, command, failure, cleanup, stage, and export trend
+  text.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs` owns compact
   cell, command-message, and optional-value formatting.
   `tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Preview.cs` owns

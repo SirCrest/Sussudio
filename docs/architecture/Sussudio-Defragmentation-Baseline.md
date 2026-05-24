@@ -240,6 +240,18 @@ CLI/MCP/pipe checks, if applicable: covered by MCP performance timeline source-o
 Behavior preserved: Timeline JSON fields still populate the same private row properties before rendering and trend summaries
 Notes for future agents: keep the private MCP timeline row DTO in `PerformanceTimelineTools.Rows.Model.cs` and JSON projection methods in `PerformanceTimelineTools.Rows.cs`; split only if a projection group grows independent parsing policy
 
+Date: 2026-05-24
+Area: MCP performance timeline Flashback trend rendering
+Problem: Flashback export trend text lived in a 15-line partial even though it is only the final subsection of Flashback trend rendering.
+Files consolidated: `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.Export.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `PerformanceTimelineTools` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by MCP performance timeline source-ownership/rendering/projection contract tests and runtime snapshot regression tests
+Behavior preserved: Flashback export trend text, order, formatting helpers, and first-vs-last comparisons are unchanged
+Notes for future agents: keep Flashback playback and export trend text together in `PerformanceTimelineTools.Rendering.Trend.Flashback.cs` unless export trend rendering grows independent policy beyond the Flashback trend section
+
 Date: 2026-05-21
 Area: Automation diagnostics Flashback evaluation
 Problem: Active/stalled Flashback export diagnostic verdict construction lived in a small partial even though it is only called by the Flashback diagnostic owner that orders storage, recording, export, and playback verdicts.

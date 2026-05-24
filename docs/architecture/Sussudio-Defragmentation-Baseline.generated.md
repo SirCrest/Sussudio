@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T01:02:32Z
+Generated UTC: 2026-05-24T01:07:20Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 886 |
+| Production .cs files | 885 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 146 (16.5%) |
-| Production .cs files under 80 lines | 239 (27.0%) |
+| Production .cs files under 60 lines | 145 (16.4%) |
+| Production .cs files under 80 lines | 238 (26.9%) |
 
 ## Largest partial-type clusters
 
@@ -31,7 +31,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | FlashbackEncoderSink | 15 | 2737 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.DisposeLifecycle.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingProgress.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateExecution.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateRequests.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.Audio.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.Video.cs |
 | FlashbackExporter | 14 | 3102 | Sussudio/Services/Flashback/FlashbackExporter.Execution.cs, Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs, Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs, Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs, Sussudio/Services/Flashback/FlashbackExporter.RuntimePolicy.cs, Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketReadLoop.cs, Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketRebasing.cs, Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs |
 | FlashbackDecoder | 13 | 2004 | Sussudio/Services/Flashback/FlashbackDecoder.AudioOutput.cs, Sussudio/Services/Flashback/FlashbackDecoder.cs, Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs, Sussudio/Services/Flashback/FlashbackDecoder.D3D11Discovery.cs, Sussudio/Services/Flashback/FlashbackDecoder.DecodeLoop.cs, Sussudio/Services/Flashback/FlashbackDecoder.Diagnostics.cs, Sussudio/Services/Flashback/FlashbackDecoder.Lifetime.cs, Sussudio/Services/Flashback/FlashbackDecoder.Seeking.cs |
-| PerformanceTimelineTools | 13 | 831 | tools/McpServer/Tools/PerformanceTimelineTools.cs, tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs, tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Flashback.cs, tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Preview.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.Export.cs |
+| PerformanceTimelineTools | 12 | 825 | tools/McpServer/Tools/PerformanceTimelineTools.cs, tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs, tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Flashback.cs, tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Preview.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Preview.cs |
 | PresentMonProbe | 11 | 1136 | tools/Common/PresentMon/PresentMonProbe.cs, tools/Common/PresentMon/PresentMonProbe.Csv.Correlation.cs, tools/Common/PresentMon/PresentMonProbe.Csv.cs, tools/Common/PresentMon/PresentMonProbe.Csv.Fields.cs, tools/Common/PresentMon/PresentMonProbe.Csv.Rows.cs, tools/Common/PresentMon/PresentMonProbe.Csv.Summary.cs, tools/Common/PresentMon/PresentMonProbe.Csv.SwapChains.cs, tools/Common/PresentMon/PresentMonProbe.Format.cs |
 | LibAvRecordingSink | 11 | 1667 | Sussudio/Services/Recording/LibAvRecordingSink.AudioQueues.cs, Sussudio/Services/Recording/LibAvRecordingSink.cs, Sussudio/Services/Recording/LibAvRecordingSink.Diagnostics.cs, Sussudio/Services/Recording/LibAvRecordingSink.EncodingLoop.cs, Sussudio/Services/Recording/LibAvRecordingSink.Lifetime.cs, Sussudio/Services/Recording/LibAvRecordingSink.PacketDrain.cs, Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs, Sussudio/Services/Recording/LibAvRecordingSink.Startup.cs |
 | StatsPresentationBuilder | 10 | 940 | Sussudio/ViewModels/StatsPresentationBuilder.cs, Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticRows.cs, Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticSummary.cs, Sussudio/ViewModels/StatsPresentationBuilder.Dock.cs, Sussudio/ViewModels/StatsPresentationBuilder.Encoder.cs, Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs, Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs, Sussudio/ViewModels/StatsPresentationBuilder.Status.cs |
@@ -98,7 +98,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 14 | Sussudio.Automation.Contracts/AutomationPipeSecurityPolicy.cs |
 | 14 | Sussudio/Models/Automation/FlashbackSegmentInfo.cs |
 | 14 | Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs |
-| 15 | tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.Export.cs |
 | 16 | tools/McpServer/Program.cs |
 | 16 | tools/ssctl/CommandHandlers.Json.cs |
 | 16 | tools/ssctl/Formatters.Snapshot.Audio.cs |
@@ -117,7 +116,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 23 | Sussudio/ViewModels/OutputDriveSpacePresentationBuilder.cs |
 | 23 | tools/ssctl/Formatters.Snapshot.Runtime.cs |
 | 23 | tools/ssctl/Formatters.Snapshot.Source.cs |
-| 24 | tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.cs |
 | 24 | tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs |
 | 25 | tools/Common/DiagnosticSessionRunner.cs |
 | 25 | tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs |
@@ -142,10 +140,12 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 32 | tools/McpServer/Tools/RecordingTools.cs |
 | 32 | tools/ssctl/Formatters.Memory.cs |
 | 32 | tools/ssctl/Formatters.Snapshot.AvSync.cs |
+| 33 | tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.cs |
 | 33 | tools/ssctl/CommandHandlers.Verification.cs |
 | 34 | Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs |
 | 34 | Sussudio/Controllers/Shell/ShellElevationController.cs |
 | 34 | Sussudio/Services/Flashback/FlashbackDecoder.OutputTypes.cs |
+| 34 | tools/McpServer/Tools/FlashbackTools.cs |
 
 ## Notes
 

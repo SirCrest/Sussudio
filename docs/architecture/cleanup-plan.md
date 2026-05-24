@@ -3335,9 +3335,8 @@ first-vs-last trend text and target-summary orchestration in
 `PerformanceTimelineTools.Rendering.Trend.cs`, preview cadence, visual/MJPEG
 fingerprint, jitter, D3D, and slow-stage trend text in
 `PerformanceTimelineTools.Rendering.Trend.Preview.cs`, Flashback playback,
-command, failure, cleanup, and stage trend text in
-`PerformanceTimelineTools.Rendering.Trend.Flashback.cs`, Flashback export trend
-text in `PerformanceTimelineTools.Rendering.Trend.Flashback.Export.cs`,
+command, failure, cleanup, stage, and export trend text in
+`PerformanceTimelineTools.Rendering.Trend.Flashback.cs`,
 compact value and command-message formatting helpers in
 `PerformanceTimelineTools.Formatting.cs`, preview jitter-depth and D3D
 bottleneck formatting in `PerformanceTimelineTools.Formatting.Preview.cs`,
