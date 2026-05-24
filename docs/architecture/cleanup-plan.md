@@ -33,8 +33,8 @@ static logging surface. `Sussudio/Logger.cs` owns initialization, rotation,
 bounded channel enqueueing, dropped-message fallback, direct file writes,
 `LogEvent`, system evidence collection, exception formatting, structured
 snapshot JSON routing through `LoggingJsonContext`, and fatal breadcrumbs.
-`LoggingJsonContext.cs` remains the source-generated JSON context boundary for
-known log payloads.
+`Logger.cs` also owns the source-generated JSON context boundary for known log
+payloads.
 
 Runtime path resolution lives with the public cached path API without changing
 repo/temp/log path behavior. `Sussudio/RuntimePaths.cs` owns the public

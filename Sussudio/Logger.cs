@@ -4,6 +4,7 @@ using System.Management;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -294,4 +295,12 @@ public static class Logger
     }
 
     public static string GetLogFilePath() => LogFilePath;
+}
+
+// Source-generated JSON metadata for diagnostic snapshots written to the log.
+[JsonSourceGenerationOptions(WriteIndented = false)]
+[JsonSerializable(typeof(CaptureHealthSnapshot))]
+[JsonSerializable(typeof(CaptureDiagnosticsSnapshot))]
+internal sealed partial class LoggingJsonContext : JsonSerializerContext
+{
 }

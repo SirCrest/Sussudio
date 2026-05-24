@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T22:53:27Z
+Generated UTC: 2026-05-24T23:00:23Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 603 |
+| Production .cs files | 602 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 21 (3.5%) |
-| Production .cs files under 80 lines | 38 (6.3%) |
+| Production .cs files under 60 lines | 20 (3.3%) |
+| Production .cs files under 80 lines | 37 (6.1%) |
 
 ## Largest partial-type clusters
 
@@ -40,7 +40,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | WasapiAudioCapture | 6 | 976 | Sussudio/Services/Audio/WasapiAudioCapture.CaptureLoop.cs, Sussudio/Services/Audio/WasapiAudioCapture.Conversion.cs, Sussudio/Services/Audio/WasapiAudioCapture.cs, Sussudio/Services/Audio/WasapiAudioCapture.Diagnostics.cs, Sussudio/Services/Audio/WasapiAudioCapture.Fanout.cs, Sussudio/Services/Audio/WasapiAudioCapture.Initialization.cs |
 | AutomationSnapshotFormatter | 5 | 785 | tools/Common/AutomationSnapshotFormatter.cs, tools/Common/AutomationSnapshotFormatter.Flashback.cs, tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs, tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs, tools/Common/AutomationSnapshotFormatter.Values.cs |
 | RecordingVerifier | 5 | 1021 | Sussudio/Services/Recording/Verification/RecordingVerifier.Cadence.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Results.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs |
-| Formatters | 4 | 960 | tools/ssctl/Formatters.Common.cs, tools/ssctl/Formatters.Options.cs, tools/ssctl/Formatters.Snapshot.cs, tools/ssctl/Formatters.Timeline.cs |
+| Formatters | 4 | 959 | tools/ssctl/Formatters.Common.cs, tools/ssctl/Formatters.Options.cs, tools/ssctl/Formatters.Snapshot.cs, tools/ssctl/Formatters.Timeline.cs |
 | PerformanceTimelineTools | 4 | 784 | tools/McpServer/Tools/PerformanceTimelineTools.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs, tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs |
 | DiagnosticSessionFlashbackExportScenarios | 4 | 906 | tools/Common/DiagnosticSessionFlashbackExportScenarios.cs, tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs, tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs, tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs |
 | FlashbackBackendResources | 4 | 944 | Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs, Sussudio/Services/Flashback/FlashbackBackendResources.cs, Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs, Sussudio/Services/Flashback/FlashbackBackendResources.Teardown.cs |
@@ -74,7 +74,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 531 | Sussudio/Services/Capture/DeviceDiscovery/MfDeviceEnumerator.cs |
 | 529 | Sussudio/ViewModels/MainViewModel.AudioState.cs |
 | 522 | Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs |
-| 517 | tools/ssctl/Formatters.Snapshot.cs |
+| 516 | tools/ssctl/Formatters.Snapshot.cs |
 | 515 | Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs |
 | 506 | Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs |
 | 493 | Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs |
@@ -90,7 +90,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 3 | tools/ssctl/AssemblyInfo.cs |
 | 6 | Sussudio/GlobalUsings.cs |
 | 9 | tools/Common/ToolJsonOptions.cs |
-| 12 | Sussudio/LoggingJsonContext.cs |
 | 12 | Sussudio/Services/Preview/ILiveVideoSource.cs |
 | 14 | Sussudio.Automation.Contracts/AutomationPipeSecurityPolicy.cs |
 | 14 | Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs |

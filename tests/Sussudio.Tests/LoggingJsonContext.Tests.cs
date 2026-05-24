@@ -11,15 +11,13 @@ static partial class Program
 {
     internal static Task LoggingJsonContext_SerializesStructuredSnapshotPayloads()
     {
-        var contextText = ReadRepoFile("Sussudio/LoggingJsonContext.cs");
-        AssertContains(contextText, "[JsonSourceGenerationOptions(WriteIndented = false)]");
-        AssertContains(contextText, "[JsonSerializable(typeof(CaptureHealthSnapshot))]");
-        AssertContains(contextText, "[JsonSerializable(typeof(CaptureDiagnosticsSnapshot))]");
-        AssertContains(contextText, "internal sealed partial class LoggingJsonContext : JsonSerializerContext");
-
         var loggerText = ReadRepoFile("Sussudio/Logger.cs");
         AssertContains(loggerText, "public static class Logger");
         AssertDoesNotContain(loggerText, "partial class Logger");
+        AssertContains(loggerText, "[JsonSourceGenerationOptions(WriteIndented = false)]");
+        AssertContains(loggerText, "[JsonSerializable(typeof(CaptureHealthSnapshot))]");
+        AssertContains(loggerText, "[JsonSerializable(typeof(CaptureDiagnosticsSnapshot))]");
+        AssertContains(loggerText, "internal sealed partial class LoggingJsonContext : JsonSerializerContext");
         AssertContains(loggerText, "Channel.CreateBounded<string>");
         AssertContains(loggerText, "private static async Task RunLogWriterAsync()");
         AssertContains(loggerText, "private static void WriteDirect(string entry)");
