@@ -11,14 +11,11 @@ static partial class Program
     {
         var exportOperationsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
             .Replace("\r\n", "\n");
-        var exportRangeResolutionText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRangeResolution.cs")
-            .Replace("\r\n", "\n");
         var exportCoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             .Replace("\r\n", "\n");
         var exportForceRotateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportForceRotate.cs")
             .Replace("\r\n", "\n");
         var captureServiceText = exportOperationsText
-            + "\n" + exportRangeResolutionText
             + "\n" + exportCoreText
             + "\n" + exportForceRotateText
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
@@ -46,9 +43,13 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackExportBackendSnapshot.cs")),
             "old Flashback export backend snapshot partial removed");
-        AssertContains(exportRangeResolutionText, "private delegate (bool Succeeded, TimeSpan InPoint, TimeSpan OutPoint, string? FailureMessage)");
-        AssertContains(exportRangeResolutionText, "private static FlashbackExportRangeResolver CreateFlashbackExportRangeResolver(");
-        AssertContains(exportRangeResolutionText, "private static FlashbackExportRangeResolver CreateFlashbackExportLastNRangeResolver(double seconds)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackExportRangeResolution.cs")),
+            "old Flashback export range-resolution partial removed");
+        AssertContains(exportCoreText, "private delegate (bool Succeeded, TimeSpan InPoint, TimeSpan OutPoint, string? FailureMessage)");
+        AssertContains(exportCoreText, "private static FlashbackExportRangeResolver CreateFlashbackExportRangeResolver(");
+        AssertContains(exportCoreText, "private static FlashbackExportRangeResolver CreateFlashbackExportLastNRangeResolver(double seconds)");
         AssertContains(exportOperationsText, "return await ExportFlashbackCoreAsync(");
         AssertDoesNotContain(exportOperationsText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
         AssertContains(exportCoreText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");

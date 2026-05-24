@@ -1383,7 +1383,7 @@ Keep range export, last-N export, lock-scoped backend reference capture,
 session/backend lock release before native export, and routing into
 range-resolution and shared-core owners there. Flashback export range
 resolution now lives in
-`Sussudio/Services/Capture/CaptureService.FlashbackExportRangeResolution.cs`.
+`Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`.
 Keep range and last-N post-eviction range resolution, buffer position clamps,
 and PTS offset math there. The shared export lifetime now lives in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`; keep
