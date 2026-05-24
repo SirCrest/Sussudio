@@ -57,23 +57,24 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimeMjpegDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"source_signal\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"mjpeg_decode\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "TryBuildRealtimePreviewSchedulerDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "TryBuildRealtimePreviewRendererDiagnosticEvaluation(lanes)");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "TryBuildRealtimePreviewPresentDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewSchedulerDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "\"preview_scheduler\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewRendererDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "\"renderer\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewPresentDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "\"present_display\"");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"preview_scheduler\"");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"renderer\"");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"present_display\"");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "Preview scheduler failed to submit frames.");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "Renderer pacing is the likely preview bottleneck.");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "Present/display cadence is the likely preview bottleneck.");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "Present/display 1% low is below target.");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimePreviewSchedulerDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimePreviewRendererDiagnosticEvaluation(lanes)");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimePreviewPresentDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewSchedulerDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"preview_scheduler\"");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewRendererDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"renderer\"");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewPresentDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"present_display\"");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "Preview scheduler failed to submit frames.");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "Renderer pacing is the likely preview bottleneck.");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "Present/display cadence is the likely preview bottleneck.");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "Present/display 1% low is below target.");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Preview.cs")),
+            "Realtime preview diagnostic evaluation helpers folded into realtime evaluation owner");
         AssertDoesNotContain(diagnostics.EvaluationText, "\"flashback_storage\"");
         AssertDoesNotContain(diagnostics.EvaluationText, "\"source_capture\"");
         AssertDoesNotContain(diagnostics.EvaluationText, "var sourceTarget =");

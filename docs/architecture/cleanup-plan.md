@@ -293,10 +293,9 @@ Flashback recording diagnostic condition assembly.
 `AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs` owns realtime
 diagnostic verdict ordering plus idle, warmup, recording integrity, audio
 integrity, source/capture cadence, duplicate source-signal, and MJPEG
-decode/reorder diagnostic verdicts.
-`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Preview.cs` owns realtime
-preview diagnostic verdict ordering plus preview scheduler, renderer pacing,
-present/display cadence, and preview display 1% low diagnostic verdicts.
+decode/reorder diagnostic verdicts, plus realtime preview scheduler, renderer
+pacing, present/display cadence, and preview display 1% low diagnostic
+verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs` owns diagnostic lane text
 orchestration, MJPEG decode lane formatting, recording/audio lane formatting,
 source cadence/source-signal lane formatting, preview scheduler/renderer/
