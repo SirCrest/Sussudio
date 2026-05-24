@@ -2351,11 +2351,10 @@ primary-context ownership, and fallback-to-staging behavior unchanged.
 
 NVDEC MJPEG decoder ownership is now split around the hot-path boundaries:
 `NvdecMjpegDecoder.Initialization.cs` owns shared decoder state plus standalone
-CUDA device and hardware-frame pool initialization, `NvdecMjpegDecoder.SharedInitialization.cs`
-owns adoption of caller-provided CUDA device/frame contexts,
+CUDA device and hardware-frame pool initialization, disposal, and FFmpeg error
+text. `NvdecMjpegDecoder.SharedInitialization.cs` owns adoption of caller-provided CUDA device/frame contexts,
 `NvdecMjpegDecoder.Decode.cs` owns packet decode and CUDA context access,
-`NvdecMjpegDecoder.Download.cs` owns CPU download/packed-buffer copies, and
-`NvdecMjpegDecoder.Lifetime.cs` owns disposal plus FFmpeg error text. Keep
+and `NvdecMjpegDecoder.Download.cs` owns CPU download/packed-buffer copies. Keep
 shared-context ownership and disposal order unchanged when touching these files.
 
 NVML telemetry ownership is now split between

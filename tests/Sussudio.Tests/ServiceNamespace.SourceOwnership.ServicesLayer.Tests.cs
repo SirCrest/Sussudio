@@ -99,16 +99,18 @@ static partial class Program
         var nvdecSharedInitializationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.SharedInitialization.cs"));
         var nvdecDecodeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Decode.cs"));
         var nvdecDownloadText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Download.cs"));
-        var nvdecLifetimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Lifetime.cs"));
         AssertContains(nvdecInitializationText, "internal sealed unsafe partial class NvdecMjpegDecoder : IDisposable");
         AssertContains(nvdecInitializationText, "private AVCodecContext* _decoderCtx;");
         AssertDoesNotContain(nvdecInitializationText, "public AVFrame* DecodeFrame(");
         AssertDoesNotContain(nvdecInitializationText, "public bool TryDownloadToCpu(");
-        AssertDoesNotContain(nvdecInitializationText, "public void Dispose()");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.cs")),
             "NVDEC decoder state-only partial");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Lifetime.cs")),
+            "NVDEC decoder lifetime folded into initialization/resource ownership");
         AssertContains(nvdecInitializationText, "public void Initialize(int width, int height)");
         AssertContains(nvdecInitializationText, "av_hwdevice_ctx_create(&hwDeviceCtx");
         AssertContains(nvdecInitializationText, "NVDEC_MJPEG_FRAMES_CTX_OK");
@@ -123,8 +125,8 @@ static partial class Program
         AssertContains(nvdecDownloadText, "public bool TryDownloadToCpu(");
         AssertContains(nvdecDownloadText, "private void EnsurePackedBufferCapacity");
         AssertContains(nvdecDownloadText, "private static void CopyPlane");
-        AssertContains(nvdecLifetimeText, "public void Dispose()");
-        AssertContains(nvdecLifetimeText, "private static string GetErrorString");
+        AssertContains(nvdecInitializationText, "public void Dispose()");
+        AssertContains(nvdecInitializationText, "private static string GetErrorString");
 
         var captureServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.cs"));
         var captureServiceTelemetryText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.Telemetry.cs"));

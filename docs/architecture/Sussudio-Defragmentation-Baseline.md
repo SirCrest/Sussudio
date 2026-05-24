@@ -1511,3 +1511,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation/tool contract changes
 Behavior preserved: CUDA/GPU queue selection, bounded video/GPU/CUDA channel creation, width/height state reset, video/GPU/CUDA metric reset, enqueue/write tick reset, diagnostics reset, and startup ordering remain unchanged
 Notes for future agents: keep per-recording video session queue setup and startup metric reset with `LibAvRecordingSink.Startup.cs`; keep public queue admission and packet cleanup in `LibAvRecordingSink.VideoQueueSubmission.cs`
+
+Date: 2026-05-24
+Area: NVDEC MJPEG decoder lifecycle locality
+Problem: `NvdecMjpegDecoder.Lifetime.cs` was a 70-line disposal/error-text partial for resources allocated by `NvdecMjpegDecoder.Initialization.cs`, forcing acquisition and release invariants across two files.
+Files consolidated: `Sussudio/Services/Gpu/NvdecMjpegDecoder.Lifetime.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `NvdecMjpegDecoder` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation/tool contract changes
+Behavior preserved: Packet/frame/context/buffer release order, packed CPU buffer free, initialized flag reset, disposal logging, and FFmpeg error string formatting remain unchanged
+Notes for future agents: keep NVDEC resource acquisition, disposal, and FFmpeg error text together in `NvdecMjpegDecoder.Initialization.cs`; keep packet decode in `Decode.cs`, CPU download/copy in `Download.cs`, and shared context adoption in `SharedInitialization.cs`
