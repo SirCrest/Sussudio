@@ -34,14 +34,14 @@ static partial class Program
     {
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
-        var deviceLostText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceLost.cs")
+        var deviceInitializationText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(deviceLostText, "private void HandleDeviceLost(Exception ex)");
-        AssertContains(deviceLostText, "private static bool IsDeviceLostException(Exception ex)");
-        AssertContains(deviceLostText, "TrackFrameDropped(stalePending, \"device-lost\");");
-        AssertContains(deviceLostText, "ResultCode.DeviceRemoved");
-        AssertContains(deviceLostText, "unchecked((int)0x887A0005)");
+        AssertContains(deviceInitializationText, "private void HandleDeviceLost(Exception ex)");
+        AssertContains(deviceInitializationText, "private static bool IsDeviceLostException(Exception ex)");
+        AssertContains(deviceInitializationText, "TrackFrameDropped(stalePending, \"device-lost\");");
+        AssertContains(deviceInitializationText, "ResultCode.DeviceRemoved");
+        AssertContains(deviceInitializationText, "unchecked((int)0x887A0005)");
         AssertDoesNotContain(resourcesText, "private void HandleDeviceLost(Exception ex)");
         AssertDoesNotContain(resourcesText, "private static bool IsDeviceLostException(Exception ex)");
 

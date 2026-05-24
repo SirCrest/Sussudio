@@ -2141,26 +2141,18 @@ in `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs`. Keep
 pacing so frame dequeue, wait, render dispatch, and wait metrics are reviewed
 together.
 
-D3D preview renderer device-lost recovery now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceLost.cs`. Keep device
-loss classification, device-lost frame drops, stop-guarded cleanup, and
-reinitialize scheduling there; keep generic resource disposal in
-`D3D11PreviewRenderer.Resources.cs`.
-
-D3D preview renderer shared-device handoff now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.SharedDevice.cs`. Keep
-`SetSharedDevice`, `RetireSharedDeviceReferenceForReinit`, shared-device COM
-reference duplication/release policy, reset request scheduling, and
-`TryInitializeWithSharedDevice` there; keep render-thread reset consumption in
-`D3D11PreviewRenderer.RenderThread.cs`.
-
 D3D preview renderer device initialization now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs`. Keep
-`InitializeD3D` orchestration, shared-vs-owned device setup, video interface
-acquisition, media present duration setup, initial panel binding, and renderer-
-owned device fallback there. Composition swap-chain creation, startup dimensions,
-HDR swap-chain capability probing, SDR swap-chain fallback, and initial color-
-space selection now live in
+`InitializeD3D` orchestration, shared-vs-owned device setup, shared-device COM
+reference duplication/release policy, reinit retirement, reset request
+scheduling, `TryInitializeWithSharedDevice`, device-loss classification,
+device-lost frame drops, stop-guarded cleanup, reinitialize scheduling, video
+interface acquisition, media present duration setup, initial panel binding, and
+renderer-owned device fallback there. Keep generic resource disposal in
+`D3D11PreviewRenderer.Resources.cs` and render-thread reset consumption in
+`D3D11PreviewRenderer.RenderThread.cs`. Composition swap-chain creation, startup
+dimensions, HDR swap-chain capability probing, SDR swap-chain fallback, and
+initial color-space selection now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.SwapChainInitialization.cs`.
 
 D3D preview renderer resource management now lives in

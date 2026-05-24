@@ -10,22 +10,18 @@ static partial class Program
             .Replace("\r\n", "\n");
         var panelBindingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs")
             .Replace("\r\n", "\n");
-        var panelCompositionText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PanelComposition.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(panelBindingText, "private int _swapChainBound;");
         AssertContains(panelBindingText, "private void BindSwapChainToPanel(IDXGISwapChain1 swapChain)");
         AssertContains(panelBindingText, "private void UnbindSwapChainFromPanel()");
         AssertContains(panelBindingText, "WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel)");
-        AssertContains(panelCompositionText, "private int _compositionTransformDirty;");
-        AssertContains(panelCompositionText, "private int _panelPixelWidth = 1;");
-        AssertContains(panelCompositionText, "private double _panelLogicalWidth = 1.0;");
-        AssertContains(panelCompositionText, "private double _rasterizationScale = 1.0;");
-        AssertContains(panelCompositionText, "public void OnPanelSizeChanged(double logicalWidth, double logicalHeight, double rasterizationScale)");
-        AssertContains(panelCompositionText, "private void ApplyCompositionScaleTransform(IDXGISwapChain1 swapChain)");
-        AssertContains(panelCompositionText, "swapChain2.MatrixTransform");
-        AssertDoesNotContain(panelBindingText, "public void OnPanelSizeChanged(");
-        AssertDoesNotContain(panelBindingText, "private void ApplyCompositionScaleTransform(IDXGISwapChain1 swapChain)");
+        AssertContains(panelBindingText, "private int _compositionTransformDirty;");
+        AssertContains(panelBindingText, "private int _panelPixelWidth = 1;");
+        AssertContains(panelBindingText, "private double _panelLogicalWidth = 1.0;");
+        AssertContains(panelBindingText, "private double _rasterizationScale = 1.0;");
+        AssertContains(panelBindingText, "public void OnPanelSizeChanged(double logicalWidth, double logicalHeight, double rasterizationScale)");
+        AssertContains(panelBindingText, "private void ApplyCompositionScaleTransform(IDXGISwapChain1 swapChain)");
+        AssertContains(panelBindingText, "swapChain2.MatrixTransform");
         AssertDoesNotContain(rootText, "private int _swapChainBound;");
         AssertDoesNotContain(rootText, "private int _compositionTransformDirty;");
         AssertDoesNotContain(resourcesText, "private void BindSwapChainToPanel(IDXGISwapChain1 swapChain)");
@@ -86,8 +82,11 @@ static partial class Program
         AssertDoesNotContain(resourcesText, "private void RecreateOutputView()");
         AssertDoesNotContain(resourcesText, "private void ApplyColorSpaces(bool isHdr)");
         AssertDoesNotContain(resourcesText, "private void InitializeD3D()");
+        AssertContains(deviceInitializationText, "private bool TryInitializeWithSharedDevice(");
+        AssertContains(deviceInitializationText, "private void HandleDeviceLost(Exception ex)");
+        AssertContains(deviceInitializationText, "private static bool IsDeviceLostException(Exception ex)");
         AssertDoesNotContain(resourcesText, "private bool TryInitializeWithSharedDevice(");
-        AssertDoesNotContain(deviceInitializationText, "private bool TryInitializeWithSharedDevice(");
+        AssertDoesNotContain(resourcesText, "private void HandleDeviceLost(Exception ex)");
         AssertDoesNotContain(deviceInitializationText, "CheckColorSpaceSupport(ColorSpaceType.RgbFullG2084NoneP2020)");
         AssertDoesNotContain(resourcesText, "private void CreateRendererOwnedDevice(");
         AssertDoesNotContain(rootText, "private ID3D11Device? _device;");
@@ -104,8 +103,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
             .Replace("\r\n", "\n");
-        var sharedDeviceText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.SharedDevice.cs")
-            .Replace("\r\n", "\n");
+        var sharedDeviceText = deviceInitializationText;
 
         AssertContains(sharedDeviceText, "private ID3D11Device? _sharedDevice;");
         AssertContains(sharedDeviceText, "private int _sharedDeviceResetPending;");
@@ -126,7 +124,6 @@ static partial class Program
         AssertContains(renderThreadText, "InitializeD3D();");
         AssertDoesNotContain(rootText, "public void SetSharedDevice(ID3D11Device sharedDevice)");
         AssertDoesNotContain(rootText, "public void RetireSharedDeviceReferenceForReinit()");
-        AssertDoesNotContain(deviceInitializationText, "private bool TryInitializeWithSharedDevice(out FeatureLevel featureLevel)");
 
         return Task.CompletedTask;
     }
