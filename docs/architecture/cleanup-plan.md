@@ -3336,11 +3336,10 @@ enable/apply commands, segment-list formatting, and the tool type in
 `FlashbackTools.Export.cs`.
 The verification MCP tool follows the same ownership rule: keep public
 `verify_recording`, `assert_snapshot`, and `verify_file` methods, command
-names, payloads, and 60s verification timeouts in `VerificationTools.cs`; keep
-assertion JSON parsing and clone lifetime safety in
-`VerificationTools.Assertions.cs`; keep recording/file/assertion text in
-`VerificationTools.Formatting.cs`; and keep `Data.Verification` /
-`Snapshot.LastVerification` lookup in `VerificationTools.Parsing.cs`.
+names, payloads, 60s verification timeouts, assertion JSON parsing, clone
+lifetime safety, and `Data.Verification` / `Snapshot.LastVerification` lookup
+in `VerificationTools.cs`; keep recording/file/assertion text in
+`VerificationTools.Formatting.cs`.
 Preview frame capture MCP reporting is split without changing visible text:
 keep the public `capture_preview_frame` entry point, default output path,
 payload, and enum-backed `CapturePreviewFrame` routing in

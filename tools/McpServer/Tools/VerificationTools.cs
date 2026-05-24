@@ -66,4 +66,59 @@ public static partial class VerificationTools
 
         return McpToolResultFactory.FromResponse(response, BuildFileVerificationText(filePath, response, verification, message));
     }
+
+    private static bool TryParseAssertionArray(string assertions, out JsonElement parsedAssertions, out string? error)
+    {
+        parsedAssertions = default;
+        error = null;
+
+        if (string.IsNullOrWhiteSpace(assertions))
+        {
+            error = "The assertions parameter must be a JSON array string.";
+            return false;
+        }
+
+        try
+        {
+            using var assertionsDocument = JsonDocument.Parse(assertions);
+            if (assertionsDocument.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                error = "The assertions parameter must be a JSON array string.";
+                return false;
+            }
+
+            parsedAssertions = assertionsDocument.RootElement.Clone();
+            return true;
+        }
+        catch (JsonException ex)
+        {
+            error = $"Invalid assertions JSON: {ex.Message}";
+            return false;
+        }
+    }
+
+    private static bool TryGetVerification(JsonElement response, out JsonElement verification)
+    {
+        verification = default;
+
+        if (response.ValueKind == JsonValueKind.Object &&
+            response.TryGetProperty("Data", out var data) &&
+            data.ValueKind == JsonValueKind.Object &&
+            data.TryGetProperty("Verification", out verification) &&
+            verification.ValueKind == JsonValueKind.Object)
+        {
+            return true;
+        }
+
+        if (response.ValueKind == JsonValueKind.Object &&
+            response.TryGetProperty("Snapshot", out var snapshot) &&
+            snapshot.ValueKind == JsonValueKind.Object &&
+            snapshot.TryGetProperty("LastVerification", out verification) &&
+            verification.ValueKind == JsonValueKind.Object)
+        {
+            return true;
+        }
+
+        return false;
+    }
 }

@@ -277,6 +277,18 @@ Behavior preserved: `flashback_segments` still sends `AutomationCommandKind.Flas
 Notes for future agents: keep low-policy Flashback MCP root commands in `FlashbackTools.cs`; keep action and export files separate while they own validation and payload policy.
 
 Date: 2026-05-24
+Area: MCP verification helper locality
+Problem: Verification lookup and assertion JSON parsing lived in two 31-36 line partials even though both are only used by the root verification MCP methods.
+Files consolidated: `tools/McpServer/Tools/VerificationTools.Parsing.cs`; `tools/McpServer/Tools/VerificationTools.Assertions.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `VerificationTools` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by MCP verification tool route/format tests and runtime snapshot regression tests
+Behavior preserved: `verify_recording`, `assert_snapshot`, and `verify_file` command routing, assertion JSON cloning, and verification lookup from `Data.Verification` / `Snapshot.LastVerification` are unchanged.
+Notes for future agents: keep small root-only verification parsing helpers in `VerificationTools.cs`; keep verification response text in `VerificationTools.Formatting.cs` while it remains a cohesive rendering surface.
+
+Date: 2026-05-24
 Area: ssctl command argument parsing locality
 Problem: CLI usage validation, argument joining, flag consumption, optional flag parsing, and JSON detection/pretty-printing lived in three small `CommandHandlers` partials even though they are one command-line argument interpretation support surface.
 Files consolidated: `tools/ssctl/CommandHandlers.Flags.cs`; `tools/ssctl/CommandHandlers.Json.cs`

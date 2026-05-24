@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T01:55:57Z
+Generated UTC: 2026-05-24T02:01:59Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 857 |
+| Production .cs files | 855 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 124 (14.5%) |
-| Production .cs files under 80 lines | 210 (24.5%) |
+| Production .cs files under 60 lines | 122 (14.3%) |
+| Production .cs files under 80 lines | 207 (24.2%) |
 
 ## Largest partial-type clusters
 
@@ -40,11 +40,11 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | AutomationSnapshotFormatter | 8 | 806 | tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs, tools/Common/AutomationSnapshotFormatter.cs, tools/Common/AutomationSnapshotFormatter.Flashback.cs, tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs, tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs, tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs, tools/Common/AutomationSnapshotFormatter.Values.cs, tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs |
 | DiagnosticSessionResultBuilder | 8 | 1388 | tools/Common/DiagnosticSessionResultBuilder.Analysis.cs, tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs, tools/Common/DiagnosticSessionResultBuilder.cs, tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs, tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs, tools/Common/DiagnosticSessionResultBuilder.Flattening.cs, tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs, tools/Common/DiagnosticSessionResultBuilder.Projections.cs |
 | FlashbackBufferManager | 8 | 1462 | Sussudio/Services/Flashback/FlashbackBufferManager.cs, Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs, Sussudio/Services/Flashback/FlashbackBufferManager.LiveAccounting.cs, Sussudio/Services/Flashback/FlashbackBufferManager.Purge.cs, Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs, Sussudio/Services/Flashback/FlashbackBufferManager.SegmentCompletion.cs, Sussudio/Services/Flashback/FlashbackBufferManager.SegmentMutation.cs, Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs |
-| FlashbackBackendResources | 7 | 966 | Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs, Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs, Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.Lifecycle.cs, Sussudio/Services/Flashback/FlashbackBackendResources.cs, Sussudio/Services/Flashback/FlashbackBackendResources.PreviewDisposal.cs, Sussudio/Services/Flashback/FlashbackBackendResources.RecordingFinalize.cs, Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs |
 | DiagnosticSessionFlashbackExportScenarios | 7 | 934 | tools/Common/DiagnosticSessionFlashbackExportScenarios.Concurrent.cs, tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs, tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation.cs, tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs, tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs, tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.cs, tools/Common/DiagnosticSessionFlashbackExportScenarios.Rotated.cs |
 | CaptureSessionCoordinator | 7 | 875 | Sussudio/Services/Capture/CaptureSessionCoordinator.Commands.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.Disposal.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.Playback.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.Queue.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.Snapshot.cs |
-| PerformanceTimelineTools | 7 | 799 | tools/McpServer/Tools/PerformanceTimelineTools.cs, tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs, tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs |
 | MjpegPreviewJitterBuffer | 7 | 1290 | Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Adaptive.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.EmitLoop.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FrameIngress.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FramePacing.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Queue.cs |
+| FlashbackBackendResources | 7 | 966 | Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs, Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs, Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.Lifecycle.cs, Sussudio/Services/Flashback/FlashbackBackendResources.cs, Sussudio/Services/Flashback/FlashbackBackendResources.PreviewDisposal.cs, Sussudio/Services/Flashback/FlashbackBackendResources.RecordingFinalize.cs, Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs |
+| PerformanceTimelineTools | 7 | 799 | tools/McpServer/Tools/PerformanceTimelineTools.cs, tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs, tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs |
 | WasapiAudioCapture | 6 | 976 | Sussudio/Services/Audio/WasapiAudioCapture.CaptureLoop.cs, Sussudio/Services/Audio/WasapiAudioCapture.Conversion.cs, Sussudio/Services/Audio/WasapiAudioCapture.cs, Sussudio/Services/Audio/WasapiAudioCapture.Diagnostics.cs, Sussudio/Services/Audio/WasapiAudioCapture.Fanout.cs, Sussudio/Services/Audio/WasapiAudioCapture.Initialization.cs |
 
 ## Largest production files
@@ -119,7 +119,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 31 | Sussudio/Services/Recording/LibAvEncoder.MuxerOptions.cs |
 | 31 | Sussudio/Services/Runtime/TelemetryAgeHelper.cs |
 | 31 | Sussudio/Services/Telemetry/NativeXuAtCommandProvider.Selector4.cs |
-| 31 | tools/McpServer/Tools/VerificationTools.Parsing.cs |
 | 32 | Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs |
 | 32 | Sussudio/MainWindow.PreviewRuntimeSnapshot.cs |
 | 32 | tools/McpServer/Tools/FramePacingVerdictTools.Timeline.cs |
@@ -133,7 +132,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 34 | tools/McpServer/Tools/PresentMonTools.Correlation.cs |
 | 35 | tools/McpServer/Tools/McpToolResultFactory.cs |
 | 36 | Sussudio/Controllers/Shell/ShellPropertyChangedController.cs |
-| 36 | tools/McpServer/Tools/VerificationTools.Assertions.cs |
 | 36 | tools/ssctl/Formatters.Diagnostics.cs |
 | 37 | Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs |
 | 37 | tools/KsAudioNodeProbe/Program.cs |
@@ -146,6 +144,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 40 | Sussudio/Services/Automation/AutomationCommandDispatcher.AudioControlCommands.cs |
 | 40 | Sussudio/ViewModels/MainViewModel.AutomationSettings.cs |
 | 40 | tools/NativeXuAudioProbe/Program.Commands.cs |
+| 41 | Sussudio/Models/Automation/AutomationSnapshot.SourceTelemetry.cs |
+| 41 | tools/Common/DiagnosticSessionAutomationResponseJson.cs |
 
 ## Notes
 

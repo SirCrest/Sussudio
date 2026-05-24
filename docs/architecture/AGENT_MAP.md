@@ -3677,12 +3677,11 @@ Primary owners:
   text.
 - `tools/McpServer/Tools/VerificationTools.cs` owns the public verification MCP
   methods, command names, payload shaping, and verification response timeout
-  policy. `tools/McpServer/Tools/VerificationTools.Assertions.cs` owns
-  assertion JSON parsing and `JsonElement.Clone()` lifetime safety.
+  policy, assertion JSON parsing and `JsonElement.Clone()` lifetime safety,
+  and verification lookup from `Data.Verification` and
+  `Snapshot.LastVerification`.
   `tools/McpServer/Tools/VerificationTools.Formatting.cs` owns recording,
   file, assertion, mismatch, and failure result text.
-  `tools/McpServer/Tools/VerificationTools.Parsing.cs` owns verification lookup
-  from `Data.Verification` and `Snapshot.LastVerification`.
 - `tools/McpServer/Tools/PreviewFrameCaptureTools.cs` owns the public preview
   frame-capture MCP entry point, default output path, payload shaping, enum
   command routing, and failure/missing-data response handling.
