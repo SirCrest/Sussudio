@@ -1388,11 +1388,9 @@ and PTS offset math there. The shared export lifetime now lives in
 export-operation locking, eviction pause/resume, diagnostics completion,
 exporter execution, active-file fallback, `FlashbackExportRequest`
 construction, throttle-provider wiring, partial-fallback result marking, and
-cleanup there. Flashback export force-rotate
-preparation now lives in
-`Sussudio/Services/Capture/CaptureService.FlashbackExportForceRotate.cs`; keep
+cleanup there. Flashback export force-rotate preparation also lives there; keep
 failure/committed-pending outcomes, timeout fallback segment discovery, and
-related diagnostics/logging there.
+related diagnostics/logging with the request assembly path.
 
 Flashback export planning now lives in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportPlanning.cs`. Keep

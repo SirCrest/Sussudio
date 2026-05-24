@@ -13,11 +13,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var exportCoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             .Replace("\r\n", "\n");
-        var exportForceRotateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportForceRotate.cs")
-            .Replace("\r\n", "\n");
         var captureServiceText = exportOperationsText
             + "\n" + exportCoreText
-            + "\n" + exportForceRotateText
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
                 .Replace("\r\n", "\n")
@@ -47,6 +44,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackExportRangeResolution.cs")),
             "old Flashback export range-resolution partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackExportForceRotate.cs")),
+            "old Flashback export force-rotate partial removed");
         AssertContains(exportCoreText, "private delegate (bool Succeeded, TimeSpan InPoint, TimeSpan OutPoint, string? FailureMessage)");
         AssertContains(exportCoreText, "private static FlashbackExportRangeResolver CreateFlashbackExportRangeResolver(");
         AssertContains(exportCoreText, "private static FlashbackExportRangeResolver CreateFlashbackExportLastNRangeResolver(double seconds)");
@@ -56,9 +57,8 @@ static partial class Program
         AssertContains(exportCoreText, "bufferManager.PauseEviction();");
         AssertContains(exportCoreText, "private FlashbackExportPreparationResult PrepareFlashbackExportRequest(");
         AssertContains(exportCoreText, "PrepareFlashbackExportForceRotateSegments(");
-        AssertDoesNotContain(exportCoreText, "ForceRotateForExport(");
-        AssertContains(exportForceRotateText, "private FlashbackExportForceRotatePreparation PrepareFlashbackExportForceRotateSegments(");
-        AssertContains(exportForceRotateText, "ForceRotateForExport");
+        AssertContains(exportCoreText, "private FlashbackExportForceRotatePreparation PrepareFlashbackExportForceRotateSegments(");
+        AssertContains(exportCoreText, "ForceRotateForExport");
         AssertContains(exportCoreText, "CreateFlashbackExportThrottleDelayProvider");
 
         var rangeExport = ExtractMemberCode(exportOperationsText, "ExportFlashbackRangeAsync");
@@ -108,8 +108,8 @@ static partial class Program
         AssertContains(exportCore, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackBackend.Exporter ??= new FlashbackExporter();\n            }");
         AssertContains(exportCore, "var preparedExport = PrepareFlashbackExportRequest(");
         AssertContains(exportCore, "if (preparedExport.FailureResult is { } preparationFailure)");
-        AssertContains(exportForceRotateText, "var forceRotateFallbackUsed = false;");
-        AssertContains(exportForceRotateText, "forceRotateFallbackUsed = true;");
+        AssertContains(exportCoreText, "var forceRotateFallbackUsed = false;");
+        AssertContains(exportCoreText, "forceRotateFallbackUsed = true;");
         AssertContains(exportCore, "live-edge partial fallback: active segment was not closed before timeout; export may omit the newest frames");
         AssertContains(exportCore, "if (preparedExport.ForceRotateFallbackUsed && result.Succeeded)\n            {\n                result = FinalizeResult.Success(");
         AssertContains(exportCore, "RecordLastFlashbackExportResult(exportId, result);\n            CompleteFlashbackExportDiagnostics(exportId, result);");
