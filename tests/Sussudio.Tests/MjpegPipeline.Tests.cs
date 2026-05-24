@@ -12,8 +12,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.CompressedQueue.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.ReorderEmission.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.ResourceCleanup.cs");
+            + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs");
         AssertContains(source, "MJPEG_PIPELINE_STARTUP_DROP");
         AssertContains(source, "HasJpegStartOfImage");
         AssertContains(source, "MJPEG_REORDER_STRICT_WAIT");
@@ -138,8 +137,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs")
             .Replace("\r\n", "\n");
-        var resourceCleanupText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.ResourceCleanup.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(lifecycleText, "public void Dispose()");
         AssertContains(lifecycleText, "public bool TryStop(TimeSpan timeout, out string? failureReason)");
@@ -152,18 +149,21 @@ static partial class Program
         AssertContains(lifecycleText, "private bool TryWaitForShutdown(TimeSpan timeout, out string? failureReason)");
         AssertContains(lifecycleText, "private void SignalFatalError(Exception ex)");
         AssertContains(lifecycleText, "private static TimeSpan GetRemainingTimeout(long deadlineTimestamp)");
-        AssertContains(resourceCleanupText, "private void CleanupResources()");
-        AssertContains(resourceCleanupText, "private void DiscardRemainingReorderFrames(string reason)");
-        AssertContains(resourceCleanupText, "private void ReturnRemainingWorkItems()");
-        AssertContains(resourceCleanupText, "ArrayPool<byte>.Shared.Return(item.JpegBuffer);");
-        AssertContains(resourceCleanupText, "_emitSignal.Dispose();");
+        AssertContains(lifecycleText, "private void CleanupResources()");
+        AssertContains(lifecycleText, "private void DiscardRemainingReorderFrames(string reason)");
+        AssertContains(lifecycleText, "private void ReturnRemainingWorkItems()");
+        AssertContains(lifecycleText, "ArrayPool<byte>.Shared.Return(item.JpegBuffer);");
+        AssertContains(lifecycleText, "_emitSignal.Dispose();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "ParallelMjpegDecodePipeline.ResourceCleanup.cs")),
+            "MJPEG pipeline resource cleanup folded into ParallelMjpegDecodePipeline.Lifecycle.cs");
         AssertDoesNotContain(rootText, "public bool TryStop(TimeSpan timeout, out string? failureReason)");
         AssertDoesNotContain(rootText, "private void BeginStop()");
         AssertDoesNotContain(rootText, "private bool TryWaitForShutdown(TimeSpan timeout, out string? failureReason)");
         AssertDoesNotContain(rootText, "private void CleanupResources()");
         AssertDoesNotContain(rootText, "private static TimeSpan GetRemainingTimeout(long deadlineTimestamp)");
         AssertDoesNotContain(rootText, "Name = \"MjpegEmitter\"");
-        AssertDoesNotContain(lifecycleText, "ArrayPool<byte>.Shared.Return(item.JpegBuffer);");
 
         return Task.CompletedTask;
     }

@@ -2304,10 +2304,9 @@ emission now live in
 Parallel MJPEG decode pipeline lifecycle now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs`. Keep
 stop/dispose, emitter signaling, shutdown joins, fatal-callback dispatch, and
-remaining-timeout helpers there. Final resource cleanup now lives in
-`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.ResourceCleanup.cs`; keep
+remaining-timeout helpers there. Final resource cleanup also lives there; keep
 decoder disposal, queued work-item return, remaining reorder-frame disposal, and
-emit-signal disposal there.
+emit-signal disposal with the stop/dispose owner.
 
 CUDA/D3D11 preview interop ownership is split by runtime boundary:
 `Sussudio/Services/Gpu/CudaD3D11Interop.Initialization.cs` owns bridge state,
