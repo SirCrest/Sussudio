@@ -98,8 +98,6 @@ static partial class Program
         var renderSource = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Diagnostics.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Nv12ShaderPass.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.HdrShaderPass.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.VideoProcessorPipeline.cs")

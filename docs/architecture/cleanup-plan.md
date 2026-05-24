@@ -1958,10 +1958,9 @@ queue state and signaling in `D3D11PreviewRenderer.PendingFrames.cs`, D3D device
 `D3D11PreviewRenderer.Resources.cs`, swap-chain panel binding state in
 `D3D11PreviewRenderer.PanelBinding.cs`, render-thread waitable frame-latency
 pacing in `D3D11PreviewRenderer.RenderThread.cs`, render-pass selection plus
-VideoProcessor execution and shared present accounting in
-`D3D11PreviewRenderer.RenderPasses.cs`, NV12 shader draw execution in
-`D3D11PreviewRenderer.Nv12ShaderPass.cs`, HDR shader draw execution in
-`D3D11PreviewRenderer.HdrShaderPass.cs`, and shader resource/cache state in
+VideoProcessor, NV12 shader, and HDR shader execution plus shared present
+accounting in `D3D11PreviewRenderer.RenderPasses.cs`, and shader
+resource/cache state in
 `D3D11PreviewRenderer.ShaderRendering.cs`. Do not re-centralize renderer
 implementation state in `D3D11PreviewRenderer.cs`; the root should keep the
 public facade, construction references, constants, user-facing accessors, and
@@ -1986,11 +1985,11 @@ leave `WaitForSingleObject` with render-thread frame pacing in
 `D3D11PreviewRenderer.RenderThread.cs`.
 
 D3D preview renderer shader compilation now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderCompilation.cs`, with
+`Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs`, with
 D3DCompiler blob extraction in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.NativeInterop.cs`. Keep
 shader bytecode creation, sampler creation, viewport constant-buffer creation,
-and compile-fallback logging in the compilation partial; keep
+and compile-fallback logging with shader resource/cache state; keep
 `D3DCompileNative` invocation, `ID3DBlob` byte extraction, and compile-error
 string extraction in the native interop partial. HLSL text and renderer mode
 labels stay in `Sussudio/Services/Preview/PreviewShaderSources.cs`.
@@ -2021,10 +2020,8 @@ device-lost handoff, failure notification handoff, final pending-frame
 drain/frame-capture failure, and renderer-mode reset there; keep render-thread
 failure telemetry and first-frame notification reset/UI enqueue in
 `D3D11PreviewRenderer.Diagnostics.cs`, render-pass selection,
-VideoProcessor execution, and shared present accounting in
-`D3D11PreviewRenderer.RenderPasses.cs`, shader draw
-execution in `D3D11PreviewRenderer.Nv12ShaderPass.cs` and
-`D3D11PreviewRenderer.HdrShaderPass.cs`, and shader resource/cache state in
+VideoProcessor execution, shader draw execution, and shared present accounting in
+`D3D11PreviewRenderer.RenderPasses.cs`, and shader resource/cache state in
 `D3D11PreviewRenderer.ShaderRendering.cs`.
 
 D3D preview renderer frame upload now lives in
@@ -2036,14 +2033,10 @@ and staging copy mechanics. Keep present tracking in
 
 D3D preview renderer render-pass selection now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`. Keep
-VideoProcessor execution, HDR fallback logging, timing bucket attribution, and pass
-precedence there. NV12 shader draw execution now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.Nv12ShaderPass.cs`; keep
-native-call guard consumption, NV12 SRV binding, draw call, and NV12 shader-mode
-present message there. HDR shader draw execution now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.HdrShaderPass.cs`; keep HDR input
-upload, shader-resource binding, draw call, passthrough/tonemap mode selection,
-and HDR shader-mode present messages there. Shader resource/cache state now lives in
+VideoProcessor execution, HDR fallback logging, timing bucket attribution, pass
+precedence, native-call guard consumption, NV12/HDR shader-resource binding,
+draw calls, passthrough/tonemap mode selection, and shader-mode present messages
+there. Shader resource/cache state now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs`. Keep shader
 fields, reusable shader class-instance arrays, and NV12 SRV caching there; keep
 render-thread orchestration in `D3D11PreviewRenderer.RenderThread.cs`, and keep
