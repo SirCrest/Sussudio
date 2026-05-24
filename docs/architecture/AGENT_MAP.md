@@ -3828,11 +3828,9 @@ Primary owners:
   all rendered section rows: overview/health/evidence, capture mode, recording
   verification, PresentMon, Flashback playback/recording/export, preview
   scheduler, preview D3D, visual cadence, process performance, artifacts,
-  actions, and warnings. Keep `DiagnosticSessionRunner.Format(...)` as the
-  stable compatibility wrapper.
-- `tools/Common/DiagnosticSessionOptionalTextFormatter.cs` owns shared
-  diagnostic-session optional text formatting used by scenarios, result
-  builders, result formatters, and validation policies.
+  actions, warnings, and shared optional text formatting used by scenarios,
+  result builders, result formatters, and validation policies. Keep
+  `DiagnosticSessionRunner.Format(...)` as the stable compatibility wrapper.
 - `tools/Common/AutomationSnapshotFormatter.cs` owns the top-level shared
   automation snapshot console text flow, state/capture-command queue,
   selected-device and initialized/preview/recording text, audio enablement,

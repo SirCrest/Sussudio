@@ -3121,8 +3121,7 @@ Diagnostic-session result text now lives in
 public `Format(...)` flow, section ordering, and all rendered rows: overview,
 capture mode, recording verification, PresentMon, Flashback playback/recording/
 export, preview scheduler, preview D3D, visual cadence, process performance,
-artifacts, actions, and warnings. `DiagnosticSessionOptionalTextFormatter.cs`
-owns shared optional text helpers.
+artifacts, actions, warnings, and shared optional text helpers.
 The runner keeps `Format(...)` as a compatibility wrapper so existing ssctl
 and MCP callers do not need to know about the formatter owner.
 
@@ -3189,9 +3188,10 @@ construction and pre-summary sample, frame-ledger, and timeline writes while
 the result builder keeps summary field construction.
 
 Shared diagnostic-session optional text formatting now lives in
-`tools/Common/DiagnosticSessionOptionalTextFormatter.cs`. Keep cross-cutting
-`FormatOptional(...)` handling there instead of reintroducing private
-duplicates in scenario, result builder, formatter, or validation policy files.
+`tools/Common/DiagnosticSessionResultFormatter.cs` alongside the human-readable
+result text owner. Keep cross-cutting `FormatOptional(...)` handling there
+instead of reintroducing private duplicates in scenario, result builder,
+formatter, or validation policy files.
 
 MCP performance timeline projection is split across the
 `tools/McpServer/Tools/PerformanceTimelineTools.*.cs` family. Keep the public
@@ -3624,7 +3624,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioPlan.cs`
 - `DiagnosticSessionScenarioSetup.cs`
 - `DiagnosticSessionScenarioStartup.cs`
-- `DiagnosticSessionOptionalTextFormatter.cs`
 - `DiagnosticSessionRunner.cs`
 - `DiagnosticSessionScenarioPhaseRunner.cs`
 - `DiagnosticSessionScenarioPhaseModels.cs`

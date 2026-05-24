@@ -112,8 +112,7 @@ static partial class Program
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
                 + "\n" + ReadDiagnosticSessionResultFormatterSource()
                 + "\n" + ReadDiagnosticSessionScenarioCatalogSource()
-                + "\n" + ReadDiagnosticSessionScenarioPlanSource()
-                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionOptionalTextFormatter.cs"),
+                + "\n" + ReadDiagnosticSessionScenarioPlanSource(),
             ReadDiagnosticSessionModelsSource(),
             ReadDiagnosticSessionScenarioCatalogSource());
     }

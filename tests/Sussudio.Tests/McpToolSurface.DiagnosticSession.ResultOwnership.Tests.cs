@@ -61,19 +61,19 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var formatterText = ReadDiagnosticSessionResultFormatterSource();
+        var formatterRootText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs")
+            .Replace("\r\n", "\n");
         var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
             .Replace("\r\n", "\n");
-        var textHelpersText = ReadRepoFile("tools/Common/DiagnosticSessionOptionalTextFormatter.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(textHelpersText, "internal static class DiagnosticSessionOptionalTextFormatter");
-        AssertContains(textHelpersText, "internal static string FormatOptional(string value)");
-        AssertContains(textHelpersText, "string.IsNullOrWhiteSpace(value) ? \"none\" : value");
+        AssertContains(formatterRootText, "internal static class DiagnosticSessionOptionalTextFormatter");
+        AssertContains(formatterRootText, "internal static string FormatOptional(string value)");
+        AssertContains(formatterRootText, "string.IsNullOrWhiteSpace(value) ? \"none\" : value");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionOptionalTextFormatter.cs")), "Optional diagnostic text formatting stays folded into DiagnosticSessionResultFormatter.cs");
         AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;");
         AssertContains(formatterText, "using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;");
         AssertContains(validationText, "using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;");
         AssertDoesNotContain(runnerText, "private static string FormatOptional(");
-        AssertDoesNotContain(formatterText, "private static string FormatOptional(");
         AssertDoesNotContain(validationText, "private static string FormatOptional(");
 
         return Task.CompletedTask;
