@@ -3633,10 +3633,10 @@ Primary owners:
   `tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs` owns the
   private row model for the same table and trend-rendering fields.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs` owns timeline
-  table text rendering. `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs`
-  owns first-vs-last trend text, preview cadence, visual/MJPEG fingerprint,
-  jitter, D3D, slow-stage, Flashback playback, command, failure, cleanup, stage,
-  export trend text, and target-summary orchestration.
+  table text rendering, first-vs-last trend text, preview cadence,
+  visual/MJPEG fingerprint, jitter, D3D, slow-stage, Flashback playback,
+  command, failure, cleanup, stage, export trend text, and target-summary
+  orchestration.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs` owns compact
   cell, command-message, optional-value, preview jitter-depth, D3D bottleneck,
   Flashback stage, cleanup, export, and byte-rate formatting.

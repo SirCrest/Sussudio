@@ -20,7 +20,6 @@ static partial class Program
         var rowsModelSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs");
         var formattingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs");
         var renderingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs");
-        var trendSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs");
         var summariesSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs");
 
         return new McpPerformanceTimelineSources
@@ -30,7 +29,6 @@ static partial class Program
             RowsModelSource = rowsModelSource,
             FormattingSource = formattingSource,
             RenderingSource = renderingSource,
-            TrendSource = trendSource,
             SummariesSource = summariesSource,
             CombinedSource = string.Join(
                 "\n",
@@ -39,7 +37,6 @@ static partial class Program
                 rowsModelSource,
                 formattingSource,
                 renderingSource,
-                trendSource,
                 summariesSource)
         };
     }
@@ -51,7 +48,6 @@ static partial class Program
         public string RowsModelSource { get; init; } = string.Empty;
         public string FormattingSource { get; init; } = string.Empty;
         public string RenderingSource { get; init; } = string.Empty;
-        public string TrendSource { get; init; } = string.Empty;
         public string SummariesSource { get; init; } = string.Empty;
         public string CombinedSource { get; init; } = string.Empty;
     }

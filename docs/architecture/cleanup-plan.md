@@ -3284,11 +3284,10 @@ projection orchestration plus root cadence, preview/MJPEG/D3D, Flashback
 playback, Flashback export, and system row projection fields in
 `PerformanceTimelineTools.Rows.cs`, the private row model in
 `PerformanceTimelineTools.Rows.Model.cs`,
-timeline table text rendering in `PerformanceTimelineTools.Rendering.cs`,
-first-vs-last trend text, preview cadence, visual/MJPEG fingerprint, jitter,
-D3D, slow-stage, Flashback playback, command, failure, cleanup, stage, export
-trend text, and target-summary orchestration in
-`PerformanceTimelineTools.Rendering.Trend.cs`, compact value, command-message,
+timeline table text rendering, first-vs-last trend text, preview cadence,
+visual/MJPEG fingerprint, jitter, D3D, slow-stage, Flashback playback, command,
+failure, cleanup, stage, export trend text, and target-summary orchestration in
+`PerformanceTimelineTools.Rendering.cs`, compact value, command-message,
 preview jitter-depth, D3D bottleneck, Flashback stage, cleanup, export, and
 byte-rate formatting helpers in `PerformanceTimelineTools.Formatting.cs`, and
 target, preview, Flashback, and system pressure summaries in
