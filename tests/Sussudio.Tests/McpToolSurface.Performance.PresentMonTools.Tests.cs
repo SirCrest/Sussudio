@@ -74,8 +74,6 @@ static partial class Program
 
         var rootText = ReadRepoFile("tools/McpServer/Tools/PresentMonTools.cs")
             .Replace("\r\n", "\n");
-        var correlationText = ReadRepoFile("tools/McpServer/Tools/PresentMonTools.Correlation.cs")
-            .Replace("\r\n", "\n");
         var optionsText = ReadRepoFile("tools/Common/PresentMon/PresentMonProbe.Options.cs")
             .Replace("\r\n", "\n");
 
@@ -87,19 +85,21 @@ static partial class Program
         AssertContains(rootText, "PresentMonProbe.Format(result)");
         AssertContains(rootText, "PresentMonProbe.RunAsync(PresentMonProbe.CreateOptions(");
         AssertContains(rootText, "correlation: resolved");
+        AssertContains(rootText, "private static async Task<PresentMonProbeCorrelation> TryResolvePreviewPresentCorrelationAsync(");
+        AssertContains(rootText, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
+        AssertContains(rootText, "return PresentMonProbe.ReadPreviewCorrelation(snapshot);");
+        AssertContains(rootText, "catch (JsonException ex)");
+        AssertContains(rootText, "catch (IOException ex)");
         AssertDoesNotContain(rootText, "new PresentMonProbeOptions");
         AssertDoesNotContain(rootText, "ExpectedSwapChainAddress =");
         AssertDoesNotContain(rootText, "AppPresentId = appPresentId");
         AssertDoesNotContain(rootText, "SendCommandAsync(\"GetSnapshot\")");
         AssertDoesNotContain(rootText, "GetPositiveLong(");
-
-        AssertContains(correlationText, "private static async Task<PresentMonProbeCorrelation> TryResolvePreviewPresentCorrelationAsync(");
-        AssertContains(correlationText, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
-        AssertContains(correlationText, "return PresentMonProbe.ReadPreviewCorrelation(snapshot);");
-        AssertContains(correlationText, "catch (JsonException ex)");
-        AssertContains(correlationText, "catch (IOException ex)");
-        AssertDoesNotContain(correlationText, "private readonly record struct PresentMonCorrelation(");
-        AssertDoesNotContain(correlationText, "GetPositiveLong(");
+        AssertDoesNotContain(rootText, "private readonly record struct PresentMonCorrelation(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PresentMonTools.Correlation.cs")),
+            "PresentMon snapshot correlation lives with the PresentMon MCP tool");
 
         AssertContains(optionsText, "public readonly record struct PresentMonProbeCorrelation(");
         AssertContains(optionsText, "public static PresentMonProbeOptions CreateOptions(");

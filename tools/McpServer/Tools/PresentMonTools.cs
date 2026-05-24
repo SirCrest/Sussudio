@@ -1,4 +1,7 @@
 using System.ComponentModel;
+using System.IO;
+using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -73,5 +76,30 @@ public static partial class PresentMonTools
             trackGpuVideo: trackGpuVideo,
             correlation: resolved))
             .ConfigureAwait(false);
+    }
+
+    private static async Task<PresentMonProbeCorrelation> TryResolvePreviewPresentCorrelationAsync(PipeClient pipeClient)
+    {
+        try
+        {
+            var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
+            if (!AutomationSnapshotFormatter.IsSuccess(response) ||
+                !response.TryGetProperty("Snapshot", out var snapshot))
+            {
+                return default;
+            }
+
+            return PresentMonProbe.ReadPreviewCorrelation(snapshot);
+        }
+        catch (JsonException ex)
+        {
+            System.Diagnostics.Trace.TraceWarning($"GetExpectedSwapChainAsync: malformed snapshot JSON: {ex.Message}");
+            return default;
+        }
+        catch (IOException ex)
+        {
+            System.Diagnostics.Trace.TraceWarning($"GetExpectedSwapChainAsync: pipe IO failure: {ex.Message}");
+            return default;
+        }
     }
 }

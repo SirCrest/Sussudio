@@ -8,7 +8,6 @@ static partial class Program
         var channelsSource = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.Channels.cs");
         var policySource = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.Policy.cs");
         var renderingSource = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.Rendering.cs");
-        var timelineSource = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.Timeline.cs");
 
         AssertContains(rootSource, "[McpServerToolType]");
         AssertContains(rootSource, "[McpServerTool, Description(\"Get a compact frame pacing verdict");
@@ -16,9 +15,11 @@ static partial class Program
         AssertContains(rootSource, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
         AssertContains(rootSource, "SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, timelinePayload)");
         AssertContains(rootSource, "BuildFramePacingVerdictText(");
+        AssertContains(rootSource, "private static IReadOnlyList<TimelineRow> ReadTimeline");
+        AssertContains(rootSource, "private sealed record TimelineRow");
+        AssertContains(rootSource, "PreviewD3DFrameStatsRecentMissedRefreshCount");
         AssertDoesNotContain(rootSource, "new StringBuilder()");
         AssertDoesNotContain(rootSource, "private sealed record FramePacingChannel");
-        AssertDoesNotContain(rootSource, "private sealed record TimelineRow");
         AssertDoesNotContain(rootSource, "private static bool IsHalfRate");
         AssertDoesNotContain(rootSource, "private static double[] GetDoubleArray");
 
@@ -35,9 +36,10 @@ static partial class Program
         AssertContains(renderingSource, "private static string BuildFramePacingVerdictText(");
         AssertContains(renderingSource, "new StringBuilder()");
         AssertContains(renderingSource, "Verdict: {verdict}");
-        AssertContains(timelineSource, "private static IReadOnlyList<TimelineRow> ReadTimeline");
-        AssertContains(timelineSource, "private sealed record TimelineRow");
-        AssertContains(timelineSource, "PreviewD3DFrameStatsRecentMissedRefreshCount");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "FramePacingVerdictTools.Timeline.cs")),
+            "Frame pacing timeline reader lives with the MCP tool orchestration");
 
         return Task.CompletedTask;
     }

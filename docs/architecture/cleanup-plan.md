@@ -3344,14 +3344,14 @@ Preview frame capture MCP reporting is split without changing visible text:
 keep the public `capture_preview_frame` entry point, default output path,
 payload, and enum-backed `CapturePreviewFrame` routing in
 `PreviewFrameCaptureTools.cs`;
-keep report section layout in `PreviewFrameCaptureTools.Rendering.cs`; keep
-16-bin histogram math/rendering in `PreviewFrameCaptureTools.Histogram.cs`; and
+keep report section layout and 16-bin histogram math/rendering in
+`PreviewFrameCaptureTools.Rendering.cs`; and
 keep anomaly diagnosis policy and aspect checks in
 `PreviewFrameCaptureTools.Diagnosis.cs`.
 PresentMon MCP stays intentionally shallow: keep `capture_presentmon`,
 `capture_presentmon_raw`, structured-content shape, and `PresentMonProbe.RunAsync`
-invocation in `PresentMonTools.cs`; keep only the app-snapshot request and
-malformed snapshot/pipe-failure fallback in `PresentMonTools.Correlation.cs`.
+invocation in `PresentMonTools.cs`; keep the app-snapshot request and malformed
+snapshot/pipe-failure fallback there too.
 Shared option precedence and preview-present field extraction belong to
 `tools/Common/PresentMon/PresentMonProbe.Options.cs`.
 

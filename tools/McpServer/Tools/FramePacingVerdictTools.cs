@@ -104,4 +104,29 @@ public static partial class FramePacingVerdictTools
 
     private static string GetMessage(JsonElement response)
         => AutomationSnapshotFormatter.Get(response, "Message", "Command failed.");
+
+    private sealed record TimelineRow(
+        long DxgiRecentMissed,
+        long MjpegJitterDropped,
+        long PlaybackDroppedFrames);
+
+    private static IReadOnlyList<TimelineRow> ReadTimeline(JsonElement timelineResponse)
+    {
+        if (!timelineResponse.TryGetProperty("Data", out var data) ||
+            data.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<TimelineRow>();
+        }
+
+        var rows = new List<TimelineRow>();
+        foreach (var item in data.EnumerateArray())
+        {
+            rows.Add(new TimelineRow(
+                AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentMissedRefreshCount"),
+                AutomationSnapshotFormatter.GetLong(item, "MjpegPreviewJitterTotalDropped"),
+                AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackDroppedFrames")));
+        }
+
+        return rows;
+    }
 }

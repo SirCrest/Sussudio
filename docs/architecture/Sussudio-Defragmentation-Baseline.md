@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-24
+Area: MCP performance/preview helper locality
+Problem: Three tiny MCP helper partials owned single-use details that are only meaningful inside their parent tool/report owner, forcing extra file hops for timeline projection, PresentMon snapshot correlation, and preview-frame histogram rendering.
+Files consolidated: `tools/McpServer/Tools/FramePacingVerdictTools.Timeline.cs`; `tools/McpServer/Tools/PresentMonTools.Correlation.cs`; `tools/McpServer/Tools/PreviewFrameCaptureTools.Histogram.cs`
+Files added: none
+Net production .cs delta: -3
+Partial clusters reduced: `FramePacingVerdictTools` -1 file; `PresentMonTools` -1 file; `PreviewFrameCaptureTools` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by MCP frame pacing, PresentMon, preview-frame capture, and tool-surface routing tests
+Behavior preserved: MCP tool names, automation command IDs, PresentMon fallback behavior, frame-pacing timeline counters, and preview-frame histogram text remain unchanged
+Notes for future agents: keep single-use MCP helper code with its parent tool/report owner unless it becomes shared policy or a separately testable collaborator
+
+Date: 2026-05-24
 Area: MCP tool control/configuration wrappers
 Problem: Four tiny MCP tool classes were split one class per file even where they were adjacent control/configuration surfaces with reflected class names as the real contract rather than file names.
 Files consolidated: `tools/McpServer/Tools/RecordingTools.cs`; `tools/McpServer/Tools/PipelineSettingsTools.cs`

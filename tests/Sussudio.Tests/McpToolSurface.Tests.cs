@@ -59,7 +59,7 @@ static partial class Program
         var previewToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewTools.cs");
         var previewColorProbeToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewColorProbeTools.cs");
         var recordingToolsText = previewToolsText;
-        var presentMonCorrelationText = ReadRepoFile("tools/McpServer/Tools/PresentMonTools.Correlation.cs");
+        var presentMonToolsText = ReadRepoFile("tools/McpServer/Tools/PresentMonTools.cs");
         var previewFrameCaptureToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewFrameCaptureTools.cs");
         var verificationToolsText = ReadRepoFile("tools/McpServer/Tools/VerificationTools.cs");
         var videoSourceProbeToolsText = ReadRepoFile("tools/McpServer/Tools/VideoSourceProbeTools.cs");
@@ -156,8 +156,8 @@ static partial class Program
         AssertDoesNotContain(previewColorProbeToolsText, "SendCommandAsync(\"ProbePreviewColor\"");
         AssertContains(previewFrameCaptureToolsText, "SendCommandAsync(AutomationCommandKind.CapturePreviewFrame, payload)");
         AssertDoesNotContain(previewFrameCaptureToolsText, "SendCommandAsync(\"CapturePreviewFrame\", payload)");
-        AssertContains(presentMonCorrelationText, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
-        AssertDoesNotContain(presentMonCorrelationText, "SendCommandAsync(\"GetSnapshot\"");
+        AssertContains(presentMonToolsText, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
+        AssertDoesNotContain(presentMonToolsText, "SendCommandAsync(\"GetSnapshot\"");
         AssertContains(verificationToolsText, "SendCommandAsync(AutomationCommandKind.VerifyLastRecording)");
         AssertContains(verificationToolsText, "SendCommandAsync(AutomationCommandKind.AssertSnapshot, payload)");
         AssertContains(verificationToolsText, "SendCommandAsync(AutomationCommandKind.VerifyFile, payload)");

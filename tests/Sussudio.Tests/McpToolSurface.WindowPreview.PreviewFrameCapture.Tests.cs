@@ -190,8 +190,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var renderingText = ReadRepoFile("tools/McpServer/Tools/PreviewFrameCaptureTools.Rendering.cs")
             .Replace("\r\n", "\n");
-        var histogramText = ReadRepoFile("tools/McpServer/Tools/PreviewFrameCaptureTools.Histogram.cs")
-            .Replace("\r\n", "\n");
         var diagnosisText = ReadRepoFile("tools/McpServer/Tools/PreviewFrameCaptureTools.Diagnosis.cs")
             .Replace("\r\n", "\n");
 
@@ -212,12 +210,15 @@ static partial class Program
         AssertContains(renderingText, "== Pixel Summary ==");
         AssertContains(renderingText, "AppendLuminanceHistogram(builder, data)");
         AssertContains(renderingText, "AppendPreviewFrameCaptureDiagnosis(builder, data)");
-
-        AssertContains(histogramText, "private static void AppendLuminanceHistogram(");
-        AssertContains(histogramText, "LuminanceHistogram");
-        AssertContains(histogramText, "while (bins.Count < 16)");
-        AssertContains(histogramText, "* 24.0");
-        AssertContains(histogramText, "new string('#', Math.Max(0, barLength))");
+        AssertContains(renderingText, "private static void AppendLuminanceHistogram(");
+        AssertContains(renderingText, "LuminanceHistogram");
+        AssertContains(renderingText, "while (bins.Count < 16)");
+        AssertContains(renderingText, "* 24.0");
+        AssertContains(renderingText, "new string('#', Math.Max(0, barLength))");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PreviewFrameCaptureTools.Histogram.cs")),
+            "preview frame histogram rendering lives with the preview frame report renderer");
 
         AssertContains(diagnosisText, "private static List<string> BuildPreviewFrameCaptureDiagnosis(");
         AssertContains(diagnosisText, "pureBlackPercent > 95.0");

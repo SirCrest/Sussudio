@@ -3661,10 +3661,9 @@ Primary owners:
   pressure summaries, and pressure counters.
 - `tools/McpServer/Tools/FramePacingVerdictTools.cs` owns the public
   `get_frame_pacing_verdict` MCP tool entry point, pipe command orchestration,
-  and response shaping. `FramePacingVerdictTools.Channels.cs` owns snapshot
-  cadence channel projection, recent-interval parsing, and the private channel
-  record. `FramePacingVerdictTools.Timeline.cs` owns performance-timeline
-  projection and the private timeline row record.
+  response shaping, performance-timeline projection, and the private timeline
+  row record. `FramePacingVerdictTools.Channels.cs` owns snapshot cadence
+  channel projection, recent-interval parsing, and the private channel record.
   `FramePacingVerdictTools.Policy.cs` owns target-FPS inference, readiness,
   half-rate, hidden-stutter, ratio, and verdict policy.
   `FramePacingVerdictTools.Rendering.cs` owns the operator-facing verdict text.
@@ -3686,16 +3685,14 @@ Primary owners:
   frame-capture MCP entry point, default output path, payload shaping, enum
   command routing, and failure/missing-data response handling.
   `tools/McpServer/Tools/PreviewFrameCaptureTools.Rendering.cs` owns the
-  operator-facing report layout and section ordering.
-  `tools/McpServer/Tools/PreviewFrameCaptureTools.Histogram.cs` owns 16-bin
-  histogram projection, padding, scaling, and bar rendering.
+  operator-facing report layout, section ordering, and 16-bin histogram
+  projection, padding, scaling, and bar rendering.
   `tools/McpServer/Tools/PreviewFrameCaptureTools.Diagnosis.cs` owns blank,
   dark, bright, letterbox, pillarbox, low-contrast, and aspect-ratio diagnosis
   policy.
 - `tools/McpServer/Tools/PresentMonTools.cs` owns public PresentMon MCP entry
-  points, structured-content shape, and probe invocation.
-  `tools/McpServer/Tools/PresentMonTools.Correlation.cs` owns app-snapshot
-  request/fallback behavior; shared option precedence and preview-present field
+  points, structured-content shape, probe invocation, and app-snapshot
+  request/fallback behavior. Shared option precedence and preview-present field
   extraction live in `tools/Common/PresentMon/PresentMonProbe.Options.cs`.
 - `tools/Common/DiagnosticSessionModels.cs` owns diagnostic session run
   options, sampled snapshot DTOs, shared tool invocation defaults, and the ssctl
