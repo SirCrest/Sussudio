@@ -2646,13 +2646,11 @@ command admission, queued-position resolution, queued-slot barriers, and
 playback-thread control-yield peek policy.
 Keep playback-thread execution in the thread partials. Do not grow the root
 controller with new coalescing slot fields.
-Command status counters, pending-command accounting, active-command timing, and
-queue telemetry bookkeeping live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.CommandTelemetry.cs`.
 Public read-only command counters, command queue latency/timestamps, last
 command failure projection, playback-thread liveness, command readiness guards,
-skipped-not-ready accounting, failure-detail formatting, last-command failure
-state, and no-op logging now live in
+skipped-not-ready accounting, command status counters, pending-command
+accounting, active-command timing, queue telemetry bookkeeping,
+failure-detail formatting, last-command failure state, and no-op logging now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs`.
 Playback thread lifecycle now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs`:
