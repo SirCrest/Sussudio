@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T06:30:08Z
+Generated UTC: 2026-05-24T06:38:31Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 802 |
+| Production .cs files | 801 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 79 (9.9%) |
-| Production .cs files under 80 lines | 149 (18.6%) |
+| Production .cs files under 60 lines | 78 (9.7%) |
+| Production .cs files under 80 lines | 148 (18.5%) |
 
 ## Largest partial-type clusters
 
@@ -21,7 +21,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | AutomationDiagnosticsHub | 33 | 10082 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.RealtimePreview.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluation.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Recording.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs |
 | D3D11PreviewRenderer | 32 | 4733 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Diagnostics.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.DisplayClock.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.FrameOwnership.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.HdrShaderPass.cs |
 | MainWindow | 21 | 2521 | Sussudio/MainWindow.AudioBindings.cs, Sussudio/MainWindow.Bindings.cs, Sussudio/MainWindow.ButtonActions.cs, Sussudio/MainWindow.CaptureOptionBindings.cs, Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs, Sussudio/MainWindow.ControllerInitialization.cs, Sussudio/MainWindow.Flashback.Interactions.cs, Sussudio/MainWindow.Flashback.Presentation.cs |
-| LibAvEncoder | 21 | 3059 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.AudioInitialization.cs, Sussudio/Services/Recording/LibAvEncoder.AudioQueue.cs, Sussudio/Services/Recording/LibAvEncoder.AudioSetup.cs, Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs, Sussudio/Services/Recording/LibAvEncoder.AvSync.cs, Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs, Sussudio/Services/Recording/LibAvEncoder.cs |
+| LibAvEncoder | 20 | 3053 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.AudioInitialization.cs, Sussudio/Services/Recording/LibAvEncoder.AudioQueue.cs, Sussudio/Services/Recording/LibAvEncoder.AudioSetup.cs, Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs, Sussudio/Services/Recording/LibAvEncoder.AvSync.cs, Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs, Sussudio/Services/Recording/LibAvEncoder.cs |
 | FlashbackPlaybackController | 19 | 5007 | Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.CommandTelemetry.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs |
 | NativeXuAtCommandProvider | 17 | 2680 | Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AnalogGain.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioCommands.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioSwitch.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommandReads.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommands.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DiagnosticSummary.cs |
 | MfSourceReaderVideoCapture | 15 | 2220 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.Cadence.cs, Sussudio/Services/Capture/MfSourceReaderVideoCapture.ConvertedMediaType.cs, Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs, Sussudio/Services/Capture/MfSourceReaderVideoCapture.DeviceEnumeration.cs, Sussudio/Services/Capture/MfSourceReaderVideoCapture.Diagnostics.cs, Sussudio/Services/Capture/MfSourceReaderVideoCapture.DxgiBuffers.cs, Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs, Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameLayout.cs |
@@ -56,8 +56,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 744 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs |
 | 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
-| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
+| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
@@ -109,7 +109,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 28 | tools/Common/DiagnosticSessionModels.cs |
 | 29 | Sussudio/Services/Capture/HdrOutputPolicy.cs |
 | 31 | Sussudio/Models/Automation/DiagnosticsEvents.cs |
-| 31 | Sussudio/Services/Recording/LibAvEncoder.MuxerOptions.cs |
 | 31 | Sussudio/Services/Runtime/TelemetryAgeHelper.cs |
 | 34 | Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs |
 | 34 | Sussudio/Controllers/Shell/ShellElevationController.cs |
@@ -146,6 +145,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 50 | tools/McpServer/PipeClient.cs |
 | 51 | Sussudio/Services/Contracts/PooledVideoFrameLease.cs |
 | 52 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs |
+| 52 | Sussudio/Services/Capture/CaptureSessionCoordinator.cs |
 
 ## Notes
 

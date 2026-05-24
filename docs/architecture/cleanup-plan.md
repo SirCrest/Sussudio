@@ -1558,10 +1558,10 @@ PTS/keyframe assignment, HDR side-data attachment, EAGAIN packet drains, and
 hardware-frame unref cleanup there.
 
 LibAv encoder output lifecycle is split across focused partials.
-`Sussudio/Services/Recording/LibAvEncoder.MuxerOptions.cs` owns MP4 muxer
-option policy for open and rotated outputs. `LibAvEncoder.OutputRotation.cs`
-owns rotation IO close/reopen, stream reinitialization, bitstream-filter reset,
-and segment runtime resets. `LibAvEncoder.ResourceCleanup.cs` owns
+`Sussudio/Services/Recording/LibAvEncoder.OutputRotation.cs` owns rotation IO
+close/reopen, stream reinitialization, bitstream-filter reset, segment runtime
+resets, and MP4 muxer option policy for open and rotated outputs.
+`LibAvEncoder.ResourceCleanup.cs` owns
 flush/final close, dispose, trailer writing, close-result logging, and final
 output telemetry. `LibAvEncoder.NativeResourceRelease.cs` owns native
 frame/context/buffer release, hardware texture pool release, and encoder state

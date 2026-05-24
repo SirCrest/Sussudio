@@ -183,8 +183,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var rotationText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.OutputRotation.cs")
             .Replace("\r\n", "\n");
-        var muxerOptionsText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.MuxerOptions.cs")
-            .Replace("\r\n", "\n");
         var nativeResourceReleaseText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.NativeResourceRelease.cs")
             .Replace("\r\n", "\n");
         var resourceCleanupText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.ResourceCleanup.cs")
@@ -199,8 +197,8 @@ static partial class Program
         AssertContains(rotationText, "private void ReinitializeOutputContext(string outputPath)");
         AssertContains(rotationText, "private void ReinitializeVideoStream()");
         AssertContains(rotationText, "private void ResetSegmentRuntimeState()");
-        AssertContains(muxerOptionsText, "private static unsafe void ApplyMp4MuxerOptions(");
-        AssertContains(muxerOptionsText, "frag_keyframe+empty_moov");
+        AssertContains(rotationText, "private static unsafe void ApplyMp4MuxerOptions(");
+        AssertContains(rotationText, "frag_keyframe+empty_moov");
         AssertContains(resourceCleanupText, "public void FlushAndClose()");
         AssertContains(resourceCleanupText, "public void Dispose()");
         AssertContains(resourceCleanupText, "private void CleanupResources(bool writeTrailer)");
