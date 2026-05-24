@@ -65,30 +65,34 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationCommandDispatcher_UiSettingsCommands_OwnUiSettingsApplication()
+    internal static Task AutomationCommandDispatcher_UiSettingsCommands_LiveWithPortMappedDispatch()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
-        var uiSettingsCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.UiSettingsCommands.cs")
+        var portMappedDispatchText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs")
             .Replace("\r\n", "\n");
 
         AssertDoesNotContain(customCommandsText, "case AutomationCommandKind.SetStatsSectionVisible:");
-        AssertContains(uiSettingsCommandsText, "private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationPreviewRecordingPort>> UiPreviewRecordingHandlers");
-        AssertContains(uiSettingsCommandsText, "private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationUiPort>> UiStateHandlers");
-        AssertContains(uiSettingsCommandsText, "[AutomationCommandKind.SetPreviewVolume]");
-        AssertContains(uiSettingsCommandsText, "[AutomationCommandKind.SetStatsVisible]");
-        AssertContains(uiSettingsCommandsText, "[AutomationCommandKind.SetSettingsVisible]");
-        AssertContains(uiSettingsCommandsText, "[AutomationCommandKind.SetFrameTimeOverlayVisible]");
-        AssertContains(uiSettingsCommandsText, "[AutomationCommandKind.SetFlashbackTimelineVisible]");
-        AssertContains(uiSettingsCommandsText, "previewRecordingHandler.InvokeAsync(_previewRecordingPort, payload, cancellationToken)");
-        AssertContains(uiSettingsCommandsText, "uiHandler.InvokeAsync(_uiPort, payload, cancellationToken)");
-        AssertContains(uiSettingsCommandsText, "if (command == AutomationCommandKind.SetStatsSectionVisible)");
-        AssertContains(uiSettingsCommandsText, "ExecuteSetStatsSectionVisibleCommandAsync(payload, correlationId, cancellationToken)");
-        AssertContains(uiSettingsCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetStatsSectionVisibleCommandAsync(");
-        AssertContains(uiSettingsCommandsText, "var section = RequireString(payload, \"section\");");
-        AssertContains(uiSettingsCommandsText, "var visible = RequireBool(payload, \"visible\");");
-        AssertContains(uiSettingsCommandsText, "_uiPort.SetStatsSectionVisibleAsync(section, visible, cancellationToken)");
-        AssertContains(uiSettingsCommandsText, "Stats section '{section}' {(visible ? \"expanded\" : \"collapsed\")}.");
+        AssertContains(portMappedDispatchText, "private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationPreviewRecordingPort>> UiPreviewRecordingHandlers");
+        AssertContains(portMappedDispatchText, "private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationUiPort>> UiStateHandlers");
+        AssertContains(portMappedDispatchText, "[AutomationCommandKind.SetPreviewVolume]");
+        AssertContains(portMappedDispatchText, "[AutomationCommandKind.SetStatsVisible]");
+        AssertContains(portMappedDispatchText, "[AutomationCommandKind.SetSettingsVisible]");
+        AssertContains(portMappedDispatchText, "[AutomationCommandKind.SetFrameTimeOverlayVisible]");
+        AssertContains(portMappedDispatchText, "[AutomationCommandKind.SetFlashbackTimelineVisible]");
+        AssertContains(portMappedDispatchText, "previewRecordingHandler.InvokeAsync(_previewRecordingPort, payload, cancellationToken)");
+        AssertContains(portMappedDispatchText, "uiHandler.InvokeAsync(_uiPort, payload, cancellationToken)");
+        AssertContains(portMappedDispatchText, "if (command == AutomationCommandKind.SetStatsSectionVisible)");
+        AssertContains(portMappedDispatchText, "ExecuteSetStatsSectionVisibleCommandAsync(payload, correlationId, cancellationToken)");
+        AssertContains(portMappedDispatchText, "private async Task<AutomationCommandResponse> ExecuteSetStatsSectionVisibleCommandAsync(");
+        AssertContains(portMappedDispatchText, "var section = RequireString(payload, \"section\");");
+        AssertContains(portMappedDispatchText, "var visible = RequireBool(payload, \"visible\");");
+        AssertContains(portMappedDispatchText, "_uiPort.SetStatsSectionVisibleAsync(section, visible, cancellationToken)");
+        AssertContains(portMappedDispatchText, "Stats section '{section}' {(visible ? \"expanded\" : \"collapsed\")}.");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.UiSettingsCommands.cs")),
+            "UI settings handlers folded into AutomationCommandDispatcher.PortMappedDispatch.cs");
 
         return Task.CompletedTask;
     }

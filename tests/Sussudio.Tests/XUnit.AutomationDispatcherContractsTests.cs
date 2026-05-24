@@ -80,7 +80,7 @@ public sealed class AutomationDispatcherContractsTests
 
     [Fact]
     public Task AutomationDispatcherUiSettingsCommandsOwnUiSettingsApplication()
-        => global::Program.AutomationCommandDispatcher_UiSettingsCommands_OwnUiSettingsApplication();
+        => global::Program.AutomationCommandDispatcher_UiSettingsCommands_LiveWithPortMappedDispatch();
 
     [Fact]
     public Task AutomationDispatcherWindowCloseWaitsForCompletion()

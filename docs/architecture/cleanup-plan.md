@@ -354,10 +354,6 @@ port.
 runtime, health, and recording verification snapshots. Its constructor should
 take `IAutomationSnapshotQueryPort` directly instead of advertising the full
 aggregate automation surface.
-`AutomationCommandDispatcher.UiSettingsCommands.cs` owns UI/settings
-automation command application, including show-all capture options, preview
-volume, stats visibility, settings visibility, frame-time overlay visibility,
-Flashback timeline visibility, and stats-section expand/collapse response text.
 `AutomationCommandDispatcher.CustomCommands.cs` owns the custom command router
 plus read-only snapshot, manifest, diagnostic event, performance timeline,
 audio ramp trace, verification, visual probe/capture, and the small
@@ -369,18 +365,19 @@ export, segment, restart, and enable command bodies behind the custom command
 router.
 `AutomationCommandDispatcher.Preflight.cs` owns manifest revision, auth-token,
 and readiness gating. `AutomationCommandDispatcher.PortMappedDispatch.cs` owns
-the simple one-property capture and pipeline command tables plus the ordered
-dispatch through those tables. Named partials own support responsibilities:
-`AutomationCommandDispatcher.CommandParsing.cs` handles command metadata,
-path-validation forwarding, and enum payload parsing;
+UI/settings command application, the show-all compatibility no-op,
+stats-section response text, simple one-property capture and pipeline command
+tables, and ordered dispatch through those tables. Named partials own support
+responsibilities:
 `AutomationCommandDispatcher.Responses.cs` handles response shaping and
 Flashback rejection diagnostics; `AutomationCommandDispatcher.WindowCommands.cs`
 handles full-screen, recordings-folder, arm-close, close-arm gating, and
 low-level window automation action execution; `AutomationCommandDispatcher.WaitConditions.cs` handles
 WaitForCondition response shaping, wait polling, and snapshot predicates; and
 `AutomationCommandDispatcher.Assertions.cs` handles AssertSnapshot response
-shaping, parsing, and comparison helpers. `AutomationCommandDispatcher.Payload.cs` owns JSON payload
-extraction helpers, and `AutomationCommandHandler.cs` owns the reusable
+shaping, parsing, and comparison helpers. `AutomationCommandDispatcher.Payload.cs`
+owns JSON payload extraction helpers, command metadata lookups, path-validation
+forwarding, and enum payload parsing, and `AutomationCommandHandler.cs` owns the reusable
 trivial-handler wrapper plus the payload field name/type metadata checked
 against the shared automation command catalog.
 
