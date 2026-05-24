@@ -3956,7 +3956,7 @@ owner, fold it back into that owner and update the source-shape tests and
    recording snapshot projection, source/preview probes, and preview
    frame capture also live in `MainViewModel.AutomationSnapshots.cs`; automation-facing
    view-model runtime snapshot UI-thread capture now lives in
-   `MainViewModel.ViewModelRuntimeSnapshot.cs`; pure view-model runtime snapshot DTO
+   `MainViewModel.AutomationSnapshots.cs`; pure view-model runtime snapshot DTO
    construction lives in `ViewModelRuntimeSnapshotBuilder.cs`;
    automation options UI-thread snapshot capture now lives in
    `MainViewModel.AutomationSnapshots.cs`; pure selected-control-state DTO

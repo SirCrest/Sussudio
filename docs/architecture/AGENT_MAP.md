@@ -3176,7 +3176,7 @@ Primary current owners:
   `MainViewModel.AutomationSnapshots.cs` owns automation-facing capture runtime,
   health, and recording snapshot projection. `MainViewModel.AutomationSnapshots.cs`
   also owns automation-facing source/preview probes and preview frame capture.
-  `MainViewModel.ViewModelRuntimeSnapshot.cs` owns automation-facing view-model runtime snapshot UI-thread capture.
+  `MainViewModel.AutomationSnapshots.cs` owns automation-facing view-model runtime snapshot UI-thread capture.
   `ViewModelRuntimeSnapshotBuilder.cs` owns pure view-model runtime snapshot DTO construction.
   `MainViewModel.AutomationSnapshots.cs` owns automation-facing options
   UI-thread snapshot capture for CLI/MCP clients, while
