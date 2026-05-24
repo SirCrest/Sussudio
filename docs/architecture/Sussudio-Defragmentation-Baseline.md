@@ -1427,3 +1427,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: covered by D3D11 preview renderer ownership, diagnostics contract, and runtime snapshot regression tests
 Behavior preserved: External texture input-view creation, raw frame size checks, direct `UpdateSubresource` upload, one-time staging fallback logging, staging `Map`/copy/`CopyResource`, and render-pass present/timing ownership remain unchanged
 Notes for future agents: keep CPU-buffer upload helpers with `D3D11PreviewRenderer.FrameUpload.cs`; keep render-pass timing/accounting in `RenderPasses.cs` and shader draw execution in the shader-pass owners
+
+Date: 2026-05-24
+Area: D3D preview renderer metrics locality
+Problem: Present cadence, render/pipeline/frame-latency tracking, and metric window reset/resizing were split across three small partials even though they all mutate and project the same renderer metric ring buffers.
+Files consolidated: `Sussudio/Services/Preview/D3D11PreviewRenderer.PresentCadenceMetrics.cs`; `Sussudio/Services/Preview/D3D11PreviewRenderer.MetricsTracking.cs`; `Sussudio/Services/Preview/D3D11PreviewRenderer.MetricWindows.cs`
+Files added: none
+Net production .cs delta: -3
+Partial clusters reduced: `D3D11PreviewRenderer` -3 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: covered by D3D11 preview renderer metrics ownership, cadence behavior tests, diagnostics contract tests, and runtime snapshot regression tests
+Behavior preserved: Present-cadence sampling/suppression, pipeline-latency tracking, render CPU timing windows, frame-latency wait counters/timing, expected-frame-rate window sizing, and reset/clear lifecycle remain unchanged
+Notes for future agents: keep renderer metric state, mutation, reset, and read-only projection together in `D3D11PreviewRenderer.Metrics.cs`; keep pure metric DTOs and shared summarization helpers in `MetricTypes.cs`

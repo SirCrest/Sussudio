@@ -1945,19 +1945,12 @@ Temp output cleanup, stale temp preparation, and orphan `.mp4.tmp` cleanup live
 in `Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs`.
 
 D3D preview renderer metrics now live in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.PresentCadenceMetrics.cs` and
-`Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`, with window
-lifecycle and sample tracking in the matching `MetricWindows`/`MetricsTracking`
-partials. Keep read-only
-present cadence state/projection and recent present interval copies in
-`D3D11PreviewRenderer.PresentCadenceMetrics.cs`; keep pipeline latency, render
-CPU timing, frame-latency wait metric snapshots, recent non-present sample
-copies, and metric projection state in `D3D11PreviewRenderer.Metrics.cs`. Shared
+`Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep present
+cadence, pipeline latency, render CPU timing, frame-latency wait metric state,
+sample tracking, expected-frame-rate window resizing, metric reset/clear
+lifecycle, read-only projections, and recent sample copies there. Shared
 ring-copy, timing-summary, tick-to-ms, and render-stage validation helpers live
-in `D3D11PreviewRenderer.MetricTypes.cs`. Render-loop metric window
-updates live in `D3D11PreviewRenderer.MetricsTracking.cs`; expected-frame-rate
-window resizing and metric reset/clear lifecycle live in
-`D3D11PreviewRenderer.MetricWindows.cs`. Renderer implementation
+in `D3D11PreviewRenderer.MetricTypes.cs`. Renderer implementation
 fields should live with the partial that mutates or projects them: keep
 renderer diagnostic ring/write state, render-thread failure state, first-frame
 notification state, and slow-frame reason classification in
@@ -2069,9 +2062,8 @@ D3D preview renderer diagnostics now live in
 recent slow-frame snapshot access, diagnostic thresholding, the slow-frame
 ring buffer writer, slow-frame reason token classification, render-thread
 failure telemetry, first-frame UI notification, and DXGI refresh-slip capture
-there; keep cadence
-windows in `D3D11PreviewRenderer.PresentCadenceMetrics.cs` and CPU timing
-windows in `D3D11PreviewRenderer.Metrics.cs`.
+there; keep cadence and CPU timing windows in
+`D3D11PreviewRenderer.Metrics.cs`.
 
 D3D preview renderer viewport and letterbox helpers now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Viewport.cs`. Keep
@@ -2084,9 +2076,9 @@ D3D preview renderer submitted/rendered/dropped frame ownership tracking now
 lives in `Sussudio/Services/Preview/D3D11PreviewRenderer.FrameOwnership.cs`.
 Keep frame ownership snapshot projection and submitted/presented/dropped
 ownership state updates there; keep cadence, latency, DXGI, and slow-frame
-timing in `D3D11PreviewRenderer.PresentCadenceMetrics.cs`,
-`D3D11PreviewRenderer.Metrics.cs`, and `D3D11PreviewRenderer.DxgiFrameStatistics.cs`,
-with slow-frame diagnostic projection in `D3D11PreviewRenderer.Diagnostics.cs`.
+timing in `D3D11PreviewRenderer.Metrics.cs` and
+`D3D11PreviewRenderer.DxgiFrameStatistics.cs`, with slow-frame diagnostic
+projection in `D3D11PreviewRenderer.Diagnostics.cs`.
 
 D3D preview renderer DXGI frame statistics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs`.
