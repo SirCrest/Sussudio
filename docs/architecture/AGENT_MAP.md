@@ -1324,9 +1324,10 @@ Primary current owners:
   diagnostics visibility gating, and decode/GPU row refresh ordering.
   `Sussudio/Controllers/Stats/StatsDockPresentationController.cs` owns
   stats dock metric text, visibility, and status brush application after the
-  presentation model is built. `Sussudio/Controllers/Stats/StatsSectionChromeController.cs`
-  owns stats dock section expand/collapse chrome and automation-visible section
-  visibility application; `Sussudio/MainWindow.StatsOverlay.Composition.cs`
+  presentation model is built. `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`
+  keeps the local section chrome controller that owns stats dock section
+  expand/collapse chrome and automation-visible section visibility application;
+  `Sussudio/MainWindow.StatsOverlay.Composition.cs`
   owns the XAML/automation adapter for that stats shell wiring.
   `Sussudio/Controllers/Stats/StatsWindowPresentationController.cs`
   owns detached stats-window metric text and dynamic telemetry detail rendering.

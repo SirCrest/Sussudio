@@ -2525,7 +2525,8 @@ row refresh ordering.
 Stats dock metric value, visibility, and status brush application now live in
 `Sussudio/Controllers/Stats/StatsDockPresentationController.cs`.
 Stats section expand/collapse chrome and automation-visible section application
-now live in `Sussudio/Controllers/Stats/StatsSectionChromeController.cs`.
+now live in the local section chrome controller inside
+`Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
 `Sussudio/MainWindow.StatsOverlay.Composition.cs` owns the XAML/automation
 adapter for the stats shell wiring and delegates controller/provider composition to
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.

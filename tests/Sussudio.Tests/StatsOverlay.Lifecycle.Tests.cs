@@ -158,7 +158,8 @@ public class StatsOverlayLifecycleTests
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
         var mainWindowText = MainWindowCompositionSource.Read();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSectionChromeController.cs");
+        var controllerText = statsOverlayCompositionText.Substring(
+            statsOverlayCompositionText.IndexOf("internal sealed class StatsSectionChromeControllerContext", StringComparison.Ordinal));
 
         AssertContains(statsOverlayCompositionText, "private readonly StatsSectionChromeController _statsSectionChromeController;");
         AssertContains(statsOverlayCompositionText, "private StatsSectionChromeController CreateSectionChromeController(");
@@ -178,6 +179,9 @@ public class StatsOverlayLifecycleTests
         AssertContains(mainWindowText, "ViewModel.StatsSectionVisibilityHandler = SetStatsSectionVisible;");
         AssertContains(mainWindowText, "InitializeStatsOverlayCompositionController();");
         AssertContains(statsOverlayCompositionText, "RefreshDiagnosticsSection = _statsDockControllerGraph.RefreshDiagnosticsSection");
+        Assert.False(
+            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsSectionChromeController.cs")),
+            "stats section chrome controller folded into stats overlay composition owner");
         AssertDoesNotContain(statsOverlayText, "StatsDockPanel.FindName(contentName)");
         AssertDoesNotContain(statsOverlayText, "rotate.Angle =");
         AssertDoesNotContain(statsOverlayText, "UpdateDiagnosticsSection(snapshot");
@@ -185,6 +189,23 @@ public class StatsOverlayLifecycleTests
 
     private static string ReadRepoFile(string relativePath)
         => RuntimeContractSource.ReadRepoFile(relativePath).Replace("\r\n", "\n");
+
+    private static string FindRepoRoot()
+    {
+        var directory = new DirectoryInfo(Environment.CurrentDirectory);
+        while (directory != null)
+        {
+            var gitPath = Path.Combine(directory.FullName, ".git");
+            if (Directory.Exists(gitPath) || File.Exists(gitPath))
+            {
+                return directory.FullName;
+            }
+
+            directory = directory.Parent;
+        }
+
+        return Environment.CurrentDirectory;
+    }
 
     private static void AssertContains(string actual, string expected)
         => Assert.True(actual.Contains(expected, StringComparison.Ordinal), $"Expected to find: {expected}");
