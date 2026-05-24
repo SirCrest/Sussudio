@@ -1,6 +1,8 @@
+using System;
 using System.Diagnostics;
 using System.Threading;
 using FFmpeg.AutoGen;
+using Sussudio.Services.Recording;
 
 namespace Sussudio.Services.Flashback;
 
@@ -164,4 +166,15 @@ internal sealed unsafe partial class FlashbackDecoder
 
     private static double ElapsedMsSince(long startTimestamp)
         => (Stopwatch.GetTimestamp() - startTimestamp) * 1000.0 / Stopwatch.Frequency;
+
+    private IDisposable? BeginRecoverableSeekLogSuppressionIfNeeded()
+    {
+        if (!_suppressRecoverableSeekLogsForNextVideoFrame)
+        {
+            return null;
+        }
+
+        _suppressRecoverableSeekLogsForNextVideoFrame = false;
+        return LibAvEncoder.SuppressRecoverableSeekFfmpegLogs();
+    }
 }

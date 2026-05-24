@@ -34,7 +34,14 @@ static partial class Program
     internal static Task FlashbackDecoder_PtsConversionRejectsInvalidTimestamps()
     {
         var sourceText = ReadFlashbackDecoderSource();
+        var timestampFragmentPath = Path.Combine(
+            GetRepoRoot(),
+            "Sussudio",
+            "Services",
+            "Flashback",
+            "FlashbackDecoder.Timestamps.cs");
 
+        AssertEqual(false, File.Exists(timestampFragmentPath), "Flashback decoder timestamp helpers stay folded into caller owners");
         AssertContains(sourceText, "var pts = DecodePtsToTimeSpan(ResolveBestEffortFrameTimestamp(_videoFrame), _videoTimeBase);");
         AssertContains(sourceText, "var pts = DecodePtsToTimeSpan(ResolveBestEffortFrameTimestamp(_audioFrame), _audioTimeBase);");
         AssertContains(sourceText, "var streamTimestamp = ToStreamTimestamp(target, _videoTimeBase);");

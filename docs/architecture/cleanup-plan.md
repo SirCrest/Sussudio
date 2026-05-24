@@ -1780,19 +1780,16 @@ decoder context setup now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs`. D3D11VA decoder
 selection and hardware-configuration diagnostics now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.D3D11Discovery.cs`. Decoded video frame
-output and hardware/software frame selection now live in
+output, PTS-to-TimeSpan conversion, and best-effort frame timestamp selection now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs`. Software plane
 copies and YUV-to-NV12/P010 conversion kernels now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.VideoConversion.cs`. Keep file
 open/close and disposal lifecycle in the root decoder. Video
-frame receive, packet feeding, inline audio interleave during video reads, and
-decode phase timing state now live in
+frame receive, packet feeding, inline audio interleave during video reads, recoverable
+seek log suppression, and decode phase timing state now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.DecodeLoop.cs`. Keyframe/exact seek control flow,
 pending-frame transfer, seek-cap diagnostics, and seek-buffer flushing now live
-in `Sussudio/Services/Flashback/FlashbackDecoder.Seeking.cs`. Shared PTS
-conversion, seek timestamp conversion, best-effort frame timestamp selection,
-and recoverable seek log suppression now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.Timestamps.cs`.
+in `Sussudio/Services/Flashback/FlashbackDecoder.Seeking.cs` with its seek timestamp conversion helpers.
 Decoded frame-size calculation, video-dimension validation, D3D11/software
 decoded-frame validation, input stream-count bounds, and stream-index bounds now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.Validation.cs`.

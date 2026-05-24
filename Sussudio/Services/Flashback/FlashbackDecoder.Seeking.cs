@@ -165,4 +165,36 @@ internal sealed unsafe partial class FlashbackDecoder
             }
         }
     }
+
+    private static long ToAvTimeBaseTimestamp(TimeSpan value)
+    {
+        if (value <= TimeSpan.Zero)
+        {
+            return 0;
+        }
+
+        var microseconds = value.TotalMilliseconds * 1000.0;
+        if (!double.IsFinite(microseconds) || microseconds >= long.MaxValue)
+        {
+            return long.MaxValue;
+        }
+
+        return (long)microseconds;
+    }
+
+    private static long ToStreamTimestamp(TimeSpan value, AVRational timeBase)
+    {
+        if (value <= TimeSpan.Zero || timeBase.num <= 0 || timeBase.den <= 0)
+        {
+            return 0;
+        }
+
+        var timestamp = value.TotalSeconds * timeBase.den / timeBase.num;
+        if (!double.IsFinite(timestamp) || timestamp >= long.MaxValue)
+        {
+            return long.MaxValue;
+        }
+
+        return (long)timestamp;
+    }
 }
