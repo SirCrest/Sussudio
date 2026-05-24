@@ -2886,7 +2886,7 @@ formatting now live in `Sussudio/ViewModels/ViewModelPresentationBuilders.cs`.
 HDR runtime state/readiness projection from capture runtime snapshots,
 target-summary property application, live-signal info projection, and
 auto-resolution display text live together in
-`Sussudio/ViewModels/MainViewModel.CapturePresentation.cs`.
+`Sussudio/ViewModels/MainViewModel.CaptureState.cs`.
 
 Preview-volume fade-in/fade-out state, saved target volume, storyboard lifetime,
 and volume save suppression now live in
@@ -3895,7 +3895,7 @@ owner, fold it back into that owner and update the source-shape tests and
    smoothing shared by recording and Flashback bitrate presentation also live in
    `MainViewModel.RecordingState.cs`, and
    capture presentation adapters now live in
-   `MainViewModel.CapturePresentation.cs`: live-capture info projection from
+   `MainViewModel.CaptureState.cs`: live-capture info projection from
    runtime snapshots, audio-preview activity, live resolution/frame-rate/pixel-format
    assignment, preview-stop live-info reset, HDR runtime state/readiness
    projection, target-summary property application, and auto-resolution display
@@ -4089,7 +4089,7 @@ owner, fold it back into that owner and update the source-shape tests and
     Automatic resolution ranking and source-aware frame-rate selection now
     live in `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs`; auto-resolution
     display text used by status and telemetry presentation lives in
-    `MainViewModel.CapturePresentation.cs`.
+    `MainViewModel.CaptureState.cs`.
    `tests/Sussudio.Tests/XUnit.PresentationPreviewResolutionSelectionContractsTests.cs`
    owns xUnit execution for the resolution-selection ownership and behavior
    checks after their removal from the legacy presentation-preview capture catalog.
@@ -4111,7 +4111,7 @@ owner, fold it back into that owner and update the source-shape tests and
    Source telemetry summary, telemetry age, and target-summary display text
    formatting now live in `Sussudio/ViewModels/ViewModelPresentationBuilders.cs`;
    HDR runtime state/readiness projection and target-summary property
-   application live in `MainViewModel.CapturePresentation.cs`; keep snapshot
+   application live in `MainViewModel.CaptureState.cs`; keep snapshot
    application, source telemetry ingress behavior, telemetry age refresh,
    enum-string caching, source-aware auto-retargeting, and source telemetry
    graph-port contract in

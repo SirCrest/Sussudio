@@ -7,7 +7,7 @@ static partial class Program
     {
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs")
             .Replace("\r\n", "\n");
-        var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CapturePresentation.cs")
+        var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs")
             .Replace("\r\n", "\n");
         var liveSignalText = ReadRepoFile("Sussudio/ViewModels/ViewModelPresentationBuilders.cs")
             .Replace("\r\n", "\n");
@@ -38,6 +38,10 @@ static partial class Program
         AssertContains(capturePresentationText, "LiveResolution = LiveInfoUnavailable;");
         AssertContains(capturePresentationText, "LiveFrameRate = LiveInfoUnavailable;");
         AssertContains(capturePresentationText, "LivePixelFormat = LiveInfoUnavailable;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.CapturePresentation.cs")),
+            "MainViewModel.CapturePresentation.cs folded into capture state");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.LiveSignalPresentation.cs")),

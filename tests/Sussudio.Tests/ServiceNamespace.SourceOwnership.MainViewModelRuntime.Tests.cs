@@ -17,7 +17,7 @@ static partial class Program
         var mainViewModelRecordingStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.RecordingState.cs"));
         var mainViewModelRecordingRuntimeText = mainViewModelRecordingStateText;
         var outputDriveSpacePresentationBuilderText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "ViewModelPresentationBuilders.cs"));
-        var mainViewModelCapturePresentationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CapturePresentation.cs"));
+        var mainViewModelCapturePresentationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureState.cs"));
         var mainViewModelDisposalText = mainViewModelText;
         AssertEqual(
             false,
@@ -150,6 +150,10 @@ static partial class Program
         AssertDoesNotContain(mainViewModelRuntimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"system resume\")");
         AssertContains(mainViewModelCapturePresentationText, "partial void OnIsPreviewingChanged(bool value)");
         AssertContains(mainViewModelCapturePresentationText, "ResetLiveCaptureInfo();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CapturePresentation.cs")),
+            "MainViewModel.CapturePresentation.cs folded into capture state");
         AssertDoesNotContain(mainViewModelRuntimeLifecycleControllerText, "private void UpdateDiskSpace()");
         AssertDoesNotContain(mainViewModelRuntimeLifecycleControllerText, "partial void OnIsPreviewingChanged(bool value)");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "public void Start()");

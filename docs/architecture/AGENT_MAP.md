@@ -3119,7 +3119,7 @@ Primary current owners:
   recording size/bitrate label assignment, recording-state reset reactions, and
   the bounded byte-sample smoothing helper shared by recording and Flashback
   bitrate presentation.
-  `MainViewModel.CapturePresentation.cs` owns capture presentation adapters:
+  `MainViewModel.CaptureState.cs` owns capture presentation adapters:
   live-capture info projection from `CaptureRuntimeSnapshot`, including
   audio-preview activity and live-resolution/frame-rate/pixel-format
   assignment, preview-stop live-info reset, HDR runtime state/readiness
