@@ -461,11 +461,11 @@ renderer routing/header text, D3D CPU timing, pipeline latency, frame-latency
 wait, D3D frame ownership, DXGI frame-stat text, and delegation to the shared
 slow-frame formatter in `Formatters.Snapshot.PreviewD3D.cs`, thread-health section order and
 source-reader/WASAPI row text in `Formatters.Snapshot.ThreadHealth.cs`,
-diagnostic-event text in
-`Formatters.Diagnostics.cs`, capture option/device text in `Formatters.Options.cs`,
+diagnostic-event text in `Formatters.Common.cs`, capture option/device text in
+`Formatters.Options.cs`,
 performance timeline response validation, JSON row projection, private row
-model, table output, and trend summaries in `Formatters.Timeline.cs`, standalone memory/GC summaries in
-`Formatters.Memory.cs`, and shared JSON/result helpers in
+model, table output, and trend summaries in `Formatters.Timeline.cs`, and
+standalone memory/GC summaries plus shared JSON/result helpers in
 `Formatters.Common.cs`.
 
 `tools/Common/AutomationSnapshotFormatter.cs` is now the shared automation

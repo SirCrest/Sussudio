@@ -3634,13 +3634,12 @@ Primary owners:
 - `tools/ssctl/Formatters.Snapshot.ThreadHealth.cs` owns thread-health section
   order plus source-reader, WASAPI capture, and WASAPI playback thread-health
   snapshot text.
-- `tools/ssctl/Formatters.Diagnostics.cs` owns recent diagnostic-event output.
 - `tools/ssctl/Formatters.Options.cs` owns capture option and device lists.
 - `tools/ssctl/Formatters.Timeline.cs` owns performance timeline response
   validation, JSON row projection, private row model, table output, and
   first-vs-last trend summary text.
-- `tools/ssctl/Formatters.Memory.cs` owns standalone memory and GC summaries.
-- `tools/ssctl/Formatters.Common.cs` owns shared result/JSON helpers.
+- `tools/ssctl/Formatters.Common.cs` owns shared result/JSON helpers, recent
+  diagnostic-event output, and standalone memory/GC summaries.
 - `tools/McpServer/Tools/PerformanceTimelineTools.cs` owns the public MCP
   tool entry point and command response handling.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs` owns timeline JSON

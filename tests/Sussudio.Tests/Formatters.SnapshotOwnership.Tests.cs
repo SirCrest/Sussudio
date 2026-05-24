@@ -141,7 +141,7 @@ static partial class Program
         AssertContains(ssctlSnapshotThreadHealthSource, "WasapiCaptureCallbackSevereGapCount");
         AssertContains(ssctlSnapshotThreadHealthSource, "private static void AppendSnapshotWasapiPlaybackThreadHealthLine(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotThreadHealthSource, "WasapiPlaybackQueueDropCount");
-        AssertContains(ReadRepoFile("tools/ssctl/Formatters.Diagnostics.cs"), "public static string FormatDiagnostics");
+        AssertContains(ssctlFormatterCommonSource, "public static string FormatDiagnostics");
         AssertContains(ReadRepoFile("tools/ssctl/Formatters.Options.cs"), "public static string FormatOptions");
         var ssctlTimelineRootSource = ReadRepoFile("tools/ssctl/Formatters.Timeline.cs");
         AssertContains(ssctlTimelineRootSource, "public static string FormatTimeline");
@@ -154,8 +154,16 @@ static partial class Program
         AssertContains(ssctlTimelineRootSource, "AppendTimelineTrendSummary(builder, entries);");
         AssertContains(ssctlTimelineRootSource, "private static void AppendTimelineTrendSummary(StringBuilder builder, IReadOnlyList<TimelineRow> entries)");
         AssertContains(ssctlTimelineRootSource, "== Trend Summary (first vs last sample) ==");
-        AssertContains(ReadRepoFile("tools/ssctl/Formatters.Memory.cs"), "public static string FormatMemory");
+        AssertContains(ssctlFormatterCommonSource, "public static string FormatMemory");
         AssertContains(ssctlFormatterCommonSource, "public static string FormatResult");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "Formatters.Diagnostics.cs")),
+            "ssctl diagnostic-event output lives with the root formatter helpers");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "Formatters.Memory.cs")),
+            "ssctl standalone memory output lives with the root formatter helpers");
         AssertContains(ssctlFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
         AssertContains(ssctlFormatterSource, "CaptureCommandMaxQueueLatencyMs");
         AssertContains(ssctlFormatterSource, "CaptureCommandCommandsCoalesced");

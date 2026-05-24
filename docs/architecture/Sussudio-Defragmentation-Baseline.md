@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-24
+Area: ssctl formatter helper locality
+Problem: Recent diagnostic-event output and standalone memory/GC output lived in two tiny formatter partials even though they are direct console projections using the same root result/JSON helper owner.
+Files consolidated: `tools/ssctl/Formatters.Diagnostics.cs`; `tools/ssctl/Formatters.Memory.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `Formatters` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by ssctl formatter source-ownership tests and runtime snapshot formatter contract checks
+Behavior preserved: diagnostic-event text, memory/GC text, and shared result/JSON formatting remain unchanged
+Notes for future agents: keep tiny standalone ssctl console projections in `Formatters.Common.cs` unless they grow a named report section or shared formatter collaborator
+
+Date: 2026-05-24
 Area: MCP performance/preview helper locality
 Problem: Three tiny MCP helper partials owned single-use details that are only meaningful inside their parent tool/report owner, forcing extra file hops for timeline projection, PresentMon snapshot correlation, and preview-frame histogram rendering.
 Files consolidated: `tools/McpServer/Tools/FramePacingVerdictTools.Timeline.cs`; `tools/McpServer/Tools/PresentMonTools.Correlation.cs`; `tools/McpServer/Tools/PreviewFrameCaptureTools.Histogram.cs`
