@@ -102,16 +102,14 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioInitializationText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioInitialization.cs")
             .Replace("\r\n", "\n");
-        var audioSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs")
-            .Replace("\r\n", "\n");
         var hdrSideDataText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HdrSideData.cs")
             .Replace("\r\n", "\n");
         var modelsText = rootText;
         var hardwareFramesText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(audioSubmissionText, "public void SendAudioSamples(ReadOnlySpan<byte> f32leSamples)");
-        AssertContains(audioSubmissionText, "public void SendMicrophoneSamples(ReadOnlySpan<byte> f32leSamples)");
+        AssertContains(audioText, "public void SendAudioSamples(ReadOnlySpan<byte> f32leSamples)");
+        AssertContains(audioText, "public void SendMicrophoneSamples(ReadOnlySpan<byte> f32leSamples)");
         AssertContains(audioText, "private unsafe struct AudioStreamState");
         AssertContains(audioText, "private void DrainStreamEncoderPackets(ref AudioStreamState s)");
         AssertContains(audioText, "private void WriteStreamPacket(ref AudioStreamState s, AVPacket* packet)");
@@ -134,6 +132,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.AudioSetup.cs")),
             "Audio setup helpers live with audio stream initialization");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.AudioSubmission.cs")),
+            "Audio sample submission folded into LibAvEncoder.Audio.cs");
         AssertContains(hdrSideDataText, "private bool AttachHdrFrameSideDataIfNeeded(LibAvEncoderOptions options)");
         AssertContains(hdrSideDataText, "private bool AttachHdrFrameSideDataToHwFrame(LibAvEncoderOptions options)");
         AssertContains(hdrSideDataText, "ffmpeg.av_mastering_display_metadata_create_side_data(_videoFrame)");
@@ -170,12 +172,9 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.OptionsValidation.cs")),
             "LibAvEncoder option validation folded into encoder initialization");
         AssertDoesNotContain(codecPolicyText, "private static void ValidateOptions(LibAvEncoderOptions options)");
-        AssertDoesNotContain(audioText, "public void SendAudioSamples(ReadOnlySpan<byte> f32leSamples)");
-        AssertDoesNotContain(audioText, "public void SendMicrophoneSamples(ReadOnlySpan<byte> f32leSamples)");
         AssertDoesNotContain(audioText, "private void InitializeAudioIfNeeded(LibAvEncoderOptions options)");
         AssertDoesNotContain(audioText, "private void InitializeMicrophoneIfNeeded(LibAvEncoderOptions options)");
         AssertDoesNotContain(audioText, "private void EncodeStreamChunk(ref AudioStreamState s, byte* inputPtr, int inputSamples,");
-        AssertDoesNotContain(audioSubmissionText, "private void EncodeStreamChunk(ref AudioStreamState s, byte* inputPtr, int inputSamples,");
         AssertDoesNotContain(audioQueueText, "private void FlushPendingStreamSamples(ref AudioStreamState s, string streamLabel,");
         AssertDoesNotContain(audioQueueText, "private void CopyToAccumulator(ref AudioStreamState s, ReadOnlySpan<byte> source, int destinationOffset)");
         AssertDoesNotContain(rootText, "private void ConfigureAudioCodecContext(AVCodecContext* codecContext, LibAvEncoderOptions options, AVCodec* codec)");

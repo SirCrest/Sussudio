@@ -1480,9 +1480,11 @@ queue/drain helpers, drift-corrected encode chunks, planar sample copies, and
 prepared-frame drains there.
 
 LibAv encoder audio submission now lives in
-`Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs`. Keep the public
+`Sussudio/Services/Recording/LibAvEncoder.Audio.cs`. Keep the public
 audio/microphone sample entry points, payload alignment checks, accumulator
-handoff, and stream-chunk submission there.
+handoff, and stream-chunk submission beside shared audio/microphone stream
+state, public status properties, interleaved packet writes, pending-sample
+flush, and accumulator ingress.
 
 LibAv encoder audio stream initialization now lives in
 `Sussudio/Services/Recording/LibAvEncoder.AudioInitialization.cs`. Keep audio
