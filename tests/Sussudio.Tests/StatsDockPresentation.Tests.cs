@@ -76,9 +76,18 @@ public partial class StatsPresentationTests
         var rowChromePresenterText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRowChromePresenter.cs").Replace("\r\n", "\n");
         var rowChromeControllerText = rowChromePresenterText;
         var refreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
-        var hardwareRowsControllerText = refreshControllerText.Substring(
-            refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsControllerContext", StringComparison.Ordinal));
-        var hardwareRowsInputProviderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs").Replace("\r\n", "\n");
+        var hardwareRowsControllerStart = refreshControllerText.IndexOf(
+            "internal sealed class StatsHardwareRowsController\n",
+            StringComparison.Ordinal);
+        var hardwareRowsControllerContextText = refreshControllerText.Substring(
+            refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsControllerContext", StringComparison.Ordinal),
+            refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsInputProviderContext", StringComparison.Ordinal)
+                - refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsControllerContext", StringComparison.Ordinal));
+        var hardwareRowsControllerText = hardwareRowsControllerContextText + refreshControllerText.Substring(hardwareRowsControllerStart);
+        var hardwareRowsInputProviderText = refreshControllerText.Substring(
+            refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsInputProviderContext", StringComparison.Ordinal),
+            hardwareRowsControllerStart
+                - refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsInputProviderContext", StringComparison.Ordinal));
         var hardwareRowsInputBuilderText = hardwareRowsInputProviderText;
         var hardwareRowsBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
@@ -135,7 +144,7 @@ public partial class StatsPresentationTests
         AssertContains(hardwareRowsBuilderText, "StatsHardwareDecodeRowsInput mjpeg)");
         AssertContains(hardwareRowsBuilderText, "public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareGpuRows(StatsHardwareGpuRowsInput? nvml)");
         AssertDoesNotContain(hardwareRowsBuilderText, "using Sussudio.Services.Gpu;");
-        AssertContains(hardwareRowsInputBuilderText, "using Sussudio.Services.Gpu;");
+        AssertContains(refreshControllerText, "using Sussudio.Services.Gpu;");
         AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareRowPresentation(string Label, string Value);");
         AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareDecodeRowsInput(");
         AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareGpuRowsInput(");
@@ -151,7 +160,7 @@ public partial class StatsPresentationTests
         AssertDoesNotContain(hardwareRowsControllerText, "GetMjpegPipelineTimingDetails");
         AssertDoesNotContain(hardwareRowsControllerText, "GetPendingPreviewFrameCount");
         AssertDoesNotContain(hardwareRowsControllerText, "GetNvmlSnapshot");
-        AssertContains(hardwareRowsInputProviderText, "using Sussudio.Services.Gpu;");
+        AssertContains(refreshControllerText, "using Sussudio.Services.Gpu;");
         AssertContains(controllerText, "internal sealed class StatsDiagnosticRowsControllerContext");
         AssertContains(controllerText, "internal sealed class StatsDiagnosticRowsController");
         AssertContains(controllerText, "public required FrameworkElement ResourceOwner { get; init; }");

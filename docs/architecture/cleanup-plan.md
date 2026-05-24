@@ -2555,8 +2555,8 @@ graph composition from those contexts lives in
 projection refresh adapter.
 Decode and GPU hardware stats row refresh/application over presentation inputs
 now lives in `Sussudio/Controllers/Stats/StatsDockRefreshController.cs`;
-live MJPEG/NVML sampling and decode availability policy live in
-`Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs`, alongside pure
+live MJPEG/NVML sampling and decode availability policy live in the local
+hardware input provider in that refresh-controller file, alongside pure
 MJPEG/NVML telemetry-to-presentation-input projection; pure row text
 projection over presentation inputs lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.cs`;
@@ -2602,9 +2602,9 @@ reuse plus shared stats dock row creation, text mutation, visibility toggles, an
 application. `Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs`
 owns diagnostic row presentation, telemetry diagnostics empty state, group
 headers, and diagnostic row pooling, while
-`Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs` owns live
-MJPEG/NVML input acquisition and `Sussudio/Controllers/Stats/StatsDockRefreshController.cs`
-owns hardware row availability, text-row presentation building, and minimum
+`Sussudio/Controllers/Stats/StatsDockRefreshController.cs` owns live
+MJPEG/NVML input acquisition through its local hardware input provider plus
+hardware row availability, text-row presentation building, and minimum
 pool sizing before delegating row chrome.
 
 Flashback timeline visibility, lockout, toggle synchronization, and track
@@ -3070,9 +3070,10 @@ capture-device selection, pending-device apply state, mismatch logging, audio
 input and microphone selection, resolution and frame-rate selection, recording
 format/quality/preset/split-encode selection, shared string ComboBox selection
 application, device-audio mode/gain projection, and the capture-selection
-`PropertyChanged` router. `Sussudio/Controllers/Capture/CaptureComboBoxSelectionNormalizer.cs`
-owns pure capture/audio/microphone/resolution/frame-rate/string ComboBox
-selection and fallback matching, while
+`PropertyChanged` router. The local `CaptureComboBoxSelectionNormalizer` in
+`Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs` owns pure
+capture/audio/microphone/resolution/frame-rate/string ComboBox selection and
+fallback matching, while
 `Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs` keeps controller
 instantiation, XAML dependency wiring, collection/property-change adapters, and
 the thin XAML-facing selection bridges for device, audio, device-audio,

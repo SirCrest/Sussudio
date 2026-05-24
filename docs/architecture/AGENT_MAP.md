@@ -1353,9 +1353,10 @@ Primary current owners:
   `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` delegates diagnostic row
   presentation to `StatsDiagnosticRowsController`, and owns hardware row
   refresh, availability, and decode/GPU minimum pool sizing before delegating row
-  chrome. `Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs` owns
-  live MJPEG/NVML input acquisition, decode availability policy, and pure
-  telemetry projection into the hardware-row presentation input DTOs;
+  chrome. `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` also keeps
+  the hardware input provider that owns live MJPEG/NVML input acquisition,
+  decode availability policy, and pure telemetry projection into the hardware-row
+  presentation input DTOs;
   `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns pure decode/GPU row
   text projection over presentation inputs, and
   `StatsDockRowChromePresenter` owns shared row chrome plus decode/GPU row
@@ -1373,9 +1374,9 @@ Primary current owners:
   visual-cadence FPS/repeat/motion text formatting, expected visual-repeat drift
   helpers, encoder dock visibility, codec label, bitrate, encoder drift text
   formatting, diagnostic row construction, and source-summary parsing.
-  `Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs` owns live
-  MJPEG/NVML sampling callbacks and pure telemetry-to-presentation-input
-  projection for hardware rows.
+  `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` owns the local
+  hardware input provider for live MJPEG/NVML sampling callbacks and pure
+  telemetry-to-presentation-input projection for hardware rows.
   `Sussudio/ViewModels/StatsPresentationBuilder.cs` also owns decode/GPU row
   text projection over presentation inputs, frame-lane diagnostic health summary
   classification, detached stats-window text, telemetry-detail presentation,
@@ -2992,10 +2993,11 @@ Primary current owners:
   frame-rate ComboBox/ViewModel synchronization, recording
   format/quality/preset/split-encode ComboBox synchronization, shared string
   ComboBox selection application, device-audio mode/gain control projection,
-  and the capture-selection `PropertyChanged` router.
-  `Sussudio/Controllers/Capture/CaptureComboBoxSelectionNormalizer.cs` owns pure
-  capture/audio/microphone/resolution/frame-rate/string ComboBox
-  selection and fallback matching.
+  and the capture-selection `PropertyChanged` router. The local
+  `CaptureComboBoxSelectionNormalizer` in
+  `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs` owns pure
+  capture/audio/microphone/resolution/frame-rate/string ComboBox selection and
+  fallback matching.
   `Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs` owns controller
   instantiation, XAML dependency wiring, collection/property-change adapters,
   and the thin XAML-facing selection bridges for device, audio, device-audio,

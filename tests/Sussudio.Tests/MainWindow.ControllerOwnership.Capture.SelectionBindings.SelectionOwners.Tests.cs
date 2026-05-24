@@ -6,7 +6,11 @@ static partial class Program
     {
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
-        var selectionNormalizerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureComboBoxSelectionNormalizer.cs").Replace("\r\n", "\n");
+        var selectionNormalizerText = controllerText.Substring(
+            controllerText.IndexOf("internal static class CaptureComboBoxSelectionNormalizer", System.StringComparison.Ordinal));
+        var bindingControllerText = controllerText.Substring(
+            0,
+            controllerText.IndexOf("internal static class CaptureComboBoxSelectionNormalizer", System.StringComparison.Ordinal));
 
         AssertContains(controllerText, "internal sealed class CaptureSelectionBindingController");
         AssertContains(controllerText, "public void EnsureDeviceSelection()");
@@ -55,12 +59,12 @@ static partial class Program
         AssertContains(selectionNormalizerText, "public static bool IsAutoFrameRateOption(FrameRateOption option)");
 
         AssertDoesNotContain(bindingsText, "DeviceComboBox.SelectionChanged +=");
-        AssertDoesNotContain(controllerText, "private static void EnsureStringComboBoxSelection(");
-        AssertDoesNotContain(controllerText, "private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
-        AssertDoesNotContain(controllerText, "private static bool IsAutoFrameRateOption(FrameRateOption option)");
-        AssertDoesNotContain(controllerText, "items.FirstOrDefault(item => string.Equals(item, vmValue, StringComparison.OrdinalIgnoreCase))");
-        AssertDoesNotContain(controllerText, "AvailableResolutions.FirstOrDefault(option =>");
-        AssertDoesNotContain(controllerText, "AvailableFrameRates.FirstOrDefault(option =>");
+        AssertDoesNotContain(bindingControllerText, "private static void EnsureStringComboBoxSelection(");
+        AssertDoesNotContain(bindingControllerText, "private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
+        AssertDoesNotContain(bindingControllerText, "private static bool IsAutoFrameRateOption(FrameRateOption option)");
+        AssertDoesNotContain(bindingControllerText, "items.FirstOrDefault(item => string.Equals(item, vmValue, StringComparison.OrdinalIgnoreCase))");
+        AssertDoesNotContain(bindingControllerText, "AvailableResolutions.FirstOrDefault(option =>");
+        AssertDoesNotContain(bindingControllerText, "AvailableFrameRates.FirstOrDefault(option =>");
 
         return Task.CompletedTask;
     }
