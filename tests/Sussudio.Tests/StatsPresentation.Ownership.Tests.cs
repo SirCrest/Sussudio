@@ -12,7 +12,7 @@ public partial class StatsPresentationTests
         var statsDockRefreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
         var frameTimeOverlayText = statsOverlayCompositionText;
         var frameTimeOverlayControllerText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
-        var frameTimeOverlayGeometryText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs").Replace("\r\n", "\n");
+        var frameTimeOverlayGeometryText = frameTimeOverlayControllerText;
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");

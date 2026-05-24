@@ -2556,9 +2556,8 @@ application, diagnostic rows, hardware rows, and row chrome pooling. Source tele
 projection checks live with stats presentation coverage in
 `tests/Sussudio.Tests/StatsPresentation.SourceTelemetry.Tests.cs`.
 Frame-time overlay compact text application and graph-line mutation now live in
-`Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs`;
-frame-time canvas sizing, sample projection, and expected-line geometry live in
-`Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs`;
+`Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs`, along
+with frame-time canvas sizing, sample projection, and expected-line geometry;
 `Sussudio/MainWindow.StatsOverlay.Composition.cs` owns the XAML-facing compact
 overlay adapter beside the stats overlay visibility route, while
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.Contexts.cs`

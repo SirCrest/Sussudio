@@ -1387,9 +1387,8 @@ Primary current owners:
   pooling while
   `StatsDockRefreshController` owns when decode/GPU rows refresh.
 - `Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs` owns compact
-  frame-time overlay text application and graph-line mutation, while
-  `Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs` owns frame-time
-  canvas sizing, sample projection, and expected-line geometry.
+  frame-time overlay text application, graph-line mutation, canvas sizing,
+  sample projection, and expected-line geometry.
   `Sussudio/MainWindow.StatsOverlay.Composition.cs` owns the XAML-facing
   compact overlay adapter beside the stats overlay visibility route.
   `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns the cohesive pure stats

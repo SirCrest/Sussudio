@@ -18,7 +18,7 @@ public class StatsOverlayLifecycleTests
         var mainWindowText = MainWindowCompositionSource.Read();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.cs");
         var frameTimeControllerText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs");
-        var frameTimeGeometryText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs");
+        var frameTimeGeometryText = frameTimeControllerText;
 
         AssertContains(statsOverlayText, "private StatsOverlayCompositionController _statsOverlayCompositionController = null!;");
         AssertContains(statsOverlayText, "private void InitializeStatsOverlayCompositionController()");
