@@ -23,8 +23,8 @@ public sealed class PresentationPreviewD3DContractsAndMetricsOwnershipTests
         => global::Program.D3D11PreviewRenderer_FrameTypesLiveInFocusedPartial();
 
     [Fact]
-    public Task FrameOwnershipLivesInFocusedPartial()
-        => global::Program.D3D11PreviewRenderer_FrameOwnershipLivesInFocusedPartial();
+    public Task FrameOwnershipLivesWithMetrics()
+        => global::Program.D3D11PreviewRenderer_FrameOwnershipLivesWithMetrics();
 
     [Fact]
     public Task DxgiFrameStatisticsLiveInFocusedPartial()

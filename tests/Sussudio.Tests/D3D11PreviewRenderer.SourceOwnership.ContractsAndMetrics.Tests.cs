@@ -85,34 +85,33 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task D3D11PreviewRenderer_FrameOwnershipLivesInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_FrameOwnershipLivesWithMetrics()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
         var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             .Replace("\r\n", "\n");
-        var ownershipText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameOwnership.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(ownershipText, "private long _framesSubmitted;");
-        AssertContains(ownershipText, "private long _framesRendered;");
-        AssertContains(ownershipText, "private long _framesDropped;");
-        AssertContains(ownershipText, "private long _submissionGeneration;");
-        AssertContains(ownershipText, "private long _lastSubmittedPreviewPresentId;");
-        AssertContains(ownershipText, "private long _lastRenderedSchedulerToPresentTicks;");
-        AssertContains(ownershipText, "private long _lastDroppedUtcUnixMs;");
-        AssertContains(ownershipText, "private string _submissionGenerationDropReason = \"transition\";");
-        AssertContains(ownershipText, "public FrameOwnershipMetrics GetFrameOwnershipMetrics()");
-        AssertContains(ownershipText, "private void TrackFrameSubmitted(PendingFrame frame)");
-        AssertContains(ownershipText, "private void TrackFramePresented(PendingFrame frame, long presentReturnTick, long estimatedVisibleTick)");
-        AssertContains(ownershipText, "private void TrackFrameDropped(PendingFrame frame, string reason)");
-        AssertContains(ownershipText, "Interlocked.Exchange(ref _lastRenderedSourcePtsTicks, frame.SourcePtsTicks);");
-        AssertContains(ownershipText, "Volatile.Write(ref _lastDropReason, reason);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.FrameOwnership.cs")),
+            "frame ownership metrics folded into renderer metrics owner");
+        AssertContains(metricsText, "private long _framesSubmitted;");
+        AssertContains(metricsText, "private long _framesRendered;");
+        AssertContains(metricsText, "private long _framesDropped;");
+        AssertContains(metricsText, "private long _submissionGeneration;");
+        AssertContains(metricsText, "private long _lastSubmittedPreviewPresentId;");
+        AssertContains(metricsText, "private long _lastRenderedSchedulerToPresentTicks;");
+        AssertContains(metricsText, "private long _lastDroppedUtcUnixMs;");
+        AssertContains(metricsText, "private string _submissionGenerationDropReason = \"transition\";");
+        AssertContains(metricsText, "public FrameOwnershipMetrics GetFrameOwnershipMetrics()");
+        AssertContains(metricsText, "private void TrackFrameSubmitted(PendingFrame frame)");
+        AssertContains(metricsText, "private void TrackFramePresented(PendingFrame frame, long presentReturnTick, long estimatedVisibleTick)");
+        AssertContains(metricsText, "private void TrackFrameDropped(PendingFrame frame, string reason)");
+        AssertContains(metricsText, "Interlocked.Exchange(ref _lastRenderedSourcePtsTicks, frame.SourcePtsTicks);");
+        AssertContains(metricsText, "Volatile.Write(ref _lastDropReason, reason);");
         AssertDoesNotContain(rootText, "private long _framesSubmitted;");
         AssertDoesNotContain(rootText, "private long _submissionGeneration;");
-        AssertDoesNotContain(metricsText, "public FrameOwnershipMetrics GetFrameOwnershipMetrics()");
-        AssertDoesNotContain(metricsText, "private void TrackFrameSubmitted(PendingFrame frame)");
-        AssertDoesNotContain(metricsText, "private void TrackFrameDropped(PendingFrame frame, string reason)");
 
         return Task.CompletedTask;
     }

@@ -2058,12 +2058,11 @@ Keep `ComputeLetterboxViewport`, `UpdateViewportConstantBuffer`, and
 creation in `D3D11PreviewRenderer.Resources.cs`.
 
 D3D preview renderer submitted/rendered/dropped frame ownership tracking now
-lives in `Sussudio/Services/Preview/D3D11PreviewRenderer.FrameOwnership.cs`.
-Keep frame ownership snapshot projection and submitted/presented/dropped
-ownership state updates there; keep cadence, latency, DXGI, and slow-frame
-timing in `D3D11PreviewRenderer.Metrics.cs` and
-`D3D11PreviewRenderer.DxgiFrameStatistics.cs`, with slow-frame diagnostic
-projection in `D3D11PreviewRenderer.Diagnostics.cs`.
+lives in `Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep
+frame ownership snapshot projection and submitted/presented/dropped ownership
+state updates with cadence, latency, and frame-latency timing there; keep DXGI
+statistics in `D3D11PreviewRenderer.DxgiFrameStatistics.cs`, with slow-frame
+diagnostic projection in `D3D11PreviewRenderer.Diagnostics.cs`.
 
 D3D preview renderer DXGI frame statistics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs`.
@@ -2111,8 +2110,7 @@ swap-chain color-space application with render-pass selection in
 `D3D11PreviewRenderer.RenderPasses.cs`.
 Device-lost recovery has its own focused owner; keep render loop consumption in
 `D3D11PreviewRenderer.RenderThread.cs`, present paths with render-pass
-completion in `D3D11PreviewRenderer.RenderPasses.cs`, and shader draw paths in
-the focused shader pass files.
+completion and shader draw paths in `D3D11PreviewRenderer.RenderPasses.cs`.
 
 D3D preview renderer swap-chain panel binding now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs`. Keep
@@ -2125,7 +2123,7 @@ D3D preview pending-frame queue ownership now lives in
 enqueue, backlog trimming, frame-ready signal/reset wrappers, explicit pending
 drains, and pending-count accounting there; keep render-loop consumption in
 `D3D11PreviewRenderer.RenderThread.cs` and frame ownership metrics in
-`D3D11PreviewRenderer.FrameOwnership.cs`.
+`D3D11PreviewRenderer.Metrics.cs`.
 
 Media Foundation source-reader negotiation now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs`. Keep
