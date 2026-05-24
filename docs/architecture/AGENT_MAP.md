@@ -3611,16 +3611,12 @@ Primary owners:
   facade only.
 - `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration, section
   ordering, and simple row sections for Sussudio state/capture-command summary,
-  audio, recording, diagnostics, legacy performance, process CPU, Memory/GC,
-  and thread-pool snapshot text.
-- `tools/ssctl/Formatters.Snapshot.CaptureSettings.cs` owns capture settings
-  text and friendly/exact frame-rate summary formatting.
-- `tools/ssctl/Formatters.Snapshot.CaptureCadence.cs` owns capture cadence,
-  low-FPS, jitter/drop, MJPEG packet fingerprint, and sampled visual cadence
-  snapshot text.
-- `tools/ssctl/Formatters.Snapshot.AvSync.cs` owns AV-sync drift and encoder
-  correction snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Source.cs` owns source dimensions, source
+  audio, capture settings, friendly/exact frame-rate summary formatting,
+  runtime video-pipeline text, recording, diagnostics, legacy performance,
+  process CPU, Memory/GC, thread-pool, capture cadence, low-FPS, jitter/drop,
+  MJPEG packet fingerprint, sampled visual cadence, AV-sync drift, encoder
+  correction, preview renderer-mode routing, GPU playback summary, non-D3D
+  fallback frame/cadence, D3D renderer delegation, source dimensions, source
   frame-rate summary, HDR, and source telemetry snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot
   active/failure gating, section and encoding subsection ordering, Flashback
@@ -3631,16 +3627,10 @@ Primary owners:
   activation, header, output order, decode/copy/callback/per-decoder timing,
   compressed queue/drop/reorder/pipeline timing, and preview-jitter queue,
   input/output/latency, ownership, and underflow snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Preview.cs` owns preview renderer-mode
-  routing, GPU playback summary, non-D3D fallback frame/cadence text, and D3D
-  renderer delegation.
 - `tools/ssctl/Formatters.Snapshot.PreviewD3D.cs` owns D3D preview renderer
   snapshot text routing/header order, D3D CPU timing, pipeline-latency,
   frame-latency wait, frame ownership, DXGI frame-stat text, and delegation to
   the shared slow-frame formatter.
-- `tools/ssctl/Formatters.Snapshot.Runtime.cs` owns runtime video-pipeline
-  snapshot text: video ingest, recording queue, encoder/GPU-CUDA, freshness,
-  and diagnostics lines.
 - `tools/ssctl/Formatters.Snapshot.ThreadHealth.cs` owns thread-health section
   order plus source-reader, WASAPI capture, and WASAPI playback thread-health
   snapshot text.

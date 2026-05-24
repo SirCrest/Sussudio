@@ -286,7 +286,19 @@ Partial clusters reduced: `Formatters` -5 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by ssctl formatter ownership/output tests and runtime snapshot regression tests
 Behavior preserved: Snapshot section order, headers, field names, and formatted text for state, audio, recording, diagnostics, performance, and memory/GC are unchanged
-Notes for future agents: keep simple one-pass snapshot row sections in `Formatters.Snapshot.cs`; keep policy-heavy or branching sections such as capture settings, Flashback, MJPEG, preview/D3D, source, runtime pipeline, and thread health in their focused owners
+Notes for future agents: superseded by the later ssctl snapshot small-section consolidation; keep simple one-pass snapshot row sections in `Formatters.Snapshot.cs`; keep policy-heavy or branching sections such as Flashback, MJPEG, preview D3D, and thread health in their focused owners.
+
+Date: 2026-05-24
+Area: ssctl snapshot small-section formatter locality
+Problem: Six 20-39 line `ssctl` snapshot formatter partials owned simple sections that only make sense in the snapshot parent render order, increasing file count and forcing extra hops for console snapshot review.
+Files consolidated: `tools/ssctl/Formatters.Snapshot.CaptureSettings.cs`; `tools/ssctl/Formatters.Snapshot.CaptureCadence.cs`; `tools/ssctl/Formatters.Snapshot.AvSync.cs`; `tools/ssctl/Formatters.Snapshot.Source.cs`; `tools/ssctl/Formatters.Snapshot.Preview.cs`; `tools/ssctl/Formatters.Snapshot.Runtime.cs`
+Files added: none
+Net production .cs delta: -6
+Partial clusters reduced: `Formatters` -6 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by ssctl snapshot source-ownership tests and runtime snapshot regression tests
+Behavior preserved: Snapshot section order and text projection stay in the same `FormatSnapshot` flow; richer Flashback, MJPEG, D3D preview, and thread-health formatter owners remain separate.
+Notes for future agents: start ssctl formatter cleanup from the smallest snapshot sections first; keep simple one-section row writers in `Formatters.Snapshot.cs` unless they grow independent policy.
 
 Date: 2026-05-21
 Area: Automation diagnostics Flashback evaluation
