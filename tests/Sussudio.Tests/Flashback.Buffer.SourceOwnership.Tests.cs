@@ -6,21 +6,17 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
-        var segmentMutationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.SegmentMutation.cs")
-            .Replace("\r\n", "\n");
-        var segmentCompletionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.SegmentCompletion.cs")
+        var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(segmentMutationText, "public string AcquireSegmentPath(out bool generated)");
-        AssertContains(segmentMutationText, "public string GenerateSegmentPath()");
-        AssertContains(segmentMutationText, "public void MarkActiveSegmentStart(string path, TimeSpan startPts)");
-        AssertContains(segmentMutationText, "public void AbandonGeneratedSegmentPath(string generatedPath, string? restoreActivePath)");
-        AssertDoesNotContain(segmentMutationText, "public void OnSegmentCompleted(string path, TimeSpan startPts, TimeSpan endPts, long sizeBytes)");
-        AssertDoesNotContain(segmentMutationText, "private bool TryExtendCompletedSegment(");
-        AssertContains(segmentCompletionText, "public void OnSegmentCompleted(string path, TimeSpan startPts, TimeSpan endPts, long sizeBytes)");
-        AssertContains(segmentCompletionText, "private bool TryExtendCompletedSegment(");
-        AssertContains(segmentCompletionText, "FLASHBACK_BUFFER_SEGMENT_COMPLETE");
-        AssertContains(segmentCompletionText, "FLASHBACK_BUFFER_SEGMENT_EXTEND");
+        AssertContains(segmentsText, "public string AcquireSegmentPath(out bool generated)");
+        AssertContains(segmentsText, "public string GenerateSegmentPath()");
+        AssertContains(segmentsText, "public void MarkActiveSegmentStart(string path, TimeSpan startPts)");
+        AssertContains(segmentsText, "public void AbandonGeneratedSegmentPath(string generatedPath, string? restoreActivePath)");
+        AssertContains(segmentsText, "public void OnSegmentCompleted(string path, TimeSpan startPts, TimeSpan endPts, long sizeBytes)");
+        AssertContains(segmentsText, "private bool TryExtendCompletedSegment(");
+        AssertContains(segmentsText, "FLASHBACK_BUFFER_SEGMENT_COMPLETE");
+        AssertContains(segmentsText, "FLASHBACK_BUFFER_SEGMENT_EXTEND");
         AssertDoesNotContain(rootText, "public string AcquireSegmentPath(out bool generated)");
         AssertDoesNotContain(rootText, "public void OnSegmentCompleted(string path, TimeSpan startPts, TimeSpan endPts, long sizeBytes)");
         AssertDoesNotContain(rootText, "private bool TryExtendCompletedSegment(");
@@ -75,7 +71,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
-        var queryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs")
+        var queryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs")
             .Replace("\r\n", "\n");
         var pathSafetyText = queryText;
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
@@ -102,7 +98,7 @@ static partial class Program
         AssertDoesNotContain(rootText, "public string? ActiveFilePath");
         AssertDoesNotContain(rootText, "public string? GetSegmentFileForPosition(TimeSpan absolutePts)");
         AssertDoesNotContain(rootText, "public IReadOnlyList<FlashbackSegmentInfo> GetSegmentInfoList()");
-        AssertContains(docsText, "FlashbackBufferManager.SegmentQueries.cs");
+        AssertContains(docsText, "FlashbackBufferManager.Segments.cs");
         AssertContains(docsText, "session-directory path safety");
 
         return Task.CompletedTask;
@@ -134,8 +130,7 @@ static partial class Program
         AssertDoesNotContain(rootText, "public void Initialize(string sessionId)");
         AssertDoesNotContain(rootText, "public void Dispose()");
         AssertDoesNotContain(rootText, "private void ThrowIfDisposed()");
-        AssertContains(docsText, "FlashbackBufferManager.SegmentCompletion.cs");
-        AssertContains(docsText, "FlashbackBufferManager.SegmentQueries.cs");
+        AssertContains(docsText, "FlashbackBufferManager.Segments.cs");
         AssertContains(docsText, "FlashbackBufferManager.Lifecycle.cs");
         AssertContains(docsText, "recovery-preserve state");
 

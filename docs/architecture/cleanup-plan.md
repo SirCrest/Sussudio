@@ -1866,24 +1866,19 @@ core state and read-only live counters. PTS reset/update, sink-cycle active
 segment finalization, encoder frame-rate truth, and disk-byte accounting
 updates live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.LiveAccounting.cs`.
-Flashback buffer segment mutation now lives in
-`Sussudio/Services/Flashback/FlashbackBufferManager.SegmentMutation.cs`. Keep
-active segment path generation and active segment start/abandonment there.
-Flashback buffer segment completion now lives in
-`Sussudio/Services/Flashback/FlashbackBufferManager.SegmentCompletion.cs`. Keep
-completion registration, duplicate-path rejection, and same-path segment
-extension there.
+Flashback buffer segment ownership now lives in
+`Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs`. Keep active
+segment path generation, active segment start/abandonment, completion
+registration, duplicate-path rejection, and same-path segment extension there.
 Flashback buffer initialization, segment-extension setup, disposal, and
 disposed-state guards now live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs`.
 Recovery-preserve state and marker files now live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs`.
-Flashback buffer segment file lookup, range selection, start-PTS lookup, and
-shared segment path safety now live in
-`Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs`.
-Segment counts, active-path projection, active segment start PTS calculation,
-and segment-info projection now live in
-`Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs`.
+Flashback buffer segment file lookup, range selection, start-PTS lookup, shared
+segment path safety, segment counts, active-path projection, active segment
+start PTS calculation, and segment-info projection also live in
+`Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs`.
 Flashback buffer saturated math, PTS range clamps, completed-segment byte
 summation, and normalized segment-path comparisons now live with shared buffer
 state in `Sussudio/Services/Flashback/FlashbackBufferManager.cs`.
