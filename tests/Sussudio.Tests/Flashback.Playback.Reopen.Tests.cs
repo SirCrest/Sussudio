@@ -15,7 +15,7 @@ static partial class Program
         var decoderReopenText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs")
             .Replace("\r\n", "\n");
         var decoderSegmentReopenText = segmentEdgesText;
-        var seekDisplayText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.SeekDisplay.cs")
+        var seekDisplayText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
             .Replace("\r\n", "\n");
         var metricsCollectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs")
             .Replace("\r\n", "\n");
@@ -114,8 +114,12 @@ static partial class Program
         AssertContains(seekDisplayText, "private bool SeekAndDisplayKeyframe(");
         AssertContains(seekDisplayText, "private bool TryDecodeAndDisplaySeekFrame(");
         AssertContains(seekDisplayText, "private void RecordSeekDisplayDecodeFailure(");
-        AssertContains(agentMapText, "FlashbackPlaybackController.SeekDisplay.cs");
-        AssertContains(cleanupPlanText, "FlashbackPlaybackController.SeekDisplay.cs");
+        AssertDoesNotContain(agentMapText, "FlashbackPlaybackController.SeekDisplay.cs");
+        AssertDoesNotContain(cleanupPlanText, "FlashbackPlaybackController.SeekDisplay.cs");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackPlaybackController.SeekDisplay.cs")),
+            "Flashback seek-display logic folded into playback frame ownership");
         var seekDisplayBlock = ExtractTextBetween(
             seekDisplayText,
             "private bool SeekAndDisplayKeyframe(",

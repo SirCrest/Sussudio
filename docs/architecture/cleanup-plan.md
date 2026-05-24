@@ -2715,20 +2715,15 @@ now live with segment-edge playback handling in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs`.
 Keep seek-display and playback pacing in the controller core/thread partials.
 
-Flashback playback seek/scrub frame display now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.SeekDisplay.cs`.
-Keep keyframe seek display, active fMP4 keyframe retry, and displayed-frame PTS
-mapping there, alongside seek/scrub decoded-frame acquisition, adjacent-segment
-fallback display, frame submission/held-frame release, and no-frame
-seek-display failure accounting;
-keep continuous playback pacing in the controller core/thread partials.
-
 Flashback continuous playback progression now lives with playback frame reads in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`.
-Keep decoded-frame submission flow, live-recovery policy invocation, cadence
-pacing, A/V drift diagnostics, prebuffer cleanup, and A/V drift frame-skip
-catch-up policy there. Decode-error and near-live snap policy, including the
-recovery near-live snap threshold, belongs in the playback live recovery owner.
+Keep seek/scrub keyframe display, active fMP4 keyframe retry, displayed-frame
+PTS mapping, seek/scrub decoded-frame acquisition, adjacent-segment fallback
+display, no-frame seek-display failure accounting, decoded-frame submission
+flow, live-recovery policy invocation, cadence pacing, A/V drift diagnostics,
+prebuffer cleanup, and A/V drift frame-skip catch-up policy there. Decode-error
+and near-live snap policy, including the recovery near-live snap threshold,
+belongs in the playback live recovery owner.
 Segment-edge routing decisions, write-head waits, next-segment switch
 transactions, next-file probing, decoder open/seek, switch counters, audio
 gates, cadence-baseline reset, and active fMP4 reopen/reseek recovery during
