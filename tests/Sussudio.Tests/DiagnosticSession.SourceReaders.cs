@@ -27,11 +27,10 @@ static partial class Program
 
     private static string ReadDiagnosticSessionFlashbackMetricsSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs",
+            "tools/Common/DiagnosticSessionFlashbackMetrics.RecordingExport.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs",
-            "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs",
-            "tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs");
+            "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs");
 
     private static string ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource()
         => ReadNormalizedSourceFiles(

@@ -3482,17 +3482,15 @@ recording readiness, stress buffer readiness, playback state, boundary
 crossing, warmed-playback frame-count/FPS, and position convergence while the
 runner keeps scenario command sequencing.
 
-Diagnostic-session Flashback recording metrics live in
-`DiagnosticSessionFlashbackMetrics.Recording.cs`, including the
-`FlashbackRecordingSessionMetrics` handoff shape and recording metric
-projection. Flashback playback session metrics live in
+Diagnostic-session Flashback recording/export metrics live in
+`DiagnosticSessionFlashbackMetrics.RecordingExport.cs`, including the
+`FlashbackRecordingSessionMetrics` and `FlashbackExportSessionMetrics`
+handoff shapes, recording metric projection, export-relevance and snapshot max
+aggregation, metric orchestration, and final force-rotate fallback counters.
+Flashback playback session metrics live in
 `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`, including the
 `FlashbackPlaybackSessionMetrics` handoff state, playback session metric
-orchestration, and end-of-session playback counter deltas. Flashback
-export metrics live in `DiagnosticSessionFlashbackMetrics.Export.cs`, including
-the `FlashbackExportSessionMetrics` handoff shape, export-relevance and
-snapshot max aggregation, metric orchestration, and final force-rotate fallback
-counters.
+orchestration, and end-of-session playback counter deltas.
 
 Diagnostic-session Flashback playback result metrics now keep the
 `FlashbackPlaybackResultMetrics` handoff shape, final construction, and
@@ -3584,8 +3582,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExportScenarios.Playback.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Range.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.cs`
-- `DiagnosticSessionFlashbackMetrics.Recording.cs`
-- `DiagnosticSessionFlashbackMetrics.Export.cs`
+- `DiagnosticSessionFlashbackMetrics.RecordingExport.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`

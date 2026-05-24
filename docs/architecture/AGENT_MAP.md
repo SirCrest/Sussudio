@@ -3751,17 +3751,16 @@ Primary owners:
   scenario registration, priority, task label, started action, post-disable
   playback-thread/queue health checks, and post-re-enable active-state
   validation.
-- `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs` owns the
-  `FlashbackRecordingSessionMetrics` handoff shape and read-only recording
-  metric projection.
+- `tools/Common/DiagnosticSessionFlashbackMetrics.RecordingExport.cs` owns the
+  `FlashbackRecordingSessionMetrics` and `FlashbackExportSessionMetrics`
+  handoff shapes, read-only recording metric projection, export-relevance and
+  snapshot max aggregation, export metric orchestration, and final force-rotate
+  fallback counters.
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs` owns the
   `FlashbackPlaybackSessionMetrics` handoff state, playback session metric
   orchestration, and end-of-session playback counter deltas. It covers observed
   identity, baseline/end snapshots, command, cadence, 1% low, decode,
-  audio-master, and stage metric fields. `tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs` owns the
-  `FlashbackExportSessionMetrics` handoff shape, export-relevance and snapshot
-  max aggregation, export metric orchestration, and final force-rotate fallback
-  counters.
+  audio-master, and stage metric fields.
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs` owns
   playback snapshot observation dispatch, active/relevant snapshot gating,
   session frame-count projection, 1% low window capture, frame/decode maxima,

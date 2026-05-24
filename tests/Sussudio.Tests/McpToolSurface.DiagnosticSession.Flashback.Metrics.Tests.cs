@@ -9,18 +9,20 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var metricsText = ReadDiagnosticSessionFlashbackMetricsSource();
-        var recordingText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs")
+        var recordingExportText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.RecordingExport.cs")
             .Replace("\r\n", "\n");
+        var recordingText = recordingExportText;
         var playbackSessionText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs")
             .Replace("\r\n", "\n");
         var playbackObservationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs")
             .Replace("\r\n", "\n");
         var playbackResultText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs")
             .Replace("\r\n", "\n");
-        var exportText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs")
-            .Replace("\r\n", "\n");
+        var exportText = recordingExportText;
 
         AssertContains(metricsText, "internal static partial class DiagnosticSessionFlashbackMetrics");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.Recording.cs")), "Flashback recording metrics stay folded into RecordingExport.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.Export.cs")), "Flashback export metrics stay folded into RecordingExport.cs");
         AssertContains(recordingText, "internal sealed class FlashbackRecordingSessionMetrics");
         AssertContains(playbackSessionText, "internal sealed class FlashbackPlaybackSessionMetrics");
         AssertContains(playbackResultText, "internal sealed class FlashbackPlaybackResultMetrics");
