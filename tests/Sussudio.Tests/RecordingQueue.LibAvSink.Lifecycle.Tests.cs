@@ -21,7 +21,7 @@ static partial class Program
     internal static Task LibAvRecordingSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches()
     {
         var libAvSource = ReadLibAvRecordingSinkSource();
-        var encodingLoopText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.EncodingLoop.cs")
+        var encodingLoopText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(libAvSource, "private const int VideoDrainBatchLimit = 24;");
@@ -52,20 +52,22 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task LibAvRecordingSink_EncodingLoopAndPacketDrainsLiveInFocusedPartials()
+    internal static Task LibAvRecordingSink_EncodingLoopLivesWithSinkRootAndPacketDrainsStayFocused()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
-            .Replace("\r\n", "\n");
-        var encodingLoopText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.EncodingLoop.cs")
             .Replace("\r\n", "\n");
         var packetDrainText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.PacketDrain.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(encodingLoopText, "private void EncodingLoop(CancellationToken cancellationToken)");
-        AssertContains(encodingLoopText, "DrainAudioPackets(audioQueue.Reader)");
-        AssertContains(encodingLoopText, "DrainCudaPackets(cudaQueue.Reader, CudaDrainBatchLimit)");
-        AssertContains(encodingLoopText, "DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit)");
-        AssertContains(encodingLoopText, "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
+        AssertContains(rootText, "private void EncodingLoop(CancellationToken cancellationToken)");
+        AssertContains(rootText, "DrainAudioPackets(audioQueue.Reader)");
+        AssertContains(rootText, "DrainCudaPackets(cudaQueue.Reader, CudaDrainBatchLimit)");
+        AssertContains(rootText, "DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit)");
+        AssertContains(rootText, "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.EncodingLoop.cs")),
+            "LibAvRecordingSink encoding loop stays folded into the sink root");
         AssertContains(packetDrainText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(packetDrainText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(packetDrainText, "private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)");
@@ -75,11 +77,10 @@ static partial class Program
         AssertContains(packetDrainText, "ffmpeg.av_frame_free(&frame);");
         AssertContains(packetDrainText, "ReturnVideoPacket(packet);");
         AssertContains(packetDrainText, "ReturnBuffer(packet.Buffer);");
-        AssertDoesNotContain(encodingLoopText, "private bool DrainVideoPackets(");
-        AssertDoesNotContain(encodingLoopText, "private bool DrainGpuPackets(");
-        AssertDoesNotContain(encodingLoopText, "private unsafe bool DrainCudaPackets(");
-        AssertDoesNotContain(encodingLoopText, "private bool DrainAudioPackets(");
-        AssertDoesNotContain(rootText, "private void EncodingLoop(CancellationToken cancellationToken)");
+        AssertDoesNotContain(rootText, "private bool DrainVideoPackets(");
+        AssertDoesNotContain(rootText, "private bool DrainGpuPackets(");
+        AssertDoesNotContain(rootText, "private unsafe bool DrainCudaPackets(");
+        AssertDoesNotContain(rootText, "private bool DrainAudioPackets(");
         AssertDoesNotContain(rootText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertDoesNotContain(rootText, "private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)");
 
