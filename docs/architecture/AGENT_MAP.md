@@ -195,16 +195,11 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs`
   owns UI/settings command pre-routing and port-typed trivial-handler dispatch
   before the custom command router.
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.AudioControlCommands.cs`
-  owns device-audio mode, analog audio gain, and microphone-enable command
-  bodies behind the custom command router.
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.CaptureControlCommands.cs`
-  owns MJPEG decoder count, output-path, and recording-enable command bodies,
-  including recording-response snapshot refresh, behind the custom command
-  router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs`
   owns the custom automation command router for multi-field payloads, special
-  response shapes, capture routing, and domain command handoff.
+  response shapes, capture routing, domain command handoff, and the small
+  device-selection, audio-control, capture-control, output-path, and
+  recording-enable command bodies it dispatches.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.UiSettingsCommands.cs`
   owns UI/settings automation command application, including the compatibility
   no-op for the public show-all capture options command, preview volume, stats
@@ -213,9 +208,6 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.ReadbackCommands.cs`
   owns read-only snapshot, manifest, diagnostic event, performance timeline,
   and audio ramp trace command bodies behind the custom command router.
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.DeviceCommands.cs`
-  owns device refresh, capture-device selection, audio-input selection, and
-  capture-options readback command bodies behind the custom command router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.FlashbackCommands.cs`
   owns Flashback action/export/segment/restart/enable command bodies behind the
   custom command router.
@@ -236,8 +228,9 @@ Automation diagnostics ownership:
   `AutomationCommandDispatcher.Preflight.cs` owns manifest revision, auth-token,
   and readiness gating, `AutomationCommandDispatcher.PortMappedDispatch.cs`
   owns the port-grouped tables and ordered dispatch for simple one-property
-  commands, and `AutomationCommandDispatcher.DeviceCommands.cs` consumes the
-  device-selection and snapshot-query ports.
+  commands, and `AutomationCommandDispatcher.CustomCommands.cs` consumes the
+  device-selection, audio, capture-settings, preview/recording, and
+  snapshot-query ports for custom command bodies.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.CommandParsing.cs`
   owns command metadata lookups, path validation forwarding, and enum payload
   parsing.

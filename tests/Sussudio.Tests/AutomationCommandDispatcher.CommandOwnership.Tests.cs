@@ -51,7 +51,7 @@ static partial class Program
         AssertContains(customCommandsText, "ExecuteGetSnapshotCommandAsync(correlationId, cancellationToken)");
         AssertContains(customCommandsText, "case AutomationCommandKind.GetAutomationManifest:");
         AssertContains(customCommandsText, "ExecuteGetAutomationManifestCommand(correlationId)");
-        AssertDoesNotContain(customCommandsText, "_diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken)");
+        AssertDoesNotContain(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteGetSnapshotCommandAsync(");
         AssertDoesNotContain(customCommandsText, "AutomationCommandCatalog.CreateManifest()");
 
         AssertContains(readbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteGetSnapshotCommandAsync(");

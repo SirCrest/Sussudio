@@ -2,12 +2,11 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    internal static Task AutomationCommandDispatcher_AudioControlCommands_LiveInFocusedPartial()
+    internal static Task AutomationCommandDispatcher_AudioControlCommands_LiveWithCustomRouter()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
-        var audioControlCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.AudioControlCommands.cs")
-            .Replace("\r\n", "\n");
+        var audioControlCommandsText = customCommandsText;
 
         AssertContains(customCommandsText, "case AutomationCommandKind.SetDeviceAudioMode:");
         AssertContains(customCommandsText, "ExecuteSetDeviceAudioModeCommandAsync(payload, correlationId, cancellationToken)");
@@ -19,8 +18,6 @@ static partial class Program
         AssertDoesNotContain(customCommandsText, "_viewModel.SetDeviceAudioModeAsync");
         AssertDoesNotContain(customCommandsText, "_viewModel.SetAnalogAudioGainAsync");
         AssertDoesNotContain(customCommandsText, "_viewModel.SetMicrophoneEnabledAsync");
-        AssertDoesNotContain(customCommandsText, "Missing 'enabled' parameter.");
-
         AssertContains(audioControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetDeviceAudioModeCommandAsync(");
         AssertContains(audioControlCommandsText, "var mode = RequireString(payload, \"mode\");");
         AssertContains(audioControlCommandsText, "_audioPort.SetDeviceAudioModeAsync(mode, cancellationToken)");
@@ -37,12 +34,11 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationCommandDispatcher_CaptureControlCommands_LiveInFocusedPartial()
+    internal static Task AutomationCommandDispatcher_CaptureControlCommands_LiveWithCustomRouter()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
-        var captureControlCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CaptureControlCommands.cs")
-            .Replace("\r\n", "\n");
+        var captureControlCommandsText = customCommandsText;
 
         AssertContains(customCommandsText, "case AutomationCommandKind.SetMjpegDecoderCount:");
         AssertContains(customCommandsText, "ExecuteSetMjpegDecoderCountCommandAsync(payload, correlationId, cancellationToken)");
@@ -54,8 +50,6 @@ static partial class Program
         AssertDoesNotContain(customCommandsText, "_viewModel.SetMjpegDecoderCountAsync");
         AssertDoesNotContain(customCommandsText, "_viewModel.SetOutputPathAsync");
         AssertDoesNotContain(customCommandsText, "_viewModel.SetRecordingEnabledAsync");
-        AssertDoesNotContain(customCommandsText, "Missing required integer property 'decoderCount'.");
-
         AssertContains(captureControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetMjpegDecoderCountCommandAsync(");
         AssertContains(captureControlCommandsText, "var decoderCount = GetInt(payload, \"decoderCount\");");
         AssertContains(captureControlCommandsText, "Missing required integer property 'decoderCount'.");
@@ -99,12 +93,11 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationCommandDispatcher_DeviceCommands_LiveInFocusedPartial()
+    internal static Task AutomationCommandDispatcher_DeviceCommands_LiveWithCustomRouter()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
-        var deviceCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.DeviceCommands.cs")
-            .Replace("\r\n", "\n");
+        var deviceCommandsText = customCommandsText;
 
         AssertContains(customCommandsText, "case AutomationCommandKind.RefreshDevices:");
         AssertContains(customCommandsText, "ExecuteRefreshDevicesCommandAsync(correlationId, cancellationToken)");

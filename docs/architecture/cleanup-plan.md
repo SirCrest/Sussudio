@@ -358,18 +358,13 @@ aggregate automation surface.
 automation command application, including show-all capture options, preview
 volume, stats visibility, settings visibility, frame-time overlay visibility,
 Flashback timeline visibility, and stats-section expand/collapse response text.
-`AutomationCommandDispatcher.AudioControlCommands.cs` owns device-audio mode,
-analog audio gain, and microphone-enable command bodies behind the custom
-command router.
-`AutomationCommandDispatcher.CaptureControlCommands.cs` owns MJPEG decoder
-count, output-path, and recording-enable command bodies, including the
-recording-response snapshot refresh, behind the custom command router.
+`AutomationCommandDispatcher.CustomCommands.cs` owns the custom command router
+plus the small device-selection, audio-control, capture-control, output-path,
+and recording-enable command bodies it dispatches, including the
+recording-response snapshot refresh.
 `AutomationCommandDispatcher.ReadbackCommands.cs` owns read-only snapshot,
 manifest, diagnostic event, performance timeline, and audio ramp trace command
 bodies behind the custom command router.
-`AutomationCommandDispatcher.DeviceCommands.cs` owns device refresh,
-capture-device selection, audio-input selection, and capture-options readback
-command bodies behind the custom command router.
 `AutomationCommandDispatcher.FlashbackCommands.cs` owns Flashback action,
 export, segment, restart, and enable command bodies behind the custom command
 router.

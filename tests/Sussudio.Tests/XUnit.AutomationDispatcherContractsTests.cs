@@ -55,8 +55,8 @@ public sealed class AutomationDispatcherContractsTests
         => global::Program.AutomationCommandDispatcher_OneFieldHandlers_MatchCatalogPayloadFields();
 
     [Fact]
-    public Task AutomationDispatcherAudioControlCommandsLiveInFocusedPartial()
-        => global::Program.AutomationCommandDispatcher_AudioControlCommands_LiveInFocusedPartial();
+    public Task AutomationDispatcherAudioControlCommandsLiveWithCustomRouter()
+        => global::Program.AutomationCommandDispatcher_AudioControlCommands_LiveWithCustomRouter();
 
     [Fact]
     public Task AutomationDispatcherAudioRampTracePayloadFieldMatchesCatalog()
@@ -71,8 +71,8 @@ public sealed class AutomationDispatcherContractsTests
         => global::Program.AutomationCommandDispatcher_CatalogReadyIndependentCommands_BypassDeviceReadiness();
 
     [Fact]
-    public Task AutomationDispatcherCaptureControlCommandsLiveInFocusedPartial()
-        => global::Program.AutomationCommandDispatcher_CaptureControlCommands_LiveInFocusedPartial();
+    public Task AutomationDispatcherCaptureControlCommandsLiveWithCustomRouter()
+        => global::Program.AutomationCommandDispatcher_CaptureControlCommands_LiveWithCustomRouter();
 
     [Fact]
     public Task AutomationDispatcherIntrospectionCommandsLiveInFocusedPartial()
@@ -103,8 +103,8 @@ public sealed class AutomationDispatcherContractsTests
         => global::Program.AutomationCommandDispatcher_GetAutomationManifest_IsReadOnlyAndReadinessIndependent();
 
     [Fact]
-    public Task AutomationDispatcherDeviceCommandsLiveInFocusedPartial()
-        => global::Program.AutomationCommandDispatcher_DeviceCommands_LiveInFocusedPartial();
+    public Task AutomationDispatcherDeviceCommandsLiveWithCustomRouter()
+        => global::Program.AutomationCommandDispatcher_DeviceCommands_LiveWithCustomRouter();
 
     [Fact]
     public Task AutomationDispatcherFlashbackFailuresReturnPlaybackDiagnostics()
