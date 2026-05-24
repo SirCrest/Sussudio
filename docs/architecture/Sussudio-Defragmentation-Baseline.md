@@ -454,7 +454,7 @@ Partial clusters reduced: `Formatters` -5 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by ssctl formatter ownership/output tests and runtime snapshot regression tests
 Behavior preserved: Snapshot section order, headers, field names, and formatted text for state, audio, recording, diagnostics, performance, and memory/GC are unchanged
-Notes for future agents: superseded by later ssctl snapshot small-section consolidations; keep simple one-pass snapshot row sections and D3D preview text with `Formatters.Snapshot.cs`; keep policy-heavy or branching sections such as Flashback, MJPEG, and thread health in their focused owners.
+Notes for future agents: superseded by later ssctl snapshot consolidations; keep snapshot row sections, D3D preview text, Flashback text, MJPEG text, and thread health with `Formatters.Snapshot.cs` unless a subsection grows independent policy beyond snapshot rendering.
 
 Date: 2026-05-24
 Area: ssctl snapshot small-section formatter locality
@@ -465,7 +465,7 @@ Net production .cs delta: -6
 Partial clusters reduced: `Formatters` -6 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by ssctl snapshot source-ownership tests and runtime snapshot regression tests
-Behavior preserved: Snapshot section order and text projection stay in the same `FormatSnapshot` flow; richer Flashback, MJPEG, D3D preview, and thread-health formatter owners remain separate.
+Behavior preserved: Snapshot section order and text projection stay in the same `FormatSnapshot` flow; D3D preview, Flashback, MJPEG, and thread-health sections now live with the snapshot renderer.
 Notes for future agents: start ssctl formatter cleanup from the smallest snapshot sections first; keep simple one-section row writers in `Formatters.Snapshot.cs` unless they grow independent policy.
 
 Date: 2026-05-21

@@ -3498,16 +3498,11 @@ Primary owners:
   fallback frame/cadence, D3D renderer section text, D3D CPU timing,
   pipeline-latency, frame-latency wait, frame ownership, DXGI frame-stat text,
   slow-frame formatter delegation, source dimensions, source frame-rate
-  summary, HDR, and source telemetry snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot
-  active/failure gating, section and encoding subsection ordering, Flashback
-  encoder/buffer/cache/cleanup text, queue-latency/backpressure/failure/GPU
-  queue text, export progress/result text, playback state/command-queue text,
-  and playback cadence/decode/frame/stage/A/V drift text.
-- `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG timing snapshot
-  activation, header, output order, decode/copy/callback/per-decoder timing,
-  compressed queue/drop/reorder/pipeline timing, and preview-jitter queue,
-  input/output/latency, ownership, and underflow snapshot text.
+  summary, HDR, source telemetry, Flashback active/failure gating, Flashback
+  section and encoding subsection ordering, Flashback encoder/buffer/cache/
+  cleanup text, Flashback export/playback text, MJPEG timing activation, decode/
+  copy/callback/per-decoder timing, compressed queue/drop/reorder/pipeline
+  timing, and preview-jitter snapshot text.
 - `tools/ssctl/Formatters.Options.cs` owns capture option and device lists.
 - `tools/ssctl/Formatters.Timeline.cs` owns performance timeline response
   validation, JSON row projection, private row model, table output, and

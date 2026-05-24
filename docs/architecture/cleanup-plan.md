@@ -431,12 +431,12 @@ performance, process CPU, Memory/GC, thread-pool, capture settings,
 friendly/exact frame-rate, capture cadence, embedded AV-sync drift,
 source-signal, video-pipeline, thread-health section order and
 source-reader/WASAPI row text, preview renderer-mode routing, non-D3D
-fallback text, and D3D preview snapshot text in `Formatters.Snapshot.cs`, Flashback snapshot gating/order, encoding status/health text, export
-progress/result text, playback command text, and playback cadence/decode/frame/
-stage/A/V drift text in `Formatters.Snapshot.Flashback.cs`, MJPEG
+fallback text, D3D preview snapshot text, Flashback snapshot gating/order,
+encoding status/health text, export progress/result text, playback command
+text, playback cadence/decode/frame/stage/A/V drift text, MJPEG
 activation/header/order, decode/copy/callback/per-decoder timing,
 compressed-queue, drop-reason, reorder, pipeline timing, preview-jitter queue,
-latency, ownership, and underflow text in `Formatters.Snapshot.Mjpeg.cs`,
+latency, ownership, and underflow text in `Formatters.Snapshot.cs`,
 diagnostic-event text in `Formatters.Common.cs`, capture option/device text in
 `Formatters.Options.cs`,
 performance timeline response validation, JSON row projection, private row
