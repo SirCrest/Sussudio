@@ -53,7 +53,7 @@ static partial class Program
         var flashbackActionsText = flashbackToolsText;
         var flashbackExportText = flashbackToolsText;
         var framePacingVerdictToolsText = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.cs");
-        var memoryDiagnosticsToolsText = ReadRepoFile("tools/McpServer/Tools/MemoryDiagnosticsTools.cs");
+        var memoryDiagnosticsToolsText = appStateToolText;
         var pipelineSettingsToolsText = captureSettingsToolsText;
         var performanceTimelineToolsText = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs");
         var previewToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewTools.cs");
