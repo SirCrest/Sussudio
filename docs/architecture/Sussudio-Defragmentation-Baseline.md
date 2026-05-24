@@ -1475,3 +1475,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation/tool contract changes
 Behavior preserved: Public start/dispose semantics, startup dimension/FPS/HDR reset, first-frame reset, shared-device reset flag, frame-ready reset, render-thread creation, stop-before-start, shared-device disposal, and frame-ready event disposal remain unchanged
 Notes for future agents: keep public lifecycle with `D3D11PreviewRenderer.cs`; keep stop/reinit-stop, panel unbind, native-call fencing, and pending-frame shutdown cleanup in `D3D11PreviewRenderer.StopLifecycle.cs`
+
+Date: 2026-05-24
+Area: CUDA D3D11 bridge lifecycle locality
+Problem: `CudaD3D11Interop.Lifetime.cs` was a 62-line disposal partial for resources acquired by `CudaD3D11Interop.Initialization.cs`, forcing bridge construction and teardown invariants to be read across two files.
+Files consolidated: `Sussudio/Services/Gpu/CudaD3D11Interop.Lifetime.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `CudaD3D11InteropBridge` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation/tool contract changes
+Behavior preserved: CUDA resource unregistration, D3D texture disposal order, primary-context release, COM reference release, initialized flag reset, and disposal logging remain unchanged
+Notes for future agents: keep bridge resource acquisition and disposal together in `CudaD3D11Interop.Initialization.cs`; keep zero-copy/staging copy hot paths in `CudaD3D11Interop.Copy.cs` and native declarations in `CudaD3D11Interop.Native.cs`

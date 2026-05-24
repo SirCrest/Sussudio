@@ -64,12 +64,15 @@ static partial class Program
 
         var cudaInteropInitializationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Initialization.cs"));
         var cudaInteropCopyText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Copy.cs"));
-        var cudaInteropLifetimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Lifetime.cs"));
         var cudaInteropNativeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Native.cs"));
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.cs")),
             "CUDA/D3D11 interop state-only partial");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Lifetime.cs")),
+            "CUDA/D3D11 interop lifetime is consolidated with bridge initialization");
         AssertContains(cudaInteropInitializationText, "internal sealed unsafe partial class CudaD3D11InteropBridge : IDisposable");
         AssertContains(cudaInteropInitializationText, "private static readonly object D3D11InteropLock");
         AssertContains(cudaInteropInitializationText, "public IntPtr TextureNativePointer");
@@ -78,7 +81,6 @@ static partial class Program
         AssertContains(cudaInteropInitializationText, "CUDA_D3D11_INTEROP_CTX_INIT");
         AssertContains(cudaInteropInitializationText, "CUDA_D3D11_ZEROCOPY_REGISTER_OK");
         AssertDoesNotContain(cudaInteropInitializationText, "public void CopyFrameToTexture");
-        AssertDoesNotContain(cudaInteropInitializationText, "public void Dispose()");
         AssertDoesNotContain(cudaInteropInitializationText, "DllImport(\"nvcuda.dll\")");
         AssertDoesNotContain(cudaInteropInitializationText, "private struct CUDA_MEMCPY2D");
         AssertContains(cudaInteropCopyText, "public void CopyFrameToTexture");
@@ -86,9 +88,9 @@ static partial class Program
         AssertContains(cudaInteropCopyText, "private void CopyFrameStaging");
         AssertContains(cudaInteropCopyText, "cuGraphicsMapResources");
         AssertContains(cudaInteropCopyText, "MapMode.Write");
-        AssertContains(cudaInteropLifetimeText, "public void Dispose()");
-        AssertContains(cudaInteropLifetimeText, "private void TryUnregisterResource");
-        AssertContains(cudaInteropLifetimeText, "cuDevicePrimaryCtxRelease");
+        AssertContains(cudaInteropInitializationText, "public void Dispose()");
+        AssertContains(cudaInteropInitializationText, "private void TryUnregisterResource");
+        AssertContains(cudaInteropInitializationText, "cuDevicePrimaryCtxRelease");
         AssertContains(cudaInteropNativeText, "private const uint CU_MEMORYTYPE_DEVICE");
         AssertContains(cudaInteropNativeText, "DllImport(\"nvcuda.dll\")");
         AssertContains(cudaInteropNativeText, "private struct CUDA_MEMCPY2D");

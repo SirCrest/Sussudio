@@ -2343,10 +2343,10 @@ emit-signal disposal there.
 
 CUDA/D3D11 preview interop ownership is split by runtime boundary:
 `Sussudio/Services/Gpu/CudaD3D11Interop.Initialization.cs` owns bridge state,
-public texture handles, constructor setup, and zero-copy registration,
+public texture handles, constructor setup, zero-copy registration, disposal,
+and CUDA resource unregistration,
 `CudaD3D11Interop.Copy.cs` owns the zero-copy and staging
-frame-copy paths, `CudaD3D11Interop.Lifetime.cs` owns disposal and CUDA resource
-unregistration, and `CudaD3D11Interop.Native.cs` owns CUDA constants, P/Invoke
+frame-copy paths, and `CudaD3D11Interop.Native.cs` owns CUDA constants, P/Invoke
 entry points, and the `CUDA_MEMCPY2D` native struct. Keep D3D11 locking,
 primary-context ownership, and fallback-to-staging behavior unchanged.
 
