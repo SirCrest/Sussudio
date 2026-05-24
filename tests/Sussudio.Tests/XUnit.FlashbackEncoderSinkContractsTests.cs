@@ -91,8 +91,8 @@ public sealed class FlashbackEncoderSinkContractsTests
         => global::Program.FlashbackEncoderSink_RootHelpersLiveInFocusedPartials();
 
     [Fact]
-    public Task FlashbackEncoderSinkForceRotateRequestsLiveInFocusedPartial()
-        => global::Program.FlashbackEncoderSink_ForceRotateRequestsLiveInFocusedPartial();
+    public Task FlashbackEncoderSinkForceRotateLivesInFocusedPartial()
+        => global::Program.FlashbackEncoderSink_ForceRotateLivesInFocusedPartial();
 
     [Fact]
     public Task FlashbackEncoderSinkStopAndDisposeLifecyclesShareShutdownOwner()

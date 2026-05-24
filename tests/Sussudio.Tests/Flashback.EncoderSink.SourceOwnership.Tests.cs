@@ -225,47 +225,45 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackEncoderSink_ForceRotateRequestsLiveInFocusedPartial()
+    internal static Task FlashbackEncoderSink_ForceRotateLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
-        var forceRotateRequestsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateRequests.cs")
-            .Replace("\r\n", "\n");
-        var forceRotateExecutionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateExecution.cs")
+        var forceRotateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs")
             .Replace("\r\n", "\n");
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
             ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
 
-        AssertContains(forceRotateRequestsText, "public bool IsForceRotateActive =>");
-        AssertContains(forceRotateRequestsText, "public bool IsForceRotateRequested =>");
-        AssertContains(forceRotateRequestsText, "public bool IsForceRotateDraining =>");
-        AssertContains(forceRotateRequestsText, "public bool WaitForForceRotateIdle(TimeSpan timeout)");
-        AssertContains(forceRotateRequestsText, "private bool _forceRotateRequested;");
-        AssertContains(forceRotateRequestsText, "private volatile ForceRotateRequest? _forceRotateRequest;");
-        AssertContains(forceRotateRequestsText, "private TimeSpan _forceRotateInPoint;");
-        AssertContains(forceRotateRequestsText, "private TimeSpan _forceRotateOutPoint;");
-        AssertContains(forceRotateRequestsText, "private bool _forceRotateDraining;");
-        AssertContains(forceRotateRequestsText, "public FlashbackForceRotateResult ForceRotateForExport(");
-        AssertContains(forceRotateRequestsText, "private const int ForceRotateCommittedGraceMs = 1_000;");
-        AssertContains(forceRotateRequestsText, "var request = new ForceRotateRequest();");
-        AssertContains(forceRotateRequestsText, "TryCancelForceRotate(request)");
-        AssertContains(forceRotateRequestsText, "private bool TryCancelForceRotate(ForceRotateRequest request)");
-        AssertContains(forceRotateRequestsText, "private void CompletePendingForceRotateWithEmptyResult()");
-        AssertContains(forceRotateRequestsText, "private static bool ShouldAbortForceRotateDrain(");
-        AssertContains(forceRotateRequestsText, "private sealed class ForceRotateRequest");
-        AssertContains(forceRotateRequestsText, "public bool TryBeginCommit()");
-        AssertContains(forceRotateRequestsText, "public bool TryCancel()");
-        AssertContains(forceRotateRequestsText, "public void Complete(IReadOnlyList<string> paths)");
-        AssertContains(forceRotateExecutionText, "private bool ProcessPendingForceRotate(");
-        AssertContains(forceRotateExecutionText, "Volatile.Write(ref _forceRotateDraining, true);");
-        AssertContains(forceRotateExecutionText, "while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))");
-        AssertContains(forceRotateExecutionText, "while (DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit))");
-        AssertContains(forceRotateExecutionText, "while (DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit))");
-        AssertContains(forceRotateExecutionText, "while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))");
-        AssertContains(forceRotateExecutionText, "if (!localRequest.TryBeginCommit())");
-        AssertContains(forceRotateExecutionText, "if (!RotateSegment(currentPts))");
-        AssertContains(forceRotateExecutionText, "localRequest.Complete(_bufferManager.GetValidSegmentPaths(localIn, localOut));");
+        AssertContains(forceRotateText, "public bool IsForceRotateActive =>");
+        AssertContains(forceRotateText, "public bool IsForceRotateRequested =>");
+        AssertContains(forceRotateText, "public bool IsForceRotateDraining =>");
+        AssertContains(forceRotateText, "public bool WaitForForceRotateIdle(TimeSpan timeout)");
+        AssertContains(forceRotateText, "private bool _forceRotateRequested;");
+        AssertContains(forceRotateText, "private volatile ForceRotateRequest? _forceRotateRequest;");
+        AssertContains(forceRotateText, "private TimeSpan _forceRotateInPoint;");
+        AssertContains(forceRotateText, "private TimeSpan _forceRotateOutPoint;");
+        AssertContains(forceRotateText, "private bool _forceRotateDraining;");
+        AssertContains(forceRotateText, "public FlashbackForceRotateResult ForceRotateForExport(");
+        AssertContains(forceRotateText, "private const int ForceRotateCommittedGraceMs = 1_000;");
+        AssertContains(forceRotateText, "var request = new ForceRotateRequest();");
+        AssertContains(forceRotateText, "TryCancelForceRotate(request)");
+        AssertContains(forceRotateText, "private bool TryCancelForceRotate(ForceRotateRequest request)");
+        AssertContains(forceRotateText, "private void CompletePendingForceRotateWithEmptyResult()");
+        AssertContains(forceRotateText, "private static bool ShouldAbortForceRotateDrain(");
+        AssertContains(forceRotateText, "private sealed class ForceRotateRequest");
+        AssertContains(forceRotateText, "public bool TryBeginCommit()");
+        AssertContains(forceRotateText, "public bool TryCancel()");
+        AssertContains(forceRotateText, "public void Complete(IReadOnlyList<string> paths)");
+        AssertContains(forceRotateText, "private bool ProcessPendingForceRotate(");
+        AssertContains(forceRotateText, "Volatile.Write(ref _forceRotateDraining, true);");
+        AssertContains(forceRotateText, "while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))");
+        AssertContains(forceRotateText, "while (DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit))");
+        AssertContains(forceRotateText, "while (DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit))");
+        AssertContains(forceRotateText, "while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))");
+        AssertContains(forceRotateText, "if (!localRequest.TryBeginCommit())");
+        AssertContains(forceRotateText, "if (!RotateSegment(currentPts))");
+        AssertContains(forceRotateText, "localRequest.Complete(_bufferManager.GetValidSegmentPaths(localIn, localOut));");
         AssertDoesNotContain(rootText, "public FlashbackForceRotateResult ForceRotateForExport(");
         AssertDoesNotContain(rootText, "public bool IsForceRotateActive =>");
         AssertDoesNotContain(rootText, "public bool WaitForForceRotateIdle(TimeSpan timeout)");
@@ -275,12 +273,11 @@ static partial class Program
         AssertDoesNotContain(rootText, "private bool _forceRotateDraining;");
         AssertDoesNotContain(rootText, "private sealed class ForceRotateRequest");
         AssertDoesNotContain(rootText, "private const int ForceRotateCommittedGraceMs = 1_000;");
-        AssertDoesNotContain(forceRotateRequestsText, "private bool ProcessPendingForceRotate(");
-        AssertContains(docsText, "FlashbackEncoderSink.ForceRotateRequests.cs");
-        AssertContains(docsText, "FlashbackEncoderSink.ForceRotateExecution.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.ForceRotate.cs");
         foreach (var removedFile in new[]
         {
-            "FlashbackEncoderSink.ForceRotate.cs",
+            "FlashbackEncoderSink.ForceRotateRequests.cs",
+            "FlashbackEncoderSink.ForceRotateExecution.cs",
             "FlashbackEncoderSink.ForceRotateLifecycle.cs",
             "FlashbackEncoderSink.ForceRotateRequest.cs"
         })
@@ -288,7 +285,7 @@ static partial class Program
             AssertEqual(
                 false,
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
-                $"{removedFile} folded into FlashbackEncoderSink.ForceRotateRequests.cs");
+                $"{removedFile} folded into FlashbackEncoderSink.ForceRotate.cs");
         }
 
         return Task.CompletedTask;

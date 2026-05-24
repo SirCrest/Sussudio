@@ -1721,18 +1721,14 @@ encoder PTS resolution, latest-PTS and disk-byte refresh, frame-encoded event
 dispatch, segment-rotation triggering, active-segment completion/registration,
 and rotation-failure recovery there.
 
-Flashback encoder export force-rotation requests now live in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateRequests.cs`. Keep
+Flashback encoder export force-rotation now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs`. Keep
 force-rotate state, status projections, idle waits, `ForceRotateForExport`,
 request publication, timeout/cancellation result classification,
 committed-pending grace handling, pending-request cancellation, empty completion
-on stop/dispose/failure, drain abort classification, and the `ForceRotateRequest`
-state machine there.
-
-Flashback encoder force-rotate execution now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateExecution.cs`.
-Keep encoding-thread force-rotate request capture, queue drain-to-rotate
-ordering, commit/rotation execution, result completion, failure logging, and
+on stop/dispose/failure, drain abort classification, the `ForceRotateRequest`
+state machine, encoding-thread request capture, queue drain-to-rotate ordering,
+commit/rotation execution, result completion, failure logging, and
 draining-gate cleanup there.
 
 Flashback encoder producer entry points now live in
