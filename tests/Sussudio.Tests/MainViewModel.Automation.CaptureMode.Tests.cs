@@ -6,7 +6,7 @@ static partial class Program
     internal static Task AutomationCaptureModeChanges_AwaitReinitialization()
     {
         var viewModelStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSettings.cs").Replace("\r\n", "\n");
+        var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCommands.cs").Replace("\r\n", "\n");
         var captureSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
 
@@ -54,6 +54,8 @@ static partial class Program
         AssertDoesNotContain(captureModeTransactionsText, "SetAutomationCaptureModeAsync(");
         foreach (var stalePath in new[]
         {
+            "MainViewModel.AutomationSettings.cs",
+            "MainViewModel.AutomationDeviceSelection.cs",
             "MainViewModel.AutomationCaptureMode.cs",
             "MainViewModel.AutomationCaptureModeGate.cs",
             "MainViewModel.AutomationFrameRate.cs",
@@ -75,7 +77,7 @@ static partial class Program
 
     internal static Task AutomationDeviceSelection_RoutesThroughApplyReinit()
     {
-        var deviceSelectionAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs").Replace("\r\n", "\n");
+        var deviceSelectionAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCommands.cs").Replace("\r\n", "\n");
         var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs")
@@ -113,6 +115,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationAudioInputSelection.cs")),
             "MainViewModel audio input automation partial");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationDeviceSelection.cs")),
+            "MainViewModel device selection automation partial folded into MainViewModel.AutomationCommands.cs");
         AssertContains(selectDevice, "return InvokeOnUiThreadAsync(async () =>");
         AssertContains(selectDevice, "await ApplySelectedDeviceAsync(target, cancellationToken).ConfigureAwait(true);");
         AssertDoesNotContain(selectDevice, "SelectedDevice = target;");

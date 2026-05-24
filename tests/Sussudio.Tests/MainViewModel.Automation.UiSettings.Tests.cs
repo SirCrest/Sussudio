@@ -7,7 +7,7 @@ static partial class Program
     internal static Task AutomationPreviewVolume_PersistsThroughSettingsPath()
     {
         var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudio.cs").Replace("\r\n", "\n");
+        var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCommands.cs").Replace("\r\n", "\n");
         var settingsProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.cs").Replace("\r\n", "\n");
 
         AssertContains(automationAudioText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SavePreviewVolume();");

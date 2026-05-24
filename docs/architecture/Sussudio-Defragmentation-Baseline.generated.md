@@ -1,24 +1,24 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T11:09:35Z
+Generated UTC: 2026-05-24T11:15:48Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 743 |
+| Production .cs files | 741 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 43 (5.8%) |
-| Production .cs files under 80 lines | 88 (11.8%) |
+| Production .cs files under 60 lines | 42 (5.7%) |
+| Production .cs files under 80 lines | 87 (11.7%) |
 
 ## Largest partial-type clusters
 
 | Type | Files | Total lines | Sample paths |
 | --- | ---: | ---: | --- |
 | CaptureService | 47 | 9789 | Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs, Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs, Sussudio/Services/Capture/CaptureService.CaptureFormatTelemetry.cs, Sussudio/Services/Capture/CaptureService.Cleanup.cs, Sussudio/Services/Capture/CaptureService.cs, Sussudio/Services/Capture/CaptureService.Failures.cs, Sussudio/Services/Capture/CaptureService.FlashbackAudioInputs.cs, Sussudio/Services/Capture/CaptureService.FlashbackBackendFailureCleanup.cs |
-| MainViewModel | 34 | 4622 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs, Sussudio/ViewModels/MainViewModel.AnalogAudioGain.cs, Sussudio/ViewModels/MainViewModel.AudioCapturePropertyChanges.cs, Sussudio/ViewModels/MainViewModel.AudioDeviceDiscovery.cs, Sussudio/ViewModels/MainViewModel.AudioInputSelection.cs, Sussudio/ViewModels/MainViewModel.AudioMeters.cs, Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.AutomationAudio.cs |
 | AutomationDiagnosticsHub | 33 | 10082 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.RealtimePreview.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluation.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Recording.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs |
+| MainViewModel | 32 | 4601 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs, Sussudio/ViewModels/MainViewModel.AnalogAudioGain.cs, Sussudio/ViewModels/MainViewModel.AudioCapturePropertyChanges.cs, Sussudio/ViewModels/MainViewModel.AudioDeviceDiscovery.cs, Sussudio/ViewModels/MainViewModel.AudioInputSelection.cs, Sussudio/ViewModels/MainViewModel.AudioMeters.cs, Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.AutomationCommands.cs |
 | D3D11PreviewRenderer | 32 | 4749 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Diagnostics.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.DisplayClock.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.FrameOwnership.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.HdrShaderPass.cs |
 | LibAvEncoder | 19 | 3086 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.AudioInitialization.cs, Sussudio/Services/Recording/LibAvEncoder.AudioQueue.cs, Sussudio/Services/Recording/LibAvEncoder.AudioSetup.cs, Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs, Sussudio/Services/Recording/LibAvEncoder.AvSync.cs, Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs, Sussudio/Services/Recording/LibAvEncoder.cs |
 | MainWindow | 19 | 2505 | Sussudio/MainWindow.AudioBindings.cs, Sussudio/MainWindow.Bindings.cs, Sussudio/MainWindow.ButtonActions.cs, Sussudio/MainWindow.CaptureOptionBindings.cs, Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs, Sussudio/MainWindow.ControllerInitialization.cs, Sussudio/MainWindow.Flashback.Interactions.cs, Sussudio/MainWindow.Flashback.Presentation.cs |
@@ -107,7 +107,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 37 | tools/KsAudioNodeProbe/Program.cs |
 | 38 | tools/ssctl/CommandHandlers.DiagnosticSession.cs |
 | 39 | Sussudio/Services/Recording/RecordingContracts.cs |
-| 40 | Sussudio/ViewModels/MainViewModel.AutomationSettings.cs |
 | 40 | tools/NativeXuAudioProbe/Program.Commands.cs |
 | 41 | tools/Common/DiagnosticSessionAutomationResponseJson.cs |
 | 45 | tools/McpServer/Tools/DiagnosticSessionTools.cs |

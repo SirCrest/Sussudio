@@ -8,7 +8,7 @@ static partial class Program
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
         var flashbackSettingsText = viewModelFiles["MainViewModel.FlashbackSettings.cs"];
         var flashbackEncoderSettingsText = viewModelFiles["MainViewModel.FlashbackEncoderSettings.cs"];
-        var automationSettingsText = viewModelFiles["MainViewModel.AutomationSettings.cs"];
+        var automationSettingsText = viewModelFiles["MainViewModel.AutomationCommands.cs"];
         var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs")
             .Replace("\r\n", "\n");
         var rawFlashbackEncoderSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackEncoderSettings.cs")

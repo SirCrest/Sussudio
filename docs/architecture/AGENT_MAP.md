@@ -2230,7 +2230,7 @@ Primary current owners:
   offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.AutomationViewModelFlashbackUiContractsTests.cs`
   owns the former automation-diagnostics ViewModel/Flashback UI registration
-  group for automation settings, audio/device/capture/recording routes, async
+  group for automation command routes, async
   Flashback/probe surface, runtime snapshot ownership, scrub/toggle behavior,
   timeline geometry, and Flashback presentation controller ownership after
   their removal from the legacy offline harness catalog.
@@ -3344,7 +3344,7 @@ Primary current owners:
   `MainViewModel.cs` owns UI-only automation mutators
   for settings visibility, Flashback timeline visibility, show-all capture
   options, stats dock/section visibility, and frame-time overlay display.
-  `MainViewModel.AutomationAudio.cs` owns automation command entry points for
+  `MainViewModel.AutomationCommands.cs` owns automation command entry points for
   app audio enablement, audio-preview enablement, preview-volume
   clamp/persist, device-native mode/gain application, and microphone
   enablement with recording-time refusal and idempotent handling.
@@ -3357,10 +3357,10 @@ Primary current owners:
   `MainViewModel.FlashbackSettings.cs` owns automation Flashback
   enable/restart routing through the capture session coordinator alongside
   buffer/GPU setting reactions.
-  `MainViewModel.AutomationDeviceSelection.cs` owns automation device refresh,
+  `MainViewModel.AutomationCommands.cs` owns automation device refresh,
   capture-device selection, audio-input selection, and custom audio-input
   enablement.
-  `MainViewModel.AutomationSettings.cs` keeps the stable public automation
+  `MainViewModel.AutomationCommands.cs` keeps the stable public automation
   facade for capture resolution, frame-rate, video-format, MJPEG decoder
   worker-count, recording format, encoder, and output-path settings.
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs`

@@ -6,7 +6,7 @@ static partial class Program
 {
     internal static Task AutomationAudioCommands_PreserveRuntimeGuards()
     {
-        var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudio.cs")
+        var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCommands.cs")
             .Replace("\r\n", "\n");
         var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
@@ -64,6 +64,7 @@ static partial class Program
             "automation microphone persists only after monitor update");
         foreach (var stalePath in new[]
         {
+            "MainViewModel.AutomationAudio.cs",
             "MainViewModel.AutomationDeviceAudio.cs",
             "MainViewModel.AutomationMicrophone.cs"
         })

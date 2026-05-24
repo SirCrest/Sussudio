@@ -8,7 +8,7 @@ static partial class Program
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var recordingRuntimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingState.cs").Replace("\r\n", "\n");
         var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs").Replace("\r\n", "\n");
-        var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSettings.cs").Replace("\r\n", "\n");
+        var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCommands.cs").Replace("\r\n", "\n");
         var automationRecordingControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs").Replace("\r\n", "\n");
         var recordingSettingsPolicyText = ReadRepoFile("Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs").Replace("\r\n", "\n");
 
