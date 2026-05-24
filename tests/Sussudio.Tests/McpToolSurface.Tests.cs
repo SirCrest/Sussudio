@@ -14,7 +14,7 @@ static partial class Program
         var captureSettingsToolsText = ReadRepoFile("tools/McpServer/Tools/CaptureSettingsTools.cs");
         var appStateToolText = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
         var captureOptionsToolText = captureSettingsToolsText;
-        var uiSettingsToolText = ReadRepoFile("tools/McpServer/Tools/UiSettingsTools.cs");
+        var uiSettingsToolText = ReadRepoFile("tools/McpServer/Tools/WindowTools.cs");
         var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
 
         AssertContains(captureSettingsToolsText, "string? preset = null");

@@ -3629,6 +3629,8 @@ Primary owners:
 - `tools/McpServer/Tools/CaptureSettingsTools.cs` owns the public device,
   capture settings, pipeline settings, and structured capture-options MCP entry
   points.
+- `tools/McpServer/Tools/WindowTools.cs` owns the public window action,
+  full-screen, recordings-folder, and UI visibility/settings MCP entry points.
 - `tools/McpServer/Tools/PerformanceTimelineTools.cs` owns the public MCP
   tool entry point and command response handling.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs` owns timeline JSON
