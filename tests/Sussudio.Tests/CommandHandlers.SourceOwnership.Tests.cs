@@ -76,14 +76,17 @@ static partial class Program
         AssertContains(flashbackRouterSource, "HandleFlashbackAsync");
         AssertContains(flashbackRouterSource, "return HandleFlashbackActionAsync(context, subcommand);");
         AssertContains(flashbackRouterSource, "return HandleFlashbackExportAsync(context);");
-        AssertDoesNotContain(flashbackRouterSource, "AutomationCommandKind.FlashbackAction");
-        AssertDoesNotContain(flashbackRouterSource, "[\"action\"] = ");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "private static Task<int> HandleFlashbackActionAsync(CommandContext context, string subcommand)");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "playPayload[\"positionMs\"] = ParseFlashbackPositionMs(context.Rest[1]);");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "[\"action\"] = \"begin-scrub\"");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "[\"action\"] = \"clear-in-out-points\"");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "private static double ParseFlashbackPositionMs(string value)");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "Flashback position must be finite, non-negative, and within TimeSpan range.");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.Flashback.Actions.cs")),
+            "Flashback action routing stays folded into the Flashback command owner");
+        AssertContains(flashbackRouterSource, "private static Task<int> HandleFlashbackActionAsync(CommandContext context, string subcommand)");
+        AssertContains(flashbackRouterSource, "AutomationCommandKind.FlashbackAction");
+        AssertContains(flashbackRouterSource, "playPayload[\"positionMs\"] = ParseFlashbackPositionMs(context.Rest[1]);");
+        AssertContains(flashbackRouterSource, "[\"action\"] = \"begin-scrub\"");
+        AssertContains(flashbackRouterSource, "[\"action\"] = \"clear-in-out-points\"");
+        AssertContains(flashbackRouterSource, "private static double ParseFlashbackPositionMs(string value)");
+        AssertContains(flashbackRouterSource, "Flashback position must be finite, non-negative, and within TimeSpan range.");
         AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Values.cs"), "private static double ParseFlashbackPositionMs(string value)");
         AssertContains(flashbackRouterSource, "private static Task<int> HandleFlashbackExportAsync(CommandContext context)");
         AssertContains(flashbackRouterSource, "ConsumeFlag(context.Rest, \"--range\")");

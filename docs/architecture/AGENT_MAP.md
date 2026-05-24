@@ -3462,12 +3462,9 @@ Primary owners:
 - `tools/ssctl/CommandHandlers.AutomationFlow.cs` owns wait/assert/probe and
   recording/file verification scripting flow commands.
 - `tools/ssctl/CommandHandlers.Flashback.cs` owns Flashback enablement,
-  timeline, segment, restart, and top-level Flashback command routing.
-  `tools/ssctl/CommandHandlers.Flashback.Actions.cs` owns Flashback playback,
-  scrub, marker/range, position parsing, and `FlashbackAction` payload shaping.
-  `tools/ssctl/CommandHandlers.Flashback.cs` owns Flashback enable/timeline/export
-  CLI routing, including export flag parsing, output-path defaulting,
-  parent-directory creation, and `FlashbackExport` payload shaping.
+  timeline, segment, restart, playback/scrub/marker/range actions, position
+  parsing, export flag parsing, output-path defaulting, parent-directory
+  creation, and `FlashbackAction`/`FlashbackExport` payload shaping.
 - `tools/NativeXuAudioProbe/Program.cs` owns probe command routing, command
   workflows, and probe-local runtime shims for linked app service sources;
   `Program.Commands.cs` owns Native XU command IDs and shared

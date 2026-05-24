@@ -413,12 +413,10 @@ settings visibility, and frame-time overlay CLI commands.
 `CommandHandlers.AutomationFlow.cs` owns
 wait/assert/probe and recording/file verification scripting flow commands.
 `CommandHandlers.Flashback.cs` owns Flashback enablement, timeline, segment,
-restart, and top-level Flashback command routing.
-`CommandHandlers.Flashback.Actions.cs` owns Flashback playback/scrub/marker/
-range CLI actions, position parsing, and `FlashbackAction` payload shaping.
-`CommandHandlers.Flashback.cs` owns Flashback enable/timeline/export routing,
-including export flags, output path defaulting, directory creation, and payload
-shape. The root `CommandHandlers.cs` owns the per-invocation command context,
+restart, playback/scrub/marker/range CLI actions, position parsing, export
+flags, output path defaulting, directory creation, and `FlashbackAction`/
+`FlashbackExport` payload shapes. The root `CommandHandlers.cs` owns the
+per-invocation command context,
 shared command sending, and response exit-code shaping.
 Support partials remain:
 `CommandHandlers.Arguments.cs` owns usage validation, argument joining, flag
