@@ -4,7 +4,7 @@ static partial class Program
 {
     internal static Task ResolutionSelectionPolicy_LivesInFocusedPartial()
     {
-        var resolutionOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionOptions.cs").Replace("\r\n", "\n");
+        var resolutionOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var resolutionOptionRebuildControllerText = captureModeOptionsControllerText;
@@ -50,9 +50,10 @@ static partial class Program
         AssertContains(autoCaptureSelectionPolicyText, "internal static AutoCaptureSelection? Select(AutoCaptureSelectionRequest request)");
         AssertContains(autoCaptureSelectionPolicyText, "private static ResolutionOption? SelectBestResolutionCandidate(");
         AssertContains(autoCaptureSelectionPolicyText, "private static MediaFormat SelectPreferredFrameRateFormat(");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.ResolutionOptions.cs")), "old resolution options partial folded into capture selection owner");
         AssertDoesNotContain(autoCaptureSelectionPolicyText, "AvailableResolutions.Clear();");
         AssertDoesNotContain(autoCaptureSelectionPolicyText, "SelectedResolution =");
-        AssertContains(resolutionOptionsText, "/// Effective resolution state and selection-policy delegates.");
+        AssertContains(resolutionOptionsText, "/// Capture-device, resolution, and frame-rate selection reactions.");
         AssertContains(captureModeTransactionsText, "/// Capture-mode transactions that coordinate option rebuilds");
         AssertContains(resolutionOptionRebuildControllerText, "private void UpdateAutoResolutionState(AutoCaptureSelection? selection)");
         AssertContains(resolutionOptionRebuildControllerText, "_context.SetAutoResolvedWidth(selection?.Resolution.Width);");

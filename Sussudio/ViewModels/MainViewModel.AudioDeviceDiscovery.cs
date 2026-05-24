@@ -11,7 +11,7 @@ namespace Sussudio.ViewModels;
 /// Audio endpoint list projection for both startup scans and watcher-driven
 /// refreshes. Capture-device refresh orchestration lives in
 /// MainViewModelDeviceRefreshController; selected-device capability rebuilds
-/// stay in MainViewModel.DeviceSelection.cs.
+/// stay in MainViewModel.CaptureSelection.cs.
 /// </summary>
 public partial class MainViewModel
 {

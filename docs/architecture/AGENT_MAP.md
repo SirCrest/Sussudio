@@ -3214,7 +3214,8 @@ Primary current owners:
   cancellation/disposal cleanup.
   `MainViewModel.FlashbackExportAutomation.cs` owns automation-facing Flashback
   export command execution, linked cancellation, and dispatcher cleanup.
-  `MainViewModel.FrameRateOptions.cs` owns frame-rate selection reactions and
+  `MainViewModel.CaptureSelection.cs` owns capture-device selection reactions,
+  effective resolution helpers, frame-rate selection reactions, and
   auto-selection entry points. `MainViewModel.CaptureModeTransactions.cs` keeps
   the resolution, frame-rate, selected-format, and video-format rebuild
   compatibility adapters alongside capture-mode transaction state, while
@@ -3276,7 +3277,7 @@ Primary current owners:
   selection restore, and scan status projection. The shallow `MainViewModel.DeviceManagement.cs`
   partial was retired instead of keeping another sub-100-line facade. Selected
   capture-device reactions, capability projection, source telemetry reset, and
-  device-native audio-control refresh handoff live in `MainViewModel.DeviceSelection.cs`; capture-mode property-change hooks live
+  device-native audio-control refresh handoff live in `MainViewModel.CaptureSelection.cs`; capture-mode property-change hooks live
   in `MainViewModel.CaptureModePropertyChanges.cs`; startup audio-list and
   watcher-driven audio endpoint refresh adaptation lives in `MainViewModel.AudioDeviceDiscovery.cs`.
   `Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs` owns pure capture-card
@@ -3309,7 +3310,7 @@ Primary current owners:
   automatic resolution-selection adaptation over current ViewModel state,
   auto-resolution state refresh, and resolution dropdown mutation through
   graph-built context ports.
-  `MainViewModel.ResolutionOptions.cs` owns effective Source resolution state
+  `MainViewModel.CaptureSelection.cs` owns effective Source resolution state
   and state-backed delegates to the pure selection policy.
   `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs` owns automatic resolution
   ranking and source-aware frame-rate selection.
@@ -3319,7 +3320,7 @@ Primary current owners:
   resolution selection, parsing, frame-rate support checks, nearest-resolution
   ranking, and the policy request/result records.
   State-backed capability queries for callers that live across the ViewModel
-  partial family stay in `MainViewModel.ResolutionOptions.cs`; observable
+  partial family stay in `MainViewModel.CaptureSelection.cs`; observable
   resolution dropdown mutation routes through the top-level
   `MainViewModelCaptureModeOptionRebuildController.cs`.
   `Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs`

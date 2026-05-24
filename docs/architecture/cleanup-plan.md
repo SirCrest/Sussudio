@@ -4029,8 +4029,9 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.FlashbackExportOperation.cs`.
    Automation-facing Flashback export command execution, linked cancellation,
    and dispatcher cleanup now live in
-   `MainViewModel.FlashbackExportAutomation.cs`. Frame-rate selection reactions and
-   auto-selection entry points now live in `MainViewModel.FrameRateOptions.cs`.
+   `MainViewModel.FlashbackExportAutomation.cs`. Capture-device selection,
+   effective resolution helpers, frame-rate selection reactions, and
+   auto-selection entry points now live in `MainViewModel.CaptureSelection.cs`.
    `MainViewModel.CaptureModeTransactions.cs` keeps the resolution, frame-rate,
    selected-format, and video-format rebuild compatibility adapters, while
    frame-rate option rebuilding and observable collection mutation through graph-built context ports live in
@@ -4075,7 +4076,7 @@ owner, fold it back into that owner and update the source-shape tests and
    selection restore, and scan status projection. The shallow `MainViewModel.DeviceManagement.cs`
    partial was retired rather than preserving a sub-100-line facade. Selected
    capture-device reactions, capability projection, source telemetry reset, and
-   device-native audio-control refresh handoff live in `MainViewModel.DeviceSelection.cs`. Capture-mode property-change
+   device-native audio-control refresh handoff live in `MainViewModel.CaptureSelection.cs`. Capture-mode property-change
    hooks live in `MainViewModel.CaptureModePropertyChanges.cs` and startup
    audio-list and watcher-driven audio endpoint refresh adaptation live in
    `MainViewModel.AudioDeviceDiscovery.cs`. Pure audio-device filtering and
@@ -4133,7 +4134,7 @@ owner, fold it back into that owner and update the source-shape tests and
     resolution-selection adaptation, auto-resolution state refresh, and
     resolution dropdown mutation through graph-built context ports. Effective Source resolution state and
     state-backed delegates to the pure selection policy live in
-    `MainViewModel.ResolutionOptions.cs`.
+    `MainViewModel.CaptureSelection.cs`.
     Automatic resolution ranking and source-aware frame-rate selection now
     live in `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs`; auto-resolution
     display text used by status and telemetry presentation lives in
@@ -4153,7 +4154,7 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.Capture.SelectionPolicy.Resolution.Behavior.Tests.cs` owns
    HDR, SDR, and auto-capture policy behavior contracts.
    State-backed delegates for callers that still live across the partial family
-   stay in `MainViewModel.ResolutionOptions.cs`, while dropdown rebuild,
+   stay in `MainViewModel.CaptureSelection.cs`, while dropdown rebuild,
    collection mutation, and property notifications route through the top-level
     `MainViewModelCaptureModeOptionRebuildController.cs`.
    Source telemetry summary, telemetry age, and target-summary display text
