@@ -11,10 +11,7 @@ static partial class Program
         var previewPropertyChangedText = ReadMainWindowPropertyChangedPreviewAdapterSource();
         var previewVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
             .Replace("\r\n", "\n");
-        var audioVolumeTransitionText = string.Join(
-                "\n",
-                ReadRepoFile("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs"),
-                ReadRepoFile("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.Ramps.cs"))
+        var audioVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs")
             .Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
             .Replace("\r\n", "\n");

@@ -55,10 +55,7 @@ static partial class Program
 
         var audioStateCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioState.cs");
         var audioInputSelectionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioInputSelection.cs");
-        var transitionCode =
-            ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs") +
-            "\n" +
-            ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.Ramps.cs");
+        var transitionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs");
         var previewChanged = ExtractMemberCode(audioStateCode, "OnPreviewVolumeChanged");
         var handlePreviewChanged = ExtractMemberCode(transitionCode, "HandlePreviewVolumeChanged");
         var rampDown = ExtractMemberCode(transitionCode, "RampDownForAudioTransitionAsync");
@@ -79,7 +76,8 @@ static partial class Program
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.PreviewVolumeTransitions.cs")), "MainViewModel.PreviewVolumeTransitions.cs folded into audio state");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AudioMonitoring.cs")), "MainViewModel.AudioMonitoring.cs folded into audio state");
         AssertDoesNotContain(audioStateCode, "private const int PreviewAudioRampDownSteps");
-        AssertContains(transitionCode, "internal sealed partial class PreviewAudioVolumeTransitionController");
+        AssertContains(transitionCode, "internal sealed class PreviewAudioVolumeTransitionController");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "PreviewAudioVolumeTransitionController.Ramps.cs")), "PreviewAudioVolumeTransitionController.Ramps.cs folded into PreviewAudioVolumeTransitionController.cs");
         AssertContains(transitionCode, "private const int RampDownSteps = 18;");
         AssertContains(transitionCode, "private const int RampDownDelayMs = 25;");
         AssertContains(transitionCode, "private const int RampUpSteps = 30;");

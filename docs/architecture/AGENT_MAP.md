@@ -3021,8 +3021,7 @@ Primary current owners:
   adapter methods plus trace recorder and preview-volume transition controller
   wiring. `PreviewAudioVolumeTransitionController.cs`
   owns preview-volume save suppression/override state, priming, restoring,
-  trace adapters, and property-to-session volume forwarding.
-  `PreviewAudioVolumeTransitionController.Ramps.cs` owns preview-audio ramp
+  trace adapters, property-to-session volume forwarding, preview-audio ramp
   constants, easing, and async ramp-down/ramp-up execution.
   `MainViewModel.AudioState.cs` owns
   audio capture enablement and Flashback restart/teardown routing.
