@@ -13,7 +13,6 @@ static partial class Program
         var deviceServiceRootText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.cs"));
         var deviceServiceFormatCacheText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.FormatCache.cs"));
         var deviceServiceFormatProbeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.FormatProbe.cs"));
-        var deviceServiceAudioAssociationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.AudioAssociation.cs"));
         AssertContains(deviceServiceText, "NativeXuInterfacePath = ResolveNativeXuInterfacePath(videoDevice.SymbolicLink)");
         AssertContains(deviceServiceText, "Native XU interface resolution found no matching interface");
         AssertDoesNotContain(deviceServiceText, "SelectOnlyUnambiguousDeviceGroup");
@@ -22,7 +21,12 @@ static partial class Program
         AssertContains(deviceServiceFormatCacheText, "private static void TryLoadFormatCache(CaptureDevice device)");
         AssertContains(deviceServiceFormatProbeText, "public void BeginBackgroundFormatProbe(CaptureDevice device, long requestId = 0)");
         AssertContains(deviceServiceFormatProbeText, "private async Task<bool> QuerySupportedFormatsAsync(CaptureDevice device)");
-        AssertContains(deviceServiceAudioAssociationText, "private static void AttachBestAudioDevice(");
+        AssertContains(deviceServiceRootText, "private static void AttachBestAudioDevice(");
+        AssertContains(deviceServiceRootText, "private static int ScoreAudioAssociation(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.AudioAssociation.cs")),
+            "audio endpoint association folded into DeviceService.cs");
         AssertContains(deviceServiceRootText, "private static string? ResolveNativeXuInterfacePath(string deviceId)");
         AssertDoesNotContain(deviceServiceRootText, "private static void TryLoadFormatCache(CaptureDevice device)");
         AssertDoesNotContain(deviceServiceRootText, "private async Task<bool> QuerySupportedFormatsAsync(CaptureDevice device)");
