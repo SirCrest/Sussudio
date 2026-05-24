@@ -3571,10 +3571,10 @@ Primary owners:
   interface selection, open failure handling, and workflow dispatch;
   `Program.ScanWorkflows.cs` owns set-and-hold, topology, brute-force,
   and full-probe orchestration; `Program.ScanWorkflows.Extended.cs` owns
-  extended-node mutation tests, ADC volume, mux, and mute probe workflows;
-  `Program.Constants.cs` owns probe constants; `Program.NativeTypes.cs` owns
-  native interop DTOs; and `Program.NativeInterop.cs` owns SetupAPI, file-handle,
-  KS property transfer, topology enumeration, and Win32 formatting helpers.
+  extended-node mutation tests, ADC volume, mux, and mute probe workflows; and
+  `Program.NativeInterop.cs` owns SetupAPI, file-handle, KS property transfer,
+  native interop constants/DTOs, topology enumeration, and Win32 formatting
+  helpers.
 - `tools/EgavdsAudioProbe/Program.cs` owns EGAVDS audio probe command flow,
   device lookup, audio input/gain actions, and result text; `Program.NativeInterop.cs`
   owns SWIG callback registration, EGAVDeviceSupport entry points, SetupAPI
@@ -3665,13 +3665,9 @@ Primary owners:
   file, assertion, mismatch, and failure result text.
 - `tools/McpServer/Tools/PreviewFrameCaptureTools.cs` owns the public preview
   frame-capture MCP entry point, default output path, payload shaping, enum
-  command routing, and failure/missing-data response handling.
-  `tools/McpServer/Tools/PreviewFrameCaptureTools.Rendering.cs` owns the
-  operator-facing report layout, section ordering, and 16-bin histogram
-  projection, padding, scaling, and bar rendering.
-  `tools/McpServer/Tools/PreviewFrameCaptureTools.Diagnosis.cs` owns blank,
-  dark, bright, letterbox, pillarbox, low-contrast, and aspect-ratio diagnosis
-  policy.
+  command routing, failure/missing-data response handling, operator-facing
+  report layout, 16-bin histogram projection, and blank/dark/bright/framing
+  diagnosis policy.
 - `tools/McpServer/Tools/PresentMonTools.cs` owns public PresentMon MCP entry
   points, structured-content shape, probe invocation, and app-snapshot
   request/fallback behavior. Shared option precedence and preview-present field

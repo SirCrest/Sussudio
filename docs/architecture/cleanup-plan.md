@@ -3307,14 +3307,11 @@ names, payloads, 60s verification timeouts, assertion JSON parsing, clone
 lifetime safety, and `Data.Verification` / `Snapshot.LastVerification` lookup
 in `VerificationTools.cs`; keep recording/file/assertion text in
 `VerificationTools.Formatting.cs`.
-Preview frame capture MCP reporting is split without changing visible text:
-keep the public `capture_preview_frame` entry point, default output path,
-payload, and enum-backed `CapturePreviewFrame` routing in
-`PreviewFrameCaptureTools.cs`;
-keep report section layout and 16-bin histogram math/rendering in
-`PreviewFrameCaptureTools.Rendering.cs`; and
-keep anomaly diagnosis policy and aspect checks in
-`PreviewFrameCaptureTools.Diagnosis.cs`.
+Preview frame capture MCP reporting stays together without changing visible
+text: keep the public `capture_preview_frame` entry point, default output path,
+payload, enum-backed `CapturePreviewFrame` routing, report layout, 16-bin
+histogram math/rendering, anomaly diagnosis policy, and aspect checks in
+`PreviewFrameCaptureTools.cs`.
 PresentMon MCP stays intentionally shallow: keep `capture_presentmon`,
 `capture_presentmon_raw`, structured-content shape, and `PresentMonProbe.RunAsync`
 invocation in `PresentMonTools.cs`; keep the app-snapshot request and malformed

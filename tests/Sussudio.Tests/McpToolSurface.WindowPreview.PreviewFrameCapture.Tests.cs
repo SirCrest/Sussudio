@@ -188,46 +188,46 @@ static partial class Program
 
         var rootText = ReadRepoFile("tools/McpServer/Tools/PreviewFrameCaptureTools.cs")
             .Replace("\r\n", "\n");
-        var renderingText = ReadRepoFile("tools/McpServer/Tools/PreviewFrameCaptureTools.Rendering.cs")
-            .Replace("\r\n", "\n");
-        var diagnosisText = ReadRepoFile("tools/McpServer/Tools/PreviewFrameCaptureTools.Diagnosis.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(rootText, "[McpServerToolType]");
-        AssertContains(rootText, "public static partial class PreviewFrameCaptureTools");
+        AssertContains(rootText, "public static class PreviewFrameCaptureTools");
         AssertContains(rootText, "public static async Task<CallToolResult> capture_preview_frame");
         AssertContains(rootText, "Path.Combine(Environment.CurrentDirectory, \"temp\", \"preview_capture.bmp\")");
         AssertContains(rootText, "SendCommandAsync(AutomationCommandKind.CapturePreviewFrame, payload)");
         AssertDoesNotContain(rootText, "SendCommandAsync(\"CapturePreviewFrame\", payload)");
         AssertContains(rootText, "BuildPreviewFrameCaptureText(data)");
-        AssertDoesNotContain(rootText, "new StringBuilder()");
-        AssertDoesNotContain(rootText, "LuminanceHistogram");
-        AssertDoesNotContain(rootText, "BLANK FRAME");
-        AssertDoesNotContain(rootText, "IsNear(");
 
-        AssertContains(renderingText, "private static string BuildPreviewFrameCaptureText(");
-        AssertContains(renderingText, "== Preview Frame Capture ==");
-        AssertContains(renderingText, "== Pixel Summary ==");
-        AssertContains(renderingText, "AppendLuminanceHistogram(builder, data)");
-        AssertContains(renderingText, "AppendPreviewFrameCaptureDiagnosis(builder, data)");
-        AssertContains(renderingText, "private static void AppendLuminanceHistogram(");
-        AssertContains(renderingText, "LuminanceHistogram");
-        AssertContains(renderingText, "while (bins.Count < 16)");
-        AssertContains(renderingText, "* 24.0");
-        AssertContains(renderingText, "new string('#', Math.Max(0, barLength))");
+        AssertContains(rootText, "private static string BuildPreviewFrameCaptureText(");
+        AssertContains(rootText, "== Preview Frame Capture ==");
+        AssertContains(rootText, "== Pixel Summary ==");
+        AssertContains(rootText, "AppendLuminanceHistogram(builder, data)");
+        AssertContains(rootText, "AppendPreviewFrameCaptureDiagnosis(builder, data)");
+        AssertContains(rootText, "private static void AppendLuminanceHistogram(");
+        AssertContains(rootText, "LuminanceHistogram");
+        AssertContains(rootText, "while (bins.Count < 16)");
+        AssertContains(rootText, "* 24.0");
+        AssertContains(rootText, "new string('#', Math.Max(0, barLength))");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PreviewFrameCaptureTools.Histogram.cs")),
             "preview frame histogram rendering lives with the preview frame report renderer");
 
-        AssertContains(diagnosisText, "private static List<string> BuildPreviewFrameCaptureDiagnosis(");
-        AssertContains(diagnosisText, "pureBlackPercent > 95.0");
-        AssertContains(diagnosisText, "averageLuminance < 30.0");
-        AssertContains(diagnosisText, "averageLuminance > 230.0");
-        AssertContains(diagnosisText, "(maxLuminance - minLuminance) < 30.0");
-        AssertContains(diagnosisText, "private static string FormatAspectRatio(");
-        AssertContains(diagnosisText, "AutomationSnapshotFormatter.FormatNumber(aspectRatio, \"0.###\")");
-        AssertContains(diagnosisText, "private static bool IsNear(");
+        AssertContains(rootText, "private static List<string> BuildPreviewFrameCaptureDiagnosis(");
+        AssertContains(rootText, "pureBlackPercent > 95.0");
+        AssertContains(rootText, "averageLuminance < 30.0");
+        AssertContains(rootText, "averageLuminance > 230.0");
+        AssertContains(rootText, "(maxLuminance - minLuminance) < 30.0");
+        AssertContains(rootText, "private static string FormatAspectRatio(");
+        AssertContains(rootText, "AutomationSnapshotFormatter.FormatNumber(aspectRatio, \"0.###\")");
+        AssertContains(rootText, "private static bool IsNear(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PreviewFrameCaptureTools.Rendering.cs")),
+            "preview frame report rendering lives with the preview frame MCP tool");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PreviewFrameCaptureTools.Diagnosis.cs")),
+            "preview frame diagnosis policy lives with the preview frame MCP tool");
     }
 
     private static async Task<string> InvokePreviewFrameCaptureAsync(

@@ -1,10 +1,66 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
-using static KsAudioNodeProbeConstants;
 
 static class KsAudioNodeProbeNative
 {
+    private const uint IoctlKsProperty = 0x002F0003;
+    private const uint DigcfPresent = 0x00000002;
+    private const uint DigcfDeviceInterface = 0x00000010;
+    private const uint GenericRead = 0x80000000;
+    private const uint GenericWrite = 0x40000000;
+    private const uint FileShareRead = 0x00000001;
+    private const uint FileShareWrite = 0x00000002;
+    private const uint OpenExisting = 3;
+    private const uint KsPropertyTypeGet = 0x00000001;
+    private const uint KsPropertyTypeSet = 0x00000002;
+    private const uint KsPropertyTypeTopology = 0x10000000;
+    private const int ErrorNoMoreItems = 259;
+    private const int ErrorInsufficientBuffer = 122;
+    private const int ErrorMoreData = 234;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct KsProperty
+    {
+        public Guid Set;
+        public uint Id;
+        public uint Flags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct KsNodeProperty
+    {
+        public KsProperty Property;
+        public uint NodeId;
+        public uint Reserved;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct KsNodePropertyAudioChannel
+    {
+        public KsNodeProperty NodeProperty;
+        public int Channel;
+        public uint Reserved;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SP_DEVICE_INTERFACE_DATA
+    {
+        public int cbSize;
+        public Guid InterfaceClassGuid;
+        public int Flags;
+        public IntPtr Reserved;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct SP_DEVICE_INTERFACE_DETAIL_DATA
+    {
+        public int cbSize;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
+        public string DevicePath;
+    }
+
     public static bool TryParseVidPid(string text, out ushort vendorId, out ushort productId)
     {
         vendorId = 0;
