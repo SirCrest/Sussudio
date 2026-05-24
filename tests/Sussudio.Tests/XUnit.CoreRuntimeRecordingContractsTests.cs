@@ -151,8 +151,8 @@ public sealed class CoreRuntimeRecordingContractsTests
         => global::Program.LibAvEncoder_MpegTsNvencDumpsHeadersForRotatedSegments();
 
     [Fact]
-    public Task LibAvEncoderPacketWritingLivesInFocusedPartial()
-        => global::Program.LibAvEncoder_PacketWritingLivesInFocusedPartial();
+    public Task LibAvEncoderPacketWritingLivesWithVideoSubmission()
+        => global::Program.LibAvEncoder_PacketWritingLivesWithVideoSubmission();
 
     [Fact]
     public Task LibAvEncoderFrameCopyLivesWithVideoSubmission()

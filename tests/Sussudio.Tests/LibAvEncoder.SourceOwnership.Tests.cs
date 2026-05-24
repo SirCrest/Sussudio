@@ -2,17 +2,21 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    internal static Task LibAvEncoder_PacketWritingLivesInFocusedPartial()
+    internal static Task LibAvEncoder_PacketWritingLivesWithVideoSubmission()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
-        var packetWritingText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.PacketWriting.cs")
+        var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(packetWritingText, "private void DrainEncoderPackets()");
-        AssertContains(packetWritingText, "private void WriteFilteredPackets()");
-        AssertContains(packetWritingText, "private void DrainBsfPackets()");
-        AssertContains(packetWritingText, "private void WritePacket(AVPacket* packet, bool useBsfTimeBase)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.PacketWriting.cs")),
+            "video packet drain/write helpers stay folded into video submission");
+        AssertContains(videoSubmissionText, "private void DrainEncoderPackets()");
+        AssertContains(videoSubmissionText, "private void WriteFilteredPackets()");
+        AssertContains(videoSubmissionText, "private void DrainBsfPackets()");
+        AssertContains(videoSubmissionText, "private void WritePacket(AVPacket* packet, bool useBsfTimeBase)");
         AssertDoesNotContain(rootText, "private void DrainEncoderPackets()");
         AssertDoesNotContain(rootText, "private void WriteFilteredPackets()");
         AssertDoesNotContain(rootText, "private void DrainBsfPackets()");

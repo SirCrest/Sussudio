@@ -1462,10 +1462,10 @@ context configuration, NVENC private option application, and video
 bitstream-filter initialization.
 
 LibAv encoder packet writing now lives in
-`Sussudio/Services/Recording/LibAvEncoder.PacketWriting.cs`. Keep video encoder
-packet drains, bitstream-filter packet drains, timestamp rescaling, packet
-stream-index assignment, packet write accounting, and interleaved video packet
-writes there.
+`Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs` beside CPU video
+submission. Keep video encoder packet drains, bitstream-filter packet drains,
+timestamp rescaling, packet stream-index assignment, packet write accounting,
+and interleaved video packet writes there.
 
 LibAv encoder core state now lives in
 `Sussudio/Services/Recording/LibAvEncoder.cs`. Keep encoder fields, stable
