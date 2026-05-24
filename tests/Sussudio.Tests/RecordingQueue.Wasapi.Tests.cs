@@ -189,10 +189,6 @@ static partial class Program
     {
         var rootSource = ReadRepoFile("Sussudio/Services/Audio/WasapiComInterop.cs")
             .Replace("\r\n", "\n");
-        var formatSource = ReadRepoFile("Sussudio/Services/Audio/WasapiComInterop.Formats.cs")
-            .Replace("\r\n", "\n");
-        var deviceClientSource = ReadRepoFile("Sussudio/Services/Audio/WasapiComInterop.DeviceClients.cs")
-            .Replace("\r\n", "\n");
         var coreAudioContractsSource = ReadRepoFile("Sussudio/Services/Audio/WasapiComInterop.CoreAudio.Contracts.cs")
             .Replace("\r\n", "\n");
         var audioClientContractsSource = ReadRepoFile("Sussudio/Services/Audio/WasapiComInterop.AudioClient.Contracts.cs")
@@ -201,15 +197,13 @@ static partial class Program
         AssertContains(rootSource, "internal static partial class WasapiComInterop");
         AssertContains(rootSource, "internal static void ThrowIfFailed(int hr, string operation)");
         AssertContains(rootSource, "internal static void ReleaseComObject<T>(ref T? comObject)");
-        AssertContains(formatSource, "internal static partial class WasapiComInterop");
-        AssertContains(formatSource, "internal static WasapiAudioFormat ReadAudioFormat(IntPtr formatPtr)");
-        AssertContains(formatSource, "private static WasapiSampleType ResolveSampleType(");
-        AssertContains(deviceClientSource, "internal static partial class WasapiComInterop");
-        AssertContains(deviceClientSource, "internal static IMMDeviceEnumerator CreateDeviceEnumerator()");
-        AssertContains(deviceClientSource, "internal static IAudioClient ActivateAudioClient(IMMDevice device, out IAudioClient3? audioClient3)");
-        AssertContains(deviceClientSource, "internal static bool TryInitializeSharedStreamWithAudioClient3(");
-        AssertContains(deviceClientSource, "internal static float GetEndpointVolume(string deviceId)");
-        AssertContains(deviceClientSource, "internal static void SetEndpointVolume(string deviceId, float level)");
+        AssertContains(rootSource, "internal static WasapiAudioFormat ReadAudioFormat(IntPtr formatPtr)");
+        AssertContains(rootSource, "private static WasapiSampleType ResolveSampleType(");
+        AssertContains(rootSource, "internal static IMMDeviceEnumerator CreateDeviceEnumerator()");
+        AssertContains(rootSource, "internal static IAudioClient ActivateAudioClient(IMMDevice device, out IAudioClient3? audioClient3)");
+        AssertContains(rootSource, "internal static bool TryInitializeSharedStreamWithAudioClient3(");
+        AssertContains(rootSource, "internal static float GetEndpointVolume(string deviceId)");
+        AssertContains(rootSource, "internal static void SetEndpointVolume(string deviceId, float level)");
         AssertContains(coreAudioContractsSource, "internal enum EDataFlow");
         AssertContains(coreAudioContractsSource, "internal enum WasapiSampleType");
         AssertContains(coreAudioContractsSource, "internal readonly record struct WasapiAudioFormat(");
@@ -226,15 +220,18 @@ static partial class Program
         AssertContains(audioClientContractsSource, "internal interface IAudioCaptureClient");
         AssertContains(audioClientContractsSource, "internal interface IAudioRenderClient");
         AssertContains(audioClientContractsSource, "internal interface IAudioEndpointVolume");
-        AssertDoesNotContain(rootSource, "internal static WasapiAudioFormat ReadAudioFormat(IntPtr formatPtr)");
-        AssertDoesNotContain(rootSource, "internal static IMMDeviceEnumerator CreateDeviceEnumerator()");
-        AssertDoesNotContain(rootSource, "internal static IAudioClient ActivateAudioClient(");
         AssertDoesNotContain(rootSource, "internal readonly record struct WasapiAudioFormat(");
         AssertDoesNotContain(rootSource, "internal struct WAVEFORMATEX");
         AssertDoesNotContain(rootSource, "internal interface IAudioClient");
         AssertDoesNotContain(rootSource, "internal interface IMMDeviceEnumerator");
-        AssertDoesNotContain(formatSource, "internal static float GetEndpointVolume(string deviceId)");
-        AssertDoesNotContain(deviceClientSource, "private static WasapiSampleType ResolveSampleType(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiComInterop.Formats.cs")),
+            "WASAPI format helpers stay with the implementation root instead of a tiny partial");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiComInterop.DeviceClients.cs")),
+            "WASAPI device helpers stay with the implementation root instead of a tiny partial");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiComInterop.Contracts.cs")),
