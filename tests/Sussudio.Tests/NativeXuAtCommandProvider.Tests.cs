@@ -104,7 +104,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioSwitchText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioSwitch.cs")
             .Replace("\r\n", "\n");
-        var selector4Text = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.Selector4.cs")
+        var atProtocolText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs")
             .Replace("\r\n", "\n");
         var deviceSupportText = ReadRepoFile("Sussudio/Services/Capture/NativeXu/NativeXuDeviceSupport.cs")
             .Replace("\r\n", "\n");
@@ -139,9 +139,9 @@ static partial class Program
         AssertContains(audioSwitchText, "private static bool ExecuteAudioSwitch(");
         AssertContains(audioSwitchText, "NATIVEXU_SWITCH_AUDIO FAILED stage=i2c_{i}");
         AssertContains(audioSwitchText, "commands=14");
-        AssertContains(selector4Text, "private static bool SendSelector4Command(");
-        AssertContains(selector4Text, "BuildAtWriteFrame(cmdCode, inputData)");
-        AssertContains(selector4Text, "TryXuSetViaOutput(handle, nodeId, XuGuid, I2cSelector, payload, out var win32)");
+        AssertContains(atProtocolText, "private static bool SendSelector4Command(");
+        AssertContains(atProtocolText, "BuildAtWriteFrame(cmdCode, inputData)");
+        AssertContains(atProtocolText, "TryXuSetViaOutput(handle, nodeId, XuGuid, I2cSelector, payload, out var win32)");
         AssertContains(deviceSupportText, "internal static class NativeXuDeviceSupport");
         AssertContains(deviceSupportText, "public static bool TryGetSupported4kXIds(");
         AssertContains(deviceSupportText, "public static bool IsSupported4kXDevice(");
@@ -149,7 +149,7 @@ static partial class Program
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.AnalogGain.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.AudioSwitch.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.DeviceCommandReads.cs");
-        AssertContains(probeProjectText, "NativeXuAtCommandProvider.Selector4.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.Selector4.cs");
         AssertContains(probeProjectText, "NativeXuDeviceSupport.cs");
 
         return Task.CompletedTask;

@@ -1674,7 +1674,8 @@ the public `SwitchAudioInputAsync` and `SetAnalogGainAsync` entry points there.
 Analog gain register mapping/writes now live in
 `NativeXuAtCommandProvider.AnalogGain.cs`, HDMI/Analog codec switch sequencing
 now lives in `NativeXuAtCommandProvider.AudioSwitch.cs`, and selector-4 I2C
-payload writes now live in `NativeXuAtCommandProvider.Selector4.cs`.
+payload writes now live with the AT transport helpers in
+`NativeXuAtCommandProvider.AtProtocol.cs`.
 
 Native XU reference full-snapshot reads now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.FullSnapshot.cs`. Keep
