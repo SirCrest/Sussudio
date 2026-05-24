@@ -14,8 +14,7 @@ static partial class Program
         var recordingText = recordingExportText;
         var playbackSessionText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs")
             .Replace("\r\n", "\n");
-        var playbackObservationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs")
-            .Replace("\r\n", "\n");
+        var playbackObservationText = playbackSessionText;
         var playbackResultText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs")
             .Replace("\r\n", "\n");
         var exportText = recordingExportText;
@@ -23,6 +22,7 @@ static partial class Program
         AssertContains(metricsText, "internal static partial class DiagnosticSessionFlashbackMetrics");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.Recording.cs")), "Flashback recording metrics stay folded into RecordingExport.cs");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.Export.cs")), "Flashback export metrics stay folded into RecordingExport.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs")), "Flashback playback observation metrics stay folded into PlaybackSession.cs");
         AssertContains(recordingText, "internal sealed class FlashbackRecordingSessionMetrics");
         AssertContains(playbackSessionText, "internal sealed class FlashbackPlaybackSessionMetrics");
         AssertContains(playbackResultText, "internal sealed class FlashbackPlaybackResultMetrics");
@@ -89,9 +89,9 @@ static partial class Program
         AssertContains(exportText, "private static void ObserveExportSnapshot(");
         AssertContains(exportText, "var relevantToSession =");
         AssertContains(exportText, "metrics.MaxThroughputBytesPerSecObserved = Math.Max(");
-        AssertDoesNotContain(playbackSessionText, "private static void ObservePlaybackOnePercentLow(");
-        AssertDoesNotContain(playbackSessionText, "private static void ObservePlaybackFrameAndDecodeMetrics(");
-        AssertDoesNotContain(playbackSessionText, "private static void ObservePlaybackAudioMasterMetrics(");
+        AssertContains(playbackSessionText, "private static void ObservePlaybackOnePercentLow(");
+        AssertContains(playbackSessionText, "private static void ObservePlaybackFrameAndDecodeMetrics(");
+        AssertContains(playbackSessionText, "private static void ObservePlaybackAudioMasterMetrics(");
         AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionFlashbackMetrics;");
         AssertContains(builderText, "var playbackResultMetrics = BuildFlashbackPlaybackResultMetrics(playbackSessionMetrics);");
         AssertDoesNotContain(runnerText, "private sealed class FlashbackPlaybackSessionMetrics");

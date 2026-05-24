@@ -29,7 +29,6 @@ static partial class Program
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionFlashbackMetrics.RecordingExport.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs",
-            "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs");
 
     private static string ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource()

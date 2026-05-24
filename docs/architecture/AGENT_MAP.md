@@ -3740,11 +3740,9 @@ Primary owners:
   `FlashbackPlaybackSessionMetrics` handoff state, playback session metric
   orchestration, and end-of-session playback counter deltas. It covers observed
   identity, baseline/end snapshots, command, cadence, 1% low, decode,
-  audio-master, and stage metric fields.
-  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs` owns
-  playback snapshot observation dispatch, active/relevant snapshot gating,
-  session frame-count projection, 1% low window capture, frame/decode maxima,
-  and audio-master maxima.
+  audio-master, and stage metric fields plus playback snapshot observation
+  dispatch, active/relevant snapshot gating, session frame-count projection,
+  1% low window capture, frame/decode maxima, and audio-master maxima.
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs` owns the
   `FlashbackPlaybackResultMetrics` handoff shape, final result metric
   construction, observed-gated primitive reads, and the grouped end-snapshot
