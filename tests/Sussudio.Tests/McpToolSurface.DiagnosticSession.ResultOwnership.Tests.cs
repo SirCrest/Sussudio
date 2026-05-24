@@ -83,7 +83,7 @@ static partial class Program
     {
         var executionText = ReadDiagnosticSessionRunExecutionRootSource();
         var initialSnapshotText = ReadDiagnosticSessionRunContextSource();
-        var jsonArtifactsText = ReadRepoFile("tools/Common/DiagnosticSessionJsonArtifacts.cs")
+        var jsonArtifactsText = ReadRepoFile("tools/Common/DiagnosticSessionResultArtifacts.cs")
             .Replace("\r\n", "\n");
         var responseJsonText = ReadRepoFile("tools/Common/DiagnosticSessionAutomationResponseJson.cs")
             .Replace("\r\n", "\n");
@@ -96,7 +96,6 @@ static partial class Program
         AssertContains(responseJsonText, "internal static bool TryGetVerification(");
         AssertContains(initialSnapshotText, "using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;");
         AssertContains(initialSnapshotText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
-        AssertDoesNotContain(jsonArtifactsText, "BuildFrameLedgerTrace(");
         AssertDoesNotContain(jsonArtifactsText, "TryGetSnapshot(");
         AssertDoesNotContain(jsonArtifactsText, "TryGetVerification(");
         AssertDoesNotContain(executionText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");

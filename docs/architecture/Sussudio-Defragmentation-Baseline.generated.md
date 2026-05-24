@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T03:32:52Z
+Generated UTC: 2026-05-24T03:41:47Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 843 |
+| Production .cs files | 842 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 106 (12.6%) |
-| Production .cs files under 80 lines | 190 (22.5%) |
+| Production .cs files under 60 lines | 105 (12.5%) |
+| Production .cs files under 80 lines | 188 (22.3%) |
 
 ## Largest partial-type clusters
 
@@ -56,8 +56,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 744 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs |
 | 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
-| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 | 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
+| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
@@ -102,7 +102,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 17 | Sussudio/Services/Preview/PreviewDisplayClock.cs |
 | 17 | tools/KsAudioNodeProbe/Program.Constants.cs |
 | 18 | Sussudio/Services/Automation/DiagnosticThresholds.cs |
-| 18 | tools/Common/DiagnosticSessionJsonArtifacts.cs |
 | 19 | Sussudio/Services/Telemetry/DisabledSourceSignalTelemetryProvider.cs |
 | 22 | Sussudio/ViewModels/DeviceAudioGainMapper.cs |
 | 22 | tools/ssctl/SsctlHelpWriter.cs |
@@ -146,6 +145,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 45 | Sussudio/Controllers/Preview/Startup/PreviewStartupOverlayController.cs |
 | 45 | tools/Common/DiagnosticSessionCleanupPolicy.cs |
 | 45 | tools/McpServer/Tools/DiagnosticSessionTools.cs |
+| 46 | Sussudio/MainWindow.Bindings.cs |
 
 ## Notes
 

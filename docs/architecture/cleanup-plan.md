@@ -3373,12 +3373,12 @@ and cleanup pass the channel itself for lifecycle mutations so
 keeps phase orchestration and its public string delegate compatibility.
 
 Diagnostic-session JSON artifact helpers now live in
-`tools/Common/DiagnosticSessionJsonArtifacts.cs`. The runner still owns the
-session lifecycle, while JSON object creation and best-effort file writes stay
-in the shared JSON helper. Snapshot / verification response-shape extraction
-now lives in `tools/Common/DiagnosticSessionAutomationResponseJson.cs`, and
-frame-ledger trace construction lives next to pre-summary result artifact
-writes in `tools/Common/DiagnosticSessionResultArtifacts.cs`.
+`tools/Common/DiagnosticSessionResultArtifacts.cs` beside pre-summary artifact
+path construction and writes. The runner still owns the session lifecycle,
+while JSON object creation, best-effort file writes, and frame-ledger trace
+construction stay in the shared artifact helper. Snapshot / verification
+response-shape extraction now lives in
+`tools/Common/DiagnosticSessionAutomationResponseJson.cs`.
 
 Diagnostic-session initial snapshot capture now lives in
 `tools/Common/DiagnosticSessionRunContext.cs` beside the mutable initial
@@ -3736,7 +3736,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackValidation.cs`
 - `DiagnosticSessionHealthPolicy.cs`
 - `DiagnosticSessionHealthTolerances.cs`
-- `DiagnosticSessionJsonArtifacts.cs`
 - `DiagnosticSessionAutomationResponseJson.cs`
 - `DiagnosticSessionMetrics.cs`
 - `DiagnosticSessionModels.cs`

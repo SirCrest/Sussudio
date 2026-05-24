@@ -3754,10 +3754,9 @@ Primary owners:
   1% low, decode, audio-master, and stage DTO value maps consumed by the final
   result initializer.
 - `tools/Common/DiagnosticSessionResultArtifacts.cs` owns diagnostic-session
-  result artifact path construction and pre-summary sample, frame-ledger, and
-  timeline artifact writes, including frame-ledger trace shaping.
-- `tools/Common/DiagnosticSessionJsonArtifacts.cs` owns diagnostic-session JSON
-  object creation and artifact writing.
+  result artifact path construction, pre-summary sample, frame-ledger, and
+  timeline artifact writes, frame-ledger trace shaping, and shared JSON object
+  creation / artifact serialization helpers.
 - `tools/Common/DiagnosticSessionAutomationResponseJson.cs` owns
   diagnostic-session automation response shape helpers for snapshot and
   verification envelopes.
