@@ -16,6 +16,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly WindowAutomationHostLifecycleController _automationHostLifecycleController;
     private NvmlMonitor? _nvmlMonitor;
     private FullScreenController _fullScreenController = null!;
+    private WindowShutdownCleanupController _windowShutdownCleanupController = null!;
 
     public MainWindow()
     {
@@ -72,6 +73,81 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         mainContent.Loaded += MainWindow_Loaded;
         mainContent.SizeChanged += MainWindow_SizeChanged;
         Closed += MainWindow_Closed;
+    }
+
+    private void InitializeWindowShutdownCleanupController()
+    {
+        _windowShutdownCleanupController = new WindowShutdownCleanupController(new WindowShutdownCleanupControllerContext
+        {
+            LifecycleController = _windowCloseLifecycleController,
+            IsRecording = () => ViewModel.IsRecording,
+            IsPreviewing = () => ViewModel.IsPreviewing,
+            CancelNativeShellRevealAfterFirstFrame = CancelNativeShellRevealAfterFirstFrame,
+            CompleteWindowCloseRequest = () => CompleteWindowCloseRequest(),
+            DetachMeterActivationHandlers = DetachMeterActivationHandlers,
+            StopTimers = StopShutdownTimers,
+            StopStatsOverlay = StopStatsOverlayForShutdown,
+            StopRecordingVisuals = StopRecordingVisualsForShutdown,
+            DetachMainContentSizeChanged = DetachMainContentSizeChanged,
+            DetachViewModelEventHandlers = DetachViewModelEventHandlers,
+            StopPreviewForShutdown = StopPreviewForShutdown,
+            ResetPreviewStartupTracking = () => ResetPreviewStartupTracking(),
+            StopRecordingAfterClosedBestEffortAsync = () => _windowCloseRecordingFinalizationController.StopAfterClosedBestEffortAsync(
+                ViewModel,
+                Content as FrameworkElement),
+            DisposeAutomationHostAsync = () => _automationHostLifecycleController.DisposeAsync(),
+            DisposeNvmlMonitor = () => _nvmlMonitor?.Dispose(),
+            DisposeViewModelAsync = ViewModel.DisposeAsync
+        });
+    }
+
+    private async void MainWindow_Closed(object sender, WindowEventArgs args)
+        => await _windowShutdownCleanupController.RunAsync();
+
+    private void DetachMeterActivationHandlers()
+    {
+        ViewModel.AudioMeterActivated -= EnsureAudioMeterTimerRunning;
+        ViewModel.MicrophoneMeterActivated -= EnsureAudioMeterTimerRunning;
+    }
+
+    private void StopShutdownTimers()
+    {
+        StopAudioMeterTimer();
+        StopLiveSignalInfoTimers();
+        StopFullScreenAutoHideTimer();
+        StopFlashbackStatusPolling();
+    }
+
+    private void StopStatsOverlayForShutdown()
+    {
+        DetachStatsOverlayToggleBindings();
+        StopStatsDockPolling();
+        HideStatsDockPanel(immediate: true);
+    }
+
+    private void StopRecordingVisualsForShutdown()
+    {
+        StopMicMeterRowAnimation();
+        RecordingGlowPulseStoryboard.Stop();
+        RecordingGlowBorder.Opacity = 0;
+        RecPulseStoryboard.Stop();
+    }
+
+    private void DetachMainContentSizeChanged()
+    {
+        if (Content is FrameworkElement mainContent)
+        {
+            mainContent.SizeChanged -= MainWindow_SizeChanged;
+        }
+    }
+
+    private void DetachViewModelEventHandlers()
+    {
+        ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        ViewModel.PreviewStartRequested -= ViewModel_PreviewStartRequested;
+        ViewModel.PreviewStopRequested -= ViewModel_PreviewStopRequested;
+        ViewModel.PreviewReinitRequested -= ViewModel_PreviewReinitRequested;
+        ViewModel.PreviewRendererStopRequested -= ViewModel_PreviewRendererStopRequested;
     }
 
     // Manual binding layer for WinUI controls. The app deliberately avoids

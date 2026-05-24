@@ -998,7 +998,7 @@ startup, ready/disabled logging, and pipe-before-hub shutdown disposal now live
 in `Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs`.
 `Sussudio/Controllers/Launch/LaunchStartupController.cs` starts that
 controller after initial device refresh, and
-`Sussudio/MainWindow.ShutdownCleanup.Composition.cs` passes its async dispose
+`Sussudio/MainWindow.xaml.cs` passes its async dispose
 delegate into the shutdown controller. Window close
 completion lives in `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`;
 recording-aware close finalization now lives in
@@ -1073,7 +1073,7 @@ keeps `RegisterCloseLifecycle`, `CloseAsync`, and `RequestWindowClose()` stable.
 cleanup order: cleanup latch, close completion, closing-state mark, timer stops,
 event detaches, preview shutdown, post-close recording finalization handoff,
 automation diagnostics disposal, NVML disposal, and ViewModel disposal.
-`Sussudio/MainWindow.ShutdownCleanup.Composition.cs`
+`Sussudio/MainWindow.xaml.cs`
 wires MainWindow cleanup delegates and the stable `Closed` event adapter into
 the controller, and owns the timer,
 event-detach, stats, recording-visual, and preview-size cleanup delegate

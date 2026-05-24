@@ -19,7 +19,7 @@ static partial class Program
             "Sussudio/Controllers/Window/WindowShutdownCleanupController.cs",
             "Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs",
             "Sussudio/MainWindow.WindowShell.cs",
-            "Sussudio/MainWindow.ShutdownCleanup.Composition.cs",
+            "Sussudio/MainWindow.xaml.cs",
         };
 
         foreach (var owner in documentedOwners)
@@ -32,6 +32,11 @@ static partial class Program
         {
             throw new InvalidOperationException("MainWindow.WindowManagement.cs should not return as a catch-all partial.");
         }
+
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShutdownCleanup.Composition.cs")),
+            "shutdown cleanup adapter folded into MainWindow root composition");
 
         AssertContains(mainWindowText, "ViewModel = new MainViewModel();");
         AssertContains(mainWindowText, "InitializeWindowCloseRequestController();");
