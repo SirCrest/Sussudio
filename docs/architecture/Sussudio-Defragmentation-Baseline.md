@@ -1523,3 +1523,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation/tool contract changes
 Behavior preserved: Packet/frame/context/buffer release order, packed CPU buffer free, initialized flag reset, disposal logging, and FFmpeg error string formatting remain unchanged
 Notes for future agents: keep NVDEC resource acquisition, disposal, and FFmpeg error text together in `NvdecMjpegDecoder.Initialization.cs`; keep packet decode in `Decode.cs`, CPU download/copy in `Download.cs`, and shared context adoption in `SharedInitialization.cs`
+
+Date: 2026-05-24
+Area: Capture session coordinator root locality
+Problem: `CaptureSessionCoordinator.Commands.cs` and `CaptureSessionCoordinator.Snapshot.cs` were two tiny facade/projection partials around the coordinator's shared state and serialized command entry points, leaving the basic coordinator surface split across three files before reaching the real queue, disposal, and Flashback boundaries.
+Files consolidated: `Sussudio/Services/Capture/CaptureSessionCoordinator.Commands.cs`; `Sussudio/Services/Capture/CaptureSessionCoordinator.Snapshot.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `CaptureSessionCoordinator` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: Public lifecycle/audio command methods, emergency stop routing, audio monitoring mute/start/stop order, preview volume guard, snapshot projection fields, pending-command age bookkeeping, queue latency tracking, and serialized worker handoff remain unchanged
+Notes for future agents: keep coordinator construction, shared state, public non-Flashback command facade, and snapshot projection together in `CaptureSessionCoordinator.cs`; keep queue worker mechanics in `Queue.cs`, disposal in `Disposal.cs`, and Flashback-specific facades in the Flashback partials

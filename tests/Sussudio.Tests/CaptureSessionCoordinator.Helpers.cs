@@ -8,11 +8,9 @@ static partial class Program
         var parts = new[]
         {
             ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Models.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Commands.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.Playback.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Queue.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Snapshot.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Disposal.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs").Replace("\r\n", "\n")
         };
