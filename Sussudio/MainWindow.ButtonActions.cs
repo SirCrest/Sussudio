@@ -4,12 +4,15 @@ using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// XAML-facing adapter for MainWindow button and output-path workflows. The
-// controllers own the actual action/display policies; this partial keeps event
-// handlers and private adapter methods near the buttons that invoke them.
+// XAML-facing adapter for MainWindow recording, button, and output-path
+// workflows. The controllers own the actual action/display policies; this
+// partial keeps event handlers and private adapter methods near the buttons and
+// recording chrome they drive.
 public sealed partial class MainWindow
 {
     private RecordingButtonActionController _recordingButtonActionController = null!;
+    private RecordingButtonChromeController _recordingButtonChromeController = null!;
+    private RecordingStatePresentationController _recordingStatePresentationController = null!;
     private CaptureDeviceActionController _captureDeviceActionController = null!;
     private OutputPathController _outputPathController = null!;
 
@@ -22,6 +25,41 @@ public sealed partial class MainWindow
                 _previewRendererHostController.HasD3DRenderer && PreviewSwapChainPanel.Visibility == Visibility.Visible,
                 _previewRendererHostController.IsCpuPreviewSourceAttached && PreviewImage.Visibility == Visibility.Visible,
                 NoDevicePlaceholder.Visibility == Visibility.Visible)
+        });
+    }
+
+    private void InitializeRecordingButtonChromeController()
+    {
+        _recordingButtonChromeController = new RecordingButtonChromeController(new RecordingButtonChromeControllerContext
+        {
+            RecordingGlowBorder = RecordingGlowBorder,
+            RecordingGlowPulseStoryboard = RecordingGlowPulseStoryboard,
+            RecPulseStoryboard = RecPulseStoryboard,
+            RecordButton = RecordButton,
+            RecordButtonNormalContent = RecordButtonNormalContent,
+            RecordButtonStartingContent = RecordButtonStartingContent,
+            RecordButtonRecordingContent = RecordButtonRecordingContent,
+        });
+    }
+
+    private void InitializeRecordingStatePresentationController()
+    {
+        _recordingStatePresentationController = new RecordingStatePresentationController(new RecordingStatePresentationControllerContext
+        {
+            ViewModel = ViewModel,
+            RecordingButtonChrome = _recordingButtonChromeController,
+            AudioRecordToggle = AudioRecordToggle,
+            CustomAudioToggle = CustomAudioToggle,
+            MicrophoneToggle = MicrophoneToggle,
+            AudioInputComboBox = AudioInputComboBox,
+            MicrophoneComboBox = MicrophoneComboBox,
+            DeviceAudioModeToggle = DeviceAudioModeToggle,
+            AnalogAudioGainSlider = AnalogAudioGainSlider,
+            ResetAudioMeterVisuals = ResetAudioMeterVisuals,
+            ApplyHdrToggleEnabledState = ApplyHdrToggleEnabledState,
+            RefreshHdrHintText = RefreshHdrHintText,
+            UpdateDeviceApplyButtonState = UpdateDeviceApplyButtonState,
+            ApplyWindowTitle = ApplyWindowTitle,
         });
     }
 
@@ -52,6 +90,12 @@ public sealed partial class MainWindow
 
     private Task ToggleRecordingFromButtonAsync()
         => _recordingButtonActionController.ToggleRecordingAsync();
+
+    private bool TryHandleRecordingPropertyChanged(string propertyName)
+        => _recordingStatePresentationController.TryHandlePropertyChanged(propertyName);
+
+    private void ApplyInitialRecordingStatePresentation()
+        => _recordingStatePresentationController.HandleFfmpegMissingChanged();
 
     private Task RefreshDevicesFromButtonAsync()
         => _captureDeviceActionController.RefreshDevicesAsync();

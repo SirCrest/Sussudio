@@ -156,6 +156,18 @@ CLI/MCP/pipe checks, if applicable: covered by preview startup session, signal, 
 Behavior preserved: Preview startup session, signal, and watchdog behavior still route through the same controller types and callback delegates
 Notes for future agents: keep preview startup MainWindow adapter glue together in `MainWindow.PreviewStartup.Session.Composition.cs`; keep state machines, timers, readiness logic, and formatting in the preview startup controllers
 
+Date: 2026-05-24
+Area: MainWindow recording adapter locality
+Problem: Recording button action glue and recording state/chrome glue lived in separate MainWindow partials even though both are XAML-facing adapters around the same recording button controller family.
+Files consolidated: `Sussudio/MainWindow.PropertyChangedRecording.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `MainWindow` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by MainWindow recording controller ownership tests and runtime snapshot regression tests
+Behavior preserved: Recording action, chrome, state presentation, and property-change routing still use the same recording controllers and policy types
+Notes for future agents: keep recording button/state MainWindow adapter glue in `MainWindow.ButtonActions.cs`; keep record-button behavior and lockout policy in the recording controllers
+
 Date: 2026-05-21
 Area: Automation diagnostics Flashback evaluation
 Problem: Active/stalled Flashback export diagnostic verdict construction lived in a small partial even though it is only called by the Flashback diagnostic owner that orders storage, recording, export, and playback verdicts.

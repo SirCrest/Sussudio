@@ -2913,8 +2913,8 @@ Primary current owners:
   `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs` owns demo-visible
   record-button chrome: recording glow, Rec pulse, starting spinner,
   normal/recording content, padding, enabled-state application, and the
-  circle/pill width morph. `MainWindow.PropertyChangedRecording.cs` wires the
-  chrome controller and recording-state presentation adapter.
+  circle/pill width morph. `MainWindow.ButtonActions.cs` wires the
+  chrome controller, recording action adapter, and recording-state presentation adapter.
 - `Sussudio/Controllers/Recording/Button/RecordingButtonActionController.cs` owns the recording
   button command workflow and preview-state logging after a start.
   `MainWindow.ButtonActions.cs` is the XAML-facing adapter for recording and
@@ -2992,7 +2992,7 @@ Primary current owners:
   reinit renderer-stop/timeout policy lives with `PreviewRendererHostController.cs`;
   preview surface presentation lives in `PreviewSurfacePresentationController`,
   and preview shadow visuals live in `PreviewSurfaceShadowController`.
-- `Sussudio/MainWindow.PropertyChangedRecording.cs` is the XAML-facing recording
+- `Sussudio/MainWindow.ButtonActions.cs` is the XAML-facing recording
   adapter. Recording-specific property-name routing, record-button, glow, pulse,
   and recording-time lockout projection live in
   `RecordingStatePresentationController` and `RecordingStatePresentationPolicy`.

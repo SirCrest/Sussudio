@@ -2969,13 +2969,13 @@ Demo-visible record-button chrome now lives in
 `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs`: recording glow,
 Rec pulse, starting spinner, normal/recording content, padding, enabled-state
 application, and the circle/pill width morph.
-`MainWindow.PropertyChangedRecording.cs` wires the chrome controller with the
-recording-state presentation adapter.
+`MainWindow.ButtonActions.cs` wires the chrome controller with the
+recording action and recording-state presentation adapters.
 
 Recording button command execution and preview-state logging after a recording
 start now live in `Sussudio/Controllers/Recording/Button/RecordingButtonActionController.cs`.
-`MainWindow.ButtonActions.cs` is the XAML-facing adapter for recording and
-capture-device button workflows.
+`MainWindow.ButtonActions.cs` is the XAML-facing adapter for recording,
+capture-device, and output-path button workflows.
 
 Live-signal pill text application, visibility state, show/hide debounce timers,
 and the small scale/fade animation now live in
@@ -3091,7 +3091,7 @@ visibility. Recording-state UI projection now lives in
 property-name routing, lockout/HDR/title/audio-meter policy application, and delegation to
 `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs` for record-button
 chrome.
-`MainWindow.PropertyChangedRecording.cs` is the XAML-facing adapter.
+`MainWindow.ButtonActions.cs` is the XAML-facing recording adapter.
 
 Capture-option property-name routing still lives in the focused
 `Sussudio/MainWindow.CaptureOptionBindings.cs` adapter. Output-path routing
