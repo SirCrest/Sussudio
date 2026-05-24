@@ -2565,7 +2565,7 @@ graph composition from those contexts lives in
 `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` keeps the stats dock
 projection refresh adapter.
 Decode and GPU hardware stats row refresh/application over presentation inputs
-now lives in `Sussudio/Controllers/Stats/StatsHardwareRowsController.cs`;
+now lives in `Sussudio/Controllers/Stats/StatsDockRefreshController.cs`;
 live MJPEG/NVML sampling and decode availability policy live in
 `Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs`, alongside pure
 MJPEG/NVML telemetry-to-presentation-input projection; pure row text
@@ -2614,7 +2614,7 @@ application. `Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs`
 owns diagnostic row presentation, telemetry diagnostics empty state, group
 headers, and diagnostic row pooling, while
 `Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs` owns live
-MJPEG/NVML input acquisition and `Sussudio/Controllers/Stats/StatsHardwareRowsController.cs`
+MJPEG/NVML input acquisition and `Sussudio/Controllers/Stats/StatsDockRefreshController.cs`
 owns hardware row availability, text-row presentation building, and minimum
 pool sizing before delegating row chrome.
 

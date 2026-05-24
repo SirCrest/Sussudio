@@ -1372,8 +1372,7 @@ Primary current owners:
   dock row creation, label/value text mutation, visibility toggles, dock row
   style application, and dynamic decode/GPU simple row pools.
   `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` delegates diagnostic row
-  presentation to `StatsDiagnosticRowsController`.
-- `Sussudio/Controllers/Stats/StatsHardwareRowsController.cs` owns hardware row
+  presentation to `StatsDiagnosticRowsController`, and owns hardware row
   refresh, availability, and decode/GPU minimum pool sizing before delegating row
   chrome. `Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs` owns
   live MJPEG/NVML input acquisition, decode availability policy, and pure

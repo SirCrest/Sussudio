@@ -1,3 +1,4 @@
+using System;
 using Xunit;
 
 namespace Sussudio.Tests;
@@ -71,12 +72,13 @@ public partial class StatsPresentationTests
         var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs").Replace("\r\n", "\n");
         var rowChromePresenterText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRowChromePresenter.cs").Replace("\r\n", "\n");
         var rowChromeControllerText = rowChromePresenterText;
-        var hardwareRowsControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsHardwareRowsController.cs").Replace("\r\n", "\n");
+        var refreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
+        var hardwareRowsControllerText = refreshControllerText.Substring(
+            refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsControllerContext", StringComparison.Ordinal));
         var hardwareRowsInputProviderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs").Replace("\r\n", "\n");
         var hardwareRowsInputBuilderText = hardwareRowsInputProviderText;
         var hardwareRowsBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
-        var refreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
 
         AssertContains(statsDockCompositionText, "private static StatsDiagnosticRowsController CreateDiagnosticRowsController(");
         AssertContains(statsDockCompositionText, "private static StatsDockRowChromeController CreateRowChromeController(");
