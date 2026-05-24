@@ -3558,8 +3558,10 @@ Primary owners:
   process CPU, Memory/GC, thread-pool, capture cadence, low-FPS, jitter/drop,
   MJPEG packet fingerprint, sampled visual cadence, AV-sync drift, encoder
   correction, preview renderer-mode routing, GPU playback summary, non-D3D
-  fallback frame/cadence, D3D renderer delegation, source dimensions, source
-  frame-rate summary, HDR, and source telemetry snapshot text.
+  fallback frame/cadence, D3D renderer section text, D3D CPU timing,
+  pipeline-latency, frame-latency wait, frame ownership, DXGI frame-stat text,
+  slow-frame formatter delegation, source dimensions, source frame-rate
+  summary, HDR, and source telemetry snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot
   active/failure gating, section and encoding subsection ordering, Flashback
   encoder/buffer/cache/cleanup text, queue-latency/backpressure/failure/GPU
@@ -3569,10 +3571,6 @@ Primary owners:
   activation, header, output order, decode/copy/callback/per-decoder timing,
   compressed queue/drop/reorder/pipeline timing, and preview-jitter queue,
   input/output/latency, ownership, and underflow snapshot text.
-- `tools/ssctl/Formatters.Snapshot.PreviewD3D.cs` owns D3D preview renderer
-  snapshot text routing/header order, D3D CPU timing, pipeline-latency,
-  frame-latency wait, frame ownership, DXGI frame-stat text, and delegation to
-  the shared slow-frame formatter.
 - `tools/ssctl/Formatters.Snapshot.ThreadHealth.cs` owns thread-health section
   order plus source-reader, WASAPI capture, and WASAPI playback thread-health
   snapshot text.

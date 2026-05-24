@@ -454,7 +454,7 @@ Partial clusters reduced: `Formatters` -5 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by ssctl formatter ownership/output tests and runtime snapshot regression tests
 Behavior preserved: Snapshot section order, headers, field names, and formatted text for state, audio, recording, diagnostics, performance, and memory/GC are unchanged
-Notes for future agents: superseded by the later ssctl snapshot small-section consolidation; keep simple one-pass snapshot row sections in `Formatters.Snapshot.cs`; keep policy-heavy or branching sections such as Flashback, MJPEG, preview D3D, and thread health in their focused owners.
+Notes for future agents: superseded by later ssctl snapshot small-section consolidations; keep simple one-pass snapshot row sections and D3D preview text with `Formatters.Snapshot.cs`; keep policy-heavy or branching sections such as Flashback, MJPEG, and thread health in their focused owners.
 
 Date: 2026-05-24
 Area: ssctl snapshot small-section formatter locality
@@ -1331,3 +1331,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: covered by diagnostic-session formatter ownership and runtime formatter tests
 Behavior preserved: Flashback diagnostic-session section order and subsection text remain unchanged
 Notes for future agents: keep one-method formatter routers with the report orchestration unless the router grows real policy
+
+Date: 2026-05-24
+Area: ssctl snapshot formatter locality
+Problem: D3D preview snapshot text lived in a 66-line partial even though it is only reached through the parent snapshot preview-routing method and shares the same console projection surface.
+Files consolidated: `tools/ssctl/Formatters.Snapshot.PreviewD3D.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `Formatters` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: covered by ssctl snapshot formatter ownership tests, shared/ssctl field-alignment tests, and runtime snapshot regression tests
+Behavior preserved: D3D preview renderer detection, section order, CPU timing, pipeline latency, frame-latency wait, frame stats, frame ownership, and slow-frame diagnostics remain in the same `FormatSnapshot` output flow
+Notes for future agents: keep single-use ssctl D3D preview snapshot text with the parent preview-routing section unless it grows independent branching policy
