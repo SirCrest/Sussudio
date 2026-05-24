@@ -2,12 +2,12 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    internal static Task DiagnosticSessionCleanupPolicy_OwnsRestoreWarnings()
+    internal static Task DiagnosticSessionAnalysisValidation_OwnsCleanupRestoreWarnings()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var cleanupActionsText = ReadDiagnosticSessionCleanupActionsSource();
-        var cleanupText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
+        var cleanupText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(cleanupActionsText, "internal static class DiagnosticSessionCleanupActions");
@@ -33,15 +33,15 @@ static partial class Program
         AssertContains(cleanupActionsText, "AutomationCommandKind.SetPreviewEnabled,");
         AssertContains(cleanupActionsText, "AutomationCommandKind.SetFlashbackEnabled,");
         AssertContains(cleanupActionsText, "AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.SetFlashbackEnabled)");
-        AssertContains(cleanupText, "internal static class DiagnosticSessionCleanupPolicy");
-        AssertContains(cleanupText, "internal static void ValidateCleanupLifecycleRestored(");
+        AssertContains(cleanupText, "internal static partial class DiagnosticSessionResultBuilder");
+        AssertContains(cleanupText, "private static void ValidateCleanupLifecycleRestored(");
         AssertContains(cleanupText, "cleanup: preview remained active after restore");
         AssertContains(cleanupText, "cleanup: Flashback remained active after restore");
         AssertContains(cleanupText, "cleanup: playback did not return live state={state}");
         AssertContains(runnerText, "DiagnosticSessionCleanupActions.RunAsync(");
         AssertContains(runnerText, "runContext.CommandChannel,");
         AssertContains(runnerText, "stoppedRecordingForVerification = cleanupResult.StoppedRecordingForVerification;");
-        AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionCleanupPolicy;");
+        AssertDoesNotContain(builderText, "using static Sussudio.Tools.DiagnosticSessionCleanupPolicy;");
         AssertDoesNotContain(runnerText, "setStage(\"cleanup-stop-recording\")");
         AssertDoesNotContain(runnerText, "setStage(\"cleanup-go-live\")");
         AssertDoesNotContain(runnerText, "setStage(\"cleanup-stop-preview\")");

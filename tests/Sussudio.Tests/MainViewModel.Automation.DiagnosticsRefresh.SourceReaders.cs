@@ -96,7 +96,6 @@ static partial class Program
                 + "\n" + ReadDiagnosticSessionBackgroundTasksSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunState.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionLiveStateWriter.cs")
-                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
                 + "\n" + ReadDiagnosticSessionFlashbackCycleScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackExportsSource()
                 + "\n" + ReadDiagnosticSessionFlashbackExportScenariosSource()

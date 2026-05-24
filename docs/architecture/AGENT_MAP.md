@@ -3736,7 +3736,9 @@ Primary owners:
   projection.
 - `tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs` owns
   diagnostic-session validation handoff order for Flashback playback, cleanup
-  lifecycle restore, preview scheduler analysis, and diagnostic health.
+  lifecycle restore, preview scheduler analysis, and diagnostic health,
+  including cleanup restore warnings after diagnostic sessions stop recording,
+  preview, Flashback, or playback state.
 - `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs` owns
   diagnostic-session health summary snapshot selection, health verdict
   composition, source-reader/ingest warning deltas for sparse source-capture
@@ -3822,9 +3824,6 @@ Primary owners:
   diagnostic-session snapshot fetches: performance timeline collection and
   final health snapshot refresh. Keep the `timeline` and `final-snapshot` stage
   names stable there.
-- `tools/Common/DiagnosticSessionCleanupPolicy.cs` owns cleanup restore
-  validation after diagnostic sessions stop recording, preview, Flashback, or
-  playback state.
 - `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs` owns Flashback
   restart/encoder cycle diagnostic task registration, restart-cycle playback
   priming/restart/refill/export verification, and encoder-cycle preset cycling,

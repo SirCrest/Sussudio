@@ -3449,8 +3449,8 @@ Diagnostic-session cleanup mutations now live in
 `tools/Common/DiagnosticSessionCleanupActions.cs`. It owns the public cleanup
 flow and ordering, recording stop for verification, Flashback playback go-live
 restore, preview stop, Flashback enable-state restore, typed automation command
-sends, and the cleanup result record, while
-`DiagnosticSessionCleanupPolicy.cs` remains the post-cleanup warning validator.
+sends, and the cleanup result record, while result analysis validation owns the
+post-cleanup warning validator.
 
 Diagnostic-session recording checks now live in
 `tools/Common/DiagnosticSessionRecordingChecks.cs`. It owns deferred Flashback
@@ -3481,9 +3481,9 @@ including the preview-cycle grouped predicate, so the runner does not grow
 direct scenario string comparisons.
 
 Diagnostic-session cleanup restore validation now lives in
-`tools/Common/DiagnosticSessionCleanupPolicy.cs`. It owns warnings for preview,
-Flashback, and playback state that remain active after the runner attempts
-cleanup.
+`tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs`. It owns
+warnings for preview, Flashback, and playback state that remain active after
+the runner attempts cleanup.
 
 Diagnostic-session Flashback cycle scenarios now live in
 `DiagnosticSessionFlashbackCycleScenarios.cs`, which owns restart/encoder cycle
@@ -3706,7 +3706,6 @@ Remaining `tools/Common` ownership:
 - `AutomationPipeClient/AutomationCommandTransport.cs`
 - `DiagnosticSessionBackgroundTasks.cs`
 - `DiagnosticSessionCleanupActions.cs`
-- `DiagnosticSessionCleanupPolicy.cs`
 - `DiagnosticSessionRecordingChecks.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackExports.cs`

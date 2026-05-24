@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T03:41:47Z
+Generated UTC: 2026-05-24T03:46:06Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 842 |
+| Production .cs files | 841 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 105 (12.5%) |
-| Production .cs files under 80 lines | 188 (22.3%) |
+| Production .cs files under 60 lines | 104 (12.4%) |
+| Production .cs files under 80 lines | 186 (22.1%) |
 
 ## Largest partial-type clusters
 
@@ -35,7 +35,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | UnifiedVideoCapture | 9 | 1435 | Sussudio/Services/Capture/UnifiedVideoCapture.cs, Sussudio/Services/Capture/UnifiedVideoCapture.FrameIngress.cs, Sussudio/Services/Capture/UnifiedVideoCapture.Initialization.cs, Sussudio/Services/Capture/UnifiedVideoCapture.Lifecycle.cs, Sussudio/Services/Capture/UnifiedVideoCapture.Metrics.cs, Sussudio/Services/Capture/UnifiedVideoCapture.MjpegPipelineLifecycle.cs, Sussudio/Services/Capture/UnifiedVideoCapture.Preview.cs, Sussudio/Services/Capture/UnifiedVideoCapture.SinkFanout.cs |
 | ParallelMjpegDecodePipeline | 8 | 1252 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.CompressedQueue.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Metrics.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.ReorderEmission.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.ResourceCleanup.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Workers.cs |
 | Formatters | 8 | 989 | tools/ssctl/Formatters.Common.cs, tools/ssctl/Formatters.Options.cs, tools/ssctl/Formatters.Snapshot.cs, tools/ssctl/Formatters.Snapshot.Flashback.cs, tools/ssctl/Formatters.Snapshot.Mjpeg.cs, tools/ssctl/Formatters.Snapshot.PreviewD3D.cs, tools/ssctl/Formatters.Snapshot.ThreadHealth.cs, tools/ssctl/Formatters.Timeline.cs |
-| DiagnosticSessionResultBuilder | 8 | 1388 | tools/Common/DiagnosticSessionResultBuilder.Analysis.cs, tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs, tools/Common/DiagnosticSessionResultBuilder.cs, tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs, tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs, tools/Common/DiagnosticSessionResultBuilder.Flattening.cs, tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs, tools/Common/DiagnosticSessionResultBuilder.Projections.cs |
+| DiagnosticSessionResultBuilder | 8 | 1425 | tools/Common/DiagnosticSessionResultBuilder.Analysis.cs, tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs, tools/Common/DiagnosticSessionResultBuilder.cs, tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs, tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs, tools/Common/DiagnosticSessionResultBuilder.Flattening.cs, tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs, tools/Common/DiagnosticSessionResultBuilder.Projections.cs |
 | AutomationSnapshotFormatter | 8 | 806 | tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs, tools/Common/AutomationSnapshotFormatter.cs, tools/Common/AutomationSnapshotFormatter.Flashback.cs, tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs, tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs, tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs, tools/Common/AutomationSnapshotFormatter.Values.cs, tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs |
 | RecordingVerifier | 8 | 1044 | Sussudio/Services/Recording/Verification/RecordingVerifier.Cadence.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.ProbeParsing.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Results.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.Format.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.Hdr.cs |
 | AutomationSnapshot | 8 | 860 | Sussudio/Models/Automation/AutomationSnapshot.AudioIngest.cs, Sussudio/Models/Automation/AutomationSnapshot.CaptureSettings.cs, Sussudio/Models/Automation/AutomationSnapshot.cs, Sussudio/Models/Automation/AutomationSnapshot.Flashback.cs, Sussudio/Models/Automation/AutomationSnapshot.FrameDiagnostics.cs, Sussudio/Models/Automation/AutomationSnapshot.Preview.cs, Sussudio/Models/Automation/AutomationSnapshot.Recording.cs, Sussudio/Models/Automation/AutomationSnapshot.SourceTelemetry.cs |
@@ -143,9 +143,9 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 44 | Sussudio/Services/Recording/LibAvEncoder.Models.cs |
 | 44 | tools/McpServer/Tools/CaptureOptionsTools.cs |
 | 45 | Sussudio/Controllers/Preview/Startup/PreviewStartupOverlayController.cs |
-| 45 | tools/Common/DiagnosticSessionCleanupPolicy.cs |
 | 45 | tools/McpServer/Tools/DiagnosticSessionTools.cs |
 | 46 | Sussudio/MainWindow.Bindings.cs |
+| 46 | tools/Common/AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs |
 
 ## Notes
 

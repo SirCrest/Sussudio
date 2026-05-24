@@ -31,7 +31,7 @@ public sealed class McpDiagnosticSessionScenarioExecutionContractsTests
 
     [Fact]
     public Task CleanupPolicyOwnsRestoreWarnings()
-        => global::Program.DiagnosticSessionCleanupPolicy_OwnsRestoreWarnings();
+        => global::Program.DiagnosticSessionAnalysisValidation_OwnsCleanupRestoreWarnings();
 
     [Fact]
     public Task RecordingChecksOwnPostRunRecordingVerification()
