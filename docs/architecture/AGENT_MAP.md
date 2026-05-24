@@ -1157,11 +1157,11 @@ Primary current owners:
   owns the pure PNG/BMP byte-stream encoding helpers. Keep whole-window
   screenshot automation on `MainWindow.WindowShell.cs` with the rest of the
   `IAutomationWindowControl` adapter.
-- `Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotPlanPolicy.cs` owns the pure preview-
-  frame screenshot output-directory fallback, file naming, status text, and log
-  text policy. `Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs` owns the
-  XAML preview-frame screenshot button workflow: directory creation,
-  preview-frame capture, logging side effects, and button enable/disable state.
+- `Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs` owns
+  the pure preview-frame screenshot output-directory fallback, file naming,
+  status/log text policy, and XAML preview-frame screenshot button workflow:
+  directory creation, preview-frame capture, logging side effects, and button
+  enable/disable state.
   `MainWindow.ButtonActions.cs` is the XAML-facing adapter for preview-frame
   screenshots.
 - `Sussudio/Controllers/Window/WindowAutomationController.cs` owns window geometry

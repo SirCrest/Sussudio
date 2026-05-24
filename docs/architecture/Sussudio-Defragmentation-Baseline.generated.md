@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T06:14:40Z
+Generated UTC: 2026-05-24T06:20:17Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 804 |
+| Production .cs files | 803 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 82 (10.2%) |
-| Production .cs files under 80 lines | 152 (18.9%) |
+| Production .cs files under 60 lines | 80 (10.0%) |
+| Production .cs files under 80 lines | 150 (18.7%) |
 
 ## Largest partial-type clusters
 
@@ -121,7 +121,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 37 | tools/KsAudioNodeProbe/Program.cs |
 | 38 | tools/ssctl/CommandHandlers.DiagnosticSession.cs |
 | 39 | Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs |
-| 39 | Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotPlanPolicy.cs |
 | 39 | Sussudio/Services/Recording/RecordingContracts.cs |
 | 40 | Sussudio/Controllers/Capture/CaptureOptionTooltipFormatter.cs |
 | 40 | Sussudio/ViewModels/MainViewModel.AutomationSettings.cs |
@@ -146,6 +145,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 50 | Sussudio/ViewModels/MainViewModel.CaptureSettings.cs |
 | 50 | tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs |
 | 50 | tools/McpServer/PipeClient.cs |
+| 51 | Sussudio/Services/Contracts/PooledVideoFrameLease.cs |
 
 ## Notes
 

@@ -958,7 +958,7 @@ other `IAutomationWindowControl` methods.
 
 Preview-frame screenshot button behavior now lives in
 `Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs`.
-`Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotPlanPolicy.cs` owns the pure output
+`Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs` owns the pure output
 directory fallback, file naming, status text, and log text policy.
 `MainWindow.ButtonActions.cs` is the XAML-facing adapter; the controller keeps
 directory creation, preview-frame capture, logging side effects, and button

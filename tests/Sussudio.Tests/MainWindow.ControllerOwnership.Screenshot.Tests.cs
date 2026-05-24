@@ -11,7 +11,14 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ButtonActions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs").Replace("\r\n", "\n");
-        var policyText = ReadRepoFile("Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotPlanPolicy.cs").Replace("\r\n", "\n");
+        const string policyMarker = "internal static class PreviewScreenshotPlanPolicy";
+        var policyStart = controllerText.IndexOf(policyMarker, StringComparison.Ordinal);
+        if (policyStart < 0)
+        {
+            throw new InvalidOperationException("PreviewScreenshotPlanPolicy was not found in PreviewScreenshotController.cs.");
+        }
+
+        var policyText = controllerText[policyStart..];
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
@@ -47,12 +54,14 @@ static partial class Program
         AssertContains(policyText, "internal readonly record struct PreviewScreenshotPlan(string OutputDirectory, string FilePath);");
         AssertContains(controllerText, "_context.ScreenshotButton.IsEnabled = false;");
         AssertContains(controllerText, "_context.ScreenshotButton.IsEnabled = true;");
-        AssertContains(agentMapText, "PreviewScreenshotPlanPolicy.cs");
-        AssertContains(cleanupPlanText, "PreviewScreenshotPlanPolicy.cs");
+        AssertContains(agentMapText, "`Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs` owns");
+        AssertContains(agentMapText, "pure preview-frame screenshot output-directory fallback");
+        AssertContains(cleanupPlanText, "`Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs` owns");
+        AssertContains(cleanupPlanText, "owns the pure output\ndirectory fallback");
         AssertDoesNotContain(adapterText, "Directory.CreateDirectory(outputDir);");
         AssertDoesNotContain(adapterText, "CapturePreviewFrameAsync(");
         AssertDoesNotContain(controllerText, "Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), \"Sussudio\")");
-        AssertDoesNotContain(controllerText, "Screenshot saved: {Path.GetFileName(filePath)}");
+        AssertDoesNotContain(adapterText, "Screenshot saved: {Path.GetFileName(filePath)}");
         AssertDoesNotContain(policyText, "Button");
         AssertDoesNotContain(policyText, "CapturePreviewFrameAsync");
         AssertDoesNotContain(policyText, "Directory.CreateDirectory");
