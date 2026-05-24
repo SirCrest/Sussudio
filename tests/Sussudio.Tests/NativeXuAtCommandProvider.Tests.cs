@@ -98,8 +98,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioCommandsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioCommands.cs")
             .Replace("\r\n", "\n");
-        var analogGainText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AnalogGain.cs")
-            .Replace("\r\n", "\n");
         var atProtocolText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs")
             .Replace("\r\n", "\n");
         var deviceSupportText = ReadRepoFile("Sussudio/Services/Capture/NativeXu/NativeXuDeviceSupport.cs")
@@ -128,16 +126,18 @@ static partial class Program
         AssertContains(audioCommandsText, "private static bool ExecuteAudioSwitch(");
         AssertContains(audioCommandsText, "NATIVEXU_SWITCH_AUDIO FAILED stage=i2c_{i}");
         AssertContains(audioCommandsText, "commands=14");
-        AssertDoesNotContain(audioCommandsText, "private static bool ExecuteGainChange(");
-        AssertDoesNotContain(audioCommandsText, "internal static void ComputeGainRegisters(");
+        AssertContains(audioCommandsText, "private static bool ExecuteGainChange(");
+        AssertContains(audioCommandsText, "internal static void ComputeGainRegisters(");
         AssertDoesNotContain(audioCommandsText, "private static bool SendSelector4Command(");
-        AssertContains(analogGainText, "private static bool ExecuteGainChange(");
-        AssertContains(analogGainText, "internal static void ComputeGainRegisters(");
-        AssertContains(analogGainText, "SendSelector4Command(");
+        AssertContains(audioCommandsText, "SendSelector4Command(");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.AudioSwitch.cs")),
             "audio switch execution folded into audio command owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.AnalogGain.cs")),
+            "analog gain execution folded into audio command owner");
         AssertContains(atProtocolText, "private static bool SendSelector4Command(");
         AssertContains(atProtocolText, "BuildAtWriteFrame(cmdCode, inputData)");
         AssertContains(atProtocolText, "TryXuSetViaOutput(handle, nodeId, XuGuid, I2cSelector, payload, out var win32)");
@@ -145,7 +145,7 @@ static partial class Program
         AssertContains(deviceSupportText, "public static bool TryGetSupported4kXIds(");
         AssertContains(deviceSupportText, "public static bool IsSupported4kXDevice(");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.AudioCommands.cs");
-        AssertContains(probeProjectText, "NativeXuAtCommandProvider.AnalogGain.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AnalogGain.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AudioSwitch.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.DeviceCommandReads.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.Selector4.cs");
