@@ -2128,12 +2128,10 @@ drains, and pending-count accounting there; keep render-loop consumption in
 Media Foundation source-reader negotiation now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs`. Keep
 DXGI manager attachment, direct device-source open, native media-type selection,
-and frame-size/frame-rate attribute reads there. Converted output media-type
-construction now lives in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.ConvertedMediaType.cs`;
-that small file is deliberate because it owns the Source Reader transform
-boundary where the selected native source type is copied into the requested
-NV12/P010 output type without changing negotiation semantics. Keep
+frame-size/frame-rate attribute reads, and converted output media-type
+construction there. Keep the Source Reader transform boundary beside native
+media-type selection so the selected native type and requested NV12/P010 output
+type can be reviewed together without changing negotiation semantics. Keep
 device-enumeration open fallback and candidate reporting in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.DeviceEnumeration.cs`;
 keep high-level source-reader state fields in the root source-reader file.

@@ -8,7 +8,6 @@ static partial class Program
         var deviceRootText = ReadRepoFile("Sussudio/Services/Capture/DeviceService.cs").Replace("\r\n", "\n");
         var sourceReaderRootText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs").Replace("\r\n", "\n");
         var sourceReaderNegotiationText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs").Replace("\r\n", "\n");
-        var sourceReaderConvertedMediaTypeText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.ConvertedMediaType.cs").Replace("\r\n", "\n");
         var sourceReaderDeviceEnumerationText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.DeviceEnumeration.cs").Replace("\r\n", "\n");
         var sourceReaderInteropText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Interop.cs").Replace("\r\n", "\n");
         var sourceReaderComContractsText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.ComContracts.cs").Replace("\r\n", "\n");
@@ -38,14 +37,17 @@ static partial class Program
         AssertContains(sourceReaderDeviceEnumerationText, "Marshal.ReleaseComObject(activated)");
         AssertContains(sourceReaderDeviceEnumerationText, "Marshal.FreeCoTaskMem(activateArrayPtr);");
         AssertContains(sourceReaderNegotiationText, "private IMFMediaType SelectMediaType(");
-        AssertDoesNotContain(sourceReaderNegotiationText, "private IMFMediaType SelectConvertedMediaType(");
+        AssertContains(sourceReaderNegotiationText, "private IMFMediaType SelectConvertedMediaType(");
+        AssertContains(sourceReaderNegotiationText, "SelectMediaType(");
+        AssertContains(sourceReaderNegotiationText, "IMFMediaType.SetGUID(MF_MT_SUBTYPE");
+        AssertContains(sourceReaderNegotiationText, "private static void CopyOptionalUInt64(");
+        AssertContains(sourceReaderNegotiationText, "private static void CopyOptionalUInt32(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.ConvertedMediaType.cs")),
+            "converted source-reader media type construction folded into negotiation owner");
         AssertContains(sourceReaderNegotiationText, "private static bool TryGetFrameSize(");
         AssertContains(sourceReaderNegotiationText, "private static bool TryGetFrameRate(");
-        AssertContains(sourceReaderConvertedMediaTypeText, "private IMFMediaType SelectConvertedMediaType(");
-        AssertContains(sourceReaderConvertedMediaTypeText, "SelectMediaType(");
-        AssertContains(sourceReaderConvertedMediaTypeText, "IMFMediaType.SetGUID(MF_MT_SUBTYPE");
-        AssertContains(sourceReaderConvertedMediaTypeText, "private static void CopyOptionalUInt64(");
-        AssertContains(sourceReaderConvertedMediaTypeText, "private static void CopyOptionalUInt32(");
         AssertContains(sourceReaderInteropText, "private static class MfInterop");
         AssertContains(sourceReaderInteropText, "DllImport(\"mfplat.dll\", ExactSpelling = true)");
         AssertContains(sourceReaderInteropText, "private static class MfConstants");
