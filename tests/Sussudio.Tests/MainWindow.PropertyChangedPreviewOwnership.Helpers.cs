@@ -7,6 +7,6 @@ static partial class Program
             "\n",
             new[]
             {
-                "Sussudio/MainWindow.PropertyChangedPreview.Composition.cs",
+                "Sussudio/MainWindow.PreviewRenderer.Composition.cs",
             }.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
 }

@@ -1807,7 +1807,7 @@ Primary current owners:
   adapter.
 - `tests/Sussudio.Tests/MainWindow.PropertyChangedPreviewOwnership.Helpers.cs`
   owns the shared source reader for the consolidated
-  `MainWindow.PropertyChangedPreview.Composition.cs` adapter.
+  preview lifecycle adapter in `MainWindow.PreviewRenderer.Composition.cs`.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
   Flashback export backend-lease, export-operation lock, ViewModel export
   routing, and export CTS lifecycle assertions.
@@ -2851,7 +2851,7 @@ Primary current owners:
   preview button command choreography: pending-reinit cancel, user stop intent,
   audio/visual fade-out ordering, preview start/stop calls, reinit animation
   reset, and unavailable-placeholder reveal.
-  `Sussudio/MainWindow.PropertyChangedPreview.Composition.cs` wires preview button presentation callbacks and preview
+  `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires preview button presentation callbacks and preview
   lifecycle property/event routing.
 - `Sussudio/MainWindow.PreviewTransitions.Composition.cs`
   keeps the XAML event name stable as part of the preview transition/presentation
@@ -2915,7 +2915,7 @@ Primary current owners:
   `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview-
   specific ViewModel event lifecycle and the preview property-change router for
   preview start/stop/reinit state.
-  `Sussudio/MainWindow.PropertyChangedPreview.Composition.cs` wires preview button
+  `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires preview button
   presentation callbacks and
   preserves preview event-handler signatures and delegates into the controller.
   `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs` owns preview
