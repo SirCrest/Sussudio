@@ -3778,13 +3778,12 @@ Primary owners:
   range-selection cleanup, plus the audio-toggle companion used by the range
   export audio-switch scenario.
 - Flashback export diagnostic scenario flows live in focused files:
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`
-  owns concurrent export, `tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
-  owns disable-during-export command coordination,
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation.cs`
-  owns disable-during-export file verification and post-disable/re-enable
-  state checks, `tools/Common/DiagnosticSessionFlashbackExportScenarios.Rotated.cs`
-  owns rotated export, `tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs`
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.cs` owns export
+  scenario task registration, concurrent export, and rotated export;
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
+  owns disable-during-export command coordination, file verification, and
+  post-disable/re-enable state checks;
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs`
   owns export-during-playback command choreography, the pre-export Playing
   sample, post-export playback continuity validation, and final go-live playback
   command-health validation, and
@@ -3793,11 +3792,6 @@ Primary owners:
   range projection, playback seeking plus in/out marker mutation, range
   duration/status validation, and post-cleanup playback command-health
   validation.
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
-  owns the export scenario task registration handoff from diagnostic-session
-  startup plus export-during-playback, range/audio-switch, concurrent,
-  disable-during-export, and rotated export task priorities, labels,
-  send-channel selection, payload variants, and started actions.
 - `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs` owns
   Flashback playback disable/re-enable lifecycle diagnostic command flow,
   scenario registration, priority, task label, started action, post-disable

@@ -3444,23 +3444,19 @@ because it performs a stateful toggle/restore workflow. Scenario command
 sequencing lives in separate scenario owners.
 
 Diagnostic-session Flashback export scenarios now live in a focused partial
-family of named owners. Concurrent export, disable-during-export command
-coordination, rotated export, export-during-playback command choreography, and
-selection-range export flows each have their own named file.
-Disable-during-export file verification and post-disable/re-enable state checks
-live in `DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation.cs`.
+family of named owners. `DiagnosticSessionFlashbackExportScenarios.cs` owns
+scenario task registration plus concurrent and rotated export flows.
+Disable-during-export command coordination, file verification, and
+post-disable/re-enable state checks live together in
+`DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`.
 Export-during-playback command choreography, pre-export Playing sampling,
 post-export playback continuity, and final go-live command-health validation now
 live together in `DiagnosticSessionFlashbackExportScenarios.Playback.cs`.
 Selection-range export orchestration, readiness waits, in/out marker mutation,
 range result validation, and post-cleanup command-health validation now live
 together in `DiagnosticSessionFlashbackExportScenarios.Range.cs`.
-`DiagnosticSessionFlashbackExportScenarios.Registrations.cs` owns export
-scenario task registration orchestration while diagnostic-session startup makes
-a single qualified call into that owner. Export playback, range/audio-switch,
-and concurrent/disable/rotated coordination registration now live together in
-that file. Do not reintroduce an empty family root or one-method registration
-partials.
+Diagnostic-session startup makes a single qualified call into the export
+scenario owner. Do not reintroduce one-method registration partials.
 
 Diagnostic-session Flashback lifecycle checks now live in
 `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs`. It owns
@@ -3639,13 +3635,10 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRecordingChecks.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackExports.cs`
-- `DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`
+- `DiagnosticSessionFlashbackExportScenarios.cs`
 - `DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
-- `DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Playback.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Range.cs`
-- `DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
-- `DiagnosticSessionFlashbackExportScenarios.Rotated.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.cs`
 - `DiagnosticSessionFlashbackMetrics.Recording.cs`
 - `DiagnosticSessionFlashbackMetrics.Export.cs`

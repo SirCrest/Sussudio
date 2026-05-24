@@ -17,11 +17,8 @@ static partial class Program
 
     private static string ReadDiagnosticSessionFlashbackExportScenariosSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackExportScenarios.Concurrent.cs",
+            "tools/Common/DiagnosticSessionFlashbackExportScenarios.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs",
-            "tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExportValidation.cs",
-            "tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.cs",
-            "tools/Common/DiagnosticSessionFlashbackExportScenarios.Rotated.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs",
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs");
 
