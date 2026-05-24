@@ -1,8 +1,9 @@
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
 {
-    internal static Task D3D11PreviewRenderer_FrameLatencyLivesInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_FrameLatencyLivesWithRenderThread()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
@@ -10,14 +11,18 @@ static partial class Program
             .Replace("\r\n", "\n");
         var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
-        var frameLatencyText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameLatency.cs")
+        var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(frameLatencyText, "private IntPtr _frameLatencyWaitHandle;");
-        AssertContains(frameLatencyText, "private void ConfigureFrameLatencyWaitableObject()");
-        AssertContains(frameLatencyText, "private void WaitForFrameLatencySignal()");
-        AssertContains(frameLatencyText, "TrackFrameLatencyWait(result, Stopwatch.GetTimestamp() - waitStart);");
-        AssertContains(frameLatencyText, "private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.FrameLatency.cs")),
+            "D3D11 waitable frame-latency pacing lives with render-thread execution");
+        AssertContains(renderThreadText, "private IntPtr _frameLatencyWaitHandle;");
+        AssertContains(renderThreadText, "private void ConfigureFrameLatencyWaitableObject()");
+        AssertContains(renderThreadText, "private void WaitForFrameLatencySignal()");
+        AssertContains(renderThreadText, "TrackFrameLatencyWait(result, Stopwatch.GetTimestamp() - waitStart);");
+        AssertContains(renderThreadText, "private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);");
         AssertDoesNotContain(rootText, "private IntPtr _frameLatencyWaitHandle;");
         AssertDoesNotContain(resourcesText, "private void WaitForFrameLatencySignal()");
         AssertDoesNotContain(renderPassesText, "private static extern uint WaitForSingleObject");

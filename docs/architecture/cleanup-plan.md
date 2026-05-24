@@ -2016,8 +2016,8 @@ queue state and signaling in `D3D11PreviewRenderer.PendingFrames.cs`, D3D device
 `D3D11PreviewRenderer.Resources.cs`, input texture resources in
 `D3D11PreviewRenderer.InputResources.cs`, HDR shader input resources in
 `D3D11PreviewRenderer.HdrInputResources.cs`, swap-chain panel binding state in
-`D3D11PreviewRenderer.PanelBinding.cs`, waitable frame-latency state in
-`D3D11PreviewRenderer.FrameLatency.cs`, render-pass selection plus
+`D3D11PreviewRenderer.PanelBinding.cs`, render-thread waitable frame-latency
+pacing in `D3D11PreviewRenderer.RenderThread.cs`, render-pass selection plus
 VideoProcessor execution and shared present accounting in
 `D3D11PreviewRenderer.RenderPasses.cs`, NV12 shader draw execution in
 `D3D11PreviewRenderer.Nv12ShaderPass.cs`, HDR shader draw execution in
@@ -2042,7 +2042,8 @@ overrides, DXGI statistics toggles, MMCSS settings, and stop-fence timeouts ther
 interop declarations now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.NativeInterop.cs`. Keep
 `ISwapChainPanelNative`, `ID3DBlob`, `D3DCompileNative`, and `DwmFlush` there;
-leave `WaitForSingleObject` in `D3D11PreviewRenderer.FrameLatency.cs`.
+leave `WaitForSingleObject` with render-thread frame pacing in
+`D3D11PreviewRenderer.RenderThread.cs`.
 
 D3D preview renderer shader compilation now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderCompilation.cs`, with
@@ -2144,11 +2145,12 @@ visible-frame tick estimation and `IPreviewDisplayClock` snapshot construction
 there. Keep slow-frame diagnostic consumption of the latest DXGI counters in
 `D3D11PreviewRenderer.Diagnostics.cs`.
 
-D3D preview renderer frame-latency waitable swap-chain setup now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.FrameLatency.cs`. Keep
+D3D preview renderer frame-latency waitable swap-chain setup and waits now live
+in `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs`. Keep
 `ConfigureFrameLatencyWaitableObject`, `WaitForFrameLatencySignal`, the native
-`WaitForSingleObject` import, and wait-result constants there so resource
-construction and render drawing stay focused.
+`WaitForSingleObject` import, and wait-result constants with render-thread
+pacing so frame dequeue, wait, render dispatch, and wait metrics are reviewed
+together.
 
 D3D preview renderer device-lost recovery now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceLost.cs`. Keep device

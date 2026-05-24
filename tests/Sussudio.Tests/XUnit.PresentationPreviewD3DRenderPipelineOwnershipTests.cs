@@ -23,8 +23,8 @@ public sealed class PresentationPreviewD3DRenderPipelineOwnershipTests
         => global::Program.D3D11PreviewRenderer_ShaderCompilationLivesInFocusedFiles();
 
     [Fact]
-    public Task FrameLatencyLivesInFocusedPartial()
-        => global::Program.D3D11PreviewRenderer_FrameLatencyLivesInFocusedPartial();
+    public Task FrameLatencyLivesWithRenderThread()
+        => global::Program.D3D11PreviewRenderer_FrameLatencyLivesWithRenderThread();
 
     [Fact]
     public Task RenderThreadLivesInFocusedPartial()
