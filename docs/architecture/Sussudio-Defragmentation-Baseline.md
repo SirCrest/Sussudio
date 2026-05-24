@@ -1499,3 +1499,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; automation command names and IDs unchanged
 Behavior preserved: Analog gain clamping, percent-to-byte mapping, native-XU volatile gain write, selected-device guards, status text updates, refresh suppression, deferred flash persistence, settings save, and cancellation checks remain unchanged
 Notes for future agents: keep device-native audio UI state, analog gain writes, gain mapping, and shared selected-device guards together in `MainViewModel.DeviceAudioState.cs`; keep mode switching in `MainViewModel.DeviceAudioMode.cs` and readback/restore in `MainViewModel.DeviceAudioRefresh.cs`
+
+Date: 2026-05-24
+Area: LibAv recording sink startup locality
+Problem: `LibAvRecordingSink.VideoSession.cs` was a 73-line startup-only partial that initialized per-recording video/GPU/CUDA queues and reset startup metrics directly around `StartAsync`.
+Files consolidated: `Sussudio/Services/Recording/LibAvRecordingSink.VideoSession.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `LibAvRecordingSink` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation/tool contract changes
+Behavior preserved: CUDA/GPU queue selection, bounded video/GPU/CUDA channel creation, width/height state reset, video/GPU/CUDA metric reset, enqueue/write tick reset, diagnostics reset, and startup ordering remain unchanged
+Notes for future agents: keep per-recording video session queue setup and startup metric reset with `LibAvRecordingSink.Startup.cs`; keep public queue admission and packet cleanup in `LibAvRecordingSink.VideoQueueSubmission.cs`

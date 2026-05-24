@@ -94,8 +94,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Startup.cs")
             .Replace("\r\n", "\n");
-        var videoSessionText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.VideoSession.cs")
-            .Replace("\r\n", "\n");
         var stopText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.StopLifecycle.cs")
             .Replace("\r\n", "\n");
         var lifetimeText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Lifetime.cs")
@@ -116,22 +114,22 @@ static partial class Program
         AssertContains(startupText, "LIBAV_SINK_START output='{context.FinalOutputPath}'");
         AssertContains(startupText, "private LibAvEncoderOptions CreateOptions(RecordingContext context)");
         AssertContains(startupText, "SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode)");
-        AssertContains(videoSessionText, "private void InitializeVideoSessionQueues()");
-        AssertContains(videoSessionText, "_cudaQueue = Channel.CreateBounded<CudaFramePacket>");
-        AssertContains(videoSessionText, "_gpuQueue = Channel.CreateBounded<GpuFramePacket>");
-        AssertContains(videoSessionText, "_videoQueue = Channel.CreateBounded<VideoFramePacket>");
-        AssertContains(videoSessionText, "LIBAV_SINK_CUDA_QUEUE_INIT capacity=");
-        AssertContains(videoSessionText, "LIBAV_SINK_GPU_QUEUE_INIT capacity=");
-        AssertContains(videoSessionText, "private void ResetVideoSessionState(RecordingContext context)");
-        AssertContains(videoSessionText, "_width = checked((int)context.EffectiveWidth);");
-        AssertContains(videoSessionText, "_height = checked((int)context.EffectiveHeight);");
-        AssertContains(videoSessionText, "private void ResetVideoSessionMetrics()");
-        AssertContains(videoSessionText, "Interlocked.Exchange(ref _videoFramesEnqueued, 0);");
-        AssertContains(videoSessionText, "Interlocked.Exchange(ref _gpuFramesEnqueued, 0);");
-        AssertContains(videoSessionText, "Interlocked.Exchange(ref _cudaFramesEnqueued, 0);");
-        AssertContains(videoSessionText, "Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);");
-        AssertContains(videoSessionText, "ResetVideoDiagnostics();");
-        AssertContains(videoSessionText, "private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();");
+        AssertContains(startupText, "private void InitializeVideoSessionQueues()");
+        AssertContains(startupText, "_cudaQueue = Channel.CreateBounded<CudaFramePacket>");
+        AssertContains(startupText, "_gpuQueue = Channel.CreateBounded<GpuFramePacket>");
+        AssertContains(startupText, "_videoQueue = Channel.CreateBounded<VideoFramePacket>");
+        AssertContains(startupText, "LIBAV_SINK_CUDA_QUEUE_INIT capacity=");
+        AssertContains(startupText, "LIBAV_SINK_GPU_QUEUE_INIT capacity=");
+        AssertContains(startupText, "private void ResetVideoSessionState(RecordingContext context)");
+        AssertContains(startupText, "_width = checked((int)context.EffectiveWidth);");
+        AssertContains(startupText, "_height = checked((int)context.EffectiveHeight);");
+        AssertContains(startupText, "private void ResetVideoSessionMetrics()");
+        AssertContains(startupText, "Interlocked.Exchange(ref _videoFramesEnqueued, 0);");
+        AssertContains(startupText, "Interlocked.Exchange(ref _gpuFramesEnqueued, 0);");
+        AssertContains(startupText, "Interlocked.Exchange(ref _cudaFramesEnqueued, 0);");
+        AssertContains(startupText, "Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);");
+        AssertContains(startupText, "ResetVideoDiagnostics();");
+        AssertContains(startupText, "private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();");
         AssertContains(stopText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
         AssertContains(stopText, "=> StopCoreAsync(emergency: false, cancellationToken);");
         AssertContains(stopText, "internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)");
@@ -150,12 +148,6 @@ static partial class Program
         AssertContains(rootText, "private void CompleteWriter<TPacket>(Channel<TPacket>? channel)");
         AssertContains(rootText, "SignalWork(\"complete_writer\");");
         AssertDoesNotContain(rootText, "public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)");
-        AssertDoesNotContain(startupText, "Channel.CreateBounded<VideoFramePacket>");
-        AssertDoesNotContain(startupText, "Channel.CreateBounded<GpuFramePacket>");
-        AssertDoesNotContain(startupText, "Channel.CreateBounded<CudaFramePacket>");
-        AssertDoesNotContain(startupText, "Interlocked.Exchange(ref _videoFramesEnqueued, 0);");
-        AssertDoesNotContain(startupText, "Interlocked.Exchange(ref _gpuFramesEnqueued, 0);");
-        AssertDoesNotContain(startupText, "Interlocked.Exchange(ref _cudaFramesEnqueued, 0);");
         AssertDoesNotContain(queueText, "private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();");
         AssertDoesNotContain(rootText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
         AssertDoesNotContain(rootText, "internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)");
@@ -172,6 +164,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Options.cs")),
             "LibAvRecordingSink.Options.cs folded into LibAvRecordingSink.Startup.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.VideoSession.cs")),
+            "LibAvRecordingSink video session startup helpers folded into LibAvRecordingSink.Startup.cs");
 
         return Task.CompletedTask;
     }
