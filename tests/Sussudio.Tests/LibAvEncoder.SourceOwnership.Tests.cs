@@ -109,8 +109,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var hardwareFramesText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs")
             .Replace("\r\n", "\n");
-        var cudaHardwareFramesText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.Cuda.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(audioSubmissionText, "public void SendAudioSamples(ReadOnlySpan<byte> f32leSamples)");
         AssertContains(audioSubmissionText, "public void SendMicrophoneSamples(ReadOnlySpan<byte> f32leSamples)");
@@ -148,9 +146,13 @@ static partial class Program
         AssertContains(hardwareFramesText, "private static IntPtr CreateSingleTexture2D(IntPtr d3d11Device, int width, int height, bool isP010, uint bindFlags)");
         AssertContains(hardwareFramesText, "private void InitializeHardwareFramesIfNeeded(LibAvEncoderOptions options)");
         AssertContains(hardwareFramesText, "framesCtx->initial_pool_size = 0;");
-        AssertContains(cudaHardwareFramesText, "private void InitializeCudaHardwareFrames(LibAvEncoderOptions options)");
-        AssertContains(cudaHardwareFramesText, "_useCudaHardwareFrames = true;");
-        AssertContains(cudaHardwareFramesText, "AVPixelFormat.AV_PIX_FMT_CUDA");
+        AssertContains(hardwareFramesText, "private void InitializeCudaHardwareFrames(LibAvEncoderOptions options)");
+        AssertContains(hardwareFramesText, "_useCudaHardwareFrames = true;");
+        AssertContains(hardwareFramesText, "AVPixelFormat.AV_PIX_FMT_CUDA");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.HardwareFrames.Cuda.cs")),
+            "CUDA hardware frame adoption lives with the hardware frame initializer");
         AssertContains(optionsValidationText, "private static void ValidateOptions(LibAvEncoderOptions options)");
         AssertContains(optionsValidationText, "private static void ValidateRequiredVideoOptions(LibAvEncoderOptions options)");
         AssertContains(optionsValidationText, "private static void ValidateAudioOptions(LibAvEncoderOptions options)");
@@ -172,7 +174,6 @@ static partial class Program
         AssertDoesNotContain(videoSetupText, "private static IntPtr CreateSingleTexture2D(IntPtr d3d11Device, int width, int height, bool isP010, uint bindFlags)");
         AssertDoesNotContain(videoSetupText, "private void InitializeHardwareFramesIfNeeded(LibAvEncoderOptions options)");
         AssertDoesNotContain(videoSetupText, "private void InitializeCudaHardwareFrames(LibAvEncoderOptions options)");
-        AssertDoesNotContain(hardwareFramesText, "_useCudaHardwareFrames = true;");
         AssertDoesNotContain(hardwareFramesText, "private void InitializeVideoBitstreamFilterIfNeeded(LibAvEncoderOptions options)");
 
         return Task.CompletedTask;

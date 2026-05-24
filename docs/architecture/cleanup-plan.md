@@ -1525,10 +1525,9 @@ encoder family.
 LibAv encoder video setup now lives in
 `Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs`. Keep video codec
 context configuration, NVENC private option application, and video bitstream-filter
-initialization there. D3D11 hardware frames setup and ArraySize=1 texture-pool
-creation now live in `Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs`;
-CUDA hardware frame context adoption lives in
-`Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.Cuda.cs`.
+initialization there. D3D11 hardware frames setup, CUDA hardware frame context
+adoption, and ArraySize=1 texture-pool creation now live in
+`Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs`.
 Output rotation now lives in `LibAvEncoder.OutputRotation.cs`; final close and
 trailer/logging now live in `LibAvEncoder.ResourceCleanup.cs`; native
 frame/context/buffer release and encoder state reset now live in
