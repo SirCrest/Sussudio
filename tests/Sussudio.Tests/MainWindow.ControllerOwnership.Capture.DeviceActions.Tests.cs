@@ -7,7 +7,7 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ButtonActions.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureDeviceActionController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private CaptureDeviceActionController _captureDeviceActionController = null!;");
         AssertContains(adapterText, "private void InitializeCaptureDeviceActionController()");

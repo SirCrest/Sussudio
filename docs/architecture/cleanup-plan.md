@@ -3098,7 +3098,7 @@ capture-mode, and recording option selection while preserving the old
 method names for binding setup and cross-controller calls.
 
 Capture-device refresh/apply button workflows now live in
-`Sussudio/Controllers/Capture/CaptureDeviceActionController.cs`.
+`Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs`.
 `MainWindow.ButtonActions.cs` is the XAML-facing adapter and keeps the explicit
 apply/reinit path separate from selection synchronization.
 

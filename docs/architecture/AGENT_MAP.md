@@ -3032,7 +3032,7 @@ Primary current owners:
   Device-audio mode/gain control projection stays in
   `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs`.
   `Sussudio/MainWindow.AudioBindings.cs` is its XAML-facing adapter.
-- `Sussudio/Controllers/Capture/CaptureDeviceActionController.cs` owns the capture-
+- `Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs` owns the capture-
   device refresh/apply button workflows and preserves the explicit apply/reinit
   path. `MainWindow.ButtonActions.cs` is the XAML-facing adapter for
   recording, capture-device, and output-path button/display bridges.
