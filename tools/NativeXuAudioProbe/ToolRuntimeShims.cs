@@ -1,5 +1,12 @@
-// Minimal CaptureDevice shape compiled into the standalone NativeXuAudioProbe
-// tool so it can reuse source files without referencing the WinUI app project.
+using System.Diagnostics;
+
+// Probe-local runtime shims used by linked app service sources.
+internal static class Logger
+{
+    public static void Log(string message)
+        => Trace.TraceInformation(message);
+}
+
 public sealed class CaptureDevice
 {
     public string Id { get; set; } = string.Empty;

@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T04:53:53Z
+Generated UTC: 2026-05-24T05:02:11Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 822 |
+| Production .cs files | 821 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 95 (11.6%) |
-| Production .cs files under 80 lines | 172 (20.9%) |
+| Production .cs files under 60 lines | 94 (11.4%) |
+| Production .cs files under 80 lines | 171 (20.8%) |
 
 ## Largest partial-type clusters
 
@@ -89,12 +89,10 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 3 | Sussudio/AssemblyInfo.cs |
 | 3 | tools/ssctl/AssemblyInfo.cs |
 | 6 | Sussudio/GlobalUsings.cs |
-| 8 | tools/NativeXuAudioProbe/ToolLogger.cs |
 | 9 | tools/Common/DiagnosticSessionOptionalTextFormatter.cs |
 | 9 | tools/Common/ToolJsonOptions.cs |
 | 12 | Sussudio/LoggingJsonContext.cs |
 | 12 | Sussudio/Services/Preview/ILiveVideoSource.cs |
-| 12 | tools/NativeXuAudioProbe/ToolCaptureDevice.cs |
 | 14 | Sussudio.Automation.Contracts/AutomationPipeSecurityPolicy.cs |
 | 14 | Sussudio/Models/Automation/FlashbackSegmentInfo.cs |
 | 14 | Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs |
@@ -103,6 +101,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 17 | tools/KsAudioNodeProbe/Program.Constants.cs |
 | 18 | Sussudio/Services/Automation/DiagnosticThresholds.cs |
 | 19 | Sussudio/Services/Telemetry/DisabledSourceSignalTelemetryProvider.cs |
+| 19 | tools/NativeXuAudioProbe/ToolRuntimeShims.cs |
 | 22 | Sussudio/ViewModels/DeviceAudioGainMapper.cs |
 | 22 | tools/ssctl/SsctlHelpWriter.cs |
 | 23 | Sussudio/Models/Automation/PreviewStartup.cs |
@@ -146,6 +145,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 48 | Sussudio/Services/Capture/CaptureSessionStateMachine.cs |
 | 48 | Sussudio/Services/Contracts/AutomationInterfaces.cs |
 | 48 | Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs |
+| 48 | tools/McpServer/Tools/PerformanceTimelineTools.cs |
 
 ## Notes
 

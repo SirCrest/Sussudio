@@ -31,7 +31,7 @@ static partial class Program
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs");
         AssertDoesNotContain(nativeXuProbeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.cs");
         AssertContains(File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Models", "Capture", "CaptureModels.cs")), "NativeXuInterfacePath");
-        AssertContains(File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "ToolCaptureDevice.cs")), "NativeXuInterfacePath");
+        AssertContains(File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "ToolRuntimeShims.cs")), "NativeXuInterfacePath");
 
         var nativeXuLocatorText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "NativeXuProbeDeviceLocator.cs"));
         AssertContains(nativeXuLocatorText, "NativeXuInterfacePath = interfacePath");
