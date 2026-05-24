@@ -13,8 +13,7 @@ static partial class Program
         var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs")
             .Replace("\r\n", "\n");
         var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
-        var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs")
-            .Replace("\r\n", "\n");
+        var previewRuntimeSnapshotText = previewRendererText;
         var previewRuntimeSnapshotSamplingControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotSamplingController.cs")
             .Replace("\r\n", "\n");
 

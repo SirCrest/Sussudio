@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-24
+Area: MainWindow preview runtime snapshot adapter
+Problem: Preview runtime snapshot context wiring lived in a 28-line MainWindow partial even though it is only the automation-facing adapter around preview renderer/startup composition.
+Files consolidated: `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `MainWindow` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by named-pipe automation server, preview runtime snapshot ownership, and runtime snapshot regression checks
+Behavior preserved: automation preview snapshot delegate, UI-dispatch sampling controller, startup signal wiring, and XAML bindings remain unchanged
+Notes for future agents: keep tiny MainWindow preview-runtime adapters with the preview renderer composition unless they become standalone controllers
+
+Date: 2026-05-24
 Area: ssctl formatter helper locality
 Problem: Recent diagnostic-event output and standalone memory/GC output lived in two tiny formatter partials even though they are direct console projections using the same root result/JSON helper owner.
 Files consolidated: `tools/ssctl/Formatters.Diagnostics.cs`; `tools/ssctl/Formatters.Memory.cs`

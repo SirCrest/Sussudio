@@ -1216,8 +1216,9 @@ Primary current owners:
   `Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs` owns
   video/control-bar composition shadow visuals, bounds alignment, clear behavior,
   and fade routing. `MainWindow.PreviewSurface.cs` is the XAML-facing adapter.
-- `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the stable automation
-  preview snapshot adapter and context wiring.
+- `Sussudio/MainWindow.PreviewRenderer.Composition.cs` owns the stable
+  automation preview snapshot adapter and context wiring alongside preview
+  renderer host composition.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotSamplingController.cs`
   owns the UI-dispatch handoff, UI-thread-only preview runtime field sampling,
   startup missing-signal refresh, and sampled-input assembly.

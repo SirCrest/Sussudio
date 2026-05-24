@@ -1,6 +1,8 @@
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Sussudio.Controllers;
+using Sussudio.Models;
 
 namespace Sussudio;
 
@@ -8,6 +10,7 @@ public sealed partial class MainWindow
 {
     private PreviewRendererHostController _previewRendererHostController = null!;
     private PreviewResizeTelemetryController _previewResizeTelemetryController = null!;
+    private PreviewRuntimeSnapshotSamplingController _previewRuntimeSnapshotSamplingController = null!;
 
     private void InitializePreviewRendererHostController()
     {
@@ -52,6 +55,22 @@ public sealed partial class MainWindow
         _previewResizeTelemetryController = new PreviewResizeTelemetryController();
     }
 
+    private void InitializePreviewRuntimeSnapshotSamplingController()
+    {
+        _previewRuntimeSnapshotSamplingController = new PreviewRuntimeSnapshotSamplingController(new PreviewRuntimeSnapshotSamplingControllerContext
+        {
+            UiDispatchController = WindowUiDispatchController,
+            ViewModel = ViewModel,
+            RendererHostController = _previewRendererHostController,
+            StartupSessionController = _previewStartupSessionController,
+            StartupSignalCoordinator = _previewStartupSignalCoordinator,
+            IsGpuElementVisible = () => PreviewSwapChainPanel.Visibility == Visibility.Visible,
+            IsCpuElementVisible = () => PreviewImage.Visibility == Visibility.Visible,
+            IsPlaceholderVisible = () => NoDevicePlaceholder.Visibility == Visibility.Visible,
+            GetStartupVisualTimeoutMs = () => PreviewStartupVisualTimeoutMs
+        });
+    }
+
     private Task StartPreviewRendererAsync()
         => _previewRendererHostController.StartAsync();
 
@@ -74,4 +93,7 @@ public sealed partial class MainWindow
 
     private void ResetPreviewResizeTelemetry()
         => _previewResizeTelemetryController.Reset();
+
+    private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
+        => await _previewRuntimeSnapshotSamplingController.GetSnapshotAsync(cancellationToken).ConfigureAwait(false);
 }

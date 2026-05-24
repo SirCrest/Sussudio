@@ -1046,8 +1046,9 @@ renderer startup planning, CPU fallback attachment, D3D renderer startup and
 event/failure handling, cleanup, D3D reinit renderer-stop/timeout policy,
 disposal, unsafe-window telemetry, stop tick accounting, fresh SwapChainPanel
 replacement, and retired-renderer handoff during D3D renderer mode switches.
-`Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the stable automation
-preview snapshot adapter and context wiring.
+`Sussudio/MainWindow.PreviewRenderer.Composition.cs` owns the stable automation
+preview snapshot adapter and context wiring alongside preview renderer host
+composition.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotSamplingController.cs`
 owns the UI-dispatch handoff, UI-thread-only preview runtime field sampling,
 startup missing-signal refresh, and sampled-input assembly.
