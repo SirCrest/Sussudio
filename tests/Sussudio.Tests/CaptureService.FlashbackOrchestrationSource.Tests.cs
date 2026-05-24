@@ -75,7 +75,6 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.RecordingFinalize.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
 
         AssertContains(flashbackStateText, "public bool IsFlashbackActive => _flashbackBackend.Sink != null;");
@@ -129,8 +128,8 @@ static partial class Program
         AssertContains(cleanupPlanText, "FlashbackBackendResources.Startup.cs");
         AssertContains(agentMapText, "rollback cleanup");
         AssertContains(cleanupPlanText, "startup failure rollback cleanup");
-        AssertContains(agentMapText, "FlashbackBackendResources.RecordingFinalize.cs");
-        AssertContains(cleanupPlanText, "FlashbackBackendResources.RecordingFinalize.cs");
+        AssertDoesNotContain(agentMapText, "FlashbackBackendResources.RecordingFinalize.cs");
+        AssertDoesNotContain(cleanupPlanText, "FlashbackBackendResources.RecordingFinalize.cs");
         AssertContains(agentMapText, "attach/detach request");
         AssertContains(cleanupPlanText, "attach/detach request");
         AssertContains(backendResourcesText, "private FlashbackBufferCyclePlaybackState DisposePlaybackForBufferCycle(");
@@ -144,6 +143,10 @@ static partial class Program
         AssertContains(backendResourcesText, "preview_init_rollback");
         AssertContains(backendResourcesText, "public async Task<FinalizeResult> FinalizeRecordingAsync(");
         AssertContains(backendResourcesText, "private static FinalizeResult PreserveEndArtifactsOnFailure(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBackendResources.RecordingFinalize.cs")),
+            "recording finalize policy folded into FlashbackBackendResources.cs");
         AssertContains(backendResourcesText, "public void AttachProducers(FlashbackProducerAttachRequest request)");
         AssertContains(backendResourcesText, "public void DetachProducers(FlashbackProducerDetachRequest request)");
         AssertDoesNotContain(flashbackStateText, "private async Task EnsureFlashbackAudioInputsAsync(");

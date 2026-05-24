@@ -879,10 +879,9 @@ Primary current owner: `Sussudio/Services/Flashback/`
 Entry points:
 
 - `FlashbackBackendResources.cs` owns preview backend resource grouping,
-  install/take/clear state, recovery-preserve flag storage, producer
-  attach/detach request shapes, and video, audio, and microphone feed wiring.
-  `FlashbackBackendResources.RecordingFinalize.cs` owns recovery-preserve policy
-  and recording-finalize handoff.
+  install/take/clear state, recovery-preserve flag storage and policy,
+  recording-finalize handoff, producer attach/detach request shapes, and video,
+  audio, and microphone feed wiring.
   `FlashbackBackendResources.Startup.cs` owns preview backend startup
   construction/install/playback initialization and startup failure rollback
   cleanup: producer detach, playback/sink/exporter/buffer cleanup, deferred
