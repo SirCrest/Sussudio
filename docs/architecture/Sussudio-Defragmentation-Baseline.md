@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-24
+Area: MainWindow responsive shell layout adapter
+Problem: Responsive shell layout XAML wiring lived in a 45-line MainWindow partial even though it is shell chrome/control-bar composition and only delegates to named shell layout controllers.
+Files consolidated: `Sussudio/MainWindow.ResponsiveShellLayout.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `MainWindow` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by responsive layout ownership tests and runtime snapshot regression checks
+Behavior preserved: control-bar label set, responsive layout controller wiring, setup binding call, and layout breakpoints remain unchanged
+Notes for future agents: keep shell layout XAML adapters with `MainWindow.ShellChrome.Composition.cs`; layout decisions remain in `ResponsiveShellLayoutPolicy`
+
+Date: 2026-05-24
 Area: MainWindow screenshot adapters
 Problem: Preview screenshot button wiring and whole-window automation screenshot routing shared a 38-line MainWindow partial even though each adapter belongs with an existing owner: button actions and `IAutomationWindowControl` window shell methods.
 Files consolidated: `Sussudio/MainWindow.Screenshot.cs`

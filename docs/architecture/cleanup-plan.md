@@ -3115,7 +3115,7 @@ control-bar label breakpoint and capture-settings narrow/wide grid-slot policy,
 that policy to the complete control-bar label set, and
 `Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs`, which applies
 capture-settings grid placement to XAML elements.
-`MainWindow.ResponsiveShellLayout.cs` is the XAML-facing adapter.
+`MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
 Responsive layout ownership checks live in
 `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs`.
 

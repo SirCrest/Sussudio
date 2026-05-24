@@ -1,3 +1,4 @@
+using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -8,7 +9,7 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.ResponsiveShellLayout.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs").Replace("\r\n", "\n");
         var labelControllerText = ReadRepoFile("Sussudio/Controllers/Shell/ControlBarLabelVisibilityController.cs").Replace("\r\n", "\n");
         var policyText = ReadRepoFile("Sussudio/Controllers/Shell/ResponsiveShellLayoutPolicy.cs").Replace("\r\n", "\n");
@@ -68,6 +69,10 @@ static partial class Program
         AssertDoesNotContain(controllerText, "private void ApplyWideCaptureSettingsLayout()");
         AssertDoesNotContain(bindingsText, "private void UpdateToggleLabelVisibility(");
         AssertDoesNotContain(bindingsText, "private void CaptureSettingsGrid_SizeChanged(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ResponsiveShellLayout.cs")),
+            "responsive shell layout adapter lives with shell chrome composition");
 
         return Task.CompletedTask;
     }

@@ -17,6 +17,8 @@ public sealed partial class MainWindow
     private ShellElevationController _shellElevationController = null!;
     private ShellPropertyChangedController _shellPropertyChangedController = null!;
     private SplashLoadingPhraseController _splashLoadingPhraseController = null!;
+    private ControlBarLabelVisibilityController _controlBarLabelVisibilityController = null!;
+    private ResponsiveShellLayoutController _responsiveShellLayoutController = null!;
 
     private AppWindow InitializeNativeShellWindow()
     {
@@ -53,6 +55,45 @@ public sealed partial class MainWindow
                 FrameTimeOverlayToggle,
             },
         });
+    }
+
+    private void InitializeResponsiveShellLayoutController()
+    {
+        var controlBarLabels = new UIElement[]
+        {
+            HdrToggleLabel,
+            AudioRecordToggleLabel,
+            PreviewButtonLabel,
+            HdrPreviewToggleLabel,
+            AudioPreviewToggleLabel,
+            StatsToggleLabel,
+            FrameTimeOverlayToggleLabel,
+            FlashbackToggleLabel,
+        };
+
+        _controlBarLabelVisibilityController = new ControlBarLabelVisibilityController(new ControlBarLabelVisibilityControllerContext
+        {
+            ControlBarBorder = ControlBarBorder,
+            ControlBarLabels = controlBarLabels,
+        });
+
+        _responsiveShellLayoutController = new ResponsiveShellLayoutController(new ResponsiveShellLayoutControllerContext
+        {
+            CaptureSettingsGrid = CaptureSettingsGrid,
+            VideoFormatColumn = VideoFormatColumn,
+            PresetColumn = PresetColumn,
+            SplitColumn = SplitColumn,
+            VideoFormatPanel = VideoFormatPanel,
+            PresetPanel = PresetPanel,
+            SplitPanel = SplitPanel,
+            CustomBitratePanel = CustomBitratePanel,
+        });
+    }
+
+    private void SetupResponsiveShellLayoutBindings()
+    {
+        _controlBarLabelVisibilityController.Attach();
+        _responsiveShellLayoutController.Attach();
     }
 
     private void SetupButtonHoverAnimations()

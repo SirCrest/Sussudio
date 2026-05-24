@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T03:28:16Z
+Generated UTC: 2026-05-24T03:32:52Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 844 |
+| Production .cs files | 843 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 107 (12.7%) |
-| Production .cs files under 80 lines | 191 (22.6%) |
+| Production .cs files under 60 lines | 106 (12.6%) |
+| Production .cs files under 80 lines | 190 (22.5%) |
 
 ## Largest partial-type clusters
 
@@ -20,8 +20,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | D3D11PreviewRenderer | 37 | 4779 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceLost.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Diagnostics.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.DisplayClock.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.FrameOwnership.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs |
 | MainViewModel | 36 | 4567 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs, Sussudio/ViewModels/MainViewModel.AnalogAudioGain.cs, Sussudio/ViewModels/MainViewModel.AudioCapturePropertyChanges.cs, Sussudio/ViewModels/MainViewModel.AudioDeviceDiscovery.cs, Sussudio/ViewModels/MainViewModel.AudioInputSelection.cs, Sussudio/ViewModels/MainViewModel.AudioMeters.cs, Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.AutomationAudio.cs |
 | AutomationDiagnosticsHub | 33 | 10082 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.RealtimePreview.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluation.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Recording.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs |
-| MainWindow | 22 | 2531 | Sussudio/MainWindow.AudioBindings.cs, Sussudio/MainWindow.Bindings.cs, Sussudio/MainWindow.ButtonActions.cs, Sussudio/MainWindow.CaptureOptionBindings.cs, Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs, Sussudio/MainWindow.ControllerInitialization.cs, Sussudio/MainWindow.Flashback.Interactions.cs, Sussudio/MainWindow.Flashback.Presentation.cs |
 | LibAvEncoder | 21 | 3059 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.AudioInitialization.cs, Sussudio/Services/Recording/LibAvEncoder.AudioQueue.cs, Sussudio/Services/Recording/LibAvEncoder.AudioSetup.cs, Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs, Sussudio/Services/Recording/LibAvEncoder.AvSync.cs, Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs, Sussudio/Services/Recording/LibAvEncoder.cs |
+| MainWindow | 21 | 2521 | Sussudio/MainWindow.AudioBindings.cs, Sussudio/MainWindow.Bindings.cs, Sussudio/MainWindow.ButtonActions.cs, Sussudio/MainWindow.CaptureOptionBindings.cs, Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs, Sussudio/MainWindow.ControllerInitialization.cs, Sussudio/MainWindow.Flashback.Interactions.cs, Sussudio/MainWindow.Flashback.Presentation.cs |
 | FlashbackPlaybackController | 19 | 5007 | Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.CommandTelemetry.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs |
 | AutomationCommandDispatcher | 18 | 1675 | Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.AudioControlCommands.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.CaptureControlCommands.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.CommandParsing.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.DeviceCommands.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.FlashbackCommands.cs |
 | NativeXuAtCommandProvider | 18 | 2689 | Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AnalogGain.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioCommands.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioSwitch.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommandReads.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommands.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DiagnosticSummary.cs |
@@ -56,8 +56,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 744 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs |
 | 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
-| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
+| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
