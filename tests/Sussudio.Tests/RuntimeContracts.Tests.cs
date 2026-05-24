@@ -199,8 +199,7 @@ internal static class RuntimeContractSource
             "tools/Common/AutomationSnapshotFormatter.Values.cs",
             "tools/Common/AutomationSnapshotFormatter.Flashback.cs",
             "tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs",
-            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs",
-            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs"
+            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs"
         });
 
     public static string ReadSsctlSnapshotFormatterSource()

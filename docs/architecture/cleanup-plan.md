@@ -480,9 +480,8 @@ order plus source-reader, WASAPI capture, and WASAPI playback rows now live with
 the video-pipeline formatter that routes to them. The
 `AutomationSnapshotFormatter.PreviewD3D.cs` owner keeps D3D header/routing and
 output order, D3D CPU timing, pipeline latency, frame-latency wait text, D3D
-frame ownership, and DXGI frame-stat text. Slow-frame diagnostics stay in
-`AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs` because `ssctl` reuses
-that formatter directly. Tests that reason about formatter source use the
+frame ownership, DXGI frame-stat text, and slow-frame diagnostics shared by
+`ssctl`. Tests that reason about formatter source use the
 shared `RuntimeContractSource` snapshot formatter source-family readers so
 ownership checks cover the full partial family from both the legacy harness and
 xUnit formatter contracts.

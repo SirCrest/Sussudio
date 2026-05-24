@@ -22,7 +22,6 @@ static partial class Program
         var sharedFormatterMjpegTimingSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs");
         var sharedFormatterPreviewSource = sharedFormatterCaptureCadenceSource;
         var sharedFormatterPreviewD3DSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs");
-        var sharedFormatterPreviewD3DSlowFramesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs");
         var sharedFormatterThreadHealthSource = sharedFormatterVideoPipelineSource;
         AssertContains(sharedFormatterRootSource, "AppendStateSection(builder, snapshot);");
         AssertContains(sharedFormatterRootSource, "AppendCaptureSettingsSection(builder, snapshot);");
@@ -192,11 +191,9 @@ static partial class Program
         AssertContains(sharedFormatterPreviewD3DSource, "D3D DXGI stats:");
         AssertContains(sharedFormatterPreviewD3DSource, "private static void AppendPreviewD3DFrameOwnership(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterPreviewD3DSource, "D3D Ownership:");
-        AssertDoesNotContain(sharedFormatterPreviewD3DSource, "D3D Slow Frames:");
-        AssertDoesNotContain(sharedFormatterPreviewD3DSource, "private static string FormatDiagnosticMs(JsonElement element, string propertyName)");
-        AssertContains(sharedFormatterPreviewD3DSlowFramesSource, "internal static void AppendPreviewSlowFrameDiagnostics(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterPreviewD3DSlowFramesSource, "private static string FormatDiagnosticMs(JsonElement element, string propertyName)");
-        AssertContains(sharedFormatterPreviewD3DSlowFramesSource, "D3D Slow Frames:");
+        AssertContains(sharedFormatterPreviewD3DSource, "internal static void AppendPreviewSlowFrameDiagnostics(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterPreviewD3DSource, "private static string FormatDiagnosticMs(JsonElement element, string propertyName)");
+        AssertContains(sharedFormatterPreviewD3DSource, "D3D Slow Frames:");
         AssertContains(sharedFormatterSourceSource, "private static void AppendSourceSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterSourceSource, "var sourceFrameRate = Get(snapshot, \"DetectedSourceFrameRate\", string.Empty);");
         AssertContains(sharedFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
