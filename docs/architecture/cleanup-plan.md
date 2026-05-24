@@ -1612,10 +1612,9 @@ that file.
 
 Native XU public device commands now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommands.cs`.
-Keep generic AT SET wrappers and named SET wrappers there. Probe-facing raw AT
-reads now live in
-`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommandReads.cs`
-so read-only hardware inspection stays separate from mutating command paths.
+Keep generic AT SET wrappers, named SET wrappers, and probe-facing raw AT reads
+there so public device command routing stays in one owner while shared device
+support continues to enforce identity, selected-interface, and transport gates.
 Shared device identity, selected-interface projection, and native transport
 gating live in `Sussudio/Services/Capture/NativeXu/NativeXuDeviceSupport.cs`;
 the root provider dispatches through that support into telemetry polling.

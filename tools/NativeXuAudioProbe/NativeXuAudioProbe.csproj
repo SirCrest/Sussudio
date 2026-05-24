@@ -19,7 +19,6 @@
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.AudioCommands.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.AudioCommands.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.AtProtocol.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.AtProtocol.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.DiagnosticSummary.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.DiagnosticSummary.cs" />
-    <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.DeviceCommandReads.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.DeviceCommandReads.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.DeviceCommands.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.DeviceCommands.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.FullSnapshot.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.FullSnapshot.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.InterfaceRead.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.InterfaceRead.cs" />
