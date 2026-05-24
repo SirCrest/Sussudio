@@ -2506,9 +2506,8 @@ from the grouped contexts, while
 context DTOs for shell controls, snapshot sources, dock targets, hardware
 sources, and frame-time targets;
 stats dock presentation/diagnostic/hardware/refresh controller graph wiring
-now lives in `Sussudio/Controllers/Stats/StatsDockControllerGraph.cs`, with
-the dock graph context contract in
-`Sussudio/Controllers/Stats/StatsDockControllerGraph.Contexts.cs`;
+and the dock graph context contract now live in
+`Sussudio/Controllers/Stats/StatsDockControllerGraph.cs`;
 `Sussudio/MainWindow.StatsOverlay.Composition.cs` owns the XAML-facing stats
 overlay adapter surface: binding setup, stats dock visibility, refresh hooks,
 snapshot inputs, frame-time targets, section commands, and polling commands.

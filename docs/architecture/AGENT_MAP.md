@@ -1322,10 +1322,8 @@ Primary current owners:
   targets, lifecycle/polling commands, and section chrome event adapters.
   `Sussudio/Controllers/Stats/StatsDockControllerGraph.cs` owns stats dock
   presentation, diagnostic row, hardware row, and refresh-controller graph
-  construction because the dock is only driven by the overlay controller.
-  `Sussudio/Controllers/Stats/StatsDockControllerGraph.Contexts.cs` owns the
-  dock graph context contract that groups dock metric targets, diagnostics
-  targets, hardware sources, and refresh predicates.
+  construction plus the dock graph context contract because the dock is only
+  driven by the overlay controller.
   `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` owns stats dock refresh
   orchestration: snapshot acquisition, dock presentation build/apply,
   diagnostics visibility gating, and decode/GPU row refresh ordering.
