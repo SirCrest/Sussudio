@@ -27,8 +27,6 @@
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.RollingCommandGroups.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.RollingCommandGroups.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.RollingPoll.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.RollingPoll.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.SnapshotAssembly.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.SnapshotAssembly.cs" />
-    <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs" />
-    <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.Build.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.Build.cs" />
-    <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs" />
+    <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.cs" />
   </ItemGroup>
 </Project>
