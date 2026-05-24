@@ -1559,3 +1559,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: D3D-enabled guards, IMFDXGIBuffer detection, D3D texture IID lookup, resource/subresource failure logging, GPU texture release on subresource failure, and CPU fallback behavior remain unchanged
 Notes for future agents: keep DXGI texture extraction and dual GPU/CPU delivery orchestration together in `MfSourceReaderVideoCapture.FrameDelivery.cs`; keep raw/compressed CPU buffer helpers in `RawFrameDelivery.cs` and packed layout math in `FrameLayout.cs`
+
+Date: 2026-05-24
+Area: D3D preview renderer render timing and viewport locality
+Problem: `D3D11PreviewRenderer.DisplayClock.cs` and `D3D11PreviewRenderer.Viewport.cs` were sub-80-line partials that split display-clock projection from the DXGI frame-statistics state it samples and split viewport helpers from the render-pass execution paths that consume them.
+Files consolidated: `Sussudio/Services/Preview/D3D11PreviewRenderer.DisplayClock.cs`; `Sussudio/Services/Preview/D3D11PreviewRenderer.Viewport.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `D3D11PreviewRenderer` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: DXGI frame-statistics sampling, visible-frame tick estimation, `IPreviewDisplayClock` snapshot construction, letterbox rectangle math, viewport constant-buffer upload, shader draw paths, and VideoProcessor destination-rectangle behavior remain unchanged
+Notes for future agents: keep display-clock projection with `D3D11PreviewRenderer.DxgiFrameStatistics.cs`; keep letterbox/viewport helpers with `D3D11PreviewRenderer.RenderPasses.cs`; keep D3D resource creation in `Resources.cs` and VideoProcessor pipeline setup in `VideoProcessorPipeline.cs`

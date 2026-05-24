@@ -35,8 +35,8 @@ public sealed class PresentationPreviewD3DRenderPipelineOwnershipTests
         => global::Program.D3D11PreviewRenderer_PresentAccountingLivesWithRenderPasses();
 
     [Fact]
-    public Task ViewportHelpersLiveInFocusedPartial()
-        => global::Program.D3D11PreviewRenderer_ViewportHelpersLiveInFocusedPartial();
+    public Task ViewportHelpersLiveWithRenderPasses()
+        => global::Program.D3D11PreviewRenderer_ViewportHelpersLiveWithRenderPasses();
 
     [Fact]
     public Task ScreenshotEncodingLivesWithScreenshotCapture()

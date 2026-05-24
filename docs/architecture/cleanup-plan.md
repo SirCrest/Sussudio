@@ -2057,12 +2057,11 @@ failure telemetry, first-frame UI notification, and DXGI refresh-slip capture
 there; keep cadence and CPU timing windows in
 `D3D11PreviewRenderer.Metrics.cs`.
 
-D3D preview renderer viewport and letterbox helpers now live in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.Viewport.cs`. Keep
-`ComputeLetterboxViewport`, `UpdateViewportConstantBuffer`, and
-`ComputeLetterboxRect` there; keep shader draw path ordering in
-`D3D11PreviewRenderer.RenderPasses.cs` and D3D resource creation in
-`D3D11PreviewRenderer.Resources.cs`.
+D3D preview renderer viewport and letterbox helpers now live with render-pass
+execution in `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`.
+Keep `ComputeLetterboxViewport`, `UpdateViewportConstantBuffer`, and
+`ComputeLetterboxRect` there with shader draw path ordering; keep D3D resource
+creation in `D3D11PreviewRenderer.Resources.cs`.
 
 D3D preview renderer submitted/rendered/dropped frame ownership tracking now
 lives in `Sussudio/Services/Preview/D3D11PreviewRenderer.FrameOwnership.cs`.
@@ -2075,10 +2074,9 @@ projection in `D3D11PreviewRenderer.Diagnostics.cs`.
 D3D preview renderer DXGI frame statistics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs`.
 Keep `GetFrameStatistics`, optional `DwmFlush`, DXGI counter deltas, and missed
-refresh accounting there. Display-clock projection now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.DisplayClock.cs`; keep
+refresh accounting there. Display-clock projection also lives there; keep
 visible-frame tick estimation and `IPreviewDisplayClock` snapshot construction
-there. Keep pending-frame queue control and `IPreviewFrameQueueControl` in
+with the DXGI statistics state it samples. Keep pending-frame queue control and `IPreviewFrameQueueControl` in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs`. Keep
 slow-frame diagnostic consumption of the latest DXGI counters in
 `D3D11PreviewRenderer.Diagnostics.cs`.

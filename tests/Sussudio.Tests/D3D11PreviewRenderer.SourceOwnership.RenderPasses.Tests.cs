@@ -30,19 +30,19 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task D3D11PreviewRenderer_ViewportHelpersLiveInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_ViewportHelpersLiveWithRenderPasses()
     {
         var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
-        var viewportText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Viewport.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(viewportText, "private Viewport ComputeLetterboxViewport(int sourceWidth, int sourceHeight)");
-        AssertContains(viewportText, "private void UpdateViewportConstantBuffer(Viewport viewport)");
-        AssertContains(viewportText, "private static Vortice.RawRect ComputeLetterboxRect(");
-        AssertContains(viewportText, "MapMode.WriteDiscard");
-        AssertDoesNotContain(renderPassesText, "private Viewport ComputeLetterboxViewport(");
-        AssertDoesNotContain(renderPassesText, "private static Vortice.RawRect ComputeLetterboxRect(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Viewport.cs")),
+            "D3D11 preview viewport helpers live with render-pass execution");
+        AssertContains(renderPassesText, "private Viewport ComputeLetterboxViewport(int sourceWidth, int sourceHeight)");
+        AssertContains(renderPassesText, "private void UpdateViewportConstantBuffer(Viewport viewport)");
+        AssertContains(renderPassesText, "private static Vortice.RawRect ComputeLetterboxRect(");
+        AssertContains(renderPassesText, "MapMode.WriteDiscard");
 
         return Task.CompletedTask;
     }
