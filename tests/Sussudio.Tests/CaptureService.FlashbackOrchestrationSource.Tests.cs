@@ -6,7 +6,7 @@ static partial class Program
     private static readonly string[] CaptureServiceFlashbackOrchestrationFiles =
     {
         "Sussudio/Services/Capture/CaptureService.FlashbackState.cs",
-        "Sussudio/Services/Capture/CaptureService.FlashbackAudioInputs.cs",
+        "Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackBufferCycle.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs"
@@ -66,7 +66,7 @@ static partial class Program
     internal static Task CaptureService_FlashbackOrchestrationLivesInFocusedPartials()
     {
         var flashbackStateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackState.cs");
-        var audioInputsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackAudioInputs.cs");
+        var flashbackRecordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs");
         var previewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs");
         var bufferCycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackBufferCycle.cs");
         var settingsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs");
@@ -86,7 +86,11 @@ static partial class Program
         AssertContains(flashbackStateText, "public Task RestartFlashbackAsync(");
         AssertContains(flashbackStateText, "private async Task RestartFlashbackCoreAsync(");
         AssertContains(flashbackStateText, "UpdateEncodingSettings(settings);");
-        AssertContains(audioInputsText, "private async Task EnsureFlashbackAudioInputsAsync(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackAudioInputs.cs")),
+            "Flashback audio input restoration folded into Flashback recording owner");
+        AssertContains(flashbackRecordingText, "private async Task EnsureFlashbackAudioInputsAsync(");
         AssertContains(previewBackendText, "private async Task EnsureFlashbackPreviewBackendAsync(");
         AssertContains(previewBackendText, "private async Task DisposeFlashbackPreviewBackendAsync(");
         AssertContains(previewBackendText, "private async Task DisposeFlashbackPreviewBackendCoreAsync(");

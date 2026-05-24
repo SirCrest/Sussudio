@@ -1204,6 +1204,9 @@ microphone monitoring lives in
 state, mic-level forwarding, writer-detach/disposal cleanup, the public update
 transaction, preview-time Flashback mic writer attachment, and post-recording
 restart/reattachment.
+Flashback preview/recording backend audio input restoration is folded into
+`Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs` beside
+Flashback audio attachment and recording topology validation.
 `Sussudio/Services/Capture/PreviewAudioGraphResources.cs` owns the live
 program WASAPI capture, microphone capture, playback startup/shutdown,
 audio-monitor attach/detach order, preview volume/mute application, playback
