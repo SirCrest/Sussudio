@@ -2733,14 +2733,12 @@ preview submission guards, audio renderer pause/resume/flush guards,
 decode-ahead prebuffer target/timeout/frame-budget policy, and rewind behavior.
 
 Flashback playback component lifecycle now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs`. Keep
-initialization, audio/preview component reference updates, lifecycle/dispose
-state, and disposal there. Preview-detach cleanup, failed-stop detach timeout
-state, deferred preview reattach state, and deferred reattach retry scheduling
-now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewDetachLifecycle.cs`.
-Keep decoder file handling and playback pacing in the controller core/thread
-partials.
+`Sussudio/Services/Flashback/FlashbackPlaybackController.cs`. Keep
+construction, initialization, audio/preview component reference updates,
+lifecycle/dispose state, disposal, preview-detach cleanup, failed-stop detach
+timeout state, deferred preview reattach state, and deferred reattach retry
+scheduling there. Keep decoder file handling and playback pacing in the
+controller core/thread partials.
 
 Flashback playback decoded-frame submission now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrames.cs`.

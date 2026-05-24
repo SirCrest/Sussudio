@@ -1439,3 +1439,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: covered by D3D11 preview renderer metrics ownership, cadence behavior tests, diagnostics contract tests, and runtime snapshot regression tests
 Behavior preserved: Present-cadence sampling/suppression, pipeline-latency tracking, render CPU timing windows, frame-latency wait counters/timing, expected-frame-rate window sizing, and reset/clear lifecycle remain unchanged
 Notes for future agents: keep renderer metric state, mutation, reset, and read-only projection together in `D3D11PreviewRenderer.Metrics.cs`; keep pure metric DTOs and shared summarization helpers in `MetricTypes.cs`
+
+Date: 2026-05-24
+Area: Flashback playback component lifecycle locality
+Problem: `FlashbackPlaybackController.Lifecycle.cs` and `FlashbackPlaybackController.PreviewDetachLifecycle.cs` split component references, init/update/dispose, preview-detach timeout cleanup, and deferred preview reattach state from the root controller state they directly mutate.
+Files consolidated: `Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs`; `Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewDetachLifecycle.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `FlashbackPlaybackController` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: covered by Flashback playback submission/lifecycle source-shape tests, marker source aggregation tests, and runtime snapshot regression tests
+Behavior preserved: Initialize/update/dispose behavior, audio/preview routing after component updates, preview-detach stop-timeout cleanup, deferred preview reattach retry scheduling, and live-state restoration order remain unchanged
+Notes for future agents: keep component lifecycle and preview-detach deferred attach state with `FlashbackPlaybackController.cs`; keep command queue, playback thread, decoder file, frame submission, and audio routing behavior in their focused owners
