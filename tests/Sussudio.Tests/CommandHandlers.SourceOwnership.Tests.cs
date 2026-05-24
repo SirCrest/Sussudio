@@ -9,6 +9,9 @@ static partial class Program
         var commandHandlersRootSource = ReadRepoFile("tools/ssctl/CommandHandlers.cs");
         AssertContains(commandHandlersRootSource, "private sealed class CommandContext");
         AssertContains(commandHandlersRootSource, "Rest = arguments.Skip(1).ToList();");
+        AssertContains(commandHandlersRootSource, "private static async Task<int> HandleSimpleCommandAsync(");
+        AssertContains(commandHandlersRootSource, "context.Transport.SendCommandAsync(kind, payload)");
+        AssertContains(commandHandlersRootSource, "private static int WriteResponse(JsonElement response, bool json, Func<JsonElement, string> formatter)");
         AssertDoesNotContain(commandHandlersRootSource, "private static Task<int> HandleFlashbackAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"), "HandleAudioRampTraceAsync");
         AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"), "HandleDiagnosticSessionAsync");
@@ -42,8 +45,12 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleProbeAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "AutomationCommandKind.ProbeVideoSource");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "AutomationCommandKind.ProbePreviewColor");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleVerifyAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "AutomationCommandKind.VerifyFile");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "AutomationCommandKind.VerifyLastRecording");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "ConsumeFlag(context.Rest, \"--json\")");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "ParseOptionalStringFlag(context.Rest, \"--verification-profile\")");
         AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleStatsAsync");
-        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleVerifyAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "HandleStatsAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "HandleSettingsAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "HandleFrameTimeAsync");
@@ -51,11 +58,6 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "AutomationCommandKind.SetStatsSectionVisible");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "AutomationCommandKind.SetSettingsVisible");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "AutomationCommandKind.SetFrameTimeOverlayVisible");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "HandleVerifyAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "AutomationCommandKind.VerifyFile");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "AutomationCommandKind.VerifyLastRecording");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "ConsumeFlag(context.Rest, \"--json\")");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "ParseOptionalStringFlag(context.Rest, \"--verification-profile\")");
         var flashbackRouterSource = ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs");
         AssertContains(flashbackRouterSource, "HandleFlashbackAsync");
         AssertContains(flashbackRouterSource, "return HandleFlashbackActionAsync(context, subcommand);");
@@ -135,7 +137,7 @@ static partial class Program
             commandHandlersSource,
             "(command, payload, responseTimeoutMs) => context.Transport.SendCommandAsync(command, payload, responseTimeoutMs)");
         AssertDoesNotContain(
-            ReadRepoFile("tools/ssctl/CommandHandlers.Transport.cs"),
+            ReadRepoFile("tools/ssctl/CommandHandlers.cs"),
             "private static async Task<int> HandleSimpleCommandAsync(\n        CommandContext context,\n        string commandName,");
 
         foreach (var commandName in new[]
@@ -178,7 +180,6 @@ static partial class Program
     {
         var rootSource = ReadRepoFile("tools/ssctl/CommandHandlers.cs");
         var captureControlsSource = ReadRepoFile("tools/ssctl/CommandHandlers.CaptureControls.cs");
-        var transportSource = ReadRepoFile("tools/ssctl/CommandHandlers.Transport.cs");
 
         AssertContains(rootSource, "HandleCaptureAsync(context, AutomationCommandKind.CaptureWindowScreenshot");
         AssertContains(rootSource, "HandleCaptureAsync(context, AutomationCommandKind.CapturePreviewFrame");
@@ -217,8 +218,8 @@ static partial class Program
         }
 
         AssertContains(captureControlsSource, "private static Task<int> SendSetValueAsync(\n        CommandContext context,\n        AutomationCommandKind kind,");
-        AssertDoesNotContain(transportSource, "private static Task<int> SendSetValueAsync(");
+        AssertDoesNotContain(rootSource, "private static Task<int> SendSetValueAsync(");
         AssertContains(captureControlsSource, "HandleSimpleCommandAsync(\n            context,\n            kind,");
-        AssertContains(transportSource, "context.Transport.SendCommandAsync(kind, payload)");
+        AssertContains(rootSource, "context.Transport.SendCommandAsync(kind, payload)");
     }
 }

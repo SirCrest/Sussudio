@@ -3540,12 +3540,10 @@ Primary owners:
 - `tools/ssctl/CommandHandlers.Window.cs` owns window close arming, window
   state/geometry actions, fullscreen toggles, snap commands, and the
   recordings-folder CLI command.
-- `tools/ssctl/CommandHandlers.AutomationFlow.cs` owns wait/assert/probe
-  scripting flow commands.
+- `tools/ssctl/CommandHandlers.AutomationFlow.cs` owns wait/assert/probe and
+  recording/file verification scripting flow commands.
 - `tools/ssctl/CommandHandlers.UiVisibility.cs` owns stats, settings, and
   frame-time visibility commands.
-- `tools/ssctl/CommandHandlers.Verification.cs` owns recording/file
-  verification commands.
 - `tools/ssctl/CommandHandlers.Flashback.cs` owns Flashback enablement,
   timeline, segment, restart, and top-level Flashback command routing.
   `tools/ssctl/CommandHandlers.Flashback.Actions.cs` owns Flashback playback,
@@ -3590,18 +3588,15 @@ Primary owners:
 - `tools/ssctl/SsctlHelpWriter.cs` owns the `ssctl` help facade.
   `tools/ssctl/SsctlHelpWriter.Sections.cs` owns operator-facing help section
   text and catalog-backed CLI help lines.
-- `tools/ssctl/CommandHandlers.cs` owns the root command dispatcher and the
-  per-invocation command context wrapper.
+- `tools/ssctl/CommandHandlers.cs` owns the root command dispatcher, the
+  per-invocation command context wrapper, shared command sending, and response
+  exit-code shaping.
 - `tools/ssctl/CommandHandlers.Arguments.cs` owns usage validation, required
   words, argument joining, flag consumption, optional flag value parsing, and
   command-handler JSON detection/pretty-printing. `CommandHandlers.Values.cs`
   owns primitive parsing, Flashback numeric validation, on/off and show/hide
   parsing, recording format normalization, snap action mapping, and assertion
   value parsing.
-- `tools/ssctl/CommandHandlers.Transport.cs` owns shared command sending,
-  `AutomationCommandKind` command resolution for handlers, and response
-  exit-code shaping; command-family payload helpers stay with their owning
-  command partials.
 - The `tools/ssctl/Formatters.*.cs` partial family is the console projection
   facade only.
 - `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration, section

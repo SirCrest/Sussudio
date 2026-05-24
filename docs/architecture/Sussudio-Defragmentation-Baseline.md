@@ -394,7 +394,7 @@ Partial clusters reduced: `CommandHandlers` -2 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by ssctl command-handler routing/source-ownership tests and runtime snapshot regression tests
 Behavior preserved: Flag removal, optional flag value parsing, usage exceptions, JSON detection, and pretty JSON formatting are unchanged
-Notes for future agents: keep generic ssctl command argument parsing helpers in `CommandHandlers.Arguments.cs`; keep primitive/domain value parsing in `CommandHandlers.Values.cs` and transport response handling in `CommandHandlers.Transport.cs`
+Notes for future agents: keep generic ssctl command argument parsing helpers in `CommandHandlers.Arguments.cs`; keep primitive/domain value parsing in `CommandHandlers.Values.cs`; keep shared command sending and response exit-code handling in `CommandHandlers.cs`
 
 Date: 2026-05-24
 Area: ssctl simple snapshot section formatting

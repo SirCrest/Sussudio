@@ -138,10 +138,8 @@ static partial class Program
             "tools/ssctl/CommandHandlers.Flashback.Actions.cs",
             "tools/ssctl/CommandHandlers.Observability.cs",
             "tools/ssctl/CommandHandlers.PresentMon.cs",
-            "tools/ssctl/CommandHandlers.Transport.cs",
             "tools/ssctl/CommandHandlers.UiVisibility.cs",
             "tools/ssctl/CommandHandlers.Values.cs",
-            "tools/ssctl/CommandHandlers.Verification.cs",
             "tools/ssctl/CommandHandlers.Window.cs",
         };
 

@@ -422,23 +422,22 @@ refresh/list/select, audio-input selection, and custom-audio enablement.
 `CommandHandlers.Window.cs` owns window close arming, state/geometry actions,
 fullscreen toggles, snap commands, and the recordings-folder CLI command.
 `CommandHandlers.AutomationFlow.cs` owns
-wait/assert/probe scripting flow commands. `CommandHandlers.UiVisibility.cs`
+wait/assert/probe and recording/file verification scripting flow commands. `CommandHandlers.UiVisibility.cs`
 owns stats, settings, and frame-time visibility commands.
-`CommandHandlers.Verification.cs` owns recording/file verification commands.
 `CommandHandlers.Flashback.cs` owns Flashback enablement, timeline, segment,
 restart, and top-level Flashback command routing.
 `CommandHandlers.Flashback.Actions.cs` owns Flashback playback/scrub/marker/
 range CLI actions, position parsing, and `FlashbackAction` payload shaping.
 `CommandHandlers.Flashback.cs` owns Flashback enable/timeline/export routing,
 including export flags, output path defaulting, directory creation, and payload
-shape. The root `CommandHandlers.cs` owns the per-invocation command context.
+shape. The root `CommandHandlers.cs` owns the per-invocation command context,
+shared command sending, and response exit-code shaping.
 Support partials remain:
 `CommandHandlers.Arguments.cs` owns usage validation, argument joining, flag
 consumption, optional flag values, and JSON detection/pretty-printing,
 `CommandHandlers.Values.cs`
-owns primitive/domain value parsing, and `CommandHandlers.Transport.cs` owns
-shared command sending plus response exit-code shaping. Command-family payload
-helpers stay with their owning command partials.
+owns primitive/domain value parsing. Command-family payload helpers stay with
+their owning command partials.
 
 The `tools/ssctl/Formatters.*.cs` partial family is only the projection facade
 for console output. Keep app snapshot orchestration, section ordering, and

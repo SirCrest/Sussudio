@@ -124,7 +124,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
     {
         var ssctlPipeText = RuntimeContractSource.ReadRepoFile("tools/ssctl/PipeTransport.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var ssctlTransportText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.Transport.cs")
+        var ssctlTransportText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var ssctlUiText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
