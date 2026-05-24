@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T05:27:22Z
+Generated UTC: 2026-05-24T05:33:27Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 812 |
+| Production .cs files | 811 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 90 (11.1%) |
-| Production .cs files under 80 lines | 163 (20.1%) |
+| Production .cs files under 60 lines | 89 (11.0%) |
+| Production .cs files under 80 lines | 161 (19.9%) |
 
 ## Largest partial-type clusters
 
@@ -56,8 +56,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 744 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs |
 | 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
-| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
+| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
@@ -128,7 +128,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 40 | tools/NativeXuAudioProbe/Program.Commands.cs |
 | 41 | Sussudio/Models/Automation/AutomationSnapshot.SourceTelemetry.cs |
 | 41 | tools/Common/DiagnosticSessionAutomationResponseJson.cs |
-| 42 | Sussudio/Controllers/Shell/ControlBarLabelVisibilityController.cs |
 | 42 | Sussudio/Models/Automation/WindowAutomation.cs |
 | 43 | Sussudio/Services/Runtime/AtomicMax.cs |
 | 44 | Sussudio/Services/Recording/LibAvEncoder.Models.cs |
@@ -146,6 +145,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 49 | Sussudio/Controllers/Window/WindowTitleController.cs |
 | 49 | tools/McpServer/Tools/WindowScreenshotTools.cs |
 | 50 | Sussudio/Controllers/Recording/Button/RecordingButtonActionController.cs |
+| 50 | Sussudio/Controllers/Shell/ResponsiveShellLayoutPolicy.cs |
 
 ## Notes
 

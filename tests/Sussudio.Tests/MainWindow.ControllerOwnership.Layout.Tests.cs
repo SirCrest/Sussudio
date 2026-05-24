@@ -11,7 +11,6 @@ static partial class Program
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs").Replace("\r\n", "\n");
-        var labelControllerText = ReadRepoFile("Sussudio/Controllers/Shell/ControlBarLabelVisibilityController.cs").Replace("\r\n", "\n");
         var policyText = ReadRepoFile("Sussudio/Controllers/Shell/ResponsiveShellLayoutPolicy.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
@@ -33,20 +32,19 @@ static partial class Program
         AssertContains(mainWindowText, "InitializeResponsiveShellLayoutController();");
         AssertContains(bindingsText, "SetupResponsiveShellLayoutBindings();");
         AssertContains(controllerText, "internal sealed class ResponsiveShellLayoutController");
-        AssertContains(labelControllerText, "internal sealed class ControlBarLabelVisibilityController");
-        AssertContains(labelControllerText, "public required UIElement[] ControlBarLabels { get; init; }");
+        AssertContains(controllerText, "internal sealed class ControlBarLabelVisibilityController");
+        AssertContains(controllerText, "public required UIElement[] ControlBarLabels { get; init; }");
         AssertContains(policyText, "internal static class ResponsiveShellLayoutPolicy");
         AssertContains(policyText, "public const double ControlBarLabelThreshold = 900.0;");
         AssertContains(policyText, "public const double CaptureSettingsNarrowWidth = 700.0;");
         AssertContains(policyText, "internal readonly record struct ResponsiveCaptureSettingsPlacement");
-        AssertContains(labelControllerText, "private bool _toggleLabelsVisible;");
+        AssertContains(controllerText, "private bool _toggleLabelsVisible;");
         AssertContains(controllerText, "private bool _captureSettingsNarrow;");
         AssertContains(controllerText, "public void Attach()");
-        AssertContains(labelControllerText, "public void Attach()");
-        AssertContains(labelControllerText, "_context.ControlBarBorder.SizeChanged += (_, e) => ApplyControlBarWidth(e.NewSize.Width);");
-        AssertContains(labelControllerText, "ResponsiveShellLayoutPolicy.ShouldShowControlBarLabels(controlBarWidth);");
-        AssertContains(labelControllerText, "foreach (var label in _context.ControlBarLabels)");
-        AssertContains(labelControllerText, "label.Visibility = visibility;");
+        AssertContains(controllerText, "_context.ControlBarBorder.SizeChanged += (_, e) => ApplyControlBarWidth(e.NewSize.Width);");
+        AssertContains(controllerText, "ResponsiveShellLayoutPolicy.ShouldShowControlBarLabels(controlBarWidth);");
+        AssertContains(controllerText, "foreach (var label in _context.ControlBarLabels)");
+        AssertContains(controllerText, "label.Visibility = visibility;");
         AssertContains(controllerText, "ResponsiveShellLayoutPolicy.GetCaptureSettingsLayoutKind(width);");
         AssertContains(controllerText, "private void ApplyCaptureSettingsLayout(ResponsiveCaptureSettingsPlacement placement)");
         AssertContains(controllerText, "private static void ApplyGridSlot(FrameworkElement element, ResponsiveGridSlot slot)");
@@ -57,13 +55,8 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private const double ControlBarLabelThreshold = 900.0;");
         AssertDoesNotContain(controllerText, "private const double ControlBarLabelThreshold = 900.0;");
         AssertDoesNotContain(controllerText, "private const double CaptureSettingsNarrowWidth = 700.0;");
-        AssertDoesNotContain(controllerText, "ControlBarBorder");
-        AssertDoesNotContain(controllerText, "ControlBarLabels");
-        AssertDoesNotContain(controllerText, "ApplyControlBarWidth");
         AssertDoesNotContain(controllerText, "_context.HdrToggleLabel.Visibility = visibility;");
         AssertDoesNotContain(controllerText, "_context.FrameTimeOverlayToggleLabel.Visibility = visibility;");
-        AssertDoesNotContain(labelControllerText, "_context.HdrToggleLabel.Visibility = visibility;");
-        AssertDoesNotContain(labelControllerText, "_context.FrameTimeOverlayToggleLabel.Visibility = visibility;");
         AssertDoesNotContain(adapterText, "FlashbackToggleLabel = FlashbackToggleLabel,");
         AssertDoesNotContain(controllerText, "private void ApplyNarrowCaptureSettingsLayout()");
         AssertDoesNotContain(controllerText, "private void ApplyWideCaptureSettingsLayout()");
@@ -73,6 +66,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ResponsiveShellLayout.cs")),
             "responsive shell layout adapter lives with shell chrome composition");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "ControlBarLabelVisibilityController.cs")),
+            "control-bar label visibility lives with responsive shell layout application");
 
         return Task.CompletedTask;
     }

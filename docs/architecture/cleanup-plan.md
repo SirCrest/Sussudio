@@ -3078,10 +3078,9 @@ presentation adapter.
 Responsive shell layout is split between
 `Sussudio/Controllers/Shell/ResponsiveShellLayoutPolicy.cs`, which owns the
 control-bar label breakpoint and capture-settings narrow/wide grid-slot policy,
-`Sussudio/Controllers/Shell/ControlBarLabelVisibilityController.cs`, which applies
-that policy to the complete control-bar label set, and
-`Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs`, which applies
-capture-settings grid placement to XAML elements.
+and `Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs`, which
+applies that policy to the complete control-bar label set and capture-settings
+grid placement to XAML elements.
 `MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
 Responsive layout ownership checks live in
 `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs`.
