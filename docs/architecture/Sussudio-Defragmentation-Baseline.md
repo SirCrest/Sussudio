@@ -228,6 +228,18 @@ CLI/MCP/pipe checks, if applicable: covered by MainWindow recording controller o
 Behavior preserved: Recording action, chrome, state presentation, and property-change routing still use the same recording controllers and policy types
 Notes for future agents: keep recording button/state MainWindow adapter glue in `MainWindow.ButtonActions.cs`; keep record-button behavior and lockout policy in the recording controllers
 
+Date: 2026-05-24
+Area: MCP performance timeline row projection locality
+Problem: One private timeline row DTO and one JSON-to-row projection path were split across eight tiny partial fragments by field group, forcing MCP timeline review to open many files for one table-shaping behavior.
+Files consolidated: `tools/McpServer/Tools/PerformanceTimelineTools.Rows.Preview.cs`; `tools/McpServer/Tools/PerformanceTimelineTools.Rows.FlashbackPlayback.cs`; `tools/McpServer/Tools/PerformanceTimelineTools.Rows.FlashbackExport.cs`; `tools/McpServer/Tools/PerformanceTimelineTools.Rows.System.cs`; `tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.Preview.cs`; `tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.FlashbackPlayback.cs`; `tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.FlashbackExport.cs`; `tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.System.cs`
+Files added: none
+Net production .cs delta: -8
+Partial clusters reduced: `PerformanceTimelineTools` -8 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by MCP performance timeline source-ownership/projection contract tests and runtime snapshot regression tests
+Behavior preserved: Timeline JSON fields still populate the same private row properties before rendering and trend summaries
+Notes for future agents: keep the private MCP timeline row DTO in `PerformanceTimelineTools.Rows.Model.cs` and JSON projection methods in `PerformanceTimelineTools.Rows.cs`; split only if a projection group grows independent parsing policy
+
 Date: 2026-05-21
 Area: Automation diagnostics Flashback evaluation
 Problem: Active/stalled Flashback export diagnostic verdict construction lived in a small partial even though it is only called by the Flashback diagnostic owner that orders storage, recording, export, and playback verdicts.

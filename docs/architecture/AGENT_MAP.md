@@ -3675,14 +3675,10 @@ Primary owners:
 - `tools/McpServer/Tools/PerformanceTimelineTools.cs` owns the public MCP
   tool entry point and command response handling.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs` owns timeline JSON
-  row projection orchestration and root cadence fields;
-  `tools/McpServer/Tools/PerformanceTimelineTools.Rows.Preview.cs`,
-  `tools/McpServer/Tools/PerformanceTimelineTools.Rows.FlashbackPlayback.cs`,
-  `tools/McpServer/Tools/PerformanceTimelineTools.Rows.FlashbackExport.cs`,
-  and `tools/McpServer/Tools/PerformanceTimelineTools.Rows.System.cs` own the matching projection field
-  groups; `tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model*.cs` owns
-  the private row model split by root cadence, preview/MJPEG/D3D, Flashback
-  playback, Flashback export, and system fields.
+  row projection orchestration and the root cadence, preview/MJPEG/D3D,
+  Flashback playback, Flashback export, and system projection field groups.
+  `tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs` owns the
+  private row model for the same table and trend-rendering fields.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs` owns timeline
   table text rendering. `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs`
   owns first-vs-last trend text and target-summary orchestration.

@@ -17,15 +17,7 @@ static partial class Program
     {
         var rootSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs");
         var rowsSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs");
-        var rowsPreviewSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Preview.cs");
-        var rowsFlashbackPlaybackSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.FlashbackPlayback.cs");
-        var rowsFlashbackExportSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.FlashbackExport.cs");
-        var rowsSystemSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.System.cs");
         var rowsModelSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs");
-        var rowsPreviewModelSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.Preview.cs");
-        var rowsFlashbackPlaybackModelSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.FlashbackPlayback.cs");
-        var rowsFlashbackExportModelSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.FlashbackExport.cs");
-        var rowsSystemModelSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.System.cs");
         var formattingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs");
         var previewFormattingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Preview.cs");
         var flashbackFormattingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Flashback.cs");
@@ -41,15 +33,7 @@ static partial class Program
         {
             RootSource = rootSource,
             RowsSource = rowsSource,
-            RowsPreviewSource = rowsPreviewSource,
-            RowsFlashbackPlaybackSource = rowsFlashbackPlaybackSource,
-            RowsFlashbackExportSource = rowsFlashbackExportSource,
-            RowsSystemSource = rowsSystemSource,
             RowsModelSource = rowsModelSource,
-            RowsPreviewModelSource = rowsPreviewModelSource,
-            RowsFlashbackPlaybackModelSource = rowsFlashbackPlaybackModelSource,
-            RowsFlashbackExportModelSource = rowsFlashbackExportModelSource,
-            RowsSystemModelSource = rowsSystemModelSource,
             FormattingSource = formattingSource,
             PreviewFormattingSource = previewFormattingSource,
             FlashbackFormattingSource = flashbackFormattingSource,
@@ -64,15 +48,7 @@ static partial class Program
                 "\n",
                 rootSource,
                 rowsSource,
-                rowsPreviewSource,
-                rowsFlashbackPlaybackSource,
-                rowsFlashbackExportSource,
-                rowsSystemSource,
                 rowsModelSource,
-                rowsPreviewModelSource,
-                rowsFlashbackPlaybackModelSource,
-                rowsFlashbackExportModelSource,
-                rowsSystemModelSource,
                 formattingSource,
                 previewFormattingSource,
                 flashbackFormattingSource,
@@ -90,15 +66,7 @@ static partial class Program
     {
         public string RootSource { get; init; } = string.Empty;
         public string RowsSource { get; init; } = string.Empty;
-        public string RowsPreviewSource { get; init; } = string.Empty;
-        public string RowsFlashbackPlaybackSource { get; init; } = string.Empty;
-        public string RowsFlashbackExportSource { get; init; } = string.Empty;
-        public string RowsSystemSource { get; init; } = string.Empty;
         public string RowsModelSource { get; init; } = string.Empty;
-        public string RowsPreviewModelSource { get; init; } = string.Empty;
-        public string RowsFlashbackPlaybackModelSource { get; init; } = string.Empty;
-        public string RowsFlashbackExportModelSource { get; init; } = string.Empty;
-        public string RowsSystemModelSource { get; init; } = string.Empty;
         public string FormattingSource { get; init; } = string.Empty;
         public string PreviewFormattingSource { get; init; } = string.Empty;
         public string FlashbackFormattingSource { get; init; } = string.Empty;
