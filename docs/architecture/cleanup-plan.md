@@ -3957,10 +3957,9 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.RecordingState.cs`, while output drive probing,
    fallback, formatting, and suppressed-warning logging now live in
    `ViewModelPresentationBuilders.cs`. Recording size/bitrate label
-   assignment and recording-state reset reactions also live in
-   `MainViewModel.RecordingState.cs`, while
-   `Sussudio/ViewModels/BitrateSampleWindow.cs` owns bounded byte-sample
-   smoothing shared by recording and Flashback bitrate presentation, and
+   assignment, recording-state reset reactions, and bounded byte-sample
+   smoothing shared by recording and Flashback bitrate presentation also live in
+   `MainViewModel.RecordingState.cs`, and
    capture presentation adapters now live in
    `MainViewModel.CapturePresentation.cs`: live-capture info projection from
    runtime snapshots, audio-preview activity, live resolution/frame-rate/pixel-format
@@ -4194,8 +4193,8 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.FlashbackEncoderSettings.cs`; buffer/GPU decode reactions stay
    in `MainViewModel.FlashbackSettings.cs`.
    Pure analog audio gain percent/XU-byte curve mapping now lives in
-   `Sussudio/ViewModels/DeviceAudioGainMapper.cs`; device-native audio request
-   lifetime, including mode property-change adapters, UI enqueue lifetime,
+   `MainViewModel.DeviceAudioState.cs` with the shared audio-control guards;
+   device-native audio request lifetime, including mode property-change adapters, UI enqueue lifetime,
    shared debounce CTS fields, graph-port context contract, cancellation
    cleanup, gain property-change adapters, XU debounce, and flash-persist
    debounce, stays in

@@ -115,7 +115,6 @@ static partial class Program
                  string.Equals(fileName, "StatsPresentationModels.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "CaptureModeOptionsBuilder.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "DeviceFormatProbeRetargetPolicy.cs", StringComparison.Ordinal) ||
-                 string.Equals(fileName, "DeviceAudioGainMapper.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "ViewModelPresentationBuilders.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "RecordingSettingsSelectionPolicy.cs", StringComparison.Ordinal))) ||
             ((string.Equals(directory, "Sussudio/Controllers", StringComparison.OrdinalIgnoreCase) ||

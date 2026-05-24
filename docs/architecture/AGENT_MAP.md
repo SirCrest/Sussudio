@@ -3114,9 +3114,9 @@ Primary current owners:
   not the legacy AT input-source fallback path. `MainViewModel.DeviceAudioState.cs`
   owns shared audio-control guards and mode normalization.
   `MainViewModel.AnalogAudioGain.cs` owns analog
-  gain XU writes and settings persistence.
-  `Sussudio/ViewModels/DeviceAudioGainMapper.cs` owns the pure percent-to-XU-
-  byte analog gain curve used by device-native gain application.
+  gain XU writes and settings persistence. `MainViewModel.DeviceAudioState.cs`
+  also keeps the pure percent-to-XU-byte analog gain curve helper used by
+  device-native gain application.
   `MainViewModel.AudioCapturePropertyChanges.cs` owns audio capture property
   handlers. `MainViewModel.AudioState.cs` owns audio-preview property
   handlers, microphone monitor property handlers, and selected-microphone
@@ -3158,9 +3158,9 @@ Primary current owners:
   while `Sussudio/ViewModels/ViewModelPresentationBuilders.cs` owns output drive probing,
   fallback, formatting, and suppressed-warning logging.
   `MainViewModel.RecordingState.cs` owns
-  recording size/bitrate label assignment and recording-state reset reactions,
-  while `Sussudio/ViewModels/BitrateSampleWindow.cs` owns bounded byte-sample
-  smoothing shared by recording and Flashback bitrate presentation.
+  recording size/bitrate label assignment, recording-state reset reactions, and
+  the bounded byte-sample smoothing helper shared by recording and Flashback
+  bitrate presentation.
   `MainViewModel.CapturePresentation.cs` owns capture presentation adapters:
   live-capture info projection from `CaptureRuntimeSnapshot`, including
   audio-preview activity and live-resolution/frame-rate/pixel-format

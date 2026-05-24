@@ -41,8 +41,6 @@ static partial class Program
         var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
             .Replace("\r\n", "\n");
         var flashbackBufferStatusText = flashbackStateText;
-        var bitrateSampleWindowText = ReadRepoFile("Sussudio/ViewModels/BitrateSampleWindow.cs")
-            .Replace("\r\n", "\n");
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs")
             .Replace("\r\n", "\n");
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
@@ -116,17 +114,19 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackBufferStatus.cs")),
             "MainViewModel.FlashbackBufferStatus.cs folded into MainViewModel.FlashbackState.cs");
-        AssertContains(bitrateSampleWindowText, "internal sealed class BitrateSampleWindow");
-        AssertContains(bitrateSampleWindowText, "public double? AddSampleAndCompute(long tick, long bytes)");
-        AssertContains(bitrateSampleWindowText, "private static double? ComputeAverageBitrate(Queue<(long Tick, long Bytes)> samples)");
+        AssertContains(recordingStateText, "internal sealed class BitrateSampleWindow");
+        AssertContains(recordingStateText, "public double? AddSampleAndCompute(long tick, long bytes)");
+        AssertContains(recordingStateText, "private static double? ComputeAverageBitrate(Queue<(long Tick, long Bytes)> samples)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "BitrateSampleWindow.cs")),
+            "BitrateSampleWindow folded into MainViewModel.RecordingState.cs");
         AssertContains(recordingRuntimeText, "_pendingModeOptionsRefresh = false;");
         AssertContains(recordingRuntimeText, "RebuildResolutionOptions();");
         AssertContains(runtimeLifecycleControllerText, "_context.UpdateRecordingStats();");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private void UpdateRecordingStats()");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private static double? ComputeAverageBitrate(");
         AssertDoesNotContain(runtimeLifecycleControllerText, "partial void OnIsRecordingChanged(bool value)");
-        AssertDoesNotContain(recordingRuntimeText, "private static double? ComputeAverageBitrate(");
-        AssertDoesNotContain(recordingRuntimeText, "Queue<(long Tick, long Bytes)> samples");
         AssertDoesNotContain(rootViewModelText, "public partial ObservableCollection<string> AvailableRecordingFormats");
         AssertDoesNotContain(rootViewModelText, "public partial string OutputPath");
         AssertContains(automationText, "=> SetRecordingDesiredStateAsync(enabled, cancellationToken);");
