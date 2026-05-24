@@ -359,21 +359,14 @@ automation command application, including show-all capture options, preview
 volume, stats visibility, settings visibility, frame-time overlay visibility,
 Flashback timeline visibility, and stats-section expand/collapse response text.
 `AutomationCommandDispatcher.CustomCommands.cs` owns the custom command router
-plus the small device-selection, audio-control, capture-control, output-path,
-and recording-enable command bodies it dispatches, including the
-recording-response snapshot refresh.
-`AutomationCommandDispatcher.ReadbackCommands.cs` owns read-only snapshot,
-manifest, diagnostic event, performance timeline, and audio ramp trace command
-bodies behind the custom command router.
+plus read-only snapshot, manifest, diagnostic event, performance timeline,
+audio ramp trace, verification, visual probe/capture, and the small
+device-selection, audio-control, capture-control, output-path, and
+recording-enable command bodies it dispatches, including the recording-response
+snapshot refresh.
 `AutomationCommandDispatcher.FlashbackCommands.cs` owns Flashback action,
 export, segment, restart, and enable command bodies behind the custom command
 router.
-`AutomationCommandDispatcher.VerificationCommands.cs` owns file and
-last-recording verification command bodies.
-`AutomationCommandDispatcher.VisualCaptureCommands.cs` owns video-source probe,
-preview-color probe, preview-frame capture, window screenshot capture, default
-capture output paths, and capture response status shaping behind the custom
-command router.
 `AutomationCommandDispatcher.Preflight.cs` owns manifest revision, auth-token,
 and readiness gating. `AutomationCommandDispatcher.PortMappedDispatch.cs` owns
 the simple one-property capture and pipeline command tables plus the ordered

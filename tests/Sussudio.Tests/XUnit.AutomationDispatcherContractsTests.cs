@@ -76,7 +76,7 @@ public sealed class AutomationDispatcherContractsTests
 
     [Fact]
     public Task AutomationDispatcherIntrospectionCommandsLiveInFocusedPartial()
-        => global::Program.AutomationCommandDispatcher_IntrospectionCommands_LiveInFocusedPartial();
+        => global::Program.AutomationCommandDispatcher_IntrospectionCommands_LiveWithCustomRouter();
 
     [Fact]
     public Task AutomationDispatcherUiSettingsCommandsOwnUiSettingsApplication()
@@ -116,11 +116,11 @@ public sealed class AutomationDispatcherContractsTests
 
     [Fact]
     public Task AutomationDispatcherVerificationCommandsLiveInFocusedPartial()
-        => global::Program.AutomationCommandDispatcher_VerificationCommands_LiveInFocusedPartial();
+        => global::Program.AutomationCommandDispatcher_VerificationCommands_LiveWithCustomRouter();
 
     [Fact]
     public Task AutomationDispatcherVisualCaptureCommandsLiveInFocusedPartial()
-        => global::Program.AutomationCommandDispatcher_VisualCaptureCommands_LiveInFocusedPartial();
+        => global::Program.AutomationCommandDispatcher_VisualCaptureCommands_LiveWithCustomRouter();
 
     [Fact]
     public Task AutomationDispatcherHandlesEveryAutomationCommandKindValue()

@@ -199,7 +199,9 @@ Automation diagnostics ownership:
   before the custom command router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs`
   owns the custom automation command router for multi-field payloads, special
-  response shapes, capture routing, domain command handoff, and the small
+  response shapes, capture routing, domain command handoff, read-only
+  snapshot/manifest/diagnostic/timeline/audio-ramp readback commands,
+  verification commands, visual probe/capture commands, and the small
   device-selection, audio-control, capture-control, output-path, and
   recording-enable command bodies it dispatches.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.UiSettingsCommands.cs`
@@ -207,19 +209,9 @@ Automation diagnostics ownership:
   no-op for the public show-all capture options command, preview volume, stats
   visibility, settings visibility, frame-time overlay visibility, Flashback
   timeline visibility, and stats-section expand/collapse response text.
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.ReadbackCommands.cs`
-  owns read-only snapshot, manifest, diagnostic event, performance timeline,
-  and audio ramp trace command bodies behind the custom command router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.FlashbackCommands.cs`
   owns Flashback action/export/segment/restart/enable command bodies behind the
   custom command router.
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.VerificationCommands.cs`
-  owns file and last-recording verification command bodies behind the custom
-  command router.
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.VisualCaptureCommands.cs`
-  owns video-source probe, preview-color probe, preview-frame capture, window
-  screenshot capture, default capture output paths, and capture response
-  status shaping behind the custom command router.
 - `Sussudio/Services/Automation/IAutomationViewModel.cs` owns the aggregate
   automation ViewModel contract plus feature-shaped ports for readiness,
   snapshot queries, device selection, capture settings, audio, preview/recording,
@@ -231,8 +223,8 @@ Automation diagnostics ownership:
   and readiness gating, `AutomationCommandDispatcher.PortMappedDispatch.cs`
   owns the port-grouped tables and ordered dispatch for simple one-property
   commands, and `AutomationCommandDispatcher.CustomCommands.cs` consumes the
-  device-selection, audio, capture-settings, preview/recording, and
-  snapshot-query ports for custom command bodies.
+  device-selection, audio, capture-settings, preview/recording, snapshot-query,
+  diagnostics, probe, and window-control ports for custom command bodies.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.CommandParsing.cs`
   owns command metadata lookups, path validation forwarding, and enum payload
   parsing.

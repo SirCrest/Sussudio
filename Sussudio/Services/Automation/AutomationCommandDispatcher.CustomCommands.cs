@@ -1,8 +1,11 @@
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
+using Sussudio.Tools;
 
 namespace Sussudio.Services.Automation;
 
@@ -227,5 +230,159 @@ public sealed partial class AutomationCommandDispatcher
         var enabled = GetBool(payload, "enabled") ?? throw new InvalidOperationException("Missing 'enabled' parameter.");
         await _audioPort.SetMicrophoneEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Microphone {(enabled ? "enabled" : "disabled")}.");
+    }
+}
+
+public sealed partial class AutomationCommandDispatcher
+{
+    private async Task<AutomationCommandResponse> ExecuteGetSnapshotCommandAsync(
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);
+        return CreateResponse(correlationId, "Snapshot retrieved.", snapshot: snapshot);
+    }
+
+    private AutomationCommandResponse ExecuteGetAutomationManifestCommand(string correlationId)
+    {
+        return CreateResponse(
+            correlationId,
+            "Automation manifest retrieved.",
+            data: AutomationCommandCatalog.CreateManifest(),
+            includeSnapshot: false);
+    }
+
+    private AutomationCommandResponse ExecuteGetDiagnosticsCommand(
+        JsonElement payload,
+        string correlationId)
+    {
+        var maxEvents = GetInt(payload, "maxEvents") ?? 100;
+        var events = _diagnosticsHub.GetRecentEvents(maxEvents);
+        return CreateResponse(correlationId, "Diagnostics retrieved.", data: events);
+    }
+
+    private AutomationCommandResponse ExecuteGetPerformanceTimelineCommand(
+        JsonElement payload,
+        string correlationId)
+    {
+        var maxEntries = GetInt(payload, "maxEntries") ?? 240;
+        var timeline = _diagnosticsHub.GetPerformanceTimeline(maxEntries);
+        return CreateResponse(correlationId, "Performance timeline retrieved.", data: timeline);
+    }
+
+    private async Task<AutomationCommandResponse> ExecuteGetAudioRampTraceCommandAsync(
+        JsonElement payload,
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        var maxEntries = GetInt(payload, "maxEntries") ?? 512;
+        var trace = await _snapshotQueryPort.GetAudioRampTraceSnapshotAsync(maxEntries, cancellationToken).ConfigureAwait(false);
+        return CreateResponse(correlationId, "Audio ramp trace retrieved.", data: trace);
+    }
+
+    private async Task<AutomationCommandResponse> ExecuteVerifyFileCommandAsync(
+        JsonElement payload,
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        var filePath = ValidatePathPayload(
+            AutomationCommandKind.VerifyFile,
+            "filePath",
+            RequireString(payload, "filePath"));
+        var verificationProfile = GetString(payload, "verificationProfile");
+        var verifyStartedAt = Stopwatch.GetTimestamp();
+        var verification = await _diagnosticsHub
+            .VerifyFileAsync(filePath, verificationProfile, cancellationToken)
+            .ConfigureAwait(false);
+        var elapsedMs = (long)Math.Round(Stopwatch.GetElapsedTime(verifyStartedAt).TotalMilliseconds);
+        return CreateVerificationResponse(correlationId, verification, elapsedMs);
+    }
+
+    private async Task<AutomationCommandResponse> ExecuteVerifyLastRecordingCommandAsync(
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        var verifyStartedAt = Stopwatch.GetTimestamp();
+        var verification = await _diagnosticsHub.VerifyLastRecordingAsync(cancellationToken).ConfigureAwait(false);
+        var elapsedMs = (long)Math.Round(Stopwatch.GetElapsedTime(verifyStartedAt).TotalMilliseconds);
+        return CreateVerificationResponse(correlationId, verification, elapsedMs);
+    }
+
+    private AutomationCommandResponse CreateVerificationResponse(
+        string correlationId,
+        RecordingVerificationResult verification,
+        long elapsedMs)
+    {
+        return CreateResponse(
+            correlationId,
+            verification.Message,
+            data: new
+            {
+                Verification = verification,
+                HdrParity = verification.HdrParity
+            },
+            errorCode: verification.Succeeded ? null : "verification-failed",
+            success: verification.Succeeded,
+            status: verification.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
+            elapsedMs: elapsedMs);
+    }
+
+    private async Task<AutomationCommandResponse> ExecuteProbeVideoSourceCommandAsync(
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _probePort.ProbeVideoSourceAsync(cancellationToken).ConfigureAwait(false);
+        return CreateResponse(correlationId, "Video source probe completed.", data: result);
+    }
+
+    private async Task<AutomationCommandResponse> ExecuteProbePreviewColorCommandAsync(
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _probePort.ProbePreviewColorAsync(cancellationToken).ConfigureAwait(false);
+        return CreateResponse(correlationId, "Preview color probe completed.", data: result);
+    }
+
+    private async Task<AutomationCommandResponse> ExecuteCapturePreviewFrameCommandAsync(
+        JsonElement payload,
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        var outputPath = ValidatePathPayload(
+            AutomationCommandKind.CapturePreviewFrame,
+            "outputPath",
+            GetString(payload, "outputPath")
+                ?? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.bmp"));
+        var result = await _probePort.CapturePreviewFrameAsync(outputPath, cancellationToken).ConfigureAwait(false);
+        return CreateCaptureResponse(correlationId, result.Message, result, result.Succeeded);
+    }
+
+    private async Task<AutomationCommandResponse> ExecuteCaptureWindowScreenshotCommandAsync(
+        JsonElement payload,
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        var outputPath = ValidatePathPayload(
+            AutomationCommandKind.CaptureWindowScreenshot,
+            "outputPath",
+            GetString(payload, "outputPath")
+                ?? Path.Combine(Path.GetTempPath(), $"window_screenshot_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.png"));
+        var result = await _windowControl.CaptureWindowScreenshotAsync(outputPath, cancellationToken).ConfigureAwait(false);
+        return CreateCaptureResponse(correlationId, result.Message, result, result.Succeeded);
+    }
+
+    private AutomationCommandResponse CreateCaptureResponse(
+        string correlationId,
+        string message,
+        object result,
+        bool succeeded)
+    {
+        return CreateResponse(
+            correlationId,
+            message,
+            data: result,
+            success: succeeded,
+            status: succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
+            errorCode: succeeded ? null : "capture-failed");
     }
 }

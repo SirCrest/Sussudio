@@ -40,31 +40,26 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationCommandDispatcher_IntrospectionCommands_LiveInFocusedPartial()
+    internal static Task AutomationCommandDispatcher_IntrospectionCommands_LiveWithCustomRouter()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
-            .Replace("\r\n", "\n");
-        var readbackCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.ReadbackCommands.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(customCommandsText, "case AutomationCommandKind.GetSnapshot:");
         AssertContains(customCommandsText, "ExecuteGetSnapshotCommandAsync(correlationId, cancellationToken)");
         AssertContains(customCommandsText, "case AutomationCommandKind.GetAutomationManifest:");
         AssertContains(customCommandsText, "ExecuteGetAutomationManifestCommand(correlationId)");
-        AssertDoesNotContain(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteGetSnapshotCommandAsync(");
-        AssertDoesNotContain(customCommandsText, "AutomationCommandCatalog.CreateManifest()");
-
-        AssertContains(readbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteGetSnapshotCommandAsync(");
-        AssertContains(readbackCommandsText, "_diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken)");
-        AssertContains(readbackCommandsText, "Snapshot retrieved.");
-        AssertContains(readbackCommandsText, "private AutomationCommandResponse ExecuteGetAutomationManifestCommand(string correlationId)");
-        AssertContains(readbackCommandsText, "Automation manifest retrieved.");
-        AssertContains(readbackCommandsText, "AutomationCommandCatalog.CreateManifest()");
-        AssertContains(readbackCommandsText, "includeSnapshot: false");
+        AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteGetSnapshotCommandAsync(");
+        AssertContains(customCommandsText, "_diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken)");
+        AssertContains(customCommandsText, "Snapshot retrieved.");
+        AssertContains(customCommandsText, "private AutomationCommandResponse ExecuteGetAutomationManifestCommand(string correlationId)");
+        AssertContains(customCommandsText, "Automation manifest retrieved.");
+        AssertContains(customCommandsText, "AutomationCommandCatalog.CreateManifest()");
+        AssertContains(customCommandsText, "includeSnapshot: false");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.IntrospectionCommands.cs")),
-            "introspection readback folded into AutomationCommandDispatcher.ReadbackCommands.cs");
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.ReadbackCommands.cs")),
+            "readback commands folded into AutomationCommandDispatcher.CustomCommands.cs");
 
         return Task.CompletedTask;
     }
@@ -166,36 +161,33 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationCommandDispatcher_VerificationCommands_LiveInFocusedPartial()
+    internal static Task AutomationCommandDispatcher_VerificationCommands_LiveWithCustomRouter()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
-            .Replace("\r\n", "\n");
-        var verificationCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.VerificationCommands.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(customCommandsText, "case AutomationCommandKind.VerifyFile:");
         AssertContains(customCommandsText, "ExecuteVerifyFileCommandAsync(payload, correlationId, cancellationToken)");
         AssertContains(customCommandsText, "case AutomationCommandKind.VerifyLastRecording:");
         AssertContains(customCommandsText, "ExecuteVerifyLastRecordingCommandAsync(correlationId, cancellationToken)");
-        AssertContains(verificationCommandsText, "private async Task<AutomationCommandResponse> ExecuteVerifyFileCommandAsync(");
-        AssertContains(verificationCommandsText, "private async Task<AutomationCommandResponse> ExecuteVerifyLastRecordingCommandAsync(");
-        AssertContains(verificationCommandsText, "ValidatePathPayload(\n            AutomationCommandKind.VerifyFile,\n            \"filePath\",");
-        AssertContains(verificationCommandsText, "_diagnosticsHub\n            .VerifyFileAsync(filePath, verificationProfile, cancellationToken)");
-        AssertContains(verificationCommandsText, "_diagnosticsHub.VerifyLastRecordingAsync(cancellationToken)");
-        AssertContains(verificationCommandsText, "HdrParity = verification.HdrParity");
-        AssertContains(verificationCommandsText, "errorCode: verification.Succeeded ? null : \"verification-failed\"");
-        AssertDoesNotContain(customCommandsText, "_diagnosticsHub\n                    .VerifyFileAsync");
-        AssertDoesNotContain(customCommandsText, "_diagnosticsHub.VerifyLastRecordingAsync");
-        AssertDoesNotContain(customCommandsText, "HdrParity = verification.HdrParity");
+        AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteVerifyFileCommandAsync(");
+        AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteVerifyLastRecordingCommandAsync(");
+        AssertContains(customCommandsText, "ValidatePathPayload(\n            AutomationCommandKind.VerifyFile,\n            \"filePath\",");
+        AssertContains(customCommandsText, "_diagnosticsHub\n            .VerifyFileAsync(filePath, verificationProfile, cancellationToken)");
+        AssertContains(customCommandsText, "_diagnosticsHub.VerifyLastRecordingAsync(cancellationToken)");
+        AssertContains(customCommandsText, "HdrParity = verification.HdrParity");
+        AssertContains(customCommandsText, "errorCode: verification.Succeeded ? null : \"verification-failed\"");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.VerificationCommands.cs")),
+            "verification commands folded into AutomationCommandDispatcher.CustomCommands.cs");
 
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationCommandDispatcher_VisualCaptureCommands_LiveInFocusedPartial()
+    internal static Task AutomationCommandDispatcher_VisualCaptureCommands_LiveWithCustomRouter()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
-            .Replace("\r\n", "\n");
-        var visualCaptureCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.VisualCaptureCommands.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(customCommandsText, "case AutomationCommandKind.ProbeVideoSource:");
@@ -209,20 +201,23 @@ static partial class Program
 
         AssertDoesNotContain(customCommandsText, "_viewModel.ProbeVideoSourceAsync");
         AssertDoesNotContain(customCommandsText, "_viewModel.ProbePreviewColorAsync");
-        AssertDoesNotContain(customCommandsText, "Path.Combine(Path.GetTempPath()");
-        AssertDoesNotContain(customCommandsText, "_windowControl.CaptureWindowScreenshotAsync");
 
-        AssertContains(visualCaptureCommandsText, "private async Task<AutomationCommandResponse> ExecuteProbeVideoSourceCommandAsync(");
-        AssertContains(visualCaptureCommandsText, "_probePort.ProbeVideoSourceAsync(cancellationToken)");
-        AssertContains(visualCaptureCommandsText, "private async Task<AutomationCommandResponse> ExecuteProbePreviewColorCommandAsync(");
-        AssertContains(visualCaptureCommandsText, "_probePort.ProbePreviewColorAsync(cancellationToken)");
-        AssertContains(visualCaptureCommandsText, "AutomationCommandKind.CapturePreviewFrame");
-        AssertContains(visualCaptureCommandsText, "_probePort.CapturePreviewFrameAsync(outputPath, cancellationToken)");
-        AssertContains(visualCaptureCommandsText, "preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.bmp");
-        AssertContains(visualCaptureCommandsText, "AutomationCommandKind.CaptureWindowScreenshot");
-        AssertContains(visualCaptureCommandsText, "window_screenshot_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.png");
-        AssertContains(visualCaptureCommandsText, "CreateCaptureResponse(correlationId, result.Message, result, result.Succeeded)");
-        AssertContains(visualCaptureCommandsText, "errorCode: succeeded ? null : \"capture-failed\"");
+        AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteProbeVideoSourceCommandAsync(");
+        AssertContains(customCommandsText, "_probePort.ProbeVideoSourceAsync(cancellationToken)");
+        AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteProbePreviewColorCommandAsync(");
+        AssertContains(customCommandsText, "_probePort.ProbePreviewColorAsync(cancellationToken)");
+        AssertContains(customCommandsText, "AutomationCommandKind.CapturePreviewFrame");
+        AssertContains(customCommandsText, "_probePort.CapturePreviewFrameAsync(outputPath, cancellationToken)");
+        AssertContains(customCommandsText, "preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.bmp");
+        AssertContains(customCommandsText, "AutomationCommandKind.CaptureWindowScreenshot");
+        AssertContains(customCommandsText, "window_screenshot_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.png");
+        AssertContains(customCommandsText, "_windowControl.CaptureWindowScreenshotAsync");
+        AssertContains(customCommandsText, "CreateCaptureResponse(correlationId, result.Message, result, result.Succeeded)");
+        AssertContains(customCommandsText, "errorCode: succeeded ? null : \"capture-failed\"");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.VisualCaptureCommands.cs")),
+            "visual capture commands folded into AutomationCommandDispatcher.CustomCommands.cs");
 
         return Task.CompletedTask;
     }
