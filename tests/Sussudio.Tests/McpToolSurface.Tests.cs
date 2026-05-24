@@ -52,7 +52,6 @@ static partial class Program
         var flashbackToolsText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.cs");
         var flashbackActionsText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.Actions.cs");
         var flashbackExportText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.Export.cs");
-        var flashbackSegmentsText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.Segments.cs");
         var framePacingVerdictToolsText = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.cs");
         var memoryDiagnosticsToolsText = ReadRepoFile("tools/McpServer/Tools/MemoryDiagnosticsTools.cs");
         var pipelineSettingsToolsText = ReadRepoFile("tools/McpServer/Tools/PipelineSettingsTools.cs");
@@ -143,8 +142,8 @@ static partial class Program
         AssertDoesNotContain(flashbackActionsText, "commandName: \"FlashbackAction\"");
         AssertContains(flashbackExportText, "SendCommandAsync(AutomationCommandKind.FlashbackExport, payload)");
         AssertDoesNotContain(flashbackExportText, "SendCommandAsync(\"FlashbackExport\"");
-        AssertContains(flashbackSegmentsText, "SendCommandAsync(AutomationCommandKind.FlashbackGetSegments)");
-        AssertDoesNotContain(flashbackSegmentsText, "SendCommandAsync(\"FlashbackGetSegments\"");
+        AssertContains(flashbackToolsText, "SendCommandAsync(AutomationCommandKind.FlashbackGetSegments)");
+        AssertDoesNotContain(flashbackToolsText, "SendCommandAsync(\"FlashbackGetSegments\"");
         AssertContains(framePacingVerdictToolsText, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
         AssertContains(framePacingVerdictToolsText, "SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, timelinePayload)");
         AssertDoesNotContain(framePacingVerdictToolsText, "SendCommandAsync(\"GetSnapshot\"");

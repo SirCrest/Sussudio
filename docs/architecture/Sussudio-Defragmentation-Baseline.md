@@ -265,6 +265,18 @@ Behavior preserved: MCP performance timeline command shape, row projection, tabl
 Notes for future agents: start MCP timeline cleanup from the smallest helper fragments first; keep formatting helpers in `PerformanceTimelineTools.Formatting.cs`, first-vs-last trend text in `PerformanceTimelineTools.Rendering.Trend.cs`, target and pressure summaries in `PerformanceTimelineTools.Summaries.cs`, and split only when a subsection grows independent policy.
 
 Date: 2026-05-24
+Area: MCP Flashback segment-list command locality
+Problem: `flashback_segments` lived in a 30-line partial even though it has no independent validation policy and belongs with the root Flashback MCP tool commands.
+Files consolidated: `tools/McpServer/Tools/FlashbackTools.Segments.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `FlashbackTools` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by MCP Flashback tool surface/pipe-route tests and runtime snapshot regression tests
+Behavior preserved: `flashback_segments` still sends `AutomationCommandKind.FlashbackGetSegments` and returns the same formatted response text.
+Notes for future agents: keep low-policy Flashback MCP root commands in `FlashbackTools.cs`; keep action and export files separate while they own validation and payload policy.
+
+Date: 2026-05-24
 Area: ssctl command argument parsing locality
 Problem: CLI usage validation, argument joining, flag consumption, optional flag parsing, and JSON detection/pretty-printing lived in three small `CommandHandlers` partials even though they are one command-line argument interpretation support surface.
 Files consolidated: `tools/ssctl/CommandHandlers.Flags.cs`; `tools/ssctl/CommandHandlers.Json.cs`

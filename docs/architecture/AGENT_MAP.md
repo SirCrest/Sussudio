@@ -3669,13 +3669,12 @@ Primary owners:
   half-rate, hidden-stutter, ratio, and verdict policy.
   `FramePacingVerdictTools.Rendering.cs` owns the operator-facing verdict text.
 - `tools/McpServer/Tools/FlashbackTools.cs` owns Flashback enable/apply MCP
-  commands and the Flashback MCP tool type.
+  commands, segment-list command routing/text, and the Flashback MCP tool type.
   `tools/McpServer/Tools/FlashbackTools.Actions.cs` owns playback/scrub action
   normalization, validation, and payload shaping.
   `tools/McpServer/Tools/FlashbackTools.Export.cs` owns export duration/path
   validation, default path selection, export payload shaping, and export result
-  text. `tools/McpServer/Tools/FlashbackTools.Segments.cs` owns segment-list
-  command routing and segment result text.
+  text.
 - `tools/McpServer/Tools/VerificationTools.cs` owns the public verification MCP
   methods, command names, payload shaping, and verification response timeout
   policy. `tools/McpServer/Tools/VerificationTools.Assertions.cs` owns

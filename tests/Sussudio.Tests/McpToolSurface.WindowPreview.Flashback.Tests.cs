@@ -73,15 +73,14 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackToolsExportText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.Export.cs")
             .Replace("\r\n", "\n");
-        var flashbackToolsSegmentsText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.Segments.cs")
-            .Replace("\r\n", "\n");
         AssertContains(flashbackToolsRootText, "[McpServerToolType]");
         AssertContains(flashbackToolsRootText, "public static partial class FlashbackTools");
         AssertContains(flashbackToolsRootText, "public static async Task<CallToolResult> flashback_enabled");
         AssertContains(flashbackToolsRootText, "public static async Task<CallToolResult> flashback_apply");
+        AssertContains(flashbackToolsRootText, "public static async Task<CallToolResult> flashback_segments");
+        AssertContains(flashbackToolsRootText, "FlashbackGetSegments");
         AssertDoesNotContain(flashbackToolsRootText, "flashback_action");
         AssertDoesNotContain(flashbackToolsRootText, "flashback_export");
-        AssertDoesNotContain(flashbackToolsRootText, "flashback_segments");
         AssertContains(flashbackToolsActionText, "public static async Task<CallToolResult> flashback_action");
         AssertContains(flashbackToolsActionText, "if (string.IsNullOrWhiteSpace(action))");
         AssertContains(flashbackToolsActionText, "Flashback action is required. Expected play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, or clear_in_out_points.");
@@ -97,8 +96,6 @@ static partial class Program
         AssertContains(flashbackToolsExportText, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
         AssertContains(flashbackToolsExportText, "AutomationSnapshotFormatter.Get(data, \"FailureKind\", string.Empty)");
         AssertContains(flashbackToolsExportText, "FailureKind: {failureKind}");
-        AssertContains(flashbackToolsSegmentsText, "public static async Task<CallToolResult> flashback_segments");
-        AssertContains(flashbackToolsSegmentsText, "FlashbackGetSegments");
 
         var exportPipeName = NewMcpToolPipeName("flashback-export-failure-kind");
         var exportPipeClient = CreateMcpPipeClient(exportPipeName);

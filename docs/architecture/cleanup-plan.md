@@ -3330,10 +3330,10 @@ method signature, pipe command orchestration, and response shaping in
 verdict policy, operator-facing text, and private records in the named
 `FramePacingVerdictTools.*.cs` partials.
 The Flashback MCP tool type is split by command responsibility: keep
-enable/apply commands and the tool type in `FlashbackTools.cs`, playback/scrub
-action validation in `FlashbackTools.Actions.cs`, export validation/payload/text
-in `FlashbackTools.Export.cs`, and segment-list formatting in
-`FlashbackTools.Segments.cs`.
+enable/apply commands, segment-list formatting, and the tool type in
+`FlashbackTools.cs`, playback/scrub action validation in
+`FlashbackTools.Actions.cs`, and export validation/payload/text in
+`FlashbackTools.Export.cs`.
 The verification MCP tool follows the same ownership rule: keep public
 `verify_recording`, `assert_snapshot`, and `verify_file` methods, command
 names, payloads, and 60s verification timeouts in `VerificationTools.cs`; keep
