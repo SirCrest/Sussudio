@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T08:34:56Z
+Generated UTC: 2026-05-24T08:41:23Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 775 |
+| Production .cs files | 774 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 50 (6.5%) |
-| Production .cs files under 80 lines | 114 (14.7%) |
+| Production .cs files under 60 lines | 49 (6.3%) |
+| Production .cs files under 80 lines | 113 (14.6%) |
 
 ## Largest partial-type clusters
 
@@ -74,12 +74,12 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 448 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs |
 | 434 | Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs |
 | 432 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs |
+| 424 | Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs |
 | 416 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
 | 414 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs |
 | 410 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs |
 | 398 | Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs |
 | 394 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs |
-| 392 | Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs |
 | 385 | Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
 
 ## Sample production files under 60 lines
@@ -106,7 +106,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 29 | Sussudio/Services/Capture/HdrOutputPolicy.cs |
 | 34 | Sussudio/Services/Flashback/FlashbackDecoder.OutputTypes.cs |
 | 35 | tools/McpServer/Tools/McpToolResultFactory.cs |
-| 37 | Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs |
 | 37 | tools/KsAudioNodeProbe/Program.cs |
 | 38 | tools/ssctl/CommandHandlers.DiagnosticSession.cs |
 | 39 | Sussudio/Services/Recording/RecordingContracts.cs |

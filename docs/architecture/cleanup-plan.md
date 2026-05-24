@@ -1022,7 +1022,7 @@ recording-aware close finalization now lives in
 `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs`.
 
 Top-level shell resize telemetry throttling for preview compositor transforms
-now lives in `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs`.
+now lives in `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs`.
 `Sussudio/MainWindow.PreviewRenderer.Composition.cs`
 wires renderer-host context callbacks, the `SizeChanged` adapter, renderer-host
 reset handoff, and stable start/stop/shutdown/reinit-unsafe-window automation
@@ -3003,7 +3003,7 @@ Preview startup loading overlay presentation now lives in
 `Sussudio/MainWindow.PreviewTransitions.Composition.cs` is the XAML-facing adapter; watchdog and
 timeout recovery stay in `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`.
 Top-level preview resize telemetry throttling now lives in
-`Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs`.
+`Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs`.
 `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires renderer-host context
 callbacks, the `SizeChanged` adapter, renderer-host reset handoff, renderer
 start/stop/shutdown, and reinit-unsafe-window adapters; reinit renderer-stop/timeout policy lives with

@@ -1185,7 +1185,7 @@ Primary current owners:
   `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs`,
   `Sussudio/MainWindow.WindowShell.cs`, and the
   `Sussudio/MainWindow.ShutdownCleanup.Composition.cs` adapter.
-- `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs` owns top-level
+- `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns top-level
   preview resize telemetry throttling and reset state for preview compositor
   transforms. `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires the
   renderer host context, `SizeChanged` adapter, renderer-host reset handoff,
@@ -2956,7 +2956,7 @@ Primary current owners:
   confirmation: ProgressRing activation, fade-in/fade-out routing, and the
   reinit-collapse opacity reset. `Sussudio/MainWindow.PreviewTransitions.Composition.cs`
   is the XAML-facing adapter.
-- `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs` owns top-level
+- `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns top-level
   preview resize log throttling and reset state.
   `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires renderer-host
   context callbacks, the XAML-facing `SizeChanged` adapter, renderer-host reset
