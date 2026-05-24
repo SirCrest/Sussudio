@@ -10,8 +10,7 @@ static partial class Program
             "Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs",
             "Sussudio/Services/Contracts/RecordingContracts.cs",
             "Sussudio/Services/Contracts/PooledVideoFrame.cs",
-            "Sussudio/Services/Contracts/PooledVideoFrameLease.cs",
-            "Sussudio/Services/Contracts/PreviewFrameTracking.cs"
+            "Sussudio/Services/Contracts/PooledVideoFrameLease.cs"
         };
 
         foreach (var relativePath in serviceContractFiles)
