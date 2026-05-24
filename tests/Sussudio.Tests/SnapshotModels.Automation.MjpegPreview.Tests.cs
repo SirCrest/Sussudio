@@ -8,7 +8,7 @@ public partial class SnapshotModelsTests
     public void AutomationSnapshot_ExposesMjpegPreviewMetrics()
     {
         var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
-        var frameDiagnosticsText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.FrameDiagnostics.cs");
+        var automationSnapshotText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs");
 
         AssertAutomationSnapshotProperties(
             snapshotType,
@@ -25,10 +25,10 @@ public partial class SnapshotModelsTests
             "MjpegPacketHashDuplicateFramePercent",
             "MjpegPacketHashPattern",
             "MjpegPacketHashRecentDuplicateFlags");
-        AssertContains(frameDiagnosticsText, "public bool MjpegPreviewJitterEnabled { get; init; }");
-        AssertContains(frameDiagnosticsText, "public string MjpegPreviewJitterLastDropReason { get; init; } = string.Empty;");
-        AssertContains(frameDiagnosticsText, "public int MjpegPacketHashSampleCount { get; init; }");
-        AssertContains(frameDiagnosticsText, "public int[] MjpegPacketHashRecentDuplicateFlags { get; init; } = Array.Empty<int>();");
-        AssertContains(frameDiagnosticsText, "public int VisualCadenceSampleCount { get; init; }");
+        AssertContains(automationSnapshotText, "public bool MjpegPreviewJitterEnabled { get; init; }");
+        AssertContains(automationSnapshotText, "public string MjpegPreviewJitterLastDropReason { get; init; } = string.Empty;");
+        AssertContains(automationSnapshotText, "public int MjpegPacketHashSampleCount { get; init; }");
+        AssertContains(automationSnapshotText, "public int[] MjpegPacketHashRecentDuplicateFlags { get; init; } = Array.Empty<int>();");
+        AssertContains(automationSnapshotText, "public int VisualCadenceSampleCount { get; init; }");
     }
 }

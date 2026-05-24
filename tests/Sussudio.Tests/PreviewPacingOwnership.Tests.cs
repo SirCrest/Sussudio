@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
@@ -112,24 +111,8 @@ public sealed class PreviewPacingOwnershipTests
 
     private static string ReadAutomationSnapshotFamilyText()
     {
-        var files = new[]
-        {
-            "Sussudio/Models/Automation/AutomationSnapshot.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.CaptureSettings.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.AudioIngest.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.Recording.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.Preview.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.FrameDiagnostics.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.Flashback.cs"
-        };
-
-        var parts = new List<string>();
-        foreach (var file in files)
-        {
-            parts.Add(ReadRepoFile(file).Replace("\r\n", "\n"));
-        }
-
-        return string.Join("\n", parts);
+        return ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs")
+            .Replace("\r\n", "\n");
     }
 
     private static string GetRepoRoot()

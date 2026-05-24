@@ -8,8 +8,7 @@ public partial class SnapshotModelsTests
     public void AutomationSnapshot_ExposesFlashbackRecordingMetrics()
     {
         var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
-        var flashbackText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.Flashback.cs");
-        var recordingText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.Recording.cs");
+        var automationSnapshotText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs");
 
         AssertAutomationSnapshotProperties(
             snapshotType,
@@ -43,11 +42,11 @@ public partial class SnapshotModelsTests
             "FlashbackVideoQueueLastRejectReason",
             "FlashbackGpuQueueRejectedFrames",
             "FlashbackGpuQueueLastRejectReason");
-        AssertContains(flashbackText, "public bool FlashbackActive { get; init; }");
-        AssertContains(flashbackText, "public int FlashbackAudioQueueCapacity { get; init; }");
-        AssertContains(flashbackText, "public string FlashbackPlaybackState { get; init; }");
-        AssertContains(flashbackText, "public bool FlashbackExportActive { get; init; }");
-        AssertContains(recordingText, "public bool FlashbackForceRotateActive { get; init; }");
-        AssertContains(recordingText, "public long FlashbackVideoFramesSubmittedToEncoder { get; init; }");
+        AssertContains(automationSnapshotText, "public bool FlashbackActive { get; init; }");
+        AssertContains(automationSnapshotText, "public int FlashbackAudioQueueCapacity { get; init; }");
+        AssertContains(automationSnapshotText, "public string FlashbackPlaybackState { get; init; }");
+        AssertContains(automationSnapshotText, "public bool FlashbackExportActive { get; init; }");
+        AssertContains(automationSnapshotText, "public bool FlashbackForceRotateActive { get; init; }");
+        AssertContains(automationSnapshotText, "public long FlashbackVideoFramesSubmittedToEncoder { get; init; }");
     }
 }

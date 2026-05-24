@@ -8,7 +8,7 @@ public partial class SnapshotModelsTests
     public void AutomationSnapshot_ExposesFlashbackExportMetrics()
     {
         var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
-        var flashbackText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.Flashback.cs");
+        var automationSnapshotText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs");
 
         AssertAutomationSnapshotProperties(
             snapshotType,
@@ -36,9 +36,9 @@ public partial class SnapshotModelsTests
             "FlashbackExportLastForceRotateFallbackInPointMs",
             "FlashbackExportLastForceRotateFallbackOutPointMs",
             "LastExportId");
-        AssertContains(flashbackText, "public bool FlashbackExportActive { get; init; }");
-        AssertContains(flashbackText, "public string FlashbackExportStatus { get; init; } = \"NotStarted\";");
-        AssertContains(flashbackText, "public string? LastExportMessage { get; init; }");
-        AssertContains(flashbackText, "public string FlashbackPlaybackState { get; init; }");
+        AssertContains(automationSnapshotText, "public bool FlashbackExportActive { get; init; }");
+        AssertContains(automationSnapshotText, "public string FlashbackExportStatus { get; init; } = \"NotStarted\";");
+        AssertContains(automationSnapshotText, "public string? LastExportMessage { get; init; }");
+        AssertContains(automationSnapshotText, "public string FlashbackPlaybackState { get; init; }");
     }
 }
