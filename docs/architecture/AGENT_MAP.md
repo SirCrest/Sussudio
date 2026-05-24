@@ -3525,13 +3525,11 @@ Primary owners:
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs` owns timeline
   table text rendering, first-vs-last trend text, preview cadence,
   visual/MJPEG fingerprint, jitter, D3D, slow-stage, Flashback playback,
-  command, failure, cleanup, stage, export trend text, and target-summary
-  orchestration, plus compact cell, command-message, optional-value, preview
-  jitter-depth, D3D bottleneck, Flashback stage, cleanup, export, and byte-rate
-  formatting.
-- `tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs` owns 1%-low
-  target summaries, shared summary predicates, preview, Flashback, and system
-  pressure summaries, and pressure counters.
+  command, failure, cleanup, stage, export trend text, 1%-low target summaries,
+  preview, Flashback, and system pressure summaries, plus compact cell,
+  command-message, optional-value, preview jitter-depth, D3D bottleneck,
+  Flashback stage, cleanup, export, byte-rate formatting, shared summary
+  predicates, and pressure counters.
 - `tools/McpServer/Tools/FramePacingVerdictTools.cs` owns the public
   `get_frame_pacing_verdict` MCP tool entry point, pipe command orchestration,
   response shaping, performance-timeline projection, snapshot cadence channel

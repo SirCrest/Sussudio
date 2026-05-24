@@ -394,7 +394,7 @@ Partial clusters reduced: `PerformanceTimelineTools` -5 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by MCP performance timeline source-ownership/rendering/projection contract tests and runtime snapshot regression tests
 Behavior preserved: MCP performance timeline command shape, row projection, table text, trend sections, pressure summaries, and helper formatting remain in the same public tool surface
-Notes for future agents: start MCP timeline cleanup from the smallest helper fragments first; keep formatting helpers with first-vs-last trend text and table rendering in `PerformanceTimelineTools.Rendering.cs`, target and pressure summaries in `PerformanceTimelineTools.Summaries.cs`, and split only when a subsection grows independent policy.
+Notes for future agents: start MCP timeline cleanup from the smallest helper fragments first; keep formatting helpers, first-vs-last trend text, table rendering, target summaries, and pressure summaries in `PerformanceTimelineTools.Rendering.cs`; split only when a subsection grows independent policy.
 
 Date: 2026-05-24
 Area: MCP Flashback segment-list command locality

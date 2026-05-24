@@ -54,9 +54,9 @@ static partial class Program
         AssertContains(sources.RenderingSource, "Export Output:");
         AssertOccursBefore(sources.RenderingSource, "Cleanup State:", "AppendFlashbackExportTrendSummary(builder, first, last);");
         AssertOccursBefore(sources.RenderingSource, "AppendFlashbackExportTrendSummary(builder, first, last);", "private static void AppendFlashbackExportTrendSummary");
-        AssertContains(sources.SummariesSource, "AppendOnePercentLowTargetSummary");
-        AssertContains(sources.SummariesSource, "private static void AppendPressureSummary(");
-        AssertContains(sources.SummariesSource, "== Pressure Summary ==");
-        AssertContains(sources.SummariesSource, "private static int CountOverBudget(");
+        AssertContains(sources.RenderingSource, "AppendOnePercentLowTargetSummary");
+        AssertContains(sources.RenderingSource, "private static void AppendPressureSummary(");
+        AssertContains(sources.RenderingSource, "== Pressure Summary ==");
+        AssertContains(sources.RenderingSource, "private static int CountOverBudget(");
     }
 }
