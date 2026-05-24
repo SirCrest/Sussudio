@@ -9,10 +9,6 @@ static partial class Program
         var catalogText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
             .Replace("\r\n", "\n");
         var catalogEntriesText = ReadAutomationCommandCatalogEntriesSource();
-        var manifestText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.Manifest.cs")
-            .Replace("\r\n", "\n");
-        var pathValidationText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.PathValidation.cs")
-            .Replace("\r\n", "\n");
         var enumType = RequireAutomationContractType("Sussudio.Models.AutomationCommandKind");
         var pathPolicyType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandPathPolicy");
         var entriesProperty = catalogType.GetProperty("Entries", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
@@ -46,12 +42,10 @@ static partial class Program
         AssertContains(catalogEntriesText, "Set(entries, AutomationCommandKind.SetRecordingEnabled");
         AssertContains(catalogEntriesText, "Set(entries, AutomationCommandKind.FlashbackExport");
         AssertDoesNotContain(catalogText, "private static IReadOnlyList<AutomationCommandMetadata> BuildEntries()");
-        AssertDoesNotContain(catalogText, "public static AutomationManifest CreateManifest()");
-        AssertDoesNotContain(catalogText, "public static string ValidatePath(");
-        AssertContains(manifestText, "public static AutomationManifest CreateManifest()");
-        AssertContains(manifestText, "public static string CreateManifestJson()");
-        AssertContains(pathValidationText, "public enum AutomationCommandPathPolicy");
-        AssertContains(pathValidationText, "public static string ValidatePath(");
+        AssertContains(catalogText, "public enum AutomationCommandPathPolicy");
+        AssertContains(catalogText, "public static AutomationManifest CreateManifest()");
+        AssertContains(catalogText, "public static string CreateManifestJson()");
+        AssertContains(catalogText, "public static string ValidatePath(");
 
         AssertCatalogMetadata(
             catalogType,

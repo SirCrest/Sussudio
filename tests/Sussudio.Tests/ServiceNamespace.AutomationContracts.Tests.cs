@@ -14,8 +14,6 @@ static partial class Program
             "AutomationCommandKind.cs",
             "AutomationCommandCatalog.cs",
             "AutomationCommandCatalog.Entries.cs",
-            "AutomationCommandCatalog.Manifest.cs",
-            "AutomationCommandCatalog.PathValidation.cs",
             "AutomationPipeProtocol.cs",
             "AutomationPipeClientModels.cs",
             "AutomationPipeSecurityPolicy.cs"
