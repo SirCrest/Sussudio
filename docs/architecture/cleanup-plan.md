@@ -2197,13 +2197,12 @@ Media Foundation source-reader diagnostics now live in
 debug-only COM vtable diagnostic there; keep sample reading, frame delivery,
 and read-loop control flow in their named source-reader partials.
 
-Media Foundation source-reader DXGI buffer extraction now lives in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.DxgiBuffers.cs`. Keep
-IMFDXGIBuffer texture/subresource extraction, D3D texture IID lookup, and DXGI
-fallback diagnostics there; keep frame delivery in
-`MfSourceReaderVideoCapture.FrameDelivery.cs` plus
-`MfSourceReaderVideoCapture.RawFrameDelivery.cs` and reader start/stop/dispose
-in the lifecycle partial.
+Media Foundation source-reader frame delivery now keeps IMFDXGIBuffer
+texture/subresource extraction, D3D texture IID lookup, DXGI fallback
+diagnostics, and dual GPU/CPU delivery orchestration in
+`MfSourceReaderVideoCapture.FrameDelivery.cs`; keep raw/compressed CPU frame
+delivery helpers in `MfSourceReaderVideoCapture.RawFrameDelivery.cs` and reader
+start/stop/dispose in the lifecycle partial.
 
 Media Foundation packed-frame layout helpers now live in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameLayout.cs`. Keep

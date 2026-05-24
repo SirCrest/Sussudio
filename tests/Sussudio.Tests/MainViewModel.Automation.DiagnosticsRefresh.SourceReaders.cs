@@ -41,7 +41,6 @@ static partial class Program
     {
         var rootText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs");
         var diagnosticsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Diagnostics.cs");
-        var dxgiBuffersText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.DxgiBuffers.cs");
         var frameLayoutText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameLayout.cs");
         var lifecycleText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Lifecycle.cs");
         var initializationText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Initialization.cs");
@@ -54,7 +53,6 @@ static partial class Program
         return new MfSourceReaderVideoCaptureSourceFamily(
             rootText,
             diagnosticsText,
-            dxgiBuffersText,
             frameLayoutText,
             lifecycleText,
             initializationText,
@@ -68,7 +66,6 @@ static partial class Program
                 {
                     rootText,
                     diagnosticsText,
-                    dxgiBuffersText,
                     frameLayoutText,
                     lifecycleText,
                     initializationText,
@@ -167,7 +164,6 @@ static partial class Program
     private readonly record struct MfSourceReaderVideoCaptureSourceFamily(
         string RootText,
         string DiagnosticsText,
-        string DxgiBuffersText,
         string FrameLayoutText,
         string LifecycleText,
         string InitializationText,

@@ -5,7 +5,6 @@ static partial class Program
         var sourceReaderSources = ReadMfSourceReaderVideoCaptureSourceFamily();
         var sourceReaderRootText = sourceReaderSources.RootText;
         var sourceReaderDiagnosticsText = sourceReaderSources.DiagnosticsText;
-        var sourceReaderDxgiBuffersText = sourceReaderSources.DxgiBuffersText;
         var sourceReaderFrameLayoutText = sourceReaderSources.FrameLayoutText;
         var sourceReaderLifecycleText = sourceReaderSources.LifecycleText;
         var sourceReaderInitializationText = sourceReaderSources.InitializationText;
@@ -19,9 +18,13 @@ static partial class Program
         AssertContains(sourceReaderDiagnosticsText, "private unsafe void DiagnoseVtable(IMFSample sample)");
         AssertContains(sourceReaderDiagnosticsText, "VTABLE_DIAG RAW slot35_GetSampleTime");
         AssertDoesNotContain(sourceReaderRootText, "private unsafe void DiagnoseVtable(IMFSample sample)");
-        AssertContains(sourceReaderDxgiBuffersText, "private bool TryGetDxgiTexture(IMFMediaBuffer buffer, out IntPtr gpuTexture, out int gpuSubresource)");
-        AssertContains(sourceReaderDxgiBuffersText, "private static readonly Guid ID3D11Texture2DIid");
-        AssertContains(sourceReaderDxgiBuffersText, "MF_SOURCE_READER_D3D_RESOURCE_FAIL");
+        AssertContains(sourceReaderFrameDeliveryText, "private bool TryGetDxgiTexture(IMFMediaBuffer buffer, out IntPtr gpuTexture, out int gpuSubresource)");
+        AssertContains(sourceReaderFrameDeliveryText, "private static readonly Guid ID3D11Texture2DIid");
+        AssertContains(sourceReaderFrameDeliveryText, "MF_SOURCE_READER_D3D_RESOURCE_FAIL");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.DxgiBuffers.cs")),
+            "MfSourceReaderVideoCapture DXGI texture extraction folded into frame delivery");
         AssertDoesNotContain(sourceReaderRootText, "private bool TryGetDxgiTexture(IMFMediaBuffer buffer, out IntPtr gpuTexture, out int gpuSubresource)");
         AssertDoesNotContain(sourceReaderRootText, "private static readonly Guid ID3D11Texture2DIid");
         AssertContains(sourceReaderFrameLayoutText, "public static int GetFrameSizeBytes(int width, int height, bool isP010)");

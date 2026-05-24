@@ -1547,3 +1547,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: Flashback scrub, seek, play, pause, go-live, nudge, in/out marker, clear-marker adapters, active-playback guard use, and rejection telemetry remain unchanged
 Notes for future agents: keep coordinator Flashback status, export/segment forwarding, playback/scrub/marker adapters, and active playback-controller guard together in `CaptureSessionCoordinator.Flashback.cs`; keep queue worker mechanics and disposal in their focused partials
+
+Date: 2026-05-24
+Area: MF source-reader frame delivery DXGI locality
+Problem: `MfSourceReaderVideoCapture.DxgiBuffers.cs` was a 58-line helper partial used only by `DeliverDualFrameFromBuffer`, splitting GPU texture extraction/fallback diagnostics from the frame-delivery branch that consumes those results.
+Files consolidated: `Sussudio/Services/Capture/MfSourceReaderVideoCapture.DxgiBuffers.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `MfSourceReaderVideoCapture` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: D3D-enabled guards, IMFDXGIBuffer detection, D3D texture IID lookup, resource/subresource failure logging, GPU texture release on subresource failure, and CPU fallback behavior remain unchanged
+Notes for future agents: keep DXGI texture extraction and dual GPU/CPU delivery orchestration together in `MfSourceReaderVideoCapture.FrameDelivery.cs`; keep raw/compressed CPU buffer helpers in `RawFrameDelivery.cs` and packed layout math in `FrameLayout.cs`
