@@ -263,12 +263,10 @@ flattening.
 transitions, signal alert orchestration and rules for preview blank/stall/
 startup/cadence/display 1% low, capture cadence drop/1% low, audio muted
 signal, recording output growth, Flashback alert group routing, Flashback
-playback alert orchestration, Flashback playback performance alert routing, and
-frame-submission failure alerts.
-`AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs`
-owns Flashback recording alert orchestration, shared condition setup, export
-progress/force-rotation gap alerts, temp-cache pressure alerts, encoder failure
-alerts, and recording path degradation alerts.
+recording alert orchestration, export progress/force-rotation gap alerts,
+temp-cache pressure alerts, encoder failure alerts, recording path degradation
+alerts, Flashback playback alert orchestration, Flashback playback performance
+alert routing, and frame-submission failure alerts.
 `AutomationDiagnosticsHub.Alerts.cs` owns Flashback playback alert
 orchestration, command queue/failure alerts, target-rate/present-cadence/
 slow-playback/frametime alerts, submit-failure alerts, audio-master fallback

@@ -1162,7 +1162,7 @@ Partial clusters reduced: `AutomationDiagnosticsHub` -3 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by automation diagnostics alert ownership and runtime snapshot regression tests
 Behavior preserved: Flashback recording alerts still evaluate export stall/rotation gap, temp-cache pressure, encoder failure, and degradation rules in the same order
-Notes for future agents: keep small Flashback recording alert rules with `FlashbackRecordingAlerts.cs` unless the rule grows enough policy to need its own owner
+Notes for future agents: small Flashback recording alert rules now live with `Alerts.cs`; extract a named collaborator only if Flashback alert policy grows beyond one cohesive scan unit
 
 Date: 2026-05-21
 Area: Automation diagnostics Flashback playback performance alerts

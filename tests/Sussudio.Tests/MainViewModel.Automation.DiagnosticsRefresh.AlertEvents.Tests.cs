@@ -32,20 +32,20 @@ static partial class Program
         AssertContains(diagnostics.AlertsText, "var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");
         AssertContains(diagnostics.AlertsText, "UpdateFlashbackRecordingAlerts(snapshot, flashbackRecordingRecent);");
         AssertContains(diagnostics.AlertsText, "UpdateFlashbackPlaybackAlerts(snapshot, nowUnixMs);");
-        AssertContains(diagnostics.FlashbackRecordingAlertsText, "private void UpdateFlashbackRecordingAlerts(");
-        AssertContains(diagnostics.FlashbackRecordingAlertsText, "UpdateFlashbackExportAlerts(");
-        AssertContains(diagnostics.FlashbackRecordingAlertsText, "UpdateFlashbackStorageAlerts(snapshot);");
-        AssertContains(diagnostics.FlashbackRecordingAlertsText, "UpdateFlashbackEncoderAlerts(snapshot);");
-        AssertContains(diagnostics.FlashbackRecordingAlertsText, "UpdateFlashbackRecordingDegradationAlert(");
-        AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-recording-degraded\"");
-        AssertContains(diagnostics.FlashbackRecordingAlertsText, "private void UpdateFlashbackExportAlerts(");
-        AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-export-stalled\"");
-        AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-export-rotation-gap\"");
-        AssertContains(diagnostics.FlashbackRecordingAlertsText, "private void UpdateFlashbackStorageAlerts(");
-        AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-temp-cache-pressure\"");
-        AssertContains(diagnostics.FlashbackRecordingAlertsText, "private void UpdateFlashbackEncoderAlerts(");
-        AssertContains(diagnostics.FlashbackRecordingAlertsText, "\"flashback-encoding-failed\"");
-        AssertContains(diagnostics.FlashbackRecordingAlertsText, "private void UpdateFlashbackRecordingDegradationAlert(");
+        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackRecordingAlerts(");
+        AssertContains(diagnostics.AlertsText, "UpdateFlashbackExportAlerts(");
+        AssertContains(diagnostics.AlertsText, "UpdateFlashbackStorageAlerts(snapshot);");
+        AssertContains(diagnostics.AlertsText, "UpdateFlashbackEncoderAlerts(snapshot);");
+        AssertContains(diagnostics.AlertsText, "UpdateFlashbackRecordingDegradationAlert(");
+        AssertContains(diagnostics.AlertsText, "\"flashback-recording-degraded\"");
+        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackExportAlerts(");
+        AssertContains(diagnostics.AlertsText, "\"flashback-export-stalled\"");
+        AssertContains(diagnostics.AlertsText, "\"flashback-export-rotation-gap\"");
+        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackStorageAlerts(");
+        AssertContains(diagnostics.AlertsText, "\"flashback-temp-cache-pressure\"");
+        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackEncoderAlerts(");
+        AssertContains(diagnostics.AlertsText, "\"flashback-encoding-failed\"");
+        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackRecordingDegradationAlert(");
         AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackPlaybackAlerts(");
         AssertContains(diagnostics.AlertsText, "UpdateFlashbackPlaybackCommandAlerts(snapshot, nowUnixMs);");
         AssertContains(diagnostics.AlertsText, "UpdateFlashbackPlaybackPerformanceAlerts(snapshot);");
@@ -62,7 +62,10 @@ static partial class Program
         AssertContains(diagnostics.AlertsText, "\"flashback-playback-command-stalled\"");
         AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackPlaybackCadenceAlerts(");
         AssertContains(diagnostics.AlertsText, "\"flashback-playback-slow\"");
-        AssertDoesNotContain(diagnostics.AlertsText, "\"flashback-export-stalled\"");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs")),
+            "Flashback recording alert rules folded into the main alerts owner");
         AssertDoesNotContain(diagnostics.HubText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
     }
 }
