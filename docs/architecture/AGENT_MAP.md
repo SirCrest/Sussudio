@@ -3645,12 +3645,9 @@ Primary owners:
   pressure summaries, and pressure counters.
 - `tools/McpServer/Tools/FramePacingVerdictTools.cs` owns the public
   `get_frame_pacing_verdict` MCP tool entry point, pipe command orchestration,
-  response shaping, performance-timeline projection, and the private timeline
-  row record. `FramePacingVerdictTools.Channels.cs` owns snapshot cadence
-  channel projection, recent-interval parsing, and the private channel record.
-  `FramePacingVerdictTools.Policy.cs` owns target-FPS inference, readiness,
-  half-rate, hidden-stutter, ratio, and verdict policy.
-  `FramePacingVerdictTools.Rendering.cs` owns the operator-facing verdict text.
+  response shaping, performance-timeline projection, snapshot cadence channel
+  projection, recent-interval parsing, readiness and verdict policy, private
+  row/channel records, and the operator-facing verdict text.
 - `tools/McpServer/Tools/FlashbackTools.cs` owns the Flashback MCP tool type:
   enable/apply commands, segment-list command routing/text, playback/scrub
   action normalization, validation and payload shaping, plus export duration/path

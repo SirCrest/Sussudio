@@ -3293,10 +3293,9 @@ byte-rate formatting helpers in `PerformanceTimelineTools.Formatting.cs`, and
 target, preview, Flashback, and system pressure summaries in
 `PerformanceTimelineTools.Summaries.cs`.
 The frame-pacing verdict MCP tool follows the same shape: keep MCP attributes,
-method signature, pipe command orchestration, and response shaping in
-`FramePacingVerdictTools.cs`; keep channel/timeline projection, readiness and
-verdict policy, operator-facing text, and private records in the named
-`FramePacingVerdictTools.*.cs` partials.
+method signature, pipe command orchestration, response shaping, channel/timeline
+projection, readiness and verdict policy, operator-facing text, and private
+records together in `FramePacingVerdictTools.cs`.
 The Flashback MCP tool type keeps enable/apply commands, segment-list
 formatting, playback/scrub action validation, and export validation/payload/text
 in `FlashbackTools.cs`.
