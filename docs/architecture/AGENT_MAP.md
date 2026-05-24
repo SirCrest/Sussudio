@@ -2239,9 +2239,10 @@ Primary current owners:
   LibAv encoder, Flashback integrity, recording-facing shared formatter, and
   dedicated LibAv verification script checks after their removal from the
   legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.RuntimeHelpersTests.cs` owns pure runtime helper
-  contracts for AtomicMax, TelemetryAgeHelper, EnvironmentHelpers, and
-  RingBufferHelpers.
+- `Sussudio/Services/Runtime/RuntimeHelpers.cs` owns pure runtime helper types
+  for AtomicMax, TelemetryAgeHelper, EnvironmentHelpers, and RingBufferHelpers.
+  `tests/Sussudio.Tests/XUnit.RuntimeHelpersTests.cs` owns their behavior
+  contracts.
 - `tests/Sussudio.Tests/XUnit.AutomationAppSurfaceContractsTests.cs` owns the
   former automation-diagnostics app-surface registration group for App exception
   policy, converter/display formatting, LoggingJsonContext, MainWindow

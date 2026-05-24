@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T07:23:24Z
+Generated UTC: 2026-05-24T07:29:31Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 793 |
+| Production .cs files | 790 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 70 (8.8%) |
-| Production .cs files under 80 lines | 139 (17.5%) |
+| Production .cs files under 60 lines | 67 (8.5%) |
+| Production .cs files under 80 lines | 135 (17.1%) |
 
 ## Largest partial-type clusters
 
@@ -56,8 +56,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 744 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs |
 | 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
-| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 | 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
+| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
@@ -109,7 +109,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 28 | tools/Common/DiagnosticSessionModels.cs |
 | 29 | Sussudio/Services/Capture/HdrOutputPolicy.cs |
 | 31 | Sussudio/Models/Automation/DiagnosticsEvents.cs |
-| 31 | Sussudio/Services/Runtime/TelemetryAgeHelper.cs |
 | 34 | Sussudio/Services/Flashback/FlashbackDecoder.OutputTypes.cs |
 | 35 | tools/McpServer/Tools/McpToolResultFactory.cs |
 | 37 | Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs |
@@ -120,7 +119,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 40 | tools/NativeXuAudioProbe/Program.Commands.cs |
 | 41 | tools/Common/DiagnosticSessionAutomationResponseJson.cs |
 | 42 | Sussudio/Models/Automation/WindowAutomation.cs |
-| 43 | Sussudio/Services/Runtime/AtomicMax.cs |
 | 44 | Sussudio/Services/Recording/LibAvEncoder.Models.cs |
 | 45 | Sussudio/Controllers/Preview/Startup/PreviewStartupOverlayController.cs |
 | 45 | tools/McpServer/Tools/DiagnosticSessionTools.cs |
@@ -143,9 +141,11 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 54 | Sussudio.Automation.Contracts/AutomationCommandCatalog.Manifest.cs |
 | 55 | Sussudio/Services/Automation/AutomationCommandDispatcher.ReadbackCommands.cs |
 | 55 | Sussudio/Services/Contracts/IPreviewFrameSink.cs |
-| 55 | Sussudio/Services/Runtime/EnvironmentHelpers.cs |
 | 56 | Sussudio/Controllers/Stats/StatsHardwareRowsController.cs |
 | 56 | Sussudio/DisplayFormatters.cs |
+| 56 | tools/McpServer/Tools/PreviewTools.cs |
+| 56 | tools/ssctl/Formatters.Snapshot.ThreadHealth.cs |
+| 57 | tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs |
 
 ## Notes
 
