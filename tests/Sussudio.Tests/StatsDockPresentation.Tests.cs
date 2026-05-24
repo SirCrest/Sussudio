@@ -69,8 +69,8 @@ public partial class StatsPresentationTests
         var statsDockCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockControllerGraph.cs").Replace("\r\n", "\n");
         var mainWindowText = MainWindowCompositionSource.Read();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs").Replace("\r\n", "\n");
-        var rowChromeControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRowChromeController.cs").Replace("\r\n", "\n");
         var rowChromePresenterText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRowChromePresenter.cs").Replace("\r\n", "\n");
+        var rowChromeControllerText = rowChromePresenterText;
         var hardwareRowsControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsHardwareRowsController.cs").Replace("\r\n", "\n");
         var hardwareRowsInputProviderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs").Replace("\r\n", "\n");
         var hardwareRowsInputBuilderText = hardwareRowsInputProviderText;

@@ -1371,11 +1371,9 @@ Primary current owners:
   delegation, hardware row projection, and row chrome pooling.
 - `Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs` owns diagnostic row
   presentation, empty-state rows, group headers, and diagnostic row pooling.
-  `Sussudio/Controllers/Stats/StatsDockRowChromeController.cs` owns dynamic decode/GPU
-  simple row pools.
   `Sussudio/Controllers/Stats/StatsDockRowChromePresenter.cs` owns shared stats
-  dock row creation, label/value text mutation, visibility toggles, and dock row
-  style application.
+  dock row creation, label/value text mutation, visibility toggles, dock row
+  style application, and dynamic decode/GPU simple row pools.
   `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` delegates diagnostic row
   presentation to `StatsDiagnosticRowsController`.
 - `Sussudio/Controllers/Stats/StatsHardwareRowsController.cs` owns hardware row
@@ -1385,8 +1383,8 @@ Primary current owners:
   telemetry projection into the hardware-row presentation input DTOs;
   `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns pure decode/GPU row
   text projection over presentation inputs, and
-  `StatsDockRowChromeController` owns decode/GPU row pooling while
-  `StatsDockRowChromePresenter` owns shared row chrome and
+  `StatsDockRowChromePresenter` owns shared row chrome plus decode/GPU row
+  pooling while
   `StatsDockRefreshController` owns when decode/GPU rows refresh.
 - `Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs` owns compact
   frame-time overlay text application and graph-line mutation, while
