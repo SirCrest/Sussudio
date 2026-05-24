@@ -1245,7 +1245,7 @@ Deferred unified-video cleanup after LibAv drains lives with the video pipeline
 resource owner. Pending LibAv drain task state and reentry policy live in
 `Sussudio/Services/Capture/CaptureRecordingBackendResources.cs`. Flashback backend
 artifact cleanup request/retry/dispose/purge mechanics live in
-`Sussudio/Services/Flashback/FlashbackBackendResources.Teardown.cs`.
+`Sussudio/Services/Flashback/FlashbackBackendResources.cs`.
 
 Capture read-only automation probes now live in
 `Sussudio/Services/Capture/CaptureService.Snapshots.cs` alongside diagnostics
@@ -1287,17 +1287,12 @@ preview backend resource grouping, install/take/clear state, and
 recovery-preserve flag storage and policy. It also owns recording-finalize
 handoff plus the video/audio/microphone attach and detach request shapes and
 feed wiring used by preview startup, buffer cycling, teardown, and rollback.
-`Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs`
-owns preview backend startup construction/install/playback initialization and
-startup failure rollback cleanup: producer detach, playback/sink/exporter/buffer
-cleanup, deferred cleanup scheduling, and final backend clear.
-`Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs`
-owns sink-only buffer-cycle orchestration, purge/finalize decisions,
-full-rebuild fallback outcomes, playback disposal, old-sink stop/dispose,
-replacement sink startup/playback restore, and failed replacement cleanup, while
-`Sussudio/Services/Flashback/FlashbackBackendResources.Teardown.cs`
-owns backend artifact cleanup request/retry/dispose/purge mechanics,
-preview-backend teardown mechanics, sink stop/dispose, and backend clear. `CaptureService`
+It owns preview backend startup construction/install/playback initialization,
+startup failure rollback cleanup, sink-only buffer-cycle orchestration,
+purge/finalize decisions, full-rebuild fallback outcomes, playback disposal,
+old-sink stop/dispose, replacement sink startup/playback restore, failed
+replacement cleanup, backend artifact cleanup request/retry/dispose/purge
+mechanics, preview-backend teardown mechanics, sink stop/dispose, and backend clear. `CaptureService`
 supplies the service-level export-lock adapter, purge-policy resolution,
 cancellation-token choice, and full rebuild fallback orchestration while using
 the backend aggregate directly instead of private root resource shims.
@@ -4129,16 +4124,12 @@ owner, fold it back into that owner and update the source-shape tests and
    `FlashbackBackendResources.cs` now owns the preview backend resource set,
    install/take/clear state, recovery-preserve flag storage and policy,
    recording-finalize handoff, producer attach/detach request shapes, and video,
-   audio, and microphone feed wiring.
-   `FlashbackBackendResources.Startup.cs` owns startup construction,
-   install/playback initialization, and startup failure rollback cleanup:
-   producer detach, playback/sink/exporter/buffer cleanup, deferred cleanup
-   scheduling, and final backend clear.
-   `FlashbackBackendResources.BufferCycle.cs` owns sink-only buffer-cycle
-   orchestration, purge/finalize decisions, full-rebuild fallback outcomes,
-   playback disposal, old-sink stop/dispose, replacement sink startup/playback
-   restore, and failed replacement cleanup. `FlashbackBackendResources.Teardown.cs` owns backend
-   teardown and artifact cleanup mechanics. CaptureService callers now use that aggregate directly
+   audio, and microphone feed wiring. It also owns startup construction,
+   install/playback initialization, startup failure rollback cleanup,
+   sink-only buffer-cycle orchestration, purge/finalize decisions,
+   full-rebuild fallback outcomes, playback disposal, old-sink stop/dispose,
+   replacement sink startup/playback restore, failed replacement cleanup,
+   backend teardown, and artifact cleanup mechanics. CaptureService callers now use that aggregate directly
    instead of private root resource shim properties. Keep later Flashback backend
    mechanics in the matching focused owner before inventing another small owner;
    `CaptureService.FlashbackPreviewBackend.cs` should stay the transition

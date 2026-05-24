@@ -70,11 +70,7 @@ static partial class Program
         var settingsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
-        var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Teardown.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
+        var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
 
         AssertContains(flashbackStateText, "public bool IsFlashbackActive => _flashbackBackend.Sink != null;");
         AssertContains(flashbackStateText, "internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()");
@@ -121,10 +117,14 @@ static partial class Program
         AssertContains(cleanupPlanText, "CaptureService.FlashbackSettings.cs");
         AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackControls.cs");
         AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackSettingsControls.cs");
-        AssertContains(agentMapText, "FlashbackBackendResources.BufferCycle.cs");
-        AssertContains(cleanupPlanText, "FlashbackBackendResources.BufferCycle.cs");
-        AssertContains(agentMapText, "FlashbackBackendResources.Startup.cs");
-        AssertContains(cleanupPlanText, "FlashbackBackendResources.Startup.cs");
+        AssertContains(agentMapText, "FlashbackBackendResources.cs");
+        AssertContains(cleanupPlanText, "FlashbackBackendResources.cs");
+        AssertDoesNotContain(agentMapText, "FlashbackBackendResources.BufferCycle.cs");
+        AssertDoesNotContain(cleanupPlanText, "FlashbackBackendResources.BufferCycle.cs");
+        AssertDoesNotContain(agentMapText, "FlashbackBackendResources.Startup.cs");
+        AssertDoesNotContain(cleanupPlanText, "FlashbackBackendResources.Startup.cs");
+        AssertDoesNotContain(agentMapText, "FlashbackBackendResources.Teardown.cs");
+        AssertDoesNotContain(cleanupPlanText, "FlashbackBackendResources.Teardown.cs");
         AssertContains(agentMapText, "rollback cleanup");
         AssertContains(cleanupPlanText, "startup failure rollback cleanup");
         AssertDoesNotContain(agentMapText, "FlashbackBackendResources.RecordingFinalize.cs");

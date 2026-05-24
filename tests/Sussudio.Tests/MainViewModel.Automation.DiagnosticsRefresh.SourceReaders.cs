@@ -25,11 +25,7 @@ static partial class Program
 
     private static string ReadFlashbackBackendResourcesSource()
     {
-        return ReadNormalizedRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Teardown.cs")
-            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs")
-            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs")
-            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs")
-            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
+        return ReadNormalizedRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
     }
 
     private static MfSourceReaderVideoCaptureSourceFamily ReadMfSourceReaderVideoCaptureSourceFamily()

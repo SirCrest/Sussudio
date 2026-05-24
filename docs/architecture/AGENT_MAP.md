@@ -565,17 +565,14 @@ Important entry points:
   artifact-cleanup export-lock delegation, teardown lock ordering, purge-policy
   resolution, service callback binding, cancellation-token choice, and
   preview backend disposal request construction.
-  Startup construction, install, playback initialization, and rollback cleanup live in
-  `FlashbackBackendResources.Startup.cs`; producer attach/detach request
-  contracts and feed wiring live in `FlashbackBackendResources.cs`;
-  teardown mechanics and backend artifact cleanup live in
-  `FlashbackBackendResources.Teardown.cs`.
+  `FlashbackBackendResources.cs` owns startup construction, install, playback
+  initialization, rollback cleanup, producer attach/detach request contracts,
+  feed wiring, teardown mechanics, and backend artifact cleanup.
 - `CaptureService.FlashbackBufferCycle.cs` owns buffer-cycle transition
   coordination: backend/export lock ordering, purge-preserve decisions, and
   full rebuild fallbacks. Sink-only resource mechanics live in
-  `FlashbackBackendResources.BufferCycle.cs`: playback disposal, old-sink
-  stop/dispose, replacement sink startup, playback restore, and failed
-  replacement cleanup.
+  `FlashbackBackendResources.cs`: playback disposal, old-sink stop/dispose,
+  replacement sink startup, playback restore, and failed replacement cleanup.
 - `CaptureService.FlashbackExportDiagnostics.cs` owns Flashback export attempt
   lifecycle, result, rejection, completion diagnostic state, progress
   forwarding/normalization, force-rotate fallback counters, locked diagnostic
@@ -869,19 +866,14 @@ Entry points:
 
 - `FlashbackBackendResources.cs` owns preview backend resource grouping,
   install/take/clear state, recovery-preserve flag storage and policy,
-  recording-finalize handoff, producer attach/detach request shapes, and video,
-  audio, and microphone feed wiring.
-  `FlashbackBackendResources.Startup.cs` owns preview backend startup
-  construction/install/playback initialization and startup failure rollback
-  cleanup: producer detach, playback/sink/exporter/buffer cleanup, deferred
-  cleanup scheduling, and final backend clear.
-  `FlashbackBackendResources.BufferCycle.cs` owns sink-only buffer-cycle
-  orchestration, purge/finalize decisions, full-rebuild fallback outcomes,
-  playback disposal, old-sink stop/dispose, replacement sink startup/playback
-  restore, and failed replacement cleanup.
-  `FlashbackBackendResources.Teardown.cs` owns preview-backend teardown,
-  sink stop/dispose, backend clear, artifact cleanup request/retry/dispose/purge
-  mechanics. The backend resource owner
+  recording-finalize handoff, producer attach/detach request shapes, video,
+  audio, and microphone feed wiring, preview backend startup
+  construction/install/playback initialization, startup failure rollback
+  cleanup, sink-only buffer-cycle orchestration, purge/finalize decisions,
+  full-rebuild fallback outcomes, playback disposal, old-sink stop/dispose,
+  replacement sink startup/playback restore, failed replacement cleanup,
+  preview-backend teardown, sink stop/dispose, backend clear, and artifact
+  cleanup request/retry/dispose/purge mechanics. The backend resource owner
   receives export-lock wait/release delegates from `CaptureService` rather than
   owning service semaphores directly during preview backend startup, cycling,
   and teardown. `CaptureService`
