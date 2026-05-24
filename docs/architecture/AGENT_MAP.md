@@ -3002,11 +3002,10 @@ Primary current owners:
   slider synchronization, save triggers, shelf enablement, and mic-meter row
   animation state. `MainWindow.AudioBindings.cs` is the XAML-facing
   audio/microphone presentation adapter.
-- `Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs` owns applying
-  responsive visibility for the complete control-bar label set and
-  capture-settings grid placement to XAML elements.
-  `Sussudio/Controllers/Shell/ResponsiveShellLayoutPolicy.cs` owns
-  the control-bar label breakpoint and narrow/wide placement policy.
+- `Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs` owns the
+  control-bar label breakpoint, narrow/wide placement policy, responsive
+  visibility for the complete control-bar label set, and capture-settings grid
+  placement to XAML elements.
   `MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs` owns
   the capture-selection binding controller shell, context lifetime, XAML

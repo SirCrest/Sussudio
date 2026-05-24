@@ -3070,13 +3070,12 @@ mic-meter row animation state now live in
 `MainWindow.AudioBindings.cs` is the XAML-facing audio/microphone
 presentation adapter.
 
-Responsive shell layout is split between
-`Sussudio/Controllers/Shell/ResponsiveShellLayoutPolicy.cs`, which owns the
-control-bar label breakpoint and capture-settings narrow/wide grid-slot policy,
-and `Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs`, which
-applies that policy to the complete control-bar label set and capture-settings
-grid placement to XAML elements.
-`MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
+Responsive shell layout is owned by
+`Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs`, which keeps the
+control-bar label breakpoint, capture-settings narrow/wide grid-slot policy,
+responsive visibility for the complete control-bar label set, and
+capture-settings grid placement together. `MainWindow.ShellChrome.Composition.cs`
+remains the XAML-facing adapter.
 Responsive layout ownership checks live in
 `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs`.
 

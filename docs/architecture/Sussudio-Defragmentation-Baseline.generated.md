@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T07:10:36Z
+Generated UTC: 2026-05-24T07:17:38Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 795 |
+| Production .cs files | 794 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 73 (9.2%) |
-| Production .cs files under 80 lines | 141 (17.7%) |
+| Production .cs files under 60 lines | 72 (9.1%) |
+| Production .cs files under 80 lines | 140 (17.6%) |
 
 ## Largest partial-type clusters
 
@@ -135,7 +135,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 48 | tools/NativeXuAudioProbe/Program.ExperimentPayloads.cs |
 | 49 | Sussudio/Controllers/Window/WindowTitleController.cs |
 | 50 | Sussudio/Controllers/Recording/Button/RecordingButtonActionController.cs |
-| 50 | Sussudio/Controllers/Shell/ResponsiveShellLayoutPolicy.cs |
 | 50 | Sussudio/ViewModels/MainViewModel.CaptureSettings.cs |
 | 50 | tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs |
 | 50 | tools/McpServer/PipeClient.cs |
@@ -146,6 +145,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 54 | Sussudio.Automation.Contracts/AutomationCommandCatalog.Manifest.cs |
 | 55 | Sussudio/Services/Automation/AutomationCommandDispatcher.ReadbackCommands.cs |
 | 55 | Sussudio/Services/Contracts/IPreviewFrameSink.cs |
+| 55 | Sussudio/Services/Runtime/EnvironmentHelpers.cs |
 
 ## Notes
 

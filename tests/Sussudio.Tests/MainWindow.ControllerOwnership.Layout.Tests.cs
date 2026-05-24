@@ -11,7 +11,6 @@ static partial class Program
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs").Replace("\r\n", "\n");
-        var policyText = ReadRepoFile("Sussudio/Controllers/Shell/ResponsiveShellLayoutPolicy.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
@@ -34,10 +33,10 @@ static partial class Program
         AssertContains(controllerText, "internal sealed class ResponsiveShellLayoutController");
         AssertContains(controllerText, "internal sealed class ControlBarLabelVisibilityController");
         AssertContains(controllerText, "public required UIElement[] ControlBarLabels { get; init; }");
-        AssertContains(policyText, "internal static class ResponsiveShellLayoutPolicy");
-        AssertContains(policyText, "public const double ControlBarLabelThreshold = 900.0;");
-        AssertContains(policyText, "public const double CaptureSettingsNarrowWidth = 700.0;");
-        AssertContains(policyText, "internal readonly record struct ResponsiveCaptureSettingsPlacement");
+        AssertContains(controllerText, "internal static class ResponsiveShellLayoutPolicy");
+        AssertContains(controllerText, "public const double ControlBarLabelThreshold = 900.0;");
+        AssertContains(controllerText, "public const double CaptureSettingsNarrowWidth = 700.0;");
+        AssertContains(controllerText, "internal readonly record struct ResponsiveCaptureSettingsPlacement");
         AssertContains(controllerText, "private bool _toggleLabelsVisible;");
         AssertContains(controllerText, "private bool _captureSettingsNarrow;");
         AssertContains(controllerText, "public void Attach()");
@@ -70,6 +69,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "ControlBarLabelVisibilityController.cs")),
             "control-bar label visibility lives with responsive shell layout application");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "ResponsiveShellLayoutPolicy.cs")),
+            "responsive shell layout policy lives with responsive shell layout application");
 
         return Task.CompletedTask;
     }
