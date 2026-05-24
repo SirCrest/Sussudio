@@ -7,7 +7,7 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var cleanupActionsText = ReadDiagnosticSessionCleanupActionsSource();
-        var cleanupText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs")
+        var cleanupText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(cleanupActionsText, "internal static class DiagnosticSessionCleanupActions");

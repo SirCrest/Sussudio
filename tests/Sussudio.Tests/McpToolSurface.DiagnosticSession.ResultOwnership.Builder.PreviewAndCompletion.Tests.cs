@@ -58,12 +58,10 @@ static partial class Program
     {
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
-        var analysisValidationText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(analysisText, "AddFlashbackPlaybackAnalysisWarnings(playbackResultMetrics, warnings);");
         AssertContains(analysisText, "AddFlashbackExportAnalysisWarnings(");
-        AssertContains(analysisValidationText, "ValidateFlashbackPreviewSchedulerAnalysis(");
+        AssertContains(analysisText, "ValidateFlashbackPreviewSchedulerAnalysis(");
         AssertContains(analysisText, "exportMetrics.ForceRotateFallbacksAtEnd,");
         AssertContains(analysisText, "exportMetrics.ForceRotateFallbacksDelta,");
         AssertContains(analysisText, "exportMetrics.LastForceRotateFallbackSegmentsAtEnd,");
@@ -74,8 +72,7 @@ static partial class Program
         AssertDoesNotContain(analysisText, "FlashbackExportForceRotateFallbacksAtEnd =");
         AssertContains(analysisText, "private static void AddFlashbackPlaybackAnalysisWarnings(");
         AssertContains(analysisText, "private static void AddFlashbackExportAnalysisWarnings(");
-        AssertContains(analysisValidationText, "EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
-        AssertDoesNotContain(analysisValidationText, "IsToleratedFlashbackScenarioWarning(");
+        AssertContains(analysisText, "EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
         AssertContains(analysisText, "private static bool EvaluateFlashbackWarningsSucceeded(");
         AssertContains(analysisText, "scenarioPlan.UsesFlashbackScenarioWarningPolicy");
         AssertContains(analysisText, "IsToleratedFlashbackScenarioWarning(");
@@ -91,13 +88,11 @@ static partial class Program
     {
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
-        var analysisValidationText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs")
-            .Replace("\r\n", "\n");
         var healthText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(analysisText, "var validationOutcome = ValidateAnalysis(");
-        AssertContains(analysisValidationText, "var diagnosticHealthSucceeded = AnalyzeDiagnosticHealth(");
+        AssertContains(analysisText, "var diagnosticHealthSucceeded = AnalyzeDiagnosticHealth(");
         AssertContains(healthText, "private readonly record struct DiagnosticSessionHealthSummary(");
         AssertContains(healthText, "private static DiagnosticSessionHealthSummary BuildDiagnosticHealthSummary(");
         AssertContains(healthText, "request.StoppedRecordingForVerification");
@@ -119,7 +114,7 @@ static partial class Program
         AssertContains(healthText, "diagnostic health degraded during session");
         AssertContains(healthText, "diagnostic health {tolerance.WarningReason}:");
         AssertContains(healthText, "flashback force-rotate drain warning tolerated for flashback scenario");
-        AssertDoesNotContain(analysisText, "AnalyzeDiagnosticHealth(");
+        AssertDoesNotContain(analysisText, "private static bool AnalyzeDiagnosticHealth(");
         AssertDoesNotContain(analysisText, "DiagnosticHealthStatus");
         AssertDoesNotContain(analysisText, "DiagnosticLikelyStage");
         AssertDoesNotContain(analysisText, "MfSourceReaderFramesDropped");

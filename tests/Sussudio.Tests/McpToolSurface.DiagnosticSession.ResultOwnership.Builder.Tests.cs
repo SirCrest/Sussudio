@@ -27,8 +27,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
-        var analysisValidationText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs")
-            .Replace("\r\n", "\n");
         var diagnosticHealthText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs")
             .Replace("\r\n", "\n");
         var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs")
@@ -67,24 +65,21 @@ static partial class Program
         AssertContains(diagnosticHealthText, "var sourceWarningCounters = BuildDiagnosticHealthSourceWarningCounters(initialSnapshot, lastSnapshot);");
         AssertContains(diagnosticHealthText, "IsSparseSourceCaptureCadenceWarningRun(");
         AssertContains(diagnosticHealthText, "IsSparsePreviewSchedulerDeadlineDropRun(");
-        AssertContains(analysisValidationText, "private readonly record struct DiagnosticSessionAnalysisValidationOutcome(");
-        AssertContains(analysisValidationText, "private static DiagnosticSessionAnalysisValidationOutcome ValidateAnalysis(");
-        AssertContains(analysisValidationText, "ValidateFlashbackPlaybackSession(");
-        AssertContains(analysisValidationText, "ValidateCleanupLifecycleRestored(");
-        AssertContains(analysisValidationText, "ValidateFlashbackPreviewSchedulerAnalysis(");
-        AssertContains(analysisValidationText, "AnalyzeDiagnosticHealth(");
-        AssertContains(analysisValidationText, "EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
+        AssertContains(analysisText, "private readonly record struct DiagnosticSessionAnalysisValidationOutcome(");
+        AssertContains(analysisText, "private static DiagnosticSessionAnalysisValidationOutcome ValidateAnalysis(");
+        AssertContains(analysisText, "ValidateFlashbackPlaybackSession(");
+        AssertContains(analysisText, "ValidateCleanupLifecycleRestored(");
+        AssertContains(analysisText, "ValidateFlashbackPreviewSchedulerAnalysis(");
+        AssertContains(analysisText, "AnalyzeDiagnosticHealth(");
+        AssertContains(analysisText, "EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
         AssertContains(analysisText, "private static bool EvaluateFlashbackWarningsSucceeded(");
         AssertContains(analysisText, "IsToleratedFlashbackScenarioWarning(");
         AssertDoesNotContain(analysisText, "MfSourceReaderFramesDropped");
         AssertDoesNotContain(analysisText, "VideoIngestErrorCount");
-        AssertDoesNotContain(analysisValidationText, "IsToleratedFlashbackScenarioWarning(");
         AssertDoesNotContain(flatteningText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
         AssertDoesNotContain(builderText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
         AssertDoesNotContain(builderText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
         AssertDoesNotContain(builderText, "return new DiagnosticSessionResult\n        {");
-        AssertDoesNotContain(analysisText, "ValidateCleanupLifecycleRestored(");
-        AssertDoesNotContain(analysisText, "ValidateFlashbackPlaybackSession(");
         AssertContains(analysisText, "IsToleratedFlashbackScenarioWarning(");
     }
 

@@ -3590,16 +3590,13 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.Analysis.cs` owns
   diagnostic-session metric preparation for validation/result projections,
   analysis warning emission, Flashback playback/export analysis warning text,
-  threshold guards, tolerated Flashback scenario warning classification, and the
-  handoff into the named analysis-validation owner before summary construction.
-  It also owns the private analysis handoff record, including the single
-  `PreviewScheduler` record property used by preview-scheduler result
-  projection.
-- `tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs` owns
+  threshold guards, tolerated Flashback scenario warning classification,
   diagnostic-session validation handoff order for Flashback playback, cleanup
-  lifecycle restore, preview scheduler analysis, and diagnostic health,
-  including cleanup restore warnings after diagnostic sessions stop recording,
-  preview, Flashback, or playback state.
+  lifecycle restore, preview scheduler analysis, and diagnostic health. It also
+  owns cleanup restore warnings after diagnostic sessions stop recording,
+  preview, Flashback, or playback state, plus the private analysis handoff
+  record, including the single `PreviewScheduler` record property used by
+  preview-scheduler result projection.
 - `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs` owns
   diagnostic-session health summary snapshot selection, health verdict
   composition, source-reader/ingest warning deltas for sparse source-capture

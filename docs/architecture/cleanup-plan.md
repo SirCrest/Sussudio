@@ -3107,8 +3107,9 @@ cadence/scheduler, preview D3D, and visual cadence. Diagnostic metric gathering
 for validation/result projections and analysis warning emission live in
 `DiagnosticSessionResultBuilder.Analysis.cs`, which also owns the private
 analysis handoff record plus Flashback playback/export warning text, threshold
-guards, and tolerated Flashback scenario warning classification. Named
-validation handoff order lives in `DiagnosticSessionResultBuilder.AnalysisValidation.cs`.
+guards, tolerated Flashback scenario warning classification, and the named
+validation handoff order for Flashback playback, cleanup lifecycle restore,
+preview scheduler analysis, and diagnostic health.
 `DiagnosticSessionResultBuilder.cs` owns the result-build request handoff
 created by `DiagnosticSessionRunner.cs` beside the summary orchestration that
 consumes it. Diagnostic
@@ -3324,9 +3325,9 @@ including the preview-cycle grouped predicate, so the runner does not grow
 direct scenario string comparisons.
 
 Diagnostic-session cleanup restore validation now lives in
-`tools/Common/DiagnosticSessionResultBuilder.AnalysisValidation.cs`. It owns
-warnings for preview, Flashback, and playback state that remain active after
-the runner attempts cleanup.
+`tools/Common/DiagnosticSessionResultBuilder.Analysis.cs`. It owns warnings
+for preview, Flashback, and playback state that remain active after the runner
+attempts cleanup.
 
 Diagnostic-session Flashback cycle scenarios now live in
 `DiagnosticSessionFlashbackCycleScenarios.cs`, which owns restart/encoder cycle
@@ -3566,7 +3567,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.Flattening.cs`
 - `DiagnosticSessionResultBuilder.Projections.cs`
 - `DiagnosticSessionResultBuilder.Analysis.cs`
-- `DiagnosticSessionResultBuilder.AnalysisValidation.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
