@@ -1333,11 +1333,9 @@ owns preview backend startup construction/install/playback initialization and
 startup failure rollback cleanup: producer detach, playback/sink/exporter/buffer
 cleanup, deferred cleanup scheduling, and final backend clear.
 `Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs`
-owns sink-only buffer-cycle orchestration, purge/finalize decisions, and
-full-rebuild fallback outcomes.
-`Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.Lifecycle.cs`
-owns playback disposal, old-sink stop/dispose, replacement sink startup/playback
-restore, and failed replacement cleanup, while
+owns sink-only buffer-cycle orchestration, purge/finalize decisions,
+full-rebuild fallback outcomes, playback disposal, old-sink stop/dispose,
+replacement sink startup/playback restore, and failed replacement cleanup, while
 `Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs`
 owns backend artifact cleanup request/retry/dispose/purge mechanics and
 `Sussudio/Services/Flashback/FlashbackBackendResources.PreviewDisposal.cs`
@@ -4309,10 +4307,9 @@ owner, fold it back into that owner and update the source-shape tests and
    producer detach, playback/sink/exporter/buffer cleanup, deferred cleanup
    scheduling, and final backend clear.
    `FlashbackBackendResources.BufferCycle.cs` owns sink-only buffer-cycle
-   orchestration, purge/finalize decisions, and full-rebuild fallback outcomes.
-   `FlashbackBackendResources.BufferCycle.Lifecycle.cs` owns playback disposal,
-   old-sink stop/dispose, replacement sink startup/playback restore, and failed
-   replacement cleanup. `FlashbackBackendResources.PreviewDisposal.cs` owns backend
+   orchestration, purge/finalize decisions, full-rebuild fallback outcomes,
+   playback disposal, old-sink stop/dispose, replacement sink startup/playback
+   restore, and failed replacement cleanup. `FlashbackBackendResources.PreviewDisposal.cs` owns backend
    teardown, and `FlashbackBackendResources.ArtifactCleanup.cs` owns artifact
    cleanup mechanics. CaptureService callers now use that aggregate directly
    instead of private root resource shim properties. Keep later Flashback backend
