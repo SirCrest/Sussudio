@@ -9,12 +9,12 @@ static partial class Program
         var viewModelType = RequireType("Sussudio.ViewModels.MainViewModel");
         AssertNotNull(viewModelType.GetMethod("SaveMicrophoneVolume", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SaveMicrophoneVolume");
 
-        var deviceAudioModeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioMode.cs")
+        var deviceAudioModeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs")
             .Replace("\r\n", "\n");
-        var deviceAudioModeCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.DeviceAudioMode.cs");
-        var deviceAudioRefreshText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioRefresh.cs")
+        var deviceAudioModeCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs");
+        var deviceAudioRefreshText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs")
             .Replace("\r\n", "\n");
-        var deviceAudioRefreshCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.DeviceAudioRefresh.cs");
+        var deviceAudioRefreshCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs");
         var deviceAudioRequestControllerCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs");
         var deviceAudioStateCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs");
         var microphoneVolumeCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioState.cs");
@@ -33,13 +33,13 @@ static partial class Program
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.MicrophoneVolume.cs")), "MainViewModel.MicrophoneVolume.cs folded into audio state");
         AssertDoesNotContain(deviceAudioStateCode, "SetMicrophoneEndpointVolume");
         AssertDoesNotContain(deviceAudioStateCode, "GetMicrophoneEndpointVolume");
-        AssertDoesNotContain(deviceAudioStateCode, "private async Task RefreshDeviceAudioControlsAsync");
-        AssertContains(deviceAudioRefreshCode, "private async Task RefreshDeviceAudioControlsAsync");
+        AssertContains(deviceAudioStateCode, "private async Task RefreshDeviceAudioControlsAsync");
         AssertContains(deviceAudioRefreshText, "Device-native audio-control support probing and state readback.");
-        AssertDoesNotContain(deviceAudioStateCode, "private async Task<bool> ApplyDeviceAudioModeAsync");
-        AssertContains(deviceAudioModeCode, "private async Task<bool> ApplyDeviceAudioModeAsync");
+        AssertContains(deviceAudioStateCode, "private async Task<bool> ApplyDeviceAudioModeAsync");
         AssertContains(deviceAudioModeText, "Device-native audio mode switching and failure readback.");
         AssertContains(deviceAudioStateCode, "private async Task<bool> ApplyAnalogAudioGainAsync");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.DeviceAudioRefresh.cs")), "MainViewModel.DeviceAudioRefresh.cs folded into device audio state");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.DeviceAudioMode.cs")), "MainViewModel.DeviceAudioMode.cs folded into device audio state");
         AssertContains(deviceAudioRequestControllerCode, "internal sealed class MainViewModelDeviceAudioRequestController");
         AssertDoesNotContain(deviceAudioRequestControllerCode, "partial class MainViewModelDeviceAudioRequestController");
         AssertContains(deviceAudioRequestControllerCode, "internal sealed class MainViewModelDeviceAudioRequestControllerContext");

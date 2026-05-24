@@ -3066,12 +3066,11 @@ Primary current owners:
   flash-persist debounce, and cancellation cleanup. The compatibility
   property-change adapters stay with the observable device-audio state in
   `MainViewModel.DeviceAudioState.cs`.
-  `MainViewModel.DeviceAudioRefresh.cs` owns device-native audio-control support
-  probing, readback, and pending saved-state reconciliation.
-  `MainViewModel.DeviceAudioMode.cs` owns device-native audio mode switching
-  and failure readback through the supported native-XU switch command surface,
-  not the legacy AT input-source fallback path. `MainViewModel.DeviceAudioState.cs`
-  owns shared audio-control guards, mode normalization, analog gain XU writes,
+  `MainViewModel.DeviceAudioState.cs` owns device-native audio-control support
+  probing, readback, pending saved-state reconciliation, mode switching, and
+  failure readback through the supported native-XU switch command surface,
+  not the legacy AT input-source fallback path. It also owns shared
+  audio-control guards, mode normalization, analog gain XU writes,
   settings persistence, and the pure percent-to-XU-byte analog gain curve helper
   used by device-native gain application.
   `MainViewModel.AudioState.cs` owns audio capture property
