@@ -453,11 +453,10 @@ standalone memory/GC summaries plus shared JSON/result helpers in
 
 `tools/Common/AutomationSnapshotFormatter.cs` is now the shared automation
 snapshot formatter owner for top-level text flow plus the small root sections:
-state/capture-command summary, capture settings, audio signal, recording
-output/backend/integrity/audio-integrity/last-finalize, diagnostics, legacy
-performance, and process CPU/Memory/GC/thread-pool text. Video pipeline and
-capture cadence text live in
-`AutomationSnapshotFormatter.VideoPipeline.cs`,
+state/capture-command summary, capture settings, audio signal, video pipeline,
+thread-health rows, recording output/backend/integrity/audio-integrity/
+last-finalize, diagnostics, legacy performance, and process CPU/Memory/GC/
+thread-pool text. Capture cadence text lives in
 `AutomationSnapshotFormatter.CaptureCadence.cs`. Snapshot response-success
 detection, tolerant JSON string/bool/numeric accessors, and shared
 byte/number/interval, frame-budget, and tick-age display helpers live in
@@ -470,9 +469,7 @@ routing, and source-signal rows emitted from the cadence tail. MJPEG activation/
 timing text, compressed queue/drop-reason/reorder/pipeline timing text, and
 MJPEG preview-jitter queue/latency/ownership/underflow text now live together in
 `AutomationSnapshotFormatter.MjpegTiming.cs`. Preview routing and D3D preview
-text live in the remaining focused formatter partials. Thread-health section
-order plus source-reader, WASAPI capture, and WASAPI playback rows now live with
-the video-pipeline formatter that routes to them. The
+text live in the remaining focused formatter partials. The
 `AutomationSnapshotFormatter.PreviewD3D.cs` owner keeps D3D header/routing and
 output order, D3D CPU timing, pipeline latency, frame-latency wait text, D3D
 frame ownership, DXGI frame-stat text, and slow-frame diagnostics shared by

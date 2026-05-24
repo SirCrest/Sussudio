@@ -3876,14 +3876,12 @@ Primary owners:
   automation snapshot console text flow, state/capture-command queue,
   selected-device and initialized/preview/recording text, audio enablement,
   capture option, recording format, HDR, pipeline, compact UI setting text,
-  preview, signal, clipping, reader and audio-frame text, recording output,
-  backend, integrity, audio-integrity and last-finalize text, diagnostic health,
-  summary, evidence and frame-lane text, plus legacy performance, process CPU,
-  memory, GC, and thread-pool text.
-  `tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs` owns video reader,
-  encoder queue, queue-latency, backpressure, failure, GPU/CUDA queue,
-  freshness, diagnostics, thread-health section order, and source-reader/WASAPI
-  row text.
+  preview, signal, clipping, reader and audio-frame text, video reader, encoder
+  queue, queue-latency, backpressure, failure, GPU/CUDA queue, freshness,
+  diagnostics, thread-health row text, recording output, backend, integrity,
+  audio-integrity and last-finalize text, diagnostic health, summary, evidence
+  and frame-lane text, plus legacy performance, process CPU, memory, GC, and
+  thread-pool text.
   `tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs` owns capture
   cadence, low-FPS, jitter/drop, MJPEG packet fingerprint, sampled visual
   cadence, AV-sync drift and encoder correction text, preview routing, source

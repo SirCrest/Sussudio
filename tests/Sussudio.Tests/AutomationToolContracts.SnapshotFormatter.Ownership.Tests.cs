@@ -11,7 +11,7 @@ static partial class Program
         var sharedFormatterRecordingSource = sharedFormatterRootSource;
         var sharedFormatterProcessResourcesSource = sharedFormatterRootSource;
         var sharedFormatterCaptureSettingsSource = sharedFormatterRootSource;
-        var sharedFormatterVideoPipelineSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs");
+        var sharedFormatterVideoPipelineSource = sharedFormatterRootSource;
         var sharedFormatterDiagnosticsSource = sharedFormatterRootSource;
         var sharedFormatterCaptureCadenceSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs");
         var sharedFormatterAvSyncSource = sharedFormatterCaptureCadenceSource;
@@ -36,7 +36,7 @@ static partial class Program
         AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Sussudio State ==\");");
         AssertContains(sharedFormatterRootSource, "var selectedFriendlyFrameRate = Get(snapshot, \"SelectedFriendlyFrameRate\", string.Empty);");
         AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Audio ==\");");
-        AssertDoesNotContain(sharedFormatterRootSource, "builder.AppendLine(\"== Video Pipeline ==\");");
+        AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Video Pipeline ==\");");
         AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Recording ==\");");
         AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Diagnostics ==\");");
         AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Performance ==\");");
@@ -128,8 +128,8 @@ static partial class Program
         AssertContains(sharedFormatterFlashbackSource, "private static void AppendFlashbackPlaybackMetricsSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterFlashbackSource, "Playback Decode:");
         AssertContains(sharedFormatterFlashbackSource, "A/V Drift:");
-        AssertDoesNotContain(sharedFormatterRootSource, "builder.AppendLine(\"== Thread Health ==\");");
-        AssertDoesNotContain(sharedFormatterRootSource, "WasapiPlaybackQueueDurationMs");
+        AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Thread Health ==\");");
+        AssertContains(sharedFormatterRootSource, "WasapiPlaybackQueueDurationMs");
         AssertContains(sharedFormatterThreadHealthSource, "private static void AppendThreadHealthSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterThreadHealthSource, "builder.AppendLine(\"== Thread Health ==\");");
         AssertContains(sharedFormatterThreadHealthSource, "AppendSourceReaderThreadHealthLine(builder, snapshot);");
@@ -204,6 +204,10 @@ static partial class Program
         AssertContains(sharedFormatterSource, "PreviewD3DInputUploadCpuP99Ms");
         AssertContains(sharedFormatterSource, "PreviewD3DTotalFrameCpuMaxMs");
         AssertContains(sharedFormatterSource, "ProcessCpuPercent");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "AutomationSnapshotFormatter.VideoPipeline.cs")),
+            "shared snapshot video-pipeline and thread-health text lives with the root snapshot formatter flow");
 
         return Task.CompletedTask;
     }

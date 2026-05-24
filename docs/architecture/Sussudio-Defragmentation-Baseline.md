@@ -1367,3 +1367,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: covered by preview pacing classifier ownership, classifier behavior tests, automation snapshot wiring tests, and runtime snapshot regression tests
 Behavior preserved: `PreviewPacingClassificationInput`, `PreviewPacingClassification`, and `PreviewPacingSlowStageClassifier.Classify` keep the same namespace, public type names, and classification behavior
 Notes for future agents: keep the classifier DTOs beside the classifier unless the evidence shape becomes shared by another independent policy
+
+Date: 2026-05-24
+Area: Shared automation snapshot formatter locality
+Problem: The shared automation snapshot video-pipeline and thread-health text lived in a 76-line partial even though it is only called by the root snapshot formatter flow and is part of the same one-pass console projection.
+Files consolidated: `tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationSnapshotFormatter` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: covered by shared snapshot formatter ownership tests, formatter output order tests, field-alignment tests, and runtime snapshot regression tests
+Behavior preserved: Video pipeline section text, thread-health section order, source-reader row, WASAPI capture row, and WASAPI playback row remain in the same `FormatSnapshot` output flow
+Notes for future agents: keep one-pass shared snapshot row sections with the root formatter unless a section grows independent policy or reusable formatting behavior
