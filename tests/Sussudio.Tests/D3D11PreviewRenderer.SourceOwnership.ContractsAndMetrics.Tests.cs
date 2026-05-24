@@ -59,29 +59,30 @@ static partial class Program
             .Replace("\r\n", "\n");
         var pendingFramesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs")
             .Replace("\r\n", "\n");
-        var metricTypesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricTypes.cs")
+        var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             .Replace("\r\n", "\n");
 
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PendingFrame.cs")), "pending-frame lifetime model stays folded into PendingFrames.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.MetricTypes.cs")), "renderer metric model types folded into Metrics.cs");
         AssertContains(pendingFramesText, "private sealed class PendingFrame : IDisposable");
         AssertContains(pendingFramesText, "ArrayPool<byte>.Shared.Return(RawData);");
         AssertContains(pendingFramesText, "FrameLease?.Dispose();");
-        AssertContains(metricTypesText, "public readonly record struct PresentCadenceMetrics(");
-        AssertContains(metricTypesText, "public readonly record struct CpuStageTimingMetrics(");
-        AssertContains(metricTypesText, "public readonly record struct RenderCpuTimingMetrics(");
-        AssertContains(metricTypesText, "public readonly record struct PipelineLatencyMetrics(");
-        AssertContains(metricTypesText, "public readonly record struct FrameLatencyWaitMetrics(");
-        AssertContains(metricTypesText, "public readonly record struct FrameOwnershipMetrics(");
-        AssertContains(metricTypesText, "public readonly record struct DxgiFrameStatisticsMetrics(");
-        AssertContains(metricTypesText, "private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)");
-        AssertContains(metricTypesText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
-        AssertContains(metricTypesText, "private static double TicksToMs(long ticks)");
-        AssertContains(metricTypesText, "private static bool IsValidRenderCpuStageMs(double value)");
+        AssertContains(metricsText, "public readonly record struct PresentCadenceMetrics(");
+        AssertContains(metricsText, "public readonly record struct CpuStageTimingMetrics(");
+        AssertContains(metricsText, "public readonly record struct RenderCpuTimingMetrics(");
+        AssertContains(metricsText, "public readonly record struct PipelineLatencyMetrics(");
+        AssertContains(metricsText, "public readonly record struct FrameLatencyWaitMetrics(");
+        AssertContains(metricsText, "public readonly record struct FrameOwnershipMetrics(");
+        AssertContains(metricsText, "public readonly record struct DxgiFrameStatisticsMetrics(");
+        AssertContains(metricsText, "private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)");
+        AssertContains(metricsText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
+        AssertContains(metricsText, "private static double TicksToMs(long ticks)");
+        AssertContains(metricsText, "private static bool IsValidRenderCpuStageMs(double value)");
         AssertDoesNotContain(rootText, "private sealed class PendingFrame : IDisposable");
         AssertDoesNotContain(rootText, "public readonly record struct PresentCadenceMetrics(");
         AssertDoesNotContain(rootText, "public readonly record struct DxgiFrameStatisticsMetrics(");
         AssertDoesNotContain(pendingFramesText, "public readonly record struct PresentCadenceMetrics(");
-        AssertDoesNotContain(metricTypesText, "private sealed class PendingFrame : IDisposable");
+        AssertDoesNotContain(metricsText, "private sealed class PendingFrame : IDisposable");
 
         return Task.CompletedTask;
     }
@@ -189,8 +190,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             .Replace("\r\n", "\n");
-        var metricTypesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricTypes.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(metricsText, "private readonly object _presentCadenceLock = new();");
         AssertContains(metricsText, "private double[] _presentIntervalWindowMs = new double[1200];");
@@ -213,16 +212,18 @@ static partial class Program
         AssertContains(metricsText, "private void ResetPresentCadence()");
         AssertContains(metricsText, "var targetSize = Math.Max(600, (int)Math.Ceiling(fps * CadenceWindowSeconds));");
         AssertContains(metricsText, "Array.Clear(_slowFrameDiagnostics, 0, _slowFrameDiagnostics.Length);");
-        AssertContains(metricTypesText, "private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)");
-        AssertContains(metricTypesText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
-        AssertContains(metricTypesText, "private static double TicksToMs(long ticks)");
-        AssertContains(metricTypesText, "private static bool IsValidRenderCpuStageMs(double value)");
-        AssertDoesNotContain(metricsText, "private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)");
-        AssertDoesNotContain(metricsText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
+        AssertContains(metricsText, "private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)");
+        AssertContains(metricsText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
+        AssertContains(metricsText, "private static double TicksToMs(long ticks)");
+        AssertContains(metricsText, "private static bool IsValidRenderCpuStageMs(double value)");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PresentCadenceMetrics.cs")),
             "Present cadence metrics folded into renderer metrics owner");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.MetricTypes.cs")),
+            "Renderer metric model types folded into renderer metrics owner");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.MetricsTracking.cs")),

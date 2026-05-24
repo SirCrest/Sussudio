@@ -1438,7 +1438,7 @@ Partial clusters reduced: `D3D11PreviewRenderer` -3 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: covered by D3D11 preview renderer metrics ownership, cadence behavior tests, diagnostics contract tests, and runtime snapshot regression tests
 Behavior preserved: Present-cadence sampling/suppression, pipeline-latency tracking, render CPU timing windows, frame-latency wait counters/timing, expected-frame-rate window sizing, and reset/clear lifecycle remain unchanged
-Notes for future agents: keep renderer metric state, mutation, reset, and read-only projection together in `D3D11PreviewRenderer.Metrics.cs`; keep pure metric DTOs and shared summarization helpers in `MetricTypes.cs`
+Notes for future agents: keep renderer metric state, mutation, reset, read-only projection, metric DTOs, and shared summarization helpers together in `D3D11PreviewRenderer.Metrics.cs`
 
 Date: 2026-05-24
 Area: Flashback playback component lifecycle locality

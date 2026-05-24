@@ -1921,9 +1921,9 @@ D3D preview renderer metrics now live in
 cadence, pipeline latency, render CPU timing, frame-latency wait metric state,
 sample tracking, expected-frame-rate window resizing, metric reset/clear
 lifecycle, read-only projections, and recent sample copies there. Shared
-ring-copy, timing-summary, tick-to-ms, and render-stage validation helpers live
-in `D3D11PreviewRenderer.MetricTypes.cs`. Renderer implementation
-fields should live with the partial that mutates or projects them: keep
+ring-copy, timing-summary, tick-to-ms, render-stage validation helpers, and
+metric record structs live there too. Renderer implementation fields should
+live with the partial that mutates or projects them: keep
 renderer diagnostic ring/write state, render-thread failure state, first-frame
 notification state, and slow-frame reason classification in
 `D3D11PreviewRenderer.Diagnostics.cs`, startup/disposal lifecycle state in the
@@ -1947,10 +1947,12 @@ public state toggles.
 D3D preview renderer queue-owned frame lifetime and metrics model types now live
 with their caller owners. Keep the `PendingFrame` lifetime wrapper in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs` beside
-queue admission/drain/drop behavior; keep renderer metric record structs and shared metric sample helpers in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.MetricTypes.cs` so the
-root renderer stays focused on construction, constants, user-facing state
-accessors, and public state changes.
+queue admission/drain/drop behavior; keep renderer metric record structs and
+shared metric sample helpers in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs` beside metric
+state, mutation, reset, and read-only projections so the root renderer stays
+focused on construction, constants, user-facing state accessors, and public
+state changes.
 
 D3D preview renderer runtime knobs live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.cs` with the renderer facade.
