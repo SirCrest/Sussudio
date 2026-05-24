@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-24
+Area: MCP result formatting helper locality
+Problem: MCP result object creation lived in a 30-line helper file even though it is shared formatting/result shaping used by the same MCP tool-command formatter family.
+Files consolidated: `tools/McpServer/Tools/McpToolResultFactory.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: none
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by MCP command-routing, tool formatter, and tool-surface tests
+Behavior preserved: `McpToolResultFactory` type name, `CallToolResult` text/error shaping, error-code append behavior, and MCP tool method outputs remain unchanged
+Notes for future agents: keep shared MCP response/result shaping beside `ToolCommandFormatter` unless it grows into a transport-level policy or public tool surface
+
+Date: 2026-05-24
 Area: MainWindow responsive shell layout adapter
 Problem: Responsive shell layout XAML wiring lived in a 45-line MainWindow partial even though it is shell chrome/control-bar composition and only delegates to named shell layout controllers.
 Files consolidated: `Sussudio/MainWindow.ResponsiveShellLayout.cs`
