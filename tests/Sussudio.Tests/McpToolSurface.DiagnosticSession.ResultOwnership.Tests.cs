@@ -85,8 +85,7 @@ static partial class Program
         var initialSnapshotText = ReadDiagnosticSessionRunContextSource();
         var jsonArtifactsText = ReadRepoFile("tools/Common/DiagnosticSessionResultArtifacts.cs")
             .Replace("\r\n", "\n");
-        var responseJsonText = ReadRepoFile("tools/Common/DiagnosticSessionAutomationResponseJson.cs")
-            .Replace("\r\n", "\n");
+        var responseJsonText = initialSnapshotText;
 
         AssertContains(jsonArtifactsText, "internal static class DiagnosticSessionJsonArtifacts");
         AssertContains(jsonArtifactsText, "internal static JsonElement CreateEmptyJsonObject()");
@@ -94,6 +93,7 @@ static partial class Program
         AssertContains(responseJsonText, "internal static class DiagnosticSessionAutomationResponseJson");
         AssertContains(responseJsonText, "internal static bool TryGetSnapshot(");
         AssertContains(responseJsonText, "internal static bool TryGetVerification(");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionAutomationResponseJson.cs")), "Automation response JSON helpers stay folded into DiagnosticSessionRunContext.cs");
         AssertContains(initialSnapshotText, "using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;");
         AssertContains(initialSnapshotText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
         AssertDoesNotContain(jsonArtifactsText, "TryGetSnapshot(");

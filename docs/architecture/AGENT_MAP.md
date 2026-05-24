@@ -3657,9 +3657,6 @@ Primary owners:
   result artifact path construction, pre-summary sample, frame-ledger, and
   timeline artifact writes, frame-ledger trace shaping, and shared JSON object
   creation / artifact serialization helpers.
-- `tools/Common/DiagnosticSessionAutomationResponseJson.cs` owns
-  diagnostic-session automation response shape helpers for snapshot and
-  verification envelopes.
 - `tools/Common/DiagnosticSessionRunState.cs` owns diagnostic-session terminal
   exception state, last-stage tracking, and best-effort artifact write failure
   recording.
@@ -3672,6 +3669,7 @@ Primary owners:
   clamping, session identity, output-directory creation, runner process
   metadata, actions, warnings, samples, run state, command channel, scenario
   cancellation source, initial snapshot state, baseline snapshot capture,
+  automation response shape helpers for snapshot and verification envelopes,
   unknown-state warning, live-state handoff, run-context disposal, and
   scenario/completion context construction.
 - `tools/Common/DiagnosticSessionRunner.cs` owns the public diagnostic-session

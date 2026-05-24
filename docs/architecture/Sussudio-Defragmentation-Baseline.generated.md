@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T18:30:27Z
+Generated UTC: 2026-05-24T18:34:56Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 654 |
+| Production .cs files | 653 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 26 (4.0%) |
-| Production .cs files under 80 lines | 46 (7.0%) |
+| Production .cs files under 60 lines | 25 (3.8%) |
+| Production .cs files under 80 lines | 45 (6.9%) |
 
 ## Largest partial-type clusters
 
@@ -58,8 +58,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
 | 638 | Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs |
-| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
+| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 615 | Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
@@ -103,7 +103,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 37 | tools/KsAudioNodeProbe/Program.cs |
 | 39 | Sussudio/Services/Recording/RecordingContracts.cs |
 | 40 | tools/NativeXuAudioProbe/Program.Commands.cs |
-| 41 | tools/Common/DiagnosticSessionAutomationResponseJson.cs |
 | 45 | tools/McpServer/Tools/DiagnosticSessionTools.cs |
 | 48 | Sussudio/Services/Capture/CaptureSessionStateMachine.cs |
 | 48 | Sussudio/Services/Contracts/AutomationInterfaces.cs |
