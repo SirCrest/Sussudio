@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-24
+Area: MCP tool control/configuration wrappers
+Problem: Four tiny MCP tool classes were split one class per file even where they were adjacent control/configuration surfaces with reflected class names as the real contract rather than file names.
+Files consolidated: `tools/McpServer/Tools/RecordingTools.cs`; `tools/McpServer/Tools/PipelineSettingsTools.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: none
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: reflected MCP tool class names and method names remain covered by routing/surface tests
+Behavior preserved: `PreviewTools`, `RecordingTools`, `CaptureSettingsTools`, and `PipelineSettingsTools` classes and their MCP method names remain unchanged
+Notes for future agents: when co-locating tiny MCP tool classes, preserve reflected type names and tool method names; file names are not the protocol surface
+
+Date: 2026-05-24
 Area: ssctl Flashback command routing
 Problem: Flashback export CLI flag parsing and payload shaping lived in a 25-line partial file even though the only caller is the Flashback command router, forcing an extra file hop for one subcommand.
 Files consolidated: `tools/ssctl/CommandHandlers.Flashback.Export.cs`

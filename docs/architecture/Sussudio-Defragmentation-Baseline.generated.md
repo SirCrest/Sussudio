@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T02:14:30Z
+Generated UTC: 2026-05-24T02:19:49Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 853 |
+| Production .cs files | 851 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 119 (14.0%) |
-| Production .cs files under 80 lines | 205 (24.0%) |
+| Production .cs files under 60 lines | 116 (13.6%) |
+| Production .cs files under 80 lines | 202 (23.7%) |
 
 ## Largest partial-type clusters
 
@@ -120,8 +120,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 32 | Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs |
 | 32 | Sussudio/MainWindow.PreviewRuntimeSnapshot.cs |
 | 32 | tools/McpServer/Tools/FramePacingVerdictTools.Timeline.cs |
-| 32 | tools/McpServer/Tools/PreviewTools.cs |
-| 32 | tools/McpServer/Tools/RecordingTools.cs |
 | 32 | tools/ssctl/Formatters.Memory.cs |
 | 33 | tools/ssctl/CommandHandlers.Verification.cs |
 | 34 | Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs |
@@ -137,7 +135,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 39 | Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs |
 | 39 | Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotPlanPolicy.cs |
 | 39 | Sussudio/Services/Recording/RecordingContracts.cs |
-| 39 | tools/McpServer/Tools/CaptureSettingsTools.cs |
 | 40 | Sussudio/Controllers/Capture/CaptureOptionTooltipFormatter.cs |
 | 40 | Sussudio/Services/Automation/AutomationCommandDispatcher.AudioControlCommands.cs |
 | 40 | Sussudio/ViewModels/MainViewModel.AutomationSettings.cs |
@@ -146,6 +143,9 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 41 | tools/Common/DiagnosticSessionAutomationResponseJson.cs |
 | 41 | tools/ssctl/Formatters.Common.cs |
 | 42 | Sussudio/Controllers/Shell/ControlBarLabelVisibilityController.cs |
+| 42 | Sussudio/Models/Automation/WindowAutomation.cs |
+| 42 | tools/McpServer/Tools/PreviewFrameCaptureTools.cs |
+| 43 | Sussudio/Services/Runtime/AtomicMax.cs |
 
 ## Notes
 

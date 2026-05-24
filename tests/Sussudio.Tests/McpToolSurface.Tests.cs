@@ -54,11 +54,11 @@ static partial class Program
         var flashbackExportText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.Export.cs");
         var framePacingVerdictToolsText = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.cs");
         var memoryDiagnosticsToolsText = ReadRepoFile("tools/McpServer/Tools/MemoryDiagnosticsTools.cs");
-        var pipelineSettingsToolsText = ReadRepoFile("tools/McpServer/Tools/PipelineSettingsTools.cs");
+        var pipelineSettingsToolsText = captureSettingsToolsText;
         var performanceTimelineToolsText = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs");
         var previewToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewTools.cs");
         var previewColorProbeToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewColorProbeTools.cs");
-        var recordingToolsText = ReadRepoFile("tools/McpServer/Tools/RecordingTools.cs");
+        var recordingToolsText = previewToolsText;
         var presentMonCorrelationText = ReadRepoFile("tools/McpServer/Tools/PresentMonTools.Correlation.cs");
         var previewFrameCaptureToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewFrameCaptureTools.cs");
         var verificationToolsText = ReadRepoFile("tools/McpServer/Tools/VerificationTools.cs");
