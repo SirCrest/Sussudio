@@ -84,8 +84,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
-        var queueText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Queue.cs")
-            .Replace("\r\n", "\n");
+        var queueText = rootText;
         var queueExecutionText = queueText;
 
         AssertContains(queueText, "private sealed class CoordinatorWorkItem");
@@ -96,9 +95,10 @@ static partial class Program
         AssertContains(queueExecutionText, "private void DecrementPendingCommands(string operation)");
         AssertContains(queueExecutionText, "Logger.LogEvent(\"CAP-COORD-START\"");
         AssertContains(queueExecutionText, "Logger.LogEvent(\"CAP-COORD-DONE\"");
-        AssertDoesNotContain(rootText, "private sealed class CoordinatorWorkItem");
-        AssertDoesNotContain(rootText, "private async Task ProcessQueueAsync()");
-        AssertDoesNotContain(rootText, "private void FailPendingCommands(Exception ex)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionCoordinator.Queue.cs")),
+            "CaptureSessionCoordinator queue worker folded into the coordinator root");
 
         return Task.CompletedTask;
     }

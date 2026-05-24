@@ -13,7 +13,7 @@ static partial class Program
         var queueProcessor = ExtractTextBetween(
             coordinatorText,
             "private async Task ProcessQueueAsync",
-            "private void UpdateSnapshot");
+            "private void FailPendingCommands(Exception ex)");
 
         AssertContains(coordinatorText, "_latestFlashbackEncoderCycleGeneration");
         AssertContains(coordinatorText, "_commandsCoalesced");
@@ -32,7 +32,7 @@ static partial class Program
         var failPending = ExtractTextBetween(
             coordinatorText,
             "private void FailPendingCommands(Exception ex)",
-            "    private void TrackPendingCommandEnqueued");
+            "    private void DecrementPendingCommands");
 
         AssertContains(failPending, "if (pending.Completion.Task.IsCanceled)\n            {\n                Interlocked.Increment(ref _commandsCanceled);");
         AssertContains(failPending, "else if (pending.Completion.TrySetException(ex))\n            {\n                Interlocked.Increment(ref _commandsFailed);");

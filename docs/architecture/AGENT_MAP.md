@@ -472,14 +472,13 @@ Important entry points:
 
 - `CaptureSessionCoordinator.cs` owns construction, shared state fields, the
   public non-Flashback lifecycle/audio command facade into the serialized
-  worker, and queue/session snapshot projection.
-- `CaptureSessionCoordinator.Models.cs` owns command enums, queue receipts,
-  session snapshots, and Flashback playback/buffer status projections.
-- `CaptureSessionCoordinator.Queue.cs` owns work-item creation, command
+  worker, queue/session snapshot projection, work-item creation, command
   enqueueing, enqueue-failure handling, disposed-state ingress guards,
   worker-loop execution, command coalescing, operation cancellation/failure
   accounting, pending-command failure drain, and pending-command counter
   decrement policy.
+- `CaptureSessionCoordinator.Models.cs` owns command enums, queue receipts,
+  session snapshots, and Flashback playback/buffer status projections.
 - `CaptureSessionCoordinator.Disposal.cs` owns dispose/drain/cancel lifecycle
   for the worker queue and cancellation token source.
 - `CaptureSessionCoordinator.Flashback.cs` owns queued Flashback mutations,

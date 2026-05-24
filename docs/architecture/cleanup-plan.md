@@ -1138,12 +1138,11 @@ snapshots, and Flashback playback/buffer status projections now live in
 `Sussudio/Services/Capture/CaptureSessionCoordinator.Models.cs`.
 `CaptureSessionCoordinator.cs` owns construction, shared state fields, the public
 non-Flashback lifecycle/audio command facade into the serialized worker, and
-queue/session snapshot projection. Queue work item creation, command enqueueing,
+queue/session snapshot projection, queue work item creation, command enqueueing,
 enqueue-failure handling, disposed-state ingress guards, worker-loop execution,
 command coalescing, operation cancellation/failure accounting, pending-command
-failure drain, and pending-command counter decrement policy now live in
-`CaptureSessionCoordinator.Queue.cs`. Dispose/drain/cancel lifecycle for the
-worker queue and cancellation token source now lives in
+failure drain, and pending-command counter decrement policy. Dispose/drain/cancel
+lifecycle for the worker queue and cancellation token source now lives in
 `CaptureSessionCoordinator.Disposal.cs`.
 Capture session coordinator API/command/snapshot contracts, focused
 source-ownership contracts, queue behavior, Flashback/cancellation behavior,
