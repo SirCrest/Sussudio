@@ -88,8 +88,8 @@ static partial class Program
             "private async Task DisposeTransientRecordingBackendAsync");
         var libAvPreviewRestore = ExtractTextBetween(
             captureServiceText,
-            "private async Task<OperationCanceledException?> RestoreLibAvPreviewFeaturesAfterRecordingAsync",
-            "private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync");
+            "private async Task<OperationCanceledException?> RestorePendingFlashbackEnableAfterLibAvRecordingAsync",
+            "private async Task<OperationCanceledException?> RestartStandardMicrophoneMonitorAfterLibAvRecordingAsync");
 
         AssertContains(setFlashbackEnabled, "_pendingFlashbackEnableAfterRecording = false;");
         AssertContains(setFlashbackEnabled, "if (_flashbackEnabled == enabled)");

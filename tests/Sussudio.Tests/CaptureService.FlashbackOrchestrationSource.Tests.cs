@@ -15,8 +15,7 @@ static partial class Program
     private static readonly string[] CaptureServiceRecordingFinalizationFiles =
     {
         "Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs",
-        "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs",
-        "Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs"
+        "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"
     };
 
     private static readonly string[] CaptureServicePreviewLifecycleFiles =
@@ -169,7 +168,6 @@ static partial class Program
         var flashbackBackendFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs");
         var libAvBackendFinalizationText =
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs");
-        var flashbackFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs");
         var recordingLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs");
 
         AssertContains(stopLifecycleText, "private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(");
@@ -180,6 +178,15 @@ static partial class Program
         AssertContains(flashbackBackendFinalizationText, "ReconcileFlashbackBackendAfterRecordingFinalizeAsync(");
         AssertContains(flashbackBackendFinalizationText, "PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);");
         AssertContains(flashbackBackendFinalizationText, "private async Task<OperationCanceledException?> ReconcileFlashbackBackendAfterRecordingFinalizeAsync(");
+        AssertContains(flashbackBackendFinalizationText, "private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync(");
+        AssertContains(flashbackBackendFinalizationText, "private static bool IsFlashbackFinalizeCancellationResult(FinalizeResult result)");
+        AssertContains(flashbackBackendFinalizationText, "private sealed class FlashbackRecordingBoundarySnapshot");
+        AssertContains(flashbackBackendFinalizationText, "private void CaptureFlashbackRecordingBoundarySnapshot(");
+        AssertContains(flashbackBackendFinalizationText, "if (recordingBoundary.Captured)");
+        AssertContains(flashbackBackendFinalizationText, "flashbackVideoCapture.EndFlashbackRecordingAccounting();");
+        AssertContains(flashbackBackendFinalizationText, "recordingBoundary.Counters = CaptureFlashbackRecordingIntegrityCountersSinceBaseline");
+        AssertContains(flashbackBackendFinalizationText, "recordingBoundary.AudioCounters = GetRecordingAudioCountersSinceBaseline(");
+        AssertContains(flashbackBackendFinalizationText, "recordingBoundary.Captured = true;");
         AssertContains(flashbackBackendFinalizationText, "_flashbackBackend.PreserveRecoverySegments(\"recording_finalize_failed\");");
         AssertContains(flashbackBackendFinalizationText, "FLASHBACK_SETTINGS_APPLY_AFTER_RECORDING_DEFERRED");
         AssertContains(flashbackBackendFinalizationText, "FLASHBACK_SETTINGS_APPLY_AFTER_RECORDING");
@@ -237,15 +244,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeLibAvPreviewRestore.cs")),
             "old LibAv preview-restore finalization partial removed");
-        AssertContains(flashbackFinalizationText, "private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync(");
-        AssertContains(flashbackFinalizationText, "private static bool IsFlashbackFinalizeCancellationResult(FinalizeResult result)");
-        AssertContains(flashbackFinalizationText, "private sealed class FlashbackRecordingBoundarySnapshot");
-        AssertContains(flashbackFinalizationText, "private void CaptureFlashbackRecordingBoundarySnapshot(");
-        AssertContains(flashbackFinalizationText, "if (recordingBoundary.Captured)");
-        AssertContains(flashbackFinalizationText, "flashbackVideoCapture.EndFlashbackRecordingAccounting();");
-        AssertContains(flashbackFinalizationText, "recordingBoundary.Counters = CaptureFlashbackRecordingIntegrityCountersSinceBaseline");
-        AssertContains(flashbackFinalizationText, "recordingBoundary.AudioCounters = GetRecordingAudioCountersSinceBaseline(");
-        AssertContains(flashbackFinalizationText, "recordingBoundary.Captured = true;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeFlashback.cs")),
+            "Flashback export-finalize helpers folded into CaptureService.RecordingFinalizeFlashbackBackend.cs");
         AssertContains(recordingLifecycleText, "private void PublishRecordingStartedOutcome(string finalOutputPath)");
         AssertContains(recordingLifecycleText, "private void PublishRecordingFinalizedOutcome(FinalizeResult result, bool updateOutputPath)");
         AssertEqual(

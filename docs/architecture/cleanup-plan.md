@@ -1335,11 +1335,12 @@ normal stop routing, the emergency stop overload that feeds finalization, and
 the stop/finalize dispatcher for active Flashback and LibAv backends.
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs`
 owns active Flashback recording backend finalization: live-edge finalize/export
-handoff, finalize-in-progress choreography, Flashback recording-integrity
-summaries, cancellation-result classification, post-finalize backend
-reconciliation, failed-finalize recovery preservation, deferred settings apply,
-buffer cycling, buffer-cycle failure classification, outcome publication,
-backend cleanup launch, and Flashback-specific microphone monitor restart.
+handoff, finalize-in-progress choreography, export finalization, live-edge
+boundary snapshots, cancellation-result classification, Flashback
+recording-integrity summaries, post-finalize backend reconciliation,
+failed-finalize recovery preservation, deferred settings apply, buffer cycling,
+buffer-cycle failure classification, outcome publication, backend cleanup
+launch, and Flashback-specific microphone monitor restart.
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs`
 owns standard LibAv recording finalization sequencing: unified-video recording
 stop, source-reader boundary diagnostics, WASAPI recording sink detach,
@@ -1355,10 +1356,11 @@ Recording outcome field publication now lives with
 `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`; post-recording
 microphone monitor restart mechanics live in
 `Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`.
-`Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs` owns
-Flashback recording export finalization plus live-edge boundary snapshots,
-including idempotent `EndFlashbackRecordingAccounting()` calls, source-frame
-counters, recording integrity counters, and audio integrity counters.
+The live-edge boundary snapshot in
+`Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs`
+keeps idempotent `EndFlashbackRecordingAccounting()` calls, source-frame
+counters, recording integrity counters, and audio integrity counters with the
+backend finalization path that consumes them.
 `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs` owns the
 helper boundary that publishes recording-start and recording-finalize outcome
 fields (`_lastOutputPath`, `_lastFinalizeStatus`, `_lastFinalizeUtc`, and

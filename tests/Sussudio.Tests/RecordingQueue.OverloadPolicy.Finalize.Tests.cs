@@ -25,7 +25,7 @@ static partial class Program
         var libAvStopRecordingBackend = ExtractSourceBlock(
             captureServiceSource,
             "private async Task<FinalizeResult> StopAndDisposeLibAvRecordingBackendAsync",
-            "private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync");
+            "private readonly record struct LibAvFinalizeStepResult");
 
         AssertContains(stopRecordingBackendRouter, "IsFlashbackRecordingBackendActive()");
         AssertContains(stopRecordingBackendRouter, "StopAndDisposeFlashbackRecordingBackendAsync(cancellationToken)");
