@@ -18,6 +18,8 @@ static partial class Program
         AssertContains(nv12SubmissionText, "private int _lastNv12IsHdr = -1;");
         AssertContains(pendingFramesText, "private readonly ManualResetEventSlim _frameReadyEvent = new(false);");
         AssertContains(pendingFramesText, "private readonly ConcurrentQueue<PendingFrame> _pendingFrames = new();");
+        AssertContains(pendingFramesText, "private sealed class PendingFrame : IDisposable");
+        AssertContains(pendingFramesText, "FrameLease?.Dispose();");
         AssertContains(pendingFramesText, "private int _pendingFrameCount;");
         AssertContains(submissionText, "public void SubmitRawFrame(");
         AssertContains(submissionText, "public void SubmitRawFrameLease(");

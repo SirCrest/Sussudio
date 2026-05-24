@@ -1950,10 +1950,10 @@ implementation state in `D3D11PreviewRenderer.cs`; the root should keep the
 public facade, construction references, constants, user-facing accessors, and
 public state toggles.
 
-D3D preview renderer nested frame and metrics model types now live in focused
-partials. Keep the `PendingFrame` lifetime wrapper in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrame.cs`, renderer
-metric record structs and shared metric sample helpers in
+D3D preview renderer queue-owned frame lifetime and metrics model types now live
+with their caller owners. Keep the `PendingFrame` lifetime wrapper in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs` beside
+queue admission/drain/drop behavior; keep renderer metric record structs and shared metric sample helpers in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.MetricTypes.cs` so the
 root renderer stays focused on construction, constants, user-facing state
 accessors, and public state changes.
@@ -2053,7 +2053,7 @@ D3D preview renderer DXGI frame statistics now live in
 Keep `GetFrameStatistics`, optional `DwmFlush`, DXGI counter deltas, and missed
 refresh accounting there. Display-clock projection also lives there; keep
 visible-frame tick estimation and `IPreviewDisplayClock` snapshot construction
-with the DXGI statistics state it samples. Keep pending-frame queue control and `IPreviewFrameQueueControl` in
+with the DXGI statistics state it samples. Keep pending-frame lifetime, queue control, and `IPreviewFrameQueueControl` in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs`. Keep
 slow-frame diagnostic consumption of the latest DXGI counters in
 `D3D11PreviewRenderer.Diagnostics.cs`.

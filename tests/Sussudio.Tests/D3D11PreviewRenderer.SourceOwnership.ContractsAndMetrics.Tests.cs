@@ -53,18 +53,19 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task D3D11PreviewRenderer_FrameTypesLiveInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_FrameTypesLiveWithPendingFrameQueue()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var pendingFrameText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrame.cs")
+        var pendingFramesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs")
             .Replace("\r\n", "\n");
         var metricTypesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricTypes.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(pendingFrameText, "private sealed class PendingFrame : IDisposable");
-        AssertContains(pendingFrameText, "ArrayPool<byte>.Shared.Return(RawData);");
-        AssertContains(pendingFrameText, "FrameLease?.Dispose();");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PendingFrame.cs")), "pending-frame lifetime model stays folded into PendingFrames.cs");
+        AssertContains(pendingFramesText, "private sealed class PendingFrame : IDisposable");
+        AssertContains(pendingFramesText, "ArrayPool<byte>.Shared.Return(RawData);");
+        AssertContains(pendingFramesText, "FrameLease?.Dispose();");
         AssertContains(metricTypesText, "public readonly record struct PresentCadenceMetrics(");
         AssertContains(metricTypesText, "public readonly record struct CpuStageTimingMetrics(");
         AssertContains(metricTypesText, "public readonly record struct RenderCpuTimingMetrics(");
@@ -79,7 +80,7 @@ static partial class Program
         AssertDoesNotContain(rootText, "private sealed class PendingFrame : IDisposable");
         AssertDoesNotContain(rootText, "public readonly record struct PresentCadenceMetrics(");
         AssertDoesNotContain(rootText, "public readonly record struct DxgiFrameStatisticsMetrics(");
-        AssertDoesNotContain(pendingFrameText, "public readonly record struct PresentCadenceMetrics(");
+        AssertDoesNotContain(pendingFramesText, "public readonly record struct PresentCadenceMetrics(");
         AssertDoesNotContain(metricTypesText, "private sealed class PendingFrame : IDisposable");
 
         return Task.CompletedTask;
