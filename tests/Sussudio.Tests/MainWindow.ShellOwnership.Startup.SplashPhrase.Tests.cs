@@ -11,8 +11,8 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var launchAdapterText = ReadMainWindowShellChromeAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs").Replace("\r\n", "\n");
-        var catalogText = ReadRepoFile("Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseCatalog.cs").Replace("\r\n", "\n");
-        var pacingPolicyText = ReadRepoFile("Sussudio/Controllers/Launch/Splash/SplashLoadingPhrasePacingPolicy.cs").Replace("\r\n", "\n");
+        var catalogText = controllerText;
+        var pacingPolicyText = controllerText;
 
         AssertContains(launchAdapterText, "private SplashLoadingPhraseController _splashLoadingPhraseController = null!;");
         AssertContains(launchAdapterText, "private void InitializeSplashLoadingPhraseController()");
@@ -45,19 +45,15 @@ static partial class Program
         AssertContains(catalogText, "line = line[2..].Trim();");
         AssertContains(catalogText, "while (line.EndsWith('.'))");
         AssertContains(catalogText, "_cachedSplashPhrases = DefaultSplashLoadingPhrases;");
-        AssertDoesNotContain(controllerText, "private static readonly string[] DefaultSplashLoadingPhrases");
-        AssertDoesNotContain(controllerText, "Path.Combine(AppContext.BaseDirectory, \"SplashPhrases.md\")");
         AssertDoesNotContain(controllerText, "private TimeSpan NextSplashPhraseInterval()");
-        AssertDoesNotContain(controllerText, "Random.Shared.NextDouble()");
-        AssertDoesNotContain(controllerText, "SplashLoadingPhrasePaceMode");
-        AssertDoesNotContain(controllerText, "280, 420");
-        AssertDoesNotContain(controllerText, "380, 900");
-        AssertDoesNotContain(controllerText, "900, 1500");
-        AssertDoesNotContain(controllerText, "1500, 2500");
-        AssertDoesNotContain(controllerText, "nextInt(280, 420)");
-        AssertDoesNotContain(controllerText, "nextInt(380, 900)");
-        AssertDoesNotContain(controllerText, "nextInt(900, 1500)");
-        AssertDoesNotContain(controllerText, "nextInt(1500, 2500)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "Splash", "SplashLoadingPhraseCatalog.cs")),
+            "splash phrase catalog folded into SplashLoadingPhraseController.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "Splash", "SplashLoadingPhrasePacingPolicy.cs")),
+            "splash phrase pacing policy folded into SplashLoadingPhraseController.cs");
 
         return Task.CompletedTask;
     }

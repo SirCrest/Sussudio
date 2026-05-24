@@ -2816,12 +2816,10 @@ Primary current owners:
 - `Sussudio/Controllers/Shell/SettingsShelfController.cs` owns settings shelf
   visibility, the animation gate, and show/hide storyboard construction.
   `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseCatalog.cs` owns splash phrase
-  file lookup, Markdown-ish parsing, cached defaults, and exception fallback.
-  `Sussudio/Controllers/Launch/Splash/SplashLoadingPhrasePacingPolicy.cs` owns
-  randomized splash phrase interval/mode selection.
-  `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs` owns
-  DispatcherTimer lifecycle and two-line text animation.
+- `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs` owns
+  splash phrase file lookup, Markdown-ish parsing, cached defaults, exception
+  fallback, randomized interval/mode selection, DispatcherTimer lifecycle, and
+  two-line text animation.
   `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing phrase
   start/stop adapter.
 - `Sussudio/Controllers/Launch/LaunchStartupController.cs` owns loaded-time

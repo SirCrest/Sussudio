@@ -2850,12 +2850,10 @@ construction now live in
 `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing settings
 shelf adapter.
 
-Splash phrase file lookup, Markdown-ish parsing, cached defaults, and exception
-fallback now live in `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseCatalog.cs`.
-Randomized interval/mode selection now lives in
-`Sussudio/Controllers/Launch/Splash/SplashLoadingPhrasePacingPolicy.cs`.
 `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs` owns
-DispatcherTimer lifecycle and the two-line splash text animation.
+Splash phrase file lookup, Markdown-ish parsing, cached defaults, exception
+fallback, randomized interval/mode selection, DispatcherTimer lifecycle, and
+the two-line splash text animation.
 Its MainWindow wiring lives in `Sussudio/MainWindow.ShellChrome.Composition.cs`
 because launch entrance owns the only phrase start/stop choreography and shares
 the shell launch adapter family.
