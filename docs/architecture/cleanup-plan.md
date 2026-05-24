@@ -2964,7 +2964,7 @@ now live in `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`.
 `Sussudio/MainWindow.PreviewRenderer.Composition.cs`
 wires button presentation callbacks and preserves event
 handler signatures and delegates into the controller. The broad
-`MainWindow.PropertyChanged.cs` dispatcher now owns only the `PropertyChanged`
+`MainWindow.ControllerInitialization.cs` dispatcher now owns only the `PropertyChanged`
 event envelope, property-name normalization, and visible route order. Preview
 reinit transition state and log ownership now live in
 `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs`, while
@@ -3001,7 +3001,7 @@ and add new property-name cases to the nearest focused owner.
 Flashback-specific ViewModel property adapter dispatch now lives in
 `Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs`:
 timeline lockout, marker and playhead refresh, export progress, and Flashback
-settings-control sync. `Sussudio/MainWindow.PropertyChanged.cs` is the
+settings-control sync. `Sussudio/MainWindow.ControllerInitialization.cs` is the
 XAML/MainWindow property-change adapter that composes the Flashback route table
 callbacks alongside the root ViewModel router.
 

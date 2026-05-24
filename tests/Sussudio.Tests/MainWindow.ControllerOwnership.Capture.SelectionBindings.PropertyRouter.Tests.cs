@@ -4,7 +4,7 @@ static partial class Program
 {
     internal static Task CaptureSelectionBindingPropertyRouter_LivesInController()
     {
-        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.ControllerInitialization.cs").Replace("\r\n", "\n");
         var adapterText = ReadMainWindowCaptureSelectionBindingsAdapterSource();
         var propertyChangesText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
 

@@ -1264,7 +1264,7 @@ Primary current owners:
   fade/reinit/start/stop command behavior. One-line XAML command bridges for
   capture-device, recording, output-path, and preview-screenshot buttons live in
   their feature adapter partials beside the owning controllers.
-- `Sussudio/MainWindow.PropertyChanged.cs` owns only the root ViewModel
+- `Sussudio/MainWindow.ControllerInitialization.cs` owns only the root ViewModel
   PropertyChanged event envelope and router composition.
   `Sussudio/Controllers/Shell/MainWindowPropertyChangedRouter.cs` owns
   property-name normalization and route order. Capture-selection and
@@ -2952,7 +2952,7 @@ Primary current owners:
 - `Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs` owns
   Flashback-specific property-change routing for timeline lockout, markers,
   playhead updates, export progress, and settings-control synchronization.
-  `Sussudio/MainWindow.PropertyChanged.cs` is the XAML/MainWindow property-change
+  `Sussudio/MainWindow.ControllerInitialization.cs` is the XAML/MainWindow property-change
   adapter that composes the Flashback route table callbacks alongside the root
   ViewModel router.
 - `Sussudio/Controllers/Audio/AudioControlPresentationController.cs` owns audio and

@@ -4,7 +4,7 @@ static partial class Program
 {
     internal static Task MainWindowPropertyChangedRouting_DelegatesToFocusedControllers()
     {
-        var rootText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var rootText = ReadRepoFile("Sussudio/MainWindow.ControllerInitialization.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadMainWindowCompositionSource();
         var propertyChangedRouterText = ReadRepoFile("Sussudio/Controllers/Shell/MainWindowPropertyChangedRouter.cs").Replace("\r\n", "\n");
         var previewText = ReadMainWindowPropertyChangedPreviewAdapterSource();
@@ -25,13 +25,17 @@ static partial class Program
         var shellChromeControllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
         var liveSignalText = ReadRepoFile("Sussudio/MainWindow.StatusStripPresentation.cs").Replace("\r\n", "\n");
         var liveSignalControllerText = ReadRepoFile("Sussudio/Controllers/Shell/LiveSignalInfoController.cs").Replace("\r\n", "\n");
-        var flashbackText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var flashbackText = ReadRepoFile("Sussudio/MainWindow.ControllerInitialization.cs").Replace("\r\n", "\n");
         var flashbackControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs").Replace("\r\n", "\n");
 
         AssertContains(rootText, "private MainWindowPropertyChangedRouter _propertyChangedRouter = null!;");
         AssertContains(rootText, "private void InitializeMainWindowPropertyChangedRouter()");
         AssertContains(mainWindowText, "InitializeMainWindowPropertyChangedRouter();");
         AssertContains(rootText, "=> _propertyChangedRouter.RouteAsync(e.PropertyName);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PropertyChanged.cs")),
+            "property-change router composition lives in the controller initialization parent partial");
         AssertContains(rootText, "TryHandleCaptureSelection = TryHandleCaptureSelectionPropertyChanged,");
         AssertContains(rootText, "TryHandleStatusStrip = TryHandleStatusStripPropertyChanged,");
         AssertContains(rootText, "TryHandlePreviewAsync = TryHandlePreviewPropertyChangedAsync,");
