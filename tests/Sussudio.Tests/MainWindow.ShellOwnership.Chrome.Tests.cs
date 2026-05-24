@@ -46,7 +46,7 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var statusStripText = ReadRepoFile("Sussudio/MainWindow.StatusStripPresentation.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowTitleController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
 
         AssertContains(statusStripText, "private WindowTitleController _windowTitleController = null!;");
         AssertContains(statusStripText, "private void InitializeWindowTitleController()");

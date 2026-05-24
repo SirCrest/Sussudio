@@ -1067,7 +1067,7 @@ Close routing/finalization handling remains in the explicit window close
 lifecycle owners below.
 
 Window title base/build-stamp formatting and the recording-time suffix now live
-in `Sussudio/Controllers/Window/WindowTitleController.cs`; `MainWindow.StatusStripPresentation.cs`
+in `Sussudio/Controllers/Shell/ShellChromeController.cs`; `MainWindow.StatusStripPresentation.cs`
 keeps the XAML-facing initialization and title assignment hook because title
 refreshes are driven by status/recording presentation.
 

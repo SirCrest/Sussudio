@@ -1233,7 +1233,7 @@ Primary current owners:
   `Sussudio/MainWindow.WindowShell.cs`, and the
   `Sussudio/MainWindow.ShutdownCleanup.Composition.cs` adapter.
 - `Sussudio/MainWindow.StatusStripPresentation.cs` keeps the XAML-facing title
-  update hook; `Sussudio/Controllers/Window/WindowTitleController.cs` owns window title
+  update hook; `Sussudio/Controllers/Shell/ShellChromeController.cs` owns window title
   base/build-stamp formatting and the recording-time suffix used by property
   changes.
 - `Sussudio/Controllers/Shell/StatusStripPresentationController.cs` owns bottom

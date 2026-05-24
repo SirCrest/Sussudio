@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T07:53:42Z
+Generated UTC: 2026-05-24T08:01:23Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 782 |
+| Production .cs files | 781 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 56 (7.2%) |
-| Production .cs files under 80 lines | 124 (15.9%) |
+| Production .cs files under 60 lines | 55 (7.0%) |
+| Production .cs files under 80 lines | 122 (15.6%) |
 
 ## Largest partial-type clusters
 
@@ -56,8 +56,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 744 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs |
 | 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
-| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 | 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
+| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
@@ -122,7 +122,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 48 | Sussudio/Services/Contracts/AutomationInterfaces.cs |
 | 48 | tools/McpServer/Tools/PerformanceTimelineTools.cs |
 | 48 | tools/NativeXuAudioProbe/Program.ExperimentPayloads.cs |
-| 49 | Sussudio/Controllers/Window/WindowTitleController.cs |
 | 50 | Sussudio/Controllers/Recording/Button/RecordingButtonActionController.cs |
 | 50 | Sussudio/ViewModels/MainViewModel.CaptureSettings.cs |
 | 50 | tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs |
