@@ -3166,14 +3166,13 @@ MCP performance timeline projection is split across the
 tool entry point and command response handling in the root file, JSON-to-row
 projection orchestration plus root cadence, preview/MJPEG/D3D, Flashback
 playback, Flashback export, and system row projection fields in
-`PerformanceTimelineTools.Rows.cs`, the private row model in
-`PerformanceTimelineTools.Rows.Model.cs`,
+`PerformanceTimelineTools.Rows.cs` alongside the private row model,
 timeline table text rendering, first-vs-last trend text, preview cadence,
 visual/MJPEG fingerprint, jitter, D3D, slow-stage, Flashback playback, command,
 failure, cleanup, stage, export trend text, and target-summary orchestration in
-`PerformanceTimelineTools.Rendering.cs`, compact value, command-message,
-preview jitter-depth, D3D bottleneck, Flashback stage, cleanup, export, and
-byte-rate formatting helpers in `PerformanceTimelineTools.Formatting.cs`, and
+`PerformanceTimelineTools.Rendering.cs` alongside compact value,
+command-message, preview jitter-depth, D3D bottleneck, Flashback stage, cleanup,
+export, and byte-rate formatting helpers, and
 target, preview, Flashback, and system pressure summaries in
 `PerformanceTimelineTools.Summaries.cs`.
 The frame-pacing verdict MCP tool follows the same shape: keep MCP attributes,

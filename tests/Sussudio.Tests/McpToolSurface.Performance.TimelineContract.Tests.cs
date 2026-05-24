@@ -17,8 +17,6 @@ static partial class Program
     {
         var rootSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs");
         var rowsSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs");
-        var rowsModelSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs");
-        var formattingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs");
         var renderingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs");
         var summariesSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs");
 
@@ -26,16 +24,12 @@ static partial class Program
         {
             RootSource = rootSource,
             RowsSource = rowsSource,
-            RowsModelSource = rowsModelSource,
-            FormattingSource = formattingSource,
             RenderingSource = renderingSource,
             SummariesSource = summariesSource,
             CombinedSource = string.Join(
                 "\n",
                 rootSource,
                 rowsSource,
-                rowsModelSource,
-                formattingSource,
                 renderingSource,
                 summariesSource)
         };
@@ -45,8 +39,6 @@ static partial class Program
     {
         public string RootSource { get; init; } = string.Empty;
         public string RowsSource { get; init; } = string.Empty;
-        public string RowsModelSource { get; init; } = string.Empty;
-        public string FormattingSource { get; init; } = string.Empty;
         public string RenderingSource { get; init; } = string.Empty;
         public string SummariesSource { get; init; } = string.Empty;
         public string CombinedSource { get; init; } = string.Empty;

@@ -3525,17 +3525,15 @@ Primary owners:
   tool entry point and command response handling.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs` owns timeline JSON
   row projection orchestration and the root cadence, preview/MJPEG/D3D,
-  Flashback playback, Flashback export, and system projection field groups.
-  `tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs` owns the
-  private row model for the same table and trend-rendering fields.
+  Flashback playback, Flashback export, and system projection field groups,
+  plus the private row model for the same table and trend-rendering fields.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs` owns timeline
   table text rendering, first-vs-last trend text, preview cadence,
   visual/MJPEG fingerprint, jitter, D3D, slow-stage, Flashback playback,
   command, failure, cleanup, stage, export trend text, and target-summary
-  orchestration.
-- `tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs` owns compact
-  cell, command-message, optional-value, preview jitter-depth, D3D bottleneck,
-  Flashback stage, cleanup, export, and byte-rate formatting.
+  orchestration, plus compact cell, command-message, optional-value, preview
+  jitter-depth, D3D bottleneck, Flashback stage, cleanup, export, and byte-rate
+  formatting.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs` owns 1%-low
   target summaries, shared summary predicates, preview, Flashback, and system
   pressure summaries, and pressure counters.
