@@ -9,7 +9,6 @@ static partial class Program
         var ssctlSnapshotRootSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.cs");
         var ssctlSnapshotFlashbackSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.cs");
         var ssctlSnapshotMjpegSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Mjpeg.cs");
-        var ssctlSnapshotThreadHealthSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.ThreadHealth.cs");
         AssertDoesNotContain(ssctlFormatterCommonSource, "public static string FormatSnapshot");
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotStateSection(builder, snapshot);");
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotCaptureSettingsSection(builder, snapshot);");
@@ -82,8 +81,17 @@ static partial class Program
         AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotSourceSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotRootSource, "builder.AppendLine(\"== Source ==\");");
         AssertContains(ssctlSnapshotRootSource, "var sourceFrameRate = AutomationSnapshotFormatter.Get(snapshot, \"DetectedSourceFrameRate\", string.Empty);");
-        AssertDoesNotContain(ssctlSnapshotRootSource, "builder.AppendLine(\"== Thread Health ==\");");
-        AssertDoesNotContain(ssctlSnapshotRootSource, "var sourceReaderLastFrameAgeMs = AutomationSnapshotFormatter.ComputeTickAgeMs");
+        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotThreadHealthSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotRootSource, "builder.AppendLine(\"== Thread Health ==\");");
+        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotSourceReaderThreadHealthLine(builder, snapshot);");
+        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotWasapiCaptureThreadHealthLine(builder, snapshot);");
+        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotWasapiPlaybackThreadHealthLine(builder, snapshot);");
+        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotSourceReaderThreadHealthLine(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotRootSource, "SourceReaderFrameChannelDepth");
+        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotWasapiCaptureThreadHealthLine(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotRootSource, "WasapiCaptureCallbackSevereGapCount");
+        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotWasapiPlaybackThreadHealthLine(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotRootSource, "WasapiPlaybackQueueDropCount");
         AssertContains(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotFlashbackSource, "var flashbackActive = AutomationSnapshotFormatter.Get(snapshot, \"FlashbackActive\", \"false\");");
         AssertContains(ssctlSnapshotFlashbackSource, "AppendSnapshotFlashbackEncodingSection(builder, snapshot);");
@@ -132,17 +140,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "Formatters.Snapshot.PreviewD3D.cs")),
             "ssctl D3D preview snapshot text lives with the preview routing owner");
-        AssertContains(ssctlSnapshotThreadHealthSource, "private static void AppendSnapshotThreadHealthSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotThreadHealthSource, "builder.AppendLine(\"== Thread Health ==\");");
-        AssertContains(ssctlSnapshotThreadHealthSource, "AppendSnapshotSourceReaderThreadHealthLine(builder, snapshot);");
-        AssertContains(ssctlSnapshotThreadHealthSource, "AppendSnapshotWasapiCaptureThreadHealthLine(builder, snapshot);");
-        AssertContains(ssctlSnapshotThreadHealthSource, "AppendSnapshotWasapiPlaybackThreadHealthLine(builder, snapshot);");
-        AssertContains(ssctlSnapshotThreadHealthSource, "private static void AppendSnapshotSourceReaderThreadHealthLine(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotThreadHealthSource, "SourceReaderFrameChannelDepth");
-        AssertContains(ssctlSnapshotThreadHealthSource, "private static void AppendSnapshotWasapiCaptureThreadHealthLine(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotThreadHealthSource, "WasapiCaptureCallbackSevereGapCount");
-        AssertContains(ssctlSnapshotThreadHealthSource, "private static void AppendSnapshotWasapiPlaybackThreadHealthLine(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotThreadHealthSource, "WasapiPlaybackQueueDropCount");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "Formatters.Snapshot.ThreadHealth.cs")),
+            "ssctl thread-health snapshot text lives with the root formatter flow");
         AssertContains(ssctlFormatterCommonSource, "public static string FormatDiagnostics");
         AssertContains(ReadRepoFile("tools/ssctl/Formatters.Options.cs"), "public static string FormatOptions");
         var ssctlTimelineRootSource = ReadRepoFile("tools/ssctl/Formatters.Timeline.cs");

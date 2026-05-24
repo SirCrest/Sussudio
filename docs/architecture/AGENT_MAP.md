@@ -3553,10 +3553,11 @@ Primary owners:
 - `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration, section
   ordering, and simple row sections for Sussudio state/capture-command summary,
   audio, capture settings, friendly/exact frame-rate summary formatting,
-  runtime video-pipeline text, recording, diagnostics, legacy performance,
-  process CPU, Memory/GC, thread-pool, capture cadence, low-FPS, jitter/drop,
-  MJPEG packet fingerprint, sampled visual cadence, AV-sync drift, encoder
-  correction, preview renderer-mode routing, GPU playback summary, non-D3D
+  runtime video-pipeline text, thread-health section order plus source-reader
+  and WASAPI row text, recording, diagnostics, legacy performance, process CPU,
+  Memory/GC, thread-pool, capture cadence, low-FPS, jitter/drop, MJPEG packet
+  fingerprint, sampled visual cadence, AV-sync drift, encoder correction,
+  preview renderer-mode routing, GPU playback summary, non-D3D
   fallback frame/cadence, D3D renderer section text, D3D CPU timing,
   pipeline-latency, frame-latency wait, frame ownership, DXGI frame-stat text,
   slow-frame formatter delegation, source dimensions, source frame-rate
@@ -3570,9 +3571,6 @@ Primary owners:
   activation, header, output order, decode/copy/callback/per-decoder timing,
   compressed queue/drop/reorder/pipeline timing, and preview-jitter queue,
   input/output/latency, ownership, and underflow snapshot text.
-- `tools/ssctl/Formatters.Snapshot.ThreadHealth.cs` owns thread-health section
-  order plus source-reader, WASAPI capture, and WASAPI playback thread-health
-  snapshot text.
 - `tools/ssctl/Formatters.Options.cs` owns capture option and device lists.
 - `tools/ssctl/Formatters.Timeline.cs` owns performance timeline response
   validation, JSON row projection, private row model, table output, and

@@ -206,7 +206,6 @@ internal static class RuntimeContractSource
             "tools/ssctl/Formatters.Snapshot.cs",
             "tools/ssctl/Formatters.Snapshot.Flashback.cs",
             "tools/ssctl/Formatters.Snapshot.Mjpeg.cs",
-            "tools/ssctl/Formatters.Snapshot.ThreadHealth.cs",
         });
 
     public static string ReadSourceFamily(IReadOnlyList<string> files)

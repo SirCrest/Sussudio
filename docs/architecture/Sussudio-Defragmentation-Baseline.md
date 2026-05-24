@@ -1379,3 +1379,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: covered by shared snapshot formatter ownership tests, formatter output order tests, field-alignment tests, and runtime snapshot regression tests
 Behavior preserved: Video pipeline section text, thread-health section order, source-reader row, WASAPI capture row, and WASAPI playback row remain in the same `FormatSnapshot` output flow
 Notes for future agents: keep one-pass shared snapshot row sections with the root formatter unless a section grows independent policy or reusable formatting behavior
+
+Date: 2026-05-24
+Area: ssctl snapshot formatter locality
+Problem: The ssctl snapshot thread-health text lived in a 56-line partial even though it is only called by the root snapshot formatter flow and sits directly after the root video-pipeline section.
+Files consolidated: `tools/ssctl/Formatters.Snapshot.ThreadHealth.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `Formatters` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: covered by ssctl snapshot ownership tests, formatter output order tests, field-alignment tests, and runtime snapshot regression tests
+Behavior preserved: Thread-health section order plus source-reader, WASAPI capture, and WASAPI playback rows remain in the same `FormatSnapshot` output flow
+Notes for future agents: keep single-use ssctl thread-health snapshot text with the root formatter unless it grows independent policy or reusable formatting behavior

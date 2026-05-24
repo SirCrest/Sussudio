@@ -436,14 +436,14 @@ for console output. Keep app snapshot orchestration, section ordering, and
 simple state/capture-command, audio, recording, diagnostics, legacy
 performance, process CPU, Memory/GC, thread-pool, capture settings,
 friendly/exact frame-rate, capture cadence, embedded AV-sync drift,
-source-signal, video-pipeline, preview renderer-mode routing, non-D3D
+source-signal, video-pipeline, thread-health section order and
+source-reader/WASAPI row text, preview renderer-mode routing, non-D3D
 fallback text, and D3D preview snapshot text in `Formatters.Snapshot.cs`, Flashback snapshot gating/order, encoding status/health text, export
 progress/result text, playback command text, and playback cadence/decode/frame/
 stage/A/V drift text in `Formatters.Snapshot.Flashback.cs`, MJPEG
 activation/header/order, decode/copy/callback/per-decoder timing,
 compressed-queue, drop-reason, reorder, pipeline timing, preview-jitter queue,
-latency, ownership, and underflow text in `Formatters.Snapshot.Mjpeg.cs`, thread-health section order and
-source-reader/WASAPI row text in `Formatters.Snapshot.ThreadHealth.cs`,
+latency, ownership, and underflow text in `Formatters.Snapshot.Mjpeg.cs`,
 diagnostic-event text in `Formatters.Common.cs`, capture option/device text in
 `Formatters.Options.cs`,
 performance timeline response validation, JSON row projection, private row
