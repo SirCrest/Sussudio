@@ -1876,8 +1876,7 @@ discovery, buffered packet transition, rebased packet writes, writer throttling,
 and EOF partial-base rescue/freeing there, along with the per-segment packet
 write state, buffered-packet rescue/flush, and native packet write outcome
 state. Segment timestamp rebasing, segment-boundary repair,
-DTS monotonicity, and native packet writes live in
-`Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketRebasing.cs`.
+DTS monotonicity, and native packet writes live there too.
 Output-template selection, template-skip diagnostics, per-segment input open,
 stream-info lookup, stream-count checks, and layout-mismatch skip tracking live
 in `Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs`.

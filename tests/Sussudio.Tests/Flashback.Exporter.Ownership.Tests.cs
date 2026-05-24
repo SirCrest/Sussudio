@@ -22,8 +22,7 @@ static partial class Program
         var segmentPacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketReadLoop.cs")
             .Replace("\r\n", "\n");
         var segmentPacketWriteStateText = segmentPacketReadLoopText;
-        var segmentPacketRebasingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketRebasing.cs")
-            .Replace("\r\n", "\n");
+        var segmentPacketRebasingText = segmentPacketReadLoopText;
         var segmentRangeProjectionText = segmentPacketWritingText;
         var segmentSkipTrackingText = segmentPacketWritingText;
         var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs")
@@ -98,7 +97,6 @@ static partial class Program
         AssertContains(segmentPacketReadLoopText, "FreeBufferedPackets(segmentPacketState.BufferedPackets, segmentPacketState.BufferedStreamIndices);");
         AssertContains(segmentPacketWriteStateText, "private struct SegmentPacketWriteState");
         AssertContains(segmentPacketWriteStateText, "private int FlushSegmentBufferedPackets(");
-        AssertDoesNotContain(segmentPacketWriteStateText, "private SegmentPacketWriteOutcome WriteRebasedSegmentPacket(");
         AssertContains(segmentPacketRebasingText, "private SegmentPacketWriteOutcome WriteRebasedSegmentPacket(");
         AssertContains(segmentPacketRebasingText, "ResolveSegmentBoundaryTimestampRepairUs(");
         AssertContains(segmentPacketRebasingText, "packet->dts = lastDtsPerOutputStream[outputStreamIndex] + 1;");
@@ -251,6 +249,10 @@ static partial class Program
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
                 $"{removedFile} folded into FlashbackExporter.RuntimePolicy.cs");
         }
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.SegmentPacketRebasing.cs")),
+            "FlashbackExporter.SegmentPacketRebasing.cs folded into FlashbackExporter.SegmentPacketReadLoop.cs");
 
         return Task.CompletedTask;
     }
