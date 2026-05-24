@@ -4,7 +4,7 @@ static partial class Program
 {
     internal static Task CaptureSelectionBindingSelectionOwners_LiveInFocusedPartials()
     {
-        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
         var selectionNormalizerText = controllerText.Substring(
             controllerText.IndexOf("internal static class CaptureComboBoxSelectionNormalizer", System.StringComparison.Ordinal));

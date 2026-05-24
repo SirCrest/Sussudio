@@ -1117,9 +1117,10 @@ recording option adapter.
 Flashback settings-control initialization, GPU decode binding/sync, and buffer
 duration combo sync now live in
 `Sussudio/Controllers/Flashback/FlashbackSettingsBindingController.cs`.
-`MainWindow.Bindings.cs` is only the startup binding sequence; device-selection
-change hooks, initial recording lockout projection, and stats visibility sync
-route through their existing feature adapters/controllers.
+`MainWindow.xaml.cs` owns construction, startup event wiring, and the root
+`SetupBindings()` sequence; device-selection change hooks, initial recording
+lockout projection, and stats visibility sync route through their existing
+feature adapters/controllers.
 
 Capture session transition legality now lives in
 `Sussudio/Models/Capture/CaptureSessionTransitionPolicy.cs`. Mutable capture

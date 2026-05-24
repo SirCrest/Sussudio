@@ -4,7 +4,7 @@ static partial class Program
 {
     internal static Task CaptureSelectionBindingCollectionSync_LivesInControllerPartial()
     {
-        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadMainWindowCaptureSelectionBindingsAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
 

@@ -92,7 +92,7 @@ static partial class Program
     internal static Task RecordingStatePresentation_LivesInController()
     {
         var mainWindowText = ReadMainWindowCompositionSource();
-        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ButtonActions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingStatePresentationController.cs").Replace("\r\n", "\n");
         const string policyMarker = "internal static class RecordingStatePresentationPolicy";

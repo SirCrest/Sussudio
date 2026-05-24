@@ -4,7 +4,7 @@ static partial class Program
 {
     internal static Task PreviewStartup_PrimesUiAndAudioBeforePreviewReveal()
     {
-        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs")
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.AudioBindings.cs")
             .Replace("\r\n", "\n");

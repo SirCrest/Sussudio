@@ -1253,7 +1253,7 @@ Primary current owners:
   guarded async event-handler status updates used by automation adapters and
   XAML event handlers. `Sussudio/MainWindow.WindowShell.cs` keeps the stable
   private MainWindow adapter names for callers.
-- `Sussudio/MainWindow.Bindings.cs` owns the root `SetupBindings()`
+- `Sussudio/MainWindow.xaml.cs` owns the root `SetupBindings()`
   startup binding sequence and leaves feature-specific binding clusters in
   focused partials or controllers, including initial recording lockout,
   device-selection change hooks, stats visibility sync, and status-strip

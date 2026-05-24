@@ -74,4 +74,45 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         Closed += MainWindow_Closed;
     }
 
+    // Manual binding layer for WinUI controls. The app deliberately avoids
+    // x:Bind, so startup maps view-model state to concrete UI updates here.
+    private void SetupBindings()
+    {
+        AttachAudioMeterActivationBindings();
+
+        ApplyInitialFlashbackSettings();
+
+        // Bind all collections to ComboBoxes
+        AttachCaptureSelectionBindings();
+        InitializeCaptureOptionCollections();
+
+        // Set initial values
+        UpdateOutputPathDisplay();
+        ApplyInitialStatusStripPresentation();
+        UpdateLiveSignalInfoVisibility();
+        ApplyInitialAudioControlBindings();
+        ApplyInitialCaptureOptionSelections();
+        ApplyInitialAudioMeterPresentation();
+        ApplyAudioClipVisibility();
+        ApplyInitialRecordingStatePresentation();
+        RefreshHdrHintText();
+        UpdateFpsTelemetryTooltip();
+        EnsureDeviceSelection();
+        EnsureAudioControlSelections();
+        EnsureInitialCaptureOptionSelections();
+
+        AttachDeviceSelectionChangedBinding();
+        AttachAudioSelectionBindings();
+        AttachCaptureModeSelectionBindings();
+
+        AttachRecordingOptionBindings();
+        AttachAudioRecordPreviewToggleBindings();
+        AttachStatsOverlayToggleBindings();
+        AttachAudioInputToggleBindings();
+        AttachFlashbackSettingsBindings();
+        AttachDeviceAudioGainAndMeterBindings();
+        SetupResponsiveShellLayoutBindings();
+        AttachOutputPathDisplay();
+        ApplyStatsVisibility(ViewModel.IsStatsVisible, immediate: true);
+    }
 }

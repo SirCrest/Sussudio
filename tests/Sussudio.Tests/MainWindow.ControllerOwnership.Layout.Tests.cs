@@ -8,7 +8,7 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
-        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
@@ -30,6 +30,10 @@ static partial class Program
         AssertContains(xamlText, "x:Name=\"FlashbackToggleLabel\"");
         AssertContains(mainWindowText, "InitializeResponsiveShellLayoutController();");
         AssertContains(bindingsText, "SetupResponsiveShellLayoutBindings();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Bindings.cs")),
+            "root startup binding sequence lives with the MainWindow composition root");
         AssertContains(controllerText, "internal sealed class ResponsiveShellLayoutController");
         AssertContains(controllerText, "internal sealed class ControlBarLabelVisibilityController");
         AssertContains(controllerText, "public required UIElement[] ControlBarLabels { get; init; }");
