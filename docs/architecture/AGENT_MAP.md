@@ -2897,7 +2897,7 @@ Primary current owners:
 - `Sussudio/Controllers/Shell/LiveSignalInfoController.cs` owns live-signal pill
   text application, visibility state, show/hide debounce timers, and the small
   scale/fade animation. `MainWindow.StatusStripPresentation.cs` is the XAML-facing
-  adapter. `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs` owns the
+  adapter. `Sussudio/ViewModels/ViewModelPresentationBuilders.cs` owns the
   view-model live-signal label formatting and pixel-format/codec suffix policy.
 - `Sussudio/Controllers/Preview/PreviewAudioFadeController.cs` owns preview-volume
   fade-in/fade-out state, saved target volume, storyboard lifetime, and volume
@@ -3158,7 +3158,7 @@ Primary current owners:
   application, HDR/SDR reinitialize dispatch, MJPG HFR preserve, session
   mismatch checks, and active-capture restore through graph-built context ports.
   `MainViewModel.RecordingState.cs` owns recording-runtime counters and the DiskSpaceInfo assignment bridge,
-  while `Sussudio/ViewModels/OutputDriveSpacePresentationBuilder.cs` owns output drive probing,
+  while `Sussudio/ViewModels/ViewModelPresentationBuilders.cs` owns output drive probing,
   fallback, formatting, and suppressed-warning logging.
   `MainViewModel.RecordingState.cs` owns
   recording size/bitrate label assignment and recording-state reset reactions,
@@ -3171,7 +3171,7 @@ Primary current owners:
   projection, target-summary property application, and auto-resolution display
   text used by status and telemetry presentation. It delegates live-signal
   label formatting to
-  `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`.
+  `Sussudio/ViewModels/ViewModelPresentationBuilders.cs`.
   `MainViewModel.CaptureSettings.cs` owns the impure adapter that samples UI
   selection and observed runtime/source state. `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`
   owns final `CaptureSettings` assembly, audio/microphone device application,
@@ -3354,7 +3354,7 @@ Primary current owners:
   summary-age refresh, source-aware auto-retargeting hints, and the source telemetry graph-port contract consumed by source telemetry
   ingress and projection, including the pure summary builder and auto-resolution
   predicate ports that keep facade-private helpers explicit.
-  `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`
+  `Sussudio/ViewModels/ViewModelPresentationBuilders.cs`
   owns source telemetry summary, telemetry age, and target-summary display text formatting.
   `MainViewModel.SettingsPersistence.cs` owns settings initialization, simple
   persistence reactions, the impure settings load/save adapter, validated

@@ -9,7 +9,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CapturePresentation.cs")
             .Replace("\r\n", "\n");
-        var liveSignalText = ReadRepoFile("Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs")
+        var liveSignalText = ReadRepoFile("Sussudio/ViewModels/ViewModelPresentationBuilders.cs")
             .Replace("\r\n", "\n");
         var builderType = RequireType("Sussudio.ViewModels.LiveSignalTextPresentationBuilder");
         var snapshotType = RequireType("Sussudio.Models.CaptureRuntimeSnapshot");

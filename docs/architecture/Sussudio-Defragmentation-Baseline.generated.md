@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T07:42:39Z
+Generated UTC: 2026-05-24T07:47:28Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 785 |
+| Production .cs files | 783 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 60 (7.6%) |
-| Production .cs files under 80 lines | 128 (16.3%) |
+| Production .cs files under 60 lines | 57 (7.3%) |
+| Production .cs files under 80 lines | 125 (16.0%) |
 
 ## Largest partial-type clusters
 
@@ -56,8 +56,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 744 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs |
 | 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
-| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
+| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
@@ -101,7 +101,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 19 | Sussudio/Services/Telemetry/DisabledSourceSignalTelemetryProvider.cs |
 | 19 | tools/NativeXuAudioProbe/ToolRuntimeShims.cs |
 | 22 | Sussudio/ViewModels/DeviceAudioGainMapper.cs |
-| 23 | Sussudio/ViewModels/OutputDriveSpacePresentationBuilder.cs |
 | 25 | tools/Common/DiagnosticSessionRunner.cs |
 | 28 | tools/Common/DiagnosticSessionModels.cs |
 | 29 | Sussudio/Services/Capture/HdrOutputPolicy.cs |
@@ -121,7 +120,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 46 | tools/Common/AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs |
 | 48 | Sussudio/Services/Capture/CaptureSessionStateMachine.cs |
 | 48 | Sussudio/Services/Contracts/AutomationInterfaces.cs |
-| 48 | Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs |
 | 48 | tools/McpServer/Tools/PerformanceTimelineTools.cs |
 | 48 | tools/NativeXuAudioProbe/Program.ExperimentPayloads.cs |
 | 49 | Sussudio/Controllers/Window/WindowTitleController.cs |
@@ -144,7 +142,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 59 | Sussudio/Controllers/Capture/CaptureDeviceActionController.cs |
 | 59 | Sussudio/Controllers/Stats/StatsSnapshotProvider.cs |
 | 59 | Sussudio/ViewModels/BitrateSampleWindow.cs |
-| 59 | Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs |
 | 59 | tools/ssctl/CommandHandlers.UiVisibility.cs |
 
 ## Notes

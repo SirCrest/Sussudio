@@ -2932,9 +2932,9 @@ Live-signal pill text application, visibility state, show/hide debounce timers,
 and the small scale/fade animation now live in
 `Sussudio/Controllers/Shell/LiveSignalInfoController.cs`. `MainWindow.StatusStripPresentation.cs`
 is the XAML-facing adapter, while
-`Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs` owns label formatting.
+`Sussudio/ViewModels/ViewModelPresentationBuilders.cs` owns label formatting.
 Source telemetry summary, telemetry age, and target-summary display text
-formatting now live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`.
+formatting now live in `Sussudio/ViewModels/ViewModelPresentationBuilders.cs`.
 HDR runtime state/readiness projection from capture runtime snapshots,
 target-summary property application, live-signal info projection, and
 auto-resolution display text live together in
@@ -3957,7 +3957,7 @@ owner, fold it back into that owner and update the source-shape tests and
    output drive free-space assignment now lives in
    `MainViewModel.RecordingState.cs`, while output drive probing,
    fallback, formatting, and suppressed-warning logging now live in
-   `OutputDriveSpacePresentationBuilder.cs`. Recording size/bitrate label
+   `ViewModelPresentationBuilders.cs`. Recording size/bitrate label
    assignment and recording-state reset reactions also live in
    `MainViewModel.RecordingState.cs`, while
    `Sussudio/ViewModels/BitrateSampleWindow.cs` owns bounded byte-sample
@@ -3968,7 +3968,7 @@ owner, fold it back into that owner and update the source-shape tests and
    assignment, preview-stop live-info reset, HDR runtime state/readiness
    projection, target-summary property application, and auto-resolution display
    text; live-signal label formatting now lives in
-   `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`. Capture
+   `Sussudio/ViewModels/ViewModelPresentationBuilders.cs`. Capture
    settings projection from UI/runtime state is sampled by
    `MainViewModel.CaptureSettings.cs` and projected by
    `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`, which owns final
@@ -4176,7 +4176,7 @@ owner, fold it back into that owner and update the source-shape tests and
    collection mutation, and property notifications route through the top-level
     `MainViewModelCaptureModeOptionRebuildController.cs`.
    Source telemetry summary, telemetry age, and target-summary display text
-   formatting now live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`;
+   formatting now live in `Sussudio/ViewModels/ViewModelPresentationBuilders.cs`;
    HDR runtime state/readiness projection and target-summary property
    application live in `MainViewModel.CapturePresentation.cs`; keep snapshot
    application, source telemetry ingress behavior, telemetry age refresh,

@@ -96,8 +96,7 @@ static partial class Program
              string.Equals(fileName, "StatsPresentationModels.cs", StringComparison.Ordinal) ||
              string.Equals(fileName, "CaptureModeOptionsBuilder.cs", StringComparison.Ordinal) ||
              fileName.StartsWith("AudioRampTraceRecorder", StringComparison.Ordinal) ||
-             string.Equals(fileName, "LiveSignalTextPresentationBuilder.cs", StringComparison.Ordinal) ||
-             string.Equals(fileName, "SourceTelemetryPresentationBuilder.cs", StringComparison.Ordinal));
+             string.Equals(fileName, "ViewModelPresentationBuilders.cs", StringComparison.Ordinal));
     }
 
     private static bool IsUiPresentationOwnershipFile(string relativePath)
@@ -117,9 +116,8 @@ static partial class Program
                  string.Equals(fileName, "CaptureModeOptionsBuilder.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "DeviceFormatProbeRetargetPolicy.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "DeviceAudioGainMapper.cs", StringComparison.Ordinal) ||
-                 string.Equals(fileName, "LiveSignalTextPresentationBuilder.cs", StringComparison.Ordinal) ||
-                 string.Equals(fileName, "RecordingSettingsSelectionPolicy.cs", StringComparison.Ordinal) ||
-                 string.Equals(fileName, "SourceTelemetryPresentationBuilder.cs", StringComparison.Ordinal))) ||
+                 string.Equals(fileName, "ViewModelPresentationBuilders.cs", StringComparison.Ordinal) ||
+                 string.Equals(fileName, "RecordingSettingsSelectionPolicy.cs", StringComparison.Ordinal))) ||
             ((string.Equals(directory, "Sussudio/Controllers", StringComparison.OrdinalIgnoreCase) ||
               directory.StartsWith("Sussudio/Controllers/", StringComparison.OrdinalIgnoreCase)) &&
                 fileName.EndsWith(".cs", StringComparison.OrdinalIgnoreCase));
