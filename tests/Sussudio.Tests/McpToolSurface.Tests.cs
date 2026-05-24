@@ -47,7 +47,7 @@ static partial class Program
         var appStateToolText = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
         var captureSettingsToolsText = ReadRepoFile("tools/McpServer/Tools/CaptureSettingsTools.cs");
         var captureOptionsToolText = captureSettingsToolsText;
-        var deviceToolsText = ReadRepoFile("tools/McpServer/Tools/DeviceTools.cs");
+        var deviceToolsText = captureSettingsToolsText;
         var diagnosticsToolsText = ReadRepoFile("tools/McpServer/Tools/DiagnosticsTools.cs");
         var flashbackToolsText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.cs");
         var flashbackActionsText = flashbackToolsText;
