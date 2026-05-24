@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T07:47:28Z
+Generated UTC: 2026-05-24T07:53:42Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 783 |
+| Production .cs files | 782 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 57 (7.3%) |
-| Production .cs files under 80 lines | 125 (16.0%) |
+| Production .cs files under 60 lines | 56 (7.2%) |
+| Production .cs files under 80 lines | 124 (15.9%) |
 
 ## Largest partial-type clusters
 
@@ -140,7 +140,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 57 | tools/Common/DiagnosticSessionPostRunSnapshots.cs |
 | 58 | Sussudio/Services/Automation/AutomationCommandDispatcher.VerificationCommands.cs |
 | 59 | Sussudio/Controllers/Capture/CaptureDeviceActionController.cs |
-| 59 | Sussudio/Controllers/Stats/StatsSnapshotProvider.cs |
 | 59 | Sussudio/ViewModels/BitrateSampleWindow.cs |
 | 59 | tools/ssctl/CommandHandlers.UiVisibility.cs |
 

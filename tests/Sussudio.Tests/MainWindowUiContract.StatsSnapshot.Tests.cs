@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using Xunit;
 
@@ -12,7 +13,7 @@ public class MainWindowUiContractStatsSnapshotTests
     {
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
-        var statsSnapshotProviderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSnapshotProvider.cs");
+        var statsSnapshotProviderText = statsOverlayCompositionText;
         var mainWindowText = MainWindowCompositionSource.Read();
         var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs");
         var statsSnapshotText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshot.cs");
@@ -45,6 +46,9 @@ public class MainWindowUiContractStatsSnapshotTests
         AssertDoesNotContain(statsSnapshotProviderText, "MainViewModel ViewModel");
         AssertContains(statsSnapshotProviderText, "var presentCadence = renderer?.GetPresentCadenceMetrics(previewMinPresentationIntervalMs);");
         AssertContains(statsSnapshotProviderText, "PreviewRecentPresentIntervalsMs: renderer?.GetRecentPresentIntervalsMs(RecentSampleCount) ?? Array.Empty<double>()");
+        Assert.False(
+            File.Exists(Path.Combine(Environment.CurrentDirectory, "Sussudio", "Controllers", "Stats", "StatsSnapshotProvider.cs")),
+            "stats snapshot provider lives with stats overlay composition");
         AssertDoesNotContain(statsOverlayText, "var renderer = new StatsSnapshotRenderMetrics(");
         AssertDoesNotContain(statsOverlayText, "return new StatsSnapshot(");
         AssertDoesNotContain(statsOverlayText, "return StatsSnapshotBuilder.Build(health, renderer, viewState);");
