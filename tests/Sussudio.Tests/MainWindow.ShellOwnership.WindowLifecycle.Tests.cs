@@ -15,8 +15,6 @@ static partial class Program
         var documentedOwners = new[]
         {
             "Sussudio/Controllers/Window/WindowCloseLifecycleController.cs",
-            "Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs",
-            "Sussudio/Controllers/Window/WindowShutdownCleanupController.cs",
             "Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs",
             "Sussudio/MainWindow.WindowShell.cs",
             "Sussudio/MainWindow.xaml.cs",

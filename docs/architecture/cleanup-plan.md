@@ -997,8 +997,7 @@ controller after initial device refresh, and
 `Sussudio/MainWindow.xaml.cs` passes its async dispose
 delegate into the shutdown controller. Window close
 completion lives in `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`;
-recording-aware close finalization now lives in
-`Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs`.
+recording-aware close finalization lives there too.
 
 Top-level shell resize telemetry throttling for preview compositor transforms
 now lives in `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs`.
@@ -1053,22 +1052,19 @@ refreshes are driven by status/recording presentation.
 
 Window close lifecycle and native window helpers are now explicit:
 `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs` owns close request
-flags, completion TCS, cleanup latch, close-in-progress classification, and
-automation close dispatch orchestration plus actual close request execution:
+flags, completion TCS, cleanup latch, close-in-progress classification,
+automation close dispatch orchestration, actual close request execution,
+recording finalization side effects, and post-close cleanup order:
 `Close()`, completion timing after non-recording closes,
 close-in-progress success handling, COM `Application.Current.Exit()` fallback,
 requested-state reset after unexpected failures, and `AppWindow.Closing`
-decision choreography.
-`Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs` owns the
-recording finalization side effects during pre-close and post-close cleanup:
-the 120-second stop budget, `StopRecordingAndWaitAsync` wait race, timeout/
-failure breadcrumbs, status text, and shutdown-content dim/restore policy.
+decision choreography, the 120-second stop budget, `StopRecordingAndWaitAsync`
+wait race, timeout/failure breadcrumbs, status text, shutdown-content
+dim/restore policy, timer stops, event detaches, preview shutdown,
+post-close recording finalization handoff, automation diagnostics disposal,
+NVML disposal, and ViewModel disposal.
 `Sussudio/MainWindow.WindowShell.cs` is the XAML/AppWindow close adapter and
 keeps `RegisterCloseLifecycle`, `CloseAsync`, and `RequestWindowClose()` stable.
-`Sussudio/Controllers/Window/WindowShutdownCleanupController.cs` owns post-`Closed`
-cleanup order: cleanup latch, close completion, closing-state mark, timer stops,
-event detaches, preview shutdown, post-close recording finalization handoff,
-automation diagnostics disposal, NVML disposal, and ViewModel disposal.
 `Sussudio/MainWindow.xaml.cs`
 wires MainWindow cleanup delegates and the stable `Closed` event adapter into
 the controller, and owns the timer,

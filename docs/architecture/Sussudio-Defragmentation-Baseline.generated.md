@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T22:27:14Z
+Generated UTC: 2026-05-24T22:35:09Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 612 |
+| Production .cs files | 610 |
 | Test .cs files | 552 |
 | Production .cs files under 60 lines | 22 (3.6%) |
-| Production .cs files under 80 lines | 40 (6.5%) |
+| Production .cs files under 80 lines | 40 (6.6%) |
 
 ## Largest partial-type clusters
 
@@ -60,11 +60,12 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
 | 638 | Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs |
-| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
+| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 615 | Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
+| 580 | Sussudio/Controllers/Window/WindowCloseLifecycleController.cs |
 | 575 | tools/NativeXuAudioProbe/Program.I2cCommands.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
 | 552 | Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.cs |
@@ -80,7 +81,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 479 | Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs |
 | 471 | Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs |
 | 470 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs |
-| 459 | Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs |
 
 ## Sample production files under 60 lines
 

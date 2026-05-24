@@ -12,7 +12,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var appClosingControllerText = closeLifecycleControllerText;
         var closeRequestControllerText = closeLifecycleControllerText;
-        var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs")
+        var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(windowCtorText, "RegisterCloseLifecycle(appWindow);");
