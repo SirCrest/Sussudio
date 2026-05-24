@@ -6,8 +6,6 @@ static partial class Program
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
-        var waitConditionsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.WaitConditions.cs")
-            .Replace("\r\n", "\n");
         var assertionsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs")
             .Replace("\r\n", "\n");
 
@@ -16,18 +14,20 @@ static partial class Program
         AssertContains(customCommandsText, "case AutomationCommandKind.AssertSnapshot:");
         AssertContains(customCommandsText, "ExecuteAssertSnapshotCommandAsync(payload, correlationId, cancellationToken)");
 
-        AssertDoesNotContain(customCommandsText, "ParseWaitCondition(payload)");
-        AssertDoesNotContain(customCommandsText, "WaitForConditionAsync(condition, timeoutMs, pollMs, cancellationToken)");
         AssertDoesNotContain(customCommandsText, "ParseAssertions(payload)");
         AssertDoesNotContain(customCommandsText, "TryEvaluateAssertion(snapshot, assertion, out var failure)");
 
-        AssertContains(waitConditionsText, "private async Task<AutomationCommandResponse> ExecuteWaitForConditionCommandAsync(");
-        AssertContains(waitConditionsText, "var condition = ParseWaitCondition(payload);");
-        AssertContains(waitConditionsText, "Math.Clamp(GetInt(payload, \"timeoutMs\") ?? DefaultWaitTimeoutMs, 250, 300_000)");
-        AssertContains(waitConditionsText, "WaitForConditionAsync(condition, timeoutMs, pollMs, cancellationToken)");
-        AssertContains(waitConditionsText, "errorCode: met ? null : \"timeout\"");
-        AssertContains(waitConditionsText, "private async Task<(bool Met, AutomationSnapshot Snapshot)> WaitForConditionAsync(");
-        AssertContains(waitConditionsText, "private static bool ConditionSatisfied(");
+        AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteWaitForConditionCommandAsync(");
+        AssertContains(customCommandsText, "var condition = ParseWaitCondition(payload);");
+        AssertContains(customCommandsText, "Math.Clamp(GetInt(payload, \"timeoutMs\") ?? DefaultWaitTimeoutMs, 250, 300_000)");
+        AssertContains(customCommandsText, "WaitForConditionAsync(condition, timeoutMs, pollMs, cancellationToken)");
+        AssertContains(customCommandsText, "errorCode: met ? null : \"timeout\"");
+        AssertContains(customCommandsText, "private async Task<(bool Met, AutomationSnapshot Snapshot)> WaitForConditionAsync(");
+        AssertContains(customCommandsText, "private static bool ConditionSatisfied(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.WaitConditions.cs")),
+            "wait-condition commands folded into AutomationCommandDispatcher.CustomCommands.cs");
 
         AssertContains(assertionsText, "private async Task<AutomationCommandResponse> ExecuteAssertSnapshotCommandAsync(");
         AssertContains(assertionsText, "_diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken)");
