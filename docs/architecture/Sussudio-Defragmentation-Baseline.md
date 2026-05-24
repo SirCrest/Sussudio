@@ -1451,3 +1451,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: covered by Flashback playback submission/lifecycle source-shape tests, marker source aggregation tests, and runtime snapshot regression tests
 Behavior preserved: Initialize/update/dispose behavior, audio/preview routing after component updates, preview-detach stop-timeout cleanup, deferred preview reattach retry scheduling, and live-state restoration order remain unchanged
 Notes for future agents: keep component lifecycle and preview-detach deferred attach state with `FlashbackPlaybackController.cs`; keep command queue, playback thread, decoder file, frame submission, and audio routing behavior in their focused owners
+
+Date: 2026-05-24
+Area: MainWindow Flashback adapter locality
+Problem: `MainWindow.Flashback.Presentation.cs` was an 86-line adapter-only partial that tests and docs already treated as one Flashback XAML adapter surface with `MainWindow.Flashback.Interactions.cs`.
+Files consolidated: `Sussudio/MainWindow.Flashback.Presentation.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `MainWindow` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: not applicable; XAML event-handler and property-change callback names preserved
+Behavior preserved: Flashback marker, playback presentation, track-size, buffer, position, export-progress, and exporting callbacks now live in the same XAML-facing Flashback adapter with unchanged controller calls
+Notes for future agents: keep Flashback command, polling, playhead, scrub, settings, timeline, and presentation adapters together in `MainWindow.Flashback.Interactions.cs`; controller behavior remains in `Sussudio/Controllers/Flashback`

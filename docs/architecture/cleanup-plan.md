@@ -2595,8 +2595,7 @@ storyboard state, immediate collapse, and fullscreen animation reset live in
 `Sussudio/Controllers/Flashback/FlashbackTimelineAnimationController.cs`.
 `Sussudio/MainWindow.Flashback.Interactions.cs` owns the consolidated
 XAML-facing adapter surface for commands, polling, playhead motion, scrub
-input, settings, and timeline visibility. The presentation surface lives in
-`Sussudio/MainWindow.Flashback.Presentation.cs`. Command semantics live in
+input, settings, timeline visibility, and presentation. Command semantics live in
 `Sussudio/Controllers/Flashback/FlashbackCommandController.cs`.
 
 Active Flashback pointer-scrub state now lives in
@@ -2623,7 +2622,7 @@ controller.
 Flashback marker placement and compact duration text now live in
 `Sussudio/Controllers/Flashback/FlashbackMarkerPresentationController.cs`, including
 in/out marker visibility, selection-region layout, and `m:ss` formatting.
-`Sussudio/MainWindow.Flashback.Presentation.cs`
+`Sussudio/MainWindow.Flashback.Interactions.cs`
 wires marker presentation callbacks.
 
 Flashback playback UI sequencing now lives in
@@ -2636,7 +2635,7 @@ position-label updates with CTI re-anchor gating.
 Flashback export progress presentation now lives in
 `Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs`:
 progress-bar value, visibility, and reset-on-complete semantics.
-`Sussudio/MainWindow.Flashback.Presentation.cs` wires the export progress
+`Sussudio/MainWindow.Flashback.Interactions.cs` wires the export progress
 presentation controller.
 
 Flashback command semantics now live in
