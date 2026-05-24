@@ -3145,9 +3145,8 @@ presentation-preview harness coverage check.
 
 Recording output-path textbox, tooltip, resize-event updates, browse, and
 open-recordings button workflows now live in
-`Sussudio/Controllers/Recording/Output/OutputPathController.cs`; pure truncation
-text policy stays in
-`Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs`.
+`Sussudio/Controllers/Recording/Output/OutputPathController.cs`, along with
+pure truncation text policy.
 `OutputPathController` also owns the output-path property-change route;
 `MainWindow.ButtonActions.cs` is the XAML-facing adapter used by binding setup,
 property changes, and button events.

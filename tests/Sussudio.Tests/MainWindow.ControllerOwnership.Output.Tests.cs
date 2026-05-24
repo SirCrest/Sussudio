@@ -10,7 +10,14 @@ static partial class Program
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ButtonActions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/Output/OutputPathController.cs").Replace("\r\n", "\n");
-        var formatterText = ReadRepoFile("Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs").Replace("\r\n", "\n");
+        const string formatterMarker = "internal static class OutputPathDisplayTextFormatter";
+        var formatterStart = controllerText.IndexOf(formatterMarker, System.StringComparison.Ordinal);
+        if (formatterStart < 0)
+        {
+            throw new System.InvalidOperationException("OutputPathDisplayTextFormatter was not found in OutputPathController.cs.");
+        }
+
+        var formatterText = controllerText[formatterStart..];
 
         AssertContains(adapterText, "private OutputPathController _outputPathController = null!;");
         AssertContains(adapterText, "private void InitializeOutputPathController()");
@@ -39,9 +46,9 @@ static partial class Program
         AssertContains(formatterText, "var maxChars = (int)((availableWidth - 20) / 7);");
         AssertContains(formatterText, "var parts = path.Split('\\\\', '/');");
         AssertContains(formatterText, "var candidate = $\"{root}\\\\...\\\\{tail}\";");
-        AssertDoesNotContain(controllerText, "var maxChars = (int)((availableWidth - 20) / 7);");
-        AssertDoesNotContain(controllerText, "var parts = path.Split('\\\\', '/');");
-        AssertDoesNotContain(controllerText, "var candidate = $\"{root}\\\\...\\\\{tail}\";");
+        AssertDoesNotContain(adapterText, "var maxChars = (int)((availableWidth - 20) / 7);");
+        AssertDoesNotContain(adapterText, "var parts = path.Split('\\\\', '/');");
+        AssertDoesNotContain(adapterText, "var candidate = $\"{root}\\\\...\\\\{tail}\";");
         AssertDoesNotContain(bindingsText, "OutputPathTextBox.SizeChanged += (s, e) => UpdateOutputPathDisplay();");
         AssertDoesNotContain(bindingsText, "private void UpdateOutputPathDisplay()");
         AssertDoesNotContain(bindingsText, "ToolTipService.SetToolTip(OutputPathTextBox, path);");

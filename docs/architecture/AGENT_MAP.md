@@ -3066,11 +3066,9 @@ Primary current owners:
   method that delegates to this controller.
 - `Sussudio/Controllers/Recording/Output/OutputPathController.cs` owns recording output-
   path textbox, tooltip, resize-event updates, and browse/open-recordings button
-  workflows.
-  `Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs` owns pure output-
-  path truncation text policy. `MainWindow.ButtonActions.cs` is the
-  XAML-facing adapter used by binding setup, property changes, and button
-  events.
+  workflows plus pure output-path truncation text policy.
+  `MainWindow.ButtonActions.cs` is the XAML-facing adapter used by binding
+  setup, property changes, and button events.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.cs` owns the public
   compatibility-facade shell, shared shell/status/live-info state, native

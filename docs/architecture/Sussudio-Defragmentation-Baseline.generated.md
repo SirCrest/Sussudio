@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T06:43:29Z
+Generated UTC: 2026-05-24T06:48:22Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 800 |
+| Production .cs files | 799 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 77 (9.6%) |
-| Production .cs files under 80 lines | 147 (18.4%) |
+| Production .cs files under 60 lines | 76 (9.5%) |
+| Production .cs files under 80 lines | 146 (18.3%) |
 
 ## Largest partial-type clusters
 
@@ -56,8 +56,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 744 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs |
 | 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
-| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 | 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
+| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
@@ -118,7 +118,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 37 | Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs |
 | 37 | tools/KsAudioNodeProbe/Program.cs |
 | 38 | tools/ssctl/CommandHandlers.DiagnosticSession.cs |
-| 39 | Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs |
 | 39 | Sussudio/Services/Recording/RecordingContracts.cs |
 | 40 | Sussudio/ViewModels/MainViewModel.AutomationSettings.cs |
 | 40 | tools/NativeXuAudioProbe/Program.Commands.cs |
@@ -146,6 +145,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 52 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs |
 | 52 | Sussudio/Services/Capture/CaptureSessionCoordinator.cs |
 | 53 | Sussudio/Controllers/Recording/RecordingStatePresentationPolicy.cs |
+| 53 | Sussudio/Controllers/Window/WindowSnapRegionLayoutPolicy.cs |
 
 ## Notes
 
