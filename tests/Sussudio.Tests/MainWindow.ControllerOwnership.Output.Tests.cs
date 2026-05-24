@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using System.Reflection;
 
 static partial class Program
@@ -7,7 +7,7 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.ControllerInitialization.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ButtonActions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/Output/OutputPathController.cs").Replace("\r\n", "\n");
         const string formatterMarker = "internal static class OutputPathDisplayTextFormatter";

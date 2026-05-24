@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -6,7 +6,7 @@ static partial class Program
     internal static Task LaunchEntranceAnimation_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var controllerInitializationText = ReadRepoFile("Sussudio/MainWindow.ControllerInitialization.cs").Replace("\r\n", "\n");
+        var controllerInitializationText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var startupText = ReadMainWindowShellChromeAdapterSource();
         var adapterText = ReadMainWindowShellChromeAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
@@ -75,7 +75,7 @@ static partial class Program
     internal static Task MainWindowStartupHosting_LivesInStartupPartial()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var controllerInitializationText = ReadRepoFile("Sussudio/MainWindow.ControllerInitialization.cs").Replace("\r\n", "\n");
+        var controllerInitializationText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var startupText = ReadMainWindowShellChromeAdapterSource();
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs").Replace("\r\n", "\n");
         var launchStartupControllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchStartupController.cs").Replace("\r\n", "\n");
@@ -126,7 +126,6 @@ static partial class Program
         AssertContains(automationHostControllerText, "Automation control ready on pipe");
         AssertContains(automationHostControllerText, "Automation control disabled on pipe");
         AssertContains(mainWindowText, "InitializeShellControllers();");
-        AssertDoesNotContain(mainWindowText, "private void InitializePreviewControllers()");
         AssertContains(controllerInitializationText, "private void InitializeShellControllers()");
         AssertContains(controllerInitializationText, "private void InitializeWindowShellControllers()");
         AssertContains(controllerInitializationText, "private void InitializeFlashbackControllers()");

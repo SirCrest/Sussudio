@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -7,7 +7,7 @@ static partial class Program
     internal static Task RecordingButtonChrome_LivesInController()
     {
         var mainWindowText = ReadMainWindowCompositionSource();
-        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.ControllerInitialization.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var recordingPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.ButtonActions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs").Replace("\r\n", "\n");
         var recordingPresentationText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingStatePresentationController.cs").Replace("\r\n", "\n");

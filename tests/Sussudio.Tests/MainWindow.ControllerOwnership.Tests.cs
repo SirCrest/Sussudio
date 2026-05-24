@@ -1,10 +1,10 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 static partial class Program
 {
     internal static Task MainWindowPropertyChangedRouting_DelegatesToFocusedControllers()
     {
-        var rootText = ReadRepoFile("Sussudio/MainWindow.ControllerInitialization.cs").Replace("\r\n", "\n");
+        var rootText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadMainWindowCompositionSource();
         var propertyChangedRouterText = ReadRepoFile("Sussudio/Controllers/Shell/MainWindowPropertyChangedRouter.cs").Replace("\r\n", "\n");
         var previewText = ReadMainWindowPropertyChangedPreviewAdapterSource();
@@ -25,7 +25,7 @@ static partial class Program
         var shellChromeControllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
         var liveSignalText = ReadRepoFile("Sussudio/MainWindow.StatusStripPresentation.cs").Replace("\r\n", "\n");
         var liveSignalControllerText = ReadRepoFile("Sussudio/Controllers/Shell/LiveSignalInfoController.cs").Replace("\r\n", "\n");
-        var flashbackText = ReadRepoFile("Sussudio/MainWindow.ControllerInitialization.cs").Replace("\r\n", "\n");
+        var flashbackText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var flashbackControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs").Replace("\r\n", "\n");
 
         AssertContains(rootText, "private MainWindowPropertyChangedRouter _propertyChangedRouter = null!;");
@@ -35,7 +35,11 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PropertyChanged.cs")),
-            "property-change router composition lives in the controller initialization parent partial");
+            "property-change router composition lives in the MainWindow root composition");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ControllerInitialization.cs")),
+            "controller initialization partial folded into MainWindow root composition");
         AssertContains(rootText, "TryHandleCaptureSelection = TryHandleCaptureSelectionPropertyChanged,");
         AssertContains(rootText, "TryHandleStatusStrip = TryHandleStatusStripPropertyChanged,");
         AssertContains(rootText, "TryHandlePreviewAsync = TryHandlePreviewPropertyChangedAsync,");

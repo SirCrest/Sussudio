@@ -1,4 +1,4 @@
-# Architecture Cleanup Plan
+﻿# Architecture Cleanup Plan
 
 Last reviewed: 2026-05-16.
 
@@ -2965,7 +2965,7 @@ now live in `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`.
 `Sussudio/MainWindow.PreviewRenderer.Composition.cs`
 wires button presentation callbacks and preserves event
 handler signatures and delegates into the controller. The broad
-`MainWindow.ControllerInitialization.cs` dispatcher now owns only the `PropertyChanged`
+`MainWindow.xaml.cs` dispatcher now owns only the `PropertyChanged`
 event envelope, property-name normalization, and visible route order. Preview
 reinit transition state and log ownership now live in
 `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs`, while
@@ -3002,7 +3002,7 @@ and add new property-name cases to the nearest focused owner.
 Flashback-specific ViewModel property adapter dispatch now lives in
 `Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs`:
 timeline lockout, marker and playhead refresh, export progress, and Flashback
-settings-control sync. `Sussudio/MainWindow.ControllerInitialization.cs` is the
+settings-control sync. `Sussudio/MainWindow.xaml.cs` is the
 XAML/MainWindow property-change adapter that composes the Flashback route table
 callbacks alongside the root ViewModel router.
 
@@ -3797,8 +3797,7 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainWindow.PreviewTransitions.Composition.cs` so audio fade, button action,
    delayed fade-in, startup overlay, animation, and reinit callback surfaces can
    be audited from one adapter file.
-   `MainWindow.xaml.cs` now owns construction and startup event wiring, while
-   `MainWindow.ControllerInitialization.cs` keeps the controller initialization
+   `MainWindow.xaml.cs` now owns construction, startup event wiring, and the controller initialization
    list grouped into shell, Flashback, presentation, preview, recording,
    launch/status, preview action, audio, capture, and output phases so the
    composition root stays navigable as new controllers appear.

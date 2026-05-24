@@ -1,4 +1,4 @@
-# Sussudio Agent Map
+﻿# Sussudio Agent Map
 
 Last reviewed: 2026-05-21.
 
@@ -1262,7 +1262,7 @@ Primary current owners:
   fade/reinit/start/stop command behavior. One-line XAML command bridges for
   capture-device, recording, output-path, and preview-screenshot buttons live in
   their feature adapter partials beside the owning controllers.
-- `Sussudio/MainWindow.ControllerInitialization.cs` owns only the root ViewModel
+- `Sussudio/MainWindow.xaml.cs` owns only the root ViewModel
   PropertyChanged event envelope and router composition.
   `Sussudio/Controllers/Shell/MainWindowPropertyChangedRouter.cs` owns
   property-name normalization and route order. Capture-selection and
@@ -2950,7 +2950,7 @@ Primary current owners:
 - `Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs` owns
   Flashback-specific property-change routing for timeline lockout, markers,
   playhead updates, export progress, and settings-control synchronization.
-  `Sussudio/MainWindow.ControllerInitialization.cs` is the XAML/MainWindow property-change
+  `Sussudio/MainWindow.xaml.cs` is the XAML/MainWindow property-change
   adapter that composes the Flashback route table callbacks alongside the root
   ViewModel router.
 - `Sussudio/Controllers/Audio/AudioControlPresentationController.cs` owns audio and
@@ -3380,8 +3380,7 @@ Primary current owners:
 Refactor direction:
 
 - Keep `MainWindow.xaml.cs` as a shell/composition root over time.
-- `MainWindow.xaml.cs` owns construction and startup event wiring, while
-  `MainWindow.ControllerInitialization.cs` owns phased controller
+- `MainWindow.xaml.cs` owns construction, startup event wiring, and phased controller
   initialization. Keep the phase methods grouped by runtime surface
   (window/shell, Flashback, presentation, preview, recording, launch/status,
   preview actions, audio, capture, output) so adding a controller does not turn

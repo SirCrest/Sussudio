@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
@@ -23,9 +23,9 @@ static partial class Program
         var flashbackSettingsControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackSettingsBindingController.cs")
             .Replace("\r\n", "\n");
         var mainWindowText = ReadMainWindowCompositionSource();
-        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.ControllerInitialization.cs")
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.ControllerInitialization.cs")
+        var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var flashbackPropertyChangedControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs")
             .Replace("\r\n", "\n");
