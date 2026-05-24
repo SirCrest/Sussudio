@@ -1415,3 +1415,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: covered by automation diagnostics source-ownership tests and runtime snapshot regression tests
 Behavior preserved: Diagnostic verdict ordering still builds lanes first, checks Flashback-specific verdicts, checks realtime verdicts, and falls back to the same healthy/mixed summary/evidence
 Notes for future agents: keep root diagnostic verdict orchestration with `AutomationDiagnosticsHub.Evaluation.cs`; keep Flashback, realtime, preview, and lane-specific verdict policy in their focused owners while they carry independent branching
+
+Date: 2026-05-24
+Area: D3D preview frame-upload locality
+Problem: `D3D11PreviewRenderer.RawFrameUpload.cs` was a 124-line implementation-detail partial for the frame-upload owner, forcing agents to open two files to follow VideoProcessor input-view resolution and raw byte/lease texture upload fallback.
+Files consolidated: `Sussudio/Services/Preview/D3D11PreviewRenderer.RawFrameUpload.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `D3D11PreviewRenderer` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: covered by D3D11 preview renderer ownership, diagnostics contract, and runtime snapshot regression tests
+Behavior preserved: External texture input-view creation, raw frame size checks, direct `UpdateSubresource` upload, one-time staging fallback logging, staging `Map`/copy/`CopyResource`, and render-pass present/timing ownership remain unchanged
+Notes for future agents: keep CPU-buffer upload helpers with `D3D11PreviewRenderer.FrameUpload.cs`; keep render-pass timing/accounting in `RenderPasses.cs` and shader draw execution in the shader-pass owners

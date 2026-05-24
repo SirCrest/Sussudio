@@ -108,7 +108,6 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Viewport.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RawFrameUpload.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs");
         var captureSource = ReadUnifiedVideoCaptureSource();
 
