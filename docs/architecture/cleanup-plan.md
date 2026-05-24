@@ -3320,20 +3320,14 @@ playback, Flashback export, and system row projection fields in
 `PerformanceTimelineTools.Rows.cs`, the private row model in
 `PerformanceTimelineTools.Rows.Model.cs`,
 timeline table text rendering in `PerformanceTimelineTools.Rendering.cs`,
-first-vs-last trend text and target-summary orchestration in
-`PerformanceTimelineTools.Rendering.Trend.cs`, preview cadence, visual/MJPEG
-fingerprint, jitter, D3D, and slow-stage trend text in
-`PerformanceTimelineTools.Rendering.Trend.Preview.cs`, Flashback playback,
-command, failure, cleanup, stage, and export trend text in
-`PerformanceTimelineTools.Rendering.Trend.Flashback.cs`,
-compact value and command-message formatting helpers in
-`PerformanceTimelineTools.Formatting.cs`, preview jitter-depth and D3D
-bottleneck formatting in `PerformanceTimelineTools.Formatting.Preview.cs`,
-Flashback stage, cleanup, export, and byte-rate formatting in
-`PerformanceTimelineTools.Formatting.Flashback.cs`, and
-target summaries in `PerformanceTimelineTools.Summaries.cs`, with preview,
-Flashback, and system pressure summaries in
-`PerformanceTimelineTools.Summaries.Pressure.cs`.
+first-vs-last trend text, preview cadence, visual/MJPEG fingerprint, jitter,
+D3D, slow-stage, Flashback playback, command, failure, cleanup, stage, export
+trend text, and target-summary orchestration in
+`PerformanceTimelineTools.Rendering.Trend.cs`, compact value, command-message,
+preview jitter-depth, D3D bottleneck, Flashback stage, cleanup, export, and
+byte-rate formatting helpers in `PerformanceTimelineTools.Formatting.cs`, and
+target, preview, Flashback, and system pressure summaries in
+`PerformanceTimelineTools.Summaries.cs`.
 The frame-pacing verdict MCP tool follows the same shape: keep MCP attributes,
 method signature, pipe command orchestration, and response shaping in
 `FramePacingVerdictTools.cs`; keep channel/timeline projection, readiness and

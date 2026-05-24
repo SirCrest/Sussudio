@@ -3660,23 +3660,15 @@ Primary owners:
   private row model for the same table and trend-rendering fields.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs` owns timeline
   table text rendering. `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs`
-  owns first-vs-last trend text and target-summary orchestration.
-  `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Preview.cs`
-  owns preview cadence, visual/MJPEG fingerprint, jitter, D3D, and slow-stage
-  trend text.
-  `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.cs`
-  owns Flashback playback, command, failure, cleanup, stage, and export trend
-  text.
+  owns first-vs-last trend text, preview cadence, visual/MJPEG fingerprint,
+  jitter, D3D, slow-stage, Flashback playback, command, failure, cleanup, stage,
+  export trend text, and target-summary orchestration.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs` owns compact
-  cell, command-message, and optional-value formatting.
-  `tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Preview.cs` owns
-  preview jitter-depth and D3D bottleneck formatting.
-  `tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Flashback.cs`
-  owns Flashback stage, cleanup, export, and byte-rate formatting.
+  cell, command-message, optional-value, preview jitter-depth, D3D bottleneck,
+  Flashback stage, cleanup, export, and byte-rate formatting.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs` owns 1%-low
-  target summaries and shared summary predicates.
-  `tools/McpServer/Tools/PerformanceTimelineTools.Summaries.Pressure.cs`
-  owns preview, Flashback, and system pressure summaries and pressure counters.
+  target summaries, shared summary predicates, preview, Flashback, and system
+  pressure summaries, and pressure counters.
 - `tools/McpServer/Tools/FramePacingVerdictTools.cs` owns the public
   `get_frame_pacing_verdict` MCP tool entry point, pipe command orchestration,
   and response shaping. `FramePacingVerdictTools.Channels.cs` owns snapshot

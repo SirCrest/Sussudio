@@ -250,7 +250,19 @@ Partial clusters reduced: `PerformanceTimelineTools` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by MCP performance timeline source-ownership/rendering/projection contract tests and runtime snapshot regression tests
 Behavior preserved: Flashback export trend text, order, formatting helpers, and first-vs-last comparisons are unchanged
-Notes for future agents: keep Flashback playback and export trend text together in `PerformanceTimelineTools.Rendering.Trend.Flashback.cs` unless export trend rendering grows independent policy beyond the Flashback trend section
+Notes for future agents: superseded by the later MCP timeline helper consolidation; keep Flashback playback and export trend text together inside `PerformanceTimelineTools.Rendering.Trend.cs` unless Flashback trend rendering grows independent policy beyond the trend section.
+
+Date: 2026-05-24
+Area: MCP performance timeline helper locality
+Problem: Several MCP timeline helper groups were 25-40 line partial fragments for formatting and trend subsections, forcing small-file hops for one timeline rendering surface.
+Files consolidated: `tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Preview.cs`; `tools/McpServer/Tools/PerformanceTimelineTools.Formatting.Flashback.cs`; `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Preview.cs`; `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.Flashback.cs`; `tools/McpServer/Tools/PerformanceTimelineTools.Summaries.Pressure.cs`
+Files added: none
+Net production .cs delta: -5
+Partial clusters reduced: `PerformanceTimelineTools` -5 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by MCP performance timeline source-ownership/rendering/projection contract tests and runtime snapshot regression tests
+Behavior preserved: MCP performance timeline command shape, row projection, table text, trend sections, pressure summaries, and helper formatting remain in the same public tool surface
+Notes for future agents: start MCP timeline cleanup from the smallest helper fragments first; keep formatting helpers in `PerformanceTimelineTools.Formatting.cs`, first-vs-last trend text in `PerformanceTimelineTools.Rendering.Trend.cs`, target and pressure summaries in `PerformanceTimelineTools.Summaries.cs`, and split only when a subsection grows independent policy.
 
 Date: 2026-05-24
 Area: ssctl command argument parsing locality
