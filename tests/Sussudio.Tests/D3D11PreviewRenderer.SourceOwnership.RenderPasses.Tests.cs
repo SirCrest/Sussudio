@@ -53,8 +53,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
             .Replace("\r\n", "\n");
-        var lifecycleText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs")
-            .Replace("\r\n", "\n");
         var stopLifecycleText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.StopLifecycle.cs")
             .Replace("\r\n", "\n");
         var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
@@ -99,8 +97,8 @@ static partial class Program
         AssertContains(stopLifecycleText, "private void ExitNativeRenderCall()");
         AssertContains(stopLifecycleText, "Interlocked.Exchange(ref _inNativeCall, 1);");
         AssertContains(stopLifecycleText, "Interlocked.Exchange(ref _inNativeCall, 0);");
-        AssertDoesNotContain(lifecycleText, "private bool TryEnterNativeRenderCall()");
-        AssertDoesNotContain(lifecycleText, "private void ExitNativeRenderCall()");
+        AssertDoesNotContain(rootText, "private bool TryEnterNativeRenderCall()");
+        AssertDoesNotContain(rootText, "private void ExitNativeRenderCall()");
         AssertContains(renderThreadText, "ProcessRenderThreadFrameOrIdle()");
         AssertContains(renderThreadText, "RenderFrame(frame);");
         AssertDoesNotContain(rootText, "private void RenderFrame(PendingFrame frame)");

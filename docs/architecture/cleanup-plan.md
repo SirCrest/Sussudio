@@ -1954,8 +1954,8 @@ in `D3D11PreviewRenderer.MetricTypes.cs`. Renderer implementation
 fields should live with the partial that mutates or projects them: keep
 renderer diagnostic ring/write state, render-thread failure state, first-frame
 notification state, and slow-frame reason classification in
-`D3D11PreviewRenderer.Diagnostics.cs`, startup/disposal lifecycle state in
-`D3D11PreviewRenderer.Lifecycle.cs`, stop/unbind/native-call fence state in
+`D3D11PreviewRenderer.Diagnostics.cs`, startup/disposal lifecycle state in the
+renderer root facade, stop/unbind/native-call fence state in
 `D3D11PreviewRenderer.StopLifecycle.cs`, render-loop shell orchestration,
 shared-device reset/rebind consumption, composition-transform wake handling,
 pending-frame render dispatch, final render-thread drain, and renderer-mode
@@ -2007,13 +2007,12 @@ frame, lease, and single shared-texture submission entry points there. The
 dual-plane NV12 submission guard, HDR transition logging, COM AddRef/release,
 and pending-frame adapter live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Nv12Submission.cs`; keep
-render-thread start/disposal in `D3D11PreviewRenderer.Lifecycle.cs`, stop and
-reinit stop in `D3D11PreviewRenderer.StopLifecycle.cs`, and panel sizing in the
-root renderer.
+render-thread start/disposal and panel sizing in the root renderer, with stop
+and reinit stop in `D3D11PreviewRenderer.StopLifecycle.cs`.
 
-D3D preview renderer lifecycle now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs`. Keep
-render-thread startup state, startup reset, and renderer disposal there.
+D3D preview renderer public lifecycle now lives in the root
+`Sussudio/Services/Preview/D3D11PreviewRenderer.cs` facade. Keep render-thread
+startup state, startup reset, and renderer disposal there.
 `Sussudio/Services/Preview/D3D11PreviewRenderer.StopLifecycle.cs` owns public
 stop, reinit stop, unbind-before-join ordering, native-call drain fencing,
 pending-frame shutdown cleanup, and render-pass native-call entry/exit guard

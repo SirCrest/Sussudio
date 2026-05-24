@@ -13,8 +13,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Diagnostics.cs")
             .Replace("\r\n", "\n");
-        var lifecycleText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs")
-            .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
             .Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md")
@@ -60,7 +58,7 @@ static partial class Program
         AssertContains(diagnosticsText, "private void ResetFirstFrameNotification()");
         AssertContains(diagnosticsText, "private void NotifyFirstFrameRendered(string message)");
         AssertContains(diagnosticsText, "FirstFrameRendered?.Invoke()");
-        AssertContains(lifecycleText, "ResetFirstFrameNotification();");
+        AssertContains(rootText, "ResetFirstFrameNotification();");
         AssertContains(renderPassesText, "NotifyFirstFrameRendered(firstFrameMessage);");
         var waitIndex = renderThreadText.IndexOf("WaitForFrameLatencySignal();", StringComparison.Ordinal);
         var renderIndex = renderThreadText.IndexOf("RenderFrame(frame);", StringComparison.Ordinal);

@@ -1463,3 +1463,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; XAML event-handler and property-change callback names preserved
 Behavior preserved: Flashback marker, playback presentation, track-size, buffer, position, export-progress, and exporting callbacks now live in the same XAML-facing Flashback adapter with unchanged controller calls
 Notes for future agents: keep Flashback command, polling, playhead, scrub, settings, timeline, and presentation adapters together in `MainWindow.Flashback.Interactions.cs`; controller behavior remains in `Sussudio/Controllers/Flashback`
+
+Date: 2026-05-24
+Area: D3D preview renderer public lifecycle locality
+Problem: `D3D11PreviewRenderer.Lifecycle.cs` kept public `Start`, `Dispose`, and renderer startup state in a tiny partial even though the root renderer already owns the public facade, construction references, runtime knobs, and observable state.
+Files consolidated: `Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `D3D11PreviewRenderer` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation/tool contract changes
+Behavior preserved: Public start/dispose semantics, startup dimension/FPS/HDR reset, first-frame reset, shared-device reset flag, frame-ready reset, render-thread creation, stop-before-start, shared-device disposal, and frame-ready event disposal remain unchanged
+Notes for future agents: keep public lifecycle with `D3D11PreviewRenderer.cs`; keep stop/reinit-stop, panel unbind, native-call fencing, and pending-frame shutdown cleanup in `D3D11PreviewRenderer.StopLifecycle.cs`

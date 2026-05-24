@@ -15,6 +15,6 @@ public sealed class PresentationPreviewD3DRuntimeCaptureOwnershipTests
         => global::Program.D3D11PreviewRenderer_SubmissionLivesInFocusedPartial();
 
     [Fact]
-    public Task LifecycleLivesInFocusedPartial()
-        => global::Program.D3D11PreviewRenderer_LifecycleLivesInFocusedPartial();
+    public Task PublicLifecycleLivesInRendererRoot()
+        => global::Program.D3D11PreviewRenderer_PublicLifecycleLivesInRendererRoot();
 }

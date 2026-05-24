@@ -39,21 +39,23 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task D3D11PreviewRenderer_LifecycleLivesInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_PublicLifecycleLivesInRendererRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
-            .Replace("\r\n", "\n");
-        var lifecycleText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs")
             .Replace("\r\n", "\n");
         var stopLifecycleText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.StopLifecycle.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(lifecycleText, "private readonly object _lifecycleLock = new();");
-        AssertContains(lifecycleText, "private Thread? _renderThread;");
-        AssertContains(lifecycleText, "private int _disposed;");
-        AssertContains(lifecycleText, "private double _startupFps = 60.0;");
-        AssertContains(lifecycleText, "public void Start(int width, int height, double fps, bool isHdr)");
-        AssertContains(lifecycleText, "public void Dispose()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Lifecycle.cs")),
+            "D3D11 preview public lifecycle is consolidated into the renderer root facade");
+        AssertContains(rootText, "private readonly object _lifecycleLock = new();");
+        AssertContains(rootText, "private Thread? _renderThread;");
+        AssertContains(rootText, "private int _disposed;");
+        AssertContains(rootText, "private double _startupFps = 60.0;");
+        AssertContains(rootText, "public void Start(int width, int height, double fps, bool isHdr)");
+        AssertContains(rootText, "public void Dispose()");
         AssertContains(stopLifecycleText, "private int _stopRequested;");
         AssertContains(stopLifecycleText, "private int _inNativeCall;");
         AssertContains(stopLifecycleText, "public void StopRenderThread()");
@@ -62,14 +64,11 @@ static partial class Program
         AssertContains(stopLifecycleText, "WaitForNativeCallToDrainOrThrow(\"stop\");");
         AssertContains(stopLifecycleText, "FailPendingFrameCapture(\"Preview renderer stopped before frame capture completed.\");");
         AssertContains(stopLifecycleText, "WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel)");
-        AssertDoesNotContain(lifecycleText, "public void StopRenderThread()");
-        AssertDoesNotContain(lifecycleText, "public void Stop()");
-        AssertDoesNotContain(lifecycleText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
-        AssertDoesNotContain(rootText, "public void Start(int width, int height, double fps, bool isHdr)");
+        AssertDoesNotContain(rootText, "public void StopRenderThread()");
+        AssertDoesNotContain(rootText, "public void Stop()");
+        AssertDoesNotContain(rootText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
         AssertDoesNotContain(rootText, "public void StopRenderThread()");
         AssertDoesNotContain(rootText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
-        AssertDoesNotContain(rootText, "private readonly object _lifecycleLock = new();");
-        AssertDoesNotContain(rootText, "private Thread? _renderThread;");
 
         return Task.CompletedTask;
     }
