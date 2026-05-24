@@ -16,7 +16,6 @@ static partial class Program
             FlashbackRecordingAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs"),
             EventsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvents.cs"),
             VerificationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Verification.cs"),
-            LifecycleText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Lifecycle.cs"),
             HdrText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Hdr.cs"),
             SnapshotsText = ReadAutomationDiagnosticsHubSnapshotsSource(),
             SnapshotsCoreText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
@@ -86,7 +85,6 @@ static partial class Program
         public string EvaluationText { get; init; } = string.Empty;
         public string EventsText { get; init; } = string.Empty;
         public string VerificationText { get; init; } = string.Empty;
-        public string LifecycleText { get; init; } = string.Empty;
         public string HdrText { get; init; } = string.Empty;
         public string SnapshotsText { get; init; } = string.Empty;
         public string SnapshotsCoreText { get; init; } = string.Empty;

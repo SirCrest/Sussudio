@@ -23,9 +23,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotsText, "ScheduleAutoVerificationIfNeeded(shouldAutoVerify);");
         AssertContains(diagnostics.SnapshotsText, "private static PreviewPacingClassification ClassifyPreviewPacing(");
         AssertContains(diagnostics.SnapshotsText, "ClassifyPreviewPacing(");
-        AssertContains(diagnostics.LifecycleText, "public void Start()");
-        AssertContains(diagnostics.LifecycleText, "private async Task RunLoopAsync(CancellationToken cancellationToken)");
-        AssertDoesNotContain(diagnostics.HubText, "public void Start()");
+        AssertContains(diagnostics.HubText, "public void Start()");
+        AssertContains(diagnostics.HubText, "private async Task RunLoopAsync(CancellationToken cancellationToken)");
         AssertContains(diagnostics.HdrText, "private static HdrTruthVerdict BuildHdrTruthVerdict(");
         AssertContains(diagnostics.HdrText, "private static PreviewHdrState BuildPreviewHdrState(");
         AssertContains(diagnostics.HdrText, "private readonly record struct PreviewHdrState(");

@@ -75,7 +75,8 @@ and scenario-level plan lookup now live together in
 execution flow and summary writing.
 
 Automation diagnostics now have named partial owners instead of one large hub
-body. `AutomationDiagnosticsHub.cs` is the compact field/constructor owner.
+body. `AutomationDiagnosticsHub.cs` is the compact field/constructor, start/
+stop/dispose, and polling-loop owner.
 `AutomationDiagnosticsHub.Counters.RealtimePreview.cs` owns preview jitter,
 MJPEG, D3D, and Flashback recording recent-counter baselines and delta updates.
 `AutomationDiagnosticsHub.Snapshots.cs` owns public snapshot read/refresh APIs,
@@ -308,8 +309,8 @@ evaluation.
 pipeline, source-HDR, and verification metadata evidence, plus preview HDR
 input detection, HDR pixel-format helpers used by preview state, and tone-map
 state projection.
-`AutomationDiagnosticsHub.Lifecycle.cs` owns start/stop/dispose and the polling
-loop. `AutomationDiagnosticsHub.Snapshots.cs` owns public snapshot read/refresh
+`AutomationDiagnosticsHub.cs` owns start/stop/dispose and the polling loop.
+`AutomationDiagnosticsHub.Snapshots.cs` owns public snapshot read/refresh
 APIs, refresh-gate serialization, core snapshot refresh orchestration, cached
 last-output file existence/size probing, process CPU/memory/GC/thread-pool
 sampling, latest-snapshot publication, timeline append, event notification, and
