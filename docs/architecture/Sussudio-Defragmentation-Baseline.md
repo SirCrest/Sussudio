@@ -252,6 +252,18 @@ CLI/MCP/pipe checks, if applicable: covered by MCP performance timeline source-o
 Behavior preserved: Flashback export trend text, order, formatting helpers, and first-vs-last comparisons are unchanged
 Notes for future agents: keep Flashback playback and export trend text together in `PerformanceTimelineTools.Rendering.Trend.Flashback.cs` unless export trend rendering grows independent policy beyond the Flashback trend section
 
+Date: 2026-05-24
+Area: ssctl command argument parsing locality
+Problem: CLI usage validation, argument joining, flag consumption, optional flag parsing, and JSON detection/pretty-printing lived in three small `CommandHandlers` partials even though they are one command-line argument interpretation support surface.
+Files consolidated: `tools/ssctl/CommandHandlers.Flags.cs`; `tools/ssctl/CommandHandlers.Json.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `CommandHandlers` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by ssctl command-handler routing/source-ownership tests and runtime snapshot regression tests
+Behavior preserved: Flag removal, optional flag value parsing, usage exceptions, JSON detection, and pretty JSON formatting are unchanged
+Notes for future agents: keep generic ssctl command argument parsing helpers in `CommandHandlers.Arguments.cs`; keep primitive/domain value parsing in `CommandHandlers.Values.cs` and transport response handling in `CommandHandlers.Transport.cs`
+
 Date: 2026-05-21
 Area: Automation diagnostics Flashback evaluation
 Problem: Active/stalled Flashback export diagnostic verdict construction lived in a small partial even though it is only called by the Flashback diagnostic owner that orders storage, recording, export, and playback verdicts.

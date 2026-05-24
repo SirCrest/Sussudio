@@ -438,9 +438,9 @@ range CLI actions, position parsing, and `FlashbackAction` payload shaping.
 defaulting, directory creation, and payload shape. Support partials remain:
 `CommandHandlers.Context.cs` owns
 per-invocation command context,
-`CommandHandlers.Flags.cs` owns flag consumption and optional flag values,
-`CommandHandlers.Arguments.cs` owns usage validation and argument joining,
-`CommandHandlers.Json.cs` owns JSON detection/pretty-printing, `CommandHandlers.Values.cs`
+`CommandHandlers.Arguments.cs` owns usage validation, argument joining, flag
+consumption, optional flag values, and JSON detection/pretty-printing,
+`CommandHandlers.Values.cs`
 owns primitive/domain value parsing, and `CommandHandlers.Transport.cs` owns
 shared command sending plus response exit-code shaping. Command-family payload
 helpers stay with their owning command partials.

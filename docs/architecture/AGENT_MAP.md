@@ -3608,9 +3608,8 @@ Primary owners:
   text and catalog-backed CLI help lines.
 - `tools/ssctl/CommandHandlers.Context.cs` owns the per-invocation command
   context wrapper.
-- `tools/ssctl/CommandHandlers.Flags.cs` owns flag consumption and optional
-  flag value parsing. `CommandHandlers.Arguments.cs` owns usage validation,
-  required words, and argument joining. `CommandHandlers.Json.cs` owns
+- `tools/ssctl/CommandHandlers.Arguments.cs` owns usage validation, required
+  words, argument joining, flag consumption, optional flag value parsing, and
   command-handler JSON detection/pretty-printing. `CommandHandlers.Values.cs`
   owns primitive parsing, Flashback numeric validation, on/off and show/hide
   parsing, recording format normalization, snap action mapping, and assertion

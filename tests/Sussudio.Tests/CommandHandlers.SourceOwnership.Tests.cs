@@ -73,9 +73,10 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs"), "ConsumeFlag(context.Rest, \"--force\")");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs"), "? ParseFlashbackExportSeconds(context.Rest[1])");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs"), "Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? \".\")");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flags.cs"), "private static bool ConsumeFlag(List<string> args, string flag)");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Arguments.cs"), "private static string JoinRemaining(IReadOnlyList<string> args, int startIndex)");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Json.cs"), "private static bool LooksLikeJson(string value)");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Arguments.cs"), "private static bool ConsumeFlag(List<string> args, string flag)");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Arguments.cs"), "private static bool LooksLikeJson(string value)");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Arguments.cs"), "private static string PrettyJson<T>(T value)");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Values.cs"), "private static object? ParseAssertionValue(string value)");
         AssertContains(commandHandlersSource, "\"manifest\" => HandleManifestAsync(context)");
         AssertContains(commandHandlersSource, "\"audio-ramp-trace\" => HandleAudioRampTraceAsync(context)");
@@ -103,6 +104,14 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers" + ".Parsing" + ".cs")),
             "old ssctl parsing grab-bag removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.Flags.cs")),
+            "ssctl flag helpers live with command argument parsing");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.Json.cs")),
+            "ssctl JSON helpers live with command argument parsing");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.DeviceWindow.cs")),
