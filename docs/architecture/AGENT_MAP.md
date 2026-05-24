@@ -491,10 +491,8 @@ Important entry points:
   for the worker queue and cancellation token source.
 - `CaptureSessionCoordinator.Flashback.cs` owns queued Flashback mutations,
   read-only Flashback status, playback snapshot projection, Flashback export
-  and segment query forwarding, and active playback-controller readiness checks
-  and rejection logging.
-- `CaptureSessionCoordinator.Flashback.Playback.cs` owns playback, scrub,
-  marker, and go-live command adapters.
+  and segment query forwarding, playback/scrub/marker/go-live command adapters,
+  and active playback-controller readiness checks and rejection logging.
 - `CaptureSessionTransitionPolicy.cs` owns pure transition legality and
   steady-state resolution for `CaptureService`;
   `Sussudio/Services/Capture/CaptureSessionStateMachine.cs` owns mutable

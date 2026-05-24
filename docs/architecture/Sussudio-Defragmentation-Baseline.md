@@ -1535,3 +1535,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: Public lifecycle/audio command methods, emergency stop routing, audio monitoring mute/start/stop order, preview volume guard, snapshot projection fields, pending-command age bookkeeping, queue latency tracking, and serialized worker handoff remain unchanged
 Notes for future agents: keep coordinator construction, shared state, public non-Flashback command facade, and snapshot projection together in `CaptureSessionCoordinator.cs`; keep queue worker mechanics in `Queue.cs`, disposal in `Disposal.cs`, and Flashback-specific facades in the Flashback partials
+
+Date: 2026-05-24
+Area: Capture session coordinator Flashback facade locality
+Problem: `CaptureSessionCoordinator.Flashback.Playback.cs` was an 80-line adapter-only partial that used the guard and rejection telemetry owned by `CaptureSessionCoordinator.Flashback.cs`, so changing the coordinator Flashback facade required opening both files.
+Files consolidated: `Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.Playback.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `CaptureSessionCoordinator` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: Flashback scrub, seek, play, pause, go-live, nudge, in/out marker, clear-marker adapters, active-playback guard use, and rejection telemetry remain unchanged
+Notes for future agents: keep coordinator Flashback status, export/segment forwarding, playback/scrub/marker adapters, and active playback-controller guard together in `CaptureSessionCoordinator.Flashback.cs`; keep queue worker mechanics and disposal in their focused partials

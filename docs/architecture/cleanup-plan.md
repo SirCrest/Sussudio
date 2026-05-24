@@ -1153,11 +1153,9 @@ source-ownership contracts, queue behavior, Flashback/cancellation behavior,
 transition policy, and shared reflection harness helpers now live in separate
 named files.
 Queued Flashback mutations, read-only Flashback status, playback snapshot
-projection, export and segment query forwarding, and active playback-controller
-readiness/rejection logging now live in
+projection, export and segment query forwarding, playback/scrub/marker command
+adapters, and active playback-controller readiness/rejection logging now live in
 `Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs`.
-Playback/scrub/marker command adapters live in
-`CaptureSessionCoordinator.Flashback.Playback.cs`.
 
 Device discovery ownership is split across a small `DeviceService` family. Keep
 capture/audio enumeration orchestration, the combined discovery result, device
