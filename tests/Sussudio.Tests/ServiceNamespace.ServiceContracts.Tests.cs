@@ -9,8 +9,7 @@ static partial class Program
             "Sussudio/Services/Contracts/IPreviewFrameSink.cs",
             "Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs",
             "Sussudio/Services/Contracts/RecordingContracts.cs",
-            "Sussudio/Services/Contracts/PooledVideoFrame.cs",
-            "Sussudio/Services/Contracts/PooledVideoFrameLease.cs"
+            "Sussudio/Services/Contracts/PooledVideoFrame.cs"
         };
 
         foreach (var relativePath in serviceContractFiles)
@@ -47,6 +46,13 @@ static partial class Program
         {
             AssertContains(agentMapText, "`" + relativePath + "`");
         }
+
+        var pooledVideoFrameText = ReadRepoFile("Sussudio/Services/Contracts/PooledVideoFrame.cs");
+        AssertContains(pooledVideoFrameText, "internal sealed class PooledVideoFrameLease : IDisposable");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "PooledVideoFrameLease.cs")),
+            "pooled-frame leases live with the pooled frame owner");
 
         AssertContains(agentMapText, "separate from `Sussudio.Automation.Contracts` wire/protocol contracts");
     }
