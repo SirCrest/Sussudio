@@ -27,13 +27,7 @@ static partial class Program
         var stateMachineText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionStateMachine.cs").Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs").Replace("\r\n", "\n");
         var resourceReleaseText = cleanupText;
-        var flashbackBackendFailureCleanupPath = "Sussudio/Services/Capture/CaptureService.FlashbackBackendFailureCleanup.cs";
-        AssertEqual(
-            true,
-            File.Exists(Path.Combine(GetRepoRoot(), flashbackBackendFailureCleanupPath.Replace('/', Path.DirectorySeparatorChar))),
-            "CaptureService Flashback backend failure cleanup partial exists");
         var failuresText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Failures.cs").Replace("\r\n", "\n");
-        var flashbackBackendFailureCleanupText = ReadRepoFile(flashbackBackendFailureCleanupPath).Replace("\r\n", "\n");
 
         AssertContains(rootText, "private readonly CaptureSessionStateMachine _sessionStateMachine = new();");
         AssertContains(rootText, "public CaptureSessionState SessionState => CurrentSessionState;");
@@ -107,10 +101,12 @@ static partial class Program
         AssertContains(fatalCleanupText, "EnterCleanupState();");
         AssertContains(fatalCleanupText, "EnterFaultedState();");
         AssertDoesNotContain(failuresText, "_sessionState =");
-        AssertDoesNotContain(failuresText, "IsGpuDeviceLost(");
-        AssertContains(flashbackBackendFailureCleanupText, "private void BeginFlashbackBackendCleanup(Exception ex)");
-        AssertContains(flashbackBackendFailureCleanupText, "private static bool IsGpuDeviceLost(Exception ex)");
-        AssertDoesNotContain(flashbackBackendFailureCleanupText, "_sessionState =");
+        AssertContains(failuresText, "private void BeginFlashbackBackendCleanup(Exception ex)");
+        AssertContains(failuresText, "private static bool IsGpuDeviceLost(Exception ex)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackBackendFailureCleanup.cs")),
+            "CaptureService Flashback backend failure cleanup partial folded into failures");
 
         return Task.CompletedTask;
     }

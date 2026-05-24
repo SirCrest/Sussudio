@@ -48,18 +48,19 @@ public sealed class CaptureServiceFailureOwnershipTests
     }
 
     [Fact]
-    public void CaptureService_FlashbackBackendFailureCleanup_LivesInFocusedPartialWithoutSessionStateWrites()
+    public void CaptureService_FlashbackBackendFailureCleanup_LivesWithFailureCallbacksWithoutSessionStateWrites()
     {
         var failuresText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Failures.cs")
             .Replace("\r\n", "\n");
-        var flashbackBackendFailureCleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackBackendFailureCleanup.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(failuresText, "private void BeginFatalCaptureCleanup(Exception ex)");
-        AssertDoesNotContain(failuresText, "IsGpuDeviceLost(");
-        AssertContains(flashbackBackendFailureCleanupText, "private void BeginFlashbackBackendCleanup(Exception ex)");
-        AssertContains(flashbackBackendFailureCleanupText, "private static bool IsGpuDeviceLost(Exception ex)");
-        AssertDoesNotContain(flashbackBackendFailureCleanupText, "_sessionState =");
+        AssertContains(failuresText, "private void BeginFlashbackBackendCleanup(Exception ex)");
+        AssertContains(failuresText, "private static bool IsGpuDeviceLost(Exception ex)");
+        AssertContains(failuresText, "_flashbackBackend.PreserveRecoverySegments(\"device_lost\");");
+        AssertDoesNotContain(failuresText, "_sessionState =");
+        Assert.False(
+            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackBackendFailureCleanup.cs")),
+            "Flashback backend failure cleanup partial folded into CaptureService.Failures.cs");
     }
 
     private static void AssertContains(string text, string expected)

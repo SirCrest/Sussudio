@@ -1264,15 +1264,12 @@ runtime lifecycle mutation code.
 
 Fatal capture and backend failure handling now lives in
 `Sussudio/Services/Capture/CaptureService.Failures.cs`. That file owns fatal
-error callbacks, fatal capture cleanup launch and generation-stale guards, the
-recording/Flashback last-failure telemetry state fields, lock, mutation
-helpers, clear helpers, and snapshot reads. Cleaning-up and faulted state writes
-route through root CaptureService transition helpers.
-Flashback backend failure cleanup now lives in
-`Sussudio/Services/Capture/CaptureService.FlashbackBackendFailureCleanup.cs`.
-That file owns the Flashback backend cleanup launcher, GPU device-lost
-classification, recovery segment preservation, and generation-stale guards, and
-must not write session state directly.
+error callbacks, fatal capture cleanup launch and generation-stale guards,
+Flashback backend cleanup launch, GPU device-lost classification, recovery
+segment preservation, the recording/Flashback last-failure telemetry state
+fields, lock, mutation helpers, clear helpers, and snapshot reads. Cleaning-up
+and faulted state writes route through root CaptureService transition helpers.
+Flashback backend cleanup must not write session state directly.
 
 Flashback-facing capture controls now live in focused CaptureService partials:
 `Sussudio/Services/Capture/CaptureService.FlashbackState.cs` owns public
