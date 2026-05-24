@@ -90,8 +90,6 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Diagnostics.cs")
-            .Replace("\r\n", "\n");
         var queueText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs")
             .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Startup.cs")
@@ -103,8 +101,12 @@ static partial class Program
         var lifetimeText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Lifetime.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(diagnosticsText, "public long DroppedVideoFrames =>");
-        AssertContains(diagnosticsText, "public bool TryGetEncoderAvSyncDrift(out double driftMs, out long correctionSamples)");
+        AssertContains(rootText, "public long DroppedVideoFrames =>");
+        AssertContains(rootText, "public bool TryGetEncoderAvSyncDrift(out double driftMs, out long correctionSamples)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Diagnostics.cs")),
+            "LibAvRecordingSink diagnostics surface lives with the sink root state");
         AssertContains(startupText, "public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)");
         AssertContains(startupText, "LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);");
         AssertContains(startupText, "InitializeVideoSessionQueues();");
@@ -147,7 +149,6 @@ static partial class Program
         AssertContains(lifetimeText, "private void ScheduleDeferredDisposeCleanup(Task encodingTask)");
         AssertContains(rootText, "private void CompleteWriter<TPacket>(Channel<TPacket>? channel)");
         AssertContains(rootText, "SignalWork(\"complete_writer\");");
-        AssertDoesNotContain(rootText, "public long DroppedVideoFrames =>");
         AssertDoesNotContain(rootText, "public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(startupText, "Channel.CreateBounded<VideoFramePacket>");
         AssertDoesNotContain(startupText, "Channel.CreateBounded<GpuFramePacket>");

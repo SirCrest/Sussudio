@@ -1585,9 +1585,8 @@ logging, and startup rollback cleanup. `LibAvRecordingSink.StopLifecycle.cs` own
 `StopAsync` routing, `_started` clearing, encode-drain deadline selection,
 emergency cancellation/flush fallback, encoding-failure classification, HDR
 validation, stopped-output validation handoff, stop logging, and
-`FinalizeResult` shaping. Keep root state/construction in
-`LibAvRecordingSink.cs`, read-only telemetry and encoder drift accessors in
-`LibAvRecordingSink.Diagnostics.cs`, dispose/deferred cleanup in
+`FinalizeResult` shaping. Keep root state/construction plus read-only telemetry
+and encoder drift accessors in `LibAvRecordingSink.cs`, dispose/deferred cleanup in
 `LibAvRecordingSink.Lifetime.cs`, and stopped-output validation in
 `LibAvRecordingSink.StopLifecycle.cs`.
 
