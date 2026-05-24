@@ -106,6 +106,54 @@ internal sealed unsafe partial class FlashbackDecoder : IDisposable
     /// </summary>
     public bool LastSeekHitForwardDecodeCap => _lastSeekHitForwardDecodeCap;
 
+    private void ThrowIfNotInitialized()
+    {
+        if (!_initialized)
+        {
+            throw new InvalidOperationException("FlashbackDecoder has not been initialized. Call Initialize() first.");
+        }
+    }
+
+    private void ThrowIfNotOpen()
+    {
+        ThrowIfDisposed();
+        if (!_isOpen)
+        {
+            throw new InvalidOperationException("No file is open. Call OpenFile() first.");
+        }
+    }
+
+    private void ThrowIfDisposed()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+    }
+
+    private static void ThrowIfError(int errorCode, string operation)
+    {
+        if (errorCode >= 0)
+        {
+            return;
+        }
+
+        var message = GetErrorString(errorCode);
+        Logger.Log($"FLASHBACK_DECODER_ERROR operation={operation} code={errorCode} msg='{message}'");
+        throw new InvalidOperationException(
+            $"FLASHBACK_DECODER_ERROR operation={operation} code={errorCode} msg='{message}'");
+    }
+
+    private static string GetErrorString(int errorCode)
+    {
+        var buffer = stackalloc byte[ffmpeg.AV_ERROR_MAX_STRING_SIZE];
+        ffmpeg.av_strerror(errorCode, buffer, (ulong)ffmpeg.AV_ERROR_MAX_STRING_SIZE);
+        return Marshal.PtrToStringAnsi((IntPtr)buffer) ?? $"unknown error {errorCode}";
+    }
+
+    private static InvalidOperationException CreateException(string message)
+    {
+        Logger.Log($"FLASHBACK_DECODER_ERROR {message}");
+        return new InvalidOperationException($"FLASHBACK_DECODER_ERROR {message}");
+    }
+
     /// <summary>
     /// Opens a .ts or .mp4 file for decoding.
     /// </summary>

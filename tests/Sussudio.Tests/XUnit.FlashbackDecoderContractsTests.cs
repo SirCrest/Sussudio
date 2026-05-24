@@ -27,8 +27,8 @@ public sealed class FlashbackDecoderContractsTests
         => global::Program.FlashbackDecoder_LifetimeCleanupLivesInFocusedPartial();
 
     [Fact]
-    public Task FlashbackDecoderDiagnosticsAndGuardsLiveInFocusedPartials()
-        => global::Program.FlashbackDecoder_DiagnosticsAndGuardsLiveInFocusedPartials();
+    public Task FlashbackDecoderStateGuardsAndTimingLiveWithOwners()
+        => global::Program.FlashbackDecoder_StateGuardsAndTimingLiveWithOwners();
 
     [Fact]
     public Task FlashbackDecoderOutputTypesLiveInFocusedFile()

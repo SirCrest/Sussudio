@@ -143,4 +143,25 @@ internal sealed unsafe partial class FlashbackDecoder
             }
         }
     }
+
+    private void AddLastDecodeReceiveMs(double elapsedMs)
+        => _lastDecodePhaseTimings = _lastDecodePhaseTimings with { ReceiveMs = _lastDecodePhaseTimings.ReceiveMs + elapsedMs };
+
+    private void AddLastDecodeFeedMs(double elapsedMs)
+        => _lastDecodePhaseTimings = _lastDecodePhaseTimings with { FeedMs = _lastDecodePhaseTimings.FeedMs + elapsedMs };
+
+    private void AddLastDecodeReadMs(double elapsedMs)
+        => _lastDecodePhaseTimings = _lastDecodePhaseTimings with { ReadMs = _lastDecodePhaseTimings.ReadMs + elapsedMs };
+
+    private void AddLastDecodeSendMs(double elapsedMs)
+        => _lastDecodePhaseTimings = _lastDecodePhaseTimings with { SendMs = _lastDecodePhaseTimings.SendMs + elapsedMs };
+
+    private void AddLastDecodeAudioMs(double elapsedMs)
+        => _lastDecodePhaseTimings = _lastDecodePhaseTimings with { AudioMs = _lastDecodePhaseTimings.AudioMs + elapsedMs };
+
+    private void AddLastDecodeConvertMs(double elapsedMs)
+        => _lastDecodePhaseTimings = _lastDecodePhaseTimings with { ConvertMs = _lastDecodePhaseTimings.ConvertMs + elapsedMs };
+
+    private static double ElapsedMsSince(long startTimestamp)
+        => (Stopwatch.GetTimestamp() - startTimestamp) * 1000.0 / Stopwatch.Frequency;
 }

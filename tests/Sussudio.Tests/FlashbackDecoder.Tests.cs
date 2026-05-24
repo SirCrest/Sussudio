@@ -99,26 +99,25 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackDecoder_DiagnosticsAndGuardsLiveInFocusedPartials()
+    internal static Task FlashbackDecoder_StateGuardsAndTimingLiveWithOwners()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Diagnostics.cs")
+        var decodeLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.DecodeLoop.cs")
             .Replace("\r\n", "\n");
-        var guardsText = diagnosticsText;
 
-        AssertContains(diagnosticsText, "private void AddLastDecodeReceiveMs(double elapsedMs)");
-        AssertContains(diagnosticsText, "private static double ElapsedMsSince(long startTimestamp)");
-        AssertContains(diagnosticsText, "private static void ThrowIfError(int errorCode, string operation)");
-        AssertContains(diagnosticsText, "private static string GetErrorString(int errorCode)");
-        AssertContains(diagnosticsText, "private static InvalidOperationException CreateException(string message)");
-        AssertContains(guardsText, "private void ThrowIfNotInitialized()");
-        AssertContains(guardsText, "private void ThrowIfNotOpen()");
-        AssertContains(guardsText, "private void ThrowIfDisposed()");
+        AssertContains(decodeLoopText, "private void AddLastDecodeReceiveMs(double elapsedMs)");
+        AssertContains(decodeLoopText, "private static double ElapsedMsSince(long startTimestamp)");
+        AssertContains(rootText, "private static void ThrowIfError(int errorCode, string operation)");
+        AssertContains(rootText, "private static string GetErrorString(int errorCode)");
+        AssertContains(rootText, "private static InvalidOperationException CreateException(string message)");
+        AssertContains(rootText, "private void ThrowIfNotInitialized()");
+        AssertContains(rootText, "private void ThrowIfNotOpen()");
+        AssertContains(rootText, "private void ThrowIfDisposed()");
         AssertDoesNotContain(rootText, "private void AddLastDecodeReceiveMs(double elapsedMs)");
         AssertDoesNotContain(rootText, "private static double ElapsedMsSince(long startTimestamp)");
-        AssertDoesNotContain(rootText, "private static void ThrowIfError(int errorCode, string operation)");
-        AssertDoesNotContain(rootText, "private void ThrowIfNotInitialized()");
+        AssertDoesNotContain(decodeLoopText, "private static void ThrowIfError(int errorCode, string operation)");
+        AssertDoesNotContain(decodeLoopText, "private void ThrowIfNotInitialized()");
 
         return Task.CompletedTask;
     }
