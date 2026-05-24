@@ -21,16 +21,20 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task LibAvEncoder_FrameCopyLivesInFocusedPartial()
+    internal static Task LibAvEncoder_FrameCopyLivesWithVideoSubmission()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
-        var frameCopyText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.FrameCopy.cs")
+        var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(frameCopyText, "private void CopyPackedFrameToVideoFrame(ReadOnlySpan<byte> frameData, LibAvEncoderOptions options)");
-        AssertContains(frameCopyText, "private static void CopyPlane(byte* sourceStart, byte* destinationStart, int destinationStride, int rowBytes, int rowCount)");
-        AssertContains(frameCopyText, "Buffer.MemoryCopy(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.FrameCopy.cs")),
+            "CPU packed-frame copy is part of video submission, not a standalone partial");
+        AssertContains(videoSubmissionText, "private void CopyPackedFrameToVideoFrame(ReadOnlySpan<byte> frameData, LibAvEncoderOptions options)");
+        AssertContains(videoSubmissionText, "private static void CopyPlane(byte* sourceStart, byte* destinationStart, int destinationStride, int rowBytes, int rowCount)");
+        AssertContains(videoSubmissionText, "Buffer.MemoryCopy(");
         AssertDoesNotContain(rootText, "private void CopyPackedFrameToVideoFrame(ReadOnlySpan<byte> frameData, LibAvEncoderOptions options)");
         AssertDoesNotContain(rootText, "private static void CopyPlane(byte* sourceStart, byte* destinationStart, int destinationStride, int rowBytes, int rowCount)");
 
@@ -48,6 +52,7 @@ static partial class Program
 
         AssertContains(videoSubmissionText, "public void SendVideoFrame(ReadOnlySpan<byte> frameData, int width, int height)");
         AssertContains(videoSubmissionText, "CopyPackedFrameToVideoFrame(frameData[..expectedSize], options);");
+        AssertContains(videoSubmissionText, "private void CopyPackedFrameToVideoFrame(ReadOnlySpan<byte> frameData, LibAvEncoderOptions options)");
         AssertDoesNotContain(videoSubmissionText, "public void SendGpuVideoFrame(IntPtr d3d11Texture, int subresourceIndex)");
         AssertDoesNotContain(videoSubmissionText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");
         AssertContains(hardwareSubmissionText, "public void SendGpuVideoFrame(IntPtr d3d11Texture, int subresourceIndex)");

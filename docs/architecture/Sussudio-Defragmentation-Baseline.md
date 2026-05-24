@@ -121,6 +121,18 @@ Behavior preserved: preview diagnostic-session section order and subsection text
 Notes for future agents: keep one-method formatter routers with the report orchestration unless the router grows real policy
 
 Date: 2026-05-23
+Area: Recording encoder CPU video submission
+Problem: Packed NV12/P010 software-frame copy helpers lived in a tiny partial even though they are private to `SendVideoFrame`, forcing CPU video-submission review to open an extra file with no independent boundary.
+Files consolidated: `Sussudio/Services/Recording/LibAvEncoder.FrameCopy.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `LibAvEncoder` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by LibAvEncoder source-ownership and runtime recording contract tests
+Behavior preserved: CPU packed-frame validation, copy, PTS assignment, HDR side-data handoff, encoder send, and packet drain logic are unchanged
+Notes for future agents: keep CPU packed-frame copy helpers with `LibAvEncoder.VideoSubmission.cs` unless they become a reusable copy policy shared by another encoder path
+
+Date: 2026-05-23
 Area: Automation diagnostics timeline projection locality
 Problem: Preview and Flashback playback performance timeline projection still lived in separate partial files after their smaller projection fragments had already been consolidated, forcing readers to leave the timeline ring/builder file to understand direct `AutomationSnapshot` to `PerformanceTimelineEntry` field flow.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.Preview.cs`; `Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.FlashbackPlayback.cs`

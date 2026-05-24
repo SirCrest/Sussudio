@@ -155,8 +155,8 @@ public sealed class CoreRuntimeRecordingContractsTests
         => global::Program.LibAvEncoder_PacketWritingLivesInFocusedPartial();
 
     [Fact]
-    public Task LibAvEncoderFrameCopyLivesInFocusedPartial()
-        => global::Program.LibAvEncoder_FrameCopyLivesInFocusedPartial();
+    public Task LibAvEncoderFrameCopyLivesWithVideoSubmission()
+        => global::Program.LibAvEncoder_FrameCopyLivesWithVideoSubmission();
 
     [Fact]
     public Task LibAvEncoderVideoSubmissionLivesInFocusedPartial()

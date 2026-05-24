@@ -1508,10 +1508,6 @@ packet drains, bitstream-filter packet drains, timestamp rescaling, packet
 stream-index assignment, packet write accounting, and interleaved video packet
 writes there.
 
-LibAv encoder packed software-frame copy helpers now live in
-`Sussudio/Services/Recording/LibAvEncoder.FrameCopy.cs`. Keep packed NV12/P010
-plane sizing, source-buffer validation, and stride-aware plane copies there.
-
 LibAv encoder diagnostics and error helpers now live in
 `Sussudio/Services/Recording/LibAvEncoder.Diagnostics.cs`. Keep open-state
 guards, FFmpeg error string conversion, structured libav exceptions, and
@@ -1565,7 +1561,8 @@ frame/context/buffer release and encoder state reset now live in
 
 LibAv encoder video submission now lives in
 `Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs`. Keep CPU packed
-frame submission, forced keyframe handling, per-frame HDR side-data
+frame submission, packed NV12/P010 plane sizing, source-buffer validation,
+stride-aware plane copies, forced keyframe handling, per-frame HDR side-data
 attachment/removal, and video packet drains there. D3D11 and CUDA hardware-frame
 submission now live in
 `Sussudio/Services/Recording/LibAvEncoder.HardwareSubmission.cs`; keep
