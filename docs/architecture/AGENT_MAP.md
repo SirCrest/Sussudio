@@ -3405,6 +3405,9 @@ Primary owners:
 
 - `tools/ssctl/` for the preferred CLI.
 - `tools/McpServer/` for MCP bridge tools.
+- `tools/McpServer/Program.cs` owns MCP host bootstrap, stdio transport
+  registration, tool discovery, and the `PipeClient` DI adapter over the shared
+  automation command transport.
 - `tools/Common/` for shared tool helpers that are not contracts, including
   pipe client, snapshot formatting, diagnostic sessions, diagnostic scenario
   cataloging, diagnostic-session pipe retry policy, PresentMon probing, and

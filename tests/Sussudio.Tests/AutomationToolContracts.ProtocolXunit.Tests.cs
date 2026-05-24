@@ -113,8 +113,11 @@ public sealed class AutomationToolContractsProtocolXunitTests
     [Fact]
     public void PipeClient_UsesSharedProtocol_ForCommandResolution()
     {
-        var pipeClientText = RuntimeContractSource.ReadRepoFile("tools/McpServer/PipeClient.cs");
+        var pipeClientText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Program.cs");
 
+        Assert.False(
+            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "McpServer", "PipeClient.cs")),
+            "MCP PipeClient should stay with the host bootstrap owner instead of returning as a tiny adapter file.");
         Assert.Contains("AutomationPipeProtocol", pipeClientText);
         Assert.DoesNotContain("CommandMap = new", pipeClientText);
     }
@@ -130,7 +133,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var ssctlFlashbackText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var mcpPipeText = RuntimeContractSource.ReadRepoFile("tools/McpServer/PipeClient.cs")
+        var mcpPipeText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Program.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var formatterText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Tools/ToolCommandFormatter.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
@@ -141,8 +144,8 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("AutomationCommandTransport.SendCommandAsync(\n            _pipeName,\n            kind,", ssctlPipeText);
         Assert.DoesNotContain("AutomationCommandCatalog.Get(kind).Name", ssctlPipeText);
         Assert.Contains("HandleSimpleCommandAsync(\n        CommandContext context,\n        AutomationCommandKind kind,", ssctlTransportText);
-        Assert.Contains("SendCommandAsync(\n        AutomationCommandKind kind,", mcpPipeText);
-        Assert.Contains("AutomationCommandTransport.SendCommandAsync(\n            _pipeName,\n            kind,", mcpPipeText);
+        Assert.Contains("SendCommandAsync(\n            AutomationCommandKind kind,", mcpPipeText);
+        Assert.Contains("AutomationCommandTransport.SendCommandAsync(\n                _pipeName,\n                kind,", mcpPipeText);
         Assert.DoesNotContain("AutomationCommandCatalog.Get(kind).Name", mcpPipeText);
         Assert.Contains("Optional(AutomationCommandKind kind, string label,", formatterText);
         Assert.Contains("ExecuteAndFormatResultAsync(\n        PipeClient pipeClient,\n        AutomationCommandKind kind,", formatterText);
@@ -196,7 +199,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var ssctlPipeText = RuntimeContractSource.ReadRepoFile("tools/ssctl/PipeTransport.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var mcpPipeText = RuntimeContractSource.ReadRepoFile("tools/McpServer/PipeClient.cs")
+        var mcpPipeText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Program.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var diagnosticSessionText = ReadDiagnosticSessionRunnerSource();
         var diagnosticSessionCommandChannelText = RuntimeContractSource.ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")

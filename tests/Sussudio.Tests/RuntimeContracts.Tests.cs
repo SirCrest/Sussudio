@@ -174,6 +174,9 @@ public sealed class RuntimeContractsTests
 
 internal static class RuntimeContractSource
 {
+    public static string GetRepoRoot()
+        => FindRepoRoot();
+
     public static string ReadRepoFile(string relativePath)
     {
         var repoRoot = FindRepoRoot();

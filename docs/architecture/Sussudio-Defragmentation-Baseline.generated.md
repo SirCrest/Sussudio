@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T18:45:37Z
+Generated UTC: 2026-05-24T18:52:39Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 651 |
+| Production .cs files | 650 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 25 (3.8%) |
-| Production .cs files under 80 lines | 43 (6.6%) |
+| Production .cs files under 60 lines | 23 (3.5%) |
+| Production .cs files under 80 lines | 42 (6.5%) |
 
 ## Largest partial-type clusters
 
@@ -94,7 +94,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 12 | Sussudio/Services/Preview/ILiveVideoSource.cs |
 | 14 | Sussudio.Automation.Contracts/AutomationPipeSecurityPolicy.cs |
 | 14 | Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs |
-| 16 | tools/McpServer/Program.cs |
 | 18 | Sussudio/Services/Automation/DiagnosticThresholds.cs |
 | 19 | Sussudio/Services/Telemetry/DisabledSourceSignalTelemetryProvider.cs |
 | 28 | tools/Common/DiagnosticSessionModels.cs |
@@ -107,7 +106,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 48 | Sussudio/Services/Capture/CaptureSessionStateMachine.cs |
 | 48 | Sussudio/Services/Contracts/AutomationInterfaces.cs |
 | 48 | tools/McpServer/Tools/PerformanceTimelineTools.cs |
-| 50 | tools/McpServer/PipeClient.cs |
 | 54 | Sussudio.Automation.Contracts/AutomationCommandCatalog.Manifest.cs |
 | 56 | Sussudio/DisplayFormatters.cs |
 | 56 | tools/McpServer/Tools/PreviewTools.cs |
