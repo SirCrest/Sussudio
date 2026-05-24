@@ -3824,13 +3824,12 @@ Primary owners:
   command, cadence, decode, audio-master, and stage metric reads.
   Export metrics include force-rotate fallback total, delta, and last fallback
   segment count; keep those counters derived outside export-observed relevance gating.
-- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
-  owns Flashback preview-cycle diagnostic task registration, priorities, task
-  labels, and started action strings.
-- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
-  owns normal Flashback preview-cycle stop/restart command choreography,
-  pre-stop encoded-frame capture, preview-off Flashback/encoder validation,
-  export-while-preview-off verification, and restart frame-flow validation.
+- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs` owns
+  Flashback preview-cycle diagnostic task registration, priorities, task labels,
+  started action strings, normal Flashback preview-cycle stop/restart command
+  choreography, pre-stop encoded-frame capture, preview-off Flashback/encoder
+  validation, export-while-preview-off verification, and restart frame-flow
+  validation.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
   owns playback-under-preview-stop diagnostic command choreography, pre-stop
   playback-frame warmup, preview-stopped playback/live-state validation,

@@ -3652,8 +3652,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
-- `DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
-- `DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
+- `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
