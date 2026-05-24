@@ -3803,13 +3803,11 @@ Primary owners:
   queue, queue-latency, backpressure, failure, GPU/CUDA queue, freshness,
   diagnostics, thread-health row text, recording output, backend, integrity,
   audio-integrity and last-finalize text, diagnostic health, summary, evidence
-  and frame-lane text, plus legacy performance, process CPU, memory, GC, and
-  thread-pool text.
-  `tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs` owns capture
-  cadence, low-FPS, jitter/drop, MJPEG packet fingerprint, sampled visual
-  cadence, AV-sync drift and encoder correction text, preview routing, source
-  dimensions, source frame-rate summary, HDR, source telemetry text, and routing
-  to MJPEG/Preview D3D sections.
+  and frame-lane text, legacy performance, process CPU, memory, GC, thread-pool
+  text, capture cadence, low-FPS, jitter/drop, MJPEG packet fingerprint, sampled
+  visual cadence, AV-sync drift and encoder correction text, preview routing,
+  source dimensions, source frame-rate summary, HDR, source telemetry text, and
+  routing to MJPEG/Preview D3D sections.
   `tools/Common/AutomationSnapshotFormatter.Values.cs` owns automation
   response-success detection, tolerant JSON string/bool/numeric accessors, and
   shared byte, number, interval, frame-budget, and tick-age display helpers,

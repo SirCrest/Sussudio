@@ -13,7 +13,7 @@ static partial class Program
         var sharedFormatterCaptureSettingsSource = sharedFormatterRootSource;
         var sharedFormatterVideoPipelineSource = sharedFormatterRootSource;
         var sharedFormatterDiagnosticsSource = sharedFormatterRootSource;
-        var sharedFormatterCaptureCadenceSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs");
+        var sharedFormatterCaptureCadenceSource = sharedFormatterRootSource;
         var sharedFormatterAvSyncSource = sharedFormatterCaptureCadenceSource;
         var sharedFormatterSourceSource = sharedFormatterCaptureCadenceSource;
         var sharedFormatterValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Values.cs");
@@ -41,7 +41,7 @@ static partial class Program
         AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Diagnostics ==\");");
         AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Performance ==\");");
         AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Memory & GC ==\");");
-        AssertDoesNotContain(sharedFormatterRootSource, "builder.AppendLine(\"== Capture Cadence ==\");");
+        AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Capture Cadence ==\");");
         AssertContains(sharedFormatterRootSource, "RecordingIntegrityStatus");
         AssertContains(sharedFormatterRootSource, "ProcessCpuPercent");
         AssertContains(sharedFormatterCoreSectionsSource, "private static void AppendStateSection(StringBuilder builder, JsonElement snapshot)");

@@ -448,17 +448,16 @@ standalone memory/GC summaries plus shared JSON/result helpers in
 snapshot formatter owner for top-level text flow plus the small root sections:
 state/capture-command summary, capture settings, audio signal, video pipeline,
 thread-health rows, recording output/backend/integrity/audio-integrity/
-last-finalize, diagnostics, legacy performance, and process CPU/Memory/GC/
-thread-pool text. Capture cadence text lives in
-`AutomationSnapshotFormatter.CaptureCadence.cs`. Snapshot response-success
+last-finalize, diagnostics, legacy performance, process CPU/Memory/GC/
+thread-pool text, capture cadence, MJPEG packet fingerprint, visual cadence,
+AV-sync, preview routing, and source-signal rows emitted from the cadence tail.
+Snapshot response-success
 detection, tolerant JSON string/bool/numeric accessors, and shared
 byte/number/interval, frame-budget, and tick-age display helpers live in
 `AutomationSnapshotFormatter.Values.cs`; the Flashback gate/header/order,
 encoding status/health text, export progress/result text, playback command text,
 and playback cadence/decode/frame/stage/A/V drift text now live together in
-`AutomationSnapshotFormatter.Flashback.cs`. Capture cadence owns the
-capture cadence, MJPEG packet fingerprint, visual cadence, AV-sync, preview
-routing, and source-signal rows emitted from the cadence tail. MJPEG activation/header/order, decode/copy/callback/per-decoder
+`AutomationSnapshotFormatter.Flashback.cs`. MJPEG activation/header/order, decode/copy/callback/per-decoder
 timing text, compressed queue/drop-reason/reorder/pipeline timing text, and
 MJPEG preview-jitter queue/latency/ownership/underflow text now live together in
 `AutomationSnapshotFormatter.MjpegTiming.cs`. Preview routing and D3D preview
