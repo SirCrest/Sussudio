@@ -14,7 +14,6 @@ static partial class Program
         return ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs")
             + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.TransitionExecution.cs")
-            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.ResourceRelease.cs")
             + "\n" + ReadCaptureServiceAudioSource()
             + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
             + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportRangeResolution.cs")

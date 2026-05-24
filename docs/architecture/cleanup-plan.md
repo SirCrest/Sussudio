@@ -1233,18 +1233,19 @@ session state and transition generation live in
 and fatal cleanup paths call those helpers while preserving their special
 teardown order.
 Best-effort resource release helpers are delegated to
-`Sussudio/Services/Capture/CaptureService.ResourceRelease.cs`.
+`Sussudio/Services/Capture/CaptureService.Cleanup.cs`.
 
 Disposal-triggered cleanup and dispose flow live with explicit cleanup in
 `Sussudio/Services/Capture/CaptureService.Cleanup.cs`; disposed-state writes
 route through TransitionExecution helpers. Coordination lock disposal is delegated to
-`Sussudio/Services/Capture/CaptureService.ResourceRelease.cs`.
+`Sussudio/Services/Capture/CaptureService.Cleanup.cs`.
 
 Capture resource release helpers now live in
-`Sussudio/Services/Capture/CaptureService.ResourceRelease.cs`. That file owns
-best-effort semaphore release/disposal, coordination-lock disposal, Flashback
-backend/export held-lock release helpers, and Flashback eviction resume warnings
-used by lifecycle/export/cleanup partials.
+`Sussudio/Services/Capture/CaptureService.Cleanup.cs` alongside disposal and
+shutdown teardown. That file owns best-effort semaphore release/disposal,
+coordination-lock disposal, Flashback backend/export held-lock release helpers,
+and Flashback eviction resume warnings used by lifecycle/export/cleanup
+partials.
 
 Deferred Flashback artifact cleanup adapter handoff and export-lock delegation
 now live with the Flashback preview backend owner in

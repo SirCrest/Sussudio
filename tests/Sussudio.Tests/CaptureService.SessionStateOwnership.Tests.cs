@@ -25,8 +25,8 @@ static partial class Program
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
         var transitionExecutionText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.TransitionExecution.cs").Replace("\r\n", "\n");
         var stateMachineText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionStateMachine.cs").Replace("\r\n", "\n");
-        var resourceReleaseText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.ResourceRelease.cs").Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs").Replace("\r\n", "\n");
+        var resourceReleaseText = cleanupText;
         var flashbackBackendFailureCleanupPath = "Sussudio/Services/Capture/CaptureService.FlashbackBackendFailureCleanup.cs";
         AssertEqual(
             true,
@@ -83,8 +83,7 @@ static partial class Program
         AssertContains(cleanupText, "await CleanupCoreAsync(CancellationToken.None).ConfigureAwait(false);");
         AssertContains(cleanupText, "public void Dispose()");
         AssertContains(cleanupText, "public async ValueTask DisposeAsync()");
-        AssertDoesNotContain(cleanupText, "private void DisposeCoordinationLocksBestEffort()");
-        AssertDoesNotContain(cleanupText, "private static void DisposeSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.ResourceRelease.cs")), "CaptureService resource-release helpers stay folded into Cleanup.cs");
         AssertContains(resourceReleaseText, "private void DisposeCoordinationLocksBestEffort()");
         AssertContains(resourceReleaseText, "private static void DisposeSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)");
         AssertContains(resourceReleaseText, "private static void ReleaseSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)");

@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
+using Sussudio.Services.Flashback;
 
 namespace Sussudio.Services.Capture;
 
@@ -176,6 +177,76 @@ public partial class CaptureService
         if (cancellationRequested || transitionToken.IsCancellationRequested)
         {
             transitionToken.ThrowIfCancellationRequested();
+        }
+    }
+
+    private void ReleaseFlashbackBackendLeaseIfHeld(ref bool backendLeaseHeld)
+    {
+        if (!backendLeaseHeld)
+        {
+            return;
+        }
+
+        backendLeaseHeld = false;
+        ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, "flashback_backend_lease");
+    }
+
+    private void ReleaseFlashbackExportOperationLockIfHeld(ref bool exportOperationLockHeld)
+    {
+        if (!exportOperationLockHeld)
+        {
+            return;
+        }
+
+        exportOperationLockHeld = false;
+        ReleaseSemaphoreBestEffort(_flashbackExportOperationLock, "flashback_export_operation");
+    }
+
+    private void DisposeCoordinationLocksBestEffort()
+    {
+        DisposeSemaphoreBestEffort(_sessionTransitionLock, "session_transition");
+        DisposeSemaphoreBestEffort(_flashbackBackendLeaseLock, "flashback_backend_lease");
+        DisposeSemaphoreBestEffort(_flashbackExportOperationLock, "flashback_export_operation");
+    }
+
+    private static void ReleaseSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)
+    {
+        try
+        {
+            semaphore.Release();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"CAPTURE_SERVICE_SEMAPHORE_RELEASE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private static void DisposeSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)
+    {
+        try
+        {
+            semaphore.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"CAPTURE_SERVICE_SEMAPHORE_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private static void ResumeFlashbackEvictionBestEffort(FlashbackBufferManager? bufferManager, string operation)
+    {
+        if (bufferManager == null)
+        {
+            return;
+        }
+
+        try
+        {
+            bufferManager.ResumeEviction();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_EVICTION_RESUME_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 }

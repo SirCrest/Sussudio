@@ -24,8 +24,6 @@ static partial class Program
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.ResourceRelease.cs")
-                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.VideoPipelineLifecycle.cs")
                 .Replace("\r\n", "\n");
         var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Teardown.cs")

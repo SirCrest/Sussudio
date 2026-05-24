@@ -27,7 +27,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.ResourceRelease.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
                 .Replace("\r\n", "\n")
