@@ -1391,3 +1391,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: covered by ssctl snapshot ownership tests, formatter output order tests, field-alignment tests, and runtime snapshot regression tests
 Behavior preserved: Thread-health section order plus source-reader, WASAPI capture, and WASAPI playback rows remain in the same `FormatSnapshot` output flow
 Notes for future agents: keep single-use ssctl thread-health snapshot text with the root formatter unless it grows independent policy or reusable formatting behavior
+
+Date: 2026-05-24
+Area: Diagnostic session runner locality
+Problem: `DiagnosticSessionRunner.cs` was a 25-line public wrapper over a single-use `DiagnosticSessionRunExecution.cs` phase-plan class, forcing agents to open two files to understand the diagnostic-session entry point and run sequence.
+Files consolidated: `tools/Common/DiagnosticSessionRunExecution.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: none
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: covered by diagnostic-session runner, scenario execution, artifact/result, ssctl, and MCP tool-surface tests
+Behavior preserved: Diagnostic-session public `RunAsync`/`Format` surface, phase order, output locking, cleanup, recording checks, post-run snapshots, result-build handoff, and live-state terminal write remain unchanged
+Notes for future agents: keep the visible diagnostic-session phase plan with `DiagnosticSessionRunner.cs`; use named collaborators for context, scenario phase execution, cleanup, recording checks, post-run snapshots, and result building

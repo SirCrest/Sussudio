@@ -3131,8 +3131,7 @@ entry lookup, requirement queries, and export verification artifact lookup.
 `DiagnosticSessionScenarioCatalog.Entries.cs` owns scenario ordering by
 composing core, Flashback playback, Flashback export/lifecycle, Flashback
 recording/rejection, and combined scenario requirement metadata.
-`DiagnosticSessionRunner.cs` owns the
-public compatibility entry points; `DiagnosticSessionRunExecution.cs` owns the
+`DiagnosticSessionRunner.cs` owns the public compatibility entry points and the
 visible run phase sequence around context creation, initial snapshot, scenario
 execution, cleanup, and completion handoff. `DiagnosticSessionRunContext.cs`
 owns the cohesive mutable per-run context: bootstrap, actions, warnings,
@@ -3140,12 +3139,11 @@ samples, run state, command channel, scenario cancellation source, initial
 snapshot state and capture, live-state writer handoff, disposal, and
 scenario/completion context construction with the callback/token handoffs passed
 into those phases.
-`DiagnosticSessionRunExecution.cs` owns the post-cleanup evidence/result sequence
+`DiagnosticSessionRunner.cs` owns the post-cleanup evidence/result sequence
 for recording checks, post-run timeline and final snapshot capture, result-build
 request mapping, result-build invocation, and terminal live-state write.
-`DiagnosticSessionRunExecution.cs` owns the completion context handoff consumed
-by the post-cleanup phase. `DiagnosticSessionRunExecution.cs`
-hands scenario execution directly to
+`DiagnosticSessionRunner.cs` owns the completion context handoff consumed by the
+post-cleanup phase and hands scenario execution directly to
 `DiagnosticSessionScenarioPhaseRunner.cs`, which owns the main scenario phase
 for setup/startup, sampling, completion delegation, and fault drain delegation.
 `DiagnosticSessionScenarioPhaseModels.cs` owns the explicit phase input handoff,
@@ -3154,7 +3152,7 @@ the immutable completion handoff, and mutable in-flight phase state.
 and fault-drain delegation beside the scenario phase sequence: registered
 background work before rejected-export handling, rejected-export handling
 before PresentMon completion, and interrupted drain handoff.
-`DiagnosticSessionRunExecution.cs` owns the final result-build
+`DiagnosticSessionRunner.cs` owns the final result-build
 request mapping consumed by the completion phase.
 The public options/result/sample contracts are separated from runner behavior. The result
 DTO root owns core session metadata, terminal state, artifacts, actions, and
@@ -3194,8 +3192,8 @@ analysis handoff record plus Flashback playback/export warning text, threshold
 guards, and tolerated Flashback scenario warning classification. Named
 validation handoff order lives in `DiagnosticSessionResultBuilder.AnalysisValidation.cs`.
 `DiagnosticSessionResultBuilder.cs` owns the result-build request handoff
-created by `DiagnosticSessionRunExecution.cs` beside the summary orchestration
-that consumes it. Diagnostic
+created by `DiagnosticSessionRunner.cs` beside the summary orchestration that
+consumes it. Diagnostic
 health summary snapshot selection, health summary text projection, verdict
 composition, diagnostic-health warning tolerance, sparse source-cadence warning
 tolerance, sparse preview-scheduler warning tolerance, source-reader/ingest
@@ -3337,7 +3335,7 @@ creation, and runner process metadata while the runner keeps command-channel
 lifetime and phase ordering.
 
 Diagnostic-session output locking now lives in
-`tools/Common/DiagnosticSessionRunExecution.cs` beside the phase sequence that
+`tools/Common/DiagnosticSessionRunner.cs` beside the phase sequence that
 acquires it. It owns the `.sussudio-diag.lock` file, exclusive
 `FileShare.None` open, delete-on-close cleanup, and concurrent-output-directory
 failure message.
@@ -3676,7 +3674,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioStartup.cs`
 - `DiagnosticSessionOptionalTextFormatter.cs`
 - `DiagnosticSessionRunner.cs`
-- `DiagnosticSessionRunExecution.cs`
 - `DiagnosticSessionScenarioPhaseRunner.cs`
 - `DiagnosticSessionScenarioPhaseModels.cs`
 - `ToolJsonOptions.cs`
@@ -3697,12 +3694,12 @@ owner, fold it back into that owner and update the source-shape tests and
 
 1. Keep diagnostic-session runner internals aligned by owner.
 
-   `tools/Common/DiagnosticSessionRunner.cs` is now the small public wrapper,
-   while `tools/Common/DiagnosticSessionRunExecution.cs` owns the visible run
-   phase sequence and `tools/Common/DiagnosticSessionRunContext.cs` owns the
+   `tools/Common/DiagnosticSessionRunner.cs` owns the public compatibility
+   surface plus the visible run phase sequence, while
+   `tools/Common/DiagnosticSessionRunContext.cs` owns the
    cohesive mutable per-run context: snapshot, live-state, disposal, and
    explicit scenario/completion context construction.
-   `DiagnosticSessionRunExecution.cs` owns the
+   `DiagnosticSessionRunner.cs` owns the
    post-cleanup evidence/result sequence, completion context handoff, and
    result-build request mapping, while
    `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario execution

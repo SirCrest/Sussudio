@@ -47,8 +47,8 @@ static partial class Program
         AssertContains(modelText, "public string TerminalState { get; set; }");
         AssertContains(modelText, "public JsonElement Snapshot { get; init; }");
         AssertContains(runnerText, "public static class DiagnosticSessionRunner");
-        AssertContains(runnerText, "public static Task<DiagnosticSessionResult> RunAsync(");
-        AssertContains(runnerText, "internal static async Task<DiagnosticSessionResult> RunAsync(");
+        AssertContains(runnerText, "public static async Task<DiagnosticSessionResult> RunAsync(");
+        AssertContains(runnerText, "private static async Task<DiagnosticSessionResult> RunCompletionPhaseAsync(");
         AssertDoesNotContain(runnerText, "public sealed class DiagnosticSessionResult");
         AssertDoesNotContain(runnerText, "public sealed class DiagnosticSessionOptions");
         AssertDoesNotContain(runnerText, "public sealed class DiagnosticSessionSample");

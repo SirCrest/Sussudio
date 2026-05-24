@@ -85,13 +85,12 @@ static partial class Program
     private static string ReadDiagnosticSessionRunnerSource()
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionRunner.cs",
-            "tools/Common/DiagnosticSessionRunExecution.cs",
             "tools/Common/DiagnosticSessionRunContext.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseRunner.cs",
             "tools/Common/DiagnosticSessionScenarioPhaseModels.cs");
 
     private static string ReadDiagnosticSessionRunExecutionRootSource()
-        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunExecution.cs");
+        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunner.cs");
 
     private static string ReadDiagnosticSessionRunContextSource()
         => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunContext.cs");
@@ -106,7 +105,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionRunExecutionCompletionSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionRunExecution.cs");
+            "tools/Common/DiagnosticSessionRunner.cs");
 
     private static string ReadDiagnosticSessionRunExecutionCompletionRootSource()
         => ReadDiagnosticSessionRunExecutionRootSource();

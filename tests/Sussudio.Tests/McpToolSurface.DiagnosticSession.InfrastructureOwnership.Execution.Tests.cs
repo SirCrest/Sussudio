@@ -123,8 +123,8 @@ static partial class Program
         AssertContains(resultBuilderText, "runState.SetStage(\"summary\")");
         AssertContains(agentMapText, "completion context handoff consumed by the post-cleanup completion phase");
         AssertContains(agentMapText, "post-cleanup evidence/result sequence, result-build");
-        AssertContains(cleanupPlanText, "`DiagnosticSessionRunExecution.cs` owns the completion context handoff");
-        AssertContains(cleanupPlanText, "`DiagnosticSessionRunExecution.cs` owns the post-cleanup evidence/result sequence");
+        AssertContains(cleanupPlanText, "`DiagnosticSessionRunner.cs` owns the completion context handoff");
+        AssertContains(cleanupPlanText, "`DiagnosticSessionRunner.cs` owns the post-cleanup evidence/result sequence");
         AssertOccursBefore(completionRootText, "DiagnosticSessionRecordingChecks.RunAsync(", "DiagnosticSessionPostRunSnapshots.CaptureAsync(");
         AssertOccursBefore(completionRootText, "DiagnosticSessionPostRunSnapshots.CaptureAsync(", "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
         AssertOccursBefore(completionRootText, "DiagnosticSessionResultBuilder.BuildAndWriteAsync(", "await context.WriteLiveStateBestEffortAsync(result.CompletedUtc, result.TerminalState)");

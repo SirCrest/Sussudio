@@ -10,13 +10,17 @@ static partial class Program
         var scenarioText = ReadDiagnosticSessionRunExecutionScenarioSource();
 
         AssertContains(runnerText, "public static class DiagnosticSessionRunner");
-        AssertContains(runnerText, "public static Task<DiagnosticSessionResult> RunAsync(");
-        AssertContains(runnerText, "return DiagnosticSessionRunExecution.RunAsync(options, sendCommandAsync, cancellationToken);");
+        AssertContains(runnerText, "public static async Task<DiagnosticSessionResult> RunAsync(");
+        AssertContains(runnerText, "await runContext.CaptureInitialSnapshotAsync().ConfigureAwait(false);");
+        AssertContains(runnerText, "DiagnosticSessionScenarioPhaseRunner.RunAsync(scenarioPhaseContext)");
+        AssertContains(runnerText, "DiagnosticSessionCleanupActions.RunAsync(");
+        AssertContains(runnerText, "return await RunCompletionPhaseAsync(");
         AssertContains(runnerText, "return DiagnosticSessionResultFormatter.Format(result);");
+        AssertContains(runnerText, "private static FileStream AcquireOutputLock(string outputDirectory)");
+        AssertDoesNotContain(runnerText, "internal static class DiagnosticSessionRunExecution");
+        AssertDoesNotContain(runnerText, "DiagnosticSessionRunExecution.RunAsync(");
         AssertDoesNotContain(runnerText, "DiagnosticSessionScenarioSetup.RunAsync(");
         AssertDoesNotContain(runnerText, "SampleLoopAsync(");
-        AssertDoesNotContain(runnerText, "DiagnosticSessionCleanupActions.RunAsync(");
-        AssertContains(executionText, "internal static class DiagnosticSessionRunExecution");
         AssertContains(executionText, "DiagnosticSessionScenarioPhaseRunner.RunAsync(scenarioPhaseContext)");
         AssertContains(executionText, "DiagnosticSessionCleanupActions.RunAsync(");
         AssertContains(scenarioText, "DiagnosticSessionScenarioSetup.RunAsync(");

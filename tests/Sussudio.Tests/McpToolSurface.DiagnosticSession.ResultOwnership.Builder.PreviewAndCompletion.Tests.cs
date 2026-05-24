@@ -134,7 +134,7 @@ static partial class Program
     private static void AssertDiagnosticSessionResultBuilderSummaryArtifactHandoffOwnership()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
-        var runExecutionText = ReadRepoFile("tools/Common/DiagnosticSessionRunExecution.cs")
+        var runExecutionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
         var completionText = runExecutionText;
         var builderText = ReadDiagnosticSessionResultBuilderSource();
