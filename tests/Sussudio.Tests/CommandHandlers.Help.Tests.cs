@@ -10,11 +10,8 @@ static partial class Program
     {
         var ssctlProgramText = ReadRepoFile("tools/ssctl/Program.cs")
             .Replace("\r\n", "\n");
-        var helpWriterRootText = ReadRepoFile("tools/ssctl/SsctlHelpWriter.cs")
+        var helpWriterText = ReadRepoFile("tools/ssctl/SsctlHelpWriter.cs")
             .Replace("\r\n", "\n");
-        var helpWriterSectionsText = ReadRepoFile("tools/ssctl/SsctlHelpWriter.Sections.cs")
-            .Replace("\r\n", "\n");
-        var helpWriterText = string.Join("\n", helpWriterRootText, helpWriterSectionsText);
         var catalogEntriesText = string.Join(
             "\n",
             ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.Entries.cs").Replace("\r\n", "\n"));
@@ -40,21 +37,19 @@ static partial class Program
         AssertContains(ssctlProgramText, "SsctlHelpWriter.Write(Console.Out);");
         AssertDoesNotContain(ssctlProgramText, "AutomationCommandCatalog.Get(kind).CliHelp");
         AssertDoesNotContain(ssctlProgramText, "WriteCatalogHelpLine");
-        AssertContains(helpWriterRootText, "internal static partial class SsctlHelpWriter");
-        AssertContains(helpWriterRootText, "WriteHeader(writer);");
-        AssertContains(helpWriterRootText, "WriteFlashbackSection(writer);");
-        AssertContains(helpWriterRootText, "WriteFlagsSection(writer);");
-        AssertDoesNotContain(helpWriterRootText, "AutomationCommandCatalog.Get(kind).CliHelp");
-        AssertDoesNotContain(helpWriterRootText, "Flashback:");
-        AssertContains(helpWriterSectionsText, "AutomationCommandCatalog.Get(kind).CliHelp");
-        AssertContains(helpWriterSectionsText, "private static void WriteCatalogHelpLine(TextWriter writer, AutomationCommandKind kind, string? suffix = null)");
-        AssertContains(helpWriterSectionsText, "private static void WriteFlashbackSection(TextWriter writer)");
-        AssertContains(helpWriterSectionsText, "private static void WriteWaitVerifySection(TextWriter writer)");
-        AssertContains(helpWriterSectionsText, "WriteCatalogHelpLine(writer, AutomationCommandKind.FlashbackExport);");
-        AssertContains(helpWriterSectionsText, "WriteCatalogHelpLine(writer, AutomationCommandKind.FlashbackGetSegments);");
-        AssertContains(helpWriterSectionsText, "WriteCatalogHelpLine(writer, AutomationCommandKind.SetFrameTimeOverlayVisible);");
-        AssertContains(helpWriterSectionsText, "WriteCatalogHelpLine(writer, AutomationCommandKind.SetFlashbackTimelineVisible);");
-        AssertContains(helpWriterSectionsText, "DiagnosticSessionOptions.CliUsage");
+        AssertContains(helpWriterText, "internal static class SsctlHelpWriter");
+        AssertContains(helpWriterText, "WriteHeader(writer);");
+        AssertContains(helpWriterText, "WriteFlashbackSection(writer);");
+        AssertContains(helpWriterText, "WriteFlagsSection(writer);");
+        AssertContains(helpWriterText, "AutomationCommandCatalog.Get(kind).CliHelp");
+        AssertContains(helpWriterText, "private static void WriteCatalogHelpLine(TextWriter writer, AutomationCommandKind kind, string? suffix = null)");
+        AssertContains(helpWriterText, "private static void WriteFlashbackSection(TextWriter writer)");
+        AssertContains(helpWriterText, "private static void WriteWaitVerifySection(TextWriter writer)");
+        AssertContains(helpWriterText, "WriteCatalogHelpLine(writer, AutomationCommandKind.FlashbackExport);");
+        AssertContains(helpWriterText, "WriteCatalogHelpLine(writer, AutomationCommandKind.FlashbackGetSegments);");
+        AssertContains(helpWriterText, "WriteCatalogHelpLine(writer, AutomationCommandKind.SetFrameTimeOverlayVisible);");
+        AssertContains(helpWriterText, "WriteCatalogHelpLine(writer, AutomationCommandKind.SetFlashbackTimelineVisible);");
+        AssertContains(helpWriterText, "DiagnosticSessionOptions.CliUsage");
         AssertContains(helpOutput, "ssctl");
         AssertContains(helpOutput, "Usage:");
         AssertContains(helpOutput, "Flashback:");

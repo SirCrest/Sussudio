@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T05:02:11Z
+Generated UTC: 2026-05-24T05:05:29Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 821 |
+| Production .cs files | 820 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 94 (11.4%) |
-| Production .cs files under 80 lines | 171 (20.8%) |
+| Production .cs files under 60 lines | 93 (11.3%) |
+| Production .cs files under 80 lines | 170 (20.7%) |
 
 ## Largest partial-type clusters
 
@@ -56,8 +56,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 744 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs |
 | 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
-| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
+| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
@@ -103,7 +103,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 19 | Sussudio/Services/Telemetry/DisabledSourceSignalTelemetryProvider.cs |
 | 19 | tools/NativeXuAudioProbe/ToolRuntimeShims.cs |
 | 22 | Sussudio/ViewModels/DeviceAudioGainMapper.cs |
-| 22 | tools/ssctl/SsctlHelpWriter.cs |
 | 23 | Sussudio/Models/Automation/PreviewStartup.cs |
 | 23 | Sussudio/ViewModels/OutputDriveSpacePresentationBuilder.cs |
 | 25 | tools/Common/DiagnosticSessionRunner.cs |
@@ -146,6 +145,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 48 | Sussudio/Services/Contracts/AutomationInterfaces.cs |
 | 48 | Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs |
 | 48 | tools/McpServer/Tools/PerformanceTimelineTools.cs |
+| 48 | tools/NativeXuAudioProbe/Program.ExperimentPayloads.cs |
 
 ## Notes
 

@@ -413,8 +413,8 @@ owns `presentmon` command parsing, swap-chain discovery, and probe invocation.
 parsing and runner invocation.
 `tools/ssctl/Program.cs` owns only process entry, Ctrl-C cancellation, CLI
 option parsing, and exit-code shaping; `tools/ssctl/SsctlHelpWriter.cs` owns
-the help facade, `tools/ssctl/SsctlHelpWriter.Sections.cs` owns
-operator-facing help section text plus catalog-backed help lines.
+the help facade, operator-facing help section text, and catalog-backed help
+lines.
 `CommandHandlers.CaptureControls.cs` owns preview/record/screenshot/frame and
 `set` capture/audio/output mutations, including the shared set-value payload
 helper. `CommandHandlers.Device.cs` owns device
