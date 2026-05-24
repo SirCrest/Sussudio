@@ -88,6 +88,8 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
+        var initializationText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Initialization.cs")
+            .Replace("\r\n", "\n");
         var codecPolicyText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs")
             .Replace("\r\n", "\n");
         var optionsValidationText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.OptionsValidation.cs")
@@ -100,13 +102,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs")
             .Replace("\r\n", "\n");
-        var audioSetupText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioSetup.cs")
-            .Replace("\r\n", "\n");
         var hdrSideDataText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HdrSideData.cs")
             .Replace("\r\n", "\n");
         var modelsText = rootText;
-        var videoSetupText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs")
-            .Replace("\r\n", "\n");
         var hardwareFramesText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs")
             .Replace("\r\n", "\n");
 
@@ -125,11 +123,15 @@ static partial class Program
         AssertContains(audioInitializationText, "private void InitializeAudioIfNeeded(LibAvEncoderOptions options)");
         AssertContains(audioInitializationText, "private void InitializeMicrophoneIfNeeded(LibAvEncoderOptions options)");
         AssertContains(audioInitializationText, "ffmpeg.avcodec_find_encoder(AVCodecID.AV_CODEC_ID_AAC)");
-        AssertContains(audioSetupText, "private void ConfigureAudioCodecContext(AVCodecContext* codecContext, LibAvEncoderOptions options, AVCodec* codec)");
-        AssertContains(audioSetupText, "private void InitializeAudioResampler(LibAvEncoderOptions options)");
-        AssertContains(audioSetupText, "private void AllocateAudioFrame()");
-        AssertContains(audioSetupText, "private void AllocateAudioAccumulator(LibAvEncoderOptions options)");
-        AssertContains(audioSetupText, "private void AllocateAudioSampleQueue(LibAvEncoderOptions options)");
+        AssertContains(audioInitializationText, "private void ConfigureAudioCodecContext(AVCodecContext* codecContext, LibAvEncoderOptions options, AVCodec* codec)");
+        AssertContains(audioInitializationText, "private void InitializeAudioResampler(LibAvEncoderOptions options)");
+        AssertContains(audioInitializationText, "private void AllocateAudioFrame()");
+        AssertContains(audioInitializationText, "private void AllocateAudioAccumulator(LibAvEncoderOptions options)");
+        AssertContains(audioInitializationText, "private void AllocateAudioSampleQueue(LibAvEncoderOptions options)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.AudioSetup.cs")),
+            "Audio setup helpers live with audio stream initialization");
         AssertContains(hdrSideDataText, "private bool AttachHdrFrameSideDataIfNeeded(LibAvEncoderOptions options)");
         AssertContains(hdrSideDataText, "private bool AttachHdrFrameSideDataToHwFrame(LibAvEncoderOptions options)");
         AssertContains(hdrSideDataText, "ffmpeg.av_mastering_display_metadata_create_side_data(_videoFrame)");
@@ -140,9 +142,13 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.Models.cs")),
             "LibAvEncoder option/result models live with the encoder root");
-        AssertContains(videoSetupText, "private void ConfigureVideoCodecContext(AVCodecContext* codecContext, LibAvEncoderOptions options)");
-        AssertContains(videoSetupText, "private void ApplyEncoderPrivateOptions(AVCodecContext* codecContext, LibAvEncoderOptions options)");
-        AssertContains(videoSetupText, "private void InitializeVideoBitstreamFilterIfNeeded(LibAvEncoderOptions options)");
+        AssertContains(initializationText, "private void ConfigureVideoCodecContext(AVCodecContext* codecContext, LibAvEncoderOptions options)");
+        AssertContains(initializationText, "private void ApplyEncoderPrivateOptions(AVCodecContext* codecContext, LibAvEncoderOptions options)");
+        AssertContains(initializationText, "private void InitializeVideoBitstreamFilterIfNeeded(LibAvEncoderOptions options)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.VideoSetup.cs")),
+            "Video codec setup helpers live with encoder initialization");
         AssertContains(hardwareFramesText, "private static IntPtr CreateSingleTexture2D(IntPtr d3d11Device, int width, int height, bool isP010, uint bindFlags)");
         AssertContains(hardwareFramesText, "private void InitializeHardwareFramesIfNeeded(LibAvEncoderOptions options)");
         AssertContains(hardwareFramesText, "framesCtx->initial_pool_size = 0;");
@@ -171,9 +177,9 @@ static partial class Program
         AssertDoesNotContain(rootText, "private void AllocateAudioFrame()");
         AssertDoesNotContain(rootText, "private bool AttachHdrFrameSideDataIfNeeded(LibAvEncoderOptions options)");
         AssertDoesNotContain(rootText, "private bool AttachHdrFrameSideDataToHwFrame(LibAvEncoderOptions options)");
-        AssertDoesNotContain(videoSetupText, "private static IntPtr CreateSingleTexture2D(IntPtr d3d11Device, int width, int height, bool isP010, uint bindFlags)");
-        AssertDoesNotContain(videoSetupText, "private void InitializeHardwareFramesIfNeeded(LibAvEncoderOptions options)");
-        AssertDoesNotContain(videoSetupText, "private void InitializeCudaHardwareFrames(LibAvEncoderOptions options)");
+        AssertDoesNotContain(initializationText, "private static IntPtr CreateSingleTexture2D(IntPtr d3d11Device, int width, int height, bool isP010, uint bindFlags)");
+        AssertDoesNotContain(initializationText, "private void InitializeHardwareFramesIfNeeded(LibAvEncoderOptions options)");
+        AssertDoesNotContain(initializationText, "private void InitializeCudaHardwareFrames(LibAvEncoderOptions options)");
         AssertDoesNotContain(hardwareFramesText, "private void InitializeVideoBitstreamFilterIfNeeded(LibAvEncoderOptions options)");
 
         return Task.CompletedTask;

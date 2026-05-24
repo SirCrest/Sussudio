@@ -1461,7 +1461,9 @@ LibAv encoder initialization now lives in
 `Sussudio/Services/Recording/LibAvEncoder.Initialization.cs`. Keep FFmpeg
 runtime initialization forwarding and the public encoder open/setup sequence
 there, including native allocation order, hardware-frame fallback behavior,
-muxer-option lifetime, open-state timing, and startup failure cleanup.
+muxer-option lifetime, open-state timing, startup failure cleanup, video codec
+context configuration, NVENC private option application, and video
+bitstream-filter initialization.
 
 LibAv encoder packet writing now lives in
 `Sussudio/Services/Recording/LibAvEncoder.PacketWriting.cs`. Keep video encoder
@@ -1491,10 +1493,7 @@ handoff, and stream-chunk submission there.
 LibAv encoder audio stream initialization now lives in
 `Sussudio/Services/Recording/LibAvEncoder.AudioInitialization.cs`. Keep audio
 and microphone AAC stream creation, codec opening, stream time-base setup,
-resampler/frame/buffer setup calls, and microphone-specific setup there.
-
-LibAv encoder audio setup helpers now live in
-`Sussudio/Services/Recording/LibAvEncoder.AudioSetup.cs`. Keep AAC codec
+resampler/frame/buffer setup calls, microphone-specific setup, AAC codec
 context configuration, resampler setup, audio frame allocation, accumulator
 allocation, and sample-queue allocation there.
 
@@ -1508,10 +1507,7 @@ LibAv encoder option/result models now live with the core encoder state in
 `RotateOutputResult` there unless they become a shared contract outside the
 encoder family.
 
-LibAv encoder video setup now lives in
-`Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs`. Keep video codec
-context configuration, NVENC private option application, and video bitstream-filter
-initialization there. D3D11 hardware frames setup, CUDA hardware frame context
+LibAv encoder D3D11 hardware frames setup, CUDA hardware frame context
 adoption, and ArraySize=1 texture-pool creation now live in
 `Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs`.
 Output rotation now lives in `LibAvEncoder.OutputRotation.cs`; final close and
