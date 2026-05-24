@@ -64,10 +64,6 @@ static partial class Program
         var probeDefaultExperimentReportingText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.DefaultExperiment.Reporting.cs"));
         var probeExperimentPayloadsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ExperimentPayloads.cs"));
         var probeI2cCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.cs"));
-        var probeI2cCommandsHighSelectorProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.HighSelectorProbe.cs"));
-        var probeI2cCommandsSelectorProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.SelectorProbe.cs"));
-        var probeI2cCommandsTopologyProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.TopologyProbe.cs"));
-        var probeI2cCommandsVerifyText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.Verify.cs"));
         var probeI2cLegacyProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cLegacyProbe.cs"));
         var probeI2cSwitchText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cSwitch.cs"));
         var probeI2cTransportText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cTransport.cs"));
@@ -134,25 +130,33 @@ static partial class Program
         AssertContains(probeI2cCommandsText, "public static async Task<int> RunAsync");
         AssertContains(probeI2cCommandsText, "Usage: i2c-cmd get|set|scan");
         AssertContains(probeI2cCommandsText, "RunVerifyAsync(dev)");
-        AssertDoesNotContain(probeI2cCommandsText, "I2C SET/verify via AT envelope");
+        AssertContains(probeI2cCommandsText, "I2C SET/verify via AT envelope");
         AssertContains(probeI2cCommandsText, "RunTopologyProbe(dev)");
-        AssertDoesNotContain(probeI2cCommandsText, "Testing with own GUID as property set");
+        AssertContains(probeI2cCommandsText, "Testing with own GUID as property set");
         AssertContains(probeI2cCommandsText, "RunSelectorProbeAsync(dev)");
-        AssertDoesNotContain(probeI2cCommandsText, "Full Selector 3 dump");
+        AssertContains(probeI2cCommandsText, "Full Selector 3 dump");
         AssertContains(probeI2cCommandsText, "RunHighSelectorProbeAsync(dev)");
-        AssertDoesNotContain(probeI2cCommandsText, "Probing selectors 18-40");
-        AssertContains(probeI2cCommandsHighSelectorProbeText, "static partial class NativeXuProbeI2cCommands");
-        AssertContains(probeI2cCommandsHighSelectorProbeText, "public static async Task<int> RunHighSelectorProbeAsync");
-        AssertContains(probeI2cCommandsHighSelectorProbeText, "Probing selectors 18-40");
-        AssertContains(probeI2cCommandsSelectorProbeText, "static partial class NativeXuProbeI2cCommands");
-        AssertContains(probeI2cCommandsSelectorProbeText, "public static async Task<int> RunSelectorProbeAsync");
-        AssertContains(probeI2cCommandsSelectorProbeText, "Full Selector 3 dump");
-        AssertContains(probeI2cCommandsTopologyProbeText, "static partial class NativeXuProbeI2cCommands");
-        AssertContains(probeI2cCommandsTopologyProbeText, "public static int RunTopologyProbe");
-        AssertContains(probeI2cCommandsTopologyProbeText, "Testing with own GUID as property set");
-        AssertContains(probeI2cCommandsVerifyText, "static partial class NativeXuProbeI2cCommands");
-        AssertContains(probeI2cCommandsVerifyText, "public static async Task<int> RunVerifyAsync");
-        AssertContains(probeI2cCommandsVerifyText, "I2C SET/verify via AT envelope");
+        AssertContains(probeI2cCommandsText, "Probing selectors 18-40");
+        AssertContains(probeI2cCommandsText, "public static async Task<int> RunHighSelectorProbeAsync");
+        AssertContains(probeI2cCommandsText, "public static async Task<int> RunSelectorProbeAsync");
+        AssertContains(probeI2cCommandsText, "public static int RunTopologyProbe");
+        AssertContains(probeI2cCommandsText, "public static async Task<int> RunVerifyAsync");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.HighSelectorProbe.cs")),
+            "old NativeXu i2c high-selector partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.SelectorProbe.cs")),
+            "old NativeXu i2c selector partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.TopologyProbe.cs")),
+            "old NativeXu i2c topology partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.Verify.cs")),
+            "old NativeXu i2c verify partial removed");
         AssertContains(probeI2cLegacyProbeText, "static class NativeXuProbeI2cLegacyProbe");
         AssertContains(probeI2cLegacyProbeText, "public static int Run()");
         AssertContains(probeI2cLegacyProbeText, "Tests whether rtk_sendI2CATCommand uses the same XU path");

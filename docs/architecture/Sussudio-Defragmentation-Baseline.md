@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-24
+Area: NativeXuAudioProbe I2C command family locality
+Problem: The exploratory `i2c-cmd` probe surface was split across one router plus four tiny subcommand partials, forcing five files to understand one CLI command family.
+Files consolidated: `tools/NativeXuAudioProbe/Program.I2cCommands.SelectorProbe.cs`; `tools/NativeXuAudioProbe/Program.I2cCommands.HighSelectorProbe.cs`; `tools/NativeXuAudioProbe/Program.I2cCommands.TopologyProbe.cs`; `tools/NativeXuAudioProbe/Program.I2cCommands.Verify.cs`
+Files added: none
+Net production .cs delta: -4
+Partial clusters reduced: `NativeXuProbeI2cCommands` -4 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: affected `NativeXuAudioProbe` build covered the consolidated exploratory CLI command family
+Behavior preserved: `i2c-cmd` subcommands, routing names, direct KS/XU calls, SET/readback/restore flow, and topology/selector probe behavior remain unchanged
+Notes for future agents: keep small NativeXu exploratory subcommands in `Program.I2cCommands.cs` while they are one CLI command family; split again only for a reusable transport or independently tested workflow
+
+Date: 2026-05-24
 Area: NativeXuAudioProbe runtime shim locality
 Problem: Probe-local `Logger` and `CaptureDevice` shims lived in a 15-line standalone file even though they only exist to support the probe entrypoint's linked app-service sources.
 Files consolidated: `tools/NativeXuAudioProbe/ToolRuntimeShims.cs`

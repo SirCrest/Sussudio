@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T12:29:04Z
+Generated UTC: 2026-05-24T12:37:10Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 723 |
+| Production .cs files | 719 |
 | Test .cs files | 552 |
 | Production .cs files under 60 lines | 37 (5.1%) |
-| Production .cs files under 80 lines | 76 (10.5%) |
+| Production .cs files under 80 lines | 75 (10.4%) |
 
 ## Largest partial-type clusters
 
@@ -45,7 +45,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | DiagnosticSessionFlashbackMetrics | 5 | 762 | tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs, tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs, tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs, tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs, tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs |
 | WasapiAudioPlayback | 5 | 854 | Sussudio/Services/Audio/WasapiAudioPlayback.cs, Sussudio/Services/Audio/WasapiAudioPlayback.Initialization.cs, Sussudio/Services/Audio/WasapiAudioPlayback.Queue.cs, Sussudio/Services/Audio/WasapiAudioPlayback.RenderThread.cs, Sussudio/Services/Audio/WasapiAudioPlayback.Volume.cs |
 | RecordingVerifier | 5 | 1021 | Sussudio/Services/Recording/Verification/RecordingVerifier.Cadence.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Results.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs |
-| NvdecMjpegDecoder | 5 | 616 | Sussudio/Services/Gpu/NvdecMjpegDecoder.Decode.cs, Sussudio/Services/Gpu/NvdecMjpegDecoder.Download.cs, Sussudio/Services/Gpu/NvdecMjpegDecoder.Initialization.cs, Sussudio/Services/Gpu/NvdecMjpegDecoder.Lifetime.cs, Sussudio/Services/Gpu/NvdecMjpegDecoder.SharedInitialization.cs |
+| FlashbackBackendResources | 5 | 951 | Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs, Sussudio/Services/Flashback/FlashbackBackendResources.cs, Sussudio/Services/Flashback/FlashbackBackendResources.RecordingFinalize.cs, Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs, Sussudio/Services/Flashback/FlashbackBackendResources.Teardown.cs |
 
 ## Largest production files
 
@@ -62,6 +62,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
+| 575 | tools/NativeXuAudioProbe/Program.I2cCommands.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
 | 546 | Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs |
 | 538 | Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs |
@@ -80,7 +81,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 414 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs |
 | 410 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs |
 | 398 | Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs |
-| 394 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs |
 
 ## Sample production files under 60 lines
 

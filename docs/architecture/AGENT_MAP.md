@@ -3516,12 +3516,10 @@ Primary owners:
   runner, experiment spec records, and analog-gain sequence;
   `Program.DefaultExperiment.Reporting.cs` owns default experiment AT
   read/decode/diff/snapshot reporting plus readback/result-diff records;
-  `Program.I2cCommands.cs` owns the exploratory `i2c-cmd` router/basic
-  get/set/scan paths; `Program.I2cCommands.SelectorProbe.cs` owns selector
-  transport probing for that command family;
-  `Program.I2cCommands.HighSelectorProbe.cs` owns high-selector probing;
-  `Program.I2cCommands.TopologyProbe.cs` owns topology/property-set probing;
-  `Program.I2cCommands.Verify.cs` owns I2C SET/readback/restore verification;
+  `Program.I2cCommands.cs` owns the exploratory `i2c-cmd` command family:
+  router, basic get/set/scan paths, selector transport probing,
+  high-selector probing, topology/property-set probing, and I2C
+  SET/readback/restore verification;
   `Program.I2cLegacyProbe.cs` owns the legacy `i2c-probe` selector scan and
   raw/AT-wrapped I2C frame experiment;
   `Program.I2cSwitch.cs` owns the captured audio-switch replay workflow;
