@@ -2895,7 +2895,9 @@ Control-bar button ownership and hover/press/release scale behavior now live in
 `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
 
 Static shell ThemeShadow and translation setup for the control bar and record
-button now live in `Sussudio/Controllers/Shell/ShellElevationController.cs`.
+button now live in `Sussudio/Controllers/Shell/ShellChromeController.cs`,
+alongside shell property-change routing across stats overlay and settings shelf
+controllers.
 `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
 
 Preview shell/content fade and scale transitions, video-shadow fade timing, and
@@ -3044,7 +3046,7 @@ chrome.
 Capture-option property-name routing still lives in the focused
 `Sussudio/MainWindow.CaptureOptionBindings.cs` adapter. Output-path routing
 lives in `OutputPathController`, shell visibility route order lives in
-`ShellPropertyChangedController` over `StatsOverlayCompositionController` and
+`ShellChromeController` over `StatsOverlayCompositionController` and
 `SettingsShelfController` through
 `Sussudio/MainWindow.ShellChrome.Composition.cs`, and live
 source-signal routing lives in `LiveSignalInfoController`. Keep the root dispatcher limited to route order,

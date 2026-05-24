@@ -2860,8 +2860,10 @@ Primary current owners:
   button list used by launch entrance animation plus hover/press/release scale
   behavior. `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing
   adapter.
-- `Sussudio/Controllers/Shell/ShellElevationController.cs` owns static shell
-  ThemeShadow and translation setup for the control bar and record button.
+- `Sussudio/Controllers/Shell/ShellChromeController.cs` owns static shell
+  ThemeShadow and translation setup for the control bar and record button plus
+  shell property-change routing across stats overlay and settings shelf
+  controllers.
   `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
   shell/content fade and scale transitions, video-shadow fade timing,
@@ -2979,7 +2981,7 @@ Primary current owners:
   `CaptureOptionBindingController`.
 - `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing
   shell property-change adapter.
-  `Sussudio/Controllers/Shell/ShellPropertyChangedController.cs` owns the shell
+  `Sussudio/Controllers/Shell/ShellChromeController.cs` owns the shell
   property-change route order across `StatsOverlayCompositionController` and
   `SettingsShelfController`; stats visibility behavior still lives in the stats
   composition controller, while settings visibility behavior still lives in the

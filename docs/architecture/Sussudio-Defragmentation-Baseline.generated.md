@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T07:17:38Z
+Generated UTC: 2026-05-24T07:23:24Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 794 |
+| Production .cs files | 793 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 72 (9.1%) |
-| Production .cs files under 80 lines | 140 (17.6%) |
+| Production .cs files under 60 lines | 70 (8.8%) |
+| Production .cs files under 80 lines | 139 (17.5%) |
 
 ## Largest partial-type clusters
 
@@ -56,8 +56,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 744 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs |
 | 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
-| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
+| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
@@ -110,10 +110,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 29 | Sussudio/Services/Capture/HdrOutputPolicy.cs |
 | 31 | Sussudio/Models/Automation/DiagnosticsEvents.cs |
 | 31 | Sussudio/Services/Runtime/TelemetryAgeHelper.cs |
-| 34 | Sussudio/Controllers/Shell/ShellElevationController.cs |
 | 34 | Sussudio/Services/Flashback/FlashbackDecoder.OutputTypes.cs |
 | 35 | tools/McpServer/Tools/McpToolResultFactory.cs |
-| 36 | Sussudio/Controllers/Shell/ShellPropertyChangedController.cs |
 | 37 | Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs |
 | 37 | tools/KsAudioNodeProbe/Program.cs |
 | 38 | tools/ssctl/CommandHandlers.DiagnosticSession.cs |
@@ -146,6 +144,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 55 | Sussudio/Services/Automation/AutomationCommandDispatcher.ReadbackCommands.cs |
 | 55 | Sussudio/Services/Contracts/IPreviewFrameSink.cs |
 | 55 | Sussudio/Services/Runtime/EnvironmentHelpers.cs |
+| 56 | Sussudio/Controllers/Stats/StatsHardwareRowsController.cs |
+| 56 | Sussudio/DisplayFormatters.cs |
 
 ## Notes
 

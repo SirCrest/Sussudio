@@ -22,7 +22,7 @@ static partial class Program
         var shellText = ReadMainWindowShellChromeAdapterSource();
         var statsOverlayCompositionControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
         var settingsShelfControllerText = ReadRepoFile("Sussudio/Controllers/Shell/SettingsShelfController.cs").Replace("\r\n", "\n");
-        var shellPropertyChangedControllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellPropertyChangedController.cs").Replace("\r\n", "\n");
+        var shellChromeControllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
         var liveSignalText = ReadRepoFile("Sussudio/MainWindow.StatusStripPresentation.cs").Replace("\r\n", "\n");
         var liveSignalControllerText = ReadRepoFile("Sussudio/Controllers/Shell/LiveSignalInfoController.cs").Replace("\r\n", "\n");
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
@@ -158,10 +158,14 @@ static partial class Program
         AssertDoesNotContain(shellText, "_settingsShelfController.TryHandlePropertyChanged(propertyName, ViewModel.IsSettingsVisible)");
         AssertDoesNotContain(shellText, "case nameof(MainViewModel.IsStatsVisible):");
         AssertDoesNotContain(shellText, "case nameof(MainViewModel.IsSettingsVisible):");
-        AssertContains(shellPropertyChangedControllerText, "internal sealed class ShellPropertyChangedController");
-        AssertContains(shellPropertyChangedControllerText, "public bool TryHandlePropertyChanged(string propertyName)");
-        AssertContains(shellPropertyChangedControllerText, "_context.StatsOverlayComposition.TryHandlePropertyChanged(propertyName, _context.IsStatsVisible())");
-        AssertContains(shellPropertyChangedControllerText, "_context.SettingsShelf.TryHandlePropertyChanged(propertyName, _context.IsSettingsVisible())");
+        AssertContains(shellChromeControllerText, "internal sealed class ShellPropertyChangedController");
+        AssertContains(shellChromeControllerText, "public bool TryHandlePropertyChanged(string propertyName)");
+        AssertContains(shellChromeControllerText, "_context.StatsOverlayComposition.TryHandlePropertyChanged(propertyName, _context.IsStatsVisible())");
+        AssertContains(shellChromeControllerText, "_context.SettingsShelf.TryHandlePropertyChanged(propertyName, _context.IsSettingsVisible())");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "ShellPropertyChangedController.cs")),
+            "shell property-change routing lives with shell chrome controller concerns");
         AssertContains(statsOverlayCompositionControllerText, "case nameof(MainViewModel.IsStatsVisible):");
         AssertContains(settingsShelfControllerText, "case nameof(MainViewModel.IsSettingsVisible):");
         AssertDoesNotContain(shellText, "StatsToggle.IsChecked = ViewModel.IsStatsVisible;");

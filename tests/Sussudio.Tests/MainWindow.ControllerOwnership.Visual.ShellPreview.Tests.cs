@@ -31,7 +31,7 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadMainWindowShellChromeAdapterSource();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellElevationController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private ShellElevationController _shellElevationController = null!;");
         AssertContains(adapterText, "private void InitializeShellElevationController()");
@@ -48,6 +48,10 @@ static partial class Program
         AssertContains(controllerText, "_context.ControlBarBorder.Translation = new Vector3(0, 0, 32);");
         AssertContains(controllerText, "var recordButtonShadow = new ThemeShadow();");
         AssertContains(controllerText, "_context.RecordButton.Translation = new Vector3(0, 0, 16);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "ShellElevationController.cs")),
+            "shell elevation setup lives with shell chrome controller concerns");
         AssertDoesNotContain(mainWindowText, "new Microsoft.UI.Xaml.Media.ThemeShadow()");
         AssertDoesNotContain(mainWindowText, "ControlBarBorder.Translation = new System.Numerics.Vector3(0, 0, 32);");
         AssertDoesNotContain(mainWindowText, "RecordButton.Translation = new System.Numerics.Vector3(0, 0, 16);");
