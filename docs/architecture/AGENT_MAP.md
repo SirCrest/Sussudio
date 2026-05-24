@@ -1177,12 +1177,10 @@ Primary current owners:
   transforms. `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires the
   renderer host context, `SizeChanged` adapter, renderer-host reset handoff,
   stable start/stop, shutdown, and reinit-unsafe-window automation adapters.
-  `Sussudio/Controllers/Preview/Renderer/PreviewRendererStartupPlanBuilder.cs` owns renderer
-  startup dimension/fps/HDR/min-present-interval planning.
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns hosted preview
   renderer context, public runtime state, counters, start/stop/shutdown flow,
-  renderer startup planning, CPU fallback attachment, D3D renderer startup and
-  event/failure handling, cleanup, D3D reinit renderer-stop/timeout policy,
+  renderer startup dimension/fps/HDR/min-present-interval planning, CPU fallback
+  attachment, D3D renderer startup and event/failure handling, cleanup, D3D reinit renderer-stop/timeout policy,
   disposal, unsafe-window telemetry, stop tick accounting, and fresh
   SwapChainPanel replacement.
   `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs` owns preview
@@ -3019,13 +3017,10 @@ Primary current owners:
   device refresh/apply button workflows and preserves the explicit apply/reinit
   path. `MainWindow.ButtonActions.cs` is the XAML-facing adapter for
   recording, capture-device, and output-path button/display bridges.
-- `Sussudio/Controllers/Capture/CaptureOptionPresentationPolicy.cs` owns pure
-  capture-option presentation decisions: HDR toggle enablement, MJPEG decoder
-  count visibility, bitrate/preset visibility, audio clipping visibility, and
-  initial decoder-count clamping. `CaptureOptionPresentationController.cs`
-  owns XAML control application, decoder-count selection handling, and
-  delegation to pure policy helpers plus pure HDR hint and FPS telemetry
-  tooltip text policy.
+- `Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs` owns pure
+  capture-option presentation decisions, XAML control application,
+  decoder-count selection handling, and HDR hint/FPS telemetry tooltip text
+  policy.
   `MainWindow.CaptureOptionBindings.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Capture/CaptureOptionBindingController.cs` owns the
   capture option binding adapter context, setup, UI event attachment,

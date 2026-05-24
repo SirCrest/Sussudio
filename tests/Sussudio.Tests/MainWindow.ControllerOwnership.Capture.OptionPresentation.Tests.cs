@@ -8,7 +8,7 @@ static partial class Program
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var captureOptionText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionBindings.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs").Replace("\r\n", "\n");
-        var policyText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionPresentationPolicy.cs").Replace("\r\n", "\n");
+        var policyText = controllerText;
         const string tooltipFormatterMarker = "internal static class CaptureOptionTooltipFormatter";
         var tooltipFormatterStart = controllerText.IndexOf(tooltipFormatterMarker, System.StringComparison.Ordinal);
         if (tooltipFormatterStart < 0)
@@ -69,7 +69,6 @@ static partial class Program
         AssertContains(policyText, "private static double ResolveSelectedFrameRate(CaptureOptionPresentationInput input)");
         AssertContains(policyText, "private static bool ShouldShowDecoderCount(");
         AssertContains(policyText, "selectedFrameRate >= 90");
-        AssertDoesNotContain(policyText, "Microsoft.UI.Xaml");
         AssertContains(tooltipFormatterText, "internal static class CaptureOptionTooltipFormatter");
         AssertContains(tooltipFormatterText, "public static string? BuildHdrHintText(string? resolutionHint, string? readinessHint, bool isRecording)");
         AssertContains(tooltipFormatterText, "Stop recording before switching between HDR and SDR pipelines.");
@@ -99,8 +98,8 @@ static partial class Program
         AssertDoesNotContain(captureOptionText, "ViewModel.MjpegDecoderCount = count;");
         AssertDoesNotContain(captureOptionText, "ViewModel.SelectedFormat?.PixelFormat");
         AssertDoesNotContain(captureOptionText, "Stop recording before switching between HDR and SDR pipelines.");
-        AssertDoesNotContain(controllerText, "var isExplicitMjpg =");
-        AssertDoesNotContain(controllerText, "var isAutoWithMjpgDevice =");
+        AssertDoesNotContain(captureOptionText, "var isExplicitMjpg =");
+        AssertDoesNotContain(captureOptionText, "var isAutoWithMjpgDevice =");
         AssertDoesNotContain(controllerText, "_context.ViewModel.IsHdrAvailable &&");
         AssertDoesNotContain(controllerText, "_context.ViewModel.IsCustomBitrateVisible ? Visibility.Visible");
         AssertDoesNotContain(controllerText, "_context.ViewModel.AudioClipping ? Visibility.Visible");

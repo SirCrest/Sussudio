@@ -1022,7 +1022,7 @@ video/control-bar composition shadow visuals, bounds alignment, clear behavior,
 and compositor opacity fade routing live in
 `Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs`.
 `Sussudio/MainWindow.PreviewSurface.cs` is the XAML-facing adapter.
-`Sussudio/Controllers/Preview/Renderer/PreviewRendererStartupPlanBuilder.cs` owns renderer
+`Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns renderer
 startup dimension/fps/HDR/min-present-interval planning.
 `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns hosted preview
 renderer context, public runtime state, counters, start/stop/shutdown flow,
@@ -3091,7 +3091,7 @@ Capture-device refresh/apply button workflows now live in
 apply/reinit path separate from selection synchronization.
 
 Pure capture-option presentation decisions now live in
-`Sussudio/Controllers/Capture/CaptureOptionPresentationPolicy.cs`: HDR toggle
+`Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs`: HDR toggle
 enablement, MJPEG decoder count visibility, bitrate/preset visibility, audio
 clipping visibility, and initial decoder-count clamping. XAML control
 application, decoder-count selection handling, delegation to policy helpers,
