@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T06:54:58Z
+Generated UTC: 2026-05-24T06:59:58Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 798 |
+| Production .cs files | 797 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 75 (9.4%) |
-| Production .cs files under 80 lines | 145 (18.2%) |
+| Production .cs files under 60 lines | 74 (9.3%) |
+| Production .cs files under 80 lines | 143 (17.9%) |
 
 ## Largest partial-type clusters
 
@@ -110,7 +110,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 29 | Sussudio/Services/Capture/HdrOutputPolicy.cs |
 | 31 | Sussudio/Models/Automation/DiagnosticsEvents.cs |
 | 31 | Sussudio/Services/Runtime/TelemetryAgeHelper.cs |
-| 34 | Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs |
 | 34 | Sussudio/Controllers/Shell/ShellElevationController.cs |
 | 34 | Sussudio/Services/Flashback/FlashbackDecoder.OutputTypes.cs |
 | 35 | tools/McpServer/Tools/McpToolResultFactory.cs |
@@ -146,6 +145,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 52 | Sussudio/Services/Capture/CaptureSessionCoordinator.cs |
 | 53 | Sussudio/Controllers/Window/WindowSnapRegionLayoutPolicy.cs |
 | 54 | Sussudio.Automation.Contracts/AutomationCommandCatalog.Manifest.cs |
+| 55 | Sussudio/Services/Automation/AutomationCommandDispatcher.ReadbackCommands.cs |
 
 ## Notes
 

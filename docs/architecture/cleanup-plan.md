@@ -2908,7 +2908,7 @@ animation callbacks; video-shadow fade callbacks and shared compositor shadow
 opacity fades route through `PreviewSurfaceShadowController`.
 
 Preview button glyph/tooltip presentation for Start Preview and Stop Preview
-now lives in `Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs`.
+now lives in `Sussudio/Controllers/Preview/PreviewButtonActionController.cs`.
 `Sussudio/MainWindow.PropertyChangedPreview.Composition.cs`
 wires preview button presentation callbacks and preview
 lifecycle property/event routing. Preview
