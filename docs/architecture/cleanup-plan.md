@@ -3197,7 +3197,7 @@ PresentMon MCP stays intentionally shallow: keep `capture_presentmon`,
 invocation in `PresentMonTools.cs`; keep the app-snapshot request and malformed
 snapshot/pipe-failure fallback there too.
 Shared option precedence and preview-present field extraction belong to
-`tools/Common/PresentMon/PresentMonProbe.Options.cs`.
+`tools/Common/PresentMon/PresentMonProbe.cs`.
 
 Diagnostic-session pipe retry/error classification now lives in
 `tools/Common/DiagnosticSessionPipeRetryPolicy.cs`, keeping access-denied as a
@@ -3279,7 +3279,7 @@ Diagnostic-session PresentMon startup now lives in
 `tools/Common/DiagnosticSessionScenarioStartup.cs` beside the scenario task
 registration flow. It owns optional PresentMon launch, correlation snapshot
 capture, and `presentmon.csv` output selection while delegating
-option/correlation policy to `tools/Common/PresentMon/PresentMonProbe.Options.cs`.
+option/correlation policy to `tools/Common/PresentMon/PresentMonProbe.cs`.
 
 Diagnostic-session scenario setup now lives in
 `tools/Common/DiagnosticSessionScenarioSetup.cs`. It owns initial setup
@@ -3507,9 +3507,6 @@ transport/protocol exception mapping for the shared command transport.
 PresentMon model ownership and result formatting are split from the probe runner.
 `tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon options, result,
 summary, swap-chain, app-correlation summary, and metric DTOs.
-`tools/Common/PresentMon/PresentMonProbe.Options.cs` owns the shared
-`PresentMonProbeCorrelation` handoff, option precedence/defaulting, and
-app-snapshot preview correlation field extraction.
 `tools/Common/PresentMon/PresentMonProbe.Format.cs` owns result text formatting while
 `tools/Common/PresentMon/PresentMonProbe.Csv.cs` owns CSV parse overloads, selected-row
 filtering, summary assembly, swap-chain normalization/selection, header/field parsing,
@@ -3520,7 +3517,8 @@ assignment, private parsed CSV row shapes, and row projection from
 header-indexed fields.
 `tools/Common/PresentMon/PresentMonProbe.Csv.Correlation.cs` owns app-present correlation, while
 `tools/Common/PresentMon/PresentMonProbe.Csv.Summary.cs` owns warnings, counted text fields, and
-percentile metric aggregation. `tools/Common/PresentMon/PresentMonProbe.cs` keeps the public run
+percentile metric aggregation. `tools/Common/PresentMon/PresentMonProbe.cs` keeps
+the public option construction, preview snapshot correlation extraction, run
 orchestration, command-line construction, argument quoting, and probe-result message shaping.
 `tools/Common/PresentMon/PresentMonProbe.Paths.cs` owns target process,
 PresentMon executable, and output-path resolution. `tools/Common/PresentMon/PresentMonProbe.Process.cs`

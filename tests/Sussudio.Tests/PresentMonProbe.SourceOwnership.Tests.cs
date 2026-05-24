@@ -8,7 +8,6 @@ static partial class Program
             => ReadRepoFile($"tools/Common/PresentMon/{fileName}").Replace("\r\n", "\n");
 
         var rootText = ReadPresentMonProbeFile("PresentMonProbe.cs");
-        var optionsText = ReadPresentMonProbeFile("PresentMonProbe.Options.cs");
         var modelsText = ReadPresentMonProbeFile("PresentMonProbe.Models.cs");
         var formatText = ReadPresentMonProbeFile("PresentMonProbe.Format.cs");
         var csvText = ReadPresentMonProbeFile("PresentMonProbe.Csv.cs");
@@ -33,17 +32,17 @@ static partial class Program
         AssertContains(rootText, "summary = ParseCsv(outputPath, options.ExpectedSwapChainAddress, options, captureStartUtcUnixMs);");
         AssertContains(rootText, "TryDelete(outputPath);");
 
-        AssertContains(optionsText, "public readonly record struct PresentMonProbeCorrelation(");
-        AssertContains(optionsText, "public static PresentMonProbeOptions CreateOptions(");
-        AssertContains(optionsText, "ExpectedSwapChainAddress = string.IsNullOrWhiteSpace(swapChainAddress)");
-        AssertContains(optionsText, "AppPresentId = appPresentId ?? correlation.PresentId");
-        AssertContains(optionsText, "public static PresentMonProbeCorrelation ReadPreviewCorrelation(JsonElement snapshot)");
-        AssertContains(optionsText, "PreviewD3DSwapChainAddress");
-        AssertContains(optionsText, "PreviewD3DLastRenderedPreviewPresentId");
-        AssertContains(optionsText, "PreviewD3DLastRenderedSourceSequenceNumber");
-        AssertContains(optionsText, "PreviewD3DLastRenderedUtcUnixMs");
-        AssertContains(optionsText, "private static long? GetPositiveLong(");
-        AssertContains(optionsText, "private static long? GetNonNegativeLong(");
+        AssertContains(rootText, "public readonly record struct PresentMonProbeCorrelation(");
+        AssertContains(rootText, "public static PresentMonProbeOptions CreateOptions(");
+        AssertContains(rootText, "ExpectedSwapChainAddress = string.IsNullOrWhiteSpace(swapChainAddress)");
+        AssertContains(rootText, "AppPresentId = appPresentId ?? correlation.PresentId");
+        AssertContains(rootText, "public static PresentMonProbeCorrelation ReadPreviewCorrelation(JsonElement snapshot)");
+        AssertContains(rootText, "PreviewD3DSwapChainAddress");
+        AssertContains(rootText, "PreviewD3DLastRenderedPreviewPresentId");
+        AssertContains(rootText, "PreviewD3DLastRenderedSourceSequenceNumber");
+        AssertContains(rootText, "PreviewD3DLastRenderedUtcUnixMs");
+        AssertContains(rootText, "private static long? GetPositiveLong(");
+        AssertContains(rootText, "private static long? GetNonNegativeLong(");
 
         AssertContains(modelsText, "public sealed class PresentMonProbeOptions");
         AssertContains(modelsText, "public sealed class PresentMonProbeResult");

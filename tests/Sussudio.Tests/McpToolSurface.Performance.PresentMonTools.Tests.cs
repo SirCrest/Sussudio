@@ -74,7 +74,7 @@ static partial class Program
 
         var rootText = ReadRepoFile("tools/McpServer/Tools/PresentMonTools.cs")
             .Replace("\r\n", "\n");
-        var optionsText = ReadRepoFile("tools/Common/PresentMon/PresentMonProbe.Options.cs")
+        var probeText = ReadRepoFile("tools/Common/PresentMon/PresentMonProbe.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "[McpServerToolType]");
@@ -101,9 +101,9 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PresentMonTools.Correlation.cs")),
             "PresentMon snapshot correlation lives with the PresentMon MCP tool");
 
-        AssertContains(optionsText, "public readonly record struct PresentMonProbeCorrelation(");
-        AssertContains(optionsText, "public static PresentMonProbeOptions CreateOptions(");
-        AssertContains(optionsText, "public static PresentMonProbeCorrelation ReadPreviewCorrelation(JsonElement snapshot)");
+        AssertContains(probeText, "public readonly record struct PresentMonProbeCorrelation(");
+        AssertContains(probeText, "public static PresentMonProbeOptions CreateOptions(");
+        AssertContains(probeText, "public static PresentMonProbeCorrelation ReadPreviewCorrelation(JsonElement snapshot)");
     }
 
     private static void AssertPresentMonOptionsFallbackAndPrecedence()

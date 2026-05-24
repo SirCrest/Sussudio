@@ -3557,7 +3557,7 @@ Primary owners:
 - `tools/McpServer/Tools/PresentMonTools.cs` owns public PresentMon MCP entry
   points, structured-content shape, probe invocation, and app-snapshot
   request/fallback behavior. Shared option precedence and preview-present field
-  extraction live in `tools/Common/PresentMon/PresentMonProbe.Options.cs`.
+  extraction live in `tools/Common/PresentMon/PresentMonProbe.cs`.
 - `tools/Common/DiagnosticSessionModels.cs` owns diagnostic session run
   options, sampled snapshot DTOs, shared tool invocation defaults, and the ssctl
   usage string.
@@ -3834,9 +3834,6 @@ Primary owners:
   adding string comparisons in `DiagnosticSessionRunner`.
 - `tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon option/result,
   summary, swap-chain, app-correlation summary, and metric DTOs.
-- `tools/Common/PresentMon/PresentMonProbe.Options.cs` owns
-  `PresentMonProbeCorrelation`, shared option precedence/defaulting, and
-  preview snapshot correlation field extraction.
 - `tools/Common/PresentMon/PresentMonProbe.Format.cs` owns PresentMon result text rendering
   used by diagnostic-session output surfaces.
 - `tools/Common/PresentMon/PresentMonProbe.Csv.cs` owns PresentMon CSV parse overloads,
@@ -3851,7 +3848,8 @@ Primary owners:
   correlation and displayed/not-displayed outcome classification.
 - `tools/Common/PresentMon/PresentMonProbe.Csv.Summary.cs` owns warnings, counted text
   fields, and percentile metric aggregation.
-- `tools/Common/PresentMon/PresentMonProbe.cs` owns PresentMon public run orchestration,
+- `tools/Common/PresentMon/PresentMonProbe.cs` owns PresentMon public option
+  construction, preview snapshot correlation extraction, run orchestration,
   command-line construction, argument quoting, and probe-result message shaping.
 - `tools/Common/PresentMon/PresentMonProbe.Paths.cs` owns target process, PresentMon
   executable, and output-path resolution.
