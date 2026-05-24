@@ -64,7 +64,7 @@ static partial class Program
         var verificationToolsText = ReadRepoFile("tools/McpServer/Tools/VerificationTools.cs");
         var videoSourceProbeToolsText = ReadRepoFile("tools/McpServer/Tools/VideoSourceProbeTools.cs");
         var windowToolsText = ReadRepoFile("tools/McpServer/Tools/WindowTools.cs");
-        var windowScreenshotToolsText = ReadRepoFile("tools/McpServer/Tools/WindowScreenshotTools.cs");
+        var windowScreenshotToolsText = previewFrameCaptureToolsText;
         var waitToolsText = ReadRepoFile("tools/McpServer/Tools/WaitTools.cs");
 
         AssertContains(formatterText, "AutomationCommandKind Kind,");

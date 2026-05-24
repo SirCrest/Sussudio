@@ -3660,8 +3660,8 @@ Primary owners:
   `tools/McpServer/Tools/VerificationTools.Formatting.cs` owns recording,
   file, assertion, mismatch, and failure result text.
 - `tools/McpServer/Tools/PreviewFrameCaptureTools.cs` owns the public preview
-  frame-capture MCP entry point, default output path, payload shaping, enum
-  command routing, failure/missing-data response handling, operator-facing
+  frame-capture and window-screenshot MCP entry points, default output paths,
+  payload shaping, enum command routing, failure/missing-data response handling, operator-facing
   report layout, 16-bin histogram projection, and blank/dark/bright/framing
   diagnosis policy.
 - `tools/McpServer/Tools/PresentMonTools.cs` owns public PresentMon MCP entry

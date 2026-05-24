@@ -3307,8 +3307,8 @@ in `VerificationTools.cs`; keep recording/file/assertion text in
 Preview frame capture MCP reporting stays together without changing visible
 text: keep the public `capture_preview_frame` entry point, default output path,
 payload, enum-backed `CapturePreviewFrame` routing, report layout, 16-bin
-histogram math/rendering, anomaly diagnosis policy, and aspect checks in
-`PreviewFrameCaptureTools.cs`.
+histogram math/rendering, anomaly diagnosis policy, aspect checks, and the
+whole-window screenshot MCP response formatting in `PreviewFrameCaptureTools.cs`.
 PresentMon MCP stays intentionally shallow: keep `capture_presentmon`,
 `capture_presentmon_raw`, structured-content shape, and `PresentMonProbe.RunAsync`
 invocation in `PresentMonTools.cs`; keep the app-snapshot request and malformed
