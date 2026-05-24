@@ -245,10 +245,9 @@ Automation diagnostics ownership:
   commands, including the payload field name/type metadata checked against the
   shared automation command catalog.
 - `Sussudio/Services/Automation/NamedPipeAutomationServer.cs` owns automation
-  pipe constructor/configuration state.
-- `Sussudio/Services/Automation/NamedPipeAutomationServer.Lifecycle.cs` owns
-  server start/stop/dispose, the accept loop, per-connection safety/disposal,
-  request-session handoff, error/timeout responses, and fallback trace logging.
+  pipe constructor/configuration state, server start/stop/dispose, the accept
+  loop, per-connection safety/disposal, request-session handoff, error/timeout
+  responses, and fallback trace logging.
 - `Sussudio/Services/Automation/NamedPipeAutomationServer.ConnectionSession.cs`
   owns per-request JSON framing, client PID logging, dispatch timeouts, late
   dispatch observation, and response writing.
