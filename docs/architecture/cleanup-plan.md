@@ -1632,11 +1632,11 @@ the root provider dispatches through that support into telemetry polling.
 
 Native XU audio command sequences now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioCommands.cs`. Keep
-the public `SwitchAudioInputAsync` and `SetAnalogGainAsync` entry points there.
+the public `SwitchAudioInputAsync` and `SetAnalogGainAsync` entry points there,
+plus the HDMI/Analog codec switch sequence used by `SwitchAudioInputAsync`.
 Analog gain register mapping/writes now live in
-`NativeXuAtCommandProvider.AnalogGain.cs`, HDMI/Analog codec switch sequencing
-now lives in `NativeXuAtCommandProvider.AudioSwitch.cs`, and selector-4 I2C
-payload writes now live with the AT transport helpers in
+`NativeXuAtCommandProvider.AnalogGain.cs`, and selector-4 I2C payload writes
+now live with the AT transport helpers in
 `NativeXuAtCommandProvider.AtProtocol.cs`.
 
 Native XU reference full-snapshot reads now live in
