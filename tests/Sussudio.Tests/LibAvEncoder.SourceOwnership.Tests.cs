@@ -96,8 +96,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var codecPolicyText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs")
             .Replace("\r\n", "\n");
-        var optionsValidationText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.OptionsValidation.cs")
-            .Replace("\r\n", "\n");
         var audioText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Audio.cs")
             .Replace("\r\n", "\n");
         var audioQueueText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioQueue.cs")
@@ -163,10 +161,14 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.HardwareFrames.Cuda.cs")),
             "CUDA hardware frame adoption lives with the hardware frame initializer");
-        AssertContains(optionsValidationText, "private static void ValidateOptions(LibAvEncoderOptions options)");
-        AssertContains(optionsValidationText, "private static void ValidateRequiredVideoOptions(LibAvEncoderOptions options)");
-        AssertContains(optionsValidationText, "private static void ValidateAudioOptions(LibAvEncoderOptions options)");
-        AssertContains(optionsValidationText, "private static void ValidateHdrOptions(LibAvEncoderOptions options)");
+        AssertContains(initializationText, "private static void ValidateOptions(LibAvEncoderOptions options)");
+        AssertContains(initializationText, "private static void ValidateRequiredVideoOptions(LibAvEncoderOptions options)");
+        AssertContains(initializationText, "private static void ValidateAudioOptions(LibAvEncoderOptions options)");
+        AssertContains(initializationText, "private static void ValidateHdrOptions(LibAvEncoderOptions options)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.OptionsValidation.cs")),
+            "LibAvEncoder option validation folded into encoder initialization");
         AssertDoesNotContain(codecPolicyText, "private static void ValidateOptions(LibAvEncoderOptions options)");
         AssertDoesNotContain(audioText, "public void SendAudioSamples(ReadOnlySpan<byte> f32leSamples)");
         AssertDoesNotContain(audioText, "public void SendMicrophoneSamples(ReadOnlySpan<byte> f32leSamples)");
