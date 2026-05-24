@@ -136,14 +136,14 @@ interval, discontinuity, timestamp-error, glitch, and audio-level event counters
 format validation, AudioClient startup, render event/client acquisition, and
 initialization-time metric resets. `WasapiAudioPlayback.cs` keeps playback
 state, start/stop/pause/resume/flush/dispose lifecycle, and render-thread
-startup. `WasapiAudioPlayback.Volume.cs` owns render-side volume ramps and
-output-level telemetry used by audio ramp traces.
+startup.
 `WasapiAudioPlayback.Queue.cs` owns playback chunk queue state, pooled-sample
 ingress, queue depth/frame accounting, buffered-duration projection, and pooled
 chunk returns.
 `WasapiAudioPlayback.RenderThread.cs` owns the WASAPI render-thread loop,
 pause/resume execution, resume prebuffer wait, endpoint buffer writes, render
-buffer filling, and render-side PTS advancement.
+buffer filling, render-side PTS advancement, volume ramps, and output-level
+telemetry used by audio ramp traces.
 `WasapiComInterop.CoreAudio.Contracts.cs` owns WASAPI/Core Audio enums,
 audio-format records, WAVEFORMAT structs, PROPERTYKEY, PropVariant lifetime
 handling, and Core Audio device, collection, property-store, and notification

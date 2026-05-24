@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 
 static partial class Program
 {
@@ -75,7 +75,7 @@ static partial class Program
         var audioRampTraceRecorderText = audioRampTraceRecorderRootText;
         var playbackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs").Replace("\r\n", "\n");
         var playbackRenderText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.RenderThread.cs").Replace("\r\n", "\n");
-        var playbackVolumeText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.Volume.cs").Replace("\r\n", "\n");
+        var playbackVolumeText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.RenderThread.cs").Replace("\r\n", "\n");
         var runtimeContractsText = string.Join(
             "\n",
             ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.cs"))
@@ -144,6 +144,10 @@ static partial class Program
         AssertContains(playbackVolumeText, "private void UpdateOutputLevel(ReadOnlySpan<byte> buffer)");
         AssertDoesNotContain(playbackText, "private void ApplyVolume(Span<byte> buffer)");
         AssertDoesNotContain(playbackText, "private void UpdateOutputLevel(ReadOnlySpan<byte> buffer)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioPlayback.Volume.cs")),
+            "WASAPI playback render-side volume telemetry folded into the render-thread owner");
 
         AssertContains(runtimeContractsText, "public double WasapiPlaybackTargetVolumePercent { get; init; }");
         AssertContains(runtimeContractsText, "public double WasapiPlaybackCurrentVolumePercent { get; init; }");
