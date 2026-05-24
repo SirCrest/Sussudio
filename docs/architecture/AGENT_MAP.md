@@ -3799,12 +3799,11 @@ Primary owners:
   and frame-lane text, legacy performance, process CPU, memory, GC, thread-pool
   text, capture cadence, low-FPS, jitter/drop, MJPEG packet fingerprint, sampled
   visual cadence, AV-sync drift and encoder correction text, preview routing,
-  source dimensions, source frame-rate summary, HDR, source telemetry text, and
-  routing to MJPEG/Preview D3D sections.
-  `tools/Common/AutomationSnapshotFormatter.Values.cs` owns automation
-  response-success detection, tolerant JSON string/bool/numeric accessors, and
-  shared byte, number, interval, frame-budget, and tick-age display helpers,
-  while `tools/Common/AutomationSnapshotFormatter.Flashback.cs` owns the Flashback
+  source dimensions, source frame-rate summary, HDR, source telemetry text,
+  routing to MJPEG/Preview D3D sections, automation response-success detection,
+  tolerant JSON string/bool/numeric accessors, and shared byte, number,
+  interval, frame-budget, and tick-age display helpers.
+  `tools/Common/AutomationSnapshotFormatter.Flashback.cs` owns the Flashback
   gate, header, subsection ordering, encoding status/health text, export
   progress/result text, playback command text, and playback cadence/decode/frame
   stage/A/V drift text.

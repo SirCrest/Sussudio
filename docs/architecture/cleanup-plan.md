@@ -450,11 +450,10 @@ state/capture-command summary, capture settings, audio signal, video pipeline,
 thread-health rows, recording output/backend/integrity/audio-integrity/
 last-finalize, diagnostics, legacy performance, process CPU/Memory/GC/
 thread-pool text, capture cadence, MJPEG packet fingerprint, visual cadence,
-AV-sync, preview routing, and source-signal rows emitted from the cadence tail.
-Snapshot response-success
-detection, tolerant JSON string/bool/numeric accessors, and shared
-byte/number/interval, frame-budget, and tick-age display helpers live in
-`AutomationSnapshotFormatter.Values.cs`; the Flashback gate/header/order,
+AV-sync, preview routing, source-signal rows emitted from the cadence tail,
+snapshot response-success detection, tolerant JSON string/bool/numeric
+accessors, and shared byte/number/interval, frame-budget, and tick-age display
+helpers. The Flashback gate/header/order,
 encoding status/health text, export progress/result text, playback command text,
 and playback cadence/decode/frame/stage/A/V drift text now live together in
 `AutomationSnapshotFormatter.Flashback.cs`. MJPEG activation/header/order, decode/copy/callback/per-decoder

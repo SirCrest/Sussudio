@@ -16,7 +16,7 @@ static partial class Program
         var sharedFormatterCaptureCadenceSource = sharedFormatterRootSource;
         var sharedFormatterAvSyncSource = sharedFormatterCaptureCadenceSource;
         var sharedFormatterSourceSource = sharedFormatterCaptureCadenceSource;
-        var sharedFormatterValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Values.cs");
+        var sharedFormatterValuesSource = sharedFormatterRootSource;
         var sharedFormatterDisplayValuesSource = sharedFormatterValuesSource;
         var sharedFormatterFlashbackSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.cs");
         var sharedFormatterMjpegTimingSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs");
@@ -208,6 +208,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "AutomationSnapshotFormatter.VideoPipeline.cs")),
             "shared snapshot video-pipeline and thread-health text lives with the root snapshot formatter flow");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "AutomationSnapshotFormatter.Values.cs")),
+            "shared snapshot value accessors live with the root snapshot formatter flow");
 
         return Task.CompletedTask;
     }
