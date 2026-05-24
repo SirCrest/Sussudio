@@ -239,11 +239,8 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/NamedPipeAutomationServer.cs` owns automation
   pipe constructor/configuration state, server start/stop/dispose, the accept
   loop, per-connection safety/disposal, request-session handoff, error/timeout
-  responses, and fallback trace logging.
-- `Sussudio/Services/Automation/NamedPipeAutomationServer.ConnectionSession.cs`
-  owns per-request JSON framing, client PID logging, dispatch timeouts, late
-  dispatch observation, and response writing.
-- `Sussudio/Services/Automation/NamedPipeAutomationServer.Security.cs` owns
+  responses, fallback trace logging, per-request JSON framing, client PID
+  logging, dispatch timeouts, late dispatch observation, response writing,
   Windows pipe security descriptor setup, fallback policy, P/Invoke, and secure
   stream creation.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs` owns polling,

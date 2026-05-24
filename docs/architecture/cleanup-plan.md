@@ -378,14 +378,12 @@ forwarding, and enum payload parsing, and `AutomationCommandHandler.cs` owns the
 trivial-handler wrapper plus the payload field name/type metadata checked
 against the shared automation command catalog.
 
-Automation pipe hosting is split across the `NamedPipeAutomationServer` root
-and its named security/session partials. Keep constructor/configuration state,
-server start/stop and accept-loop behavior, per-connection safety/disposal,
-request-session handoff, error/timeout responses, and fallback tracing in
-`NamedPipeAutomationServer.cs`; keep per-request JSON framing, client PID
-logging, dispatch timeouts, late-dispatch observation, and response writing in
-`NamedPipeAutomationServer.ConnectionSession.cs`, and Windows pipe
-security/PInvoke in `NamedPipeAutomationServer.Security.cs`.
+Automation pipe hosting now lives in `NamedPipeAutomationServer.cs`. Keep
+constructor/configuration state, server start/stop and accept-loop behavior,
+per-connection safety/disposal, request-session handoff, error/timeout
+responses, fallback tracing, per-request JSON framing, client PID logging,
+dispatch timeouts, late-dispatch observation, response writing, and Windows
+pipe security/PInvoke in that server owner.
 
 App project build workflow is split so `Sussudio/Sussudio.csproj` stays focused
 on app identity, assets, packages, runtime config, and project references, while

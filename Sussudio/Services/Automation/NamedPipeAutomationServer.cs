@@ -1,10 +1,15 @@
 using System;
 using System.IO;
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Security.Principal;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 using Sussudio.Models;
 using Sussudio.Services.Runtime;
 using Sussudio.Tools;
@@ -264,4 +269,379 @@ public sealed partial class NamedPipeAutomationServer : IDisposable, IAsyncDispo
 
     public string PipeName => _pipeName;
     internal bool AuthTokenRequired => _authTokenRequired;
+
+    private sealed class ConnectionSession
+    {
+        private readonly NamedPipeAutomationServer _owner;
+        private readonly NamedPipeServerStream _server;
+        private readonly CancellationToken _serverCancellation;
+
+        public ConnectionSession(
+            NamedPipeAutomationServer owner,
+            NamedPipeServerStream server,
+            CancellationToken serverCancellation)
+        {
+            _owner = owner;
+            _server = server;
+            _serverCancellation = serverCancellation;
+        }
+
+        public async Task RunAsync()
+        {
+            AutomationCommandResponse response;
+            var requestTimeout = new CancellationTokenSource(_owner._requestTimeoutMs);
+            var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(requestTimeout.Token, _serverCancellation);
+            var disposeRequestCancellation = true;
+
+            using var reader = new StreamReader(_server, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 4096, leaveOpen: true);
+            using var writer = new StreamWriter(_server, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 4096, leaveOpen: true)
+            {
+                AutoFlush = true
+            };
+
+            try
+            {
+                var requestLine = await reader.ReadLineAsync().WaitAsync(requestCancellation.Token).ConfigureAwait(false);
+                var request = string.IsNullOrWhiteSpace(requestLine)
+                    ? null
+                    : JsonSerializer.Deserialize<AutomationCommandRequest>(requestLine, _owner._jsonOptions);
+
+                if (request == null)
+                {
+                    response = CreateErrorResponse("Request payload was empty.", "invalid-request");
+                }
+                else
+                {
+                    LogReceivedRequest(request);
+
+                    var execution = await ExecuteCommandWithTimeoutAsync(
+                        request,
+                        requestTimeout,
+                        requestCancellation).ConfigureAwait(false);
+                    response = execution.Response;
+                    disposeRequestCancellation = !execution.DispatchContinues;
+                }
+            }
+            catch (JsonException ex)
+            {
+                response = CreateErrorResponse($"Invalid JSON request: {ex.Message}", "invalid-json");
+            }
+            catch (OperationCanceledException)
+            {
+                var timedOut = requestTimeout.IsCancellationRequested;
+                response = CreateErrorResponse(
+                    timedOut ? $"Request timed out after {_owner._requestTimeoutMs} ms." : "Request canceled.",
+                    timedOut ? "request-timeout" : "canceled");
+            }
+            catch (Exception ex)
+            {
+                response = CreateErrorResponse($"Request execution failed: {ex.Message}", "execution-failed");
+            }
+            finally
+            {
+                if (disposeRequestCancellation)
+                {
+                    requestCancellation.Dispose();
+                    requestTimeout.Dispose();
+                }
+            }
+
+            var responseLine = JsonSerializer.Serialize(response, _owner._jsonOptions);
+            await writer.WriteLineAsync(responseLine).ConfigureAwait(false);
+        }
+
+        private void LogReceivedRequest(AutomationCommandRequest request)
+        {
+            var clientPid = TryGetClientProcessId();
+            Logger.Log(
+                $"AUTOMATION_PIPE_RECV command={request.Command} correlationId={request.CorrelationId} clientPid={(clientPid == 0 ? "?" : clientPid.ToString())}");
+        }
+
+        private uint TryGetClientProcessId()
+        {
+            try
+            {
+                var handle = _server.SafePipeHandle.DangerousGetHandle();
+                if (handle != IntPtr.Zero && GetNamedPipeClientProcessId(handle, out var clientPid))
+                {
+                    return clientPid;
+                }
+            }
+            catch
+            {
+                // PID lookup is best-effort.
+            }
+
+            return 0;
+        }
+
+        private async Task<CommandExecutionResult> ExecuteCommandWithTimeoutAsync(
+            AutomationCommandRequest request,
+            CancellationTokenSource requestTimeout,
+            CancellationTokenSource requestCancellation)
+        {
+            var dispatchTask = _owner._commandDispatcher.ExecuteAsync(request, requestCancellation.Token);
+            if (await WaitForDispatchCompletionAsync(dispatchTask, requestCancellation.Token).ConfigureAwait(false))
+            {
+                var response = await dispatchTask.ConfigureAwait(false);
+                if (requestTimeout.IsCancellationRequested &&
+                    string.Equals(response.ErrorCode, "canceled", StringComparison.OrdinalIgnoreCase))
+                {
+                    response = _owner.CreateRequestTimeoutResponse();
+                }
+
+                return new CommandExecutionResult(response, DispatchContinues: false);
+            }
+
+            if (_serverCancellation.IsCancellationRequested && !requestTimeout.IsCancellationRequested)
+            {
+                throw new OperationCanceledException(_serverCancellation);
+            }
+
+            if (!requestTimeout.IsCancellationRequested)
+            {
+                requestTimeout.Cancel();
+            }
+
+            ObserveTimedOutDispatch(dispatchTask, request.Command, requestTimeout, requestCancellation);
+            return new CommandExecutionResult(_owner.CreateRequestTimeoutResponse(), DispatchContinues: true);
+        }
+
+        private static async Task<bool> WaitForDispatchCompletionAsync(
+            Task<AutomationCommandResponse> dispatchTask,
+            CancellationToken cancellationToken)
+        {
+            if (dispatchTask.IsCompleted)
+            {
+                return true;
+            }
+
+            var cancellationCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var registration = cancellationToken.Register(
+                static state => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
+                cancellationCompletion);
+            var completedTask = await Task.WhenAny(dispatchTask, cancellationCompletion.Task).ConfigureAwait(false);
+            return ReferenceEquals(completedTask, dispatchTask);
+        }
+
+        private void ObserveTimedOutDispatch(
+            Task<AutomationCommandResponse> dispatchTask,
+            AutomationCommandKind command,
+            CancellationTokenSource requestTimeout,
+            CancellationTokenSource requestCancellation)
+        {
+            _ = ObserveTimedOutDispatchAsync(dispatchTask, command, requestTimeout, requestCancellation);
+        }
+
+        private async Task ObserveTimedOutDispatchAsync(
+            Task<AutomationCommandResponse> dispatchTask,
+            AutomationCommandKind command,
+            CancellationTokenSource requestTimeout,
+            CancellationTokenSource requestCancellation)
+        {
+            try
+            {
+                var response = await dispatchTask.ConfigureAwait(false);
+                Logger.Log(
+                    $"Automation command completed after request timeout: command={command} success={response.Success} error={response.ErrorCode ?? "(none)"}");
+            }
+            catch (OperationCanceledException ex)
+            {
+                Logger.Log($"Automation command canceled after request timeout: command={command} message={ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Automation command failed after request timeout: command={command} error={ex.Message}");
+                Logger.LogException(ex);
+            }
+            finally
+            {
+                requestCancellation.Dispose();
+                requestTimeout.Dispose();
+            }
+        }
+
+        private AutomationCommandResponse CreateErrorResponse(string message, string errorCode)
+            => NamedPipeAutomationServer.CreateErrorResponse(message, errorCode);
+
+        private readonly record struct CommandExecutionResult(
+            AutomationCommandResponse Response,
+            bool DispatchContinues);
+    }
+
+    private const uint PipeAccessDuplex = 0x00000003;
+    private const uint FileFlagOverlapped = 0x40000000;
+    private const uint PipeTypeByte = 0x00000000;
+    private const uint PipeReadModeByte = 0x00000000;
+    private const uint PipeWait = 0x00000000;
+    private const uint PipeUnlimitedInstances = 255;
+
+    private NamedPipeServerStream CreateServerStream()
+    {
+        if (_pipeSecurityDescriptor != null && OperatingSystem.IsWindows() && !_explicitSecurityFailed)
+        {
+            try
+            {
+                return _secureServerStreamFactory(_pipeSecurityDescriptor);
+            }
+            catch (Exception ex)
+            {
+                _explicitSecurityFailed = true;
+                if (!_authTokenRequired)
+                {
+                    throw new AutomationPipeSecurityException(
+                        "Explicit Windows pipe security failed and no automation token is configured.",
+                        ex);
+                }
+
+                Logger.Log($"Automation pipe explicit security fallback to token-required default security: {ex.Message}");
+            }
+        }
+
+        if (IsDefaultSecurityDisallowed())
+        {
+            throw new AutomationPipeSecurityException(
+                "Default Windows pipe security is disabled unless automation token auth is required.");
+        }
+
+        return _defaultServerStreamFactory();
+    }
+
+    private NamedPipeServerStream CreateDefaultServerStream()
+    {
+        return new NamedPipeServerStream(
+            _pipeName,
+            PipeDirection.InOut,
+            NamedPipeServerStream.MaxAllowedServerInstances,
+            PipeTransmissionMode.Byte,
+            PipeOptions.Asynchronous);
+    }
+
+    private bool IsDefaultSecurityDisallowed()
+        => AutomationPipeSecurityPolicy.ShouldDisableDefaultSecurityFallback(
+            OperatingSystem.IsWindows(),
+            _pipeSecurityDescriptor != null,
+            _explicitSecurityFailed,
+            _authTokenRequired);
+
+    private NamedPipeServerStream CreateServerStreamWithSecurityDescriptor(byte[] securityDescriptor)
+    {
+        IntPtr securityDescriptorPtr = IntPtr.Zero;
+        try
+        {
+            securityDescriptorPtr = Marshal.AllocHGlobal(securityDescriptor.Length);
+            Marshal.Copy(securityDescriptor, 0, securityDescriptorPtr, securityDescriptor.Length);
+
+            var securityAttributes = new SECURITY_ATTRIBUTES
+            {
+                nLength = Marshal.SizeOf<SECURITY_ATTRIBUTES>(),
+                lpSecurityDescriptor = securityDescriptorPtr,
+                bInheritHandle = 0
+            };
+
+            var fullPipeName = $@"\\.\pipe\{_pipeName}";
+            var pipeHandle = CreateNamedPipe(
+                fullPipeName,
+                PipeAccessDuplex | FileFlagOverlapped,
+                PipeTypeByte | PipeReadModeByte | PipeWait,
+                PipeUnlimitedInstances,
+                0,
+                0,
+                0,
+                ref securityAttributes);
+
+            if (pipeHandle.IsInvalid)
+            {
+                var error = Marshal.GetLastWin32Error();
+                pipeHandle.Dispose();
+                throw new IOException($"CreateNamedPipe failed with Win32 error {error}.");
+            }
+
+            return new NamedPipeServerStream(PipeDirection.InOut, isAsync: true, isConnected: false, pipeHandle);
+        }
+        finally
+        {
+            if (securityDescriptorPtr != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(securityDescriptorPtr);
+            }
+        }
+    }
+
+    private static (byte[]? SecurityDescriptor, string Mode) CreatePipeSecurityDescriptor()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return (null, "default-nonwindows");
+        }
+
+        try
+        {
+            var currentIdentity = WindowsIdentity.GetCurrent();
+            var currentUserSid = currentIdentity.User;
+            if (currentUserSid == null)
+            {
+                return (null, "default-security-no-user-sid");
+            }
+
+            var security = new PipeSecurity();
+            security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+
+            // Restrict access to this user plus trusted local administrators/system.
+            security.AddAccessRule(new PipeAccessRule(
+                currentUserSid,
+                PipeAccessRights.FullControl,
+                AccessControlType.Allow));
+            security.AddAccessRule(new PipeAccessRule(
+                new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null),
+                PipeAccessRights.FullControl,
+                AccessControlType.Allow));
+            security.AddAccessRule(new PipeAccessRule(
+                new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null),
+                PipeAccessRights.FullControl,
+                AccessControlType.Allow));
+
+            // Keep the automation pipe on explicit Windows security, but avoid adding a
+            // mandatory integrity SACL. Creating named objects with a SACL requires
+            // SeSecurityPrivilege on some systems; without it CreateNamedPipe fails
+            // with ERROR_PRIVILEGE_NOT_HELD and disables MCP/ssctl entirely.
+            return (security.GetSecurityDescriptorBinaryForm(), $"explicit-security-user+admins+system ({currentUserSid.Value})");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Automation pipe security setup fallback: {ex.Message}");
+            return (null, $"default-security-fallback ({ex.GetType().Name})");
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SECURITY_ATTRIBUTES
+    {
+        public int nLength;
+        public IntPtr lpSecurityDescriptor;
+        public int bInheritHandle;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetNamedPipeClientProcessId(IntPtr hPipe, out uint ClientProcessId);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern SafePipeHandle CreateNamedPipe(
+        string lpName,
+        uint dwOpenMode,
+        uint dwPipeMode,
+        uint nMaxInstances,
+        uint nOutBufferSize,
+        uint nInBufferSize,
+        uint nDefaultTimeOut,
+        ref SECURITY_ATTRIBUTES lpSecurityAttributes);
+
+    private sealed class AutomationPipeSecurityException : Exception
+    {
+        public AutomationPipeSecurityException(string message, Exception? innerException = null)
+            : base(message, innerException)
+        {
+        }
+    }
 }

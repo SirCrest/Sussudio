@@ -6,9 +6,7 @@ static partial class Program
 {
     internal static Task NamedPipeAutomationServer_RequestTimeoutsUseBoundedDispatchCancellation()
     {
-        var pipeServerText = (
-            ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.ConnectionSession.cs"))
+        var pipeServerText = ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(pipeServerText, "private sealed class ConnectionSession");
