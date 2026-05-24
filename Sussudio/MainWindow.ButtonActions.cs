@@ -15,6 +15,7 @@ public sealed partial class MainWindow
     private RecordingStatePresentationController _recordingStatePresentationController = null!;
     private CaptureDeviceActionController _captureDeviceActionController = null!;
     private OutputPathController _outputPathController = null!;
+    private PreviewScreenshotController _previewScreenshotController = null!;
 
     private void InitializeRecordingButtonActionController()
     {
@@ -88,6 +89,15 @@ public sealed partial class MainWindow
         });
     }
 
+    private void InitializePreviewScreenshotController()
+    {
+        _previewScreenshotController = new PreviewScreenshotController(new PreviewScreenshotControllerContext
+        {
+            ViewModel = ViewModel,
+            ScreenshotButton = ScreenshotButton,
+        });
+    }
+
     private Task ToggleRecordingFromButtonAsync()
         => _recordingButtonActionController.ToggleRecordingAsync();
 
@@ -115,6 +125,9 @@ public sealed partial class MainWindow
     private Task OpenRecordingsFolderFromButtonAsync()
         => _outputPathController.OpenRecordingsFolderIfAvailableAsync();
 
+    private Task CapturePreviewScreenshotAsync()
+        => _previewScreenshotController.CaptureAsync();
+
     private void RecordButton_Click(object sender, RoutedEventArgs e)
     {
         _ = RunUiEventHandlerAsync(() => ToggleRecordingFromButtonAsync(), nameof(RecordButton_Click));
@@ -138,6 +151,11 @@ public sealed partial class MainWindow
     private void OpenRecordingsButton_Click(object sender, RoutedEventArgs e)
     {
         _ = RunUiEventHandlerAsync(() => OpenRecordingsFolderFromButtonAsync(), nameof(OpenRecordingsButton_Click));
+    }
+
+    private void ScreenshotButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = RunUiEventHandlerAsync(() => CapturePreviewScreenshotAsync(), nameof(ScreenshotButton_Click));
     }
 
     private bool TryHandleOutputPropertyChanged(string propertyName)

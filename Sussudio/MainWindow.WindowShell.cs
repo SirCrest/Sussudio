@@ -18,6 +18,7 @@ public sealed partial class MainWindow
     private readonly WindowCloseRecordingFinalizationController _windowCloseRecordingFinalizationController = new();
     private WindowCloseRequestController _windowCloseRequestController = null!;
     private WindowAppClosingController _windowAppClosingController = null!;
+    private WindowScreenshotController _windowScreenshotController = null!;
     private bool _isWindowClosing => _windowCloseLifecycleController.IsClosing;
 
     private WindowUiDispatchController WindowUiDispatchController =>
@@ -62,6 +63,13 @@ public sealed partial class MainWindow
                 GetWindowHandle = () => _hwnd,
                 InvokeOnUiThreadAsync = InvokeOnUiThreadAsync
             });
+    }
+
+    private void InitializeWindowScreenshotController()
+    {
+        _windowScreenshotController = new WindowScreenshotController(
+            _dispatcherQueue,
+            () => _hwnd);
     }
 
     private void RegisterCloseLifecycle(Microsoft.UI.Windowing.AppWindow appWindow)
@@ -116,4 +124,9 @@ public sealed partial class MainWindow
 
     public Task SnapToRegionAsync(AutomationWindowAction region, CancellationToken cancellationToken = default)
         => _windowAutomationController.SnapToRegionAsync(region, cancellationToken);
+
+    public Task<WindowScreenshotResult> CaptureWindowScreenshotAsync(
+        string outputPath,
+        CancellationToken cancellationToken = default)
+        => _windowScreenshotController.CaptureAsync(outputPath, cancellationToken);
 }

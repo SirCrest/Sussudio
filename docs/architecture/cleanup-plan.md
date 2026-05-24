@@ -958,14 +958,15 @@ UI-thread dispatch, cancellation, and failure wrapping. Native PrintWindow/GDI
 capture and screenshot result shaping live in
 `Sussudio/Controllers/Screenshot/Window/WindowScreenshotNativeCapture.cs`, while pure PNG/BMP
 byte-stream encoding lives in
-`Sussudio/Controllers/Screenshot/Window/WindowScreenshotImageEncoder.cs`. `MainWindow.Screenshot.cs`
-is the shared screenshot XAML/automation adapter.
+`Sussudio/Controllers/Screenshot/Window/WindowScreenshotImageEncoder.cs`.
+Whole-window screenshot automation stays on `MainWindow.WindowShell.cs` with the
+other `IAutomationWindowControl` methods.
 
 Preview-frame screenshot button behavior now lives in
 `Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs`.
 `Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotPlanPolicy.cs` owns the pure output
 directory fallback, file naming, status text, and log text policy.
-`MainWindow.Screenshot.cs` is the XAML-facing adapter; the controller keeps
+`MainWindow.ButtonActions.cs` is the XAML-facing adapter; the controller keeps
 directory creation, preview-frame capture, logging side effects, and button
 enable/disable state.
 Renderer-level preview frame capture request state, timeout/cancellation

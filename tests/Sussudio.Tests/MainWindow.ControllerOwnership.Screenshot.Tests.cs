@@ -9,7 +9,7 @@ static partial class Program
     internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
     {
         var mainWindowText = ReadMainWindowCompositionSource();
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.Screenshot.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.ButtonActions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs").Replace("\r\n", "\n");
         var policyText = ReadRepoFile("Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotPlanPolicy.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
@@ -57,6 +57,10 @@ static partial class Program
         AssertDoesNotContain(policyText, "CapturePreviewFrameAsync");
         AssertDoesNotContain(policyText, "Directory.CreateDirectory");
         AssertDoesNotContain(policyText, "Logger.Log");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Screenshot.cs")),
+            "preview screenshot button adapter lives with MainWindow button actions");
 
         return Task.CompletedTask;
     }
@@ -127,7 +131,7 @@ static partial class Program
 
     internal static Task MainWindowScreenshot_CompletesOnDispatcherFailureAndCancellation()
     {
-        var windowText = ReadRepoFile("Sussudio/MainWindow.Screenshot.cs")
+        var windowText = ReadRepoFile("Sussudio/MainWindow.WindowShell.cs")
             .Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs")
             .Replace("\r\n", "\n");
