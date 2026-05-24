@@ -15,11 +15,10 @@ static partial class Program
         var deviceAudioRefreshText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioRefresh.cs")
             .Replace("\r\n", "\n");
         var deviceAudioRefreshCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.DeviceAudioRefresh.cs");
-        var analogAudioGainCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AnalogAudioGain.cs");
         var deviceAudioRequestControllerCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs");
         var deviceAudioStateCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs");
         var microphoneVolumeCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioState.cs");
-        var audioCode = deviceAudioModeCode + "\n" + deviceAudioRefreshCode + "\n" + analogAudioGainCode + "\n" + deviceAudioRequestControllerCode + "\n" + deviceAudioStateCode + "\n" + microphoneVolumeCode;
+        var audioCode = deviceAudioModeCode + "\n" + deviceAudioRefreshCode + "\n" + deviceAudioRequestControllerCode + "\n" + deviceAudioStateCode + "\n" + microphoneVolumeCode;
         var setMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "SetMicrophoneEndpointVolume");
         var getMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "GetMicrophoneEndpointVolume");
         var refreshDeviceAudioControls = ExtractMemberCode(audioCode, "RefreshDeviceAudioControlsAsync");
@@ -40,8 +39,7 @@ static partial class Program
         AssertDoesNotContain(deviceAudioStateCode, "private async Task<bool> ApplyDeviceAudioModeAsync");
         AssertContains(deviceAudioModeCode, "private async Task<bool> ApplyDeviceAudioModeAsync");
         AssertContains(deviceAudioModeText, "Device-native audio mode switching and failure readback.");
-        AssertDoesNotContain(deviceAudioStateCode, "private async Task<bool> ApplyAnalogAudioGainAsync");
-        AssertContains(analogAudioGainCode, "private async Task<bool> ApplyAnalogAudioGainAsync");
+        AssertContains(deviceAudioStateCode, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertContains(deviceAudioRequestControllerCode, "internal sealed class MainViewModelDeviceAudioRequestController");
         AssertDoesNotContain(deviceAudioRequestControllerCode, "partial class MainViewModelDeviceAudioRequestController");
         AssertContains(deviceAudioRequestControllerCode, "internal sealed class MainViewModelDeviceAudioRequestControllerContext");
@@ -52,6 +50,7 @@ static partial class Program
         AssertContains(deviceAudioStateCode, "partial void OnAnalogAudioGainPercentChanged(double value)");
         AssertDoesNotContain(deviceAudioStateCode, "TryApplyAtDeviceAudioModeAsync");
         AssertDoesNotContain(deviceAudioStateCode, "SetInputSourceAsync");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AnalogAudioGain.cs")), "MainViewModel analog gain writes folded into device audio state");
 
         AssertContains(setMicrophoneEndpointVolume, "string.IsNullOrWhiteSpace(deviceId)");
         AssertContains(setMicrophoneEndpointVolume, "WasapiComInterop.SetEndpointVolume(deviceId, (float)(Math.Clamp(volumePercent, 0.0, 100.0) / 100.0));");

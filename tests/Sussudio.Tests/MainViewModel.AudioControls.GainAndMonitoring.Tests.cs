@@ -15,12 +15,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var deviceAudioModeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioMode.cs")
             .Replace("\r\n", "\n");
-        var analogAudioGainText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AnalogAudioGain.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(deviceAudioModeText, "DeviceAudioGainMapper.PercentToGainByte(AnalogAudioGainPercent)");
-        AssertContains(analogAudioGainText, "DeviceAudioGainMapper.PercentToGainByte(gainPercent)");
-        AssertContains(analogAudioGainText, "Device-native analog gain application and deferred flash persistence.");
+        AssertContains(deviceAudioStateText, "DeviceAudioGainMapper.PercentToGainByte(gainPercent)");
+        AssertContains(deviceAudioStateText, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertDoesNotContain(deviceAudioStateText, "private static byte MapPercentToGainByte");
         AssertDoesNotContain(deviceAudioStateText, "private static double MapGainByteToPercent");
         AssertContains(deviceAudioStateText, "internal static class DeviceAudioGainMapper");
@@ -28,6 +26,7 @@ static partial class Program
         AssertContains(deviceAudioStateText, "internal static byte PercentToGainByte");
         AssertContains(deviceAudioStateText, "internal static double GainByteToPercent");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "DeviceAudioGainMapper.cs")), "DeviceAudioGainMapper folded into MainViewModel.DeviceAudioState.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AnalogAudioGain.cs")), "analog gain XU writes folded into MainViewModel.DeviceAudioState.cs");
 
         AssertEqual((byte)0, (byte)mapPercent.Invoke(null, new object[] { -25d })!, "PercentToGainByte clamps below zero");
         AssertEqual((byte)0, (byte)mapPercent.Invoke(null, new object[] { 0d })!, "PercentToGainByte zero");

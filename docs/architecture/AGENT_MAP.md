@@ -3078,11 +3078,9 @@ Primary current owners:
   `MainViewModel.DeviceAudioMode.cs` owns device-native audio mode switching
   and failure readback through the supported native-XU switch command surface,
   not the legacy AT input-source fallback path. `MainViewModel.DeviceAudioState.cs`
-  owns shared audio-control guards and mode normalization.
-  `MainViewModel.AnalogAudioGain.cs` owns analog
-  gain XU writes and settings persistence. `MainViewModel.DeviceAudioState.cs`
-  also keeps the pure percent-to-XU-byte analog gain curve helper used by
-  device-native gain application.
+  owns shared audio-control guards, mode normalization, analog gain XU writes,
+  settings persistence, and the pure percent-to-XU-byte analog gain curve helper
+  used by device-native gain application.
   `MainViewModel.AudioCapturePropertyChanges.cs` owns audio capture property
   handlers. `MainViewModel.AudioState.cs` owns audio-preview property
   handlers, microphone monitor property handlers, and selected-microphone

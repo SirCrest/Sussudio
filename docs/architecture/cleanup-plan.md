@@ -3848,8 +3848,8 @@ owner, fold it back into that owner and update the source-shape tests and
    audio-control support probing, readback, and pending saved-state reconciliation
    now live in `MainViewModel.DeviceAudioRefresh.cs`; mode switching and failure
    readback live in `MainViewModel.DeviceAudioMode.cs`; shared audio-control
-   guards stay with device-native UI state in `MainViewModel.DeviceAudioState.cs`, while analog gain writes
-   live in `MainViewModel.AnalogAudioGain.cs`. UI-facing state is
+   guards and analog gain writes stay with device-native UI state in
+   `MainViewModel.DeviceAudioState.cs`. UI-facing state is
    split by owner: `MainViewModel.cs` owns shared shell/status/live-info flags,
    native window handle state, UI collection replacement, and non-preview
    coordination gates, `MainViewModel.PreviewState.cs`
@@ -4149,9 +4149,9 @@ owner, fold it back into that owner and update the source-shape tests and
    async native-XU
    device audio-control refresh/readback stays in
    `MainViewModel.DeviceAudioRefresh.cs`, mode switching and failure readback
-   live in `MainViewModel.DeviceAudioMode.cs`, shared audio-control guards stay
-   with `MainViewModel.DeviceAudioState.cs`, and `MainViewModel.AnalogAudioGain.cs`
-   owns analog gain XU writes and settings persistence. Use
+   live in `MainViewModel.DeviceAudioMode.cs`; shared audio-control guards,
+   analog gain XU writes, and settings persistence stay with
+   `MainViewModel.DeviceAudioState.cs`. Use
    the supported native-XU switch/gain command surface rather than the legacy
    AT input-source fallback path.
    UI-only automation mutators for settings visibility, Flashback timeline
