@@ -372,7 +372,7 @@ UI/settings command application, the show-all compatibility no-op,
 stats-section response text, simple one-property capture and pipeline command
 tables, and ordered dispatch through those tables. Named partials own support
 responsibilities:
-`AutomationCommandDispatcher.Responses.cs` handles response shaping and
+`AutomationCommandDispatcher.cs` handles shared response shaping and
 Flashback rejection diagnostics; `AutomationCommandDispatcher.WindowCommands.cs`
 handles full-screen, recordings-folder, arm-close, close-arm gating, and
 low-level window automation action execution; `AutomationCommandDispatcher.WaitConditions.cs` handles
