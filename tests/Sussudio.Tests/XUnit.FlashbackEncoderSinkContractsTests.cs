@@ -99,8 +99,8 @@ public sealed class FlashbackEncoderSinkContractsTests
         => global::Program.FlashbackEncoderSink_StopAndDisposeLifecyclesShareShutdownOwner();
 
     [Fact]
-    public Task FlashbackEncoderSinkProducerInputsLiveInFocusedPartials()
-        => global::Program.FlashbackEncoderSink_ProducerInputsLiveInFocusedPartials();
+    public Task FlashbackEncoderSinkProducerInputsLiveInCohesivePartial()
+        => global::Program.FlashbackEncoderSink_ProducerInputsLiveInCohesivePartial();
 
     [Fact]
     public Task FlashbackEncoderSinkRuntimeStateLivesInCohesivePartial()

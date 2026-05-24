@@ -322,42 +322,42 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackEncoderSink_ProducerInputsLiveInFocusedPartials()
+    internal static Task FlashbackEncoderSink_ProducerInputsLiveInCohesivePartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
-        var videoInputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.Video.cs")
-            .Replace("\r\n", "\n");
-        var audioInputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.Audio.cs")
+        var inputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.cs")
             .Replace("\r\n", "\n");
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
             ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
 
-        AssertContains(videoInputsText, "public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)");
-        AssertContains(videoInputsText, "bool IRawVideoFrameLeaseTryEncoder.TryEnqueueRawVideoFrame(PooledVideoFrameLease frame)");
-        AssertContains(videoInputsText, "public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)");
-        AssertContains(videoInputsText, "MfSourceReaderVideoCapture.GetFrameSizeBytes");
-        AssertContains(videoInputsText, "Marshal.AddRef(d3d11Texture2D);");
-        AssertContains(videoInputsText, "TrackVideoQueueRejected(rejectReason);");
-        AssertContains(videoInputsText, "TrackGpuQueueRejected(rejectReason);");
-        AssertDoesNotContain(videoInputsText, "WriteAudioAsync");
-        AssertDoesNotContain(videoInputsText, "EnqueueMicrophoneSamples");
-
-        AssertContains(audioInputsText, "public void EnqueueAudioSamples(ReadOnlyMemory<byte> samples)");
-        AssertContains(audioInputsText, "public void EnqueueMicrophoneSamples(ReadOnlyMemory<byte> samples)");
-        AssertContains(audioInputsText, "public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
-        AssertContains(audioInputsText, "public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
-        AssertContains(audioInputsText, "Hot WASAPI callback path: copy/enqueue only, never await or block.");
-        AssertContains(audioInputsText, "TryValidateAudioPacketLength(samples.Length, \"audio\")");
-        AssertContains(audioInputsText, "TryValidateAudioPacketLength(samples.Length, \"microphone\")");
-        AssertDoesNotContain(audioInputsText, "TryEnqueueRawVideoFrame");
-        AssertDoesNotContain(audioInputsText, "TryEnqueueGpuVideoFrame");
+        AssertContains(inputsText, "public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)");
+        AssertContains(inputsText, "bool IRawVideoFrameLeaseTryEncoder.TryEnqueueRawVideoFrame(PooledVideoFrameLease frame)");
+        AssertContains(inputsText, "public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)");
+        AssertContains(inputsText, "MfSourceReaderVideoCapture.GetFrameSizeBytes");
+        AssertContains(inputsText, "Marshal.AddRef(d3d11Texture2D);");
+        AssertContains(inputsText, "TrackVideoQueueRejected(rejectReason);");
+        AssertContains(inputsText, "TrackGpuQueueRejected(rejectReason);");
+        AssertContains(inputsText, "public void EnqueueAudioSamples(ReadOnlyMemory<byte> samples)");
+        AssertContains(inputsText, "public void EnqueueMicrophoneSamples(ReadOnlyMemory<byte> samples)");
+        AssertContains(inputsText, "public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
+        AssertContains(inputsText, "public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
+        AssertContains(inputsText, "Hot WASAPI callback path: copy/enqueue only, never await or block.");
+        AssertContains(inputsText, "TryValidateAudioPacketLength(samples.Length, \"audio\")");
+        AssertContains(inputsText, "TryValidateAudioPacketLength(samples.Length, \"microphone\")");
 
         AssertDoesNotContain(rootText, "public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)");
         AssertDoesNotContain(rootText, "public void EnqueueAudioSamples(ReadOnlyMemory<byte> samples)");
-        AssertContains(docsText, "FlashbackEncoderSink.Inputs.Video.cs");
-        AssertContains(docsText, "FlashbackEncoderSink.Inputs.Audio.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.Inputs.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Inputs.Video.cs")),
+            "FlashbackEncoderSink video producer inputs folded into FlashbackEncoderSink.Inputs.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Inputs.Audio.cs")),
+            "FlashbackEncoderSink audio producer inputs folded into FlashbackEncoderSink.Inputs.cs");
 
         return Task.CompletedTask;
     }
@@ -467,7 +467,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var packetBuffersText = queuesText;
         var packetTypesText = packetBuffersText;
-        var audioInputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.Audio.cs")
+        var inputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.cs")
             .Replace("\r\n", "\n");
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
@@ -503,8 +503,8 @@ static partial class Program
         AssertContains(packetTypesText, "private readonly record struct AudioSamplePacket");
         AssertContains(packetTypesText, "private readonly record struct GpuFramePacket");
 
-        AssertContains(audioInputsText, "private static long GetSampleCount(int byteLength)");
-        AssertContains(audioInputsText, "private static bool TryValidateAudioPacketLength(int byteLength, string source)");
+        AssertContains(inputsText, "private static long GetSampleCount(int byteLength)");
+        AssertContains(inputsText, "private static bool TryValidateAudioPacketLength(int byteLength, string source)");
         AssertDoesNotContain(rootText, "private static FlashbackSessionContext CreateSessionContext");
         AssertDoesNotContain(rootText, "private static byte[] GetBuffer");
         AssertContains(docsText, "FlashbackEncoderSink.Options.cs");
