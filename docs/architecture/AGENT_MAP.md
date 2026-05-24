@@ -1164,8 +1164,7 @@ Primary current owners:
   screenshots.
 - `Sussudio/Controllers/Window/WindowAutomationController.cs` owns window geometry
   automation plus the recordings-folder command: UI-thread dispatch, AppWindow
-  and DisplayArea access, maximized presenter restore, and side effects.
-  `Sussudio/Controllers/Window/WindowSnapRegionLayoutPolicy.cs` owns the pure
+  and DisplayArea access, maximized presenter restore, side effects, and pure
   snap-region rectangle math. `MainWindow.WindowShell.cs` is the
   `IAutomationWindowControl` adapter; recording-aware close handling stays with
   the close lifecycle/finalization owners.

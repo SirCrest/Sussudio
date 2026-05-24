@@ -978,9 +978,8 @@ container, chunk writing, output-directory creation, and CRC helpers.
 
 Window geometry automation and the recordings-folder command now live in
 `Sussudio/Controllers/Window/WindowAutomationController.cs`. Display-area/AppWindow
-access, UI-thread dispatch, presenter restore, and side effects stay there, while
-`Sussudio/Controllers/Window/WindowSnapRegionLayoutPolicy.cs` owns the pure snap-region
-rectangle math for window actions.
+access, UI-thread dispatch, presenter restore, side effects, and pure
+snap-region rectangle math for window actions stay there.
 `MainWindow.WindowShell.cs` is the `IAutomationWindowControl` adapter.
 Close lifecycle state remains separate from geometry automation; see the
 explicit window close lifecycle section below for the close-state and recording

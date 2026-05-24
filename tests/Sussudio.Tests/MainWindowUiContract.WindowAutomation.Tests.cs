@@ -50,8 +50,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var controllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationController.cs")
             .Replace("\r\n", "\n");
-        var snapPolicySource = ReadRepoFile("Sussudio/Controllers/Window/WindowSnapRegionLayoutPolicy.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(adapterSource, "private WindowAutomationController _windowAutomationController = null!;");
         AssertContains(adapterSource, "private void InitializeWindowAutomationController()");
@@ -74,12 +72,14 @@ static partial class Program
         AssertContains(controllerSource, "WindowSnapRegionLayoutPolicy.ResolveTargetBounds(region, work, currentSize)");
         AssertContains(controllerSource, "appWindow.MoveAndResize(bounds);");
         AssertContains(controllerSource, "Process.Start(\"explorer.exe\", path);");
-        AssertContains(snapPolicySource, "internal static class WindowSnapRegionLayoutPolicy");
-        AssertContains(snapPolicySource, "public static RectInt32? ResolveTargetBounds(");
-        AssertContains(snapPolicySource, "AutomationWindowAction.Center => new RectInt32(");
-        AssertDoesNotContain(controllerSource, "case AutomationWindowAction.SnapLeft:");
-        AssertDoesNotContain(controllerSource, "work.Width / 2");
+        AssertContains(controllerSource, "internal static class WindowSnapRegionLayoutPolicy");
+        AssertContains(controllerSource, "public static RectInt32? ResolveTargetBounds(");
+        AssertContains(controllerSource, "AutomationWindowAction.Center => new RectInt32(");
         AssertContains(adapterSource, "public Task CloseAsync(CancellationToken cancellationToken = default)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Window", "WindowSnapRegionLayoutPolicy.cs")),
+            "snap-region rectangle math lives with window automation controller concerns");
         return Task.CompletedTask;
     }
 }
