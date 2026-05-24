@@ -137,8 +137,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var ffprobeText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs")
             .Replace("\r\n", "\n");
-        var parsingText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.ProbeParsing.cs")
-            .Replace("\r\n", "\n");
         var validationText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs")
             .Replace("\r\n", "\n");
         var resultsText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Results.cs")
@@ -146,9 +144,9 @@ static partial class Program
 
         AssertContains(rootText, "public async Task<RecordingVerificationResult> VerifyAsync(");
         AssertContains(ffprobeText, "private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(");
+        AssertContains(ffprobeText, "private static Dictionary<string, string> ParseKeyValueOutput(string output)");
+        AssertContains(ffprobeText, "private static double? TryParseRational(string? value)");
         AssertContains(ffprobeText, "private ProcessSpec CreateFfprobeProcessSpec(");
-        AssertContains(parsingText, "private static Dictionary<string, string> ParseKeyValueOutput(string output)");
-        AssertContains(parsingText, "private static double? TryParseRational(string? value)");
         AssertContains(validationText, "private static void ValidateContainer(");
         AssertContains(validationText, "private static void ValidateCodec(");
         AssertContains(validationText, "private static void ValidateDimensions(");

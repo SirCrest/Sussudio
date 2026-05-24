@@ -1606,9 +1606,8 @@ assertions.
 Recording verifier ownership is split across focused partials. Keep strict
 verification orchestration in `Sussudio/Services/Recording/Verification/RecordingVerifier.cs`,
 ffprobe process/spec/side-data probing in
-`Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs`, probe
-scalar parsing in
-`Sussudio/Services/Recording/Verification/RecordingVerifier.ProbeParsing.cs`,
+`Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs`,
+including probe scalar parsing,
 dimensions, frame-rate, cadence, container/codec format, Flashback export
 verification format resolution, and HDR validation policy in
 `Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs`,
@@ -2107,7 +2106,9 @@ Keep `GetFrameStatistics`, optional `DwmFlush`, DXGI counter deltas, and missed
 refresh accounting there. Display-clock projection now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.DisplayClock.cs`; keep
 visible-frame tick estimation and `IPreviewDisplayClock` snapshot construction
-there. Keep slow-frame diagnostic consumption of the latest DXGI counters in
+there. Keep pending-frame queue control and `IPreviewFrameQueueControl` in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs`. Keep
+slow-frame diagnostic consumption of the latest DXGI counters in
 `D3D11PreviewRenderer.Diagnostics.cs`.
 
 D3D preview renderer frame-latency waitable swap-chain setup and waits now live

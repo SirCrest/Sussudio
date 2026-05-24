@@ -4,6 +4,11 @@ using System.Threading;
 
 namespace Sussudio.Services.Preview;
 
+internal interface IPreviewFrameQueueControl
+{
+    int DropPendingFrames(string reason);
+}
+
 internal sealed partial class D3D11PreviewRenderer
 {
     private readonly ManualResetEventSlim _frameReadyEvent = new(false);
