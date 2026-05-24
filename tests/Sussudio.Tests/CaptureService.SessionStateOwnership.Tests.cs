@@ -23,7 +23,7 @@ static partial class Program
         AssertEqual(0, directWriterCount, "CaptureService direct _sessionState writer count");
 
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
-        var transitionExecutionText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.TransitionExecution.cs").Replace("\r\n", "\n");
+        var transitionExecutionText = rootText;
         var stateMachineText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionStateMachine.cs").Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs").Replace("\r\n", "\n");
         var resourceReleaseText = cleanupText;
@@ -37,6 +37,10 @@ static partial class Program
 
         AssertContains(rootText, "private readonly CaptureSessionStateMachine _sessionStateMachine = new();");
         AssertContains(rootText, "public CaptureSessionState SessionState => CurrentSessionState;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.TransitionExecution.cs")),
+            "CaptureService transition transaction helpers stay folded into CaptureService.cs");
         AssertContains(transitionExecutionText, "private async Task RunTransitionAsync(");
         AssertContains(transitionExecutionText, "await _sessionTransitionLock.WaitAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(transitionExecutionText, "ReleaseSemaphoreBestEffort(_sessionTransitionLock, \"session_transition\");");
