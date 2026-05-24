@@ -1117,7 +1117,7 @@ Primary current owners:
   chrome/material state, overlay pointer/auto-hide behavior, and full-screen key
   routing behind the shared full-screen context.
   behavior plus full-screen key routing and timeline eligibility.
-  `Sussudio/MainWindow.FullScreen.Composition.cs` wires the controller context,
+  `Sussudio/MainWindow.ShellChrome.Composition.cs` wires the controller context,
   button/menu/double-tap and automation command adapters, key routing, pointer,
   and auto-hide adapters. Flashback command execution remains in
   `Sussudio/Controllers/Flashback/FlashbackCommandController.cs`.
@@ -1782,7 +1782,7 @@ Primary current owners:
   owns the shared source reader for the split
   `MainWindow.CaptureBindings.cs` adapter.
 - `tests/Sussudio.Tests/MainWindow.FullScreenOwnership.Helpers.cs` owns the
-  shared source reader for the consolidated `MainWindow.FullScreen.Composition.cs`
+  shared source reader for the consolidated `MainWindow.ShellChrome.Composition.cs`
   adapter.
 - `tests/Sussudio.Tests/MainWindow.PreviewRendererOwnership.Helpers.cs` owns the
   shared source reader for the consolidated `MainWindow.PreviewRenderer.Composition.cs`

@@ -7,6 +7,6 @@ static partial class Program
             "\n",
             new[]
             {
-                "Sussudio/MainWindow.FullScreen.Composition.cs",
+                "Sussudio/MainWindow.ShellChrome.Composition.cs",
             }.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
 }
