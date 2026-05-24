@@ -144,6 +144,18 @@ CLI/MCP/pipe checks, if applicable: covered by MainWindow audio/controller owner
 Behavior preserved: Audio/microphone binding, presentation, meter, and row-animation behavior still route through the same controller types
 Notes for future agents: keep XAML-facing audio/microphone adapter calls together in `MainWindow.AudioBindings.cs`; keep policy, animation state, and UI projection behavior in the audio controllers
 
+Date: 2026-05-23
+Area: MainWindow preview startup adapter locality
+Problem: The XAML-facing preview startup adapter was split across session, readiness-signal, and watchdog MainWindow partials even though all three only wire the same startup controller family into MainWindow callbacks and state projections.
+Files consolidated: `Sussudio/MainWindow.PreviewStartup.Signals.Composition.cs`; `Sussudio/MainWindow.PreviewStartup.Watchdog.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `MainWindow` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by preview startup session, signal, watchdog, and runtime snapshot regression tests
+Behavior preserved: Preview startup session, signal, and watchdog behavior still route through the same controller types and callback delegates
+Notes for future agents: keep preview startup MainWindow adapter glue together in `MainWindow.PreviewStartup.Session.Composition.cs`; keep state machines, timers, readiness logic, and formatting in the preview startup controllers
+
 Date: 2026-05-21
 Area: Automation diagnostics Flashback evaluation
 Problem: Active/stalled Flashback export diagnostic verdict construction lived in a small partial even though it is only called by the Flashback diagnostic owner that orders storage, recording, export, and playback verdicts.

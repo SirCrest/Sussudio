@@ -2941,17 +2941,19 @@ Primary current owners:
   signal-window predicates, snapshot missing-signal refresh gates, and reset
   orchestration.
   `Sussudio/MainWindow.PreviewStartup.Session.Composition.cs` wires UI/runtime
-  callbacks into the session controller, stable state projections, startup state,
-  renderer-attached, first-visual, begin-attempt, and reset adapters.
+  callbacks into the session, watchdog, and signal controllers, stable state
+  projections, startup state, renderer-attached, first-visual, begin-attempt,
+  reset adapters, raw timeout diagnostic snapshots, live preview signal state,
+  renderer visibility details, logging, and confirmation callbacks.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs` owns
   watchdog/telemetry timers, timeout configuration, timeout recovery, and
-  failure-stop scheduling. `Sussudio/MainWindow.PreviewStartup.Watchdog.cs` wires
-  the MainWindow/XAML-facing adapter and raw timeout diagnostic snapshot.
+  failure-stop scheduling. The MainWindow/XAML-facing adapter stays in
+  `Sussudio/MainWindow.PreviewStartup.Session.Composition.cs`.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs` owns readiness-
   signal coordination: readiness-signal state handoff, missing-signal updates,
   playback-progress diagnostics, startup signal log strings, GPU position
   counter state, and first-visual confirmation decisions.
-  `Sussudio/MainWindow.PreviewStartup.Signals.Composition.cs` wires the
+  `Sussudio/MainWindow.PreviewStartup.Session.Composition.cs` wires the
   coordinator context, stable signal snapshot properties used by automation,
   GPU signal, missing-signal, playback-snapshot, and first-visual adapter callbacks.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs` owns

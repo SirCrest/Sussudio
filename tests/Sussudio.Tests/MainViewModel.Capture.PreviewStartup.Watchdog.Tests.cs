@@ -20,9 +20,9 @@ static partial class Program
 
         AssertContains(mainWindowText, "InitializePreviewStartupWatchdogController();");
         AssertEqual(
-            true,
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewStartup.Watchdog.cs")),
-            "preview startup watchdog adapter lives in the focused startup watchdog partial");
+            "preview startup watchdog adapter folded into the preview startup session adapter");
         AssertContains(previewStartupWatchdogText, "private PreviewStartupWatchdogController _previewStartupWatchdogController = null!;");
         AssertContains(previewStartupWatchdogText, "private void InitializePreviewStartupWatchdogController()");
         AssertContains(previewStartupWatchdogText, "IsWaitingForFirstVisual = () => _previewStartupSessionController.IsWaitingForFirstVisual,");

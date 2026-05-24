@@ -8,7 +8,5 @@ static partial class Program
             new[]
             {
                 "Sussudio/MainWindow.PreviewStartup.Session.Composition.cs",
-                "Sussudio/MainWindow.PreviewStartup.Signals.Composition.cs",
-                "Sussudio/MainWindow.PreviewStartup.Watchdog.cs",
             }.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
 }
