@@ -2907,9 +2907,9 @@ Primary current owners:
   GPU signal, missing-signal, playback-snapshot, and first-visual adapter callbacks.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs` owns
   readiness-signal required/received state, missing-signal calculation,
+  signal-list formatting, timeout diagnostic payload formatting,
   playback-advance threshold checks, and readiness result snapshots.
-  `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalFormatter.cs` owns missing-signal,
-  signal-list, and timeout diagnostic payload formatting. `PreviewStartupWatchdogController.cs`
+  `PreviewStartupWatchdogController.cs`
   owns preview startup timeout reason, timeout status, and failure-stop status text.
   `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview-
   specific ViewModel event lifecycle and the preview property-change router for

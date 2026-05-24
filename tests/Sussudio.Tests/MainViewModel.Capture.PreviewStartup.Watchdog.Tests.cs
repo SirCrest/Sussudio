@@ -15,7 +15,7 @@ static partial class Program
         var previewStartupWatchdogText = ReadMainWindowPreviewStartupAdapterSource();
         var previewStartupWatchdogControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs")
             .Replace("\r\n", "\n");
-        var previewStartupSignalFormatterText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupSignalFormatter.cs")
+        var previewStartupSignalFormatterText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "InitializePreviewStartupWatchdogController();");

@@ -2969,9 +2969,9 @@ position counter state, and first-visual confirmation decisions.
 Readiness-signal required/received state,
 missing-signal calculation, playback-advance threshold checks, and readiness
 result snapshots live in
-`Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs`. Missing-signal,
-signal-list, and timeout diagnostic payload formatting lives in
-`Sussudio/Controllers/Preview/Startup/PreviewStartupSignalFormatter.cs`. Timeout reason,
+`Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs`.
+Missing-signal, signal-list, and timeout diagnostic payload formatting live with
+that readiness signal owner. Timeout reason,
 timeout status, and failure-stop status text live inside
 `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`, where the timeout
 and failure-stop decisions are made. This keeps the root shell focused on wiring
