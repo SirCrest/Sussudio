@@ -20,8 +20,7 @@ static partial class Program
             ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.Entries.cs").Replace("\r\n", "\n"));
         var flashbackHandlersText = string.Join(
             "\n",
-            ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs").Replace("\r\n", "\n"));
+            ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs").Replace("\r\n", "\n"));
         var ssctlAssembly = LoadToolAssemblyIsolated(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
         var helpWriterType = ssctlAssembly.GetType("Sussudio.Tools.Ssctl.SsctlHelpWriter")
             ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.SsctlHelpWriter type not found.");

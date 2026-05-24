@@ -69,12 +69,11 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "private static double ParseFlashbackPositionMs(string value)");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "Flashback position must be finite, non-negative, and within TimeSpan range.");
         AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Values.cs"), "private static double ParseFlashbackPositionMs(string value)");
-        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "ParseFlashbackExportSeconds(context.Rest[1])");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs"), "private static Task<int> HandleFlashbackExportAsync(CommandContext context)");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs"), "ConsumeFlag(context.Rest, \"--range\")");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs"), "ConsumeFlag(context.Rest, \"--force\")");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs"), "? ParseFlashbackExportSeconds(context.Rest[1])");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs"), "Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? \".\")");
+        AssertContains(flashbackRouterSource, "private static Task<int> HandleFlashbackExportAsync(CommandContext context)");
+        AssertContains(flashbackRouterSource, "ConsumeFlag(context.Rest, \"--range\")");
+        AssertContains(flashbackRouterSource, "ConsumeFlag(context.Rest, \"--force\")");
+        AssertContains(flashbackRouterSource, "? ParseFlashbackExportSeconds(context.Rest[1])");
+        AssertContains(flashbackRouterSource, "Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? \".\")");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Arguments.cs"), "private static string JoinRemaining(IReadOnlyList<string> args, int startIndex)");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Arguments.cs"), "private static bool ConsumeFlag(List<string> args, string flag)");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Arguments.cs"), "private static bool LooksLikeJson(string value)");
@@ -122,6 +121,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.Context.cs")),
             "ssctl command context lives with the root command dispatcher");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.Flashback.Export.cs")),
+            "Flashback export routing lives with the Flashback command router");
 
         return Task.CompletedTask;
     }

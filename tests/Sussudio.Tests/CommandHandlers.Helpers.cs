@@ -136,7 +136,6 @@ static partial class Program
             "tools/ssctl/CommandHandlers.DiagnosticSession.cs",
             "tools/ssctl/CommandHandlers.Flashback.cs",
             "tools/ssctl/CommandHandlers.Flashback.Actions.cs",
-            "tools/ssctl/CommandHandlers.Flashback.Export.cs",
             "tools/ssctl/CommandHandlers.Observability.cs",
             "tools/ssctl/CommandHandlers.PresentMon.cs",
             "tools/ssctl/CommandHandlers.Transport.cs",

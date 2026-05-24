@@ -48,6 +48,18 @@ Notes for future agents:
 
 ## Slice Evidence
 
+Date: 2026-05-24
+Area: ssctl Flashback command routing
+Problem: Flashback export CLI flag parsing and payload shaping lived in a 25-line partial file even though the only caller is the Flashback command router, forcing an extra file hop for one subcommand.
+Files consolidated: `tools/ssctl/CommandHandlers.Flashback.Export.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `CommandHandlers` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by ssctl command-handler routing/help/source-ownership tests
+Behavior preserved: Flashback export CLI flags, default output path, parent-directory creation, and `FlashbackExport` payload shape remain unchanged
+Notes for future agents: keep small ssctl subcommand handlers with their command router unless they grow independent parsing/policy surface
+
 Date: 2026-05-21
 Area: Tool snapshot formatting
 Problem: Thread-health formatter rows were scattered across one section-order file plus three one-row partial files in both the shared `AutomationSnapshotFormatter` and ssctl `Formatters` implementations.

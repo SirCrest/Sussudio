@@ -434,9 +434,10 @@ owns stats, settings, and frame-time visibility commands.
 restart, and top-level Flashback command routing.
 `CommandHandlers.Flashback.Actions.cs` owns Flashback playback/scrub/marker/
 range CLI actions, position parsing, and `FlashbackAction` payload shaping.
-`CommandHandlers.Flashback.Export.cs` owns Flashback export flags, output path
-defaulting, directory creation, and payload shape. The root `CommandHandlers.cs`
-owns the per-invocation command context. Support partials remain:
+`CommandHandlers.Flashback.cs` owns Flashback enable/timeline/export routing,
+including export flags, output path defaulting, directory creation, and payload
+shape. The root `CommandHandlers.cs` owns the per-invocation command context.
+Support partials remain:
 `CommandHandlers.Arguments.cs` owns usage validation, argument joining, flag
 consumption, optional flag values, and JSON detection/pretty-printing,
 `CommandHandlers.Values.cs`
