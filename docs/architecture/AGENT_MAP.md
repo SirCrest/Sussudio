@@ -1393,8 +1393,8 @@ Primary current owners:
   chrome. `Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs` owns
   live MJPEG/NVML input acquisition, decode availability policy, and pure
   telemetry projection into the hardware-row presentation input DTOs;
-  `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs` owns pure
-  decode/GPU row text projection over presentation inputs, and
+  `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns pure decode/GPU row
+  text projection over presentation inputs, and
   `StatsDockRowChromeController` owns decode/GPU row pooling while
   `StatsDockRowChromePresenter` owns shared row chrome and
   `StatsDockRefreshController` owns when decode/GPU rows refresh.
@@ -1404,31 +1404,20 @@ Primary current owners:
   canvas sizing, sample projection, and expected-line geometry.
   `Sussudio/MainWindow.StatsOverlay.Composition.cs` owns the XAML-facing
   compact overlay adapter beside the stats overlay visibility route.
-  `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns shared stats
-  formatting helpers.
-  `Sussudio/ViewModels/StatsPresentationBuilder.Dock.cs` owns stats dock
-  summary construction and HDMI/capture/preview resolution text.
-  `Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs` owns compact
-  preview-stat formatting, range/sample text policy, and frame-time overlay
-  presentation. `Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs` owns
-  visual-cadence FPS/repeat/motion text formatting and expected visual-repeat
-  drift helpers.
-  `Sussudio/ViewModels/StatsPresentationBuilder.Encoder.cs` owns encoder dock
-  visibility, codec label, bitrate, and encoder drift text formatting.
-  `Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticRows.cs` owns
-  diagnostic row construction and source-summary parsing.
+  `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns the cohesive pure stats
+  presentation projection surface: shared formatting helpers, stats dock summary
+  construction, HDMI/capture/preview resolution text, compact preview-stat
+  formatting, range/sample text policy, frame-time overlay presentation,
+  visual-cadence FPS/repeat/motion text formatting, expected visual-repeat drift
+  helpers, encoder dock visibility, codec label, bitrate, encoder drift text
+  formatting, diagnostic row construction, and source-summary parsing.
   `Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs` owns live
   MJPEG/NVML sampling callbacks and pure telemetry-to-presentation-input
   projection for hardware rows.
-  `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs` owns decode
-  and GPU row text projection over presentation inputs.
-  `Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticSummary.cs` owns
-  frame-lane diagnostic health summary classification.
-  `Sussudio/ViewModels/StatsPresentationBuilder.Window.cs` owns detached
-  stats-window text and telemetry-detail presentation.
-  `Sussudio/ViewModels/StatsPresentationBuilder.Status.cs`
-  owns stats lane status classification and consumes the visual-repeat drift
-  result.
+  `Sussudio/ViewModels/StatsPresentationBuilder.cs` also owns decode/GPU row
+  text projection over presentation inputs, frame-lane diagnostic health summary
+  classification, detached stats-window text, telemetry-detail presentation,
+  stats lane status classification, and the visual-repeat drift result.
   `Sussudio/ViewModels/StatsPresentationModels.cs` owns the internal DTO
   records/enums consumed by the stats overlay and stats-window controllers.
   `Sussudio/ViewModels/StatsSnapshot.cs` owns the UI stats snapshot DTO, and

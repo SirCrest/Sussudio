@@ -162,7 +162,6 @@ public partial class StatsPresentationTests
         var frameTimeOverlayControllerText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs");
         var frameTimeOverlayGeometryText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs");
-        var statsPresentationFrameTimeText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs");
         var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs");
         var statsSnapshotText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshot.cs");
         var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml");
@@ -171,7 +170,6 @@ public partial class StatsPresentationTests
         Assert.Contains("PreviewOnePercentLowFps: presentCadence?.OnePercentLowFps ?? 0", statsSnapshotProviderText);
         Assert.Contains("PreviewOnePercentLowFps: StatsPresentationBuilder.Sanitize(renderer.PreviewOnePercentLowFps)", statsSnapshotBuilderText);
         AssertStatsPresentationPreviewFormattingLivesInBuilder(
-            statsPresentationFrameTimeText,
             statsPresentationText,
             statsOverlayText,
             statsOverlayCompositionText,
@@ -188,19 +186,16 @@ public partial class StatsPresentationTests
     }
 
     private static void AssertStatsPresentationPreviewFormattingLivesInBuilder(
-        string statsPresentationFrameTimeText,
         string statsPresentationText,
         string statsOverlayText,
         string frameTimeOverlayText,
         string frameTimeOverlayControllerText)
     {
-        Assert.Contains("private static string FormatPreviewCadenceSummary(StatsSnapshot snapshot)", statsPresentationFrameTimeText);
-        Assert.Contains("private static double ResolveCurrentPreviewFrameTimeMs(StatsSnapshot snapshot)", statsPresentationFrameTimeText);
-        Assert.Contains("ResolveCurrentPreviewFrameTimeMs(snapshot)", statsPresentationFrameTimeText);
-        Assert.Contains("1% low {FormatFps(snapshot.PreviewOnePercentLowFps)} fps", statsPresentationFrameTimeText);
-        Assert.Contains("return $\"{currentFrameTime} | {onePercentLow}\";", statsPresentationFrameTimeText);
-        Assert.DoesNotContain("private static string FormatPreviewCadenceSummary(", statsPresentationText);
-        Assert.DoesNotContain("private static double ResolveCurrentPreviewFrameTimeMs(", statsPresentationText);
+        Assert.Contains("private static string FormatPreviewCadenceSummary(StatsSnapshot snapshot)", statsPresentationText);
+        Assert.Contains("private static double ResolveCurrentPreviewFrameTimeMs(StatsSnapshot snapshot)", statsPresentationText);
+        Assert.Contains("ResolveCurrentPreviewFrameTimeMs(snapshot)", statsPresentationText);
+        Assert.Contains("1% low {FormatFps(snapshot.PreviewOnePercentLowFps)} fps", statsPresentationText);
+        Assert.Contains("return $\"{currentFrameTime} | {onePercentLow}\";", statsPresentationText);
         Assert.DoesNotContain("private static string FormatPreviewCadenceSummary(", statsOverlayText);
         Assert.DoesNotContain("private static double ResolveCurrentPreviewFrameTimeMs(", statsOverlayText);
         Assert.DoesNotContain("private static string FormatPreviewCadenceSummary(", frameTimeOverlayText);

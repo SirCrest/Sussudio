@@ -74,7 +74,7 @@ public partial class StatsPresentationTests
         var hardwareRowsControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsHardwareRowsController.cs").Replace("\r\n", "\n");
         var hardwareRowsInputProviderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs").Replace("\r\n", "\n");
         var hardwareRowsInputBuilderText = hardwareRowsInputProviderText;
-        var hardwareRowsBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs").Replace("\r\n", "\n");
+        var hardwareRowsBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
         var refreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
 
