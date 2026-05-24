@@ -316,11 +316,11 @@ Automation diagnostics ownership:
   preview state, and tone-map state projection.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` owns
   automation snapshot input projection for preview pacing stage classification.
-- `Sussudio/Services/Automation/PreviewPacingClassificationModels.cs` owns the
-  preview pacing classifier DTOs. `PreviewPacingSlowStageClassifier.cs` owns
-  pure slow-stage classification ordering plus source capture, visual
-  duplicate/low-motion, MJPEG decode, preview jitter scheduler,
-  compositor-miss, renderer-submit, and D3D dominance predicates/evidence.
+- `Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.cs` owns the
+  preview pacing classifier DTOs plus pure slow-stage classification ordering:
+  source capture, visual duplicate/low-motion, MJPEG decode, preview jitter
+  scheduler, compositor-miss, renderer-submit, and D3D dominance
+  predicates/evidence.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` owns
   public snapshot read/refresh APIs, refresh-gate serialization, core snapshot
   refresh orchestration, cached last-output file existence/size probing,

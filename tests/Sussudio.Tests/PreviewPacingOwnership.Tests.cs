@@ -11,16 +11,12 @@ public sealed class PreviewPacingOwnershipTests
     {
         var classifierText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.cs")
             .Replace("\r\n", "\n");
-        var modelText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingClassificationModels.cs")
-            .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
 
-        Assert.Contains("public sealed class PreviewPacingClassificationInput", modelText);
-        Assert.Contains("public readonly record struct PreviewPacingClassification(", modelText);
+        Assert.Contains("public sealed class PreviewPacingClassificationInput", classifierText);
+        Assert.Contains("public readonly record struct PreviewPacingClassification(", classifierText);
         Assert.Contains("public static class PreviewPacingSlowStageClassifier", classifierText);
         Assert.DoesNotContain("partial class PreviewPacingSlowStageClassifier", classifierText);
-        Assert.DoesNotContain("public sealed class PreviewPacingClassificationInput", classifierText);
-        Assert.DoesNotContain("public readonly record struct PreviewPacingClassification(", classifierText);
         Assert.Contains("var dominantStage = ResolveDominantD3DStage(input, targetFrameMs);", classifierText);
         Assert.Contains("private static string ResolveDominantD3DStage(", classifierText);
         Assert.Contains("TryClassifySourceCapture(input, sourceSampleReady, targetFps", classifierText);
@@ -47,6 +43,7 @@ public sealed class PreviewPacingOwnershipTests
         Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingSlowStageClassifier.Lanes.SourceVisual.cs")));
         Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingSlowStageClassifier.Lanes.DecodeJitter.cs")));
         Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingSlowStageClassifier.Lanes.Render.cs")));
+        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingClassificationModels.cs")));
     }
 
     [Fact]

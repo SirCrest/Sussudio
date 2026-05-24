@@ -1355,3 +1355,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: covered by ssctl command-handler source ownership, enum-command protocol, and routing tests
 Behavior preserved: `stats`, `stats section`, `settings`, `frametime`, and `frame-time` commands still send the same automation command IDs and payload fields
 Notes for future agents: keep shell visibility commands with `CommandHandlers.Window.cs` unless they grow non-shell policy or a shared UI-control command owner
+
+Date: 2026-05-24
+Area: Preview pacing classification locality
+Problem: Preview pacing classifier input/output DTOs lived in a separate 65-line file even though they are only meaningful as the public evidence/result shape consumed by the slow-stage classifier policy.
+Files consolidated: `Sussudio/Services/Automation/PreviewPacingClassificationModels.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: none
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: covered by preview pacing classifier ownership, classifier behavior tests, automation snapshot wiring tests, and runtime snapshot regression tests
+Behavior preserved: `PreviewPacingClassificationInput`, `PreviewPacingClassification`, and `PreviewPacingSlowStageClassifier.Classify` keep the same namespace, public type names, and classification behavior
+Notes for future agents: keep the classifier DTOs beside the classifier unless the evidence shape becomes shared by another independent policy

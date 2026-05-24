@@ -316,11 +316,10 @@ last-output file existence/size probing, process CPU/memory/GC/thread-pool
 sampling, latest-snapshot publication, timeline append, event notification, and
 auto-verification handoff plus automation snapshot input projection for preview
 pacing stage classification.
-`PreviewPacingClassificationModels.cs` owns the preview pacing DTOs, while
-`PreviewPacingSlowStageClassifier.cs` owns pure slow-stage classification
-ordering plus source capture, visual duplicate/low-motion, MJPEG decode,
-preview jitter scheduler, compositor-miss, renderer-submit, and D3D dominance
-predicates/evidence.
+`PreviewPacingSlowStageClassifier.cs` owns the preview pacing DTOs plus pure
+slow-stage classification ordering: source capture, visual duplicate/low-motion,
+MJPEG decode, preview jitter scheduler, compositor-miss, renderer-submit, and
+D3D dominance predicates/evidence.
 `AutomationDiagnosticsHub.Verification.cs` owns manual recording/file
 verification commands, verification-profile adaptation, explicit verification
 events, automatic post-recording verification scheduling, and recording-start

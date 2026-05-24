@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T12:56:46Z
+Generated UTC: 2026-05-24T13:02:59Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 715 |
+| Production .cs files | 714 |
 | Test .cs files | 552 |
 | Production .cs files under 60 lines | 35 (4.9%) |
-| Production .cs files under 80 lines | 70 (9.8%) |
+| Production .cs files under 80 lines | 69 (9.7%) |
 
 ## Largest partial-type clusters
 
@@ -64,13 +64,13 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
 | 575 | tools/NativeXuAudioProbe/Program.I2cCommands.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
+| 552 | Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.cs |
 | 546 | Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs |
 | 538 | Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs |
 | 531 | Sussudio/Services/Capture/DeviceDiscovery/MfDeviceEnumerator.cs |
 | 522 | Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs |
 | 506 | Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs |
 | 493 | Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs |
-| 488 | Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.cs |
 | 487 | Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs |
 | 471 | Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs |
 | 470 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs |
