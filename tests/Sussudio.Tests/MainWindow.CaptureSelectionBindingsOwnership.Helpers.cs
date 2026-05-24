@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 
 static partial class Program
 {
@@ -7,6 +7,6 @@ static partial class Program
             "\n",
             new[]
             {
-                "Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs",
+                "Sussudio/MainWindow.CaptureBindings.cs",
             }.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
 }

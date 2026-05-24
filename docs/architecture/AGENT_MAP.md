@@ -1267,7 +1267,7 @@ Primary current owners:
   `Sussudio/Controllers/Shell/MainWindowPropertyChangedRouter.cs` owns
   property-name normalization and route order. Capture-selection and
   status-strip adapters are still considered first through the
-  `Sussudio/MainWindow.CaptureSelectionBindings.*.cs` adapter family and
+  `Sussudio/MainWindow.CaptureBindings.cs` adapter and
   `MainWindow.StatusStripPresentation.cs`; broad domain property-name switches
   and status-strip routing logic live in focused controllers/partials.
 - `Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs` owns shared
@@ -1780,7 +1780,7 @@ Primary current owners:
   adapter.
 - `tests/Sussudio.Tests/MainWindow.CaptureSelectionBindingsOwnership.Helpers.cs`
   owns the shared source reader for the split
-  `MainWindow.CaptureSelectionBindings.*.cs` adapter family.
+  `MainWindow.CaptureBindings.cs` adapter.
 - `tests/Sussudio.Tests/MainWindow.FullScreenOwnership.Helpers.cs` owns the
   shared source reader for the consolidated `MainWindow.FullScreen.Composition.cs`
   adapter.
@@ -2933,7 +2933,7 @@ Primary current owners:
   device, and output-path button/display adapter. `OutputPathController` owns
   output-path property-change routing, textbox updates, and browse/open
   commands.
-- `Sussudio/MainWindow.CaptureOptionBindings.cs` is the XAML-facing adapter
+- `Sussudio/MainWindow.CaptureBindings.cs` is the XAML-facing adapter
   for capture option setup, event binding, and capture-option/source-signal
   property-change routing; the property-name router lives in
   `CaptureOptionBindingController`.
@@ -2982,7 +2982,7 @@ Primary current owners:
   `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs` owns pure
   capture/audio/microphone/resolution/frame-rate/string ComboBox selection and
   fallback matching.
-  `Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs` owns controller
+  `Sussudio/MainWindow.CaptureBindings.cs` owns controller
   instantiation, XAML dependency wiring, collection/property-change adapters,
   and the thin XAML-facing selection bridges for device, audio, device-audio,
   capture-mode, and recording option selection.
@@ -3002,7 +3002,7 @@ Primary current owners:
   capture-option presentation decisions, XAML control application,
   decoder-count selection handling, and HDR hint/FPS telemetry tooltip text
   policy.
-  `MainWindow.CaptureOptionBindings.cs` is the XAML-facing adapter.
+  `MainWindow.CaptureBindings.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Capture/CaptureOptionBindingController.cs` owns the
   capture option binding adapter context, setup, UI event attachment,
   initialization, resolution/frame-rate selection, recording option event
@@ -3012,7 +3012,7 @@ Primary current owners:
   custom-bitrate control sync, HDR/true-HDR ViewModel-to-control sync, preview
   HDR passthrough forwarding, and delegated presentation callbacks for option
   affordances, telemetry tooltips, and source overlay refreshes.
-  `MainWindow.CaptureOptionBindings.cs` is the XAML-facing capture and
+  `MainWindow.CaptureBindings.cs` is the XAML-facing capture and
   recording option adapter, including the small property-change forwarding
   method that delegates to this controller.
 - `Sussudio/Controllers/Recording/Output/OutputPathController.cs` owns recording output-

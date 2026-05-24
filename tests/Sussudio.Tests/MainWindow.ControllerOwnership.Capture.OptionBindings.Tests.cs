@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.IO;
+using System.Threading.Tasks;
 
 static partial class Program
 {
@@ -6,7 +7,7 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionBindings.cs").Replace("\r\n", "\n");
+        var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.CaptureBindings.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerRootText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
         var controllerText = controllerRootText;
@@ -49,6 +50,8 @@ static partial class Program
         AssertContains(captureOptionBindingsText, "private void AttachRecordingOptionBindings()");
         AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.AttachRecordingOptionBindings();");
         AssertContains(mainWindowText, "InitializeCaptureOptionBindingController();");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.CaptureOptionBindings.cs")), "MainWindow capture option adapter folded into MainWindow.CaptureBindings.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.CaptureSelectionBindings.Composition.cs")), "MainWindow capture selection adapter folded into MainWindow.CaptureBindings.cs");
 
         AssertContains(controllerRootText, "internal sealed class CaptureOptionBindingControllerContext");
         AssertContains(controllerRootText, "internal sealed class CaptureOptionBindingController");
@@ -131,7 +134,7 @@ static partial class Program
         AssertContains(agentMapText, "`Sussudio/Controllers/Capture/CaptureOptionBindingController.cs` owns the");
         AssertContains(agentMapText, "capture option binding adapter context, setup, UI event attachment");
         AssertContains(agentMapText, "capture-option/source-signal property-change routing");
-        AssertContains(agentMapText, "`Sussudio/MainWindow.CaptureOptionBindings.cs` is the XAML-facing adapter");
+        AssertContains(agentMapText, "`Sussudio/MainWindow.CaptureBindings.cs` is the XAML-facing adapter");
         AssertContains(agentMapText, "option binding adapter context");
         AssertContains(agentMapText, "recording option event");
         AssertContains(agentMapText, "HDR/true-HDR click binding");
@@ -154,7 +157,7 @@ static partial class Program
         AssertContains(cleanupPlanText, "preview HDR passthrough forwarding");
         AssertContains(cleanupPlanText, "presentation callback routing for option affordances, telemetry tooltips, and");
         AssertContains(cleanupPlanText, "source overlay refreshes");
-        AssertContains(cleanupPlanText, "`Sussudio/MainWindow.CaptureOptionBindings.cs` now owns the XAML-facing");
+        AssertContains(cleanupPlanText, "`Sussudio/MainWindow.CaptureBindings.cs` now owns the XAML-facing");
         AssertDoesNotContain(cleanupPlanText, "CaptureOptionBindingController.Context.cs");
         AssertDoesNotContain(cleanupPlanText, "CaptureOptionBindingController.Bindings.cs");
         AssertDoesNotContain(cleanupPlanText, "CaptureOptionBindingController.PropertyChanges.cs");
