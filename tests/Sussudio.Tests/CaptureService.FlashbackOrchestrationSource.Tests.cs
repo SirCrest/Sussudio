@@ -72,8 +72,7 @@ static partial class Program
         var settingsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
-        var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.PreviewDisposal.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs")
+        var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Teardown.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs")

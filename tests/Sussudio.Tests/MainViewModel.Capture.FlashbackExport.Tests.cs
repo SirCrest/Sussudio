@@ -28,9 +28,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.VideoPipelineLifecycle.cs")
                 .Replace("\r\n", "\n");
-        var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.PreviewDisposal.cs")
-            .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs")
+        var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Teardown.cs")
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs")
             .Replace("\r\n", "\n")

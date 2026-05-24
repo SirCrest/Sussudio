@@ -134,9 +134,7 @@ static partial class Program
             .Replace("\r\n", "\n")
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
             + "\n" + ReadCaptureServiceRecordingFinalizationSource();
-        var backendSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.PreviewDisposal.cs")
-            .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs")
+        var backendSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.Teardown.cs")
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs")
             .Replace("\r\n", "\n")
