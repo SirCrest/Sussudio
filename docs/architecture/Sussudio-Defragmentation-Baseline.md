@@ -1571,3 +1571,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: DXGI frame-statistics sampling, visible-frame tick estimation, `IPreviewDisplayClock` snapshot construction, letterbox rectangle math, viewport constant-buffer upload, shader draw paths, and VideoProcessor destination-rectangle behavior remain unchanged
 Notes for future agents: keep display-clock projection with `D3D11PreviewRenderer.DxgiFrameStatistics.cs`; keep letterbox/viewport helpers with `D3D11PreviewRenderer.RenderPasses.cs`; keep D3D resource creation in `Resources.cs` and VideoProcessor pipeline setup in `VideoProcessorPipeline.cs`
+
+Date: 2026-05-24
+Area: MainViewModel capture-settings adapter locality
+Problem: `MainViewModel.CaptureSettings.cs` was a 50-line adapter partial that only sampled capture-selection, source telemetry, recording, Flashback, and audio UI state before delegating to `CaptureSettingsProjectionBuilder`, forcing one extra file hop for preview/recording settings review.
+Files consolidated: `Sussudio/ViewModels/MainViewModel.CaptureSettings.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `MainViewModel` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: Effective resolution sampling, runtime/source telemetry capture, frame-rate option snapshotting, HDR/MJPEG/recording/Flashback/audio/microphone input projection, and pure `CaptureSettingsProjectionBuilder` policy remain unchanged
+Notes for future agents: keep the impure `BuildCaptureSettings` adapter with `MainViewModel.CaptureState.cs`; keep pure capture-settings policy and DTOs in `CaptureSettingsProjectionBuilder.cs`

@@ -3902,8 +3902,8 @@ owner, fold it back into that owner and update the source-shape tests and
    projection, target-summary property application, and auto-resolution display
    text; live-signal label formatting now lives in
    `Sussudio/ViewModels/ViewModelPresentationBuilders.cs`. Capture
-   settings projection from UI/runtime state is sampled by
-   `MainViewModel.CaptureSettings.cs` and projected by
+   settings projection from UI/runtime state is sampled by the capture-state
+   owner in `MainViewModel.CaptureState.cs` and projected by
    `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`, which owns final
    `CaptureSettings` assembly, audio/microphone device application, pure
    projection policy, and input DTOs:

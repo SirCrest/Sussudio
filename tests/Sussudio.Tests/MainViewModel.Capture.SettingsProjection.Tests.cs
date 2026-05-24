@@ -1,4 +1,5 @@
 using System.Collections;
+using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -15,18 +16,22 @@ static partial class Program
         var recordingTransitionControllerText =
             ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
                 .Replace("\r\n", "\n");
-        var captureSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSettings.cs")
+        var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs")
             .Replace("\r\n", "\n");
         var captureSettingsBuilderText = ReadRepoFile("Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(captureSettingsText, "private CaptureSettings BuildCaptureSettings()");
-        AssertContains(captureSettingsText, "var runtime = _captureService.GetRuntimeSnapshot();");
-        AssertContains(captureSettingsText, "var sourceTelemetry = _captureService.GetLatestSourceTelemetrySnapshot();");
-        AssertContains(captureSettingsText, "return CaptureSettingsProjectionBuilder.Build(new CaptureSettingsProjectionInput");
-        AssertContains(captureSettingsText, "AvailableFrameRates = AvailableFrameRates.ToArray(),");
-        AssertContains(captureSettingsText, "SelectedAudioInputDeviceId = SelectedAudioInputDevice?.Id,");
-        AssertContains(captureSettingsText, "SelectedMicrophoneDeviceId = SelectedMicrophoneDevice?.Id,");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.CaptureSettings.cs")),
+            "MainViewModel capture-settings adapter folded into capture state owner");
+        AssertContains(captureStateText, "private CaptureSettings BuildCaptureSettings()");
+        AssertContains(captureStateText, "var runtime = _captureService.GetRuntimeSnapshot();");
+        AssertContains(captureStateText, "var sourceTelemetry = _captureService.GetLatestSourceTelemetrySnapshot();");
+        AssertContains(captureStateText, "return CaptureSettingsProjectionBuilder.Build(new CaptureSettingsProjectionInput");
+        AssertContains(captureStateText, "AvailableFrameRates = AvailableFrameRates.ToArray(),");
+        AssertContains(captureStateText, "SelectedAudioInputDeviceId = SelectedAudioInputDevice?.Id,");
+        AssertContains(captureStateText, "SelectedMicrophoneDeviceId = SelectedMicrophoneDevice?.Id,");
         AssertContains(captureSettingsBuilderText, "internal static class CaptureSettingsProjectionBuilder");
         AssertDoesNotContain(captureSettingsBuilderText, "partial class CaptureSettingsProjectionBuilder");
         AssertContains(captureSettingsBuilderText, "public static CaptureSettings Build(CaptureSettingsProjectionInput input)");
@@ -51,9 +56,9 @@ static partial class Program
         AssertContains(captureSettingsBuilderText, "input.SelectedFormat?.FrameRateNumerator > 0 && input.SelectedFormat.FrameRateDenominator > 0");
         AssertContains(captureSettingsBuilderText, "requestedFrameRateArg = effectiveFrameRate.ToString(\"0.###\");");
         AssertContains(captureSettingsBuilderText, "internal readonly record struct CaptureSettingsFrameRateProjection(");
-        AssertDoesNotContain(captureSettingsText, "ProjectCaptureSettingsFrameRate");
-        AssertDoesNotContain(captureSettingsText, "private string? ResolveRequestedPixelFormat()");
-        AssertDoesNotContain(captureSettingsText, "private bool ShouldForceMjpegDecode()");
+        AssertDoesNotContain(captureStateText, "ProjectCaptureSettingsFrameRate");
+        AssertDoesNotContain(captureStateText, "private string? ResolveRequestedPixelFormat()");
+        AssertDoesNotContain(captureStateText, "private bool ShouldForceMjpegDecode()");
         AssertDoesNotContain(captureText, "private CaptureSettings BuildCaptureSettings()");
         AssertContains(previewLifecycleControllerText, "await _context.SessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken)");
         AssertContains(recordingTransitionControllerText, "await _context.StartRecordingAsync(settings, cancellationToken);");

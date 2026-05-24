@@ -3128,8 +3128,9 @@ Primary current owners:
   text used by status and telemetry presentation. It delegates live-signal
   label formatting to
   `Sussudio/ViewModels/ViewModelPresentationBuilders.cs`.
-  `MainViewModel.CaptureSettings.cs` owns the impure adapter that samples UI
-  selection and observed runtime/source state. `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`
+  `MainViewModel.CaptureState.cs` owns the impure capture-settings adapter that
+  samples UI selection and observed runtime/source state.
+  `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`
   owns final `CaptureSettings` assembly, audio/microphone device application,
   pure projection policy/input DTOs, selected frame-rate option seed,
   auto-resolved effective FPS, negotiated rational/source-telemetry overrides,

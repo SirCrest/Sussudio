@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Sussudio.Models;
 
@@ -199,5 +200,45 @@ public partial class MainViewModel
         _lastSourceModeKey = null;
         _pendingSdrAutoSelectionForDeviceChange = false;
         _pendingSdrAutoFriendlyFrameRateBucket = null;
+    }
+
+    private CaptureSettings BuildCaptureSettings()
+    {
+        var effectiveResolutionKnown = TryGetEffectiveResolutionSelection(out _, out var effectiveWidth, out var effectiveHeight);
+        var runtime = _captureService.GetRuntimeSnapshot();
+        var sourceTelemetry = _captureService.GetLatestSourceTelemetrySnapshot();
+        return CaptureSettingsProjectionBuilder.Build(new CaptureSettingsProjectionInput
+        {
+            EffectiveResolutionKnown = effectiveResolutionKnown,
+            EffectiveWidth = effectiveWidth,
+            EffectiveHeight = effectiveHeight,
+            SelectedResolution = SelectedResolution,
+            SelectedFrameRate = SelectedFrameRate,
+            AutoResolvedFrameRate = AutoResolvedFrameRate,
+            IsAutoResolutionSelected = IsAutoResolutionValue(SelectedResolution),
+            SelectedFormat = SelectedFormat,
+            AvailableFrameRates = AvailableFrameRates.ToArray(),
+            Runtime = runtime,
+            SourceTelemetry = sourceTelemetry,
+            SelectedVideoFormat = SelectedVideoFormat,
+            IsHdrEnabled = IsHdrEnabled,
+            IsTrueHdrPreviewEnabled = IsTrueHdrPreviewEnabled,
+            MjpegDecoderCount = MjpegDecoderCount,
+            SelectedRecordingFormat = SelectedRecordingFormat,
+            SelectedQuality = SelectedQuality,
+            SelectedPreset = SelectedPreset,
+            SelectedSplitEncodeMode = SelectedSplitEncodeMode,
+            CustomBitrateMbps = CustomBitrateMbps,
+            OutputPath = OutputPath,
+            FlashbackGpuDecode = FlashbackGpuDecode,
+            FlashbackBufferMinutes = FlashbackBufferMinutes,
+            IsAudioEnabled = IsAudioEnabled,
+            IsCustomAudioInputEnabled = IsCustomAudioInputEnabled,
+            SelectedAudioInputDeviceId = SelectedAudioInputDevice?.Id,
+            SelectedAudioInputDeviceName = SelectedAudioInputDevice?.Name,
+            IsMicrophoneEnabled = IsMicrophoneEnabled,
+            SelectedMicrophoneDeviceId = SelectedMicrophoneDevice?.Id,
+            SelectedMicrophoneDeviceName = SelectedMicrophoneDevice?.Name
+        });
     }
 }
