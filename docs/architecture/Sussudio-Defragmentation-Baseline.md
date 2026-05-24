@@ -1595,3 +1595,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: UI operation enqueue/execute/invoke adapter names, disposal-aware enqueue policy delegation, preview reinitialize event fan-out, renderer-stop event fan-out, timeout helper semantics, and controller graph port wiring remain unchanged
 Notes for future agents: keep stable MainViewModel UI-dispatch adapter names and preview event fan-out in `MainViewModel.Composition.cs`; keep actual dispatcher queue policy in `MainViewModelUiDispatchController.cs`
+
+Date: 2026-05-24
+Area: NativeXuAudioProbe default experiment payload locality
+Problem: `Program.ExperimentPayloads.cs` was a 48-line helper file used only by `Program.DefaultExperiment.cs`, splitting payload construction from the default experiment sequence that consumes every helper.
+Files consolidated: `tools/NativeXuAudioProbe/Program.ExperimentPayloads.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; probe helper file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: affected `NativeXuAudioProbe` build covered by solution build; no command names changed
+Behavior preserved: short/int/byte experiment enumeration, invariant display-value formatting, width-based payload byte construction, unsupported-width exception behavior, and default experiment restore/set payload usage remain unchanged
+Notes for future agents: keep default-experiment-only payload construction with `Program.DefaultExperiment.cs`; keep shared Native XU command IDs in `Program.Commands.cs` and reporting/readback helpers in `Program.DefaultExperiment.Reporting.cs`

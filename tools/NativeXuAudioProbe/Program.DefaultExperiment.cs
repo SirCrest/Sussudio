@@ -1,7 +1,7 @@
+using System.Globalization;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Telemetry;
 using static NativeXuProbeCommands;
-using static NativeXuProbeExperimentPayloads;
 using static NativeXuProbeFormatting;
 
 enum ValueKind
@@ -216,6 +216,50 @@ static partial class NativeXuProbeDefaultExperiment
         var padded = new byte[4];
         Array.Copy(value, padded, value.Length);
         return padded;
+    }
+
+    private static IEnumerable<SetExperiment> BuildShortExperiments(string group, IReadOnlyList<SetterSpec> setters, IReadOnlyList<short> values)
+    {
+        foreach (var setter in setters)
+        {
+            foreach (var value in values)
+            {
+                yield return new SetExperiment(group, setter, value.ToString(CultureInfo.InvariantCulture), BuildPayload(setter.PayloadWidth, value));
+            }
+        }
+    }
+
+    private static IEnumerable<SetExperiment> BuildIntExperiments(string group, IReadOnlyList<SetterSpec> setters, IReadOnlyList<int> values)
+    {
+        foreach (var setter in setters)
+        {
+            foreach (var value in values)
+            {
+                yield return new SetExperiment(group, setter, value.ToString(CultureInfo.InvariantCulture), BuildPayload(setter.PayloadWidth, value));
+            }
+        }
+    }
+
+    private static IEnumerable<SetExperiment> BuildByteExperiments(string group, IReadOnlyList<SetterSpec> setters, IReadOnlyList<byte> values)
+    {
+        foreach (var setter in setters)
+        {
+            foreach (var value in values)
+            {
+                yield return new SetExperiment(group, setter, value.ToString(CultureInfo.InvariantCulture), BuildPayload(setter.PayloadWidth, value));
+            }
+        }
+    }
+
+    private static byte[] BuildPayload(int width, long value)
+    {
+        return width switch
+        {
+            1 => new[] { unchecked((byte)value) },
+            2 => BitConverter.GetBytes(unchecked((short)value)),
+            4 => BitConverter.GetBytes(unchecked((int)value)),
+            _ => throw new InvalidOperationException($"Unsupported payload width {width}.")
+        };
     }
 
 }

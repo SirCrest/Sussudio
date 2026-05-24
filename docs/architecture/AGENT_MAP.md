@@ -3508,7 +3508,7 @@ Primary owners:
   `Program.I2cLegacyProbe.cs` owns the legacy `i2c-probe` selector scan and
   raw/AT-wrapped I2C frame experiment;
   `Program.I2cSwitch.cs` owns the captured audio-switch replay workflow;
-  `Program.ExperimentPayloads.cs` owns experiment payload construction;
+  `Program.DefaultExperiment.cs` owns default experiment payload construction;
   `Program.I2cTransport.cs` owns I2C-over-AT transport helpers; and
   `Program.ServiceProbe.cs` owns service-control smoke/payload workflows.
 - `tools/KsAudioNodeProbe/Program.cs` owns KS audio node probe argument parsing,

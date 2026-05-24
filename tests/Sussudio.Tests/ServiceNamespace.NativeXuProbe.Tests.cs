@@ -62,7 +62,6 @@ static partial class Program
         var probeCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Commands.cs"));
         var probeDefaultExperimentText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.DefaultExperiment.cs"));
         var probeDefaultExperimentReportingText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.DefaultExperiment.Reporting.cs"));
-        var probeExperimentPayloadsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ExperimentPayloads.cs"));
         var probeI2cCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.cs"));
         var probeI2cLegacyProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cLegacyProbe.cs"));
         var probeI2cSwitchText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cSwitch.cs"));
@@ -114,6 +113,8 @@ static partial class Program
         AssertContains(probeDefaultExperimentText, "sealed record SetExperiment");
         AssertContains(probeDefaultExperimentText, "public static async Task<int> RunAsync(CaptureDevice device)");
         AssertContains(probeDefaultExperimentText, "RunAnalogGainSequenceAsync");
+        AssertContains(probeDefaultExperimentText, "private static IEnumerable<SetExperiment> BuildShortExperiments");
+        AssertContains(probeDefaultExperimentText, "private static byte[] BuildPayload(int width, long value)");
         AssertDoesNotContain(probeDefaultExperimentText, "private static AtReadResult Decode(");
         AssertDoesNotContain(probeDefaultExperimentText, "private static void PrintSnapshot(");
         AssertContains(probeDefaultExperimentReportingText, "static partial class NativeXuProbeDefaultExperiment");
@@ -124,8 +125,10 @@ static partial class Program
         AssertContains(probeDefaultExperimentReportingText, "private static AtReadResult Decode");
         AssertContains(probeDefaultExperimentReportingText, "private static void PrintInterestingChanges");
         AssertContains(probeDefaultExperimentReportingText, "private static void PrintSnapshot");
-        AssertContains(probeExperimentPayloadsText, "public static IEnumerable<SetExperiment> BuildShortExperiments");
-        AssertContains(probeExperimentPayloadsText, "public static byte[] BuildPayload(int width, long value)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ExperimentPayloads.cs")),
+            "NativeXu probe experiment payload helpers folded into default experiment owner");
         AssertContains(probeI2cCommandsText, "static partial class NativeXuProbeI2cCommands");
         AssertContains(probeI2cCommandsText, "public static async Task<int> RunAsync");
         AssertContains(probeI2cCommandsText, "Usage: i2c-cmd get|set|scan");
