@@ -3111,10 +3111,9 @@ Pure capture-option presentation decisions now live in
 `Sussudio/Controllers/Capture/CaptureOptionPresentationPolicy.cs`: HDR toggle
 enablement, MJPEG decoder count visibility, bitrate/preset visibility, audio
 clipping visibility, and initial decoder-count clamping. XAML control
-application, decoder-count selection handling, and delegation to policy/tooltip
-helpers live in `Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs`.
-Pure HDR readiness hint and FPS telemetry tooltip text policy now lives in
-`Sussudio/Controllers/Capture/CaptureOptionTooltipFormatter.cs`.
+application, decoder-count selection handling, delegation to policy helpers,
+and pure HDR readiness hint/FPS telemetry tooltip text policy live in
+`Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs`.
 `MainWindow.CaptureOptionBindings.cs` is the XAML-facing adapter and keeps
 the existing method names for binding setup, property-change projection, and
 the XAML decoder-count selection event.

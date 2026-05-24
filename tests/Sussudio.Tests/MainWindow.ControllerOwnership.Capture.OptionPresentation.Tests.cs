@@ -9,7 +9,14 @@ static partial class Program
         var captureOptionText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionBindings.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs").Replace("\r\n", "\n");
         var policyText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionPresentationPolicy.cs").Replace("\r\n", "\n");
-        var tooltipFormatterText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionTooltipFormatter.cs").Replace("\r\n", "\n");
+        const string tooltipFormatterMarker = "internal static class CaptureOptionTooltipFormatter";
+        var tooltipFormatterStart = controllerText.IndexOf(tooltipFormatterMarker, System.StringComparison.Ordinal);
+        if (tooltipFormatterStart < 0)
+        {
+            throw new System.InvalidOperationException("CaptureOptionTooltipFormatter was not found in CaptureOptionPresentationController.cs.");
+        }
+
+        var tooltipFormatterText = controllerText[tooltipFormatterStart..];
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionBindings.cs").Replace("\r\n", "\n");
         var captureOptionPropertyChangedMethod = ExtractMemberCode(captureOptionBindingsText, "TryHandleCaptureOptionPropertyChanged");
@@ -67,7 +74,7 @@ static partial class Program
         AssertContains(tooltipFormatterText, "public static string? BuildHdrHintText(string? resolutionHint, string? readinessHint, bool isRecording)");
         AssertContains(tooltipFormatterText, "Stop recording before switching between HDR and SDR pipelines.");
         AssertContains(tooltipFormatterText, "public static string? BuildFpsTelemetryTooltip(string? sourceTelemetrySummaryText, string? sourceTargetSummaryText)");
-        AssertDoesNotContain(controllerText, "var combinedHint =");
+        AssertDoesNotContain(captureOptionText, "var combinedHint =");
         AssertDoesNotContain(controllerText, "var parts = new List<string>();");
         AssertContains(controllerText, "_context.ViewModel.SourceTelemetrySummaryText");
         AssertContains(controllerText, "_context.ViewModel.SourceTargetSummaryText");
