@@ -3939,16 +3939,13 @@ Primary owners:
 - `tools/Common/PresentMon/PresentMonProbe.Format.cs` owns PresentMon result text rendering
   used by diagnostic-session output surfaces.
 - `tools/Common/PresentMon/PresentMonProbe.Csv.cs` owns PresentMon CSV parse overloads,
-  selected-row filtering, summary assembly, and handoff to row/swap-chain/
-  warning/correlation helpers.
+  selected-row filtering, summary assembly, swap-chain normalization/selection,
+  header/field parsing, scalar metric reads, CSV line tokenization, and handoff
+  to row/warning/correlation helpers.
 - `tools/Common/PresentMon/PresentMonProbe.Csv.Rows.cs` owns PresentMon CSV row ingestion,
   header index construction, schema-presence detection, blank-line skipping,
   row index assignment, private parsed CSV row shapes, and row projection from
   header-indexed fields.
-- `tools/Common/PresentMon/PresentMonProbe.Csv.Fields.cs` owns header/field parsing,
-  scalar field/metric reads, and CSV line tokenization.
-- `tools/Common/PresentMon/PresentMonProbe.Csv.SwapChains.cs` owns swap-chain
-  normalization, artifact filtering, and selected-chain summaries.
 - `tools/Common/PresentMon/PresentMonProbe.Csv.Correlation.cs` owns app-present
   correlation and displayed/not-displayed outcome classification.
 - `tools/Common/PresentMon/PresentMonProbe.Csv.Summary.cs` owns warnings, counted text

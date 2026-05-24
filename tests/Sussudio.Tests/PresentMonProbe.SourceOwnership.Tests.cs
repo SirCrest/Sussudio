@@ -13,8 +13,6 @@ static partial class Program
         var formatText = ReadPresentMonProbeFile("PresentMonProbe.Format.cs");
         var csvText = ReadPresentMonProbeFile("PresentMonProbe.Csv.cs");
         var csvRowsText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Rows.cs");
-        var fieldsText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Fields.cs");
-        var swapChainsText = ReadPresentMonProbeFile("PresentMonProbe.Csv.SwapChains.cs");
         var correlationText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Correlation.cs");
         var summaryText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Summary.cs");
         var pathsText = ReadPresentMonProbeFile("PresentMonProbe.Paths.cs");
@@ -68,6 +66,11 @@ static partial class Program
         AssertContains(csvText, "var swapChains = BuildSwapChainSummaries(rows, selectedSwapChain);");
         AssertContains(csvText, "var warnings = BuildWarnings(");
         AssertContains(csvText, "var appCorrelation = BuildAppCorrelation(");
+        AssertContains(csvText, "private static IReadOnlyList<PresentMonSwapChainSummary> BuildSwapChainSummaries(");
+        AssertContains(csvText, "private static string? NormalizeSwapChainAddress(");
+        AssertContains(csvText, "private static string NormalizeHeader(");
+        AssertContains(csvText, "private static double? ReadMetric(");
+        AssertContains(csvText, "private static List<string> SplitCsvLine(");
         AssertContains(csvRowsText, "private static PresentMonCsvRows ReadCsvRows(string path)");
         AssertContains(csvRowsText, "private sealed record PresentMonCsvRows(");
         AssertContains(csvRowsText, "private sealed record PresentMonRow(");
@@ -75,11 +78,6 @@ static partial class Program
         AssertContains(csvRowsText, "private static PresentMonRow ReadRow(");
         AssertContains(csvRowsText, "rows.Add(ReadRow(rowIndex++, fields, index));");
         AssertContains(csvRowsText, "private static bool HasAnyColumn(");
-        AssertContains(fieldsText, "private static string NormalizeHeader(");
-        AssertContains(fieldsText, "private static double? ReadMetric(");
-        AssertContains(fieldsText, "private static List<string> SplitCsvLine(");
-        AssertContains(swapChainsText, "private static IReadOnlyList<PresentMonSwapChainSummary> BuildSwapChainSummaries(");
-        AssertContains(swapChainsText, "private static string? NormalizeSwapChainAddress(");
         AssertContains(correlationText, "private static PresentMonAppCorrelation BuildAppCorrelation(");
         AssertContains(correlationText, "private static string ClassifyPresentOutcome(");
         AssertContains(summaryText, "private static IReadOnlyList<string> BuildWarnings(");
@@ -87,7 +85,7 @@ static partial class Program
         AssertContains(summaryText, "private static double Percentile(");
         AssertDoesNotContain(csvText, "new StreamReader(path)");
         AssertDoesNotContain(csvText, "new PresentMonRow(");
-        AssertDoesNotContain(fieldsText, "private static bool HasAnyColumn(");
+        AssertDoesNotContain(csvRowsText, "private static List<string> SplitCsvLine(");
 
         AssertContains(pathsText, "private static Process? ResolveTargetProcess(");
         AssertContains(pathsText, "private static string? ResolvePresentMonPath(");
