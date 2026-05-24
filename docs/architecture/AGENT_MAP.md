@@ -3689,21 +3689,12 @@ Primary owners:
   segment-count parsing, strict export verification payload construction, and
   range-selection cleanup, plus the audio-toggle companion used by the range
   export audio-switch scenario.
-- Flashback export diagnostic scenario flows live in focused files:
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.cs` owns export
-  scenario task registration, concurrent export, and rotated export;
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
-  owns disable-during-export command coordination, file verification, and
-  post-disable/re-enable state checks;
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs`
-  owns export-during-playback command choreography, the pre-export Playing
-  sample, post-export playback continuity validation, and final go-live playback
-  command-health validation, and
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs` owns
-  selection-range export orchestration, range buffer-readiness waits, near-live
-  range projection, playback seeking plus in/out marker mutation, range
-  duration/status validation, and post-cleanup playback command-health
-  validation.
+- `tools/Common/DiagnosticSessionFlashbackExportScenarios.cs` owns Flashback
+  export diagnostic scenario task registration plus concurrent export, rotated
+  export, disable-during-export command coordination, export-during-playback
+  choreography, and selection-range export orchestration. Keep the scenario
+  registration, command flows, verification, cleanup, and playback
+  command-health checks together in this scenario-family owner.
 - `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs` owns
   Flashback playback disable/re-enable lifecycle diagnostic command flow,
   scenario registration, priority, task label, started action, post-disable

@@ -3354,18 +3354,12 @@ range-selection cleanup, plus the range export audio-switch companion command
 because it performs a stateful toggle/restore workflow. Scenario command
 sequencing lives in separate scenario owners.
 
-Diagnostic-session Flashback export scenarios now live in a focused partial
-family of named owners. `DiagnosticSessionFlashbackExportScenarios.cs` owns
-scenario task registration plus concurrent and rotated export flows.
-Disable-during-export command coordination, file verification, and
-post-disable/re-enable state checks live together in
-`DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`.
-Export-during-playback command choreography, pre-export Playing sampling,
-post-export playback continuity, and final go-live command-health validation now
-live together in `DiagnosticSessionFlashbackExportScenarios.Playback.cs`.
-Selection-range export orchestration, readiness waits, in/out marker mutation,
-range result validation, and post-cleanup command-health validation now live
-together in `DiagnosticSessionFlashbackExportScenarios.Range.cs`.
+Diagnostic-session Flashback export scenarios now live in
+`DiagnosticSessionFlashbackExportScenarios.cs`. It owns scenario task
+registration plus concurrent export, rotated export, disable-during-export
+command coordination, export-during-playback command choreography, selection
+range orchestration, verification, cleanup, and playback command-health
+validation for the export scenario family.
 Diagnostic-session startup makes a single qualified call into the export
 scenario owner. Do not reintroduce one-method registration partials.
 
@@ -3538,9 +3532,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackExportScenarios.cs`
-- `DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
-- `DiagnosticSessionFlashbackExportScenarios.Playback.cs`
-- `DiagnosticSessionFlashbackExportScenarios.Range.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.cs`
 - `DiagnosticSessionFlashbackMetrics.RecordingExport.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`

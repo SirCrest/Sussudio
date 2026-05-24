@@ -9,12 +9,9 @@ static partial class Program
         var scenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
         var rootText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.cs")
             .Replace("\r\n", "\n");
-        var disableDuringExportText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs")
-            .Replace("\r\n", "\n");
-        var playbackText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs")
-            .Replace("\r\n", "\n");
-        var rangeText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs")
-            .Replace("\r\n", "\n");
+        var disableDuringExportText = rootText;
+        var playbackText = rootText;
+        var rangeText = rootText;
         var scenariosTextWithoutSpaces = scenariosText.Replace(" ", string.Empty);
 
         AssertContains(scenariosText, "internal static partial class DiagnosticSessionFlashbackExportScenarios");
