@@ -2259,12 +2259,11 @@ enqueue signaling. `MjpegPreviewJitterBuffer.Queue.cs` owns queue depth, ordered
 frame insertion/dequeue, missing-sequence recovery, clear behavior, and resume
 reprime accounting. `MjpegPreviewJitterBuffer.Adaptive.cs` owns hard/soft
 deadline drops, adjusted output cadence, target-depth increase/decrease, and
-latency-pressure classification. `MjpegPreviewJitterBuffer.EmitLoop.cs` owns
-the paced emit loop control flow and MMCSS registration.
+latency-pressure classification. `MjpegPreviewJitterBuffer.cs` owns the paced
+emit loop control flow and MMCSS registration beside construction, thread
+lifecycle, suppression/reprime lifecycle, and dispose-time queue teardown.
 `MjpegPreviewJitterBuffer.FramePacing.cs` owns display-clock alignment, frame
-submission to the preview sink, tick waits, and timer-resolution P/Invoke. Keep
-the root file focused on construction, suppression/reprime lifecycle, and
-dispose-time queue teardown.
+submission to the preview sink, tick waits, and timer-resolution P/Invoke.
 
 Parallel MJPEG compressed input admission now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.CompressedQueue.cs`. Keep

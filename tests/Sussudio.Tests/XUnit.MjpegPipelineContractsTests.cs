@@ -79,8 +79,8 @@ public sealed class MjpegPipelineContractsTests
         => global::Program.MjpegPreviewJitter_ExposesAdaptiveDeadlinePolicy();
 
     [Fact]
-    public Task MjpegPreviewJitterEmitLoopLivesInFocusedPartial()
-        => global::Program.MjpegPreviewJitter_EmitLoopLivesInFocusedPartial();
+    public Task MjpegPreviewJitterEmitLoopLivesWithLifecycleRoot()
+        => global::Program.MjpegPreviewJitter_EmitLoopLivesWithLifecycleRoot();
 
     [Fact]
     public Task MjpegPreviewJitterDropsSoftDeadlineOverflowToRecoverLatency()
