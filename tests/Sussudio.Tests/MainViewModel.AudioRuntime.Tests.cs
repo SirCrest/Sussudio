@@ -6,9 +6,9 @@ static partial class Program
     {
         var mainViewModelStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
-        var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.MicrophoneControls.cs").Replace("\r\n", "\n");
+        var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.AudioBindings.cs").Replace("\r\n", "\n");
         var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlPresentationController.cs").Replace("\r\n", "\n");
-        var audioMeterText = ReadRepoFile("Sussudio/MainWindow.AudioMeter.cs").Replace("\r\n", "\n");
+        var audioMeterText = ReadRepoFile("Sussudio/MainWindow.AudioBindings.cs").Replace("\r\n", "\n");
         var audioMeterControllerRootText = ReadRepoFile("Sussudio/Controllers/Audio/Meter/AudioMeterController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadMainWindowCompositionSource();
 
@@ -19,6 +19,14 @@ static partial class Program
         AssertContains(audioControlPresentationControllerText, "HandleAudioPreviewActiveChanged();");
         AssertContains(audioControlPresentationControllerText, "_context.SetAudioMeterMonitoringState(_context.ViewModel.IsAudioPreviewActive);");
         AssertContains(audioMeterText, "private AudioMeterController _audioMeterController = null!;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.AudioMeter.cs")),
+            "Audio meter adapter folded into MainWindow.AudioBindings.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.MicrophoneControls.cs")),
+            "Microphone controls adapter folded into MainWindow.AudioBindings.cs");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _audioMeterMonitoringStoryboard;");
         AssertContains(audioMeterControllerRootText, "internal sealed class AudioMeterController");
         AssertContains(audioMeterControllerRootText, "private Storyboard? _audioMeterMonitoringStoryboard;");

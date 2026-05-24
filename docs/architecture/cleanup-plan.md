@@ -1138,7 +1138,8 @@ preview-volume binding and priming,
 audio/microphone/device-audio selection handlers,
 record/preview/custom-audio/microphone toggle handlers, audio-meter activation,
 initial meter presentation, and device-audio gain/meter resize hooks.
-`Sussudio/MainWindow.AudioBindings.cs` is the XAML-facing adapter;
+`Sussudio/MainWindow.AudioBindings.cs` is the XAML-facing audio, microphone,
+and audio-meter adapter;
 video-format collection setup, initial capture/recording option projection, and
 code-attached resolution/frame-rate handlers now live in
 `Sussudio/Controllers/Capture/CaptureOptionBindingController.cs`, with
@@ -3112,13 +3113,13 @@ Audio and microphone-specific ViewModel property projections now live in
 `Sussudio/Controllers/Audio/AudioControlPresentationController.cs`: audio toggles,
 monitoring meter state, preview volume slider sync, microphone enablement, and
 microphone volume sync. The controller also owns the audio property-change
-router; `Sussudio/MainWindow.MicrophoneControls.cs` is the XAML-facing
+router; `Sussudio/MainWindow.AudioBindings.cs` is the XAML-facing
 audio/microphone presentation adapter.
 
 Microphone volume slider synchronization, save triggers, shelf enablement, and
 mic-meter row animation state now live in
 `Sussudio/Controllers/Audio/MicrophoneControlsController.cs`.
-`MainWindow.MicrophoneControls.cs` is the XAML-facing audio/microphone
+`MainWindow.AudioBindings.cs` is the XAML-facing audio/microphone
 presentation adapter.
 
 Responsive shell layout is split between

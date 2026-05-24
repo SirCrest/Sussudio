@@ -132,6 +132,18 @@ CLI/MCP/pipe checks, if applicable: covered by automation diagnostics refresh-pi
 Behavior preserved: Preview and Flashback playback timeline entries still flow through the same typed projection records before final DTO initialization
 Notes for future agents: keep direct timeline projection records beside `BuildPerformanceTimelineEntry` unless a group grows independent policy or reusable ownership
 
+Date: 2026-05-23
+Area: MainWindow audio adapter locality
+Problem: Audio binding setup, audio-meter adapter calls, and microphone-control adapter calls lived in three small MainWindow partials even though they are all XAML-facing adapters over the same audio/microphone controller cluster.
+Files consolidated: `Sussudio/MainWindow.AudioMeter.cs`; `Sussudio/MainWindow.MicrophoneControls.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `MainWindow` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by MainWindow audio/controller ownership tests and runtime snapshot regression tests
+Behavior preserved: Audio/microphone binding, presentation, meter, and row-animation behavior still route through the same controller types
+Notes for future agents: keep XAML-facing audio/microphone adapter calls together in `MainWindow.AudioBindings.cs`; keep policy, animation state, and UI projection behavior in the audio controllers
+
 Date: 2026-05-21
 Area: Automation diagnostics Flashback evaluation
 Problem: Active/stalled Flashback export diagnostic verdict construction lived in a small partial even though it is only called by the Flashback diagnostic owner that orders storage, recording, export, and playback verdicts.
