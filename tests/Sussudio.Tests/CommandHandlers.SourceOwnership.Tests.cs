@@ -28,15 +28,17 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.PresentMon.cs")),
             "presentmon command routing lives with ssctl observability commands");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.CaptureControls.cs"), "HandleSetAsync");
+        var captureControlsSource = ReadRepoFile("tools/ssctl/CommandHandlers.CaptureControls.cs");
+        AssertContains(captureControlsSource, "HandleSetAsync");
         AssertSsctlCapturePipelineRoutingUsesAutomationCommandKinds();
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "HandleDeviceAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "AutomationCommandKind.RefreshDevices");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "AutomationCommandKind.GetCaptureOptions");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "AutomationCommandKind.SelectDevice");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "AutomationCommandKind.SelectAudioInputDevice");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "AutomationCommandKind.SetCustomAudioInput");
-        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "HandleWindowAsync");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.Device.cs")), "ssctl device commands stay folded into CaptureControls.cs");
+        AssertContains(captureControlsSource, "HandleDeviceAsync");
+        AssertContains(captureControlsSource, "AutomationCommandKind.RefreshDevices");
+        AssertContains(captureControlsSource, "AutomationCommandKind.GetCaptureOptions");
+        AssertContains(captureControlsSource, "AutomationCommandKind.SelectDevice");
+        AssertContains(captureControlsSource, "AutomationCommandKind.SelectAudioInputDevice");
+        AssertContains(captureControlsSource, "AutomationCommandKind.SetCustomAudioInput");
+        AssertDoesNotContain(captureControlsSource, "HandleWindowAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "HandleWindowAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.ArmClose");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.WindowAction");

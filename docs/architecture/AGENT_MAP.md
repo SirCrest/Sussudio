@@ -3449,13 +3449,12 @@ Primary owners:
   memory, audio-ramp, `presentmon` parsing/swap-chain discovery/probe
   invocation, and `diagnostic-session` parsing/runner invocation.
 - `tools/ssctl/CommandHandlers.CaptureControls.cs` owns preview/record,
-  screenshot/frame capture, and `set` capture/audio/output mutations, including
+  screenshot/frame capture, device refresh/list/select, audio-input selection,
+  custom-audio enablement, and `set` capture/audio/output mutations, including
   the shared set-value payload helper. Fixed ssctl automation routes should
   call shared enum overloads with `AutomationCommandKind` values; labels and
   wire command IDs remain catalog owned. Dynamic diagnostic-session runner
   command names stay string-based at the transport seam.
-- `tools/ssctl/CommandHandlers.Device.cs` owns device refresh/list/select,
-  audio-input selection, and custom-audio enablement.
 - `tools/ssctl/CommandHandlers.Window.cs` owns window close arming, window
   state/geometry actions, fullscreen toggles, snap commands, the
   recordings-folder CLI command, stats visibility, settings visibility, and

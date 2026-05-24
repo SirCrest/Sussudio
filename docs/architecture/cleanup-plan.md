@@ -403,10 +403,10 @@ commands: state, diagnostics, options, manifest, timeline, memory, audio-ramp,
 option parsing, and exit-code shaping; `tools/ssctl/SsctlHelpWriter.cs` owns
 the help facade, operator-facing help section text, and catalog-backed help
 lines.
-`CommandHandlers.CaptureControls.cs` owns preview/record/screenshot/frame and
+`CommandHandlers.CaptureControls.cs` owns preview/record/screenshot/frame,
+device refresh/list/select, audio-input selection, custom-audio enablement, and
 `set` capture/audio/output mutations, including the shared set-value payload
-helper. `CommandHandlers.Device.cs` owns device
-refresh/list/select, audio-input selection, and custom-audio enablement.
+helper.
 `CommandHandlers.Window.cs` owns window close arming, state/geometry actions,
 fullscreen toggles, snap commands, recordings-folder, stats visibility,
 settings visibility, and frame-time overlay CLI commands.

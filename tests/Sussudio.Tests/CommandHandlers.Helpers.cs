@@ -132,7 +132,6 @@ static partial class Program
             "tools/ssctl/CommandHandlers.Arguments.cs",
             "tools/ssctl/CommandHandlers.AutomationFlow.cs",
             "tools/ssctl/CommandHandlers.CaptureControls.cs",
-            "tools/ssctl/CommandHandlers.Device.cs",
             "tools/ssctl/CommandHandlers.Flashback.cs",
             "tools/ssctl/CommandHandlers.Flashback.Actions.cs",
             "tools/ssctl/CommandHandlers.Observability.cs",
