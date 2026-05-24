@@ -96,11 +96,9 @@ static partial class Program
     internal static Task DiagnosticSessionPostRunSnapshots_OwnTimelineAndFinalSnapshot()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
-        var postRunText = ReadRepoFile("tools/Common/DiagnosticSessionPostRunSnapshots.cs")
-            .Replace("\r\n", "\n");
+        var postRunText = ReadDiagnosticSessionRunExecutionRootSource();
 
-        AssertContains(postRunText, "internal static class DiagnosticSessionPostRunSnapshots");
-        AssertContains(postRunText, "internal static async Task<DiagnosticSessionPostRunSnapshotResult> CaptureAsync(");
+        AssertContains(postRunText, "private static async Task<DiagnosticSessionPostRunSnapshotResult> CapturePostRunSnapshotsAsync(");
         AssertContains(postRunText, "internal readonly record struct DiagnosticSessionPostRunSnapshotResult(");
         AssertContains(postRunText, "JsonElement HealthSnapshot,");
         AssertContains(postRunText, "setStage(\"timeline\")");
@@ -111,12 +109,13 @@ static partial class Program
         AssertContains(postRunText, "sendAsync(\"GetSnapshot\", null, null)");
         AssertContains(postRunText, "TryGetSnapshot(finalSnapshotResponse, out var finalSnapshot)");
         AssertContains(postRunText, "recordTerminalException(ex, \"final-snapshot\")");
-        AssertContains(runnerText, "DiagnosticSessionPostRunSnapshots.CaptureAsync(");
+        AssertContains(runnerText, "CapturePostRunSnapshotsAsync(");
         AssertContains(runnerText, "postRunSnapshots.HealthSnapshot");
         AssertContains(runnerText, "postRunSnapshots.Timeline");
-        AssertDoesNotContain(runnerText, "SetStage(\"timeline\")");
-        AssertDoesNotContain(runnerText, "\"GetPerformanceTimeline\"");
-        AssertDoesNotContain(runnerText, "RecordTerminalException(ex, \"final-snapshot\")");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionPostRunSnapshots.cs")),
+            "post-run timeline and final-snapshot capture lives with the runner completion phase");
 
         return Task.CompletedTask;
     }

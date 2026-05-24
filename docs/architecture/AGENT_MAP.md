@@ -3699,8 +3699,10 @@ Primary owners:
   scenario/completion context construction.
 - `tools/Common/DiagnosticSessionRunner.cs` owns the public diagnostic-session
   compatibility surface, phase sequencing around context creation, initial
-  snapshot capture, scenario phase invocation, cleanup, post-cleanup evidence/result sequence, result-build request mapping, result-build
-  invocation, terminal live-state write, and completion context handoff consumed by the post-cleanup completion phase. It also owns the
+  snapshot capture, scenario phase invocation, cleanup, post-cleanup evidence/result sequence, result-build
+  request mapping, post-run performance timeline and final health snapshot fetches, result-build
+  invocation, terminal live-state write, and completion context handoff consumed by the post-cleanup completion phase. Keep the
+  `timeline` and `final-snapshot` stage names stable there. It also owns the
   per-output-directory exclusive lock that prevents concurrent diagnostic
   sessions from writing the same artifact set.
 - `tools/Common/DiagnosticSessionScenarioPhaseRunner.cs` owns the named
@@ -3740,10 +3742,6 @@ Primary owners:
   verification action text, and Flashback recording validation. Keep the
   `settings-deferred-restore`, `recording-verification`, and
   `recording-validation` stage names stable there.
-- `tools/Common/DiagnosticSessionPostRunSnapshots.cs` owns post-run
-  diagnostic-session snapshot fetches: performance timeline collection and
-  final health snapshot refresh. Keep the `timeline` and `final-snapshot` stage
-  names stable there.
 - `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs` owns Flashback
   restart/encoder cycle diagnostic task registration, restart-cycle playback
   priming/restart/refill/export verification, and encoder-cycle preset cycling,

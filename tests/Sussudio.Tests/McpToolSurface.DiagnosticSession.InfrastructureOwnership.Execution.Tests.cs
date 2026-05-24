@@ -87,8 +87,7 @@ static partial class Program
         var recordingChecksText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
             .Replace("\r\n", "\n");
         var recordingVerificationText = recordingChecksText;
-        var postRunText = ReadRepoFile("tools/Common/DiagnosticSessionPostRunSnapshots.cs")
-            .Replace("\r\n", "\n");
+        var postRunText = completionRootText;
         var resultBuilderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
@@ -103,7 +102,7 @@ static partial class Program
         AssertContains(completionRootText, "DiagnosticSessionRecordingChecks.RunAsync(");
         AssertContains(completionRootText, "var verification = recordingCheckResult.Verification;");
         AssertContains(completionRootText, "context.ScenarioPhase.FlashbackRecordingSettingsDeferredPresetState");
-        AssertContains(completionRootText, "DiagnosticSessionPostRunSnapshots.CaptureAsync(");
+        AssertContains(completionRootText, "CapturePostRunSnapshotsAsync(");
         AssertContains(completionRootText, "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
         AssertContains(completionRootText, "CreateResultBuildRequest(");
         AssertContains(completionRootText, "context.ScenarioPhase.PresentMon");
@@ -115,7 +114,7 @@ static partial class Program
         AssertContains(executionText, "return await RunCompletionPhaseAsync(");
         AssertContains(executionText, "runContext.CreateCompletionContext(options, scenarioPhase, stoppedRecordingForVerification, cancellationToken)");
         AssertContains(executionText, "DiagnosticSessionRecordingChecks.RunAsync(");
-        AssertContains(executionText, "DiagnosticSessionPostRunSnapshots.CaptureAsync(");
+        AssertContains(executionText, "CapturePostRunSnapshotsAsync(");
         AssertContains(executionText, "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
         AssertContains(recordingVerificationText, "setStage(\"recording-verification\")");
         AssertContains(postRunText, "setStage(\"timeline\")");
@@ -125,8 +124,8 @@ static partial class Program
         AssertContains(agentMapText, "post-cleanup evidence/result sequence, result-build");
         AssertContains(cleanupPlanText, "`DiagnosticSessionRunner.cs` owns the completion context handoff");
         AssertContains(cleanupPlanText, "`DiagnosticSessionRunner.cs` owns the post-cleanup evidence/result sequence");
-        AssertOccursBefore(completionRootText, "DiagnosticSessionRecordingChecks.RunAsync(", "DiagnosticSessionPostRunSnapshots.CaptureAsync(");
-        AssertOccursBefore(completionRootText, "DiagnosticSessionPostRunSnapshots.CaptureAsync(", "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
+        AssertOccursBefore(completionRootText, "DiagnosticSessionRecordingChecks.RunAsync(", "CapturePostRunSnapshotsAsync(");
+        AssertOccursBefore(completionRootText, "CapturePostRunSnapshotsAsync(", "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
         AssertOccursBefore(completionRootText, "DiagnosticSessionResultBuilder.BuildAndWriteAsync(", "await context.WriteLiveStateBestEffortAsync(result.CompletedUtc, result.TerminalState)");
         AssertOccursBefore(postRunText, "setStage(\"timeline\")", "setStage(\"final-snapshot\")");
 

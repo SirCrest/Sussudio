@@ -3359,9 +3359,9 @@ result, skipped-verification action text, and Flashback recording validation
 while the runner keeps the high-level post-cleanup phase order.
 
 Diagnostic-session post-run snapshot fetches now live in
-`tools/Common/DiagnosticSessionPostRunSnapshots.cs`. It owns performance
-timeline artifact input and final health snapshot refresh while the runner
-keeps the high-level post-cleanup phase order.
+`tools/Common/DiagnosticSessionRunner.cs` beside the completion phase that
+orders them. It owns performance timeline artifact input and final health
+snapshot refresh.
 
 Diagnostic-session scenario metadata now lives in the
 `tools/Common/DiagnosticSessionScenarioCatalog.*.cs` family. The root catalog
@@ -3629,7 +3629,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResult.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionCommandChannel.cs`
-- `DiagnosticSessionPostRunSnapshots.cs`
 - `DiagnosticSessionResultArtifacts.cs`
 - `DiagnosticSessionResultBuilder.cs`
 - `DiagnosticSessionResultBuilder.Flattening.cs`

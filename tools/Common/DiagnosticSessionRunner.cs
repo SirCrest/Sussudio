@@ -79,7 +79,7 @@ public static class DiagnosticSessionRunner
             .ConfigureAwait(false);
         var verification = recordingCheckResult.Verification;
 
-        var postRunSnapshots = await DiagnosticSessionPostRunSnapshots.CaptureAsync(
+        var postRunSnapshots = await CapturePostRunSnapshotsAsync(
                 context.Samples,
                 context.InitialSnapshot,
                 context.CommandChannel.SendAsync,
@@ -154,6 +154,52 @@ public static class DiagnosticSessionRunner
             warnings);
     }
 
+    private static async Task<DiagnosticSessionPostRunSnapshotResult> CapturePostRunSnapshotsAsync(
+        IReadOnlyList<DiagnosticSessionSample> samples,
+        JsonElement initialSnapshot,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
+        Action<string> setStage,
+        Action<Exception, string> recordTerminalException)
+    {
+        JsonElement? timeline = null;
+        try
+        {
+            setStage("timeline");
+            var timelineResponse = await sendAsync(
+                    "GetPerformanceTimeline",
+                    new Dictionary<string, object?> { ["maxEntries"] = 240 },
+                    null)
+                .ConfigureAwait(false);
+            if (timelineResponse.TryGetProperty("Data", out var timelineData))
+            {
+                timeline = timelineData.Clone();
+            }
+        }
+        catch (Exception ex)
+        {
+            recordTerminalException(ex, "timeline");
+        }
+
+        var lastSnapshot = samples.Count > 0
+            ? samples[^1].Snapshot
+            : initialSnapshot;
+        var healthSnapshot = lastSnapshot;
+        try
+        {
+            setStage("final-snapshot");
+            var finalSnapshotResponse = await sendAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            healthSnapshot = DiagnosticSessionAutomationResponseJson.TryGetSnapshot(finalSnapshotResponse, out var finalSnapshot)
+                ? finalSnapshot
+                : lastSnapshot;
+        }
+        catch (Exception ex)
+        {
+            recordTerminalException(ex, "final-snapshot");
+        }
+
+        return new DiagnosticSessionPostRunSnapshotResult(healthSnapshot, timeline);
+    }
+
     private static FileStream AcquireOutputLock(string outputDirectory)
     {
         // Per-output-directory exclusive lock. Prevents two concurrent diagnostic-session
@@ -213,3 +259,7 @@ internal sealed class DiagnosticSessionCompletionContext
 
     internal required Func<DateTimeOffset?, string?, Task> WriteLiveStateBestEffortAsync { get; init; }
 }
+
+internal readonly record struct DiagnosticSessionPostRunSnapshotResult(
+    JsonElement HealthSnapshot,
+    JsonElement? Timeline);
