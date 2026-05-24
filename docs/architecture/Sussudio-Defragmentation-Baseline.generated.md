@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T06:20:17Z
+Generated UTC: 2026-05-24T06:30:08Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 803 |
+| Production .cs files | 802 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 80 (10.0%) |
-| Production .cs files under 80 lines | 150 (18.7%) |
+| Production .cs files under 60 lines | 79 (9.9%) |
+| Production .cs files under 80 lines | 149 (18.6%) |
 
 ## Largest partial-type clusters
 
@@ -56,8 +56,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 744 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs |
 | 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
-| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 | 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
+| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
@@ -111,7 +111,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 31 | Sussudio/Models/Automation/DiagnosticsEvents.cs |
 | 31 | Sussudio/Services/Recording/LibAvEncoder.MuxerOptions.cs |
 | 31 | Sussudio/Services/Runtime/TelemetryAgeHelper.cs |
-| 32 | Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs |
 | 34 | Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs |
 | 34 | Sussudio/Controllers/Shell/ShellElevationController.cs |
 | 34 | Sussudio/Services/Flashback/FlashbackDecoder.OutputTypes.cs |
@@ -146,6 +145,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 50 | tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs |
 | 50 | tools/McpServer/PipeClient.cs |
 | 51 | Sussudio/Services/Contracts/PooledVideoFrameLease.cs |
+| 52 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs |
 
 ## Notes
 

@@ -104,11 +104,35 @@ internal sealed class PreviewSurfaceShadowController
     }
 
     public void FadeInVideoFrameShadow(int delayMs, int durationMs)
-        => PreviewShadowFadeAnimator.FadeIn(_videoShadowVisual, delayMs, durationMs);
+        => FadeIn(_videoShadowVisual, delayMs, durationMs);
 
     public void FadeOutVideoFrameShadow(int durationMs)
-        => PreviewShadowFadeAnimator.FadeOut(_videoShadowVisual, durationMs);
+        => FadeOut(_videoShadowVisual, durationMs);
 
     public void FadeInControlBarShadow(int delayMs, int durationMs)
-        => PreviewShadowFadeAnimator.FadeIn(_controlBarShadowVisual, delayMs, durationMs);
+        => FadeIn(_controlBarShadowVisual, delayMs, durationMs);
+
+    private static void FadeIn(SpriteVisual? visual, int delayMs, int durationMs)
+    {
+        if (visual == null) return;
+
+        var compositor = visual.Compositor;
+        var animation = compositor.CreateScalarKeyFrameAnimation();
+        animation.InsertKeyFrame(0f, 0f);
+        animation.InsertKeyFrame(1f, 1f, compositor.CreateCubicBezierEasingFunction(new Vector2(0.25f, 0.1f), new Vector2(0.25f, 1f)));
+        animation.Duration = TimeSpan.FromMilliseconds(durationMs);
+        animation.DelayTime = TimeSpan.FromMilliseconds(delayMs);
+        visual.StartAnimation("Opacity", animation);
+    }
+
+    private static void FadeOut(SpriteVisual? visual, int durationMs)
+    {
+        if (visual == null) return;
+
+        var compositor = visual.Compositor;
+        var animation = compositor.CreateScalarKeyFrameAnimation();
+        animation.InsertKeyFrame(1f, 0f, compositor.CreateCubicBezierEasingFunction(new Vector2(0.25f, 0.1f), new Vector2(0.25f, 1f)));
+        animation.Duration = TimeSpan.FromMilliseconds(durationMs);
+        visual.StartAnimation("Opacity", animation);
+    }
 }

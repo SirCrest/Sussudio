@@ -1030,7 +1030,7 @@ reset handoff, and stable start/stop/shutdown/reinit-unsafe-window automation
 adapters. Preview surface sizing and GPU panel visibility now live in
 `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs`, while
 video/control-bar composition shadow visuals, bounds alignment, clear behavior,
-and fade routing live in
+and compositor opacity fade routing live in
 `Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs`.
 `Sussudio/MainWindow.PreviewSurface.cs` is the XAML-facing adapter.
 `Sussudio/Controllers/Preview/Renderer/PreviewRendererStartupPlanBuilder.cs` owns renderer
@@ -2904,9 +2904,8 @@ Preview shell/content fade and scale transitions, video-shadow fade timing, and
 unavailable-placeholder presentation now live in
 `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`.
 `Sussudio/MainWindow.PreviewTransitions.Composition.cs` wires preview-transition
-animation callbacks; video-shadow fade callbacks route through
-`PreviewSurfaceShadowController` and shared compositor shadow opacity fades live
-in `Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs`.
+animation callbacks; video-shadow fade callbacks and shared compositor shadow
+opacity fades route through `PreviewSurfaceShadowController`.
 
 Preview button glyph/tooltip presentation for Start Preview and Stop Preview
 now lives in `Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs`.

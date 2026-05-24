@@ -1205,7 +1205,8 @@ Primary current owners:
   surface content-fit sizing and GPU panel visibility.
   `Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs` owns
   video/control-bar composition shadow visuals, bounds alignment, clear behavior,
-  and fade routing. `MainWindow.PreviewSurface.cs` is the XAML-facing adapter.
+  and compositor opacity fade routing. `MainWindow.PreviewSurface.cs` is the
+  XAML-facing adapter.
 - `Sussudio/MainWindow.PreviewRenderer.Composition.cs` owns the stable
   automation preview snapshot adapter and context wiring alongside preview
   renderer host composition.
@@ -1307,9 +1308,9 @@ Primary current owners:
   `Sussudio/MainWindow.CaptureSelectionBindings.*.cs` adapter family and
   `MainWindow.StatusStripPresentation.cs`; broad domain property-name switches
   and status-strip routing logic live in focused controllers/partials.
-- `Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs` owns shared
-  compositor opacity fade helpers for preview shadow visuals.
-  `PreviewSurfaceShadowController` calls it without adding dispatcher hops.
+- `Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs` owns shared
+  compositor opacity fade helpers for preview shadow visuals without adding
+  dispatcher hops.
 - `Sussudio/Controllers/Audio/Meter/AudioMeterController.cs` owns audio/microphone meter
   setup, the XAML/view-model dependency bag, runtime fields, smoothing,
   peak/range markers, microphone meter clipping, reset behavior, timer lifetime,
@@ -2857,7 +2858,7 @@ Primary current owners:
   splash playback state, loading-phrase start/stop ordering, handoff into shell
   entrance, shell chrome/button/stats entrance choreography, deferred preview
   reveal logging, active-storyboard cleanup, and the delayed control-bar shadow
-  fade routed through `PreviewShadowFadeAnimator`.
+  fade routed through `PreviewSurfaceShadowController`.
   `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing launch
   entrance adapter.
 - `Sussudio/Controllers/Shell/ControlBarAnimationController.cs` owns the control-bar
@@ -2872,7 +2873,7 @@ Primary current owners:
   unavailable-placeholder fades, and startup/unavailable presentation prep.
   `Sussudio/MainWindow.PreviewTransitions.Composition.cs` wires
   preview-transition animation callbacks; video-shadow fade callbacks route
-  through `PreviewSurfaceShadowController` and `PreviewShadowFadeAnimator`.
+  through `PreviewSurfaceShadowController`.
 - `Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs` owns preview
   button glyph and tooltip presentation for Start Preview and Stop Preview.
   `Sussudio/MainWindow.PropertyChangedPreview.Composition.cs` wires preview button presentation callbacks and preview
