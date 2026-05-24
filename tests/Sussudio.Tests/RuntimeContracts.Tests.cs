@@ -207,15 +207,10 @@ internal static class RuntimeContractSource
         => ReadSourceFamily(new[]
         {
             "tools/ssctl/Formatters.Snapshot.cs",
-            "tools/ssctl/Formatters.Snapshot.CoreSections.cs",
-            "tools/ssctl/Formatters.Snapshot.Audio.cs",
-            "tools/ssctl/Formatters.Snapshot.Recording.cs",
-            "tools/ssctl/Formatters.Snapshot.ProcessResources.cs",
             "tools/ssctl/Formatters.Snapshot.CaptureSettings.cs",
             "tools/ssctl/Formatters.Snapshot.CaptureCadence.cs",
             "tools/ssctl/Formatters.Snapshot.AvSync.cs",
             "tools/ssctl/Formatters.Snapshot.Source.cs",
-            "tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs",
             "tools/ssctl/Formatters.Snapshot.Flashback.cs",
             "tools/ssctl/Formatters.Snapshot.Mjpeg.cs",
             "tools/ssctl/Formatters.Snapshot.Preview.cs",

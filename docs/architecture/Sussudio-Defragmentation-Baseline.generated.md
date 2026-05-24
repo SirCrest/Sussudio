@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T01:13:28Z
+Generated UTC: 2026-05-24T01:21:38Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 883 |
+| Production .cs files | 878 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 143 (16.2%) |
-| Production .cs files under 80 lines | 235 (26.6%) |
+| Production .cs files under 60 lines | 137 (15.6%) |
+| Production .cs files under 80 lines | 229 (26.1%) |
 
 ## Largest partial-type clusters
 
@@ -22,11 +22,11 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | AutomationDiagnosticsHub | 33 | 10082 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.RealtimePreview.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluation.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Recording.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs |
 | MainWindow | 24 | 2555 | Sussudio/MainWindow.AudioBindings.cs, Sussudio/MainWindow.Bindings.cs, Sussudio/MainWindow.ButtonActions.cs, Sussudio/MainWindow.CaptureOptionBindings.cs, Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs, Sussudio/MainWindow.ControllerInitialization.cs, Sussudio/MainWindow.Flashback.Interactions.cs, Sussudio/MainWindow.Flashback.Presentation.cs |
 | LibAvEncoder | 21 | 3059 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.AudioInitialization.cs, Sussudio/Services/Recording/LibAvEncoder.AudioQueue.cs, Sussudio/Services/Recording/LibAvEncoder.AudioSetup.cs, Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs, Sussudio/Services/Recording/LibAvEncoder.AvSync.cs, Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs, Sussudio/Services/Recording/LibAvEncoder.cs |
-| Formatters | 21 | 1097 | tools/ssctl/Formatters.Common.cs, tools/ssctl/Formatters.Diagnostics.cs, tools/ssctl/Formatters.Memory.cs, tools/ssctl/Formatters.Options.cs, tools/ssctl/Formatters.Snapshot.Audio.cs, tools/ssctl/Formatters.Snapshot.AvSync.cs, tools/ssctl/Formatters.Snapshot.CaptureCadence.cs, tools/ssctl/Formatters.Snapshot.CaptureSettings.cs |
 | FlashbackPlaybackController | 19 | 5007 | Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.CommandTelemetry.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs |
 | AutomationCommandDispatcher | 18 | 1675 | Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.AudioControlCommands.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.CaptureControlCommands.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.CommandParsing.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.DeviceCommands.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.FlashbackCommands.cs |
 | NativeXuAtCommandProvider | 18 | 2689 | Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AnalogGain.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioCommands.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioSwitch.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommandReads.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommands.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DiagnosticSummary.cs |
 | CommandHandlers | 17 | 1083 | tools/ssctl/CommandHandlers.Arguments.cs, tools/ssctl/CommandHandlers.AutomationFlow.cs, tools/ssctl/CommandHandlers.CaptureControls.cs, tools/ssctl/CommandHandlers.Context.cs, tools/ssctl/CommandHandlers.cs, tools/ssctl/CommandHandlers.Device.cs, tools/ssctl/CommandHandlers.DiagnosticSession.cs, tools/ssctl/CommandHandlers.Flashback.Actions.cs |
+| Formatters | 16 | 1056 | tools/ssctl/Formatters.Common.cs, tools/ssctl/Formatters.Diagnostics.cs, tools/ssctl/Formatters.Memory.cs, tools/ssctl/Formatters.Options.cs, tools/ssctl/Formatters.Snapshot.AvSync.cs, tools/ssctl/Formatters.Snapshot.CaptureCadence.cs, tools/ssctl/Formatters.Snapshot.CaptureSettings.cs, tools/ssctl/Formatters.Snapshot.cs |
 | MfSourceReaderVideoCapture | 15 | 2220 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.Cadence.cs, Sussudio/Services/Capture/MfSourceReaderVideoCapture.ConvertedMediaType.cs, Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs, Sussudio/Services/Capture/MfSourceReaderVideoCapture.DeviceEnumeration.cs, Sussudio/Services/Capture/MfSourceReaderVideoCapture.Diagnostics.cs, Sussudio/Services/Capture/MfSourceReaderVideoCapture.DxgiBuffers.cs, Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs, Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameLayout.cs |
 | FlashbackEncoderSink | 15 | 2737 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.DisposeLifecycle.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingProgress.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateExecution.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateRequests.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.Audio.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.Video.cs |
 | FlashbackExporter | 14 | 3102 | Sussudio/Services/Flashback/FlashbackExporter.Execution.cs, Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs, Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs, Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs, Sussudio/Services/Flashback/FlashbackExporter.RuntimePolicy.cs, Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketReadLoop.cs, Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketRebasing.cs, Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs |
@@ -55,8 +55,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 744 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs |
 | 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
-| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 | 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
+| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
@@ -99,15 +99,12 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 14 | Sussudio/Models/Automation/FlashbackSegmentInfo.cs |
 | 14 | Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs |
 | 16 | tools/McpServer/Program.cs |
-| 16 | tools/ssctl/Formatters.Snapshot.Audio.cs |
 | 17 | Sussudio/Services/Preview/PreviewDisplayClock.cs |
 | 17 | tools/KsAudioNodeProbe/Program.Constants.cs |
 | 18 | Sussudio/Services/Automation/DiagnosticThresholds.cs |
 | 18 | tools/Common/DiagnosticSessionJsonArtifacts.cs |
 | 18 | tools/ssctl/CommandHandlers.Context.cs |
-| 18 | tools/ssctl/Formatters.Snapshot.CoreSections.cs |
 | 19 | Sussudio/Services/Telemetry/DisabledSourceSignalTelemetryProvider.cs |
-| 19 | tools/ssctl/Formatters.Snapshot.Recording.cs |
 | 20 | tools/ssctl/Formatters.Snapshot.CaptureCadence.cs |
 | 22 | Sussudio/ViewModels/DeviceAudioGainMapper.cs |
 | 22 | tools/ssctl/SsctlHelpWriter.cs |
@@ -115,12 +112,10 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 23 | Sussudio/ViewModels/OutputDriveSpacePresentationBuilder.cs |
 | 23 | tools/ssctl/Formatters.Snapshot.Runtime.cs |
 | 23 | tools/ssctl/Formatters.Snapshot.Source.cs |
-| 24 | tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs |
 | 25 | tools/Common/DiagnosticSessionRunner.cs |
 | 25 | tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs |
 | 25 | tools/ssctl/CommandHandlers.Flashback.Export.cs |
 | 27 | Sussudio/Services/Contracts/PreviewFrameTracking.cs |
-| 27 | tools/ssctl/Formatters.Snapshot.ProcessResources.cs |
 | 28 | tools/Common/DiagnosticSessionModels.cs |
 | 29 | Sussudio/Services/Capture/HdrOutputPolicy.cs |
 | 30 | tools/McpServer/Tools/FlashbackTools.Segments.cs |
@@ -146,6 +141,11 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 34 | Sussudio/Services/Flashback/FlashbackDecoder.OutputTypes.cs |
 | 34 | tools/McpServer/Tools/FlashbackTools.cs |
 | 34 | tools/McpServer/Tools/PresentMonTools.Correlation.cs |
+| 35 | tools/McpServer/Tools/McpToolResultFactory.cs |
+| 36 | Sussudio/Controllers/Shell/ShellPropertyChangedController.cs |
+| 36 | tools/McpServer/Tools/VerificationTools.Assertions.cs |
+| 36 | tools/ssctl/Formatters.Diagnostics.cs |
+| 37 | Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs |
 
 ## Notes
 

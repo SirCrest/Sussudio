@@ -264,6 +264,18 @@ CLI/MCP/pipe checks, if applicable: covered by ssctl command-handler routing/sou
 Behavior preserved: Flag removal, optional flag value parsing, usage exceptions, JSON detection, and pretty JSON formatting are unchanged
 Notes for future agents: keep generic ssctl command argument parsing helpers in `CommandHandlers.Arguments.cs`; keep primitive/domain value parsing in `CommandHandlers.Values.cs` and transport response handling in `CommandHandlers.Transport.cs`
 
+Date: 2026-05-24
+Area: ssctl simple snapshot section formatting
+Problem: Simple snapshot row sections for state, audio, recording, diagnostics, performance, and memory/GC lived in five tiny formatter partials even though they are only called by the root snapshot formatter in fixed output order.
+Files consolidated: `tools/ssctl/Formatters.Snapshot.CoreSections.cs`; `tools/ssctl/Formatters.Snapshot.Audio.cs`; `tools/ssctl/Formatters.Snapshot.Recording.cs`; `tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs`; `tools/ssctl/Formatters.Snapshot.ProcessResources.cs`
+Files added: none
+Net production .cs delta: -5
+Partial clusters reduced: `Formatters` -5 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: covered by ssctl formatter ownership/output tests and runtime snapshot regression tests
+Behavior preserved: Snapshot section order, headers, field names, and formatted text for state, audio, recording, diagnostics, performance, and memory/GC are unchanged
+Notes for future agents: keep simple one-pass snapshot row sections in `Formatters.Snapshot.cs`; keep policy-heavy or branching sections such as capture settings, Flashback, MJPEG, preview/D3D, source, runtime pipeline, and thread health in their focused owners
+
 Date: 2026-05-21
 Area: Automation diagnostics Flashback evaluation
 Problem: Active/stalled Flashback export diagnostic verdict construction lived in a small partial even though it is only called by the Flashback diagnostic owner that orders storage, recording, export, and playback verdicts.

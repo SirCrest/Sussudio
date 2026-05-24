@@ -3620,17 +3620,10 @@ Primary owners:
   command partials.
 - The `tools/ssctl/Formatters.*.cs` partial family is the console projection
   facade only.
-- `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration and
-  section ordering only.
-- `tools/ssctl/Formatters.Snapshot.CoreSections.cs` owns the Sussudio state,
-  capture-command summary, selected-device, and initialized/preview/recording
-  snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Audio.cs` owns audio enablement, preview,
-  signal, clipping, reader, and audio-frame snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Recording.cs` owns recording output,
-  backend, integrity, audio-integrity, and last-finalize snapshot text.
-- `tools/ssctl/Formatters.Snapshot.ProcessResources.cs` owns legacy
-  performance, process CPU, Memory/GC, and thread-pool snapshot text.
+- `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration, section
+  ordering, and simple row sections for Sussudio state/capture-command summary,
+  audio, recording, diagnostics, legacy performance, process CPU, Memory/GC,
+  and thread-pool snapshot text.
 - `tools/ssctl/Formatters.Snapshot.CaptureSettings.cs` owns capture settings
   text and friendly/exact frame-rate summary formatting.
 - `tools/ssctl/Formatters.Snapshot.CaptureCadence.cs` owns capture cadence,
@@ -3640,8 +3633,6 @@ Primary owners:
   correction snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Source.cs` owns source dimensions, source
   frame-rate summary, HDR, and source telemetry snapshot text.
-- `tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs` owns diagnostic health,
-  summary, evidence, and frame-lane snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot
   active/failure gating, section and encoding subsection ordering, Flashback
   encoder/buffer/cache/cleanup text, queue-latency/backpressure/failure/GPU

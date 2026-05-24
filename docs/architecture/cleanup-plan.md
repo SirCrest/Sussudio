@@ -446,18 +446,16 @@ shared command sending plus response exit-code shaping. Command-family payload
 helpers stay with their owning command partials.
 
 The `tools/ssctl/Formatters.*.cs` partial family is only the projection facade
-for console output. Keep app snapshot orchestration and section ordering in `Formatters.Snapshot.cs`,
-state/capture-command, audio, legacy performance, and Memory/GC text
-in `Formatters.Snapshot.CoreSections.cs`, recording output, backend, integrity,
-audio-integrity, and last-finalize text in `Formatters.Snapshot.Recording.cs`,
+for console output. Keep app snapshot orchestration, section ordering, and
+simple state/capture-command, audio, recording, diagnostics, legacy
+performance, process CPU, Memory/GC, and thread-pool text in
+`Formatters.Snapshot.cs`,
 capture settings and friendly/exact
 frame-rate text in `Formatters.Snapshot.CaptureSettings.cs`, capture cadence,
 embedded AV-sync drift, and source-signal text in
 `Formatters.Snapshot.CaptureCadence.cs`, video-pipeline text in
 `Formatters.Snapshot.Runtime.cs`, preview renderer-mode routing/non-D3D
-fallback text in `Formatters.Snapshot.Preview.cs`,
-diagnostic health/frame-lane text in `Formatters.Snapshot.DiagnosticLanes.cs`,
-Flashback snapshot gating/order, encoding status/health text, export
+fallback text in `Formatters.Snapshot.Preview.cs`, Flashback snapshot gating/order, encoding status/health text, export
 progress/result text, playback command text, and playback cadence/decode/frame/
 stage/A/V drift text in `Formatters.Snapshot.Flashback.cs`, MJPEG
 activation/header/order, decode/copy/callback/per-decoder timing,
