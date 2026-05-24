@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T07:34:17Z
+Generated UTC: 2026-05-24T07:38:11Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 789 |
+| Production .cs files | 786 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 66 (8.4%) |
-| Production .cs files under 80 lines | 134 (17.0%) |
+| Production .cs files under 60 lines | 62 (7.9%) |
+| Production .cs files under 80 lines | 130 (16.5%) |
 
 ## Largest partial-type clusters
 
@@ -94,7 +94,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 12 | Sussudio/LoggingJsonContext.cs |
 | 12 | Sussudio/Services/Preview/ILiveVideoSource.cs |
 | 14 | Sussudio.Automation.Contracts/AutomationPipeSecurityPolicy.cs |
-| 14 | Sussudio/Models/Automation/FlashbackSegmentInfo.cs |
 | 14 | Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs |
 | 16 | tools/McpServer/Program.cs |
 | 17 | Sussudio/Services/Preview/PreviewDisplayClock.cs |
@@ -102,13 +101,11 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 19 | Sussudio/Services/Telemetry/DisabledSourceSignalTelemetryProvider.cs |
 | 19 | tools/NativeXuAudioProbe/ToolRuntimeShims.cs |
 | 22 | Sussudio/ViewModels/DeviceAudioGainMapper.cs |
-| 23 | Sussudio/Models/Automation/PreviewStartup.cs |
 | 23 | Sussudio/ViewModels/OutputDriveSpacePresentationBuilder.cs |
 | 25 | tools/Common/DiagnosticSessionRunner.cs |
 | 27 | Sussudio/Services/Contracts/PreviewFrameTracking.cs |
 | 28 | tools/Common/DiagnosticSessionModels.cs |
 | 29 | Sussudio/Services/Capture/HdrOutputPolicy.cs |
-| 31 | Sussudio/Models/Automation/DiagnosticsEvents.cs |
 | 34 | Sussudio/Services/Flashback/FlashbackDecoder.OutputTypes.cs |
 | 35 | tools/McpServer/Tools/McpToolResultFactory.cs |
 | 37 | Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs |
@@ -118,7 +115,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 40 | Sussudio/ViewModels/MainViewModel.AutomationSettings.cs |
 | 40 | tools/NativeXuAudioProbe/Program.Commands.cs |
 | 41 | tools/Common/DiagnosticSessionAutomationResponseJson.cs |
-| 42 | Sussudio/Models/Automation/WindowAutomation.cs |
 | 44 | Sussudio/Services/Recording/LibAvEncoder.Models.cs |
 | 45 | Sussudio/Controllers/Preview/Startup/PreviewStartupOverlayController.cs |
 | 45 | tools/McpServer/Tools/DiagnosticSessionTools.cs |
@@ -146,6 +142,10 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 56 | tools/ssctl/Formatters.Snapshot.ThreadHealth.cs |
 | 57 | tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs |
 | 57 | tools/Common/DiagnosticSessionPostRunSnapshots.cs |
+| 58 | Sussudio/Services/Automation/AutomationCommandDispatcher.VerificationCommands.cs |
+| 59 | Sussudio/Controllers/Capture/CaptureDeviceActionController.cs |
+| 59 | Sussudio/Controllers/Stats/StatsSnapshotProvider.cs |
+| 59 | Sussudio/ViewModels/BitrateSampleWindow.cs |
 
 ## Notes
 

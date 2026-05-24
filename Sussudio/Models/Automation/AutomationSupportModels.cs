@@ -2,6 +2,64 @@ using System;
 
 namespace Sussudio.Models;
 
+public sealed class FlashbackSegmentInfo
+{
+    public string Path { get; init; } = "";
+    public int SequenceNumber { get; init; }
+    public long StartPtsMs { get; init; }
+    public long EndPtsMs { get; init; }
+    public long SizeBytes { get; init; }
+    public bool IsActive { get; init; }
+}
+
+public enum DiagnosticsSeverity
+{
+    Info,
+    Warning,
+    Error
+}
+
+public enum DiagnosticsCategory
+{
+    Control,
+    Capture,
+    Preview,
+    Audio,
+    Recording,
+    Flashback,
+    Verification,
+    System
+}
+
+public sealed class DiagnosticsEvent
+{
+    public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+    public DiagnosticsSeverity Severity { get; init; } = DiagnosticsSeverity.Info;
+    public DiagnosticsCategory Category { get; init; } = DiagnosticsCategory.System;
+    public string Message { get; init; } = string.Empty;
+    public string? CorrelationId { get; init; }
+}
+
+public enum PreviewStartupStrategy
+{
+    None,
+    GpuMediaSourceNoFrameReader,
+    GpuMediaSourceWithFrameReader,
+    CpuSoftwareBitmap,
+    DirectShow,
+    D3D11VideoProcessor
+}
+
+[Flags]
+public enum PreviewStartupSignalFlags
+{
+    None = 0,
+    MediaOpened = 1 << 0,
+    FirstCaptureFrame = 1 << 1,
+    PlaybackAdvancing = 1 << 2,
+    FirstVisual = 1 << 3
+}
+
 public sealed class PreviewFrameCaptureResult
 {
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
