@@ -1,3 +1,4 @@
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -7,7 +8,7 @@ static partial class Program
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.WindowShell.cs").Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
         var appClosingControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAppClosingController.cs").Replace("\r\n", "\n");
-        var closeRequestControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRequestController.cs").Replace("\r\n", "\n");
+        var closeRequestControllerText = closeLifecycleControllerText;
 
         AssertContains(closeLifecycleText, "private readonly WindowCloseLifecycleController _windowCloseLifecycleController = new();");
         AssertContains(closeLifecycleText, "private readonly WindowCloseRecordingFinalizationController _windowCloseRecordingFinalizationController = new();");
@@ -77,6 +78,10 @@ static partial class Program
         AssertContains(closeRequestControllerText, "catch (COMException ex)");
         AssertContains(closeRequestControllerText, "_context.ExitApplication();");
         AssertContains(closeRequestControllerText, "_context.LifecycleController.ResetRequestedAfterFailure();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Window", "WindowCloseRequestController.cs")),
+            "close request execution lives with close lifecycle policy");
 
         AssertDoesNotContain(closeLifecycleText, "args.Cancel = true;");
         AssertDoesNotContain(closeLifecycleText, "if (!ViewModel.IsRecording && !ViewModel.IsRecordingTransitioning)");

@@ -1074,9 +1074,8 @@ refreshes are driven by status/recording presentation.
 Window close lifecycle and native window helpers are now explicit:
 `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs` owns close request
 flags, completion TCS, cleanup latch, close-in-progress classification, and
-automation close dispatch orchestration.
-`Sussudio/Controllers/Window/WindowCloseRequestController.cs` owns actual close
-request execution: `Close()`, completion timing after non-recording closes,
+automation close dispatch orchestration plus actual close request execution:
+`Close()`, completion timing after non-recording closes,
 close-in-progress success handling, COM `Application.Current.Exit()` fallback,
 and requested-state reset after unexpected failures.
 `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs` owns the

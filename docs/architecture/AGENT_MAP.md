@@ -1245,10 +1245,8 @@ Primary current owners:
   adapter and builds the ViewModel snapshot passed into the controller.
 - `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs` owns window close
   request flags, completion TCS, cleanup latch, recording-stop handoff flags,
-  close-in-progress exception classification, and automation close dispatch
-  orchestration.
-- `Sussudio/Controllers/Window/WindowCloseRequestController.cs` owns actual
-  close request execution: `Close()`, completion timing after non-recording
+  close-in-progress exception classification, automation close dispatch
+  orchestration, and actual close request execution: `Close()`, completion timing after non-recording
   closes, close-in-progress success handling, COM `Application.Current.Exit()`
   fallback, and requested-state reset after unexpected failures.
 - `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs` owns

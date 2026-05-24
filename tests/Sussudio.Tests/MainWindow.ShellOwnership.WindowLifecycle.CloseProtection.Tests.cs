@@ -12,8 +12,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var appClosingControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAppClosingController.cs")
             .Replace("\r\n", "\n");
-        var closeRequestControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRequestController.cs")
-            .Replace("\r\n", "\n");
+        var closeRequestControllerText = closeLifecycleControllerText;
         var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs")
             .Replace("\r\n", "\n");
 
