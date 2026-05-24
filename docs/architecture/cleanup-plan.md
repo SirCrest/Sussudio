@@ -2923,7 +2923,7 @@ application, and the circle/pill width morph.
 recording action and recording-state presentation adapters.
 
 Recording button command execution and preview-state logging after a recording
-start now live in `Sussudio/Controllers/Recording/Button/RecordingButtonActionController.cs`.
+start now live in `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs`.
 `MainWindow.ButtonActions.cs` is the XAML-facing adapter for recording,
 capture-device, and output-path button workflows.
 
