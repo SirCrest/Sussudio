@@ -280,8 +280,8 @@ event storage.
 verification entry points, flashback-export verification profile shaping, event
 publication for explicit verification, last-verification snapshot state,
 post-recording auto-verification gating, and background scheduling.
-`AutomationDiagnosticsHub.DiagnosticEvaluation.cs` owns diagnostic verdict
-orchestration and the final healthy/mixed fallback.
+`AutomationDiagnosticsHub.Evaluation.cs` owns performance scoring, diagnostic
+verdict orchestration, and the final healthy/mixed fallback.
 `AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs` owns Flashback-specific
 diagnostic verdict ordering plus Flashback storage pressure, active/stalled
 export, playback command, playback performance, frametime, and submission
@@ -302,9 +302,8 @@ orchestration, MJPEG decode lane formatting, recording/audio lane formatting,
 source cadence/source-signal lane formatting, preview scheduler/renderer/
 present/display/visual-cadence lane formatting, Flashback recording/export/
 playback lane formatting, and lane DTOs used by diagnostic verdicts.
-`AutomationDiagnosticsHub.Evaluation.cs` owns performance scoring, shared
-alert-detail formatting, and health classifiers used by alerts and diagnostic
-evaluation.
+`AutomationDiagnosticsHub.Evaluation.cs` owns shared alert-detail formatting
+and health classifiers used by alerts and diagnostic evaluation.
 `AutomationDiagnosticsHub.Hdr.cs` owns HDR truth classification from capture
 pipeline, source-HDR, and verification metadata evidence, plus preview HDR
 input detection, HDR pixel-format helpers used by preview state, and tone-map

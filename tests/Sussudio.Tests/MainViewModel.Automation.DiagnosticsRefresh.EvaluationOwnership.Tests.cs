@@ -5,10 +5,10 @@ static partial class Program
         AssertContains(diagnostics.EvaluationText, "private static string FormatPreviewSlowFrameAlertDetail");
         AssertContains(diagnostics.EvaluationText, "private static bool IsCaptureOnePercentLowDegraded(");
         AssertContains(diagnostics.EvaluationText, "private PerformanceEvaluation EvaluatePerformance(");
-        AssertContains(diagnostics.DiagnosticEvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationText, "var lanes = BuildDiagnosticEvaluationLanes(");
-        AssertContains(diagnostics.DiagnosticEvaluationText, "var flashbackDiagnostic = TryBuildFlashbackDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationText, "var realtimeDiagnostic = TryBuildRealtimeDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "var lanes = BuildDiagnosticEvaluationLanes(");
+        AssertContains(diagnostics.EvaluationText, "var flashbackDiagnostic = TryBuildFlashbackDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "var realtimeDiagnostic = TryBuildRealtimeDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "private static DiagnosticEvaluation? TryBuildFlashbackDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "TryBuildFlashbackStorageDiagnosticEvaluation(health, lanes)");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "TryBuildFlashbackRecordingDiagnosticEvaluation(health, isRecording, recentFlashbackRecording, lanes)");
@@ -74,9 +74,9 @@ static partial class Program
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "Renderer pacing is the likely preview bottleneck.");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "Present/display cadence is the likely preview bottleneck.");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "Present/display 1% low is below target.");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationText, "\"flashback_storage\"");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationText, "\"source_capture\"");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationText, "var sourceTarget =");
+        AssertDoesNotContain(diagnostics.EvaluationText, "\"flashback_storage\"");
+        AssertDoesNotContain(diagnostics.EvaluationText, "\"source_capture\"");
+        AssertDoesNotContain(diagnostics.EvaluationText, "var sourceTarget =");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static DiagnosticEvaluationLanes BuildDiagnosticEvaluationLanes(");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildSourceLane(health)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildPreviewLane(");
@@ -101,7 +101,10 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private readonly record struct DiagnosticEvaluationRenderLane(");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "var sourceTarget =");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private readonly record struct DiagnosticEvaluationLanes(");
-        AssertDoesNotContain(diagnostics.EvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvaluation.cs")),
+            "Root diagnostic evaluation partial folded into Evaluation owner");
         AssertDoesNotContain(diagnostics.HubText, "private PerformanceEvaluation EvaluatePerformance(");
         AssertDoesNotContain(diagnostics.HubText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
     }

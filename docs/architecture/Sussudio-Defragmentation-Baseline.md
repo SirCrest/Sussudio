@@ -1403,3 +1403,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: covered by diagnostic-session runner, scenario execution, artifact/result, ssctl, and MCP tool-surface tests
 Behavior preserved: Diagnostic-session public `RunAsync`/`Format` surface, phase order, output locking, cleanup, recording checks, post-run snapshots, result-build handoff, and live-state terminal write remain unchanged
 Notes for future agents: keep the visible diagnostic-session phase plan with `DiagnosticSessionRunner.cs`; use named collaborators for context, scenario phase execution, cleanup, recording checks, post-run snapshots, and result building
+
+Date: 2026-05-24
+Area: Automation diagnostics evaluation locality
+Problem: `AutomationDiagnosticsHub.DiagnosticEvaluation.cs` was a 115-line root verdict orchestration partial while `AutomationDiagnosticsHub.Evaluation.cs` already owned the performance score, diagnostic helpers, and health classifiers used to choose that verdict.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluation.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics source-ownership tests and runtime snapshot regression tests
+Behavior preserved: Diagnostic verdict ordering still builds lanes first, checks Flashback-specific verdicts, checks realtime verdicts, and falls back to the same healthy/mixed summary/evidence
+Notes for future agents: keep root diagnostic verdict orchestration with `AutomationDiagnosticsHub.Evaluation.cs`; keep Flashback, realtime, preview, and lane-specific verdict policy in their focused owners while they carry independent branching
