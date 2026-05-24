@@ -1332,8 +1332,7 @@ Primary current owners:
   visibility application; `Sussudio/MainWindow.StatsOverlay.Composition.cs`
   owns the XAML/automation adapter for that stats shell wiring.
   `Sussudio/Controllers/Stats/StatsWindowPresentationController.cs`
-  owns detached stats-window metric text and delegates dynamic telemetry detail
-  rendering to `Sussudio/Controllers/Stats/StatsWindowTelemetryDetailsController.cs`.
+  owns detached stats-window metric text and dynamic telemetry detail rendering.
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns shell stats snapshot
   orchestration from capture-health, renderer metrics, and view state, including
   renderer cadence/recent-sample acquisition and null fallback policy.
@@ -2784,14 +2783,11 @@ Primary current owners:
   Flashback marker placement, selection-region layout, and compact duration
   text formatting. `Sussudio/MainWindow.Flashback.Presentation.cs` wires marker
   presentation callbacks.
-- `Sussudio/Controllers/Flashback/FlashbackPlaybackPresentationController.cs` owns
-  Flashback play/pause glyph policy, Go Live enabled state, buffer-duration
-  text, and floating playhead label text. `Sussudio/MainWindow.Flashback.Presentation.cs`
-  wires the playback presentation controller and playback UI coordinator.
 - `Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs` owns Flashback
   playback UI sequencing: track-resize snap/position/marker/CTI refresh order,
-  playback state polling start/stop, buffer-fill/position/marker refresh order,
-  and position-label updates with CTI re-anchor gating.
+  playback state polling start/stop, play/pause glyph policy, Go Live enabled
+  state, buffer-duration text, buffer-fill/position/marker refresh order, and
+  position-label updates with CTI re-anchor gating.
 - `Sussudio/Controllers/Flashback/FlashbackCommandController.cs` owns Flashback command
   semantics for in/out points, clear, play/pause, Go Live, fullscreen keyboard
   shortcuts including left/right nudge rejection logging, export, save-last-5m,

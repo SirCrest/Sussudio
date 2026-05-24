@@ -2530,9 +2530,8 @@ now live in `Sussudio/Controllers/Stats/StatsSectionChromeController.cs`.
 adapter for the stats shell wiring and delegates controller/provider composition to
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
 Detached stats-window metric text now lives in
-`Sussudio/Controllers/Stats/StatsWindowPresentationController.cs`, while dynamic
-telemetry-detail clearing, empty state, group headers, and row rendering live
-in `Sussudio/Controllers/Stats/StatsWindowTelemetryDetailsController.cs`, with
+`Sussudio/Controllers/Stats/StatsWindowPresentationController.cs`, along with
+dynamic telemetry-detail clearing, empty state, group headers, and row rendering, with
 `Sussudio/StatsWindow.xaml.cs` kept to lifecycle, sizing, polling, controller
 composition, and always-on-top behavior.
 Stats overlay lifecycle, stats dock refresh, stats section chrome, and
@@ -2646,17 +2645,12 @@ in/out marker visibility, selection-region layout, and `m:ss` formatting.
 `Sussudio/MainWindow.Flashback.Presentation.cs`
 wires marker presentation callbacks.
 
-Flashback playback presentation now lives in
-`Sussudio/Controllers/Flashback/FlashbackPlaybackPresentationController.cs`: play/pause
-glyph policy, Go Live enabled state, buffer-duration text, and floating
-playhead label text. `Sussudio/MainWindow.Flashback.Presentation.cs` wires the playback
-presentation controller and playback UI coordinator.
-
 Flashback playback UI sequencing now lives in
 `Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs`: track-resize
 snap/position/marker/CTI refresh order, playback state polling start/stop,
-buffer-fill/position/marker refresh order, and position-label updates with CTI
-re-anchor gating.
+play/pause glyph policy, Go Live enabled state, buffer-duration text, floating
+playhead label text, buffer-fill/position/marker refresh order, and
+position-label updates with CTI re-anchor gating.
 
 Flashback export progress presentation now lives in
 `Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs`:

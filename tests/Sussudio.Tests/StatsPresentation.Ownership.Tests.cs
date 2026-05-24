@@ -17,7 +17,7 @@ public partial class StatsPresentationTests
         var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
         var statsWindowPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsWindowPresentationController.cs").Replace("\r\n", "\n");
-        var statsWindowTelemetryDetailsControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsWindowTelemetryDetailsController.cs").Replace("\r\n", "\n");
+        var statsWindowTelemetryDetailsControllerText = statsWindowPresentationControllerText;
 
         AssertContains(statsPresentationText, "internal static class StatsPresentationBuilder");
         AssertDoesNotContain(statsPresentationText, "internal static partial class StatsPresentationBuilder");
@@ -83,7 +83,6 @@ public partial class StatsPresentationTests
         AssertContains(statsWindowPresentationControllerText, "private readonly StatsWindowTelemetryDetailsController _telemetryDetailsController;");
         AssertContains(statsWindowPresentationControllerText, "_telemetryDetailsController.Apply(presentation.TelemetryDetails);");
         AssertDoesNotContain(statsWindowPresentationControllerText, "private void UpdateTelemetryDetails(StatsWindowTelemetryDetailsPresentation presentation)");
-        AssertDoesNotContain(statsWindowPresentationControllerText, "private Grid CreateTelemetryDetailRow(");
         AssertContains(statsWindowTelemetryDetailsControllerText, "internal sealed class StatsWindowTelemetryDetailsController");
         AssertContains(statsWindowTelemetryDetailsControllerText, "public void Apply(StatsWindowTelemetryDetailsPresentation presentation)");
         AssertContains(statsWindowTelemetryDetailsControllerText, "_context.TelemetryDetailsContent.Children.Clear();");
