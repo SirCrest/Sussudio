@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 static partial class Program
 {
@@ -7,7 +7,7 @@ static partial class Program
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var compositionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Composition.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
-        var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.PreviewState.cs").Replace("\r\n", "\n");
+        var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs").Replace("\r\n", "\n");
         var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs").Replace("\r\n", "\n");
@@ -101,11 +101,15 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.State.cs")),
             "MainViewModel.State.cs folded into MainViewModel.cs");
         AssertDoesNotContain(captureModeTransactionsText, "_automationCaptureModeGate");
-        AssertDoesNotContain(rootText, "public partial bool IsPreviewing");
-        AssertDoesNotContain(rootText, "public event EventHandler? PreviewStartRequested");
-        AssertDoesNotContain(rootText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
-        AssertDoesNotContain(rootText, "public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)");
-        AssertDoesNotContain(rootText, "private Task ReinitializeDeviceAsync(string reason)");
+        AssertContains(rootText, "public partial bool IsPreviewing");
+        AssertContains(rootText, "public event EventHandler? PreviewStartRequested");
+        AssertContains(rootText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
+        AssertContains(rootText, "public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)");
+        AssertContains(rootText, "private Task ReinitializeDeviceAsync(string reason)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.PreviewState.cs")),
+            "MainViewModel.PreviewState.cs folded into MainViewModel.cs");
         AssertContains(captureStateText, "public partial ObservableCollection<CaptureDevice> Devices");
         AssertContains(captureStateText, "public partial ObservableCollection<ResolutionOption> AvailableResolutions");
         AssertContains(captureStateText, "public partial ObservableCollection<FrameRateOption> AvailableFrameRates");

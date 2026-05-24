@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 static partial class Program
 {
@@ -6,7 +6,7 @@ static partial class Program
     {
         var viewModelFiles = ReadMainViewModelCodeFiles();
         var viewModelSharedStateText = viewModelFiles["MainViewModel.cs"];
-        var viewModelPreviewStateText = viewModelFiles["MainViewModel.PreviewState.cs"];
+        var viewModelPreviewStateText = viewModelFiles["MainViewModel.cs"];
         var viewModelCaptureStateText = viewModelFiles["MainViewModel.CaptureState.cs"];
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
         var rawPreviewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
@@ -17,8 +17,8 @@ static partial class Program
         AssertContains(viewModelFlashbackStateText, "private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;");
         AssertContains(viewModelCaptureStateText, "private const int PreviewReinitializeDebounceMs = 250;");
         AssertContains(viewModelPreviewStateText, "private int _previewReinitializeGeneration;");
-        AssertDoesNotContain(viewModelSharedStateText, "private int _previewReinitializeGeneration;");
-        AssertContains(viewModelFiles["MainViewModel.PreviewState.cs"], "=> _previewLifecycleController.ReinitializeDeviceAsync(reason);");
+        AssertContains(viewModelSharedStateText, "private int _previewReinitializeGeneration;");
+        AssertContains(viewModelFiles["MainViewModel.cs"], "=> _previewLifecycleController.ReinitializeDeviceAsync(reason);");
         AssertContains(rawPreviewLifecycleControllerText, "=> _previewReinitializeController.ReinitializeDeviceAsync(reason);");
         AssertContains(rawPreviewReinitializeControllerText, "var reinitializeGeneration = _context.IncrementReinitializeGeneration();");
         AssertContains(rawPreviewReinitializeControllerText, "await Task.Delay(_context.PreviewReinitializeDebounceMs).ConfigureAwait(true);");

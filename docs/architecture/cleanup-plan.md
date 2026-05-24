@@ -3840,7 +3840,7 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.DeviceAudioState.cs`. UI-facing state is
    split by owner: `MainViewModel.cs` owns shared shell/status/live-info flags,
    native window handle state, UI collection replacement, and non-preview
-   coordination gates, `MainViewModel.PreviewState.cs`
+   coordination gates, `MainViewModel.cs`
    owns preview lifecycle compatibility entry points, preview-sink handoff,
    preview lifecycle flags, preview reinitialize coordination, and preview
    request events, `MainViewModel.CaptureState.cs` owns capture-selection
@@ -3909,7 +3909,7 @@ owner, fold it back into that owner and update the source-shape tests and
    selected-option seeding, auto-resolved effective FPS, runtime/source rational
    overrides, rational/decimal fallbacks, requested pixel format, and MJPEG
    decode forcing.
-   `MainViewModel.PreviewState.cs` keeps the stable compatibility facade entry
+   `MainViewModel.cs` keeps the stable compatibility facade entry
    points for device initialization, preview start/stop, selected-device apply,
    and preview reinitialization. Preview lifecycle
    implementation now lives in the top-level
@@ -4154,7 +4154,7 @@ owner, fold it back into that owner and update the source-shape tests and
    and preview start/stop routing now live in
    top-level `MainViewModelPreviewLifecycleController.cs` plus graph-built
    `MainViewModelPreviewReinitializeController.cs` context ports, with the stable
-   `MainViewModel.PreviewState.cs` compatibility facade preserving the automation surface.
+   `MainViewModel.cs` compatibility facade preserving the automation surface.
    Automation HDR and true-HDR preview recording-time guard enforcement and HDR
    availability checks now live in `MainViewModel.CaptureModeTransactions.cs`
    beside HDR mode change side effects.

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -13,7 +13,7 @@ static partial class Program
             + "\n" + ReadCaptureServicePreviewLifecycleSource()
             + "\n" + ReadCaptureServiceAudioSource();
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
-        var viewModelPreviewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.PreviewState.cs")
+        var viewModelPreviewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)");

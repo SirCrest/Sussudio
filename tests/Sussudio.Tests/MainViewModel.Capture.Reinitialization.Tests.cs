@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 static partial class Program
 {
@@ -6,7 +6,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.PreviewState.cs")
+        var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
             .Replace("\r\n", "\n");
@@ -62,7 +62,7 @@ static partial class Program
         AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.StartPreviewAsync(userInitiated: false);");
         AssertContains(previewReinitializeControllerText, "_context.ReleaseReinitializeGate();");
         AssertDoesNotContain(previewStateText, "private async Task ReinitializeDeviceAsync(string reason)");
-        AssertDoesNotContain(rootText, "private Task ReinitializeDeviceAsync(string reason)");
+        AssertContains(rootText, "private Task ReinitializeDeviceAsync(string reason)");
         AssertContains(previewStateText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
         AssertContains(previewStateText, "public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)");
         AssertContains(agentMapText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`");
