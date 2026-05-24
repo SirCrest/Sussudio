@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-24
+Area: ssctl diagnostic command locality
+Problem: Diagnostic tooling commands were split across observability, PresentMon, and diagnostic-session handler files even though they form one CLI investigation surface over shared tool helpers.
+Files consolidated: `tools/ssctl/CommandHandlers.PresentMon.cs`; `tools/ssctl/CommandHandlers.DiagnosticSession.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `CommandHandlers` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: affected `ssctl` build covered command-handler binding and shared tool references
+Behavior preserved: `presentmon`, `diagnostic-session`, state/diagnostics/options/manifest/timeline/memory/audio-ramp command names, flags, payloads, and output formatting remain unchanged
+Notes for future agents: keep ssctl diagnostic tooling commands in `CommandHandlers.Observability.cs`; split only if a command becomes an independently tested workflow or shared helper
+
+Date: 2026-05-24
 Area: NativeXuAudioProbe I2C command family locality
 Problem: The exploratory `i2c-cmd` probe surface was split across one router plus four tiny subcommand partials, forcing five files to understand one CLI command family.
 Files consolidated: `tools/NativeXuAudioProbe/Program.I2cCommands.SelectorProbe.cs`; `tools/NativeXuAudioProbe/Program.I2cCommands.HighSelectorProbe.cs`; `tools/NativeXuAudioProbe/Program.I2cCommands.TopologyProbe.cs`; `tools/NativeXuAudioProbe/Program.I2cCommands.Verify.cs`

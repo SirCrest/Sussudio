@@ -128,8 +128,7 @@ static partial class Program
             ReadNormalizedRepoFile("tools/ssctl/Program.cs"),
             ReadNormalizedRepoFile("tools/ssctl/SsctlHelpWriter.cs"),
             (ReadRepoFile("tools/ssctl/CommandHandlers.cs")
-                + "\n" + ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs")
-                + "\n" + ReadRepoFile("tools/ssctl/CommandHandlers.DiagnosticSession.cs"))
+                + "\n" + ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"))
                 .Replace("\r\n", "\n"),
             ReadNormalizedRepoFile("tools/McpServer/Tools/DiagnosticSessionTools.cs"));
     }

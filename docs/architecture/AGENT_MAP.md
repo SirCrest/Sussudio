@@ -3479,12 +3479,10 @@ Primary owners:
 - `tools/send-automation-command.ps1` owns the PowerShell helper wrapper and
   its AutomationClient rebuild freshness inputs.
 - `tools/ssctl/CommandHandlers.cs` owns top-level CLI routing only.
-- `tools/ssctl/CommandHandlers.Observability.cs` owns state, diagnostics,
-  options, manifest, timeline, memory, and audio-ramp commands.
-  `tools/ssctl/CommandHandlers.PresentMon.cs` owns `presentmon` command
-  parsing, swap-chain discovery, and probe invocation.
-  `tools/ssctl/CommandHandlers.DiagnosticSession.cs` owns
-  `diagnostic-session` command parsing and runner invocation.
+- `tools/ssctl/CommandHandlers.Observability.cs` owns diagnostic and
+  observability CLI commands: state, diagnostics, options, manifest, timeline,
+  memory, audio-ramp, `presentmon` parsing/swap-chain discovery/probe
+  invocation, and `diagnostic-session` parsing/runner invocation.
 - `tools/ssctl/CommandHandlers.CaptureControls.cs` owns preview/record,
   screenshot/frame capture, and `set` capture/audio/output mutations, including
   the shared set-value payload helper. Fixed ssctl automation routes should

@@ -13,13 +13,21 @@ static partial class Program
         AssertContains(commandHandlersRootSource, "context.Transport.SendCommandAsync(kind, payload)");
         AssertContains(commandHandlersRootSource, "private static int WriteResponse(JsonElement response, bool json, Func<JsonElement, string> formatter)");
         AssertDoesNotContain(commandHandlersRootSource, "private static Task<int> HandleFlashbackAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"), "HandleAudioRampTraceAsync");
-        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"), "HandleDiagnosticSessionAsync");
-        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"), "HandlePresentMonAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.DiagnosticSession.cs"), "HandleDiagnosticSessionAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.PresentMon.cs"), "HandlePresentMonAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.PresentMon.cs"), "TryResolvePreviewPresentCorrelationAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.PresentMon.cs"), "PresentMonProbe.CreateOptions(");
+        var observabilitySource = ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs");
+        AssertContains(observabilitySource, "HandleAudioRampTraceAsync");
+        AssertContains(observabilitySource, "HandleDiagnosticSessionAsync");
+        AssertContains(observabilitySource, "HandlePresentMonAsync");
+        AssertContains(observabilitySource, "TryResolvePreviewPresentCorrelationAsync");
+        AssertContains(observabilitySource, "PresentMonProbe.CreateOptions(");
+        AssertContains(observabilitySource, "DiagnosticSessionRunner.RunAsync(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.DiagnosticSession.cs")),
+            "diagnostic-session command routing lives with ssctl observability commands");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.PresentMon.cs")),
+            "presentmon command routing lives with ssctl observability commands");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.CaptureControls.cs"), "HandleSetAsync");
         AssertSsctlCapturePipelineRoutingUsesAutomationCommandKinds();
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "HandleDeviceAsync");

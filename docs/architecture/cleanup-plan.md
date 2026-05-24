@@ -400,11 +400,10 @@ on app identity, assets, packages, runtime config, and project references, while
 stripping, and repo-local `latest-build` staging.
 
 `tools/ssctl/CommandHandlers.cs` is now only the top-level CLI router.
-`CommandHandlers.Observability.cs` owns state, diagnostics, options, manifest,
-timeline, memory, and audio-ramp commands. `CommandHandlers.PresentMon.cs`
-owns `presentmon` command parsing, swap-chain discovery, and probe invocation.
-`CommandHandlers.DiagnosticSession.cs` owns `diagnostic-session` command
-parsing and runner invocation.
+`CommandHandlers.Observability.cs` owns diagnostic and observability CLI
+commands: state, diagnostics, options, manifest, timeline, memory, audio-ramp,
+`presentmon` command parsing, swap-chain discovery, probe invocation, and
+`diagnostic-session` command parsing and runner invocation.
 `tools/ssctl/Program.cs` owns only process entry, Ctrl-C cancellation, CLI
 option parsing, and exit-code shaping; `tools/ssctl/SsctlHelpWriter.cs` owns
 the help facade, operator-facing help section text, and catalog-backed help
