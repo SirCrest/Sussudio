@@ -2070,6 +2070,8 @@ Primary current owners:
   `FfmpegRuntimeLocator.cs` owns app-local/PATH runtime and tool resolution plus
   cached FFmpeg encoder/split-encode capability probes through bounded
   `ProcessSupervisor` calls.
+  `FfmpegRuntimeInit.cs` owns one-time native initialization, FFmpeg log callback
+  routing, and recoverable seek-log suppression.
 - `tests/Sussudio.Tests/ProjectBuildContracts.Tests.cs` owns project-file build
   and publish policy contract helpers. `tests/Sussudio.Tests/XUnit.ProjectBuildContractsTests.cs`
   owns xUnit execution for those checks after their removal from the legacy

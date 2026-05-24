@@ -47,6 +47,9 @@ public locator surface. `Sussudio/Services/Runtime/FfmpegRuntimeLocator.cs` owns
 app-local, Program Files, and PATH-based runtime/tool resolution, cached encoder
 and split-encode capability probes, and the bounded `ProcessSupervisor` calls
 and timeout policy used by startup recording capability checks.
+`Sussudio/Services/Runtime/FfmpegRuntimeInit.cs` owns one-time native
+initialization, FFmpeg log callback routing, and recoverable seek-log
+suppression.
 
 Automation contracts have been extracted into `Sussudio.Automation.Contracts/`.
 This removes the old linked-source arrangement where app and tools compiled
