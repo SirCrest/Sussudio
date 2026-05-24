@@ -3088,8 +3088,9 @@ Primary current owners:
   cancellation handoff, enqueue-failure logging, status projection, and the UI
   dispatch graph-port contract for dispatcher access, disposal state, logging,
   exception logging, and status text projection.
-  `MainViewModel.Dispatching.cs` owns the stable private adapter names plus
-  preview event fan-out for the partial family.
+  `MainViewModel.Composition.cs` owns the stable private UI-dispatch adapter
+  names plus preview event fan-out for the partial family, beside the
+  controller graph construction that consumes those ports.
   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs`
   is a top-level `Sussudio.Controllers` owner for periodic timer refresh orchestration, initial
   source-telemetry/HDR/live-info/timer/disk-space bootstrap, and the

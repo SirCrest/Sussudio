@@ -3871,8 +3871,8 @@ owner, fold it back into that owner and update the source-shape tests and
    The UI dispatch graph-port contract for dispatcher access, disposal state,
    logging, exception logging, and status text projection lives with
    `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs`, while
-   `MainViewModel.Dispatching.cs` keeps the stable private adapter names and
-   preview event fan-out;
+   `MainViewModel.Composition.cs` keeps the stable private adapter names and
+   preview event fan-out beside the controller graph handoff;
    periodic timer refresh orchestration and initial
    source-telemetry/HDR/live-info/timer/disk-space bootstrap through
    graph-built context ports now live in
