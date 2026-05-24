@@ -3509,14 +3509,11 @@ summary, swap-chain, app-correlation summary, and metric DTOs.
 `tools/Common/PresentMon/PresentMonProbe.Format.cs` owns result text formatting while
 `tools/Common/PresentMon/PresentMonProbe.Csv.cs` owns CSV parse overloads, selected-row
 filtering, summary assembly, swap-chain normalization/selection, header/field parsing,
-scalar metric reads, CSV line tokenization, and handoff to row/warning/correlation
-helpers. `tools/Common/PresentMon/PresentMonProbe.Csv.Rows.cs` owns row ingestion, header index
+scalar metric reads, CSV line tokenization, row ingestion, header index
 construction, schema-presence detection, blank-line skipping, row index
-assignment, private parsed CSV row shapes, and row projection from
-header-indexed fields.
-`tools/Common/PresentMon/PresentMonProbe.Csv.Correlation.cs` owns app-present correlation, while
-`tools/Common/PresentMon/PresentMonProbe.Csv.Summary.cs` owns warnings, counted text fields, and
-percentile metric aggregation. `tools/Common/PresentMon/PresentMonProbe.cs` keeps
+assignment, private parsed CSV row shapes, row projection from header-indexed
+fields, app-present correlation, warnings, counted text fields, and percentile
+metric aggregation. `tools/Common/PresentMon/PresentMonProbe.cs` keeps
 the public option construction, preview snapshot correlation extraction, run
 orchestration, command-line construction, argument quoting, and probe-result message shaping.
 `tools/Common/PresentMon/PresentMonProbe.Paths.cs` owns target process,

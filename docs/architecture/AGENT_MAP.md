@@ -3835,16 +3835,11 @@ Primary owners:
   used by diagnostic-session output surfaces.
 - `tools/Common/PresentMon/PresentMonProbe.Csv.cs` owns PresentMon CSV parse overloads,
   selected-row filtering, summary assembly, swap-chain normalization/selection,
-  header/field parsing, scalar metric reads, CSV line tokenization, and handoff
-  to row/warning/correlation helpers.
-- `tools/Common/PresentMon/PresentMonProbe.Csv.Rows.cs` owns PresentMon CSV row ingestion,
-  header index construction, schema-presence detection, blank-line skipping,
-  row index assignment, private parsed CSV row shapes, and row projection from
-  header-indexed fields.
-- `tools/Common/PresentMon/PresentMonProbe.Csv.Correlation.cs` owns app-present
-  correlation and displayed/not-displayed outcome classification.
-- `tools/Common/PresentMon/PresentMonProbe.Csv.Summary.cs` owns warnings, counted text
-  fields, and percentile metric aggregation.
+  header/field parsing, scalar metric reads, CSV line tokenization, row
+  ingestion, header index construction, schema-presence detection, private
+  parsed CSV row shapes, app-present correlation, displayed/not-displayed
+  outcome classification, warnings, counted text fields, and percentile metric
+  aggregation.
 - `tools/Common/PresentMon/PresentMonProbe.cs` owns PresentMon public option
   construction, preview snapshot correlation extraction, run orchestration,
   command-line construction, argument quoting, and probe-result message shaping.

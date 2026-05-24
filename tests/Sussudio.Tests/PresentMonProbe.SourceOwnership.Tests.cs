@@ -11,9 +11,6 @@ static partial class Program
         var modelsText = ReadPresentMonProbeFile("PresentMonProbe.Models.cs");
         var formatText = ReadPresentMonProbeFile("PresentMonProbe.Format.cs");
         var csvText = ReadPresentMonProbeFile("PresentMonProbe.Csv.cs");
-        var csvRowsText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Rows.cs");
-        var correlationText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Correlation.cs");
-        var summaryText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Summary.cs");
         var pathsText = ReadPresentMonProbeFile("PresentMonProbe.Paths.cs");
         var processText = ReadPresentMonProbeFile("PresentMonProbe.Process.cs");
 
@@ -70,21 +67,18 @@ static partial class Program
         AssertContains(csvText, "private static string NormalizeHeader(");
         AssertContains(csvText, "private static double? ReadMetric(");
         AssertContains(csvText, "private static List<string> SplitCsvLine(");
-        AssertContains(csvRowsText, "private static PresentMonCsvRows ReadCsvRows(string path)");
-        AssertContains(csvRowsText, "private sealed record PresentMonCsvRows(");
-        AssertContains(csvRowsText, "private sealed record PresentMonRow(");
-        AssertContains(csvRowsText, "private static IReadOnlyDictionary<string, int> BuildCsvHeaderIndex(");
-        AssertContains(csvRowsText, "private static PresentMonRow ReadRow(");
-        AssertContains(csvRowsText, "rows.Add(ReadRow(rowIndex++, fields, index));");
-        AssertContains(csvRowsText, "private static bool HasAnyColumn(");
-        AssertContains(correlationText, "private static PresentMonAppCorrelation BuildAppCorrelation(");
-        AssertContains(correlationText, "private static string ClassifyPresentOutcome(");
-        AssertContains(summaryText, "private static IReadOnlyList<string> BuildWarnings(");
-        AssertContains(summaryText, "private static PresentMonMetricSummary Summarize(");
-        AssertContains(summaryText, "private static double Percentile(");
-        AssertDoesNotContain(csvText, "new StreamReader(path)");
-        AssertDoesNotContain(csvText, "new PresentMonRow(");
-        AssertDoesNotContain(csvRowsText, "private static List<string> SplitCsvLine(");
+        AssertContains(csvText, "private static PresentMonCsvRows ReadCsvRows(string path)");
+        AssertContains(csvText, "private sealed record PresentMonCsvRows(");
+        AssertContains(csvText, "private sealed record PresentMonRow(");
+        AssertContains(csvText, "private static IReadOnlyDictionary<string, int> BuildCsvHeaderIndex(");
+        AssertContains(csvText, "private static PresentMonRow ReadRow(");
+        AssertContains(csvText, "rows.Add(ReadRow(rowIndex++, fields, index));");
+        AssertContains(csvText, "private static bool HasAnyColumn(");
+        AssertContains(csvText, "private static PresentMonAppCorrelation BuildAppCorrelation(");
+        AssertContains(csvText, "private static string ClassifyPresentOutcome(");
+        AssertContains(csvText, "private static IReadOnlyList<string> BuildWarnings(");
+        AssertContains(csvText, "private static PresentMonMetricSummary Summarize(");
+        AssertContains(csvText, "private static double Percentile(");
 
         AssertContains(pathsText, "private static Process? ResolveTargetProcess(");
         AssertContains(pathsText, "private static string? ResolvePresentMonPath(");
@@ -102,6 +96,18 @@ static partial class Program
         AssertDoesNotContain(rootText, "private static PresentMonMetricSummary Summarize(");
         AssertDoesNotContain(rootText, "public static string Format(PresentMonProbeResult result)");
         AssertDoesNotContain(modelsText, "PreviewD3DSwapChainAddress");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Csv.Rows.cs")),
+            "PresentMon CSV row ingestion lives with PresentMonProbe.Csv.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Csv.Correlation.cs")),
+            "PresentMon CSV app correlation lives with PresentMonProbe.Csv.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Csv.Summary.cs")),
+            "PresentMon CSV warnings and percentile summaries live with PresentMonProbe.Csv.cs");
 
         return Task.CompletedTask;
     }
