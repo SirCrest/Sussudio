@@ -104,8 +104,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var hdrSideDataText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HdrSideData.cs")
             .Replace("\r\n", "\n");
-        var modelsText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Models.cs")
-            .Replace("\r\n", "\n");
+        var modelsText = rootText;
         var videoSetupText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs")
             .Replace("\r\n", "\n");
         var hardwareFramesText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs")
@@ -139,6 +138,10 @@ static partial class Program
         AssertContains(hdrSideDataText, "ffmpeg.av_mastering_display_metadata_create_side_data(_hwFrame)");
         AssertContains(modelsText, "internal sealed record LibAvEncoderOptions");
         AssertContains(modelsText, "internal readonly record struct RotateOutputResult");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.Models.cs")),
+            "LibAvEncoder option/result models live with the encoder root");
         AssertContains(videoSetupText, "private void ConfigureVideoCodecContext(AVCodecContext* codecContext, LibAvEncoderOptions options)");
         AssertContains(videoSetupText, "private void ApplyEncoderPrivateOptions(AVCodecContext* codecContext, LibAvEncoderOptions options)");
         AssertContains(videoSetupText, "private void InitializeVideoBitstreamFilterIfNeeded(LibAvEncoderOptions options)");
@@ -166,8 +169,6 @@ static partial class Program
         AssertDoesNotContain(rootText, "private void AllocateAudioFrame()");
         AssertDoesNotContain(rootText, "private bool AttachHdrFrameSideDataIfNeeded(LibAvEncoderOptions options)");
         AssertDoesNotContain(rootText, "private bool AttachHdrFrameSideDataToHwFrame(LibAvEncoderOptions options)");
-        AssertDoesNotContain(rootText, "internal sealed record LibAvEncoderOptions");
-        AssertDoesNotContain(rootText, "internal readonly record struct RotateOutputResult");
         AssertDoesNotContain(videoSetupText, "private static IntPtr CreateSingleTexture2D(IntPtr d3d11Device, int width, int height, bool isP010, uint bindFlags)");
         AssertDoesNotContain(videoSetupText, "private void InitializeHardwareFramesIfNeeded(LibAvEncoderOptions options)");
         AssertDoesNotContain(videoSetupText, "private void InitializeCudaHardwareFrames(LibAvEncoderOptions options)");

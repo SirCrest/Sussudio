@@ -1517,10 +1517,10 @@ LibAv encoder HDR frame side-data helpers now live in
 and hardware-frame HDR mastering display and content-light metadata attachment
 there, including parsing/applying mastering-display metadata strings.
 
-LibAv encoder models now live in
-`Sussudio/Services/Recording/LibAvEncoder.Models.cs`. Keep `LibAvEncoderOptions`
-and `RotateOutputResult` there so the root encoder remains runtime behavior
-rather than DTO storage.
+LibAv encoder option/result models now live with the core encoder state in
+`Sussudio/Services/Recording/LibAvEncoder.cs`. Keep `LibAvEncoderOptions` and
+`RotateOutputResult` there unless they become a shared contract outside the
+encoder family.
 
 LibAv encoder video setup now lives in
 `Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs`. Keep video codec

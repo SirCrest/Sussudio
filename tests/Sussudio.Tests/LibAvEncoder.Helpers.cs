@@ -18,7 +18,6 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioSetup.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HdrSideData.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Models.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.Cuda.cs").Replace("\r\n", "\n"),
