@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
@@ -46,10 +46,10 @@ static partial class Program
         var viewModelText = string.Join("\n", viewModelFiles.Values) + "\n" + recordingSettingsAutomationControllerText;
         var viewModelAudioStateText = viewModelFiles["MainViewModel.AudioState.cs"];
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var flashbackSettingsText = viewModelFiles["MainViewModel.FlashbackSettings.cs"];
+        var flashbackSettingsText = viewModelFiles["MainViewModel.FlashbackState.cs"];
         var flashbackExportText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
-        var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackExportOperation.cs"];
-        var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackExportAutomation.cs"];
+        var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
+        var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
         var flashbackBufferStatusText = viewModelFlashbackStateText;
         var flashbackPlaybackCommandsText = viewModelFiles["MainViewModel.FlashbackPlaybackCommands.cs"];
         var flashbackPlaybackText = flashbackPlaybackCommandsText;
@@ -64,12 +64,12 @@ static partial class Program
             .Replace("\r\n", "\n");
         var rawAudioCapturePropertyChangesText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
             .Replace("\r\n", "\n");
-        var flashbackEncoderSettingsText = viewModelFiles["MainViewModel.FlashbackEncoderSettings.cs"];
+        var flashbackEncoderSettingsText = viewModelFiles["MainViewModel.FlashbackState.cs"];
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationFlashback.cs")),
             "MainViewModel automation Flashback partial");
-        var rawFlashbackSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackSettings.cs")
+        var rawFlashbackSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
             .Replace("\r\n", "\n");
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
@@ -167,6 +167,10 @@ static partial class Program
         AssertMemberContains(flashbackSettingsText, "RestartFlashbackAfterSettingsUpdateAsync", "await RestartFlashbackAsync().ConfigureAwait(false)");
         AssertMemberContains(flashbackSettingsText, "RestartFlashbackAfterSettingsUpdateAsync", "catch (OperationCanceledException ex)");
         AssertContains(rawFlashbackSettingsText, "RestartFlashbackAfterSettingsUpdate canceled");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackSettings.cs")), "MainViewModel.FlashbackSettings.cs folded into FlashbackState");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackEncoderSettings.cs")), "MainViewModel.FlashbackEncoderSettings.cs folded into FlashbackState");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackExportOperation.cs")), "MainViewModel.FlashbackExportOperation.cs folded into FlashbackExport");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackExportAutomation.cs")), "MainViewModel.FlashbackExportAutomation.cs folded into FlashbackExport");
         AssertMemberContains(audioCapturePropertyChangesText, "OnIsAudioEnabledChanged", "var settings = BuildCaptureSettings();");
         AssertMemberContains(rawAudioCapturePropertyChangesText, "OnIsAudioEnabledChanged", "SetAudioMonitoringEnabledWithVolumeTransitionAsync(\n                        true,\n                        \"audio_capture_enable\",");
         AssertMemberContains(audioCapturePropertyChangesText, "OnIsAudioEnabledChanged", "afterMonitoringStarted: () => _sessionCoordinator.RestartFlashbackAsync(settings)");

@@ -1,3 +1,4 @@
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -6,12 +7,12 @@ static partial class Program
     {
         var viewModelFiles = ReadMainViewModelCodeFiles();
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var flashbackSettingsText = viewModelFiles["MainViewModel.FlashbackSettings.cs"];
-        var flashbackEncoderSettingsText = viewModelFiles["MainViewModel.FlashbackEncoderSettings.cs"];
+        var flashbackSettingsText = viewModelFiles["MainViewModel.FlashbackState.cs"];
+        var flashbackEncoderSettingsText = viewModelFiles["MainViewModel.FlashbackState.cs"];
         var automationSettingsText = viewModelFiles["MainViewModel.AutomationCommands.cs"];
         var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs")
             .Replace("\r\n", "\n");
-        var rawFlashbackEncoderSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackEncoderSettings.cs")
+        var rawFlashbackEncoderSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
             .Replace("\r\n", "\n");
 
         AssertMemberContains(flashbackEncoderSettingsText, "OnSelectedRecordingFormatChanged", "TrackPendingFlashbackCycleTask(\n                _sessionCoordinator.UpdateRecordingFormatAsync(format),");
@@ -55,6 +56,8 @@ static partial class Program
         AssertMemberContains(flashbackEncoderSettingsText, "TrackPendingFlashbackCycleTask", "else if (t.IsCanceled)");
         AssertContains(rawFlashbackEncoderSettingsText, "CycleFlashbackEncoder({description}) failed");
         AssertContains(rawFlashbackEncoderSettingsText, "CycleFlashbackEncoder({description}) canceled");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackEncoderSettings.cs")), "MainViewModel.FlashbackEncoderSettings.cs folded into FlashbackState");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackSettings.cs")), "MainViewModel.FlashbackSettings.cs folded into FlashbackState");
 
         return Task.CompletedTask;
     }

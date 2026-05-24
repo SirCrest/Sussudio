@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -13,7 +13,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var recordingTransitionControllerText = recordingTransitionControllerRootText;
         var automationText = recordingLifecycleText
-            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackSettings.cs")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCommands.cs")
             .Replace("\r\n", "\n")
@@ -23,9 +23,9 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExport.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExportOperation.cs")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExport.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExportAutomation.cs")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExport.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackPlaybackCommands.cs")
                 .Replace("\r\n", "\n")

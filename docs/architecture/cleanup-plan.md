@@ -3970,16 +3970,13 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.FlashbackPlaybackCommands.cs`; buffer,
    bitrate, playback-state, in/out marker, and gap-from-live UI projection live
    in `MainViewModel.FlashbackState.cs`.
-   Flashback UI export commands, save-picker flow, active-export guard, and
-   user-facing export result/status handling now live in
-   `MainViewModel.FlashbackExport.cs`. Shared Flashback export operation
-   lifecycle, including outcome classification, core export execution,
-   progress handoff, stale-result classification, current-operation checks,
-   and CTS cancellation/disposal cleanup, now lives in
-   `MainViewModel.FlashbackExportOperation.cs`.
-   Automation-facing Flashback export command execution, linked cancellation,
-   and dispatcher cleanup now live in
-   `MainViewModel.FlashbackExportAutomation.cs`. Capture-device selection,
+   Flashback UI export commands, save-picker flow, active-export guard,
+   user-facing export result/status handling, shared export operation
+   lifecycle, progress handoff, stale-result classification,
+   current-operation checks, CTS cancellation/disposal cleanup, and
+   automation-facing export execution with linked cancellation and dispatcher
+   cleanup now live in `MainViewModel.FlashbackExport.cs`.
+   Capture-device selection,
    effective resolution helpers, frame-rate selection reactions, and
    auto-selection entry points now live in `MainViewModel.CaptureSelection.cs`.
    `MainViewModel.CaptureModeTransactions.cs` keeps the resolution, frame-rate,
@@ -4122,10 +4119,9 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModelSettingsPersistenceProjection.cs` owns persisted-settings
    validation, clamping, deferred-selection projection, save DTO projection,
    and load/save projection contracts;
-   active Flashback reactions to recording format
-   and encoder quality/preset/split/bitrate now live in
-   `MainViewModel.FlashbackEncoderSettings.cs`; buffer/GPU decode reactions stay
-   in `MainViewModel.FlashbackSettings.cs`.
+   active Flashback reactions to recording format,
+   encoder quality/preset/split/bitrate, buffer duration, and GPU decode now
+   live in `MainViewModel.FlashbackState.cs`.
    Pure analog audio gain percent/XU-byte curve mapping now lives in
    `MainViewModel.DeviceAudioState.cs` with the shared audio-control guards;
    device-native audio request lifetime, including mode property-change adapters, UI enqueue lifetime,
@@ -4156,7 +4152,7 @@ owner, fold it back into that owner and update the source-shape tests and
    availability checks now live in `MainViewModel.CaptureModeTransactions.cs`
    beside HDR mode change side effects.
    Automation Flashback enable/restart routing through the capture session
-   coordinator now lives in `MainViewModel.FlashbackSettings.cs` alongside
+   coordinator now lives in `MainViewModel.FlashbackState.cs` alongside
    buffer/GPU setting reactions.
    Automation device refresh, capture-device selection, audio-input selection,
    and custom audio-input enablement now live in

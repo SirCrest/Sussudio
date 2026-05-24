@@ -173,17 +173,17 @@ static partial class Program
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
         var disposalText = viewModelFiles["MainViewModel.cs"];
         var flashbackExportText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
-        var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackExportOperation.cs"];
-        var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackExportAutomation.cs"];
+        var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
+        var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
         var rawDisposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs")
             .Replace("\r\n", "\n");
         var rawFlashbackExportText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExport.cs")
             .Replace("\r\n", "\n");
-        var rawFlashbackExportOperationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExportOperation.cs")
+        var rawFlashbackExportOperationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExport.cs")
             .Replace("\r\n", "\n");
-        var rawFlashbackExportAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExportAutomation.cs")
+        var rawFlashbackExportAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExport.cs")
             .Replace("\r\n", "\n");
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
 
@@ -236,6 +236,8 @@ static partial class Program
         AssertContains(rawFlashbackExportOperationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"ui_stale\");");
         AssertContains(rawFlashbackExportAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"automation_dispatcher_cleanup\");");
         AssertContains(rawFlashbackExportAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"automation_inline_cleanup\");");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackExportOperation.cs")), "MainViewModel.FlashbackExportOperation.cs folded into FlashbackExport");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackExportAutomation.cs")), "MainViewModel.FlashbackExportAutomation.cs folded into FlashbackExport");
         AssertDoesNotContain(
             flashbackExportText + "\n" + flashbackExportOperationText + "\n" + flashbackExportAutomationText,
             "exportCts.Dispose();");

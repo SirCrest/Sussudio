@@ -3187,15 +3187,12 @@ Primary current owners:
   automation-facing Flashback playback action dispatch.
   `MainViewModel.FlashbackState.cs` owns buffer, bitrate,
   playback-state, in/out marker, and gap-from-live UI projection.
-  `MainViewModel.FlashbackExport.cs` owns
-  Flashback UI export commands, save-picker flow, active-export guard, and
-  user-facing export result/status handling.
-  `MainViewModel.FlashbackExportOperation.cs` owns shared Flashback export
-  operation lifecycle: outcome classification, core export execution, progress
-  handoff, stale-result classification, current-operation checks, and CTS
-  cancellation/disposal cleanup.
-  `MainViewModel.FlashbackExportAutomation.cs` owns automation-facing Flashback
-  export command execution, linked cancellation, and dispatcher cleanup.
+  `MainViewModel.FlashbackExport.cs` owns Flashback UI export commands,
+  save-picker flow, active-export guard, user-facing export result/status
+  handling, shared export operation lifecycle, progress handoff, stale-result
+  classification, current-operation checks, CTS cancellation/disposal cleanup,
+  and automation-facing export execution with linked cancellation and dispatcher
+  cleanup.
   `MainViewModel.CaptureSelection.cs` owns capture-device selection reactions,
   effective resolution helpers, frame-rate selection reactions, and
   auto-selection entry points. `MainViewModel.CaptureModeTransactions.cs` keeps
@@ -3319,10 +3316,9 @@ Primary current owners:
   `MainViewModelSettingsPersistenceProjection.cs` owns persisted-settings
   validation, clamping, deferred-selection handoff, save DTO projection, and
   load/save projection contracts.
-  `MainViewModel.FlashbackEncoderSettings.cs` owns active
-  Flashback reactions to recording-format, encoder quality/preset/split, and
-  bitrate changes. `MainViewModel.FlashbackSettings.cs` owns active Flashback
-  reactions to buffer-duration and GPU-decode setting changes.
+  `MainViewModel.FlashbackState.cs` owns active Flashback reactions to
+  recording-format, encoder quality/preset/split, bitrate, buffer-duration,
+  and GPU-decode setting changes.
   `MainViewModel.cs` owns UI-only automation mutators
   for settings visibility, Flashback timeline visibility, show-all capture
   options, stats dock/section visibility, and frame-time overlay display.
@@ -3336,7 +3332,7 @@ Primary current owners:
   `MainViewModel.CaptureModeTransactions.cs` owns automation HDR and true-HDR
   preview recording-time guard enforcement and availability checks alongside
   HDR mode change side effects.
-  `MainViewModel.FlashbackSettings.cs` owns automation Flashback
+  `MainViewModel.FlashbackState.cs` owns automation Flashback
   enable/restart routing through the capture session coordinator alongside
   buffer/GPU setting reactions.
   `MainViewModel.AutomationCommands.cs` owns automation device refresh,
