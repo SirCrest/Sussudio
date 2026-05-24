@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 
 static partial class Program
 {
@@ -9,9 +9,9 @@ static partial class Program
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var flashbackPropertyChangedControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs").Replace("\r\n", "\n");
+        var flashbackPropertyChangedControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs").Replace("\r\n", "\n");
         var adapterText = ReadMainWindowFlashbackAdapterSource();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackSettingsBindingController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs").Replace("\r\n", "\n");
         var commandAdapterText = ReadMainWindowFlashbackAdapterSource();
         var commandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackCommandController.cs").Replace("\r\n", "\n");
 

@@ -2732,7 +2732,7 @@ Primary current owners:
   setup, snap placement, magnetic pointer-scrub movement, linear keyframe
   animation, and label clamp/positioning.
   `Sussudio/MainWindow.Flashback.Interactions.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/Flashback/FlashbackMarkerPresentationController.cs` owns
+- `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns
   Flashback marker placement, selection-region layout, and compact duration
   text formatting. `Sussudio/MainWindow.Flashback.Interactions.cs` wires marker
   presentation callbacks.
@@ -2746,17 +2746,17 @@ Primary current owners:
   shortcuts including left/right nudge rejection logging, export, save-last-5m,
   enable-toggle rollback, and apply/restart. `Sussudio/MainWindow.Flashback.Interactions.cs`
   preserves the XAML command event-handler surface.
-- `Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs` also owns
+- `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` also owns
   Flashback export progress-bar value, visibility, and reset-on-complete
   semantics. `Sussudio/MainWindow.Flashback.Interactions.cs` wires the
   export progress presentation controller.
-- `Sussudio/Controllers/Flashback/FlashbackSettingsBindingController.cs` owns Flashback
+- `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback
   settings-control initialization, GPU decode toggle binding/sync, buffer
   duration combo selection/sync, and buffer-duration change logging.
   `Sussudio/MainWindow.Flashback.Interactions.cs` is the XAML-facing settings
   adapter; enable toggle rollback and apply/restart command behavior live in
   `FlashbackCommandController`.
-- `Sussudio/Controllers/Flashback/FlashbackPollingController.cs` owns Flashback status
+- `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback status
   and playback-position polling timers. `Sussudio/MainWindow.Flashback.Interactions.cs`
   is the XAML-facing adapter; CTI anchor timing lives in
   `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs`.
@@ -2916,7 +2916,7 @@ Primary current owners:
 - `Sussudio/MainWindow.StatusStripPresentation.cs` is the XAML-facing live signal
   adapter. `LiveSignalInfoController` owns live source-signal property-change
   routing and pill presentation.
-- `Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs` owns
+- `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns
   Flashback-specific property-change routing for timeline lockout, markers,
   playhead updates, export progress, and settings-control synchronization.
   `Sussudio/MainWindow.xaml.cs` is the XAML/MainWindow property-change
