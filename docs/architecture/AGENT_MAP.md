@@ -3627,6 +3627,8 @@ Primary owners:
 - `tools/McpServer/Tools/AppStateTools.cs` owns the public app-state MCP entry
   points plus the memory/GC/thread-pool diagnostics view over the same snapshot
   command.
+- `tools/McpServer/Tools/CaptureSettingsTools.cs` owns the public capture
+  settings, pipeline settings, and structured capture-options MCP entry points.
 - `tools/McpServer/Tools/PerformanceTimelineTools.cs` owns the public MCP
   tool entry point and command response handling.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs` owns timeline JSON

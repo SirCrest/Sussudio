@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T05:54:57Z
+Generated UTC: 2026-05-24T05:59:24Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 808 |
+| Production .cs files | 807 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 85 (10.5%) |
-| Production .cs files under 80 lines | 156 (19.3%) |
+| Production .cs files under 60 lines | 84 (10.4%) |
+| Production .cs files under 80 lines | 155 (19.2%) |
 
 ## Largest partial-type clusters
 
@@ -130,7 +130,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 42 | Sussudio/Models/Automation/WindowAutomation.cs |
 | 43 | Sussudio/Services/Runtime/AtomicMax.cs |
 | 44 | Sussudio/Services/Recording/LibAvEncoder.Models.cs |
-| 44 | tools/McpServer/Tools/CaptureOptionsTools.cs |
 | 45 | Sussudio/Controllers/Preview/Startup/PreviewStartupOverlayController.cs |
 | 45 | tools/McpServer/Tools/DiagnosticSessionTools.cs |
 | 46 | Sussudio/MainWindow.Bindings.cs |
@@ -146,6 +145,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 50 | Sussudio/Controllers/Shell/ResponsiveShellLayoutPolicy.cs |
 | 50 | Sussudio/ViewModels/MainViewModel.CaptureSettings.cs |
 | 50 | tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs |
+| 50 | tools/McpServer/PipeClient.cs |
 
 ## Notes
 

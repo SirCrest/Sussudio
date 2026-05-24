@@ -13,7 +13,7 @@ static partial class Program
     {
         var captureSettingsToolsText = ReadRepoFile("tools/McpServer/Tools/CaptureSettingsTools.cs");
         var appStateToolText = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
-        var captureOptionsToolText = ReadRepoFile("tools/McpServer/Tools/CaptureOptionsTools.cs");
+        var captureOptionsToolText = captureSettingsToolsText;
         var uiSettingsToolText = ReadRepoFile("tools/McpServer/Tools/UiSettingsTools.cs");
         var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
 
@@ -46,7 +46,7 @@ static partial class Program
         var formatterText = ReadRepoFile("tools/McpServer/Tools/ToolCommandFormatter.cs");
         var appStateToolText = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
         var captureSettingsToolsText = ReadRepoFile("tools/McpServer/Tools/CaptureSettingsTools.cs");
-        var captureOptionsToolText = ReadRepoFile("tools/McpServer/Tools/CaptureOptionsTools.cs");
+        var captureOptionsToolText = captureSettingsToolsText;
         var deviceToolsText = ReadRepoFile("tools/McpServer/Tools/DeviceTools.cs");
         var diagnosticsToolsText = ReadRepoFile("tools/McpServer/Tools/DiagnosticsTools.cs");
         var flashbackToolsText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.cs");
