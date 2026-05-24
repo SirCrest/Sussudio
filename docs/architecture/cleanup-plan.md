@@ -1408,9 +1408,10 @@ Keep export attempt lifecycle, result, rejection, completion diagnostic state,
 progress forwarding/normalization, and force-rotate fallback counters there.
 
 Shared video-pipeline lifecycle handoff now lives in
-`Sussudio/Services/Capture/CaptureService.VideoPipelineLifecycle.cs`. That file
-owns preview-frame sink attachment, late Flashback playback preview wiring,
-shared D3D preview-device handoff, and fatal/pixel callback attach/detach.
+`Sussudio/Services/Capture/CaptureService.PreviewStart.cs`, alongside preview
+reuse/fresh-start orchestration. That file owns preview-frame sink attachment,
+late Flashback playback preview wiring, shared D3D preview-device handoff, and
+fatal/pixel callback attach/detach.
 Active video capture storage, preview-frame sink storage, negotiated video
 getters, cached MJPEG pipeline timing snapshots, and deferred unified-video
 cleanup after LibAv drains now live in

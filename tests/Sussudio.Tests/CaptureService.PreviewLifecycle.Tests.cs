@@ -95,7 +95,6 @@ static partial class Program
         var startText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStart.cs").Replace("\r\n", "\n");
         var audioGraphText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs").Replace("\r\n", "\n");
         var stopText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStop.cs").Replace("\r\n", "\n");
-        var videoPipelineLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.VideoPipelineLifecycle.cs").Replace("\r\n", "\n");
         var videoPipelineResourcesText = ReadRepoFile("Sussudio/Services/Capture/CaptureVideoPipelineResources.cs").Replace("\r\n", "\n");
         var flashbackPreviewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs").Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs").Replace("\r\n", "\n");
@@ -163,23 +162,25 @@ static partial class Program
         AssertDoesNotContain(
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs"),
             "_unifiedVideoCapture");
-        AssertContains(videoPipelineLifecycleText, "internal void SetPreviewFrameSink(IPreviewFrameSink? sink)");
-        AssertContains(videoPipelineLifecycleText, "private void AttachUnifiedVideoCapture(UnifiedVideoCapture unifiedVideoCapture)");
-        AssertContains(videoPipelineLifecycleText, "private void DetachUnifiedVideoCapture(UnifiedVideoCapture? unifiedVideoCapture)");
-        AssertContains(videoPipelineLifecycleText, "private void CacheMjpegTimingMetrics(UnifiedVideoCapture? unifiedVideoCapture)");
-        AssertDoesNotContain(videoPipelineLifecycleText, "private IPreviewFrameSink? _previewFrameSink");
-        AssertDoesNotContain(videoPipelineLifecycleText, "private Task ScheduleDeferredUnifiedVideoCaptureCleanup(");
-        AssertDoesNotContain(videoPipelineLifecycleText, "ThrowIfPendingLibAvDrainBlocksReentry");
-        AssertDoesNotContain(videoPipelineLifecycleText, "PendingLibAvDrainTask");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.VideoPipelineLifecycle.cs")),
+            "video pipeline lifecycle helper partial folded into preview start");
+        AssertContains(startText, "internal void SetPreviewFrameSink(IPreviewFrameSink? sink)");
+        AssertContains(startText, "private void AttachUnifiedVideoCapture(UnifiedVideoCapture unifiedVideoCapture)");
+        AssertContains(startText, "private void DetachUnifiedVideoCapture(UnifiedVideoCapture? unifiedVideoCapture)");
+        AssertContains(startText, "private void CacheMjpegTimingMetrics(UnifiedVideoCapture? unifiedVideoCapture)");
+        AssertDoesNotContain(startText, "private IPreviewFrameSink? _previewFrameSink");
+        AssertDoesNotContain(startText, "private Task ScheduleDeferredUnifiedVideoCaptureCleanup(");
         AssertContains(stopText, "_recordingBackend.ClearPendingLibAvDrainIfCompletedSuccessfully();");
-        AssertContains(videoPipelineLifecycleText, "private void TryApplySharedPreviewDevice(UnifiedVideoCapture? capture, IPreviewFrameSink? sink)");
-        AssertContains(videoPipelineLifecycleText, "_videoPipeline.CacheMjpegTimingMetrics(unifiedVideoCapture);");
+        AssertContains(startText, "private void TryApplySharedPreviewDevice(UnifiedVideoCapture? capture, IPreviewFrameSink? sink)");
+        AssertContains(startText, "_videoPipeline.CacheMjpegTimingMetrics(unifiedVideoCapture);");
         AssertContains(cleanupText, "_videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(");
         AssertContains(stopText, "_videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(");
         AssertContains(libAvFinalizeText, "_videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(");
         AssertContains(recordingRollbackText, "_videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(");
-        AssertDoesNotContain(videoPipelineLifecycleText, "private UnifiedVideoCapture.MjpegPipelineTimingMetrics _lastMjpegPipelineTimingMetrics;");
-        AssertDoesNotContain(videoPipelineLifecycleText, "private ParallelMjpegDecodePipeline.PipelineTimingMetrics? _lastFullMjpegPipelineTimingMetrics;");
+        AssertDoesNotContain(startText, "private UnifiedVideoCapture.MjpegPipelineTimingMetrics _lastMjpegPipelineTimingMetrics;");
+        AssertDoesNotContain(startText, "private ParallelMjpegDecodePipeline.PipelineTimingMetrics? _lastFullMjpegPipelineTimingMetrics;");
         AssertDoesNotContain(flashbackPreviewBackendText, "ScheduleDeferredUnifiedVideoCaptureCleanup");
         AssertEqual(
             false,
@@ -187,7 +188,6 @@ static partial class Program
             "old preview pipeline partial removed after video lifecycle promotion");
         AssertDoesNotContain(startText, "private Task StopVideoPreviewCoreAsync(");
         AssertDoesNotContain(startText, "private async Task DisposePreviewPipelineAsync(");
-        AssertDoesNotContain(startText, "private void AttachUnifiedVideoCapture(");
         AssertDoesNotContain(startText, "new WasapiAudioCapture()");
         AssertDoesNotContain(startText, "micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
         AssertDoesNotContain(stopText, "public Task StartVideoPreviewAsync(");

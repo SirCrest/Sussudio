@@ -16,7 +16,6 @@ static partial class Program
             + "\n" + ReadCaptureServicePreviewLifecycleCodeWithoutCommentsOrStrings()
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
             + "\n" + ReadCaptureServiceAudioCodeWithoutCommentsOrStrings()
-            + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.VideoPipelineLifecycle.cs")
             + "\n" + ReadCaptureServiceFlashbackOrchestrationCodeWithoutCommentsOrStrings();
         var captureServiceRawText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
@@ -30,8 +29,6 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadCaptureServiceAudioSource()
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.VideoPipelineLifecycle.cs")
-                .Replace("\r\n", "\n")
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource();
         var captureServiceRootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");

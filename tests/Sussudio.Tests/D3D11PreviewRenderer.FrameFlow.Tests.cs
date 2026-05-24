@@ -147,7 +147,7 @@ static partial class Program
 
         var managerText = ReadRepoFile("Sussudio/Services/Preview/SharedD3DDeviceManager.cs")
             .Replace("\r\n", "\n");
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.VideoPipelineLifecycle.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStart.cs")
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
