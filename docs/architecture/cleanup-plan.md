@@ -3034,13 +3034,11 @@ window-title refresh on recording-time updates. Flashback bitrate presentation
 also routes through this controller so the recording bitrate text keeps one UI
 owner.
 
-Pure recording-state lockout decisions now live in
-`Sussudio/Controllers/Recording/RecordingStatePresentationPolicy.cs`: recording-time
+Pure recording-state lockout decisions and recording-state UI projection now live in
+`Sussudio/Controllers/Recording/RecordingStatePresentationController.cs`: recording-time
 capture/audio control enablement, analog gain enablement, transition button
-enablement, FFmpeg button enablement, and settled record-button content
-visibility. Recording-state UI projection now lives in
-`Sussudio/Controllers/Recording/RecordingStatePresentationController.cs`: ViewModel-derived
-property-name routing, lockout/HDR/title/audio-meter policy application, and delegation to
+enablement, FFmpeg button enablement, settled record-button content visibility,
+ViewModel-derived property-name routing, lockout/HDR/title/audio-meter policy application, and delegation to
 `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs` for record-button
 chrome.
 `MainWindow.ButtonActions.cs` is the XAML-facing recording adapter.

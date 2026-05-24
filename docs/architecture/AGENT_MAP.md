@@ -2882,13 +2882,10 @@ Primary current owners:
   unavailable-placeholder reveal. `Sussudio/MainWindow.PreviewTransitions.Composition.cs`
   keeps the XAML event name stable as part of the preview transition/presentation
   adapter.
-- `Sussudio/Controllers/Recording/RecordingStatePresentationPolicy.cs` owns pure
-  recording-state lockout decisions: recording-time capture/audio control
-  enablement, analog gain enablement, transition button enablement, FFmpeg
-  button enablement, and settled record-button content visibility.
-  `Sussudio/Controllers/Recording/RecordingStatePresentationController.cs` owns
-  recording property-change routing, ViewModel-derived lockout/HDR/title/audio-meter
-  policy application, and delegates record-button chrome.
+- `Sussudio/Controllers/Recording/RecordingStatePresentationController.cs` owns
+  pure recording-state lockout decisions, recording property-change routing,
+  ViewModel-derived lockout/HDR/title/audio-meter policy application, and
+  delegates record-button chrome.
   `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs` owns demo-visible
   record-button chrome: recording glow, Rec pulse, starting spinner,
   normal/recording content, padding, enabled-state application, and the
@@ -2974,7 +2971,7 @@ Primary current owners:
 - `Sussudio/MainWindow.ButtonActions.cs` is the XAML-facing recording
   adapter. Recording-specific property-name routing, record-button, glow, pulse,
   and recording-time lockout projection live in
-  `RecordingStatePresentationController` and `RecordingStatePresentationPolicy`.
+  `RecordingStatePresentationController`.
 - `Sussudio/MainWindow.ButtonActions.cs` is the XAML-facing recording,
   device, and output-path button/display adapter. `OutputPathController` owns
   output-path property-change routing, textbox updates, and browse/open

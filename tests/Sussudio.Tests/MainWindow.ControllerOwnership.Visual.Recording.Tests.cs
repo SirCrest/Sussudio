@@ -95,7 +95,14 @@ static partial class Program
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ButtonActions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingStatePresentationController.cs").Replace("\r\n", "\n");
-        var policyText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingStatePresentationPolicy.cs").Replace("\r\n", "\n");
+        const string policyMarker = "internal static class RecordingStatePresentationPolicy";
+        var policyStart = controllerText.IndexOf(policyMarker, System.StringComparison.Ordinal);
+        if (policyStart < 0)
+        {
+            throw new System.InvalidOperationException("RecordingStatePresentationPolicy was not found in RecordingStatePresentationController.cs.");
+        }
+
+        var policyText = controllerText[policyStart..];
 
         AssertContains(adapterText, "private RecordingStatePresentationController _recordingStatePresentationController = null!;");
         AssertContains(adapterText, "private void InitializeRecordingStatePresentationController()");
