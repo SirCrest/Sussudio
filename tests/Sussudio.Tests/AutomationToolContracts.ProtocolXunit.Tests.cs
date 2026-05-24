@@ -173,21 +173,23 @@ public sealed class AutomationToolContractsProtocolXunitTests
     public void AutomationClient_UsesSharedProtocol_ForCommandResolution()
     {
         var entryText = RuntimeContractSource.ReadRepoFile("tools/AutomationClient/Program.cs");
-        var argumentsText = RuntimeContractSource.ReadRepoFile("tools/AutomationClient/Program.Arguments.cs");
-        var payloadText = RuntimeContractSource.ReadRepoFile("tools/AutomationClient/Program.Payload.cs");
-        var clientText = string.Join("\n", entryText, argumentsText, payloadText);
+        var clientText = entryText;
 
         Assert.Contains("AutomationPipeProtocol", clientText);
         Assert.Contains("var options = ParseArgs(args);", entryText);
         Assert.Contains("var payload = BuildPayload(options);", entryText);
         Assert.Contains("public int? ResponseTimeoutMs { get; set; }", entryText);
-        Assert.DoesNotContain("private static Options ParseArgs(string[] args)", entryText);
-        Assert.DoesNotContain("private static object BuildPayload(Options options)", entryText);
-        Assert.Contains("private static Options ParseArgs(string[] args)", argumentsText);
-        Assert.Contains("private static void WriteHelp()", argumentsText);
-        Assert.Contains("--payload-base64", argumentsText);
-        Assert.Contains("private static object BuildPayload(Options options)", payloadText);
-        Assert.Contains("Convert.FromBase64String(options.PayloadBase64)", payloadText);
+        Assert.Contains("private static Options ParseArgs(string[] args)", entryText);
+        Assert.Contains("private static void WriteHelp()", entryText);
+        Assert.Contains("--payload-base64", entryText);
+        Assert.Contains("private static object BuildPayload(Options options)", entryText);
+        Assert.Contains("Convert.FromBase64String(options.PayloadBase64)", entryText);
+        Assert.False(
+            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "AutomationClient", "Program.Arguments.cs")),
+            "AutomationClient argument parsing should stay with the low-level client entrypoint.");
+        Assert.False(
+            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "AutomationClient", "Program.Payload.cs")),
+            "AutomationClient payload construction should stay with the low-level client entrypoint.");
         Assert.DoesNotContain("CommandMap = new", clientText);
     }
 

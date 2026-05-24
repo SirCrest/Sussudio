@@ -3410,12 +3410,9 @@ Primary owners:
   batches and diagnostic-session command callbacks.
 - `tools/AutomationClient/Program.cs` owns the low-level pipe client entry
   flow, cancellation handling, shared-protocol command resolution, timeout
-  selection, response printing, and the local options DTO for scripts and ad
-  hoc automation calls.
-- `tools/AutomationClient/Program.Arguments.cs` owns AutomationClient flag
-  parsing and help text.
-- `tools/AutomationClient/Program.Payload.cs` owns AutomationClient JSON,
-  base64, and key/value payload construction.
+  selection, response printing, the local options DTO, flag parsing/help text,
+  and JSON/base64/key-value payload construction for scripts and ad hoc
+  automation calls. Keep this low-level tool as one cohesive CLI entrypoint.
 - `tools/AutomationClient/README.md` owns AutomationClient usage notes.
 - `tools/send-automation-command.ps1` owns the PowerShell helper wrapper and
   its AutomationClient rebuild freshness inputs.

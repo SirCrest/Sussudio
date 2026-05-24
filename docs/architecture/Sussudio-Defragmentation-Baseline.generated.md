@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T23:31:19Z
+Generated UTC: 2026-05-24T23:36:55Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 592 |
+| Production .cs files | 590 |
 | Test .cs files | 552 |
 | Production .cs files under 60 lines | 20 (3.4%) |
 | Production .cs files under 80 lines | 36 (6.1%) |
@@ -44,8 +44,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | Formatters | 4 | 959 | tools/ssctl/Formatters.Common.cs, tools/ssctl/Formatters.Options.cs, tools/ssctl/Formatters.Snapshot.cs, tools/ssctl/Formatters.Timeline.cs |
 | FlashbackBackendResources | 4 | 944 | Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs, Sussudio/Services/Flashback/FlashbackBackendResources.cs, Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs, Sussudio/Services/Flashback/FlashbackBackendResources.Teardown.cs |
 | WasapiAudioPlayback | 4 | 847 | Sussudio/Services/Audio/WasapiAudioPlayback.cs, Sussudio/Services/Audio/WasapiAudioPlayback.Initialization.cs, Sussudio/Services/Audio/WasapiAudioPlayback.Queue.cs, Sussudio/Services/Audio/WasapiAudioPlayback.RenderThread.cs |
+| NamedPipeAutomationServer | 3 | 668 | Sussudio/Services/Automation/NamedPipeAutomationServer.ConnectionSession.cs, Sussudio/Services/Automation/NamedPipeAutomationServer.cs, Sussudio/Services/Automation/NamedPipeAutomationServer.Security.cs |
 | WasapiComInterop | 3 | 366 | Sussudio/Services/Audio/WasapiComInterop.cs, Sussudio/Services/Audio/WasapiComInterop.DeviceClients.cs, Sussudio/Services/Audio/WasapiComInterop.Formats.cs |
-| Program | 3 | 321 | tools/AutomationClient/Program.Arguments.cs, tools/AutomationClient/Program.cs, tools/AutomationClient/Program.Payload.cs |
 
 ## Largest production files
 
