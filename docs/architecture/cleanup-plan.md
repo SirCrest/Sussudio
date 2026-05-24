@@ -3989,9 +3989,10 @@ owner, fold it back into that owner and update the source-shape tests and
    partial was retired rather than preserving a sub-100-line facade. Selected
    capture-device reactions, capability projection, source telemetry reset, and
    device-native audio-control refresh handoff live in `MainViewModel.CaptureSelection.cs`. Capture-mode property-change
-   hooks live in `MainViewModel.CaptureModeTransactions.cs` and startup
-   audio-list and watcher-driven audio endpoint refresh adaptation live in
-   `MainViewModel.AudioDeviceDiscovery.cs`. Pure audio-device filtering and
+   hooks live in `MainViewModel.CaptureModeTransactions.cs`; startup audio-list
+   and watcher-driven audio endpoint refresh adaptation are folded into
+   `MainViewModel.AudioState.cs` beside the audio collections and saved-device
+   restore state. Pure audio-device filtering and
    previous/saved/default audio and microphone selection fallback policy now
    lives in `Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs`. Pure
    recording codec filtering, selected-codec fallback policy, string-to-model

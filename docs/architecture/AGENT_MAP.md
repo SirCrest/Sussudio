@@ -3241,7 +3241,7 @@ Primary current owners:
   capture-device reactions, capability projection, source telemetry reset, and
   device-native audio-control refresh handoff live in `MainViewModel.CaptureSelection.cs`; capture-mode property-change hooks live
   in `MainViewModel.CaptureModeTransactions.cs`; startup audio-list and
-  watcher-driven audio endpoint refresh adaptation lives in `MainViewModel.AudioDeviceDiscovery.cs`.
+  watcher-driven audio endpoint refresh adaptation live in `MainViewModel.AudioState.cs`.
   `Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs` owns pure capture-card
   endpoint filtering plus previous/saved/default audio and microphone selection
   fallback policy.
