@@ -3000,7 +3000,7 @@ Delayed preview reveal after first visual now lives in
 `Sussudio/MainWindow.PreviewTransitions.Composition.cs`. Watchdog/timeout recovery remains in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`.
 Preview startup loading overlay presentation now lives in
-`Sussudio/Controllers/Preview/Startup/PreviewStartupOverlayController.cs`.
+`Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`.
 `Sussudio/MainWindow.PreviewTransitions.Composition.cs` is the XAML-facing adapter; watchdog and
 timeout recovery stay in `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`.
 Top-level preview resize telemetry throttling now lives in

@@ -2954,7 +2954,7 @@ Primary current owners:
   replacement fallback, and preview-audio fade start ordering.
   `Sussudio/MainWindow.PreviewTransitions.Composition.cs` wires the XAML-facing adapter. Keep
   timeout/watchdog recovery in `PreviewStartupWatchdogController`.
-- `Sussudio/Controllers/Preview/Startup/PreviewStartupOverlayController.cs` owns preview-
+- `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview-
   startup loading overlay presentation while the app waits for visual
   confirmation: ProgressRing activation, fade-in/fade-out routing, and the
   reinit-collapse opacity reset. `Sussudio/MainWindow.PreviewTransitions.Composition.cs`

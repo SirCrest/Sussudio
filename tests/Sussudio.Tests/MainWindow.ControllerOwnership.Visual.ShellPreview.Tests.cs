@@ -118,7 +118,7 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadMainWindowPreviewTransitionsAdapterSource();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupOverlayController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private PreviewStartupOverlayController _previewStartupOverlayController = null!;");
         AssertContains(adapterText, "private void InitializePreviewStartupOverlayController()");
@@ -136,6 +136,10 @@ static partial class Program
         AssertContains(controllerText, "_context.PreviewLoadingOverlay.Opacity = 1.0;");
         AssertContains(controllerText, "PreviewTransitionAnimationController.FadeInElement(_context.PreviewLoadingOverlay);");
         AssertContains(controllerText, "PreviewTransitionAnimationController.FadeOutElement(_context.PreviewLoadingOverlay);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Startup", "PreviewStartupOverlayController.cs")),
+            "preview startup overlay lives with preview transition presentation concerns");
         AssertDoesNotContain(adapterText, "FadeInElement = FadeInElement,");
         AssertDoesNotContain(adapterText, "FadeOutElement = FadeOutElement,");
         AssertDoesNotContain(adapterText, "var ring = (ProgressRing)");

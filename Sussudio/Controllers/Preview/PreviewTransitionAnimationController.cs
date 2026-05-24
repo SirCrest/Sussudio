@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 
@@ -195,5 +196,46 @@ internal sealed class PreviewTransitionAnimationController
         storyboard.Completed += (_, _) => tcs.TrySetResult(true);
         storyboard.Begin();
         return tcs.Task;
+    }
+}
+
+internal sealed class PreviewStartupOverlayControllerContext
+{
+    public required Panel PreviewLoadingOverlay { get; init; }
+}
+
+internal sealed class PreviewStartupOverlayController
+{
+    private readonly PreviewStartupOverlayControllerContext _context;
+
+    public PreviewStartupOverlayController(PreviewStartupOverlayControllerContext context)
+    {
+        _context = context;
+    }
+
+    public void Start()
+    {
+        var ring = (ProgressRing)_context.PreviewLoadingOverlay.Children[0];
+        ring.IsActive = true;
+        PreviewTransitionAnimationController.FadeInElement(_context.PreviewLoadingOverlay);
+    }
+
+    public void Stop(bool isPreviewReinitAnimating)
+    {
+        if (_context.PreviewLoadingOverlay.Visibility == Visibility.Collapsed)
+        {
+            return;
+        }
+
+        var ring = (ProgressRing)_context.PreviewLoadingOverlay.Children[0];
+        ring.IsActive = false;
+        if (isPreviewReinitAnimating)
+        {
+            _context.PreviewLoadingOverlay.Visibility = Visibility.Collapsed;
+            _context.PreviewLoadingOverlay.Opacity = 1.0;
+            return;
+        }
+
+        PreviewTransitionAnimationController.FadeOutElement(_context.PreviewLoadingOverlay);
     }
 }
