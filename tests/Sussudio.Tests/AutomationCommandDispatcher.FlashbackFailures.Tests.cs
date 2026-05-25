@@ -63,12 +63,11 @@ static partial class Program
         AssertEqual(snapshot, GetPublicProperty(response, "Snapshot"), "flashback failure response reuses diagnostic snapshot");
     }
 
-    internal static Task AutomationCommandDispatcher_FlashbackCommands_LiveInFocusedPartial()
+    internal static Task AutomationCommandDispatcher_FlashbackCommands_LiveWithCustomRouter()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
-        var flashbackCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.FlashbackCommands.cs")
-            .Replace("\r\n", "\n");
+        var flashbackCommandsText = customCommandsText;
 
         AssertContains(customCommandsText, "case AutomationCommandKind.FlashbackAction:");
         AssertContains(customCommandsText, "ExecuteFlashbackActionCommandAsync(payload, correlationId, cancellationToken)");
@@ -87,8 +86,10 @@ static partial class Program
         AssertContains(flashbackCommandsText, "_flashbackPort.GetFlashbackSegmentsAsync(cancellationToken)");
         AssertContains(flashbackCommandsText, "_flashbackPort.RestartFlashbackAsync(cancellationToken)");
         AssertContains(flashbackCommandsText, "_flashbackPort.SetFlashbackEnabledAsync(enabled, cancellationToken)");
-        AssertDoesNotContain(customCommandsText, "ExportFlashbackAutomationAsync(seconds");
-        AssertDoesNotContain(customCommandsText, "CreateFlashbackActionRejectedResponse(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.FlashbackCommands.cs")),
+            "Flashback command bodies folded into AutomationCommandDispatcher.CustomCommands.cs");
 
         return Task.CompletedTask;
     }

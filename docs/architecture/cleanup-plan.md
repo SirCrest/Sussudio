@@ -353,10 +353,8 @@ plus read-only snapshot, manifest, diagnostic event, performance timeline,
 audio ramp trace, verification, visual probe/capture, and the small
 device-selection, audio-control, capture-control, output-path, and
 recording-enable command bodies it dispatches, including the recording-response
-snapshot refresh.
-`AutomationCommandDispatcher.FlashbackCommands.cs` owns Flashback action,
-export, segment, restart, and enable command bodies behind the custom command
-router.
+snapshot refresh, plus Flashback action, export, segment, restart, and enable
+command bodies behind the custom command router.
 `AutomationCommandDispatcher.cs` owns manifest revision, auth-token, and
 readiness gating beside shared response shaping and Flashback rejection
 diagnostics. `AutomationCommandDispatcher.PortMappedDispatch.cs` owns

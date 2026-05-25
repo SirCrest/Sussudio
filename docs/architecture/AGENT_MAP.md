@@ -199,10 +199,8 @@ Automation diagnostics ownership:
   snapshot/manifest/diagnostic/timeline/audio-ramp readback commands,
   verification commands, visual probe/capture commands, and the small
   device-selection, audio-control, capture-control, output-path, and
-  recording-enable command bodies it dispatches.
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.FlashbackCommands.cs`
-  owns Flashback action/export/segment/restart/enable command bodies behind the
-  custom command router.
+  recording-enable command bodies it dispatches, plus Flashback action/export/
+  segment/restart/enable command bodies behind the custom command router.
 - `Sussudio/Services/Automation/IAutomationViewModel.cs` owns the aggregate
   automation ViewModel contract plus feature-shaped ports for readiness,
   snapshot queries, device selection, capture settings, audio, preview/recording,
@@ -219,7 +217,8 @@ Automation diagnostics ownership:
   diagnostics, probe, and window-control ports for custom command bodies,
   including WaitForCondition response shaping, wait-condition polling, snapshot
   predicates, full-screen, recordings-folder, arm-close, close-arm gating, and
-  low-level window action execution.
+  low-level window action execution. It also consumes the Flashback port for
+  Flashback action/export/segment/restart/enable command bodies.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.cs` also owns
   shared response shaping, acknowledged responses, and Flashback rejection
   diagnostics for the dispatcher family.

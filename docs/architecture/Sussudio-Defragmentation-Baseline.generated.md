@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-25T01:59:02Z
+Generated UTC: 2026-05-25T02:05:46Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 563 |
+| Production .cs files | 562 |
 | Test .cs files | 552 |
 | Production .cs files under 60 lines | 14 (2.5%) |
 | Production .cs files under 80 lines | 28 (5.0%) |
@@ -35,8 +35,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | ParallelMjpegDecodePipeline | 7 | 1245 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.CompressedQueue.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Metrics.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.ReorderEmission.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Workers.cs |
 | FlashbackBufferManager | 6 | 1445 | Sussudio/Services/Flashback/FlashbackBufferManager.cs, Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs, Sussudio/Services/Flashback/FlashbackBufferManager.LiveAccounting.cs, Sussudio/Services/Flashback/FlashbackBufferManager.Purge.cs, Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs, Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs |
 | WasapiAudioCapture | 6 | 976 | Sussudio/Services/Audio/WasapiAudioCapture.CaptureLoop.cs, Sussudio/Services/Audio/WasapiAudioCapture.Conversion.cs, Sussudio/Services/Audio/WasapiAudioCapture.cs, Sussudio/Services/Audio/WasapiAudioCapture.Diagnostics.cs, Sussudio/Services/Audio/WasapiAudioCapture.Fanout.cs, Sussudio/Services/Audio/WasapiAudioCapture.Initialization.cs |
-| AutomationCommandDispatcher | 6 | 1568 | Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.FlashbackCommands.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.Payload.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs |
 | MjpegPreviewJitterBuffer | 6 | 1280 | Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Adaptive.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FrameIngress.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FramePacing.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Queue.cs |
+| AutomationCommandDispatcher | 5 | 1557 | Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.Payload.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs |
 | RecordingVerifier | 5 | 1021 | Sussudio/Services/Recording/Verification/RecordingVerifier.Cadence.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Results.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs |
 | NvdecMjpegDecoder | 4 | 610 | Sussudio/Services/Gpu/NvdecMjpegDecoder.Decode.cs, Sussudio/Services/Gpu/NvdecMjpegDecoder.Download.cs, Sussudio/Services/Gpu/NvdecMjpegDecoder.Initialization.cs, Sussudio/Services/Gpu/NvdecMjpegDecoder.SharedInitialization.cs |
 | WasapiAudioPlayback | 4 | 847 | Sussudio/Services/Audio/WasapiAudioPlayback.cs, Sussudio/Services/Audio/WasapiAudioPlayback.Initialization.cs, Sussudio/Services/Audio/WasapiAudioPlayback.Queue.cs, Sussudio/Services/Audio/WasapiAudioPlayback.RenderThread.cs |
@@ -58,17 +58,17 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 814 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs |
 | 764 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 744 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs |
+| 723 | Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs |
 | 684 | Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs |
 | 677 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
 | 649 | tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs |
 | 647 | Sussudio/Services/Automation/NamedPipeAutomationServer.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
 | 638 | Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs |
-| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 | 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
+| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 | 615 | Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
-| 586 | Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
 | 580 | Sussudio/Controllers/Window/WindowCloseLifecycleController.cs |
 | 578 | Sussudio/Services/Capture/CaptureSessionCoordinator.cs |

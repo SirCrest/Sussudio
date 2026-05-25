@@ -111,8 +111,8 @@ public sealed class AutomationDispatcherContractsTests
         => global::Program.AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics();
 
     [Fact]
-    public Task AutomationDispatcherFlashbackCommandsLiveInFocusedPartial()
-        => global::Program.AutomationCommandDispatcher_FlashbackCommands_LiveInFocusedPartial();
+    public Task AutomationDispatcherFlashbackCommandsLiveWithCustomRouter()
+        => global::Program.AutomationCommandDispatcher_FlashbackCommands_LiveWithCustomRouter();
 
     [Fact]
     public Task AutomationDispatcherVerificationCommandsLiveInFocusedPartial()
