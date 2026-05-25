@@ -1542,7 +1542,7 @@ Flashback buffer retention now lives in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs`. Keep segment
 eviction selection, eviction file deletion, and disk-budget/window retention
 policy there. Explicit purge/delete-all lifecycle behavior now lives in
-`Sussudio/Services/Flashback/FlashbackBufferManager.Purge.cs`; keep
+`Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs`; keep
 `PurgeCompletedSegments`, `PurgeAllSegments`, `PurgeAllSegmentsCore`, and
 guarded purge deletion there. Eviction pause state, recording PTS range capture,
 and pause-driven disk-warning state now live with retention in

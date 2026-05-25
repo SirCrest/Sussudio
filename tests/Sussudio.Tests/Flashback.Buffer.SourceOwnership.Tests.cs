@@ -134,20 +134,21 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackBufferManager_PurgeLivesInFocusedPartial()
+    internal static Task FlashbackBufferManager_PurgeLivesWithLifecycleCleanup()
     {
         var retentionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs")
             .Replace("\r\n", "\n");
-        var purgeText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Purge.cs")
+        var lifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(purgeText, "public void PurgeCompletedSegments()");
-        AssertContains(purgeText, "public void PurgeAllSegments()");
-        AssertContains(purgeText, "private (int Segments, long FreedBytes) PurgeAllSegmentsCore()");
-        AssertContains(purgeText, "private bool TryDeleteFile(string filePath)");
-        AssertContains(purgeText, "FLASHBACK_PURGE_PARTIAL");
-        AssertContains(purgeText, "FLASHBACK_BUFFER_PURGE_SKIP reason=recovery_preserved");
-        AssertContains(purgeText, "FLASHBACK_BUFFER_DELETE_SKIP reason=outside_session");
+        AssertContains(lifecycleText, "public void PurgeCompletedSegments()");
+        AssertContains(lifecycleText, "public void PurgeAllSegments()");
+        AssertContains(lifecycleText, "private (int Segments, long FreedBytes) PurgeAllSegmentsCore()");
+        AssertContains(lifecycleText, "private bool TryDeleteFile(string filePath)");
+        AssertContains(lifecycleText, "FLASHBACK_PURGE_PARTIAL");
+        AssertContains(lifecycleText, "FLASHBACK_BUFFER_PURGE_SKIP reason=recovery_preserved");
+        AssertContains(lifecycleText, "FLASHBACK_BUFFER_DELETE_SKIP reason=outside_session");
+        AssertContains(lifecycleText, "var (purgedSegments, purgedBytes) = PurgeAllSegmentsCore();");
         AssertContains(retentionText, "public void PauseEviction()");
         AssertContains(retentionText, "public (TimeSpan StartPts, TimeSpan EndPts) ResumeEviction()");
         AssertContains(retentionText, "public bool IsDiskWarningActive");
@@ -160,6 +161,10 @@ static partial class Program
         AssertDoesNotContain(retentionText, "public void PurgeCompletedSegments()");
         AssertDoesNotContain(retentionText, "public void PurgeAllSegments()");
         AssertDoesNotContain(retentionText, "private (int Segments, long FreedBytes) PurgeAllSegmentsCore()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Purge.cs")),
+            "FlashbackBufferManager.Purge.cs folded into FlashbackBufferManager.Lifecycle.cs");
 
         return Task.CompletedTask;
     }

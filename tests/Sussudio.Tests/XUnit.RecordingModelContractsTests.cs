@@ -83,8 +83,8 @@ public sealed class RecordingModelContractsTests
         => global::Program.FlashbackBufferManager_LifecycleHelpersLiveInFocusedPartial();
 
     [Fact]
-    public Task FlashbackBufferManagerPurgeHelpersLiveInFocusedPartial()
-        => global::Program.FlashbackBufferManager_PurgeLivesInFocusedPartial();
+    public Task FlashbackBufferManagerPurgeHelpersLiveWithLifecycleCleanup()
+        => global::Program.FlashbackBufferManager_PurgeLivesWithLifecycleCleanup();
 
     [Fact]
     public Task FlashbackBufferManagerLatestPtsClampsInvalidBufferDuration()

@@ -2152,3 +2152,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: raw/lease/GPU video validation, texture AddRef ownership, hot audio/microphone write adapters, accepted/rejected/overloaded queue transactions, force-rotate audio queue guard policy, depth/max-depth accounting, backlog eviction accounting, rejection counters, and throttled queue diagnostics remain unchanged
 Notes for future agents: keep Flashback encoder producer input validation and queue admission/write/rejection helpers together in `FlashbackEncoderSink.Inputs.cs`; keep queue DTOs, packet buffer ownership, and queued-buffer cleanup in `FlashbackEncoderSink.Queues.cs`.
+
+Date: 2026-05-25
+Area: Flashback buffer purge lifecycle locality
+Problem: `FlashbackBufferManager.Purge.cs` held explicit purge/delete-all cleanup while `FlashbackBufferManager.Lifecycle.cs` owned `Dispose()` and called `PurgeAllSegmentsCore()`. Reviewing dispose cleanup and recovery-preserve purge behavior required opening two adjacent partials for one lifecycle cleanup path.
+Files consolidated: `Sussudio/Services/Flashback/FlashbackBufferManager.Purge.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `FlashbackBufferManager` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: completed-segment purge, full purge, dispose purge, recovery-preserve purge skip, session-directory path guard, active-segment delete/reset, freed-byte accounting, and eviction pause reset remain unchanged
+Notes for future agents: keep explicit purge/delete-all cleanup with `FlashbackBufferManager.Lifecycle.cs`; keep retention eviction selection and pause/resume recording range policy in `FlashbackBufferManager.Retention.cs`.
