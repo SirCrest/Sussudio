@@ -2189,7 +2189,8 @@ Primary current owners:
   `ResultOwnership.Builder.PreviewAndCompletion.Tests.cs` covers preview,
   analysis-warning, diagnostic-health, and artifact-handoff ownership.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.HealthPolicy.Tests.cs`
-  owns diagnostic-session Flashback warmup health-policy ownership assertions.
+  owns diagnostic-session Flashback warmup health-policy and warning-policy
+  ownership assertions.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`
   owns diagnostic-session Flashback cycle, preview-cycle, rejected-export,
   segment-playback, recording-settings, and lifecycle scenario ownership
@@ -2201,8 +2202,6 @@ Primary current owners:
   owns diagnostic-session Flashback metric projection ownership assertions.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Waits.Tests.cs`
   owns diagnostic-session Flashback snapshot polling wait ownership assertions.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Validation.Tests.cs`
-  owns diagnostic-session Flashback warning-policy ownership assertions.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Export.Tests.cs`
   owns diagnostic-session Flashback export ownership assertions for export
   scenario flows, export helpers, and shared segment wait/parsing collaborators.
