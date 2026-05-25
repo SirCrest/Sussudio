@@ -151,6 +151,9 @@ static partial class Program
         AssertContains(retentionText, "public void PauseEviction()");
         AssertContains(retentionText, "public (TimeSpan StartPts, TimeSpan EndPts) ResumeEviction()");
         AssertContains(retentionText, "public bool IsDiskWarningActive");
+        AssertContains(retentionText, "public TimeSpan RecordingStartPts");
+        AssertContains(retentionText, "public TimeSpan RecordingEndPts");
+        AssertContains(retentionText, "FLASHBACK_BUFFER_EVICTION_RESUME_UNBALANCED");
         AssertContains(retentionText, "private void EvictOldestSegments()");
         AssertContains(retentionText, "private bool DeleteFileForEviction(string filePath, long sizeBytes, string reason)");
         AssertContains(retentionText, "private static bool DeleteEvictedFile(string fullPath, string sessionRoot, long sizeBytes, string reason)");
