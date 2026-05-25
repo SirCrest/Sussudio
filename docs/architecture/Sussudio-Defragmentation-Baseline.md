@@ -1693,6 +1693,18 @@ Behavior preserved: `Sussudio.Tests` remains a friend assembly for both the app 
 Notes for future agents: keep mechanical friend assembly metadata in project files unless an assembly needs substantial handwritten assembly metadata.
 
 Date: 2026-05-25
+Area: app contracts using metadata locality
+Problem: `Sussudio/GlobalUsings.cs` was a six-line project-wide import file containing only `global using Sussudio.Services.Contracts;`, leaving mechanical project import metadata as an extra production `.cs` file.
+Files consolidated: `Sussudio/GlobalUsings.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: none
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: not applicable; namespace import moved into the owning project file
+Behavior preserved: all app source files still receive the `Sussudio.Services.Contracts` namespace through project-generated global using metadata.
+Notes for future agents: keep broad project-level imports in the project file when they are pure metadata and do not document a behavioral boundary.
+
+Date: 2026-05-25
 Area: diagnostic-session run context locality
 Problem: `DiagnosticSessionRunState.cs` was a 63-line state holder constructed only by `DiagnosticSessionRunContext`, splitting terminal exception state, last-stage tracking, and best-effort artifact failure recording from the mutable run context that owns the lifecycle using that state.
 Files consolidated: `tools/Common/DiagnosticSessionRunState.cs`

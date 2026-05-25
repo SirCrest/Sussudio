@@ -102,6 +102,7 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
       <_Parameter1>Sussudio.Tests</_Parameter1>
     </AssemblyAttribute>
+    <Using Include="Sussudio.Services.Contracts" />
   </ItemGroup>
 
   <Import Project="Sussudio.Build.targets" />
