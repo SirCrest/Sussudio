@@ -7,8 +7,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
-        var modelText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Models.cs")
-            .Replace("\r\n", "\n");
+        var modelText = rootText;
 
         AssertContains(modelText, "public enum CaptureCommandKind");
         AssertContains(modelText, "public enum CaptureCommandOutcome");
@@ -16,11 +15,10 @@ static partial class Program
         AssertContains(modelText, "public sealed class CaptureSessionSnapshot");
         AssertContains(modelText, "internal readonly record struct FlashbackPlaybackSnapshot(");
         AssertContains(modelText, "internal readonly record struct FlashbackBufferStatus(");
-        AssertDoesNotContain(rootText, "public enum CaptureCommandKind");
-        AssertDoesNotContain(rootText, "public enum CaptureCommandOutcome");
-        AssertDoesNotContain(rootText, "public sealed class CaptureSessionSnapshot");
-        AssertDoesNotContain(rootText, "internal readonly record struct FlashbackPlaybackSnapshot(");
-        AssertDoesNotContain(rootText, "internal readonly record struct FlashbackBufferStatus(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionCoordinator.Models.cs")),
+            "coordinator model surface folded into the coordinator root");
 
         return Task.CompletedTask;
     }

@@ -451,7 +451,7 @@ Important entry points:
   accounting, pending-command failure drain, and pending-command counter
   decrement policy, plus dispose/drain/cancel lifecycle for the worker queue
   and cancellation token source.
-- `CaptureSessionCoordinator.Models.cs` owns command enums, queue receipts,
+- `CaptureSessionCoordinator.cs` also owns command enums, queue receipts,
   session snapshots, and Flashback playback/buffer status projections.
 - `CaptureSessionCoordinator.Flashback.cs` owns queued Flashback mutations,
   read-only Flashback status, playback snapshot projection, Flashback export

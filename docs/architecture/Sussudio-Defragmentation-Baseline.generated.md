@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-25T10:44:38Z
+Generated UTC: 2026-05-25T10:49:40Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 469 |
+| Production .cs files | 468 |
 | Test .cs files | 552 |
 | Production .cs files under 60 lines | 9 (1.9%) |
 | Production .cs files under 80 lines | 16 (3.4%) |
@@ -63,6 +63,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 744 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs |
 | 738 | Sussudio/ViewModels/MainViewModel.AudioState.cs |
 | 723 | Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs |
+| 705 | Sussudio/Services/Capture/CaptureSessionCoordinator.cs |
 | 684 | Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs |
 | 683 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs |
 | 677 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
@@ -70,14 +71,13 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 647 | Sussudio/Services/Automation/NamedPipeAutomationServer.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
 | 638 | Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs |
-| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 | 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
+| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 | 624 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 585 | Sussudio/Services/Gpu/NvdecMjpegDecoder.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
 | 580 | Sussudio/Controllers/Window/WindowCloseLifecycleController.cs |
-| 578 | Sussudio/Services/Capture/CaptureSessionCoordinator.cs |
 | 575 | tools/NativeXuAudioProbe/Program.I2cCommands.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
 | 552 | Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.cs |

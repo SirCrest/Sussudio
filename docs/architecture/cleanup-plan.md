@@ -1093,8 +1093,8 @@ lifecycle-changing operations should pass an explicit target
 `Sussudio/Services/Capture/CapturePipelineResources.cs`.
 Capture session coordinator command enums, queue receipt records, session
 snapshots, and Flashback playback/buffer status projections now live in
-`Sussudio/Services/Capture/CaptureSessionCoordinator.Models.cs`.
-`CaptureSessionCoordinator.cs` owns construction, shared state fields, the public
+`Sussudio/Services/Capture/CaptureSessionCoordinator.cs` with construction,
+shared state fields, the public
 non-Flashback lifecycle/audio command facade into the serialized worker, and
 queue/session snapshot projection, queue work item creation, command enqueueing,
 enqueue-failure handling, disposed-state ingress guards, worker-loop execution,
