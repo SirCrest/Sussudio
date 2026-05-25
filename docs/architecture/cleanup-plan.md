@@ -2219,12 +2219,12 @@ Parallel MJPEG worker execution now lives in
 array ownership, worker thread creation/naming, worker decode-loop execution,
 and worker liveness checks there; keep the root pipeline focused on
 construction, callback storage, channel creation, and startup sequencing.
-Software MJPEG decode/copy execution now lives in
-`Sussudio/Services/Gpu/SoftwareMjpegDecoder.Decode.cs`. Keep FFmpeg decoder
-context allocation, frame/packet ownership, disposal, and error-string helpers
-in `Sussudio/Services/Gpu/SoftwareMjpegDecoder.cs`; keep the hot MJPEG
-send/receive, format/dimension validation, one-time diagnostics, and YUV420 to
-NV12 copy path in the decode partial.
+Software MJPEG decode/copy execution now lives with its decoder state in
+`Sussudio/Services/Gpu/SoftwareMjpegDecoder.cs`. Keep FFmpeg decoder context
+allocation, frame/packet ownership, hot MJPEG send/receive,
+format/dimension validation, one-time diagnostics, YUV420-to-NV12 copy,
+disposal, and error-string helpers together unless a real named collaborator
+emerges.
 
 Parallel MJPEG decode pipeline timing now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Metrics.cs`. Keep timing

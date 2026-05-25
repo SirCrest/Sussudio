@@ -125,17 +125,17 @@ public class MjpegPipelineTimingTests
     public void SoftwareMjpegDecoder_Properties_ExposeCorrectDimensions()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Gpu/SoftwareMjpegDecoder.cs");
-        var decodeText = ReadRepoFile("Sussudio/Services/Gpu/SoftwareMjpegDecoder.Decode.cs");
         var decoderType = RequireType("Sussudio.Services.Gpu.SoftwareMjpegDecoder");
 
-        AssertContains(rootText, "internal sealed unsafe partial class SoftwareMjpegDecoder : IDisposable");
+        AssertContains(rootText, "internal sealed unsafe class SoftwareMjpegDecoder : IDisposable");
         AssertContains(rootText, "public void Initialize(int width, int height)");
         AssertContains(rootText, "public void Dispose()");
-        AssertContains(decodeText, "internal sealed unsafe partial class SoftwareMjpegDecoder");
-        AssertContains(decodeText, "public bool DecodeToNv12(ReadOnlySpan<byte> jpegData, Span<byte> nv12Destination)");
-        AssertContains(decodeText, "SW_MJPEG_DECODE_DIAG");
-        AssertContains(decodeText, "Buffer.MemoryCopy(");
-        AssertDoesNotContain(rootText, "public bool DecodeToNv12(");
+        AssertContains(rootText, "public bool DecodeToNv12(ReadOnlySpan<byte> jpegData, Span<byte> nv12Destination)");
+        AssertContains(rootText, "SW_MJPEG_DECODE_DIAG");
+        AssertContains(rootText, "Buffer.MemoryCopy(");
+        Assert.False(
+            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "Sussudio", "Services", "Gpu", "SoftwareMjpegDecoder.Decode.cs")),
+            "Software MJPEG decode path folded into decoder state/lifetime owner");
 
         var widthProp = decoderType.GetProperty("Width", BindingFlags.Public | BindingFlags.Instance);
         var heightProp = decoderType.GetProperty("Height", BindingFlags.Public | BindingFlags.Instance);
