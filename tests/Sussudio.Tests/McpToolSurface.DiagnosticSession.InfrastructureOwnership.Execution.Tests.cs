@@ -9,7 +9,7 @@ static partial class Program
         var scenarioText = ReadDiagnosticSessionRunExecutionScenarioSource();
         var phaseRunnerText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseRunner.cs")
             .Replace("\r\n", "\n");
-        var phaseModelsText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseModels.cs")
+        var phaseModelsText = ReadRepoFile("tools/Common/DiagnosticSessionModels.cs")
             .Replace("\r\n", "\n");
         var completionText = phaseRunnerText;
         var backgroundTasksText = ReadDiagnosticSessionBackgroundTasksSource();

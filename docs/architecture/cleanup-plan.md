@@ -3036,7 +3036,9 @@ Diagnostic session DTOs live in feature-oriented model files:
 `tools/Common/DiagnosticSessionModels.cs` and
 `tools/Common/DiagnosticSessionResult.cs`,
 with `DiagnosticSessionModels.cs` owning run options, sampled snapshot DTOs,
-shared tool invocation defaults, and the ssctl diagnostic-session usage string,
+shared tool invocation defaults, the ssctl diagnostic-session usage string,
+explicit scenario phase input handoff, immutable completion handoff, and mutable
+in-flight phase state,
 while `DiagnosticSessionScenarioCatalog.cs` owns scenario name constants, the
 MCP-compatible scenario description, the CLI help-list constant, normalization,
 entry lookup, requirement queries, and export verification artifact lookup.
@@ -3058,8 +3060,6 @@ request mapping, result-build invocation, and terminal live-state write.
 post-cleanup phase and hands scenario execution directly to
 `DiagnosticSessionScenarioPhaseRunner.cs`, which owns the main scenario phase
 for setup/startup, sampling, completion delegation, and fault drain delegation.
-`DiagnosticSessionScenarioPhaseModels.cs` owns the explicit phase input handoff,
-the immutable completion handoff, and mutable in-flight phase state.
 `DiagnosticSessionScenarioPhaseRunner.cs` owns post-sampling completion order
 and fault-drain delegation beside the scenario phase sequence: registered
 background work before rejected-export handling, rejected-export handling
@@ -3557,7 +3557,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioStartup.cs`
 - `DiagnosticSessionRunner.cs`
 - `DiagnosticSessionScenarioPhaseRunner.cs`
-- `DiagnosticSessionScenarioPhaseModels.cs`
 - `ToolJsonOptions.cs`
 - `tools/Common/PresentMon/PresentMonProbe.cs`
 
@@ -3583,7 +3582,7 @@ owner, fold it back into that owner and update the source-shape tests and
    post-cleanup evidence/result sequence, completion context handoff, and
    result-build request mapping, while
    `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario execution
-   phase including scenario sampling. `DiagnosticSessionScenarioPhaseModels.cs`
+   phase including scenario sampling. `DiagnosticSessionModels.cs`
    owns the explicit scenario context/result/state handoffs, with
    `DiagnosticSessionScenarioPhaseRunner.cs` owning post-sampling
    completion ordering and fault-drain delegation while background task
