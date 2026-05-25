@@ -2012,3 +2012,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; architecture test locality only
 Behavior preserved: the same harness-visible `ServiceNamespaces_FollowServiceFolders` entry point and MainViewModel source ownership dispatcher remain on the `Program` partial type
 Notes for future agents: keep the service namespace harness entry point with `ServiceNamespace.FolderRules.Tests.cs` and keep MainViewModel source ownership orchestration with `ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs`; create a new service namespace file only for a distinct assertion owner or helper boundary
+
+Date: 2026-05-25
+Area: xUnit wrapper execution-surface locality
+Problem: Three tiny xUnit wrapper files only exposed public test classes that delegated to existing `Program` checks: presentation-preview harness registration, ssctl command-handler routing/help coverage, and architecture-doc reference integrity. Each had a natural neighboring execution owner, so keeping them separate created file-count noise without preserving fixture or helper boundaries.
+Files consolidated: `tests/Sussudio.Tests/XUnit.PresentationPreviewHarnessRegistrationTests.cs`; `tests/Sussudio.Tests/XUnit.SsctlCommandHandlerContractsTests.cs`; `tests/Sussudio.Tests/XUnit.ArchitectureDocsReferenceIntegrityTests.cs`
+Files added: none
+Net production .cs delta: 0
+Net test .cs delta: -3
+Partial clusters reduced: xUnit wrapper execution-surface file count -3
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
+Behavior preserved: the same public test class names, `[Fact]` method names, delegated `Program` checks, and target-assembly bootstrap behavior remain available in neighboring xUnit owner files
+Notes for future agents: keep presentation-preview harness registration wrappers with `XUnit.PresentationPreviewStartupContractsTests.cs`, ssctl command-handler wrappers with `XUnit.ToolContractsTests.cs`, and architecture-doc reference wrappers with `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` unless a group needs independent fixtures or executable helper state

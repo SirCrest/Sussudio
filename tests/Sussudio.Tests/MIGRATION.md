@@ -116,7 +116,7 @@ add xUnit alongside, and port incrementally.
   unsafe-native-path contract checks. The public wrapper classes remain
   separate inside this file so existing test identities stay stable while the
   execution surface is easier to scan.
-- `XUnit.SsctlCommandHandlerContractsTests.cs` owns the former legacy ssctl
+- `XUnit.ToolContractsTests.cs` owns the former legacy ssctl
   command-handler routing, source ownership, and catalog-backed help contract
   checks.
 - `XUnit.TargetAssemblyBootstrap.cs` lets xUnit wrapper facts initialize the
@@ -136,7 +136,7 @@ add xUnit alongside, and port incrementally.
   stay stable while the execution surface is easier to scan.
 - `Program.cs` keeps the legacy runner entry point, but the
   diagnostic-session catalog has no remaining legacy registrations.
-- `XUnit.PresentationPreviewHarnessRegistrationTests.cs` owns the former legacy
+- `XUnit.PresentationPreviewStartupContractsTests.cs` owns the former legacy
   presentation-preview harness registration guard.
 - `XUnit.PresentationPreviewMainViewModelContractsTests.cs` owns the former
   legacy presentation-preview MainViewModel xUnit execution groups: initial
@@ -181,9 +181,8 @@ add xUnit alongside, and port incrementally.
   runtime capture, render setup/resource, and render pipeline checks. The legacy
   D3D catalog hook was removed after the final group moved to xUnit.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
-  AGENT_MAP ownership, path-reference, and test-project shape guard checks.
-- `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy
-  architecture-doc reference drift and migration-inventory guard checks.
+  AGENT_MAP ownership, path-reference, test-project shape guard,
+  architecture-doc reference drift, and migration-inventory guard checks.
 - Additional focused `[Fact]`/`[Theory]` files such as
   `AutomationContracts.ProtocolXunit.Tests.cs`,
   `AutomationToolContracts.ProtocolXunit.Tests.cs` (automation client timeout

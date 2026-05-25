@@ -570,8 +570,8 @@ ssctl command-handler routing coverage now lives in focused
 capture controls, recordings, Flashback, window, manifest, observability,
 automation-flow, UI visibility, and verification commands, with source ownership
 kept separate in `CommandHandlers.SourceOwnership.Tests.cs` and xUnit execution
-owned by `tests/Sussudio.Tests/XUnit.SsctlCommandHandlerContractsTests.cs` after
-removal from the legacy offline harness catalog. Captured ssctl
+owned by `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` after removal from
+the legacy offline harness catalog. Captured ssctl
 `request.command` ID assertions now flow through `AssertSsctlCommandRequest`,
 which delegates to the shared golden-table-backed `AssertAutomationCommandId`
 helper instead of duplicating numeric IDs in routing tests. Fixed ssctl source
@@ -587,15 +587,13 @@ Flashback preview startup AGENT_MAP wording, shared tool automation path
 coverage, duplicate tools/Common owner checks, and empty test marker-shell
 checks.
 `tests/Sussudio.Tests/XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the
-xUnit execution surface for those AGENT_MAP ownership checks after their
-removal from the legacy offline harness catalog.
+xUnit execution surface for those AGENT_MAP ownership checks and pure
+architecture-doc reference checks after their removal from the legacy offline
+harness catalog.
 `tests/Sussudio.Tests/ArchitectureDocs.ReferenceIntegrity.Tests.cs` owns
 literal `ReadRepoFile` source-shape path resolution, cleanup-plan file/folder
 reference drift checks, architecture-doc test-family coverage, and the shared
 implementations for the xUnit migration inventory guard.
-`tests/Sussudio.Tests/XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns
-the xUnit execution surface for those pure architecture-doc reference checks
-after their removal from the legacy offline harness catalog.
 `tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs` owns shared
 Markdown code-span path-token extraction and resolution helpers.
 `tests/Sussudio.Tests/ArchitectureDocs.OwnershipFileEnumerators.cs` owns

@@ -1945,15 +1945,15 @@ Primary current owners:
   automation exact-path, duplicate tools/Common owner, and empty test
   marker-shell checks.
   `tests/Sussudio.Tests/XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns
-  the xUnit execution surface for those AGENT_MAP ownership checks after their
-  removal from the legacy offline harness catalog.
+  the xUnit execution surface for those AGENT_MAP ownership checks and pure
+  architecture-doc reference checks after their removal from the legacy offline
+  harness catalog.
   `tests/Sussudio.Tests/ArchitectureDocs.ReferenceIntegrity.Tests.cs` owns
   literal `ReadRepoFile` source-shape path drift, cleanup-plan file/folder
   reference drift, and the shared implementation for xUnit migration inventory
   checks.
-  `tests/Sussudio.Tests/XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns
-  the xUnit execution surface for those pure architecture-doc reference checks
-  after their removal from the legacy offline harness catalog.
+  The xUnit execution surface for these pure architecture-doc reference checks
+  lives with `tests/Sussudio.Tests/XUnit.ArchitectureDocsAgentMapOwnershipTests.cs`.
   `tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs` owns
   shared Markdown code-span path-token extraction and resolution helpers.
   `tests/Sussudio.Tests/ArchitectureDocs.OwnershipFileEnumerators.cs` owns
@@ -1991,9 +1991,9 @@ Primary current owners:
   `CommandHandlers.SourceOwnership.Tests.cs` owns ssctl handler partial-family
   source ownership assertions, and `CommandHandlers.Help.Tests.cs` owns ssctl
   help/catalog force-flag coverage.
-  `tests/Sussudio.Tests/XUnit.SsctlCommandHandlerContractsTests.cs` owns the
-  xUnit execution surface for those command-handler routing, source ownership,
-  and help checks after their removal from the legacy offline harness catalog.
+  `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
+  surface for those command-handler routing, source ownership, and help checks
+  after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/PresentMonProbe.Tests.cs` owns PresentMon parser
   behavior contracts for swap-chain selection, artifact filtering, CSV field
   versions, and app-present correlation.
@@ -2064,10 +2064,7 @@ Primary current owners:
   separate from `Sussudio.Automation.Contracts` wire/protocol ownership.
 - Focused `tests/Sussudio.Tests/XUnit.PresentationPreview*.cs` slices own
   presentation-preview capture/root policy, MainViewModel, MainWindow, stats,
-  D3D renderer, and preview pacing execution surfaces.
-  `tests/Sussudio.Tests/XUnit.PresentationPreviewHarnessRegistrationTests.cs`
-  owns the xUnit execution surface that audits those registration groups against
-  the focused UI ownership test inventory.
+  D3D renderer, preview pacing, and harness-registration execution surfaces.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowContractsTests.cs`
   owns the former presentation-preview MainWindow xUnit execution groups:
   window lifecycle, launch/startup, preview screenshot workflow, shell chrome,
