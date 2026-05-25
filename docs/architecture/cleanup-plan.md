@@ -1564,12 +1564,12 @@ poll cadence gates, cached AT-command fields, incomplete-cache handling, and
 group advancement there, along with rolling command batch construction/refresh
 and per-command cancellation checks.
 
-Native XU selected-interface reading now lives in
-`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.InterfaceRead.cs`. Keep
-interface open failures, topology reads, dev-specific node selection, per-node
-rolling-read iteration, and node-read failure classification there. The root
-provider keeps public `ReadAsync` validation, transport gate ownership, and
-interface enumeration.
+Native XU selected-interface reading now lives in the root provider,
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`, with public
+`ReadAsync` validation, transport gate ownership, and interface enumeration.
+Keep interface open failures, topology reads, dev-specific node selection,
+per-node rolling-read iteration, and node-read failure classification there so
+the public read path stays in one cohesive owner.
 
 Native XU source snapshot assembly now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs`.
