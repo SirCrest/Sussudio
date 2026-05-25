@@ -2217,12 +2217,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Export.Tests.cs`
   owns diagnostic-session Flashback export ownership assertions for export
   scenario flows, export helpers, and shared segment wait/parsing collaborators.
-- Focused diagnostic-session runner behavior coverage lives in
-  `McpToolSurface.DiagnosticSession.Runner.Artifacts`,
-  `Runner.HealthPolicy`,
-  `Runner.FlashbackPlayback`, `Runner.InitialSnapshot`, `Runner.PipeRetry`,
-  and `Runner.Concurrency` files that execute the reflective runner against
-  synthetic command delegates.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Tests.cs` owns
+  focused diagnostic-session runner behavior coverage: reflective runner
+  setup, artifacts, health policy, Flashback playback, initial snapshot,
+  pipe retry, and concurrency checks against synthetic command delegates.
 - `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionContractsTests.cs` owns the
   xUnit execution surface for the former legacy diagnostic-session catalog
   bands: infrastructure, result surface, command/run context, scenario
@@ -2232,10 +2230,12 @@ Primary current owners:
   fixture or executable helper state.
 - `tests/Sussudio.Tests/Program.cs` keeps the compatibility runner entry point;
   diagnostic-session checks now execute through xUnit wrappers.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Helpers.cs`
-  owns shared reflective runner setup for diagnostic-session runner behavior
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Tests.cs`
+  owns shared reflective runner setup and diagnostic-session runner behavior
   tests: loading `ssctl`, creating `DiagnosticSessionOptions`, invoking
-  `DiagnosticSessionRunner.RunAsync`, and parsing synthetic JSON responses.
+  `DiagnosticSessionRunner.RunAsync`, parsing synthetic JSON responses, and
+  validating artifacts, health policy, Flashback playback, initial snapshot,
+  pipe retry, and concurrency behavior.
 - `tests/Sussudio.Tests/McpToolSurface.Performance.*.Tests.cs` owns MCP
   performance timeline contract, Flashback timeline formatting, and
   frame-pacing verdict tests, plus PresentMon MCP correlation and option

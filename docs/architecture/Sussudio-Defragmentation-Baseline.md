@@ -2090,3 +2090,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: MCP performance timeline tests remain in the xUnit suite and exercise the same timeline tool pipe calls
 Behavior preserved: the same internal `Program` test method names, timeline source loader, source-ownership assertions, rendering/projection contracts, and Flashback command-counter formatting check remain in `McpToolSurface.Performance.TimelineContract.Tests.cs`
 Notes for future agents: keep MCP performance timeline source-loading, projection, rendering, and Flashback timeline formatting checks in `McpToolSurface.Performance.TimelineContract.Tests.cs` unless a subgroup grows a distinct fixture or helper seam
+
+Date: 2026-05-25
+Area: MCP diagnostic-session runner test locality
+Problem: Diagnostic-session runner behavior tests split the reflective runner setup/helpers from initial snapshot, health policy, pipe retry, concurrency, artifacts, and Flashback playback cases. All fragments exercised the same `DiagnosticSessionRunner.RunAsync` seam through synthetic command delegates, so reviewing runner behavior required opening many small partial files.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Helpers.cs`; `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.InitialSnapshot.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.HealthPolicy.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.PipeRetry.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Concurrency.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Artifacts.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.FlashbackPlayback.Tests.cs`
+Files added: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Tests.cs`
+Net production .cs delta: 0
+Net test .cs delta: -6
+Partial clusters reduced: `Program` diagnostic-session runner partial-family file count -6
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: diagnostic-session runner tests remain in the xUnit suite and exercise the same reflective runner plus synthetic command delegates
+Behavior preserved: the same internal `Program` test method names, helper methods, reflective runner setup, JSON parsing, and scenario assertions remain in one runner owner file
+Notes for future agents: keep diagnostic-session runner helper and synthetic-command behavior tests in `McpToolSurface.DiagnosticSession.Runner.Tests.cs` unless a subgroup grows a distinct fixture or external-process seam
