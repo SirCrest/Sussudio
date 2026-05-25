@@ -55,7 +55,7 @@ static partial class Program
         var framePacingVerdictToolsText = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.cs");
         var memoryDiagnosticsToolsText = appStateToolText;
         var pipelineSettingsToolsText = captureSettingsToolsText;
-        var performanceTimelineToolsText = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs");
+        var performanceTimelineToolsText = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs");
         var previewToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewTools.cs");
         var previewColorProbeToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewColorProbeTools.cs");
         var recordingToolsText = previewToolsText;

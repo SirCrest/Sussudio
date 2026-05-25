@@ -2,9 +2,6 @@ static partial class Program
 {
     private static void AssertMcpPerformanceTimelineSourceOwnership(McpPerformanceTimelineSources sources)
     {
-        AssertDoesNotContain(sources.RootSource, "private sealed class TimelineRow");
-        AssertDoesNotContain(sources.RootSource, "new StringBuilder()");
-        AssertDoesNotContain(sources.RootSource, "== Trend Summary");
         AssertContains(sources.RowsSource, "PopulatePreviewTimelineRow(item, row);");
         AssertContains(sources.RowsSource, "PopulateFlashbackPlaybackTimelineRow(item, row);");
         AssertContains(sources.RowsSource, "PopulateFlashbackExportTimelineRow(item, row);");
@@ -31,6 +28,9 @@ static partial class Program
         AssertOccursBefore(sources.RowsSource, "public string PreviewPacingSlowStageEvidence { get; set; } = string.Empty;", "public string FlashbackPlaybackState { get; set; } = string.Empty;");
         AssertOccursBefore(sources.RowsSource, "public bool FlashbackForceRotateDraining { get; set; }", "public bool FlashbackExportActive { get; set; }");
         AssertOccursBefore(sources.RowsSource, "public string FlashbackExportMessage { get; set; } = string.Empty;", "public long LatencyMs { get; set; }");
+        AssertContains(sources.RenderingSource, "public static async Task<CallToolResult> get_performance_timeline(");
+        AssertContains(sources.RenderingSource, "var entries = ReadTimelineRows(data);");
+        AssertContains(sources.RenderingSource, "McpToolResultFactory.FromResponse(response, BuildPerformanceTimelineText(entries, targetOnePercentLowFps))");
         AssertContains(sources.RenderingSource, "BuildPerformanceTimelineText");
         AssertContains(sources.RenderingSource, "AppendTrendSummary");
         AssertContains(sources.RenderingSource, "== Trend Summary");

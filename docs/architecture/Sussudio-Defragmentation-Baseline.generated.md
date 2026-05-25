@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-25T00:55:54Z
+Generated UTC: 2026-05-25T01:06:51Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 572 |
+| Production .cs files | 571 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 17 (3.0%) |
-| Production .cs files under 80 lines | 31 (5.4%) |
+| Production .cs files under 60 lines | 16 (2.8%) |
+| Production .cs files under 80 lines | 30 (5.3%) |
 
 ## Largest partial-type clusters
 
@@ -43,9 +43,9 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | AutomationSnapshotFormatter | 4 | 779 | tools/Common/AutomationSnapshotFormatter.cs, tools/Common/AutomationSnapshotFormatter.Flashback.cs, tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs, tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs |
 | WasapiAudioPlayback | 4 | 847 | Sussudio/Services/Audio/WasapiAudioPlayback.cs, Sussudio/Services/Audio/WasapiAudioPlayback.Initialization.cs, Sussudio/Services/Audio/WasapiAudioPlayback.Queue.cs, Sussudio/Services/Audio/WasapiAudioPlayback.RenderThread.cs |
 | DeviceService | 3 | 716 | Sussudio/Services/Capture/DeviceService.cs, Sussudio/Services/Capture/DeviceService.FormatCache.cs, Sussudio/Services/Capture/DeviceService.FormatProbe.cs |
-| PerformanceTimelineTools | 3 | 777 | tools/McpServer/Tools/PerformanceTimelineTools.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs |
 | DiagnosticSessionFlashbackMetrics | 3 | 746 | tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs, tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs, tools/Common/DiagnosticSessionFlashbackMetrics.RecordingExport.cs |
 | PresentMonProbe | 3 | 1099 | tools/Common/PresentMon/PresentMonProbe.cs, tools/Common/PresentMon/PresentMonProbe.Csv.cs, tools/Common/PresentMon/PresentMonProbe.Format.cs |
+| CudaD3D11InteropBridge | 3 | 587 | Sussudio/Services/Gpu/CudaD3D11Interop.Copy.cs, Sussudio/Services/Gpu/CudaD3D11Interop.Initialization.cs, Sussudio/Services/Gpu/CudaD3D11Interop.Native.cs |
 
 ## Largest production files
 
@@ -101,7 +101,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 45 | tools/McpServer/Tools/DiagnosticSessionTools.cs |
 | 48 | Sussudio/Services/Capture/CaptureSessionStateMachine.cs |
 | 48 | Sussudio/Services/Contracts/AutomationInterfaces.cs |
-| 48 | tools/McpServer/Tools/PerformanceTimelineTools.cs |
 | 56 | Sussudio/DisplayFormatters.cs |
 
 ## Notes

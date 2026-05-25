@@ -15,18 +15,15 @@ static partial class Program
 
     private static McpPerformanceTimelineSources ReadMcpPerformanceTimelineSources()
     {
-        var rootSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs");
         var rowsSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs");
         var renderingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs");
 
         return new McpPerformanceTimelineSources
         {
-            RootSource = rootSource,
             RowsSource = rowsSource,
             RenderingSource = renderingSource,
             CombinedSource = string.Join(
                 "\n",
-                rootSource,
                 rowsSource,
                 renderingSource)
         };
@@ -34,7 +31,6 @@ static partial class Program
 
     private sealed class McpPerformanceTimelineSources
     {
-        public string RootSource { get; init; } = string.Empty;
         public string RowsSource { get; init; } = string.Empty;
         public string RenderingSource { get; init; } = string.Empty;
         public string CombinedSource { get; init; } = string.Empty;

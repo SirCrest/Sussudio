@@ -1635,7 +1635,6 @@ policy, AT-command-result decode into `SourceSignalTelemetrySnapshot`,
 diagnostic/detail assembly, and full-vs-rolling logging switches there.
 Flash-audio analog-gain row insertion and snapshot audio-origin policy belong
 to the audio-input telemetry detail partial.
-
 Native XU payload decoding now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.PayloadDecoding.cs`.
 Keep AVI InfoFrame decoding, HDR metadata decoding, scalar/ascii payload reads,
@@ -3155,15 +3154,15 @@ instead of reintroducing private duplicates in scenario, result builder,
 formatter, or validation policy files.
 
 MCP performance timeline projection is split across the
-`tools/McpServer/Tools/PerformanceTimelineTools.*.cs` family. Keep the public
-tool entry point and command response handling in the root file, JSON-to-row
+`tools/McpServer/Tools/PerformanceTimelineTools.*.cs` family. Keep JSON-to-row
 projection orchestration plus root cadence, preview/MJPEG/D3D, Flashback
 playback, Flashback export, and system row projection fields in
-`PerformanceTimelineTools.Rows.cs` alongside the private row model, and timeline
-table text rendering, first-vs-last trend text, preview cadence, visual/MJPEG
-fingerprint, jitter, D3D, slow-stage, Flashback playback, command, failure,
-cleanup, stage, export trend text, target-summary orchestration, target,
-preview, Flashback, and system pressure summaries in
+`PerformanceTimelineTools.Rows.cs` alongside the private row model. Keep the
+public tool entry point, command response handling, timeline table text
+rendering, first-vs-last trend text, preview cadence, visual/MJPEG fingerprint,
+jitter, D3D, slow-stage, Flashback playback, command, failure, cleanup, stage,
+export trend text, target-summary orchestration, target, preview, Flashback,
+and system pressure summaries in
 `PerformanceTimelineTools.Rendering.cs` alongside compact value,
 command-message, preview jitter-depth, D3D bottleneck, Flashback stage, cleanup,
 export, byte-rate formatting helpers, shared summary predicates, and pressure
