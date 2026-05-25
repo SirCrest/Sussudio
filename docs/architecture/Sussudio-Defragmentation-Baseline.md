@@ -2224,3 +2224,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: container, codec, dimensions, frame-rate, cadence, Flashback export verification format, and HDR validation logic moved unchanged beside the strict verifier orchestration and result shaping; ffprobe path/process/scalar/HDR/cadence probing remains in `RecordingVerifier.Ffprobe.cs`.
 Notes for future agents: keep pure recording verification policy in the root verifier unless it grows a separate collaborator seam; keep external ffprobe process and JSON probe mechanics in `RecordingVerifier.Ffprobe.cs`.
+
+Date: 2026-05-25
+Area: Automation command dispatcher assert-snapshot locality
+Problem: `AutomationCommandDispatcher.Assertions.cs` held private AssertSnapshot command parsing/comparison helpers while `AutomationCommandDispatcher.CustomCommands.cs` owned the custom command switch and the AssertSnapshot route. Reviewing one custom command required opening a small support partial plus the router even though no separate collaborator or public seam existed.
+Files consolidated: `Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationCommandDispatcher` production partial-family file count 3 -> 2
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: automation command names/IDs and manifest metadata unchanged; coverage remains in automation command dispatcher tests
+Behavior preserved: AssertSnapshot response shaping, payload parsing, field lookup cache, numeric/boolean/string comparison behavior, error code, status, and refreshed snapshot inclusion moved unchanged beside the custom command router.
+Notes for future agents: keep custom command bodies and support helpers in `AutomationCommandDispatcher.CustomCommands.cs` unless a command grows an independent service/collaborator seam; keep manifest/auth/preflight/payload helpers and one-field handler tables in `AutomationCommandDispatcher.cs`.

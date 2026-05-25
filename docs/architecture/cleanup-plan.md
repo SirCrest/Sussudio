@@ -349,11 +349,10 @@ tables, ordered dispatch through those tables, JSON payload extraction helpers,
 command metadata lookups, path-validation forwarding, and enum payload parsing.
 Named partials own support responsibilities:
 `AutomationCommandDispatcher.CustomCommands.cs`
-also owns WaitForCondition response shaping, wait polling, and snapshot
-predicates, full-screen, recordings-folder, arm-close, close-arm gating, and
-low-level window automation action execution; and
-`AutomationCommandDispatcher.Assertions.cs` handles AssertSnapshot response
-shaping, parsing, and comparison helpers. The reusable target-typed
+also owns AssertSnapshot response shaping, assertion payload parsing, snapshot
+comparison helpers, WaitForCondition response shaping, wait polling, and
+snapshot predicates, full-screen, recordings-folder, arm-close, close-arm gating,
+and low-level window automation action execution. The reusable target-typed
 trivial-handler wrapper lives with `AutomationCommandDispatcher.cs` because it
 only supports the dispatcher's port-grouped one-property command tables.
 

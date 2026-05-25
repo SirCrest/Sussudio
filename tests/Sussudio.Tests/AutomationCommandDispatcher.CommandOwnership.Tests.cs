@@ -35,16 +35,11 @@ static partial class Program
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
-        var assertionsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(customCommandsText, "case AutomationCommandKind.WaitForCondition:");
         AssertContains(customCommandsText, "ExecuteWaitForConditionCommandAsync(payload, correlationId, cancellationToken)");
         AssertContains(customCommandsText, "case AutomationCommandKind.AssertSnapshot:");
         AssertContains(customCommandsText, "ExecuteAssertSnapshotCommandAsync(payload, correlationId, cancellationToken)");
-
-        AssertDoesNotContain(customCommandsText, "ParseAssertions(payload)");
-        AssertDoesNotContain(customCommandsText, "TryEvaluateAssertion(snapshot, assertion, out var failure)");
 
         AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteWaitForConditionCommandAsync(");
         AssertContains(customCommandsText, "var condition = ParseWaitCondition(payload);");
@@ -58,13 +53,17 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.WaitConditions.cs")),
             "wait-condition commands folded into AutomationCommandDispatcher.CustomCommands.cs");
 
-        AssertContains(assertionsText, "private async Task<AutomationCommandResponse> ExecuteAssertSnapshotCommandAsync(");
-        AssertContains(assertionsText, "_diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken)");
-        AssertContains(assertionsText, "var assertions = ParseAssertions(payload);");
-        AssertContains(assertionsText, "TryEvaluateAssertion(snapshot, assertion, out var failure)");
-        AssertContains(assertionsText, "errorCode: passed ? null : \"assertion-failed\"");
-        AssertContains(assertionsText, "private static List<SnapshotAssertion> ParseAssertions(");
-        AssertContains(assertionsText, "private static bool TryEvaluateAssertion(");
+        AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteAssertSnapshotCommandAsync(");
+        AssertContains(customCommandsText, "_diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken)");
+        AssertContains(customCommandsText, "var assertions = ParseAssertions(payload);");
+        AssertContains(customCommandsText, "TryEvaluateAssertion(snapshot, assertion, out var failure)");
+        AssertContains(customCommandsText, "errorCode: passed ? null : \"assertion-failed\"");
+        AssertContains(customCommandsText, "private static List<SnapshotAssertion> ParseAssertions(");
+        AssertContains(customCommandsText, "private static bool TryEvaluateAssertion(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.Assertions.cs")),
+            "assert-snapshot command body folded into AutomationCommandDispatcher.CustomCommands.cs");
 
         return Task.CompletedTask;
     }
