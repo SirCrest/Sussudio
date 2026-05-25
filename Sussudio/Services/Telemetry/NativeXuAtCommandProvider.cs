@@ -8,6 +8,19 @@ using Sussudio.Services.Contracts;
 
 namespace Sussudio.Services.Telemetry;
 
+// Null-object telemetry provider used when source telemetry is unavailable or
+// intentionally disabled.
+public sealed class DisabledSourceSignalTelemetryProvider : ISourceSignalTelemetryProvider
+{
+    public Task<SourceSignalTelemetrySnapshot> ReadAsync(
+        CaptureDevice? device,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-provider-disabled"));
+    }
+}
+
 public sealed partial class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
 {
     private static readonly Guid XuGuid = NativeXuDeviceSupport.ExtensionUnitGuid;
