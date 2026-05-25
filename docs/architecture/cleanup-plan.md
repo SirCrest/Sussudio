@@ -2164,13 +2164,13 @@ telemetry, and tick/millisecond conversion helpers there; keep queue ordering,
 deadline drops, adaptive target depth, and emit-loop pacing in their focused
 owners.
 
-MJPEG preview jitter-buffer queueing and adaptive deadline policy now have
-their own owners. `MjpegPreviewJitterBuffer.FrameIngress.cs` owns decoded
+MJPEG preview jitter-buffer ingress/queueing and adaptive deadline policy now
+have focused owners. `MjpegPreviewJitterBuffer.FrameIngress.cs` owns decoded
 preview-frame ingress, the nested buffered payload type, ArrayPool/lease
-ownership transfer, input-interval recording, queue-full admission drops, and
-enqueue signaling. `MjpegPreviewJitterBuffer.Queue.cs` owns queue depth, ordered
-frame insertion/dequeue, missing-sequence recovery, clear behavior, and resume
-reprime accounting. `MjpegPreviewJitterBuffer.Adaptive.cs` owns hard/soft
+ownership transfer, input-interval recording, queue-full admission drops,
+enqueue signaling, queue depth, ordered frame insertion/dequeue,
+missing-sequence recovery, clear behavior, and resume reprime accounting.
+`MjpegPreviewJitterBuffer.Adaptive.cs` owns hard/soft
 deadline drops, adjusted output cadence, target-depth increase/decrease, and
 latency-pressure classification. `MjpegPreviewJitterBuffer.cs` owns the paced
 emit loop control flow and MMCSS registration beside construction, thread
