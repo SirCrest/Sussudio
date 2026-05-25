@@ -107,7 +107,7 @@ static partial class Program
     internal static Task FlashbackExporter_ReleasesBufferedSegmentPacketsOnFailures()
     {
         var sourceText = ReadFlashbackExporterSource();
-        var singleFileText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFile.cs")
+        var singleFileText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Execution.cs")
             .Replace("\r\n", "\n");
         var singleFilePacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketReadLoop.cs")
             .Replace("\r\n", "\n");

@@ -8,8 +8,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs")
             .Replace("\r\n", "\n");
-        var singleFileText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFile.cs")
-            .Replace("\r\n", "\n");
         var singleFilePacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketReadLoop.cs")
             .Replace("\r\n", "\n");
         var singleFilePacketWritingText = singleFilePacketReadLoopText;
@@ -29,6 +27,7 @@ static partial class Program
         var segmentInputPreflightText = segmentTemplateText;
         var executionPolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Execution.cs")
             .Replace("\r\n", "\n");
+        var singleFileText = executionPolicyText;
         var outputFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs")
             .Replace("\r\n", "\n");
         var validationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Validation.cs")
@@ -241,7 +240,8 @@ static partial class Program
         {
             "FlashbackExporter.Progress.cs",
             "FlashbackExporter.WriterPacing.cs",
-            "FlashbackExporter.RuntimePolicy.cs"
+            "FlashbackExporter.RuntimePolicy.cs",
+            "FlashbackExporter.SingleFile.cs"
         })
         {
             AssertEqual(

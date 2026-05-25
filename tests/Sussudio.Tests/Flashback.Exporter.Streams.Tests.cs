@@ -8,7 +8,7 @@ static partial class Program
         var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs")
             .Replace("\r\n", "\n");
         var streamTemplatesText = streamsText;
-        var singleFileText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFile.cs")
+        var singleFileText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Execution.cs")
             .Replace("\r\n", "\n");
         var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
             .Replace("\r\n", "\n");

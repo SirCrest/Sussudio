@@ -1754,9 +1754,10 @@ and per-export throttle provider scoping there so native export cores stay
 behind focused entry points.
 
 Flashback exporter single-file export shell now lives in
-`Sussudio/Services/Flashback/FlashbackExporter.SingleFile.cs`. Keep the
-single `.ts` export validation, seek/setup, final output replacement, success
-result shaping, and single-export lock release there. Single-file packet result
+`Sussudio/Services/Flashback/FlashbackExporter.Execution.cs` with the request
+routing and task wrapper that call it. Keep the single `.ts` export validation,
+seek/setup, final output replacement, success result shaping, and single-export
+lock release there. Single-file packet result
 validation, active input packet pump, native frame reads, per-read packet unref,
 stream filtering, out-point clipping, timestamp rebasing, inline remux writes,
 writer throttling, progress heartbeat, final packet cleanup, packet write state,

@@ -1691,3 +1691,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: diagnostic-session result ownership and artifact tests cover pre-summary writes, frame-ledger trace shaping, JSON artifact helpers, and summary write failure handling; no automation command names/IDs changed
 Behavior preserved: summary/samples/frame-ledger/timeline artifact paths, pre-summary write stages, frame-ledger event de-duplication key, pretty JSON serialization, empty JSON object creation, and summary write failure handling remain unchanged
 Notes for future agents: keep pre-summary artifact writes and summary write handling together in `DiagnosticSessionResultBuilder.cs`; keep run-context response extraction in `DiagnosticSessionRunContext.cs`
+
+Date: 2026-05-25
+Area: Flashback exporter single-file shell locality
+Problem: `FlashbackExporter.SingleFile.cs` held only the synchronous single-file export shell directly called by `ExportSingleAsync`, while request routing, linked cancellation, background scheduling, progress normalization, and writer pacing lived in `FlashbackExporter.Execution.cs`; reviewing a single-file export required opening a tiny extra partial before the execution policy that invokes it.
+Files consolidated: `Sussudio/Services/Flashback/FlashbackExporter.SingleFile.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `FlashbackExporter` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: single-file input/range/output validation, source overwrite refusal, temp-path overwrite refusal, export lock acquisition/release, FFmpeg initialization, stream-info lookup, bounded stream-count validation, seek warning behavior, output context/header setup, packet writing handoff, final output replacement, success/failure result shaping, native cleanup, temp cleanup, and cancellation handling remain unchanged
+Notes for future agents: keep single-file request scheduling and the synchronous single-file export shell together in `FlashbackExporter.Execution.cs`; keep packet pump/rebasing state in `FlashbackExporter.SingleFilePacketReadLoop.cs`, shared stream setup in `Streams.cs`, temp/final output replacement in `OutputFiles.cs`, and validation helpers in `Validation.cs`
