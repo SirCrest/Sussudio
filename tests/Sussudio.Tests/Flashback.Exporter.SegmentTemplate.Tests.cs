@@ -8,7 +8,7 @@ static partial class Program
         var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs")
             .Replace("\r\n", "\n");
         var streamTemplatesText = streamsText;
-        var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs")
+        var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
             .Replace("\r\n", "\n");
         var segmentInputPreflightText = segmentTemplateText;
 
@@ -52,7 +52,7 @@ static partial class Program
         var segmentPacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
         var skipTrackingText = segmentPacketWritingText;
-        var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs")
+        var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
             .Replace("\r\n", "\n");
         var segmentInputPreflightText = segmentTemplateText;
 

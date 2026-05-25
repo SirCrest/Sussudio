@@ -1808,8 +1808,10 @@ rescue now live in
 
 Flashback exporter multi-segment packet-copy/remux behavior now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Segments.cs`. Keep segment
-validation dispatch, temp-output preparation, final output replacement, and
-segment-export lock release there. Segment packet writing now lives in
+validation dispatch, temp-output preparation, output-template selection,
+template-skip diagnostics, per-segment input open, stream-info lookup,
+stream-count checks, layout-mismatch skip tracking, final output replacement,
+and segment-export lock release there. Segment packet writing now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs`; keep
 output-template initialization, segment input sequencing, segment export
 range/window projection, segment offset updates, completion progress, and
@@ -1822,9 +1824,6 @@ and EOF partial-base rescue/freeing there, along with the per-segment packet
 write state, buffered-packet rescue/flush, and native packet write outcome
 state. Segment timestamp rebasing, segment-boundary repair,
 DTS monotonicity, and native packet writes live there too.
-Output-template selection, template-skip diagnostics, per-segment input open,
-stream-info lookup, stream-count checks, and layout-mismatch skip tracking live
-in `Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs`.
 `FlashbackExporter.Lifecycle.cs` keeps shared native state, constants, and
 fields.
 

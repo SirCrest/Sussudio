@@ -1619,3 +1619,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: ssctl command routing tests cover command IDs/payloads; no automation command names/IDs changed
 Behavior preserved: argument count checks, required word parsing, flag consumption, optional flag values, JSON pretty-printing/detection, primitive parsing, Flashback export duration validation, on/off and show/hide parsing, recording format normalization, snap action mapping, and assertion value parsing remain unchanged
 Notes for future agents: keep generic ssctl argument/value helpers with `CommandHandlers.cs`; keep command-family payload shaping in `CaptureControls`, `Window`, `AutomationFlow`, `Flashback`, and `Observability`
+
+Date: 2026-05-24
+Area: Flashback exporter segment template locality
+Problem: `FlashbackExporter.SegmentTemplate.cs` split first-usable-template selection and per-segment input preflight away from the multi-segment export shell in `FlashbackExporter.Segments.cs`, so reviewing segment export setup required opening an extra partial before reaching packet writing.
+Files consolidated: `Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `FlashbackExporter` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: template selection order, stream-info lookup, bounded stream-count validation, missing-video and incomplete-video skip diagnostics, output context/header setup, per-segment input open, stream-count mismatch handling, layout mismatch skip tracking, and close-on-failed-preflight behavior remain unchanged
+Notes for future agents: keep multi-segment export shell, template selection, and segment input preflight together in `FlashbackExporter.Segments.cs`; keep packet writing orchestration in `SegmentPacketWriting.cs` and packet read/rebase hot loop behavior in `SegmentPacketReadLoop.cs`

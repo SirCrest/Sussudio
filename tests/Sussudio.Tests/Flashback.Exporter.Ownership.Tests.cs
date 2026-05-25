@@ -25,8 +25,7 @@ static partial class Program
         var segmentPacketRebasingText = segmentPacketReadLoopText;
         var segmentRangeProjectionText = segmentPacketWritingText;
         var segmentSkipTrackingText = segmentPacketWritingText;
-        var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs")
-            .Replace("\r\n", "\n");
+        var segmentTemplateText = segmentsText;
         var segmentInputPreflightText = segmentTemplateText;
         var runtimePolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.RuntimePolicy.cs")
             .Replace("\r\n", "\n");
@@ -110,7 +109,7 @@ static partial class Program
         AssertContains(segmentRangeProjectionText, "private static SegmentExportWindow ProjectSegmentExportWindow(");
         AssertContains(segmentRangeProjectionText, "SkipBecauseEmpty: segmentOutDelta <= TimeSpan.Zero");
         AssertContains(segmentPacketWritingText, "TryOpenSegmentInputForExport(");
-        AssertDoesNotContain(segmentsText, "avformat_find_stream_info(_activeInputContext, null)");
+        AssertContains(segmentsText, "avformat_find_stream_info(_activeInputContext, null)");
         AssertContains(segmentSkipTrackingText, "private struct RequestedSegmentSkipTracker");
         AssertContains(segmentSkipTrackingText, "public void Track(FlashbackExportSegment segment, string reason)");
         AssertContains(segmentSkipTrackingText, "public bool TryCreateFailureMessage(out string message)");
@@ -123,7 +122,7 @@ static partial class Program
         AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"stream_layout_mismatch\");");
         AssertContains(segmentTemplateText, "private bool TryInitializeSegmentOutputTemplate(");
         AssertContains(segmentTemplateText, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");
-        AssertDoesNotContain(segmentsText, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");
+        AssertContains(segmentsText, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");
         AssertContains(segmentValidationText, "private static bool TryValidateSegmentExportInputs(");
         AssertContains(segmentValidationText, "private static bool TryEstimateSegmentExportReadableBytes(");
         AssertContains(segmentValidationText, "private static int FindInvalidSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)");
@@ -253,6 +252,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.SegmentPacketRebasing.cs")),
             "FlashbackExporter.SegmentPacketRebasing.cs folded into FlashbackExporter.SegmentPacketReadLoop.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.SegmentTemplate.cs")),
+            "FlashbackExporter.SegmentTemplate.cs folded into FlashbackExporter.Segments.cs");
 
         return Task.CompletedTask;
     }
