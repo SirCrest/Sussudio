@@ -3183,6 +3183,9 @@ alongside recording/file/assertion result text in `VerificationTools.cs`.
 Preview/recording control and condition-wait MCP methods stay in
 `PreviewTools.cs`; keep the public `PreviewTools`, `RecordingTools`, and
 `WaitTools` type names stable while avoiding one-method tool files.
+Preview color/source probe MCP methods stay in `PreviewColorProbeTools.cs`;
+keep the public `PreviewColorProbeTools` and `VideoSourceProbeTools` type names
+stable while avoiding one-method probe files.
 Preview frame capture MCP reporting stays together without changing visible
 text: keep the public `capture_preview_frame` entry point, default output path,
 payload, enum-backed `CapturePreviewFrame` routing, report layout, 16-bin

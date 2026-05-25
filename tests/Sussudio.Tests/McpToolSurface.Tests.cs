@@ -62,7 +62,7 @@ static partial class Program
         var presentMonToolsText = ReadRepoFile("tools/McpServer/Tools/PresentMonTools.cs");
         var previewFrameCaptureToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewFrameCaptureTools.cs");
         var verificationToolsText = ReadRepoFile("tools/McpServer/Tools/VerificationTools.cs");
-        var videoSourceProbeToolsText = ReadRepoFile("tools/McpServer/Tools/VideoSourceProbeTools.cs");
+        var videoSourceProbeToolsText = previewColorProbeToolsText;
         var windowToolsText = ReadRepoFile("tools/McpServer/Tools/WindowTools.cs");
         var windowScreenshotToolsText = previewFrameCaptureToolsText;
         var waitToolsText = previewToolsText;

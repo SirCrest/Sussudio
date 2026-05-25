@@ -3505,6 +3505,9 @@ Primary owners:
 - `tools/McpServer/Tools/PreviewTools.cs` owns the public preview-toggle,
   recording-toggle, and condition-wait MCP entry points while preserving the
   `PreviewTools`, `RecordingTools`, and `WaitTools` tool types.
+- `tools/McpServer/Tools/PreviewColorProbeTools.cs` owns the public preview
+  color and video-source probe MCP entry points while preserving the
+  `PreviewColorProbeTools` and `VideoSourceProbeTools` tool types.
 - `tools/McpServer/Tools/PerformanceTimelineTools.cs` owns the public MCP
   tool entry point and command response handling.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs` owns timeline JSON
