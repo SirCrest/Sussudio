@@ -1731,10 +1731,9 @@ Decoded frame-size calculation, video-dimension validation, D3D11/software
 decoded-frame validation, input stream-count bounds, and stream-index bounds now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.Validation.cs`.
 File-close native cleanup, software buffer returns, pending held-frame release,
-decoder state reset, and held-frame best-effort release helpers now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.Lifetime.cs`.
-Open/disposed state guards and FFmpeg decoder error formatting now live in the
-root decoder; decode phase timing accumulation lives with
+decoder state reset, held-frame best-effort release helpers, open/disposed
+state guards, and FFmpeg decoder error formatting now live in the root decoder;
+decode phase timing accumulation lives with
 `Sussudio/Services/Flashback/FlashbackDecoder.DecodeLoop.cs`.
 Decoded video/audio output DTOs now live in the root decoder beside the
 decoder's public output surface, instead of a sub-40-line output-type fragment.

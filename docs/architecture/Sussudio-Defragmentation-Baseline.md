@@ -1631,3 +1631,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: template selection order, stream-info lookup, bounded stream-count validation, missing-video and incomplete-video skip diagnostics, output context/header setup, per-segment input open, stream-count mismatch handling, layout mismatch skip tracking, and close-on-failed-preflight behavior remain unchanged
 Notes for future agents: keep multi-segment export shell, template selection, and segment input preflight together in `FlashbackExporter.Segments.cs`; keep packet writing orchestration in `SegmentPacketWriting.cs` and packet read/rebase hot loop behavior in `SegmentPacketReadLoop.cs`
+
+Date: 2026-05-24
+Area: Flashback decoder lifecycle cleanup locality
+Problem: `FlashbackDecoder.Lifetime.cs` only contained `CloseFileCore` and held-frame cleanup helpers, while `OpenFile`, `CloseFile`, and `Dispose` lived in `FlashbackDecoder.cs`; reviewing decoder lifecycle therefore required a second tiny partial for the cleanup path immediately called by the root lifecycle methods.
+Files consolidated: `Sussudio/Services/Flashback/FlashbackDecoder.Lifetime.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `FlashbackDecoder` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: close logging, pending held-frame release, software buffer return, AVPacket/AVFrame/free cleanup, resampler/codec/input-context release, decoder state reset, D3D11 hardware context persistence, and best-effort held-frame release logging remain unchanged
+Notes for future agents: keep decoder open/close/dispose and per-file cleanup in `FlashbackDecoder.cs`; keep decode-loop timing in `DecodeLoop.cs`, video codec setup in `VideoSetup.cs`, and output validation in `Validation.cs`

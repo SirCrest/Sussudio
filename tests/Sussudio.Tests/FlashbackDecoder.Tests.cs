@@ -82,19 +82,18 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackDecoder_LifetimeCleanupLivesInFocusedPartial()
+    internal static Task FlashbackDecoder_LifetimeCleanupLivesWithRootLifecycle()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var lifetimeText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Lifetime.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(lifetimeText, "private void CloseFileCore()");
-        AssertContains(lifetimeText, "internal static void ReleaseHeldFrame(DecodedVideoFrame frame)");
-        AssertContains(lifetimeText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
-        AssertDoesNotContain(rootText, "private void CloseFileCore()");
-        AssertDoesNotContain(rootText, "internal static void ReleaseHeldFrame(DecodedVideoFrame frame)");
-        AssertDoesNotContain(rootText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
+        AssertContains(rootText, "private void CloseFileCore()");
+        AssertContains(rootText, "internal static void ReleaseHeldFrame(DecodedVideoFrame frame)");
+        AssertContains(rootText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.Lifetime.cs")),
+            "FlashbackDecoder file-close cleanup lives with the root lifecycle owner");
 
         return Task.CompletedTask;
     }
