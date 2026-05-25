@@ -1681,6 +1681,18 @@ Behavior preserved: public automation command names/IDs, typed and string comman
 Notes for future agents: keep `AutomationCommandTransport` as a named type in `AutomationPipeClient.cs` so ssctl/MCP callers still read as command transport users while the shared pipe-client implementation lives in one file.
 
 Date: 2026-05-25
+Area: test friend assembly metadata locality
+Problem: `Sussudio/AssemblyInfo.cs` and `tools/ssctl/AssemblyInfo.cs` were metadata-only two-line files containing only `InternalsVisibleTo("Sussudio.Tests")`, leaving mechanical test-access attributes as extra production `.cs` files.
+Files consolidated: `Sussudio/AssemblyInfo.cs`; `tools/ssctl/AssemblyInfo.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: none
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (first run hit known intermittent `Cannot write to a closed TextWriter` in `RoutesUiVisibilityCommands`, rerun passed); offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: not applicable; assembly metadata moved into the owning project files
+Behavior preserved: `Sussudio.Tests` remains a friend assembly for both the app and ssctl assemblies through project-generated assembly attributes.
+Notes for future agents: keep mechanical friend assembly metadata in project files unless an assembly needs substantial handwritten assembly metadata.
+
+Date: 2026-05-25
 Area: diagnostic-session run context locality
 Problem: `DiagnosticSessionRunState.cs` was a 63-line state holder constructed only by `DiagnosticSessionRunContext`, splitting terminal exception state, last-stage tracking, and best-effort artifact failure recording from the mutable run context that owns the lifecycle using that state.
 Files consolidated: `tools/Common/DiagnosticSessionRunState.cs`

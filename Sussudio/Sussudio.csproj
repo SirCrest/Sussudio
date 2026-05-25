@@ -98,5 +98,11 @@
     <ProjectReference Include="..\Sussudio.Automation.Contracts\Sussudio.Automation.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Sussudio.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   <Import Project="Sussudio.Build.targets" />
 </Project>
