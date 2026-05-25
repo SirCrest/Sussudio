@@ -1960,3 +1960,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
 Behavior preserved: the same public test classes, `[Fact]` method names, and delegated `Program` checks remain available under one MCP tool contracts file
 Notes for future agents: keep general MCP tool xUnit wrapper classes in `XUnit.McpToolContractsTests.cs`; add new wrapper classes there unless a group needs independent fixtures or executable helper state
+
+Date: 2026-05-25
+Area: Automation snapshot-model test locality
+Problem: Eleven `SnapshotModelsTests` partial files split the AutomationSnapshot/AutomationOptions DTO shape contract by metric band. Each file contributed a handful of facts or shared property-list helpers to the same partial test type, so reviewing the automation snapshot DTO contract required opening many tiny files without gaining an independent fixture or helper boundary.
+Files consolidated: `tests/Sussudio.Tests/SnapshotModels.Automation.CpuMjpegContractSpec.cs`; `tests/Sussudio.Tests/SnapshotModels.Automation.CpuMjpeg.Tests.cs`; `tests/Sussudio.Tests/SnapshotModels.Automation.MjpegPreview.Tests.cs`; `tests/Sussudio.Tests/SnapshotModels.Automation.PreviewDiagnostics.Tests.cs`; `tests/Sussudio.Tests/SnapshotModels.Automation.CaptureCommands.Tests.cs`; `tests/Sussudio.Tests/SnapshotModels.Automation.Recording.Tests.cs`; `tests/Sussudio.Tests/SnapshotModels.Automation.FlashbackRecording.Tests.cs`; `tests/Sussudio.Tests/SnapshotModels.Automation.FlashbackPlayback.Tests.cs`; `tests/Sussudio.Tests/SnapshotModels.Automation.FlashbackExport.Tests.cs`; `tests/Sussudio.Tests/SnapshotModels.Automation.VisualCadence.Tests.cs`; `tests/Sussudio.Tests/SnapshotModels.Automation.Options.Tests.cs`
+Files added: `tests/Sussudio.Tests/SnapshotModels.Automation.Tests.cs`
+Net production .cs delta: 0
+Net test .cs delta: -10
+Partial clusters reduced: `SnapshotModelsTests` automation partial-family file count -10
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; DTO contract test consolidation only
+Behavior preserved: the same xUnit facts, shared property-list helpers, reflection checks, source-text assertions, and AutomationSnapshot/AutomationOptions property coverage remain under one automation snapshot-model test file
+Notes for future agents: keep automation snapshot DTO shape checks in `SnapshotModels.Automation.Tests.cs`; add a new file only for a distinct snapshot DTO family or independent fixture/helper boundary

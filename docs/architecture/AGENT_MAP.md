@@ -1681,34 +1681,12 @@ Primary current owners:
   property-list, nullability, and helper assertion methods; and
   `SnapshotModels.ReflectionJson.cs` owns shared reflection JSON round-trip and
   registered-property coverage helpers.
-- `tests/Sussudio.Tests/SnapshotModels.Automation.CpuMjpeg.Tests.cs` owns
-  xUnit automation snapshot CPU MJPEG metric shape checks.
-- `tests/Sussudio.Tests/SnapshotModels.Automation.MjpegPreview.Tests.cs` owns
-  xUnit automation snapshot MJPEG preview jitter and packet-hash metric shape
-  checks.
-- `tests/Sussudio.Tests/SnapshotModels.Automation.PreviewDiagnostics.Tests.cs`
-  owns xUnit automation snapshot preview D3D, diagnostic lane, and preview
-  pacing metric shape checks.
-- `tests/Sussudio.Tests/SnapshotModels.Automation.CaptureCommands.Tests.cs`
-  owns xUnit automation snapshot capture-command queue metric shape checks.
-- `tests/Sussudio.Tests/SnapshotModels.Automation.Recording.Tests.cs` owns
-  xUnit automation snapshot recording video metric shape checks.
-- `tests/Sussudio.Tests/SnapshotModels.Automation.FlashbackRecording.Tests.cs`
-  owns xUnit automation snapshot Flashback recording, cleanup, backend, and
-  queue metric shape checks.
-- `tests/Sussudio.Tests/SnapshotModels.Automation.FlashbackPlayback.Tests.cs`
-  owns xUnit automation snapshot Flashback playback, cadence, decode, and
-  command metric shape checks.
-- `tests/Sussudio.Tests/SnapshotModels.Automation.FlashbackExport.Tests.cs`
-  owns xUnit automation snapshot Flashback export metric shape checks.
-- `tests/Sussudio.Tests/SnapshotModels.Automation.VisualCadence.Tests.cs`
-  owns xUnit automation snapshot visual cadence metric shape checks.
-- `tests/Sussudio.Tests/SnapshotModels.Automation.Options.Tests.cs` owns
-  xUnit automation options DTO shape checks.
-- `tests/Sussudio.Tests/SnapshotModels.Automation.CpuMjpegContractSpec.cs` owns
-  the CPU MJPEG automation snapshot property-list contract plus shared
-  AutomationSnapshot property assertions used by focused automation snapshot
-  shape checks.
+- `tests/Sussudio.Tests/SnapshotModels.Automation.Tests.cs` owns xUnit
+  AutomationSnapshot and AutomationOptions DTO shape checks for CPU MJPEG,
+  MJPEG preview, preview diagnostics, capture-command, recording, Flashback
+  recording/playback/export, visual cadence, and advanced control-state options.
+  It also owns the CPU MJPEG property-list contract plus shared
+  AutomationSnapshot property assertions used by the metric-shape checks.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.Tests.cs` owns xUnit
   CaptureDiagnosticsSnapshot default, round-trip, reflection JSON, and MJPEG
   source-ownership checks.
