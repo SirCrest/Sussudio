@@ -2677,29 +2677,25 @@ now live with segment-edge playback handling in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs`.
 Keep seek-display and playback pacing in the controller core/thread partials.
 
-Flashback continuous playback progression now lives with playback frame reads in
+Flashback continuous playback progression and timing policy now live with
+playback frame reads in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`.
 Keep seek/scrub keyframe display, active fMP4 keyframe retry, displayed-frame
 PTS mapping, seek/scrub decoded-frame acquisition, adjacent-segment fallback
 display, no-frame seek-display failure accounting, decoded-frame submission
 flow, live-recovery policy invocation, cadence pacing, A/V drift diagnostics,
-prebuffer cleanup, and A/V drift frame-skip catch-up policy there. Decode-error
-and near-live snap policy, including the recovery near-live snap threshold,
-belongs in the playback live recovery owner.
+prebuffer cleanup, A/V drift frame-skip catch-up policy, frame-rate resolution,
+pause-from-live target calculation, continuous-playback snap policy,
+software-decode budget detection, decoder hardware-acceleration status refresh,
+over-budget snap telemetry, rolling playback cadence metric updates, decoded
+PTS cadence state/projection/tracking, mismatch telemetry, and cadence-baseline
+reset there. Decode-error and near-live snap policy, including the recovery
+near-live snap threshold, belongs in the playback live recovery owner.
 Segment-edge routing decisions, write-head waits, next-segment switch
 transactions, next-file probing, decoder open/seek, switch counters, audio
 gates, cadence-baseline reset, and active fMP4 reopen/reseek recovery during
 segment-edge handling now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs`.
-
-Flashback playback timing policy and decoded PTS cadence now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs`.
-Keep frame-rate resolution, pause-from-live target calculation,
-continuous-playback snap policy, software-decode budget detection, decoder
-hardware-acceleration status refresh, over-budget snap telemetry, recovery
-handoff, rolling playback cadence metric updates, decoded PTS cadence state,
-read-only projection, tracking, mismatch telemetry, and cadence-baseline reset
-there.
 The live-state recovery implementation is local to
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`.
 Audio-master clock sample state, stale-clock detection, read-only A/V drift
