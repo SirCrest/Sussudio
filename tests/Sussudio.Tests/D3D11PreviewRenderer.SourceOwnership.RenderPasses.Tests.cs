@@ -145,8 +145,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var shaderRenderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs")
             .Replace("\r\n", "\n");
-        var nativeInteropText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.NativeInterop.cs")
-            .Replace("\r\n", "\n");
         var previewShaderSourcesText = ReadRepoFile("Sussudio/Services/Preview/PreviewShaderSources.cs")
             .Replace("\r\n", "\n");
 
@@ -168,19 +166,22 @@ static partial class Program
         AssertContains(shaderRenderingText, "PreviewShaderSources.HdrTonemapPixel");
         AssertContains(shaderRenderingText, "PreviewShaderSources.HdrPassthroughPixel");
         AssertContains(shaderRenderingText, "PreviewShaderSources.Nv12Pixel");
-        AssertContains(nativeInteropText, "private static byte[] CompileShader(string hlslSource, string entryPoint, string profile)");
-        AssertContains(nativeInteropText, "private static byte[] ReadBlobBytes(IntPtr blobPtr)");
-        AssertContains(nativeInteropText, "private static string ReadBlobString(IntPtr blobPtr)");
-        AssertContains(nativeInteropText, "D3DCompileNative(");
+        AssertContains(shaderRenderingText, "private interface ID3DBlob");
+        AssertContains(shaderRenderingText, "private static extern int D3DCompileNative(");
+        AssertContains(shaderRenderingText, "private static byte[] CompileShader(string hlslSource, string entryPoint, string profile)");
+        AssertContains(shaderRenderingText, "private static byte[] ReadBlobBytes(IntPtr blobPtr)");
+        AssertContains(shaderRenderingText, "private static string ReadBlobString(IntPtr blobPtr)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.NativeInterop.cs")),
+            "shader compiler interop folded into shader rendering owner");
 
         AssertDoesNotContain(rootText, "internal const string FullscreenVertex");
         AssertDoesNotContain(rootText, "static const float PQ_m1");
         AssertDoesNotContain(renderPassesText, "internal const string HdrTonemapPixel");
         AssertDoesNotContain(renderPassesText, "BT2020_to_BT709");
-        AssertDoesNotContain(shaderRenderingText, "D3DCompileNative(");
         AssertDoesNotContain(shaderRenderingText, "static const float PQ_m1");
         AssertDoesNotContain(shaderRenderingText, "Texture2D<float> yPlane : register(t0);");
-        AssertDoesNotContain(nativeInteropText, "PreviewShaderSources.FullscreenVertex");
 
         return Task.CompletedTask;
     }

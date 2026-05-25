@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace Sussudio.Services.Preview;
@@ -17,6 +18,9 @@ internal interface IPreviewDisplayClock
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    [DllImport("dwmapi.dll", ExactSpelling = true)]
+    private static extern int DwmFlush();
+
     private readonly object _dxgiFrameStatisticsLock = new();
     private long _dxgiFrameStatisticsSampleCount;
     private long _dxgiFrameStatisticsSuccessCount;

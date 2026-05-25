@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Vortice.DXGI;
 
@@ -7,6 +8,14 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    [ComImport]
+    [Guid("63aad0b8-7c24-40ff-85a8-640d944cc325")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface ISwapChainPanelNative
+    {
+        void SetSwapChain(IntPtr swapChain);
+    }
+
     private int _compositionTransformDirty;
     private int _panelPixelWidth = 1;
     private int _panelPixelHeight = 1;
