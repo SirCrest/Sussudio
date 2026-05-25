@@ -58,7 +58,7 @@ Partial clusters reduced: `CommandHandlers` -2 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: affected `ssctl` build covered command-handler binding and shared tool references
 Behavior preserved: `presentmon`, `diagnostic-session`, state/diagnostics/options/manifest/timeline/memory/audio-ramp command names, flags, payloads, and output formatting remain unchanged
-Notes for future agents: keep ssctl diagnostic tooling commands in `CommandHandlers.Observability.cs`; split only if a command becomes an independently tested workflow or shared helper
+Notes for future agents: superseded on 2026-05-25 by the ssctl command-handler consolidation; keep diagnostic tooling commands in `CommandHandlers.cs` unless a command becomes an independently tested workflow or shared helper
 
 Date: 2026-05-24
 Area: NativeXuAudioProbe I2C command family locality
@@ -1354,7 +1354,7 @@ Partial clusters reduced: `CommandHandlers` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: covered by ssctl command-handler source ownership, enum-command protocol, and routing tests
 Behavior preserved: `stats`, `stats section`, `settings`, `frametime`, and `frame-time` commands still send the same automation command IDs and payload fields
-Notes for future agents: keep shell visibility commands with `CommandHandlers.Window.cs` unless they grow non-shell policy or a shared UI-control command owner
+Notes for future agents: superseded on 2026-05-25 by the ssctl command-handler consolidation; keep shell visibility commands in `CommandHandlers.cs` unless they grow non-shell policy or a shared UI-control command owner
 
 Date: 2026-05-24
 Area: Preview pacing classification locality
@@ -1843,3 +1843,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: MCP tool routing tests cover preview, recording, wait-condition, window actions, and typed automation command routing; public MCP tool class names and method names remain unchanged
 Behavior preserved: `PreviewTools.control_preview`, `RecordingTools.control_recording`, `WaitTools.wait_for_condition`, response-timeout selection, formatted condition text, `WindowTools`, and `UiSettingsTools` remain on the same public MCP surface
 Notes for future agents: keep window, UI settings, preview/recording controls, and wait-condition MCP wrappers together in `WindowTools.cs` unless a tool type gains independent helper state or a separate transport seam
+
+Date: 2026-05-25
+Area: ssctl command-handler locality
+Problem: The ssctl CLI command router was still split across four small command-family partial files plus the root handler file. Each family was only a section of the same transport/argument/payload surface, so changing CLI routing or reviewing command ownership required hopping across files without gaining a real collaborator boundary.
+Files consolidated: `tools/ssctl/CommandHandlers.Observability.cs`; `tools/ssctl/CommandHandlers.CaptureControls.cs`; `tools/ssctl/CommandHandlers.Window.cs`; `tools/ssctl/CommandHandlers.Flashback.cs`
+Files added: none
+Net production .cs delta: -4
+Net test .cs delta: 0
+Partial clusters reduced: `CommandHandlers` tool partial family removed; command-family sections now live in `tools/ssctl/CommandHandlers.cs`
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: ssctl routing/source-ownership/help/protocol tests still cover typed command IDs, request payloads, Flashback export flags, UI visibility routes, observability routes, and diagnostic-session runner invocation
+Behavior preserved: public ssctl command names, accepted aliases, argument parsing, automation command IDs, payload field names, response formatting, and diagnostic-session dynamic command forwarding are unchanged
+Notes for future agents: keep ssctl command handlers in `CommandHandlers.cs`; add a new `CommandHandlers.*.cs` file only for a real independently tested collaborator, not as a partial-class section marker

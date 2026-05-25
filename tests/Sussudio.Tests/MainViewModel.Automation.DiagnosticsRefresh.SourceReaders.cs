@@ -105,9 +105,7 @@ static partial class Program
         return new DiagnosticSessionToolSurfaceSourceFamily(
             ReadNormalizedRepoFile("tools/ssctl/Program.cs"),
             ReadNormalizedRepoFile("tools/ssctl/SsctlHelpWriter.cs"),
-            (ReadRepoFile("tools/ssctl/CommandHandlers.cs")
-                + "\n" + ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"))
-                .Replace("\r\n", "\n"),
+            ReadNormalizedRepoFile("tools/ssctl/CommandHandlers.cs"),
             ReadNormalizedRepoFile("tools/McpServer/Tools/AppStateTools.cs"));
     }
 

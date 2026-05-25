@@ -369,31 +369,23 @@ on app identity, assets, packages, runtime config, and project references, while
 `Sussudio/Sussudio.Build.targets` owns publish flags, English-only locale
 stripping, and repo-local `latest-build` staging.
 
-`tools/ssctl/CommandHandlers.cs` owns the top-level CLI router,
-per-invocation command context, shared command sending, response exit-code
-shaping, generic argument helpers, flag parsing, JSON detection/pretty
-printing, primitive/domain value parsing, and wait/assert/probe plus
-recording/file verification scripting flow commands.
-`CommandHandlers.Observability.cs` owns diagnostic and observability CLI
-commands: state, diagnostics, options, manifest, timeline, memory, audio-ramp,
-`presentmon` command parsing, swap-chain discovery, probe invocation, and
-`diagnostic-session` command parsing and runner invocation.
+`tools/ssctl/CommandHandlers.cs` owns the complete ssctl command-handler
+surface: top-level CLI router, per-invocation command context, shared command
+sending, response exit-code shaping, generic argument helpers, flag parsing,
+JSON detection/pretty printing, primitive/domain value parsing,
+wait/assert/probe plus recording/file verification scripting flow commands,
+diagnostic and observability commands, `presentmon` parsing/swap-chain
+discovery/probe invocation, `diagnostic-session` parsing/runner invocation,
+preview/record/screenshot/frame commands, device commands, set-value
+capture/audio/output mutations, window and shell visibility commands,
+recordings-folder commands, and Flashback timeline/playback/scrub/marker/range
+and export payload shapes. Keep command-family section comments inside this
+single owner; do not reintroduce `CommandHandlers.*.cs` partial files unless a
+family becomes a real independently tested collaborator.
 `tools/ssctl/Program.cs` owns only process entry, Ctrl-C cancellation, CLI
 option parsing, and exit-code shaping; `tools/ssctl/SsctlHelpWriter.cs` owns
 the help facade, operator-facing help section text, and catalog-backed help
 lines.
-`CommandHandlers.CaptureControls.cs` owns preview/record/screenshot/frame,
-device refresh/list/select, audio-input selection, custom-audio enablement, and
-`set` capture/audio/output mutations, including the shared set-value payload
-helper.
-`CommandHandlers.Window.cs` owns window close arming, state/geometry actions,
-fullscreen toggles, snap commands, recordings-folder, stats visibility,
-settings visibility, and frame-time overlay CLI commands.
-`CommandHandlers.Flashback.cs` owns Flashback enablement, timeline, segment,
-restart, playback/scrub/marker/range CLI actions, position parsing, export
-flags, output path defaulting, directory creation, and `FlashbackAction`/
-`FlashbackExport` payload shapes. Command-family payload helpers stay with
-their owning command partials.
 
 The `tools/ssctl/Formatters.*.cs` partial family is only the projection facade
 for console output. Keep app snapshot orchestration, section ordering, and

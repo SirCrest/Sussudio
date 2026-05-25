@@ -46,8 +46,8 @@ public sealed class SsctlCommandHandlerContractsTests
         => global::Program.SsctlCommandHandlers_RouteVerificationCommands();
 
     [Fact]
-    public Task SourceOwnershipIsSplit()
-        => global::Program.SsctlCommandHandlers_SourceOwnership_IsSplit();
+    public Task SourceOwnershipIsConsolidated()
+        => global::Program.SsctlCommandHandlers_SourceOwnership_IsConsolidated();
 
     [Fact]
     public Task HelpUsesCatalogCliHelpForAutomationCommands()

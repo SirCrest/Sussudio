@@ -3263,33 +3263,25 @@ Primary owners:
 - `tools/AutomationClient/README.md` owns AutomationClient usage notes.
 - `tools/send-automation-command.ps1` owns the PowerShell helper wrapper and
   its AutomationClient rebuild freshness inputs.
-- `tools/ssctl/CommandHandlers.cs` owns top-level CLI routing, the
-  per-invocation command context wrapper, shared command sending, response
-  exit-code shaping, usage validation, required words, argument joining, flag
-  consumption, optional flag value parsing, command-handler JSON
-  detection/pretty-printing, primitive parsing, Flashback export numeric
-  validation, on/off and show/hide parsing, recording format normalization,
-  snap action mapping, assertion value parsing, and wait/assert/probe plus
-  recording/file verification scripting flow commands.
-- `tools/ssctl/CommandHandlers.Observability.cs` owns diagnostic and
-  observability CLI commands: state, diagnostics, options, manifest, timeline,
-  memory, audio-ramp, `presentmon` parsing/swap-chain discovery/probe
-  invocation, and `diagnostic-session` parsing/runner invocation.
-- `tools/ssctl/CommandHandlers.CaptureControls.cs` owns preview/record,
-  screenshot/frame capture, device refresh/list/select, audio-input selection,
-  custom-audio enablement, and `set` capture/audio/output mutations, including
-  the shared set-value payload helper. Fixed ssctl automation routes should
-  call shared enum overloads with `AutomationCommandKind` values; labels and
-  wire command IDs remain catalog owned. Dynamic diagnostic-session runner
-  command names stay string-based at the transport seam.
-- `tools/ssctl/CommandHandlers.Window.cs` owns window close arming, window
-  state/geometry actions, fullscreen toggles, snap commands, the
-  recordings-folder CLI command, stats visibility, settings visibility, and
-  frame-time overlay visibility commands.
-- `tools/ssctl/CommandHandlers.Flashback.cs` owns Flashback enablement,
-  timeline, segment, restart, playback/scrub/marker/range actions, position
-  parsing, export flag parsing, output-path defaulting, parent-directory
-  creation, and `FlashbackAction`/`FlashbackExport` payload shaping.
+- `tools/ssctl/CommandHandlers.cs` owns the complete ssctl command-handler
+  surface: top-level CLI routing, the per-invocation command context wrapper,
+  shared command sending, response exit-code shaping, usage validation,
+  required words, argument joining, flag consumption, optional flag value
+  parsing, command-handler JSON detection/pretty-printing, primitive parsing,
+  Flashback export numeric validation, on/off and show/hide parsing, recording
+  format normalization, snap action mapping, assertion value parsing,
+  wait/assert/probe plus recording/file verification scripting flow commands,
+  diagnostic and observability commands, presentmon parsing/swap-chain
+  discovery/probe invocation, diagnostic-session parsing/runner invocation,
+  preview/record/screenshot/frame commands, device commands, set-value capture
+  and audio mutations, window and shell visibility commands, recordings-folder
+  commands, and Flashback timeline/playback/scrub/marker/range/export payload
+  shaping. Fixed ssctl automation routes should call shared enum overloads with
+  `AutomationCommandKind` values; labels and wire command IDs remain catalog
+  owned. Dynamic diagnostic-session runner command names stay string-based at
+  the transport seam. Do not reintroduce `CommandHandlers.*.cs` partial files
+  unless a command family becomes an independently tested collaborator with a
+  real boundary.
 - `tools/NativeXuAudioProbe/Program.cs` owns probe command routing, command
   workflows, and probe-local runtime shims for linked app service sources;
   `Program.Commands.cs` owns Native XU command IDs and shared
