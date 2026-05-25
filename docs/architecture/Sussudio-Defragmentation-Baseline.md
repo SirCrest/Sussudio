@@ -1667,3 +1667,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: shared automation tool contract tests cover enum command routing, exact pipe connect error classification, response-state parsing, and synthetic error shaping; no automation command names/IDs changed
 Behavior preserved: command resolution, typed `AutomationCommandKind` command-id handoff, request envelope serialization, `not_ready` retry delay bounds, response-state parsing, named-pipe connect classification, UTF-8 request/response framing, response timeout, and cancellation behavior remain unchanged
 Notes for future agents: keep command envelope/retry/response-state parsing and named-pipe request transport together in `AutomationPipeClient.cs`; keep higher-level timeout selection, response validation, and synthetic error handling in `AutomationCommandTransport.cs`
+
+Date: 2026-05-25
+Area: diagnostic-session run context locality
+Problem: `DiagnosticSessionRunState.cs` was a 63-line state holder constructed only by `DiagnosticSessionRunContext`, splitting terminal exception state, last-stage tracking, and best-effort artifact failure recording from the mutable run context that owns the lifecycle using that state.
+Files consolidated: `tools/Common/DiagnosticSessionRunState.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; diagnostic-session shared helper file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: diagnostic-session infrastructure ownership and artifact tests cover terminal state, live breadcrumb stage selection, summary last-stage projection, and runner context construction; no automation command names/IDs changed
+Behavior preserved: initial last-stage value, terminal exception capture, warning text, canceled/failed/completed classification, result last-stage selection, and best-effort artifact write failure handling remain unchanged
+Notes for future agents: keep mutable run lifecycle state with `DiagnosticSessionRunContext.cs`; keep `DiagnosticSessionLiveStateWriter.cs` focused on breadcrumb payload writing and throttling

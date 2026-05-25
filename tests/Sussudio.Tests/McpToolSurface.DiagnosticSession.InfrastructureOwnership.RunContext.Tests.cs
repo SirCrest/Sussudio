@@ -6,20 +6,19 @@ static partial class Program
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var contextText = ReadDiagnosticSessionRunContextSource();
-        var stateText = ReadRepoFile("tools/Common/DiagnosticSessionRunState.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(stateText, "internal sealed class DiagnosticSessionRunState");
-        AssertContains(stateText, "internal void SetStage(string stage)");
-        AssertContains(stateText, "internal void RecordTerminalException(Exception ex, string stage)");
-        AssertContains(stateText, "internal string GetTerminalState()");
-        AssertContains(stateText, "internal async Task WriteArtifactBestEffortAsync<T>(");
+        AssertContains(contextText, "internal sealed class DiagnosticSessionRunState");
+        AssertContains(contextText, "internal void SetStage(string stage)");
+        AssertContains(contextText, "internal void RecordTerminalException(Exception ex, string stage)");
+        AssertContains(contextText, "internal string GetTerminalState()");
+        AssertContains(contextText, "internal async Task WriteArtifactBestEffortAsync<T>(");
         AssertContains(contextText, "RunState = new DiagnosticSessionRunState(");
         AssertContains(contextText, "internal void SetStage(string stage)");
         AssertContains(contextText, "internal void RecordTerminalException(Exception ex, string stage)");
-        AssertDoesNotContain(stateText, "internal string LivePath { get; }");
-        AssertDoesNotContain(stateText, "internal async Task WriteLiveStateBestEffortAsync(");
-        AssertDoesNotContain(stateText, "internal async Task WriteSamplingLiveStateBestEffortAsync(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionRunState.cs")),
+            "run state stays folded into DiagnosticSessionRunContext.cs");
         AssertDoesNotContain(runnerText, "var lastStage = \"initializing\";");
         AssertDoesNotContain(runnerText, "Exception? terminalException = null;");
         AssertDoesNotContain(runnerText, "DateTimeOffset.MinValue");

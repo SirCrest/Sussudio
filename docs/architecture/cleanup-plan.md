@@ -3157,15 +3157,11 @@ initial-snapshot exception recording while the runner keeps phase ordering.
 Diagnostic-session run context now lives in
 `tools/Common/DiagnosticSessionRunContext.cs`. `DiagnosticSessionRunContext.cs`
 owns the cohesive mutable per-run context: bootstrap, actions, warnings,
-samples, run state, command channel, scenario cancellation source, initial
+samples, terminal exception state, last-stage tracking, best-effort artifact
+write failure recording, command channel, scenario cancellation source, initial
 snapshot state and capture, live-state writer handoff, disposal, and
 scenario/completion context construction with the explicit callback/token
 handoffs consumed by scenario and completion phases.
-
-Diagnostic-session run state now lives in
-`tools/Common/DiagnosticSessionRunState.cs`. It owns last-stage tracking,
-terminal exception classification, and best-effort artifact write failure
-recording while the runner keeps the scenario flow readable.
 
 Diagnostic-session live breadcrumbs now live in
 `tools/Common/DiagnosticSessionLiveStateWriter.cs`. It owns the
@@ -3468,7 +3464,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
 - `DiagnosticSessionResultFormatter.cs`
-- `DiagnosticSessionRunState.cs`
 - `DiagnosticSessionLiveStateWriter.cs`
 - `DiagnosticSessionRunContext.cs`
 - `DiagnosticSessionScenarioCatalog.cs`

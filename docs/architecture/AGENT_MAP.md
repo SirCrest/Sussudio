@@ -3557,9 +3557,6 @@ Primary owners:
   result artifact path construction, pre-summary sample, frame-ledger, and
   timeline artifact writes, frame-ledger trace shaping, and shared JSON object
   creation / artifact serialization helpers.
-- `tools/Common/DiagnosticSessionRunState.cs` owns diagnostic-session terminal
-  exception state, last-stage tracking, and best-effort artifact write failure
-  recording.
 - `tools/Common/DiagnosticSessionLiveStateWriter.cs` owns the best-effort
   `session-live.json` breadcrumb path, payload shape, health projection,
   warning projection, terminal override mapping, and sampling live-state write
@@ -3567,8 +3564,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionRunContext.cs` owns diagnostic-session core mutable run infrastructure:
   bootstrap, scenario normalization, scenario-plan selection, duration/sample
   clamping, session identity, output-directory creation, runner process
-  metadata, actions, warnings, samples, run state, command channel, scenario
-  cancellation source, initial snapshot state, baseline snapshot capture,
+  metadata, actions, warnings, samples, terminal exception state, last-stage
+  tracking, best-effort artifact write failure recording, command channel,
+  scenario cancellation source, initial snapshot state, baseline snapshot capture,
   automation response shape helpers for snapshot and verification envelopes,
   unknown-state warning, live-state handoff, run-context disposal, and
   scenario/completion context construction.
