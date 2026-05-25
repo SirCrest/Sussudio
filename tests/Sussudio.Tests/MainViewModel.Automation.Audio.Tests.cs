@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -70,6 +71,57 @@ static partial class Program
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", stalePath)),
                 $"stale audio automation partial {stalePath}");
         }
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task MainViewModelAutomation_RoutesPreviewVolumePersistenceThroughSaveHook()
+    {
+        var vmType = RequireType("Sussudio.ViewModels.MainViewModel");
+
+        var savePreviewVolume = vmType.GetMethod(
+            "SavePreviewVolume",
+            BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        AssertNotNull(savePreviewVolume, "MainViewModel.SavePreviewVolume");
+
+        var previewVolume = vmType.GetProperty("PreviewVolume", BindingFlags.Instance | BindingFlags.Public);
+        AssertNotNull(previewVolume, "MainViewModel.PreviewVolume");
+
+        var audioPreview = vmType.GetProperty("IsAudioPreviewEnabled", BindingFlags.Instance | BindingFlags.Public);
+        AssertNotNull(audioPreview, "MainViewModel.IsAudioPreviewEnabled");
+
+        var getOptionsSnapshot = vmType.GetMethod(
+            "GetAutomationOptionsSnapshotAsync",
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        AssertNotNull(getOptionsSnapshot, "MainViewModel.GetAutomationOptionsSnapshotAsync");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task MainViewModelCapture_RoutesAudioMonitoringThroughCoordinator()
+    {
+        var coordinatorType = RequireType("Sussudio.Services.Capture.CaptureSessionCoordinator");
+
+        var setPreviewVolume = coordinatorType.GetMethod(
+            "SetPreviewVolume", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        AssertNotNull(setPreviewVolume, "CaptureSessionCoordinator.SetPreviewVolume");
+
+        var updateAudioMonitoring = coordinatorType.GetMethod(
+            "UpdateAudioMonitoringAsync", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        AssertNotNull(updateAudioMonitoring, "CaptureSessionCoordinator.UpdateAudioMonitoringAsync");
+
+        var updateAudioInput = coordinatorType.GetMethod(
+            "UpdateAudioInputAsync", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        AssertNotNull(updateAudioInput, "CaptureSessionCoordinator.UpdateAudioInputAsync");
+
+        var startVideoPreview = coordinatorType.GetMethod(
+            "StartVideoPreviewAsync", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        AssertNotNull(startVideoPreview, "CaptureSessionCoordinator.StartVideoPreviewAsync");
+
+        var commandKindType = RequireType("Sussudio.Models.AutomationCommandKind");
+        AssertEqual(true,
+            Enum.IsDefined(commandKindType, Enum.Parse(commandKindType, "SetAudioPreviewEnabled")),
+            "AutomationCommandKind.SetAudioPreviewEnabled exists");
 
         return Task.CompletedTask;
     }

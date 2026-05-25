@@ -1403,12 +1403,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.Preview.Tests.cs` owns
   automation preview enable/disable and start/stop routing through the preview
   lifecycle controller.
-- `tests/Sussudio.Tests/MainViewModel.Automation.Hdr.Tests.cs` owns
-  automation HDR/true-HDR preview enablement guard assertions in the
-  capture-mode transaction owner plus HDR mode change side-effect ownership
-  assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.PreviewVolume.Tests.cs` owns
-  preview-volume persistence and automation options surface assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.RecordingTransition.Tests.cs`
   owns automation recording routing through the shared transition gate and
   recording runtime ownership assertions, recording start/stop failure
@@ -1421,12 +1415,14 @@ Primary current owners:
   dispatcher routing and UI-dispatch cancellation disposal assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Audio.Tests.cs` owns
   automation audio/microphone command entry-point, microphone monitor
-  suppression, and runtime-guard assertions.
+  suppression, preview-volume persistence, automation options surface, and
+  capture audio-monitoring coordinator surface and runtime-guard assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.UiSettings.Tests.cs` owns
   automation UI-setting persistence and frame-time/stat visibility contracts.
 - `tests/Sussudio.Tests/MainViewModel.Automation.CaptureMode.Tests.cs` owns
   automation capture-mode reinitialization, device refresh, and
-  device/audio-input selection routing contracts.
+  device/audio-input selection routing contracts, plus HDR/true-HDR preview
+  enablement guards and HDR mode change side-effect ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
   owns the serialized diagnostics refresh ownership check and coordinates the
   focused diagnostics refresh assertion helpers.
@@ -1508,8 +1504,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.SettingsProjection.Tests.cs`
   owns capture settings projection ownership assertions, including the focused
   frame-rate request projector used by `BuildCaptureSettings`.
-- `tests/Sussudio.Tests/MainViewModel.Capture.AudioMonitoring.Tests.cs` owns
-  capture audio-monitoring coordinator surface assertions.
 - `tests/Sussudio.Tests/MainViewModel.AudioControls.GainAndMonitoring.Tests.cs`
   owns analog gain curve mapping and preview audio monitoring volume-ramp
   ownership assertions.
