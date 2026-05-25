@@ -6,7 +6,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadMainWindowCompositionSource();
-        var propertyChangedRouterText = ReadRepoFile("Sussudio/Controllers/Shell/MainWindowPropertyChangedRouter.cs").Replace("\r\n", "\n");
+        var propertyChangedRouterText = rootText;
         var previewText = ReadMainWindowPropertyChangedPreviewAdapterSource();
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
         var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
@@ -40,6 +40,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ControllerInitialization.cs")),
             "controller initialization partial folded into MainWindow root composition");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "MainWindowPropertyChangedRouter.cs")),
+            "property-name route order lives in the MainWindow root composition");
         AssertContains(rootText, "TryHandleCaptureSelection = TryHandleCaptureSelectionPropertyChanged,");
         AssertContains(rootText, "TryHandleStatusStrip = TryHandleStatusStripPropertyChanged,");
         AssertContains(rootText, "TryHandlePreviewAsync = TryHandlePreviewPropertyChangedAsync,");

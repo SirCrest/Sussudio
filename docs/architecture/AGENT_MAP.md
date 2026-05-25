@@ -1185,10 +1185,9 @@ Primary current owners:
   fade/reinit/start/stop command behavior. One-line XAML command bridges for
   capture-device, recording, output-path, and preview-screenshot buttons live in
   their feature adapter partials beside the owning controllers.
-- `Sussudio/MainWindow.xaml.cs` owns only the root ViewModel
-  PropertyChanged event envelope and router composition.
-  `Sussudio/Controllers/Shell/MainWindowPropertyChangedRouter.cs` owns
-  property-name normalization and route order. Capture-selection and
+- `Sussudio/MainWindow.xaml.cs` owns the root ViewModel
+  PropertyChanged event envelope, property-name normalization, and route order.
+  Capture-selection and
   status-strip adapters are still considered first through the
   `Sussudio/MainWindow.CaptureBindings.cs` adapter and
   `MainWindow.ShellChrome.Composition.cs`; broad domain property-name switches
