@@ -1332,16 +1332,12 @@ Primary current owners:
   assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionNormalizer.Tests.cs`
   owns capture ComboBox selection normalizer fallback-policy assertions.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.DeviceActions.Tests.cs`
-  owns capture refresh/apply button controller-adapter ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionPresentation.Tests.cs`
-  owns capture option presentation controller-adapter ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionPresentationPolicy.Tests.cs`
-  owns capture option presentation affordance-policy assertions.
+  owns capture option presentation controller-adapter, refresh/apply button
+  controller-adapter, affordance-policy, and HDR/FPS tooltip text-policy
+  assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionBindings.Tests.cs`
   owns capture/recording option binding controller-adapter ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionTooltipFormatter.Tests.cs`
-  owns capture option HDR/FPS tooltip text-policy assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Output.Tests.cs` owns
   MainWindow output path display/action ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Screenshot.Tests.cs`
