@@ -110,33 +110,12 @@ add xUnit alongside, and port incrementally.
   snapshot construction and health/renderer metric projection checks.
 - `XUnit.ToolFormatterContractsTests.cs` owns focused tool formatter contract
   checks.
-- `XUnit.AutomationCatalogContractsTests.cs` owns the former legacy automation
-  catalog, manifest, path-policy, and reliability-gates contract checks.
-- `XUnit.AutomationAppSurfaceContractsTests.cs` owns the former legacy
-  automation app-surface registration group: App exception policy, converter
-  and display formatting, LoggingJsonContext, MainWindow automation IDs,
-  full-screen/window dispatch adapters, pipe/auth, and Stream Deck auth-envelope
-  checks.
-- `XUnit.AutomationViewModelFlashbackUiContractsTests.cs` owns the former
-  legacy automation ViewModel/Flashback UI registration group: automation
-  settings, audio/device/capture/recording routes, async Flashback/probe
-  surface, runtime snapshot ownership, scrub/toggle behavior, timeline
-  geometry, and Flashback presentation controller ownership checks.
-- `XUnit.AutomationDispatcherContractsTests.cs` owns the former legacy
-  automation dispatcher registration group: payload parsing, catalog metadata,
-  readiness classification, authorization, manifest, command coverage, and
-  focused dispatcher command-owner checks.
-- `XUnit.AutomationCaptureFlashbackRoutingContractsTests.cs` owns the former
-  legacy automation capture/Flashback routing registration group: Flashback
-  routing, capture transition policy, capture session coordinator contracts,
-  service namespace ownership, and diagnostics snapshot refresh serialization.
-- `XUnit.AutomationSnapshotProjectionContractsTests.cs` owns the former legacy
-  automation diagnostics snapshot-projection registration group: snapshot
-  status/evaluation, audio, capture/settings, source/cadence, MJPEG, recording,
-  process/A/V sync, preview, and Flashback projection ownership checks.
-- `XUnit.AutomationDiagnosticsLoopContractsTests.cs` owns the former legacy
-  diagnostics-loop polling contract that keeps automation options snapshots out
-  of hot diagnostics refresh paths.
+- `XUnit.AutomationContractsTests.cs` owns the former legacy automation xUnit
+  execution groups: catalog, manifest, path-policy, reliability-gates,
+  app-surface, ViewModel/Flashback UI, dispatcher, capture/Flashback routing,
+  diagnostics snapshot projection, and diagnostics-loop polling checks. The
+  public wrapper classes remain separate inside this file so existing test
+  identities stay stable while the execution surface is easier to scan.
 - `XUnit.ToolContractsTests.cs` owns the former legacy PresentMon parser, ssctl
   pipe transport, KS audio-node, EGAVDS probe, shared automation snapshot
   formatter core, Flashback, Preview D3D, source ownership, ssctl formatter,

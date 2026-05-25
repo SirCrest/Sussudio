@@ -547,7 +547,7 @@ parsing, using `RuntimeContractSource.ReadAutomationPipeClientSource()` for
 the shared AutomationPipeClient source family. Automation tool contract coverage is
 otherwise split into catalog/manifest/path-policy contracts, reliability-gates
 script checks, shared/ssctl snapshot formatter contracts, and tool-probe
-contracts. `tests/Sussudio.Tests/XUnit.AutomationCatalogContractsTests.cs` owns
+contracts. `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns
 the xUnit execution surface for catalog, manifest, path-policy, and
 reliability-gates checks after their removal from the legacy offline harness
 catalog. `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit
@@ -681,33 +681,13 @@ Core runtime checks now execute through
 telemetry, capture-service snapshot, NativeXu, frame-ledger, recording-integrity,
 and basic app contract checks in xUnit after their removal from the legacy
 harness catalog.
-Automation app-surface checks now execute through
-`tests/Sussudio.Tests/XUnit.AutomationAppSurfaceContractsTests.cs`, keeping App
-exception policy, converter/display formatting, LoggingJsonContext, MainWindow
-automation surface, pipe/auth, and Stream Deck auth-envelope checks in xUnit
-after their removal from the legacy harness catalog.
-Automation ViewModel/Flashback UI checks now execute through
-`tests/Sussudio.Tests/XUnit.AutomationViewModelFlashbackUiContractsTests.cs`,
-keeping automation command routes, async
-Flashback/probe surface, runtime snapshot ownership, scrub/toggle behavior,
-timeline geometry, and Flashback presentation controller ownership checks in
-xUnit after their removal from the legacy harness catalog.
-Automation dispatcher checks now execute through
-`tests/Sussudio.Tests/XUnit.AutomationDispatcherContractsTests.cs`, keeping
-payload parsing, catalog metadata, readiness classification, authorization,
-manifest, command coverage, and focused dispatcher command-owner checks in
-xUnit after their removal from the legacy harness catalog.
-Automation capture/Flashback routing checks now execute through
-`tests/Sussudio.Tests/XUnit.AutomationCaptureFlashbackRoutingContractsTests.cs`,
-keeping Flashback routing, capture transition policy, capture session
-coordinator contracts, service namespace/source ownership, and diagnostics
-snapshot refresh serialization checks in xUnit after their removal from the
-legacy harness catalog.
-Automation diagnostics snapshot-projection checks now execute through
-`tests/Sussudio.Tests/XUnit.AutomationSnapshotProjectionContractsTests.cs`,
-keeping snapshot/status, audio, capture and source, MJPEG, recording, system
-resources and A/V sync, preview, and Flashback owner checks in xUnit after their
-removal from the legacy harness catalog.
+Automation checks now execute through
+`tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`, keeping App exception
+policy, converter/display formatting, LoggingJsonContext, MainWindow automation
+surface, pipe/auth, Stream Deck auth-envelope, ViewModel/Flashback UI,
+dispatcher, capture/Flashback routing, snapshot projection, catalog/manifest,
+and diagnostics-loop checks in xUnit after their removal from the legacy
+harness catalog.
 Presentation-preview MainViewModel checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`,
 keeping initial recording transition failure propagation, audio controls and
@@ -3598,7 +3578,7 @@ owner, fold it back into that owner and update the source-shape tests and
    automation options UI-thread snapshot capture now lives in
    `MainViewModel.AutomationSnapshots.cs`; pure selected-control-state DTO
    construction lives in `ViewModelBuilders.cs`.
-   `tests/Sussudio.Tests/XUnit.AutomationDiagnosticsLoopContractsTests.cs`
+   `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
    owns xUnit execution for the diagnostics-loop polling check after its removal
    from the legacy presentation-preview capture catalog.
    Buffer, bitrate, playback-state, in/out marker, gap-from-live UI projection,

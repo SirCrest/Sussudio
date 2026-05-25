@@ -1499,7 +1499,7 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsLoop.Tests.cs`
   owns diagnostics-loop polling contracts that keep options snapshots out of
   hot diagnostics refresh paths.
-- `tests/Sussudio.Tests/XUnit.AutomationDiagnosticsLoopContractsTests.cs`
+- `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
   owns xUnit execution for the former legacy diagnostics-loop polling catalog
   check.
 - Keep new automation diagnostics projection ownership assertions in the focused
@@ -1966,7 +1966,7 @@ Primary current owners:
   and manifest serialization contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Reliability.Tests.cs` owns the
   shared implementation for the reliability-gates script contract test.
-- `tests/Sussudio.Tests/XUnit.AutomationCatalogContractsTests.cs` owns the
+- `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns the
   xUnit execution surface for catalog, manifest, path-policy, and
   reliability-gates checks after their removal from the legacy offline harness
   catalog.
@@ -2058,34 +2058,13 @@ Primary current owners:
   registration. `tests/Sussudio.Tests/XUnit.RuntimeHelpersTests.cs` and
   `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` own their behavior and
   native-entry-point contracts.
-- `tests/Sussudio.Tests/XUnit.AutomationAppSurfaceContractsTests.cs` owns the
-  former automation-diagnostics app-surface registration group for App exception
-  policy, converter/display formatting, LoggingJsonContext, MainWindow
-  automation IDs and window/full-screen/dispatch adapters, pipe/auth policy,
-  and Stream Deck auth-envelope checks after their removal from the legacy
-  offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.AutomationViewModelFlashbackUiContractsTests.cs`
-  owns the former automation-diagnostics ViewModel/Flashback UI registration
-  group for automation command routes, async
-  Flashback/probe surface, runtime snapshot ownership, scrub/toggle behavior,
-  timeline geometry, and Flashback presentation controller ownership after
-  their removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.AutomationDispatcherContractsTests.cs` owns the
-  former automation-diagnostics dispatcher registration group for payload
-  parsing, catalog metadata, readiness classification, authorization, manifest,
-  command coverage, and focused dispatcher command-owner checks after their
-  removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.AutomationCaptureFlashbackRoutingContractsTests.cs`
-  owns the former automation-diagnostics capture/Flashback routing registration
-  group for Flashback routing, capture transition policy, capture session
-  coordinator contracts, service namespace/source ownership, and diagnostics
-  snapshot refresh serialization after their removal from the legacy offline
-  harness catalog.
-- `tests/Sussudio.Tests/XUnit.AutomationSnapshotProjectionContractsTests.cs`
-  owns the former automation-diagnostics snapshot-projection registration group
-  for snapshot status/evaluation, audio, capture/settings, source/cadence,
-  MJPEG, recording, process/A/V sync, preview, and Flashback projection
-  ownership after their removal from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns the former
+  automation-diagnostics xUnit execution groups for app-surface, ViewModel and
+  Flashback UI, dispatcher, capture/Flashback routing, snapshot projection,
+  catalog/manifest/path-policy/reliability, and diagnostics-loop checks after
+  their removal from the legacy offline harness catalog. Keep the public
+  wrapper classes in this file unless a group needs an independent fixture or
+  executable helper state.
 - `tests/Sussudio.Tests/ServiceNamespace.Tests.cs` owns the harness-visible
   service namespace/source ownership orchestrator.
 - `tests/Sussudio.Tests/ServiceNamespace.FolderRules.Tests.cs` owns service

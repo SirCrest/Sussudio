@@ -1934,3 +1934,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
 Behavior preserved: the same public test classes, `[Fact]` method names, target-assembly bootstrap calls where they existed, and delegated `Program` checks remain available under one tool contracts file
 Notes for future agents: keep tool-side xUnit wrapper classes in `XUnit.ToolContractsTests.cs`; add new wrapper classes there unless a group needs independent fixtures or executable helper state
+
+Date: 2026-05-25
+Area: Automation xUnit execution-surface locality
+Problem: Seven automation xUnit wrapper files still mirrored former legacy catalog bands even though each file only exposed public wrapper classes and delegated `Program` checks. Reviewing automation app-surface, dispatcher, ViewModel/Flashback UI, capture/Flashback routing, snapshot projection, catalog, and diagnostics-loop execution required opening one shell per band without gaining independent fixtures or helper state.
+Files consolidated: `tests/Sussudio.Tests/XUnit.AutomationAppSurfaceContractsTests.cs`; `tests/Sussudio.Tests/XUnit.AutomationCatalogContractsTests.cs`; `tests/Sussudio.Tests/XUnit.AutomationDiagnosticsLoopContractsTests.cs`; `tests/Sussudio.Tests/XUnit.AutomationDispatcherContractsTests.cs`; `tests/Sussudio.Tests/XUnit.AutomationViewModelFlashbackUiContractsTests.cs`; `tests/Sussudio.Tests/XUnit.AutomationSnapshotProjectionContractsTests.cs`; `tests/Sussudio.Tests/XUnit.AutomationCaptureFlashbackRoutingContractsTests.cs`
+Files added: `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
+Net production .cs delta: 0
+Net test .cs delta: -6
+Partial clusters reduced: n/a; automation xUnit wrapper file count -6
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
+Behavior preserved: the same public test classes, constructors, `[Fact]` method names, target-assembly bootstrap calls, and delegated `Program` checks remain available under one automation contracts file
+Notes for future agents: keep automation xUnit wrapper classes in `XUnit.AutomationContractsTests.cs`; add new wrapper classes there unless a group needs independent fixtures or executable helper state
