@@ -9,7 +9,7 @@ static partial class Program
 
         var rootText = ReadPresentMonProbeFile("PresentMonProbe.cs");
         var modelsText = ReadPresentMonProbeFile("PresentMonProbe.Models.cs");
-        var formatText = ReadPresentMonProbeFile("PresentMonProbe.Format.cs");
+        var formatText = rootText;
         var csvText = ReadPresentMonProbeFile("PresentMonProbe.Csv.cs");
 
         AssertContains(rootText, "public static async Task<PresentMonProbeResult> RunAsync(");
@@ -51,7 +51,10 @@ static partial class Program
         AssertContains(formatText, "private static void AppendMetric(");
         AssertContains(formatText, "private static void AppendAppCorrelation(");
         AssertContains(formatText, "private static void AppendSwapChains(");
-        AssertDoesNotContain(formatText, "private static string BuildResultMessage(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Format.cs")),
+            "PresentMon result formatting lives with PresentMonProbe.RunAsync");
 
         AssertContains(csvText, "private static PresentMonCaptureSummary ParseCsv(");
         AssertContains(csvText, "var csvRows = ReadCsvRows(path);");
@@ -98,7 +101,6 @@ static partial class Program
         AssertDoesNotContain(rootText, "private static PresentMonCaptureSummary ParseCsv(");
         AssertDoesNotContain(rootText, "private static IReadOnlyList<PresentMonSwapChainSummary> BuildSwapChainSummaries(");
         AssertDoesNotContain(rootText, "private static PresentMonMetricSummary Summarize(");
-        AssertDoesNotContain(rootText, "public static string Format(PresentMonProbeResult result)");
         AssertDoesNotContain(modelsText, "PreviewD3DSwapChainAddress");
         AssertEqual(
             false,

@@ -3323,8 +3323,6 @@ Primary owners:
   adding string comparisons in `DiagnosticSessionRunner`.
 - `tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon option/result,
   summary, swap-chain, app-correlation summary, and metric DTOs.
-- `tools/Common/PresentMon/PresentMonProbe.Format.cs` owns PresentMon result text rendering
-  used by diagnostic-session output surfaces.
 - `tools/Common/PresentMon/PresentMonProbe.Csv.cs` owns PresentMon CSV parse overloads,
   selected-row filtering, summary assembly, swap-chain normalization/selection,
   header/field parsing, scalar metric reads, CSV line tokenization, row
@@ -3336,7 +3334,8 @@ Primary owners:
   construction, preview snapshot correlation extraction, run orchestration,
   target process/PresentMon executable/output-path resolution, command-line
   construction, argument quoting, process supervision, stdout/stderr drain,
-  timeout kill, temp CSV cleanup, and probe-result message shaping.
+  timeout kill, temp CSV cleanup, probe-result message shaping, and result text
+  rendering used by diagnostic-session output surfaces.
 
 Invariants:
 

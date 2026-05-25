@@ -2188,3 +2188,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: capture/audio enumeration orchestration, format-cache warm/load/delete/save behavior, background probe event delivery, inline format probing, HDR detection, pixel-format normalization, frame-rate normalization, discovery summary text, priority scoring, audio association, and native XU interface resolution remain unchanged
 Notes for future agents: keep device enumeration, discovery cache, and format probing together in `DeviceService.cs`; keep lower-level MF enumeration/source opening in `DeviceDiscovery/MfDeviceEnumerator.cs`.
+
+Date: 2026-05-25
+Area: PresentMon result formatting locality
+Problem: `PresentMonProbe.Format.cs` split the public text-rendering surface away from the PresentMon tool owner that creates options, runs PresentMon, shapes result messages, and is called by ssctl/MCP output paths. Reviewing operator-facing PresentMon result behavior required opening a tiny formatting partial plus the root runner.
+Files consolidated: `tools/Common/PresentMon/PresentMonProbe.Format.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `PresentMonProbe` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: ssctl/MCP still call `PresentMonProbe.Format(result)`; no automation command names/IDs changed
+Behavior preserved: PresentMon run orchestration, CSV parse handoff, result message shaping, successful/failed format output, stderr inclusion, summary context, metric rows, app correlation text, count fields, and swap-chain list rendering remain unchanged
+Notes for future agents: keep PresentMon run orchestration and text formatting in `PresentMonProbe.cs`; keep CSV parsing/aggregation in `PresentMonProbe.Csv.cs` and public DTOs in `PresentMonProbe.Models.cs`.
