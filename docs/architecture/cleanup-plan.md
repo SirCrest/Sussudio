@@ -2651,14 +2651,13 @@ timeout state, deferred preview reattach state, and deferred reattach retry
 scheduling there. Keep decoder file handling and playback pacing in the
 controller core/thread partials.
 
-Flashback playback decoded-frame submission now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrames.cs`.
+Flashback playback decoded-frame submission now lives with held playback frame
+ownership in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`.
 Keep preview-sink selection, submission telemetry, renderer calls,
 decoded-frame validity checks, GPU/CPU frame skip reasons, NV12/P010 byte-size
-policy, and held-frame handoff there.
-Held playback frame backing state, release-for-live reset policy, and best-effort decoded
-frame release warnings now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`;
+policy, held-frame handoff, release-for-live reset policy, and best-effort
+decoded frame release warnings there.
 seek-display and playback-submit failure recovery plus decode-error snap,
 near-live snap, and software-decode-budget recovery back to live playback state
 now live in
