@@ -1812,23 +1812,12 @@ Primary current owners:
   assertions plus the structured source telemetry behavior scenario.
 - `tests/Sussudio.Tests/CaptureService.HealthSnapshots.MjpegCachedMetrics.Tests.cs`
   owns cached MJPEG timing propagation for health and diagnostics snapshots.
-- `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` owns shared
-  fake process-supervisor, runtime-snapshot, verifier-construction, and
-  verification-invocation helpers for recording verifier integration tests.
-- `tests/Sussudio.Tests/RecordingVerifier.Integration.Failures.Tests.cs` owns
-  ffprobe unavailable/nonzero failure scenarios.
-- `tests/Sussudio.Tests/RecordingVerifier.Integration.Priority.Tests.cs` owns
-  ffprobe process-priority assertions.
-- `tests/Sussudio.Tests/RecordingVerifier.Integration.Codec.Tests.cs` owns
-  HEVC/H264 codec success and codec-mismatch scenarios.
-- `tests/Sussudio.Tests/RecordingVerifier.Integration.Flashback.Tests.cs`
-  owns Flashback export/recording verification format scenarios.
-- `tests/Sussudio.Tests/RecordingVerifier.Integration.Mismatches.Tests.cs`
-  owns resolution and frame-rate mismatch scenarios.
-- `tests/Sussudio.Tests/RecordingVerifier.Integration.Hdr.Tests.cs` owns HDR
-  validation success and colorimetry/pixel-format mismatch scenarios.
-- `tests/Sussudio.Tests/RecordingVerifier.Integration.Cadence.Tests.cs` owns
-  NTSC frame-rate tolerance scenarios.
+- `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` owns the
+  recording verifier integration seam: fake process-supervisor,
+  runtime-snapshot, verifier-construction, verification-invocation helpers,
+  ffprobe failure/priority scenarios, HEVC/H264 codec success and mismatch,
+  Flashback verification format, resolution/frame-rate mismatch, HDR
+  validation, and NTSC frame-rate tolerance scenarios.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.Geometry.Tests.cs` owns letterbox,
   screenshot black-edge counting, and preview PNG encoder CRC/capture contract
   tests.

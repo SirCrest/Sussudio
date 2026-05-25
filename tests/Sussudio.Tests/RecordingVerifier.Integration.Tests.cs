@@ -243,4 +243,463 @@ static partial class Program
         sb.Append("]}");
         return sb.ToString();
     }
+
+    // ── Integration test: ffprobe unavailable ──
+
+    internal static async Task RecordingVerifier_ReturnsFailure_WhenFfprobeUnavailable()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"rv_ffprobe_{Guid.NewGuid():N}.mp4");
+        File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 }); // minimal mp4 header
+        try
+        {
+            var fake = new FakeProcessSupervisorImpl().WithFfprobeUnavailable();
+            var verifier = CreateVerifierWithFake(fake.CreateProxy());
+            var snapshot = BuildRuntimeSnapshotForVerificationEx();
+            var result = await RunVerifyAsync(verifier, tempFile, snapshot);
+
+            AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Succeeded");
+            AssertContains(GetStringProperty(result, "PrimaryMismatchCode"), "ffprobe");
+        }
+        finally
+        {
+            try { File.Delete(tempFile); } catch { }
+        }
+    }
+
+    // ── Integration test: ffprobe exit code failure ──
+
+    internal static async Task RecordingVerifier_ReturnsFailure_WhenFfprobeExitsNonZero()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"rv_exit_{Guid.NewGuid():N}.mp4");
+        File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
+        try
+        {
+            var fake = new FakeProcessSupervisorImpl()
+                .WithExitCode(1)
+                .WithStreamInfo("");
+
+            var verifier = CreateVerifierWithFake(fake.CreateProxy());
+            var snapshot = BuildRuntimeSnapshotForVerificationEx();
+            var result = await RunVerifyAsync(verifier, tempFile, snapshot);
+
+            AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Succeeded");
+            AssertContains(GetStringProperty(result, "PrimaryMismatchCode"), "ffprobe-failed");
+        }
+        finally
+        {
+            try { File.Delete(tempFile); } catch { }
+        }
+    }
+
+    // ── Integration test: codec match (HEVC) ──
+
+    internal static async Task RecordingVerifier_RunsFfprobeBelowNormalPriority()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"rv_priority_{Guid.NewGuid():N}.mp4");
+        File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
+        try
+        {
+            var fake = new FakeProcessSupervisorImpl()
+                .WithStreamInfo(
+                    "format_name=mov,mp4,m4a,3gp,3g2,mj2\n" +
+                    "codec_name=h264\n" +
+                    "width=1920\n" +
+                    "height=1080\n" +
+                    "avg_frame_rate=60/1\n" +
+                    "r_frame_rate=60/1\n" +
+                    "pix_fmt=yuv420p\n");
+
+            var verifier = CreateVerifierWithFake(fake.CreateProxy());
+            var snapshot = BuildRuntimeSnapshotForVerificationEx(requestedFormat: "H264Mp4");
+            _ = await RunVerifyAsync(verifier, tempFile, snapshot);
+
+            AssertEqual(true, fake.Calls.Count >= 2, "ffprobe calls recorded");
+            foreach (var call in fake.Calls)
+            {
+                AssertEqual("BelowNormal", call.PriorityClass, $"ffprobe priority for {call.Arguments}");
+            }
+        }
+        finally
+        {
+            try { File.Delete(tempFile); } catch { }
+        }
+    }
+
+    internal static async Task RecordingVerifier_PassesVerification_WhenAllFieldsMatch_Hevc()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"rv_hevc_{Guid.NewGuid():N}.mp4");
+        File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
+        try
+        {
+            var fake = new FakeProcessSupervisorImpl()
+                .WithStreamInfo(
+                    "format_name=mov,mp4,m4a,3gp,3g2,mj2\n" +
+                    "codec_name=hevc\n" +
+                    "width=1920\n" +
+                    "height=1080\n" +
+                    "avg_frame_rate=60/1\n" +
+                    "r_frame_rate=60/1\n" +
+                    "pix_fmt=yuv420p\n")
+                ;
+
+            var verifier = CreateVerifierWithFake(fake.CreateProxy());
+            var snapshot = BuildRuntimeSnapshotForVerificationEx(requestedFormat: "HevcMp4");
+            var result = await RunVerifyAsync(verifier, tempFile, snapshot);
+
+            AssertEqual(true, GetBoolProperty(result, "Succeeded"), "Succeeded");
+            AssertEqual("hevc", GetStringProperty(result, "DetectedVideoCodec"), "DetectedVideoCodec");
+            AssertEqual((uint)1920, (uint)Convert.ToInt64(GetPropertyValue(result, "DetectedWidth")), "DetectedWidth");
+            AssertEqual((uint)1080, (uint)Convert.ToInt64(GetPropertyValue(result, "DetectedHeight")), "DetectedHeight");
+        }
+        finally
+        {
+            try { File.Delete(tempFile); } catch { }
+        }
+    }
+
+    // ── Integration test: codec mismatch ──
+
+    internal static async Task RecordingVerifier_DetectsCodecMismatch_WhenH264InsteadOfHevc()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"rv_codec_{Guid.NewGuid():N}.mp4");
+        File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
+        try
+        {
+            var fake = new FakeProcessSupervisorImpl()
+                .WithStreamInfo(
+                    "format_name=mov,mp4,m4a,3gp,3g2,mj2\n" +
+                    "codec_name=h264\n" +
+                    "width=1920\n" +
+                    "height=1080\n" +
+                    "avg_frame_rate=60/1\n" +
+                    "r_frame_rate=60/1\n" +
+                    "pix_fmt=yuv420p\n")
+                ;
+
+            var verifier = CreateVerifierWithFake(fake.CreateProxy());
+            var snapshot = BuildRuntimeSnapshotForVerificationEx(requestedFormat: "HevcMp4");
+            var result = await RunVerifyAsync(verifier, tempFile, snapshot);
+
+            AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Succeeded");
+            AssertContains(GetStringProperty(result, "PrimaryMismatchCode"), "codec-mismatch");
+        }
+        finally
+        {
+            try { File.Delete(tempFile); } catch { }
+        }
+    }
+
+    // ── Integration test: H264 codec match ──
+
+    internal static async Task RecordingVerifier_PassesVerification_ForH264Format()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"rv_h264_{Guid.NewGuid():N}.mp4");
+        File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
+        try
+        {
+            var fake = new FakeProcessSupervisorImpl()
+                .WithStreamInfo(
+                    "format_name=mov,mp4,m4a,3gp,3g2,mj2\n" +
+                    "codec_name=h264\n" +
+                    "width=1920\n" +
+                    "height=1080\n" +
+                    "avg_frame_rate=60/1\n" +
+                    "r_frame_rate=60/1\n" +
+                    "pix_fmt=yuv420p\n")
+                ;
+
+            var verifier = CreateVerifierWithFake(fake.CreateProxy());
+            var snapshot = BuildRuntimeSnapshotForVerificationEx(requestedFormat: "H264Mp4");
+            var result = await RunVerifyAsync(verifier, tempFile, snapshot);
+
+            AssertEqual(true, GetBoolProperty(result, "Succeeded"), "Succeeded");
+            AssertEqual("h264", GetStringProperty(result, "DetectedVideoCodec"), "DetectedVideoCodec");
+        }
+        finally
+        {
+            try { File.Delete(tempFile); } catch { }
+        }
+    }
+
+    // ── Integration test: resolution mismatch ──
+
+    internal static async Task RecordingVerifier_UsesFlashbackExportVerificationFormat()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"rv_flashback_{Guid.NewGuid():N}.mp4");
+        File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
+        try
+        {
+            var fake = new FakeProcessSupervisorImpl()
+                .WithStreamInfo(
+                    "format_name=mov,mp4,m4a,3gp,3g2,mj2\n" +
+                    "codec_name=hevc\n" +
+                    "width=1920\n" +
+                    "height=1080\n" +
+                    "avg_frame_rate=60/1\n" +
+                    "r_frame_rate=60/1\n" +
+                    "pix_fmt=yuv420p\n");
+
+            var verifier = CreateVerifierWithFake(fake.CreateProxy());
+            var snapshot = BuildRuntimeSnapshotForVerificationEx(
+                requestedFormat: "Av1Mp4",
+                flashbackExportOutputPath: tempFile,
+                flashbackExportVerificationFormat: "HevcMp4");
+            var result = await RunVerifyAsync(verifier, tempFile, snapshot);
+
+            AssertEqual(true, GetBoolProperty(result, "Succeeded"), "Succeeded");
+            AssertEqual("hevc", GetStringProperty(result, "DetectedVideoCodec"), "DetectedVideoCodec");
+        }
+        finally
+        {
+            try { File.Delete(tempFile); } catch { }
+        }
+    }
+
+    internal static async Task RecordingVerifier_UsesFlashbackRecordingVerificationFormat()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"rv_flashback_recording_{Guid.NewGuid():N}.mp4");
+        File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
+        try
+        {
+            var fake = new FakeProcessSupervisorImpl()
+                .WithStreamInfo(
+                    "format_name=mov,mp4,m4a,3gp,3g2,mj2\n" +
+                    "codec_name=hevc\n" +
+                    "width=1920\n" +
+                    "height=1080\n" +
+                    "avg_frame_rate=60/1\n" +
+                    "r_frame_rate=60/1\n" +
+                    "pix_fmt=yuv420p\n");
+
+            var verifier = CreateVerifierWithFake(fake.CreateProxy());
+            var snapshot = BuildRuntimeSnapshotForVerificationEx(
+                requestedFormat: "Av1Mp4",
+                flashbackExportVerificationFormat: "HevcMp4",
+                lastOutputPath: tempFile,
+                recordingIntegrityBackend: "Flashback");
+            var result = await RunVerifyAsync(verifier, tempFile, snapshot);
+
+            AssertEqual(true, GetBoolProperty(result, "Succeeded"), "Succeeded");
+            AssertEqual("hevc", GetStringProperty(result, "DetectedVideoCodec"), "DetectedVideoCodec");
+        }
+        finally
+        {
+            try { File.Delete(tempFile); } catch { }
+        }
+    }
+
+    internal static async Task RecordingVerifier_DetectsResolutionMismatch()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"rv_res_{Guid.NewGuid():N}.mp4");
+        File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
+        try
+        {
+            var fake = new FakeProcessSupervisorImpl()
+                .WithStreamInfo(
+                    "format_name=mov,mp4,m4a,3gp,3g2,mj2\n" +
+                    "codec_name=hevc\n" +
+                    "width=1280\n" +
+                    "height=720\n" +
+                    "avg_frame_rate=60/1\n" +
+                    "r_frame_rate=60/1\n" +
+                    "pix_fmt=yuv420p\n")
+                ;
+
+            var verifier = CreateVerifierWithFake(fake.CreateProxy());
+            var snapshot = BuildRuntimeSnapshotForVerificationEx(
+                negotiatedWidth: 1920, negotiatedHeight: 1080);
+            var result = await RunVerifyAsync(verifier, tempFile, snapshot);
+
+            AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Succeeded");
+            AssertContains(GetStringProperty(result, "PrimaryMismatchCode"), "resolution-mismatch");
+        }
+        finally
+        {
+            try { File.Delete(tempFile); } catch { }
+        }
+    }
+
+    // ── Integration test: frame rate mismatch ──
+
+    internal static async Task RecordingVerifier_DetectsFrameRateMismatch()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"rv_fps_{Guid.NewGuid():N}.mp4");
+        File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
+        try
+        {
+            var fake = new FakeProcessSupervisorImpl()
+                .WithStreamInfo(
+                    "format_name=mov,mp4,m4a,3gp,3g2,mj2\n" +
+                    "codec_name=hevc\n" +
+                    "width=1920\n" +
+                    "height=1080\n" +
+                    "avg_frame_rate=30/1\n" +
+                    "r_frame_rate=30/1\n" +
+                    "pix_fmt=yuv420p\n");
+
+            var verifier = CreateVerifierWithFake(fake.CreateProxy());
+            var snapshot = BuildRuntimeSnapshotForVerificationEx(
+                negotiatedFrameRateNumerator: 60, negotiatedFrameRateDenominator: 1);
+            var result = await RunVerifyAsync(verifier, tempFile, snapshot);
+
+            AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Succeeded");
+            AssertContains(GetStringProperty(result, "PrimaryMismatchCode"), "fps-mismatch");
+        }
+        finally
+        {
+            try { File.Delete(tempFile); } catch { }
+        }
+    }
+
+    // ── Integration test: HDR validation passes with correct metadata ──
+
+    internal static async Task RecordingVerifier_PassesHdrValidation_WhenAllHdrFieldsPresent()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"rv_hdr_{Guid.NewGuid():N}.mp4");
+        File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
+        try
+        {
+            // Use hdrOutputActive=true (not requestedHdrEnabled) to trigger HDR validation
+            // without the ProbeHdrSideDataAsync JSON path (avoids System.Text.Json version mismatch)
+            var fake = new FakeProcessSupervisorImpl()
+                .WithStreamInfo(
+                    "format_name=mov,mp4,m4a,3gp,3g2,mj2\n" +
+                    "codec_name=hevc\n" +
+                    "width=3840\n" +
+                    "height=2160\n" +
+                    "avg_frame_rate=60/1\n" +
+                    "r_frame_rate=60/1\n" +
+                    "pix_fmt=p010le\n" +
+                    "color_primaries=bt2020\n" +
+                    "color_transfer=smpte2084\n" +
+                    "color_space=bt2020nc\n");
+
+            var verifier = CreateVerifierWithFake(fake.CreateProxy());
+            var snapshot = BuildRuntimeSnapshotForVerificationEx(
+                requestedFormat: "HevcMp4",
+                requestedHdrEnabled: false,
+                hdrOutputActive: true,
+                negotiatedWidth: 3840,
+                negotiatedHeight: 2160);
+            var result = await RunVerifyAsync(verifier, tempFile, snapshot);
+
+            AssertEqual(true, GetBoolProperty(result, "Succeeded"), "Succeeded");
+            AssertEqual("p010le", GetStringProperty(result, "DetectedPixelFormat"), "DetectedPixelFormat");
+            AssertEqual(true, GetPropertyValue(result, "HdrMetadataPresent"), "HdrMetadataPresent");
+            AssertEqual(true, GetPropertyValue(result, "HdrColorimetryValid"), "HdrColorimetryValid");
+            AssertEqual("ColorimetryOnly", GetStringProperty(result, "HdrVerificationLevel"), "HdrVerificationLevel");
+
+            var hdrParity = GetPropertyValue(result, "HdrParity")!;
+            AssertEqual("Verified", GetStringProperty(hdrParity, "Status"), "HdrParity.Status");
+            AssertEqual(true, GetBoolProperty(hdrParity, "Verified"), "HdrParity.Verified");
+            AssertEqual("ColorimetryOnly", GetStringProperty(hdrParity, "VerificationLevel"), "HdrParity.VerificationLevel");
+        }
+        finally
+        {
+            try { File.Delete(tempFile); } catch { }
+        }
+    }
+
+    // ── Integration test: HDR colorimetry mismatch ──
+
+    internal static async Task RecordingVerifier_DetectsHdrColorimetryMismatch()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"rv_hdr_bad_{Guid.NewGuid():N}.mp4");
+        File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
+        try
+        {
+            // SDR colorimetry on an HDR-active recording (use hdrOutputActive, not requestedHdrEnabled
+            // to avoid ProbeHdrSideDataAsync JSON path)
+            var fake = new FakeProcessSupervisorImpl()
+                .WithStreamInfo(
+                    "format_name=mov,mp4,m4a,3gp,3g2,mj2\n" +
+                    "codec_name=hevc\n" +
+                    "width=3840\n" +
+                    "height=2160\n" +
+                    "avg_frame_rate=60/1\n" +
+                    "r_frame_rate=60/1\n" +
+                    "pix_fmt=yuv420p\n" +
+                    "color_primaries=bt709\n" +
+                    "color_transfer=bt709\n" +
+                    "color_space=bt709\n");
+
+            var verifier = CreateVerifierWithFake(fake.CreateProxy());
+            var snapshot = BuildRuntimeSnapshotForVerificationEx(
+                requestedFormat: "HevcMp4",
+                requestedHdrEnabled: false,
+                hdrOutputActive: true,
+                negotiatedWidth: 3840,
+                negotiatedHeight: 2160);
+            var result = await RunVerifyAsync(verifier, tempFile, snapshot);
+
+            AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Succeeded");
+            // Should have multiple HDR-related mismatches
+            var mismatches = GetPropertyValue(result, "Mismatches") as System.Collections.IEnumerable;
+            var mismatchList = new List<string>();
+            foreach (var m in mismatches!) mismatchList.Add(m?.ToString() ?? "");
+            var hasPixfmtMismatch = mismatchList.Any(m => m.Contains("pixfmt-not-10bit"));
+            var hasColorimetryMismatch = mismatchList.Any(m => m.Contains("colorimetry-mismatch"));
+            AssertEqual(true, hasPixfmtMismatch, "Has pixfmt-not-10bit mismatch");
+            AssertEqual(true, hasColorimetryMismatch, "Has colorimetry-mismatch");
+
+            AssertEqual(false, GetPropertyValue(result, "HdrMetadataPresent"), "HdrMetadataPresent");
+            AssertEqual(false, GetPropertyValue(result, "HdrColorimetryValid"), "HdrColorimetryValid");
+            AssertEqual("ColorimetryOnly", GetStringProperty(result, "HdrVerificationLevel"), "HdrVerificationLevel");
+
+            var hdrParity = GetPropertyValue(result, "HdrParity")!;
+            AssertEqual("Mismatch", GetStringProperty(hdrParity, "Status"), "HdrParity.Status");
+            AssertEqual(false, GetBoolProperty(hdrParity, "Verified"), "HdrParity.Verified");
+
+            var taxonomy = GetPropertyValue(hdrParity, "MismatchTaxonomy") as System.Collections.IEnumerable;
+            var taxonomyEntries = new List<object>();
+            foreach (var entry in taxonomy!) taxonomyEntries.Add(entry!);
+            var hasHdrError = taxonomyEntries.Any(entry =>
+                GetStringProperty(entry, "Category") == "HDR" &&
+                GetStringProperty(entry, "Code") == "pixfmt-not-10bit" &&
+                GetStringProperty(entry, "Severity") == "Error");
+            var hasColorimetryError = taxonomyEntries.Any(entry =>
+                GetStringProperty(entry, "Category") == "Colorimetry" &&
+                GetStringProperty(entry, "Code") == "colorimetry-mismatch" &&
+                GetStringProperty(entry, "Severity") == "Error");
+            AssertEqual(true, hasHdrError, "HDR mismatch taxonomy is Error severity");
+            AssertEqual(true, hasColorimetryError, "Colorimetry mismatch taxonomy is Error severity");
+        }
+        finally
+        {
+            try { File.Delete(tempFile); } catch { }
+        }
+    }
+
+    // ── Integration test: NTSC frame rate tolerance ──
+
+    internal static async Task RecordingVerifier_PassesNtscFrameRateWithinTolerance()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"rv_ntsc_{Guid.NewGuid():N}.mp4");
+        File.WriteAllBytes(tempFile, new byte[] { 0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70 });
+        try
+        {
+            // 59.94 fps (60000/1001) vs expected 60 fps — within 0.75 tolerance
+            var fake = new FakeProcessSupervisorImpl()
+                .WithStreamInfo(
+                    "format_name=mov,mp4,m4a,3gp,3g2,mj2\n" +
+                    "codec_name=hevc\n" +
+                    "width=1920\n" +
+                    "height=1080\n" +
+                    "avg_frame_rate=60000/1001\n" +
+                    "r_frame_rate=60000/1001\n" +
+                    "pix_fmt=yuv420p\n");
+
+            var verifier = CreateVerifierWithFake(fake.CreateProxy());
+            var snapshot = BuildRuntimeSnapshotForVerificationEx(
+                negotiatedFrameRateNumerator: 60, negotiatedFrameRateDenominator: 1);
+            var result = await RunVerifyAsync(verifier, tempFile, snapshot);
+
+            // 60 - 59.94 = 0.06 which is within 0.75 tolerance
+            AssertEqual(true, GetBoolProperty(result, "Succeeded"), "Succeeded");
+        }
+        finally
+        {
+            try { File.Delete(tempFile); } catch { }
+        }
+    }
 }

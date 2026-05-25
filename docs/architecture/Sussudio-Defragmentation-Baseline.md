@@ -2038,3 +2038,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; test wrapper/dispatcher consolidation only
 Behavior preserved: the same public xUnit class/fact names and `Program` helper names remain available from neighboring owner files, and the presentation-preview harness inventory now points at the consolidated selection-binding owner file
 Notes for future agents: keep project-build xUnit execution with `ProjectBuildContracts.Tests.cs`, diagnostics-refresh root orchestration with `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`, and capture selection-binding device-audio projection checks with `MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs`
+
+Date: 2026-05-25
+Area: RecordingVerifier integration test locality
+Problem: Seven RecordingVerifier integration scenario files split ffprobe failure, priority, codec, Flashback verification-format, mismatch, HDR, and cadence cases away from the single fake `IProcessSupervisor` seam and runtime-snapshot helper they all depend on. Reviewing or changing recording verification behavior required opening many small scenario fragments plus the helper owner.
+Files consolidated: `tests/Sussudio.Tests/RecordingVerifier.Integration.Failures.Tests.cs`; `tests/Sussudio.Tests/RecordingVerifier.Integration.Priority.Tests.cs`; `tests/Sussudio.Tests/RecordingVerifier.Integration.Codec.Tests.cs`; `tests/Sussudio.Tests/RecordingVerifier.Integration.Flashback.Tests.cs`; `tests/Sussudio.Tests/RecordingVerifier.Integration.Mismatches.Tests.cs`; `tests/Sussudio.Tests/RecordingVerifier.Integration.Hdr.Tests.cs`; `tests/Sussudio.Tests/RecordingVerifier.Integration.Cadence.Tests.cs`
+Files added: none
+Net production .cs delta: 0
+Net test .cs delta: -7
+Partial clusters reduced: `Program` RecordingVerifier integration partial-family file count -7
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; recording verifier integration test consolidation only
+Behavior preserved: the same internal `Program` test method names, fake supervisor seam, runtime snapshot helpers, and verifier invocation path remain in `RecordingVerifier.Integration.Tests.cs`
+Notes for future agents: keep fake-ffprobe RecordingVerifier integration scenarios in `RecordingVerifier.Integration.Tests.cs` unless a scenario grows a distinct fixture or external process seam
