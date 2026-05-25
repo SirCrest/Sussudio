@@ -23,10 +23,7 @@ static partial class Program
         => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs");
 
     private static string ReadDiagnosticSessionFlashbackMetricsSource()
-        => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackMetrics.RecordingExport.cs",
-            "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs",
-            "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs");
+        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.cs");
 
     private static string ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource()
         => ReadNormalizedSourceFiles(

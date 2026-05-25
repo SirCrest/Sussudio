@@ -9,20 +9,19 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var metricsText = ReadDiagnosticSessionFlashbackMetricsSource();
-        var recordingExportText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.RecordingExport.cs")
-            .Replace("\r\n", "\n");
-        var recordingText = recordingExportText;
-        var playbackSessionText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs")
-            .Replace("\r\n", "\n");
-        var playbackObservationText = playbackSessionText;
-        var playbackResultText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs")
-            .Replace("\r\n", "\n");
-        var exportText = recordingExportText;
+        var recordingText = metricsText;
+        var playbackSessionText = metricsText;
+        var playbackObservationText = metricsText;
+        var playbackResultText = metricsText;
+        var exportText = metricsText;
 
-        AssertContains(metricsText, "internal static partial class DiagnosticSessionFlashbackMetrics");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.Recording.cs")), "Flashback recording metrics stay folded into RecordingExport.cs");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.Export.cs")), "Flashback export metrics stay folded into RecordingExport.cs");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs")), "Flashback playback observation metrics stay folded into PlaybackSession.cs");
+        AssertContains(metricsText, "internal static class DiagnosticSessionFlashbackMetrics");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.Recording.cs")), "Flashback recording metrics stay folded into the consolidated metrics owner");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.Export.cs")), "Flashback export metrics stay folded into the consolidated metrics owner");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs")), "Flashback playback observation metrics stay folded into the consolidated metrics owner");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.RecordingExport.cs")), "Flashback recording/export metrics stay folded into the consolidated metrics owner");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.PlaybackSession.cs")), "Flashback playback session metrics stay folded into the consolidated metrics owner");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.PlaybackResult.cs")), "Flashback playback result metrics stay folded into the consolidated metrics owner");
         AssertContains(recordingText, "internal sealed class FlashbackRecordingSessionMetrics");
         AssertContains(playbackSessionText, "internal sealed class FlashbackPlaybackSessionMetrics");
         AssertContains(playbackResultText, "internal sealed class FlashbackPlaybackResultMetrics");
@@ -41,9 +40,6 @@ static partial class Program
         AssertContains(playbackResultText, "public long AudioMasterFallbacksAtEnd { get; init; }");
         AssertContains(playbackResultText, "public long SeekForwardDecodeCapHitsDelta { get; init; }");
         AssertContains(exportText, "public long ForceRotateFallbacksAtEnd { get; set; }");
-        AssertDoesNotContain(recordingText, "internal sealed class FlashbackPlaybackSessionMetrics");
-        AssertDoesNotContain(playbackSessionText, "internal sealed class FlashbackPlaybackResultMetrics");
-        AssertDoesNotContain(playbackResultText, "internal sealed class FlashbackExportSessionMetrics");
         AssertContains(metricsText, "internal static FlashbackRecordingSessionMetrics BuildFlashbackRecordingMetrics(");
         AssertContains(playbackSessionText, "internal static FlashbackPlaybackSessionMetrics BuildFlashbackPlaybackSessionMetrics(");
         AssertContains(playbackObservationText, "private static void ObservePlaybackSnapshot(");

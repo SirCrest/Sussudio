@@ -2164,3 +2164,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: completed-segment purge, full purge, dispose purge, recovery-preserve purge skip, session-directory path guard, active-segment delete/reset, freed-byte accounting, and eviction pause reset remain unchanged
 Notes for future agents: keep explicit purge/delete-all cleanup with `FlashbackBufferManager.Lifecycle.cs`; keep retention eviction selection and pause/resume recording range policy in `FlashbackBufferManager.Retention.cs`.
+
+Date: 2026-05-25
+Area: Diagnostic-session Flashback metrics locality
+Problem: `DiagnosticSessionFlashbackMetrics` had no concrete owner file; recording/export, playback-session observation, and playback-result projection lived in three partials totaling a reviewable metrics owner. Reviewing one snapshot-only projection family required opening three tiny files and kept an unnecessary partial cluster alive.
+Files consolidated: `tools/Common/DiagnosticSessionFlashbackMetrics.RecordingExport.cs`; `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`; `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
+Files added: `tools/Common/DiagnosticSessionFlashbackMetrics.cs`
+Net production .cs delta: -2
+Partial clusters reduced: `DiagnosticSessionFlashbackMetrics` partial family removed
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: tool contract coverage remains in the xUnit suite; no automation command names/IDs changed
+Behavior preserved: recording/export metrics, export relevance gating, force-rotate fallback counters outside the export-observed relevance gate, playback active/relevant snapshot gating, session frame-count projection, 1% low capture, frame/decode/audio-master maxima, playback counter deltas, final result construction, and grouped command/cadence/decode/audio-master/stage reads remain unchanged
+Notes for future agents: keep Flashback diagnostic-session metric projection in `tools/Common/DiagnosticSessionFlashbackMetrics.cs`; split only if a new independent metric subsystem grows its own state or external seam.

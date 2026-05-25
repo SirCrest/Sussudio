@@ -3087,17 +3087,16 @@ label, started action, post-disable playback-thread/queue health, and
 post-re-enable active-state validation while startup only delegates to the
 lifecycle owner.
 
-Diagnostic-session Flashback metric projection now lives in a focused partial
-family of named owners. Recording/export metrics, playback-session observation
-and aggregation, and playback result copying each have named behavior owner
-files. Playback session metrics in
-`DiagnosticSessionFlashbackMetrics.PlaybackSession.cs` own observation dispatch,
-active/relevant snapshot gating, session frame-count projection, 1% low capture,
-frame/decode maxima, audio-master maxima, and end-of-session playback counter
-deltas. Export metrics also own force-rotate fallback total, delta, and last
-fallback segment count, derived outside export-observed relevance gating. These
-helpers remain snapshot-only projections and must not send automation commands.
-Do not reintroduce an empty family root.
+Diagnostic-session Flashback metric projection now lives in
+`tools/Common/DiagnosticSessionFlashbackMetrics.cs`. Recording/export metrics,
+playback-session observation and aggregation, and playback result copying stay
+in one concrete behavior owner instead of an empty partial family. Playback
+session metrics own observation dispatch, active/relevant snapshot gating,
+session frame-count projection, 1% low capture, frame/decode maxima,
+audio-master maxima, and end-of-session playback counter deltas. Export metrics
+also own force-rotate fallback total, delta, and last fallback segment count,
+derived outside export-observed relevance gating. These helpers remain
+snapshot-only projections and must not send automation commands.
 
 MCP fixed command routes should use `AutomationCommandKind` overloads when the
 command is part of the shared catalog. Keep this as an ownership rule, not a
@@ -3149,24 +3148,18 @@ recording readiness, stress buffer readiness, playback state, boundary
 crossing, warmed-playback frame-count/FPS, and position convergence while the
 runner keeps scenario command sequencing.
 
-Diagnostic-session Flashback recording/export metrics live in
-`DiagnosticSessionFlashbackMetrics.RecordingExport.cs`, including the
-`FlashbackRecordingSessionMetrics` and `FlashbackExportSessionMetrics`
-handoff shapes, recording metric projection, export-relevance and snapshot max
-aggregation, metric orchestration, and final force-rotate fallback counters.
-Flashback playback session metrics live in
-`DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`, including the
-`FlashbackPlaybackSessionMetrics` handoff state, playback session metric
-orchestration, playback snapshot observation, active/relevant snapshot gating,
-session frame-count projection, 1% low window capture, frame/decode maxima,
-audio-master maxima, and end-of-session playback counter deltas.
-
-Diagnostic-session Flashback playback result metrics now keep the
-`FlashbackPlaybackResultMetrics` handoff shape, final construction, and
-observed-gated command, cadence, decode, audio-master, and stage end-snapshot
-reads in `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`.
-Preserve the final `init` DTO construction in the root unless a broader
-construction pattern replaces it deliberately.
+Diagnostic-session Flashback metrics live in
+`tools/Common/DiagnosticSessionFlashbackMetrics.cs`, including the
+`FlashbackRecordingSessionMetrics`, `FlashbackExportSessionMetrics`,
+`FlashbackPlaybackSessionMetrics`, and `FlashbackPlaybackResultMetrics` handoff
+shapes; recording metric projection; export-relevance and snapshot max
+aggregation; metric orchestration; final force-rotate fallback counters;
+playback snapshot observation; active/relevant snapshot gating; session
+frame-count projection; 1% low window capture; frame/decode maxima;
+audio-master maxima; end-of-session playback counter deltas; final playback
+result construction; and observed-gated command, cadence, decode, audio-master,
+and stage end-snapshot reads. Preserve the final `init` DTO construction unless
+a broader construction pattern replaces it deliberately.
 
 Diagnostic-session Flashback stress orchestration now lives in
 `tools/Common/DiagnosticSessionFlashbackStressScenario.cs`, which owns stress
@@ -3237,9 +3230,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackExportScenarios.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.cs`
-- `DiagnosticSessionFlashbackMetrics.RecordingExport.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
+- `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
