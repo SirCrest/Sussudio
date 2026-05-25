@@ -49,7 +49,7 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var statusStripText = ReadRepoFile("Sussudio/MainWindow.StatusStripPresentation.cs").Replace("\r\n", "\n");
+        var statusStripText = ReadMainWindowShellChromeAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
 
         AssertContains(statusStripText, "private WindowTitleController _windowTitleController = null!;");
@@ -85,7 +85,7 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var liveSignalAdapterText = ReadRepoFile("Sussudio/MainWindow.StatusStripPresentation.cs").Replace("\r\n", "\n");
+        var liveSignalAdapterText = ReadMainWindowShellChromeAdapterSource();
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/LiveSignalInfoController.cs").Replace("\r\n", "\n");
@@ -133,13 +133,17 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.StatusStripPresentation.cs").Replace("\r\n", "\n");
+        var adapterText = ReadMainWindowShellChromeAdapterSource();
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var flashbackPropertyChangedControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/StatusStripPresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private StatusStripPresentationController _statusStripPresentationController = null!;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.StatusStripPresentation.cs")),
+            "status strip adapter lives with the shell chrome composition partial");
         AssertContains(adapterText, "private void InitializeStatusStripPresentationController()");
         AssertContains(adapterText, "DiskWarningInfoBar = DiskWarningInfoBar,");
         AssertContains(adapterText, "StatusTextBlock = StatusTextBlock,");

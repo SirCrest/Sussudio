@@ -1037,7 +1037,7 @@ Close routing/finalization handling remains in the explicit window close
 lifecycle owners below.
 
 Window title base/build-stamp formatting and the recording-time suffix now live
-in `Sussudio/Controllers/Shell/ShellChromeController.cs`; `MainWindow.StatusStripPresentation.cs`
+in `Sussudio/Controllers/Shell/ShellChromeController.cs`; `MainWindow.ShellChrome.Composition.cs`
 keeps the XAML-facing initialization and title assignment hook because title
 refreshes are driven by status/recording presentation.
 
@@ -2812,7 +2812,7 @@ capture-device, and output-path button workflows.
 
 Live-signal pill text application, visibility state, show/hide debounce timers,
 and the small scale/fade animation now live in
-`Sussudio/Controllers/Shell/LiveSignalInfoController.cs`. `MainWindow.StatusStripPresentation.cs`
+`Sussudio/Controllers/Shell/LiveSignalInfoController.cs`. `MainWindow.ShellChrome.Composition.cs`
 is the XAML-facing adapter, while
 `Sussudio/ViewModels/ViewModelPresentationBuilders.cs` owns label formatting.
 Source telemetry summary, telemetry age, and target-summary display text
@@ -2907,7 +2907,7 @@ handoff and XAML callback endpoints for completion presentation.
 
 Bottom status-strip projection now lives in
 `Sussudio/Controllers/Shell/StatusStripPresentationController.cs`, while
-`Sussudio/MainWindow.StatusStripPresentation.cs` is the XAML-facing adapter and
+`Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter and
 builds the ViewModel snapshot passed into the controller. The controller owns
 the status-strip `PropertyChanged` router and preserves the recording-only
 window-title refresh on recording-time updates. Flashback bitrate presentation

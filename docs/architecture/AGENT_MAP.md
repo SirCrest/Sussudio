@@ -1153,7 +1153,7 @@ Primary current owners:
   section below:
   `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`,
   `Sussudio/MainWindow.WindowShell.cs`, and `Sussudio/MainWindow.xaml.cs`.
-- `Sussudio/MainWindow.StatusStripPresentation.cs` keeps the XAML-facing title
+- `Sussudio/MainWindow.ShellChrome.Composition.cs` keeps the XAML-facing title
   update hook; `Sussudio/Controllers/Shell/ShellChromeController.cs` owns window title
   base/build-stamp formatting and the recording-time suffix used by property
   changes.
@@ -1162,7 +1162,7 @@ Primary current owners:
   disk-space text, recording size, recording bitrate, the status-strip
   `PropertyChanged` router, the recording-only title-refresh callback, and the
   Flashback bitrate fallback used while Flashback is enabled and recording is
-  idle. `Sussudio/MainWindow.StatusStripPresentation.cs` is the XAML-facing
+  idle. `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing
   adapter and builds the ViewModel snapshot passed into the controller.
 - `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs` owns window close
   request flags, completion TCS, cleanup latch, recording-stop handoff flags,
@@ -1215,7 +1215,7 @@ Primary current owners:
   property-name normalization and route order. Capture-selection and
   status-strip adapters are still considered first through the
   `Sussudio/MainWindow.CaptureBindings.cs` adapter and
-  `MainWindow.StatusStripPresentation.cs`; broad domain property-name switches
+  `MainWindow.ShellChrome.Composition.cs`; broad domain property-name switches
   and status-strip routing logic live in focused controllers/partials.
 - `Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs` owns shared
   compositor opacity fade helpers for preview shadow visuals without adding
@@ -2803,7 +2803,7 @@ Primary current owners:
   capture-device button workflows.
 - `Sussudio/Controllers/Shell/LiveSignalInfoController.cs` owns live-signal pill
   text application, visibility state, show/hide debounce timers, and the small
-  scale/fade animation. `MainWindow.StatusStripPresentation.cs` is the XAML-facing
+  scale/fade animation. `MainWindow.ShellChrome.Composition.cs` is the XAML-facing
   adapter. `Sussudio/ViewModels/ViewModelPresentationBuilders.cs` owns the
   view-model live-signal label formatting and pixel-format/codec suffix policy.
 - `Sussudio/Controllers/Preview/PreviewAudioFadeController.cs` owns preview-volume
@@ -2893,7 +2893,7 @@ Primary current owners:
   `SettingsShelfController`; stats visibility behavior still lives in the stats
   composition controller, while settings visibility behavior still lives in the
   settings shelf controller.
-- `Sussudio/MainWindow.StatusStripPresentation.cs` is the XAML-facing live signal
+- `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing live signal
   adapter. `LiveSignalInfoController` owns live source-signal property-change
   routing and pill presentation.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns
