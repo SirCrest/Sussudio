@@ -2221,10 +2221,11 @@ Primary current owners:
   owns MCP `run_diagnostic_session` success artifact contract tests.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Failures.Tests.cs`
   owns MCP `run_diagnostic_session` failure artifact contract tests.
-  `tests/Sussudio.Tests/XUnit.McpToolSurfaceContractsTests.cs` owns the xUnit
+  `tests/Sussudio.Tests/XUnit.McpToolContractsTests.cs` owns the xUnit
   execution surface for the general MCP tool-surface, command-routing,
-  host/pipe, verification, Flashback tool, and diagnostic-session tool entry
-  contracts after their removal from the legacy harness catalog.
+  host/pipe, verification, Flashback tool, diagnostic-session tool entry,
+  performance/probe, and window/preview tool contracts after their removal from
+  the legacy harness catalog.
 - Diagnostic-session helper ownership checks live in focused lifecycle files:
   planning/setup checks in
   `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Planning.Tests.cs`,
@@ -2292,13 +2293,13 @@ Primary current owners:
   `McpToolSurface.Performance.TimelineContract.*.Tests.cs` partials for shared
   source loading, source-ownership assertions, rendering text contracts, and
   `PerformanceTimelineEntry` projection contracts.
-  `tests/Sussudio.Tests/XUnit.McpPerformanceToolContractsTests.cs` owns the
-  xUnit execution surface for these performance/probe contracts after their
-  removal from the legacy harness catalog.
+  `tests/Sussudio.Tests/XUnit.McpToolContractsTests.cs` owns the xUnit
+  execution surface for these performance/probe contracts after their removal
+  from the legacy harness catalog.
 - `tests/Sussudio.Tests/McpToolSurface.WindowPreview.*.Tests.cs` owns MCP
   wait, window action, preview toggle, Flashback toggle, screenshot, and probe
-  tests. `tests/Sussudio.Tests/XUnit.McpWindowPreviewToolContractsTests.cs`
-  owns the xUnit execution surface for the wait/window/screenshot/preview-frame/
+  tests. `tests/Sussudio.Tests/XUnit.McpToolContractsTests.cs` owns the xUnit
+  execution surface for the wait/window/screenshot/preview-frame/
   preview-toggle/probe checks after their removal from the legacy harness
   catalog.
 - `tests/Sussudio.Tests/McpToolSurface.Helpers.Process.cs`,

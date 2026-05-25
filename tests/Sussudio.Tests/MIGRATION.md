@@ -128,14 +128,13 @@ add xUnit alongside, and port incrementally.
   checks.
 - `XUnit.TargetAssemblyBootstrap.cs` lets xUnit wrapper facts initialize the
   staged app assembly before calling legacy reflection helpers.
-- `XUnit.McpWindowPreviewToolContractsTests.cs` owns the former legacy MCP
-  window/preview wait, screenshot, frame-capture, window-action, and
-  preview-toggle/probe checks.
-- `XUnit.McpPerformanceToolContractsTests.cs` owns the former legacy MCP
-  PresentMon correlation, performance timeline, and frame-pacing verdict checks.
-- `XUnit.McpToolSurfaceContractsTests.cs` owns the former legacy MCP tool
-  surface, command-routing, host/pipe, verification, Flashback tool, and
-  diagnostic-session tool entry checks.
+- `XUnit.McpToolContractsTests.cs` owns the former legacy MCP tool execution
+  groups: window/preview wait, screenshot, frame-capture, window action,
+  preview-toggle/probe, PresentMon correlation, performance timeline,
+  frame-pacing verdict, general tool surface, command-routing, host/pipe,
+  verification, Flashback tool, and diagnostic-session tool entry checks. The
+  public wrapper classes remain separate inside this file so existing test
+  identities stay stable while the execution surface is easier to scan.
 - `XUnit.McpDiagnosticSessionContractsTests.cs` owns the former legacy
   diagnostic-session xUnit execution bands: infrastructure, result surface,
   command/run context, scenario execution, Flashback scenarios/helpers/metrics,

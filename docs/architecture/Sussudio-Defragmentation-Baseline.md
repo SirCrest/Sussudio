@@ -1947,3 +1947,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
 Behavior preserved: the same public test classes, constructors, `[Fact]` method names, target-assembly bootstrap calls, and delegated `Program` checks remain available under one automation contracts file
 Notes for future agents: keep automation xUnit wrapper classes in `XUnit.AutomationContractsTests.cs`; add new wrapper classes there unless a group needs independent fixtures or executable helper state
+
+Date: 2026-05-25
+Area: MCP tool xUnit execution-surface locality
+Problem: Three MCP xUnit wrapper files still mirrored former legacy catalog bands for general tool-surface, performance/probe, and window/preview checks. Each file only exposed public wrapper classes and delegated `Program` checks, so reviewing MCP tool xUnit execution required opening separate shell files without gaining independent fixtures or helper state.
+Files consolidated: `tests/Sussudio.Tests/XUnit.McpToolSurfaceContractsTests.cs`; `tests/Sussudio.Tests/XUnit.McpPerformanceToolContractsTests.cs`; `tests/Sussudio.Tests/XUnit.McpWindowPreviewToolContractsTests.cs`
+Files added: `tests/Sussudio.Tests/XUnit.McpToolContractsTests.cs`
+Net production .cs delta: 0
+Net test .cs delta: -2
+Partial clusters reduced: n/a; MCP tool xUnit wrapper file count -2
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
+Behavior preserved: the same public test classes, `[Fact]` method names, and delegated `Program` checks remain available under one MCP tool contracts file
+Notes for future agents: keep general MCP tool xUnit wrapper classes in `XUnit.McpToolContractsTests.cs`; add new wrapper classes there unless a group needs independent fixtures or executable helper state
