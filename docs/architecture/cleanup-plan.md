@@ -382,7 +382,8 @@ stripping, and repo-local `latest-build` staging.
 `tools/ssctl/CommandHandlers.cs` owns the top-level CLI router,
 per-invocation command context, shared command sending, response exit-code
 shaping, generic argument helpers, flag parsing, JSON detection/pretty
-printing, and primitive/domain value parsing.
+printing, primitive/domain value parsing, and wait/assert/probe plus
+recording/file verification scripting flow commands.
 `CommandHandlers.Observability.cs` owns diagnostic and observability CLI
 commands: state, diagnostics, options, manifest, timeline, memory, audio-ramp,
 `presentmon` command parsing, swap-chain discovery, probe invocation, and
@@ -398,8 +399,6 @@ helper.
 `CommandHandlers.Window.cs` owns window close arming, state/geometry actions,
 fullscreen toggles, snap commands, recordings-folder, stats visibility,
 settings visibility, and frame-time overlay CLI commands.
-`CommandHandlers.AutomationFlow.cs` owns
-wait/assert/probe and recording/file verification scripting flow commands.
 `CommandHandlers.Flashback.cs` owns Flashback enablement, timeline, segment,
 restart, playback/scrub/marker/range CLI actions, position parsing, export
 flags, output path defaulting, directory creation, and `FlashbackAction`/

@@ -53,21 +53,24 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.SetSettingsVisible");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.SetFrameTimeOverlayVisible");
         AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "HandleDeviceAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleWaitAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "AutomationCommandKind.WaitForCondition");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "Math.Max(timeoutMs.GetValueOrDefault(0) + 5000, 60000)");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleAssertAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "JsonDocument.Parse(assertionsJson)");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "AutomationCommandKind.AssertSnapshot");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleProbeAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "AutomationCommandKind.ProbeVideoSource");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "AutomationCommandKind.ProbePreviewColor");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleVerifyAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "AutomationCommandKind.VerifyFile");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "AutomationCommandKind.VerifyLastRecording");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "ConsumeFlag(context.Rest, \"--json\")");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "ParseOptionalStringFlag(context.Rest, \"--verification-profile\")");
-        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleStatsAsync");
+        AssertContains(commandHandlersRootSource, "HandleWaitAsync");
+        AssertContains(commandHandlersRootSource, "AutomationCommandKind.WaitForCondition");
+        AssertContains(commandHandlersRootSource, "Math.Max(timeoutMs.GetValueOrDefault(0) + 5000, 60000)");
+        AssertContains(commandHandlersRootSource, "HandleAssertAsync");
+        AssertContains(commandHandlersRootSource, "JsonDocument.Parse(assertionsJson)");
+        AssertContains(commandHandlersRootSource, "AutomationCommandKind.AssertSnapshot");
+        AssertContains(commandHandlersRootSource, "HandleProbeAsync");
+        AssertContains(commandHandlersRootSource, "AutomationCommandKind.ProbeVideoSource");
+        AssertContains(commandHandlersRootSource, "AutomationCommandKind.ProbePreviewColor");
+        AssertContains(commandHandlersRootSource, "HandleVerifyAsync");
+        AssertContains(commandHandlersRootSource, "AutomationCommandKind.VerifyFile");
+        AssertContains(commandHandlersRootSource, "AutomationCommandKind.VerifyLastRecording");
+        AssertContains(commandHandlersRootSource, "ConsumeFlag(context.Rest, \"--json\")");
+        AssertContains(commandHandlersRootSource, "ParseOptionalStringFlag(context.Rest, \"--verification-profile\")");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.AutomationFlow.cs")),
+            "wait/assert/probe/verify scripting flow commands live with the ssctl root command dispatcher");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.UiVisibility.cs")),

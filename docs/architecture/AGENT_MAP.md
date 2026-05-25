@@ -3354,7 +3354,8 @@ Primary owners:
   consumption, optional flag value parsing, command-handler JSON
   detection/pretty-printing, primitive parsing, Flashback export numeric
   validation, on/off and show/hide parsing, recording format normalization,
-  snap action mapping, and assertion value parsing.
+  snap action mapping, assertion value parsing, and wait/assert/probe plus
+  recording/file verification scripting flow commands.
 - `tools/ssctl/CommandHandlers.Observability.cs` owns diagnostic and
   observability CLI commands: state, diagnostics, options, manifest, timeline,
   memory, audio-ramp, `presentmon` parsing/swap-chain discovery/probe
@@ -3370,8 +3371,6 @@ Primary owners:
   state/geometry actions, fullscreen toggles, snap commands, the
   recordings-folder CLI command, stats visibility, settings visibility, and
   frame-time overlay visibility commands.
-- `tools/ssctl/CommandHandlers.AutomationFlow.cs` owns wait/assert/probe and
-  recording/file verification scripting flow commands.
 - `tools/ssctl/CommandHandlers.Flashback.cs` owns Flashback enablement,
   timeline, segment, restart, playback/scrub/marker/range actions, position
   parsing, export flag parsing, output-path defaulting, parent-directory
