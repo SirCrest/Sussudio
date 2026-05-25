@@ -1686,16 +1686,15 @@ Primary current owners:
 - `tests/Sussudio.Tests/CaptureService.PreviewLifecycle.Tests.cs` owns
   video-only preview fallback, missing audio endpoint, preview-stop API surface,
   and preview backend log contracts.
-- `tests/Sussudio.Tests/CaptureService.InitializationOwnership.Tests.cs` owns
-  the CaptureService initialization focused-partial ownership contract.
 - `tests/Sussudio.Tests/CaptureService.Failures.Tests.cs` owns CaptureService
   last-failure telemetry source placement, capture fatal cleanup, Flashback
   backend failure cleanup source placement, and faulted-session state
   assertions.
 - `tests/Sussudio.Tests/CaptureService.SessionStateOwnership.Tests.cs` owns
-  CaptureService session-state-machine ownership, asserts that lifecycle
-  partials route state changes through transition/state-machine helpers, and
-  keeps the no-direct-session-state-write guard for failure cleanup.
+  CaptureService initialization, session-state-machine ownership, asserts that
+  lifecycle partials route state changes through transition/state-machine
+  helpers, and keeps the no-direct-session-state-write guard for failure
+  cleanup.
 - `tests/Sussudio.Tests/CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`
   owns CaptureService health snapshot assembly, capture-cadence, MJPEG, and
   AV-sync ownership assertions plus shared health snapshot assertion helpers.
