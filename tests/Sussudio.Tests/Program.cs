@@ -59,4 +59,6 @@ static partial class Program
             "Sussudio.dll");
     }
 
+    private static Task<List<CheckResult>> RunAllChecksAsync()
+        => Task.FromResult(new List<CheckResult>());
 }

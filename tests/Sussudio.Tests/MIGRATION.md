@@ -187,7 +187,7 @@ add xUnit alongside, and port incrementally.
   legacy diagnostic-session runner behavior band for Flashback export playback,
   warmup warning tolerance, sparse source-cadence tolerance, initial snapshot
   failure, pipe retry, and concurrent-output lock checks.
-- `HarnessCheckCatalog.cs` keeps the legacy runner entry point, but the
+- `Program.cs` keeps the legacy runner entry point, but the
   diagnostic-session catalog has no remaining legacy registrations.
 - `XUnit.PresentationPreviewHarnessRegistrationTests.cs` owns the former legacy
   presentation-preview harness registration guard.
@@ -416,7 +416,7 @@ every check has a `[Fact]`/`[Theory]` equivalent:
   public API shape is the contract.
 - Keep the legacy `Program.cs` runner available while the repo still requires
   the offline `dotnet exec` validation shim; add new coverage to xUnit instead
-  of repopulating `HarnessCheckCatalog.cs`.
+  of restoring a harness catalog.
 
 ## Open work tracked separately
 

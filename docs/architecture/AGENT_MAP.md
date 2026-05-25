@@ -20,7 +20,7 @@ mentions the moved files.
 | Area | Current owners / split families | Preferred next owner |
 |------|---------------------|----------------------|
 | Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs`, `tools/Common/DiagnosticSessionRunContext.cs`, `tools/Common/DiagnosticSessionScenarioPhaseRunner.cs`, `tools/Common/DiagnosticSessionModels.cs` | public runner compatibility surface plus phase sequencing, cohesive mutable run context, initial snapshot state, live-state handoff, run context disposal, scenario/completion context construction, post-cleanup completion phase, completion context handoff, result-build request mapping, named scenario phase execution with consolidated context/result/state models, scenario sampling, post-sampling completion order/fault-drain delegation, run bootstrap/options normalization, scenario catalog, startup/cleanup/recording-check/post-run snapshot helpers, result formatter, plus per-scenario runners |
-| Offline regression harness | `tests/Sussudio.Tests/Program.cs`, `tests/Sussudio.Tests/HarnessCheckCatalog*.cs` | runner entry point, topic check catalogs, xUnit slices, and focused contract tests such as `StatsPresentation.*.Tests.cs` |
+| Offline regression harness | `tests/Sussudio.Tests/Program.cs`, focused `tests/Sussudio.Tests/XUnit.*.cs` slices | runner entry point, compatibility no-op check shim, xUnit slices, and focused contract tests such as `StatsPresentation.*.Tests.cs` |
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.AudioPreviewLifecycle.cs`, `CaptureService.MicrophoneMonitor.cs`, `CapturePipelineResources.cs`, `CaptureService.Cleanup.cs`, `CaptureService.Failures.cs`, `CaptureService.FlashbackState.cs`, `CaptureService.FlashbackSettings.cs`, `CaptureService.FlashbackPreviewBackend.cs`, `CaptureService.FlashbackExportDiagnostics.cs`, `CaptureService.FlashbackExportOperations.cs`, `CaptureService.FlashbackExportCore.cs`, `CaptureService.FlashbackRecording.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.HealthSnapshotAssembler.cs`, `CaptureService.HealthSnapshotFlashbackBackend.cs`, `CaptureService.HealthSnapshotFlashbackPlayback.cs`, `CaptureService.HealthSnapshotRecording.cs`, `CaptureService.PreviewStart.cs`, `CaptureService.RecordingIntegrity.cs`, `CaptureService.RecordingLifecycle.cs`, `CaptureService.RecordingStartLibAv.cs`, `CaptureService.RecordingFinalizeFlashbackBackend.cs`, `CaptureService.RecordingFinalizeLibAvBackend.cs`, `CaptureService.RecordingRollback.cs`, `CaptureService.RuntimeSnapshots.cs`, `CaptureService.RuntimeSnapshotAssembler.cs`, `CaptureService.RuntimeSnapshotHdrPipeline.cs`, `CaptureService.RuntimeSnapshotSourceTelemetry.cs`, `CaptureService.Snapshots.cs`, `CaptureService.Telemetry.cs` | service state, construction, public event/property surface, initialization owner, transition transaction/state-sampling owner, and lifecycle guards, audio preview lifecycle/volume/event/startup/rollback and live audio input switching owner, microphone monitor state/event/disposal/update/restart owner, preview audio resource owner, active recording backend resource owner, video pipeline resource owner, cleanup/disposal and resource-release helper owner, failure callback, failure-telemetry, fatal cleanup, Flashback backend failure cleanup/device-lost owner, Flashback public state, segment access, enable/disable, and restart owner, Flashback settings/buffer/GPU/format/encoder-cycle owner, Flashback preview backend startup/disposal and artifact-cleanup adapter owner, Flashback buffer cycle coordination owner, Flashback export diagnostics/progress/fallback lifecycle, failure taxonomy, and health projection owner, Flashback export entry/routing and backend snapshot/lock handoff owner, Flashback export core lifetime, request assembly, segment metadata mapping, live-export throttle policy, segment path normalization, segment PTS timestamp repair, range-resolution, buffer-position clamps, PTS offset math, and force-rotate preparation owner, Flashback recording backend/capability/session-context/frame-rate/start owner, health snapshot sampler with capture cadence/MJPEG and source telemetry projections, health snapshot DTO assembler and handoff owner, Flashback backend and queue health projection, Flashback playback health projection, recording health orchestration and active backend health projection, preview start/stop/recycle/fast-path/reuse predicates/fresh-pipeline/video-pipeline handoff/disposal transition owner, read-only automation probe owner, recording integrity active-backend resolver, counter/audio DTO capture, normalized summary input, status/reason evaluation, and integrity logging owner, recording start transition/router, context request assembly, rollback-state holder, and recording outcome-state owner, Flashback recording backend finalization/export-finalize/boundary snapshot/reconciliation owner, LibAv recording start/video/audio startup owner, recording stop transition/finalization router owner, LibAv recording finalization/video-boundary/sink/idle-preview/preview-restore owner, transient recording rollback owner, runtime snapshot sampler with ingest/audio, reader/transport, and recording-integrity projections, runtime snapshot DTO assembler, runtime HDR/encoder pipeline projection, runtime source-telemetry projection, diagnostics compatibility, read-only automation probes, preview-frame capture waits, and shared snapshot utilities/recording stats/format/observed frames/A/V sync/source telemetry snapshot policy, source telemetry polling/fallback merge, capture-format and observed pixel telemetry owner, resource managers |
 | App shell | `Sussudio/App.xaml.cs` | XAML partial root, FFmpeg startup check, global handler hookup, recoverable/fatal exception policy plus emergency recording finalization, single-instance guard, startup identity logging, and MainWindow activation |
 | Logging | `Sussudio/Logger.cs` | nonblocking log writer state, rotation, channel saturation fallback, direct write path, diagnostics/system evidence, structured snapshot JSON routing, exception formatting, fatal breadcrumbs, and source-generated JSON context for known log payloads |
@@ -2057,11 +2057,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` owns shared tool
   assembly loading, isolated load contexts, freshness checks, and tool build
   command mapping used by the legacy harness and xUnit slices.
-- `tests/Sussudio.Tests/HarnessCheckCatalog.cs` owns ordered offline harness
-  topic sequencing, shared catalog registration helpers, and the pass-through
-  routing for automation diagnostics, presentation preview, MCP diagnostics,
-  and remaining legacy catalog groups. Keep `Program.cs` as the runner, not the
-  assertion registry.
+- `tests/Sussudio.Tests/Program.cs` owns the offline compatibility runner and
+  its no-op `RunAllChecksAsync` shim; executable checks now live in focused
+  xUnit slices and contract files rather than a harness catalog.
 - `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns the former
   core-runtime registration group for runtime telemetry, capture-service
   snapshot, recording-integrity, NativeXu, frame-ledger, and basic app contract
@@ -2137,10 +2135,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/ServiceNamespace.ServiceContracts.Tests.cs` owns the
   app-service contract boundary assertions that keep `Sussudio/Services/Contracts`
   separate from `Sussudio.Automation.Contracts` wire/protocol ownership.
-- Focused `tests/Sussudio.Tests/HarnessCheckCatalog.PresentationPreview.*.cs`
-  partials own presentation-preview capture/root
-  policy, MainViewModel, MainWindow, stats, D3D renderer, and preview pacing
-  registration groups. `tests/Sussudio.Tests/XUnit.PresentationPreviewHarnessRegistrationTests.cs`
+- Focused `tests/Sussudio.Tests/XUnit.PresentationPreview*.cs` slices own
+  presentation-preview capture/root policy, MainViewModel, MainWindow, stats,
+  D3D renderer, and preview pacing execution surfaces.
+  `tests/Sussudio.Tests/XUnit.PresentationPreviewHarnessRegistrationTests.cs`
   owns the xUnit execution surface that audits those registration groups against
   the focused UI ownership test inventory.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelInitialContractsTests.cs`
@@ -2281,8 +2279,7 @@ Primary current owners:
   group for render passes, shader rendering cache, shader compilation/source
   contracts, frame-latency wait, render thread, present accounting, viewport helpers, and screenshot
   encoding checks after their removal from the legacy offline D3D harness
-  catalog. The empty `HarnessCheckCatalog.PresentationPreview.D3D.cs` hook was
-  removed after the final D3D group moved to xUnit.
+  catalog.
 - `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral
@@ -2452,8 +2449,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionRunnerBehaviorContractsTests.cs`
   owns xUnit execution for the former legacy diagnostic-session runner behavior
   catalog band.
-- `tests/Sussudio.Tests/HarnessCheckCatalog.cs` keeps the compatibility runner
-  entry point; diagnostic-session checks now execute through xUnit wrappers.
+- `tests/Sussudio.Tests/Program.cs` keeps the compatibility runner entry point;
+  diagnostic-session checks now execute through xUnit wrappers.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Helpers.cs`
   owns shared reflective runner setup for diagnostic-session runner behavior
   tests: loading `ssctl`, creating `DiagnosticSessionOptions`, invoking

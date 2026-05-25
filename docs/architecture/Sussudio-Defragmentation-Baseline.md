@@ -1778,3 +1778,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; test source readers only
 Behavior preserved: legacy `Program`-partial ownership tests and namespaced xUnit helper callers still read normalized `Sussudio/MainWindow.xaml.cs` text through their existing APIs
 Notes for future agents: keep both MainWindow root source-reader APIs together in `MainWindow.CompositionSource.cs` unless one harness is retired
+
+Date: 2026-05-25
+Area: Legacy runtime harness shim locality
+Problem: `HarnessCheckCatalog.cs` was an 8-line no-op compatibility method returning an empty result list, while `Program.cs` is the only caller and owns the offline `dotnet exec` runner.
+Files consolidated: `tests/Sussudio.Tests/HarnessCheckCatalog.cs`
+Files added: none
+Net production .cs delta: 0
+Net test .cs delta: -1
+Partial clusters reduced: `Program` test harness -1 file
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: offline runtime harness still runs through `dotnet exec tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll ...`
+Behavior preserved: the offline compatibility runner still returns an empty check list and reports success after the app assembly loads; executable coverage remains in focused xUnit slices
+Notes for future agents: keep the no-op `RunAllChecksAsync` shim with `Program.cs`; add new coverage to xUnit instead of restoring a harness catalog
