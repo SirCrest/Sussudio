@@ -2320,3 +2320,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: MCP performance timeline contract tests cover row projection, row model, rendering, trend summaries, and command routing; no public MCP tool names or automation command IDs changed
 Behavior preserved: `get_performance_timeline` payload, automation command kind, JSON field projection, table columns, trend summaries, target 1% low summaries, pressure summaries, and formatting helpers remain unchanged
 Notes for future agents: keep the MCP performance timeline as one cohesive report owner in `PerformanceTimelineTools.Rendering.cs`; split only if row projection becomes a shared parser or a report subsection grows independent policy.
+
+Date: 2026-05-25
+Area: EGAVDS audio probe locality
+Problem: `tools/EgavdsAudioProbe/Program.cs` owned the only EGAVDS probe command flow, device lookup, audio input/gain actions, and result text while `Program.NativeInterop.cs` held private SWIG, EGAVDeviceSupport, and SetupAPI declarations consumed only by that same probe. Understanding or changing this single exploratory CLI required opening both files.
+Files consolidated: `tools/EgavdsAudioProbe/Program.NativeInterop.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `EgavdsProbe` partial family removed
+Build/tests/runtime checks: `dotnet build tools\EgavdsAudioProbe\EgavdsAudioProbe.csproj -c Debug --no-restore`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`
+CLI/MCP/pipe checks, if applicable: EGAVDS source-ownership tests and solution build cover the consolidated probe; no app automation command names or public tool commands changed
+Behavior preserved: EGAVDS CLI arguments, SetupAPI device path selection, SWIG callback registration, EGAVDeviceSupport initialization/open/close calls, audio input switching, line-in gain query/set, HDR and connection info reads, and result text remain unchanged
+Notes for future agents: keep EGAVDS probe-private native declarations with `tools/EgavdsAudioProbe/Program.cs` unless they become shared by another tool or need independent generated bindings.

@@ -3203,10 +3203,10 @@ command-line construction, argument quoting, process supervision, stdout/stderr
 drain, timeout kill, temp CSV cleanup, probe-result message shaping, and result
 text formatting.
 
-EGAVDS audio probing keeps the CLI command flow, SetupAPI device lookup, and
-audio input/gain actions in `tools/EgavdsAudioProbe/Program.cs`; SWIG callback
-registration, EGAVDeviceSupport imports, SetupAPI imports, and native interface
-DTOs live in `tools/EgavdsAudioProbe/Program.NativeInterop.cs`.
+EGAVDS audio probing keeps the CLI command flow, SetupAPI device lookup,
+audio input/gain actions, SWIG callback registration, EGAVDeviceSupport
+imports, SetupAPI imports, and native interface DTOs in
+`tools/EgavdsAudioProbe/Program.cs`.
 
 Remaining `tools/Common` ownership:
 

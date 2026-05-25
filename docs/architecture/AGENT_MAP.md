@@ -2987,9 +2987,9 @@ Primary owners:
   native interop constants/DTOs, topology enumeration, and Win32 formatting
   helpers.
 - `tools/EgavdsAudioProbe/Program.cs` owns EGAVDS audio probe command flow,
-  device lookup, audio input/gain actions, and result text; `Program.NativeInterop.cs`
-  owns SWIG callback registration, EGAVDeviceSupport entry points, SetupAPI
-  entry points, and native interface DTOs.
+  device lookup, audio input/gain actions, result text, SWIG callback
+  registration, EGAVDeviceSupport entry points, SetupAPI entry points, and
+  native interface DTOs.
 - `tools/ssctl/Program.cs` owns the process entry point, Ctrl-C cancellation,
   CLI option parsing, and exit-code shaping.
 - `tools/ssctl/SsctlHelpWriter.cs` owns the `ssctl` help facade,

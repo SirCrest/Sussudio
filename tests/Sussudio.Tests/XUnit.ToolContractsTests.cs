@@ -107,8 +107,8 @@ public sealed class ToolProbeContractsTests
         => global::Program.KsAudioNodeProbe_SourceOwnership_IsSplit();
 
     [Fact]
-    public Task EgavdsAudioProbeSourceOwnershipIsSplit()
-        => global::Program.EgavdsAudioProbe_SourceOwnership_IsSplit();
+    public Task EgavdsAudioProbeSourceOwnershipIsConsolidated()
+        => global::Program.EgavdsAudioProbe_SourceOwnership_IsConsolidated();
 }
 
 public sealed class ToolModelContractsTests

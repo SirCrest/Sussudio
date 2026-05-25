@@ -44,10 +44,9 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task EgavdsAudioProbe_SourceOwnership_IsSplit()
+    internal static Task EgavdsAudioProbe_SourceOwnership_IsConsolidated()
     {
         var programText = ReadRepoFile("tools/EgavdsAudioProbe/Program.cs");
-        var nativeInteropText = ReadRepoFile("tools/EgavdsAudioProbe/Program.NativeInterop.cs");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
 
@@ -55,20 +54,19 @@ static partial class Program
         AssertContains(programText, "static string? FindElgato4KXDevicePath()");
         AssertContains(programText, "EGAVDS_SetAudioInputSelection(handleRef, targetInput)");
         AssertContains(programText, "EGAVDS_SetLineInAudioGain(handleRef, setGain.Value)");
-        AssertDoesNotContain(programText, "const string DLL = \"EGAVDeviceSupport\"");
-        AssertDoesNotContain(programText, "SWIGRegisterExceptionCallbacks_EGAVDS");
-        AssertDoesNotContain(programText, "DllImport(");
-        AssertDoesNotContain(programText, "struct SP_DEVICE_INTERFACE_DATA");
-
-        AssertContains(nativeInteropText, "static partial class EgavdsProbe");
-        AssertContains(nativeInteropText, "private const string DLL = \"EGAVDeviceSupport\"");
-        AssertContains(nativeInteropText, "private static void RegisterSwigCallbacks()");
-        AssertContains(nativeInteropText, "private static extern int EGAVDS_OpenDevice");
-        AssertContains(nativeInteropText, "private static extern bool SetupDiEnumDeviceInterfaces");
-        AssertContains(nativeInteropText, "private struct SP_DEVICE_INTERFACE_DATA");
+        AssertContains(programText, "private const string DLL = \"EGAVDeviceSupport\"");
+        AssertContains(programText, "private static void RegisterSwigCallbacks()");
+        AssertContains(programText, "SWIGRegisterExceptionCallbacks_EGAVDS");
+        AssertContains(programText, "private static extern int EGAVDS_OpenDevice");
+        AssertContains(programText, "private static extern bool SetupDiEnumDeviceInterfaces");
+        AssertContains(programText, "private struct SP_DEVICE_INTERFACE_DATA");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "EgavdsAudioProbe", "Program.NativeInterop.cs")),
+            "EGAVDS probe private interop declarations live with the probe command flow");
         AssertContains(agentMapText, "`tools/EgavdsAudioProbe/Program.cs` owns EGAVDS audio probe command flow,");
-        AssertContains(agentMapText, "`Program.NativeInterop.cs`");
-        AssertContains(cleanupPlanText, "`tools/EgavdsAudioProbe/Program.NativeInterop.cs`");
+        AssertDoesNotContain(agentMapText, "`Program.NativeInterop.cs` owns EGAVDS");
+        AssertDoesNotContain(cleanupPlanText, "`tools/EgavdsAudioProbe/Program.NativeInterop.cs`");
 
         return Task.CompletedTask;
     }
