@@ -206,7 +206,8 @@ Automation diagnostics ownership:
   `AutomationCommandDispatcher.cs` owns manifest revision, auth-token, and
   readiness gating beside the command envelope, the port-grouped tables and
   ordered dispatch for UI/settings plus simple one-property commands, and the
-  payload/path/enum helpers used by all dispatcher command bodies.
+  payload/path/enum helpers used by all dispatcher command bodies, plus the
+  target-typed trivial-handler wrapper used by the one-property command tables.
   `AutomationCommandDispatcher.CustomCommands.cs` consumes the
   device-selection, audio, capture-settings, preview/recording, snapshot-query,
   diagnostics, probe, and window-control ports for custom command bodies,
@@ -217,10 +218,6 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs`
   owns AssertSnapshot command response shaping, payload parsing, and snapshot
   comparison helpers.
-- `Sussudio/Services/Automation/AutomationCommandHandler.cs` owns the shared
-  target-typed trivial-handler wrapper used by simple one-property automation
-  commands, including the payload field name/type metadata checked against the
-  shared automation command catalog.
 - `Sussudio/Services/Automation/NamedPipeAutomationServer.cs` owns automation
   pipe constructor/configuration state, server start/stop/dispose, the accept
   loop, per-connection safety/disposal, request-session handoff, error/timeout

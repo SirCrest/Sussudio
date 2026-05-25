@@ -359,9 +359,9 @@ also owns WaitForCondition response shaping, wait polling, and snapshot
 predicates, full-screen, recordings-folder, arm-close, close-arm gating, and
 low-level window automation action execution; and
 `AutomationCommandDispatcher.Assertions.cs` handles AssertSnapshot response
-shaping, parsing, and comparison helpers. `AutomationCommandHandler.cs` owns the reusable
-trivial-handler wrapper plus the payload field name/type metadata checked
-against the shared automation command catalog.
+shaping, parsing, and comparison helpers. The reusable target-typed
+trivial-handler wrapper lives with `AutomationCommandDispatcher.cs` because it
+only supports the dispatcher's port-grouped one-property command tables.
 
 Automation pipe hosting now lives in `NamedPipeAutomationServer.cs`. Keep
 constructor/configuration state, server start/stop and accept-loop behavior,
