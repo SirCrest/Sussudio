@@ -1575,10 +1575,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` and its
   `SnapshotModels.*` partials own the xUnit snapshot-model contract suite.
   `SnapshotModels.Tests.cs` owns shared snapshot-model spec DTOs and
-  registration state; `SnapshotModels.PropertyAssertions.cs` owns shared
-  property-list, nullability, and helper assertion methods; and
-  `SnapshotModels.ReflectionJson.cs` owns shared reflection JSON round-trip and
-  registered-property coverage helpers.
+  registration state plus reflection JSON round-trip and registered-property
+  coverage helpers; `SnapshotModels.PropertyAssertions.cs` owns shared
+  property-list, nullability, and helper assertion methods.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.Tests.cs` owns xUnit
   AutomationSnapshot and AutomationOptions DTO shape checks for CPU MJPEG,
   MJPEG preview, preview diagnostics, capture-command/cadence, recording,
