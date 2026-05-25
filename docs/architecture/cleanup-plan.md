@@ -1328,10 +1328,10 @@ accounting, artifact rollback, and best-effort teardown for partially started
 sinks, WASAPI capture, unified-video capture, and deferred LibAv drain cleanup
 after a failed recording start.
 
-Flashback export failure classification now lives in
-`Sussudio/Services/Capture/CaptureService.FlashbackExportFailureClassification.cs`.
+Flashback export failure classification now lives with export diagnostics in
+`Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs`.
 Keep the export failure-kind taxonomy there because automation responses and
-capture diagnostics both consume it.
+capture diagnostics both consume the diagnostic result classification.
 
 Flashback export entry points now live in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs`.
@@ -1359,7 +1359,8 @@ partial stays focused on orchestration.
 Flashback export diagnostics now lives in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs`.
 Keep export attempt lifecycle, result, rejection, completion diagnostic state,
-progress forwarding/normalization, and force-rotate fallback counters there.
+progress forwarding/normalization, force-rotate fallback counters, and
+failure-kind classification there.
 
 Shared video-pipeline lifecycle handoff now lives in
 `Sussudio/Services/Capture/CaptureService.PreviewStart.cs`, alongside preview

@@ -12,13 +12,13 @@ static partial class Program
             ?? throw new InvalidOperationException("CaptureService.ClassifyFlashbackExportFailureKind was not found.");
         var exportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
             .Replace("\r\n", "\n");
-        var classifierText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportFailureClassification.cs")
+        var diagnosticsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs")
             .Replace("\r\n", "\n");
 
         AssertDoesNotContain(exportText, "internal static string ClassifyFlashbackExportFailureKind(string? statusMessage)");
-        AssertContains(classifierText, "internal static string ClassifyFlashbackExportFailureKind(string? statusMessage)");
-        AssertContains(classifierText, "private static bool IsFlashbackExportCancelled(string? statusMessage)");
-        AssertContains(classifierText, "private static bool ContainsFlashbackExportFailureText(string statusMessage, string value)");
+        AssertContains(diagnosticsText, "internal static string ClassifyFlashbackExportFailureKind(string? statusMessage)");
+        AssertContains(diagnosticsText, "private static bool IsFlashbackExportCancelled(string? statusMessage)");
+        AssertContains(diagnosticsText, "private static bool ContainsFlashbackExportFailureText(string statusMessage, string value)");
 
         AssertEqual(
             "BufferInactive",
