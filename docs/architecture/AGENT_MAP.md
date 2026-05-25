@@ -1566,11 +1566,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Toggle.Tests.cs`
   owns Flashback timeline toggle rollback and lockout assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.PreviewPipeline.Tests.cs`
-  owns retained Flashback preview backend, audio restoration, and preview stop
-  rollback assertions.
-- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.Teardown.Tests.cs`
-  owns device-switch teardown ordering between video stop, Flashback backend
-  disposal, and preview reinit disposal.
+  owns retained Flashback preview backend, audio restoration, preview stop
+  rollback assertions, and device-switch teardown ordering between video stop,
+  Flashback backend disposal, and preview reinit disposal.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.LifecycleLogs.Tests.cs`
   owns Flashback lifecycle outcome log-token, codec no-downgrade, export
   force-rotate, and buffer-cycle assertions.
