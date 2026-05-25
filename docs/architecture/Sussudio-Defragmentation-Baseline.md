@@ -2176,3 +2176,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: tool contract coverage remains in the xUnit suite; no automation command names/IDs changed
 Behavior preserved: recording/export metrics, export relevance gating, force-rotate fallback counters outside the export-observed relevance gate, playback active/relevant snapshot gating, session frame-count projection, 1% low capture, frame/decode/audio-master maxima, playback counter deltas, final result construction, and grouped command/cadence/decode/audio-master/stage reads remain unchanged
 Notes for future agents: keep Flashback diagnostic-session metric projection in `tools/Common/DiagnosticSessionFlashbackMetrics.cs`; split only if a new independent metric subsystem grows its own state or external seam.
+
+Date: 2026-05-25
+Area: Device discovery locality
+Problem: `DeviceService.FormatProbe.cs` split format-cache DTOs, cache load/save/delete, background format probing, inline Media Foundation probing, and format normalization away from the device discovery owner that calls those helpers during enumeration and startup refresh. Reviewing discovery behavior required opening two partial files for one cohesive capture/audio device option pipeline.
+Files consolidated: `Sussudio/Services/Capture/DeviceService.FormatProbe.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `DeviceService` partial family removed
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: capture/audio enumeration orchestration, format-cache warm/load/delete/save behavior, background probe event delivery, inline format probing, HDR detection, pixel-format normalization, frame-rate normalization, discovery summary text, priority scoring, audio association, and native XU interface resolution remain unchanged
+Notes for future agents: keep device enumeration, discovery cache, and format probing together in `DeviceService.cs`; keep lower-level MF enumeration/source opening in `DeviceDiscovery/MfDeviceEnumerator.cs`.
