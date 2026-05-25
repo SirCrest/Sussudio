@@ -7,7 +7,6 @@ static partial class Program
     private static readonly string[] CaptureServiceAudioFiles =
     {
         "Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs",
-        "Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs",
         "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs",
         "Sussudio/Services/Capture/PreviewAudioGraphResources.cs"
     };
@@ -26,7 +25,6 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs");
         var audioPreviewText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs");
-        var audioInputSwitchingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs");
         var microphoneText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs");
         var resourceText = ReadRepoFile("Sussudio/Services/Capture/PreviewAudioGraphResources.cs");
 
@@ -59,20 +57,19 @@ static partial class Program
         AssertContains(audioPreviewText, "public Task StopAudioPreviewAsync(");
         AssertContains(audioPreviewText, "public Task StopAudioPreviewWithTeardownAsync(");
         AssertContains(audioPreviewText, "private Task StopAudioPreviewCoreAsync(");
-        AssertDoesNotContain(audioPreviewText, "public Task UpdateAudioInputAsync(");
+        AssertContains(audioPreviewText, "public Task UpdateAudioInputAsync(");
+        AssertContains(audioPreviewText, "Logger.Log($\"Live audio input switch:");
+        AssertContains(audioPreviewText, "Logger.Log(\"AUDIO_INPUT_SWITCH_CANCEL_DEFERRED\");");
         AssertDoesNotContain(audioPreviewText, "public Task UpdateMicrophoneMonitorAsync(");
         AssertDoesNotContain(audioPreviewText, "private async Task StartWasapiPlaybackAsync(");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Audio.cs")),
             "old audio event projection partial removed after audio preview lifecycle consolidation");
-
-        AssertContains(audioInputSwitchingText, "public Task UpdateAudioInputAsync(");
-        AssertContains(audioInputSwitchingText, "Logger.Log($\"Live audio input switch:");
-        AssertContains(audioInputSwitchingText, "Logger.Log(\"AUDIO_INPUT_SWITCH_CANCEL_DEFERRED\");");
-        AssertDoesNotContain(audioInputSwitchingText, "public Task StartAudioPreviewAsync(");
-        AssertDoesNotContain(audioInputSwitchingText, "public Task UpdateMicrophoneMonitorAsync(");
-        AssertDoesNotContain(audioInputSwitchingText, "private async Task StartWasapiPlaybackAsync(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.AudioInputSwitching.cs")),
+            "live audio input switching folded into CaptureService.AudioPreviewLifecycle.cs");
 
         AssertContains(microphoneText, "public Task UpdateMicrophoneMonitorAsync(");
         AssertContains(microphoneText, "RunTransitionAsync(CurrentSessionState,");

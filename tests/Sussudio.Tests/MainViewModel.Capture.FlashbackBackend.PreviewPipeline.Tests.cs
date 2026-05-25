@@ -135,7 +135,7 @@ static partial class Program
         var updateAudioInput = ExtractTextBetween(
             captureServiceText,
             "public Task UpdateAudioInputAsync",
-            "        }, cancellationToken);\n}");
+            "private void OnWasapiAudioLevelUpdated");
         AssertContains(updateAudioInput, "var committedSwitchToken = CancellationToken.None;");
         AssertContains(updateAudioInput, "await newCapture.InitializeAsync(resolvedId, committedSwitchToken)");
         AssertContains(updateAudioInput, "await _previewAudioGraph.StartPlaybackAsync(");
@@ -163,7 +163,7 @@ static partial class Program
         var updateAudioInputRaw = ExtractTextBetween(
             captureServiceRawText,
             "public Task UpdateAudioInputAsync",
-            "        }, cancellationToken);\n}");
+            "private void OnWasapiAudioLevelUpdated");
         AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_OLD_DISPOSE_WARN");
         AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN");
         AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_CANCEL_DEFERRED");

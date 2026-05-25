@@ -6,8 +6,8 @@ using Sussudio.Services.Audio;
 
 namespace Sussudio.Services.Capture;
 
-// Audio-preview start/stop lifecycle, preview volume/mute, and WASAPI
-// audio-level/failure event projection for the capture session.
+// Capture audio lifecycle: audio-preview start/stop, live input switching,
+// preview volume/mute, and WASAPI audio-level/failure event projection.
 public partial class CaptureService
 {
     public void SetPreviewVolume(float volume)
@@ -252,6 +252,132 @@ public partial class CaptureService
 
             AudioLevelUpdated?.Invoke(this, new AudioLevelEventArgs(0, 0, false));
             StatusChanged?.Invoke(this, "Audio preview stopped");
+        }, cancellationToken);
+
+    public Task UpdateAudioInputAsync(string? audioDeviceId, string? audioDeviceName, CancellationToken cancellationToken = default)
+        => RunTransitionAsync(CurrentSessionState, async transitionToken =>
+        {
+            transitionToken.ThrowIfCancellationRequested();
+            var previousDeviceId = _audioDeviceId;
+            var previousDeviceName = _audioDeviceName;
+
+            if (string.Equals(previousDeviceId, audioDeviceId, StringComparison.OrdinalIgnoreCase))
+            {
+                _audioDeviceName = audioDeviceName;
+                return;
+            }
+
+            if (_previewAudioGraph.ProgramCapture == null)
+            {
+                _audioDeviceId = audioDeviceId;
+                _audioDeviceName = audioDeviceName;
+                return;
+            }
+
+            Logger.Log($"Live audio input switch: {audioDeviceName ?? "(card default)"}");
+
+            var activeSink = _isRecording ? _recordingBackend.Sink : null;
+            var oldCapture = _previewAudioGraph.ProgramCapture;
+            var committedSwitchToken = CancellationToken.None;
+
+            var resolvedId = audioDeviceId ?? _currentDevice?.AudioDeviceId;
+            if (!string.IsNullOrEmpty(resolvedId))
+            {
+                var newCapture = new WasapiAudioCapture();
+                try
+                {
+                    await newCapture.InitializeAsync(resolvedId, committedSwitchToken).ConfigureAwait(false);
+                    newCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
+                    newCapture.CaptureFailed += OnWasapiCaptureFailed;
+                    newCapture.Start();
+                }
+                catch
+                {
+                    _audioDeviceId = previousDeviceId;
+                    _audioDeviceName = previousDeviceName;
+                    try
+                    {
+                        newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
+                        newCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                        await newCapture.DisposeAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+                    }
+
+                    throw;
+                }
+
+                _previewAudioGraph.DetachCapture(
+                    oldCapture,
+                    OnWasapiAudioLevelUpdated,
+                    OnWasapiCaptureFailed,
+                    _flashbackBackend.PlaybackController);
+                _previewAudioGraph.ProgramCapture = newCapture;
+                _audioDeviceId = audioDeviceId;
+                _audioDeviceName = audioDeviceName;
+                _previewAudioGraph.ResetCaptureFault();
+
+                AttachFlashbackAudioIfSupported(newCapture, "audio_input_switch");
+
+                if (activeSink != null && !ReferenceEquals(activeSink, _flashbackBackend.Sink))
+                {
+                    newCapture.AttachRecordingSink(activeSink);
+                }
+
+                try
+                {
+                    if (_isAudioPreviewActive)
+                    {
+                        await _previewAudioGraph.StartPlaybackAsync(
+                            committedSwitchToken,
+                            _flashbackBackend.PlaybackController).ConfigureAwait(false);
+                    }
+
+                    Logger.Log($"Audio input switched to: {audioDeviceName ?? resolvedId}");
+                }
+                finally
+                {
+                    try
+                    {
+                        await oldCapture.DisposeAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"AUDIO_INPUT_SWITCH_OLD_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+                    }
+                }
+            }
+            else
+            {
+                _audioDeviceId = audioDeviceId;
+                _audioDeviceName = audioDeviceName;
+                _isAudioPreviewActive = false;
+                _previewAudioGraph.ProgramCapture = null;
+                _previewAudioGraph.DetachCapture(
+                    oldCapture,
+                    OnWasapiAudioLevelUpdated,
+                    OnWasapiCaptureFailed,
+                    _flashbackBackend.PlaybackController);
+                try
+                {
+                    await oldCapture.DisposeAsync().ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"AUDIO_INPUT_SWITCH_OLD_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+                }
+
+                Logger.Log("Audio input cleared - no device available");
+                AudioLevelUpdated?.Invoke(this, new AudioLevelEventArgs(0, 0, false));
+            }
+
+            if (transitionToken.IsCancellationRequested)
+            {
+                Logger.Log("AUDIO_INPUT_SWITCH_CANCEL_DEFERRED");
+                transitionToken.ThrowIfCancellationRequested();
+            }
         }, cancellationToken);
 
     private void OnWasapiAudioLevelUpdated(object? sender, AudioLevelEventArgs e)

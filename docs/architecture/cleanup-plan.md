@@ -1157,11 +1157,9 @@ negotiated-format seeding, the initial observed-pixel telemetry reset call,
 fallback source telemetry, source telemetry refresh, NTSC frame-rate correction,
 and initialized status event.
 
-WASAPI audio-level/failure event projection and audio-preview start/stop
-lifecycle now live in
-`Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs`, and live
-audio input switching lives in
-`Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs`. Preview-time
+WASAPI audio-level/failure event projection, audio-preview start/stop
+lifecycle, and live audio input switching now live in
+`Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs`. Preview-time
 microphone monitoring lives in
 `Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs` for shared
 state, mic-level forwarding, writer-detach/disposal cleanup, the public update
@@ -1383,7 +1381,7 @@ startup ordering;
 `Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs` owns preview
 WASAPI capture startup, video-only audio fallback logging, preview playback
 attach, preview-time microphone monitor startup, and partially-started audio
-rollback;
+rollback, plus committed live audio input switching and Flashback audio attach;
 `Sussudio/Services/Capture/CaptureService.PreviewStop.cs` owns video-preview
 stop transitions, keep-pipeline-alive detach semantics, and stopped-state/
 telemetry commit plus preview pipeline disposal ordering, Flashback backend
