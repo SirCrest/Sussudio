@@ -16,17 +16,13 @@ static partial class Program
 
     private static McpPerformanceTimelineSources ReadMcpPerformanceTimelineSources()
     {
-        var rowsSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs");
         var renderingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs");
 
         return new McpPerformanceTimelineSources
         {
-            RowsSource = rowsSource,
+            RowsSource = renderingSource,
             RenderingSource = renderingSource,
-            CombinedSource = string.Join(
-                "\n",
-                rowsSource,
-                renderingSource)
+            CombinedSource = renderingSource
         };
     }
 
@@ -61,10 +57,15 @@ static partial class Program
         AssertContains(sources.RowsSource, "public double FlashbackExportThroughputBytesPerSec { get; set; }");
         AssertContains(sources.RowsSource, "public int IoThreads { get; set; }");
         AssertOccursBefore(sources.RowsSource, "private static void PopulateSystemTimelineRow", "private sealed class TimelineRow");
+        AssertOccursBefore(sources.RowsSource, "private static List<TimelineRow> ReadTimelineRows", "private static string BuildPerformanceTimelineText");
         AssertOccursBefore(sources.RowsSource, "public double PreviewSlowPct { get; set; }", "public double VisualCadenceChangeObservedFps { get; set; }");
         AssertOccursBefore(sources.RowsSource, "public string PreviewPacingSlowStageEvidence { get; set; } = string.Empty;", "public string FlashbackPlaybackState { get; set; } = string.Empty;");
         AssertOccursBefore(sources.RowsSource, "public bool FlashbackForceRotateDraining { get; set; }", "public bool FlashbackExportActive { get; set; }");
         AssertOccursBefore(sources.RowsSource, "public string FlashbackExportMessage { get; set; } = string.Empty;", "public long LatencyMs { get; set; }");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PerformanceTimelineTools.Rows.cs")),
+            "MCP performance timeline row projection lives with the timeline renderer owner");
         AssertContains(sources.RenderingSource, "public static async Task<CallToolResult> get_performance_timeline(");
         AssertContains(sources.RenderingSource, "var entries = ReadTimelineRows(data);");
         AssertContains(sources.RenderingSource, "McpToolResultFactory.FromResponse(response, BuildPerformanceTimelineText(entries, targetOnePercentLowFps))");

@@ -3040,13 +3040,11 @@ Primary owners:
 - `tools/McpServer/Tools/PreviewColorProbeTools.cs` owns the public preview
   color and video-source probe MCP entry points while preserving the
   `PreviewColorProbeTools` and `VideoSourceProbeTools` tool types.
-- `tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs` owns timeline JSON
-  row projection orchestration and the root cadence, preview/MJPEG/D3D,
-  Flashback playback, Flashback export, and system projection field groups,
-  plus the private row model for the same table and trend-rendering fields.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs` owns the public
-  MCP tool entry point, command response handling, timeline table text
-  rendering, first-vs-last trend text, preview cadence,
+  MCP tool entry point, command response handling, timeline JSON row projection
+  orchestration, root cadence, preview/MJPEG/D3D, Flashback playback,
+  Flashback export, and system projection field groups, the private row model,
+  timeline table text rendering, first-vs-last trend text, preview cadence,
   visual/MJPEG fingerprint, jitter, D3D, slow-stage, Flashback playback,
   command, failure, cleanup, stage, export trend text, 1%-low target summaries,
   preview, Flashback, and system pressure summaries, plus compact cell,

@@ -2871,20 +2871,17 @@ result text owner. Keep cross-cutting `FormatOptional(...)` handling there
 instead of reintroducing private duplicates in scenario, result builder,
 formatter, or validation policy files.
 
-MCP performance timeline projection is split across the
-`tools/McpServer/Tools/PerformanceTimelineTools.*.cs` family. Keep JSON-to-row
-projection orchestration plus root cadence, preview/MJPEG/D3D, Flashback
-playback, Flashback export, and system row projection fields in
-`PerformanceTimelineTools.Rows.cs` alongside the private row model. Keep the
-public tool entry point, command response handling, timeline table text
+MCP performance timeline projection now lives in
+`tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs`. Keep the public
+tool entry point, command response handling, JSON-to-row projection
+orchestration, root cadence, preview/MJPEG/D3D, Flashback playback, Flashback
+export, system row projection fields, private row model, timeline table text
 rendering, first-vs-last trend text, preview cadence, visual/MJPEG fingerprint,
 jitter, D3D, slow-stage, Flashback playback, command, failure, cleanup, stage,
 export trend text, target-summary orchestration, target, preview, Flashback,
-and system pressure summaries in
-`PerformanceTimelineTools.Rendering.cs` alongside compact value,
-command-message, preview jitter-depth, D3D bottleneck, Flashback stage, cleanup,
-export, byte-rate formatting helpers, shared summary predicates, and pressure
-counters.
+and system pressure summaries there alongside compact value, command-message,
+preview jitter-depth, D3D bottleneck, Flashback stage, cleanup, export,
+byte-rate formatting helpers, shared summary predicates, and pressure counters.
 The frame-pacing verdict MCP tool follows the same shape: keep MCP attributes,
 method signature, pipe command orchestration, response shaping, channel/timeline
 projection, readiness and verdict policy, operator-facing text, and private

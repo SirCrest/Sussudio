@@ -370,7 +370,7 @@ Partial clusters reduced: `PerformanceTimelineTools` -8 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by MCP performance timeline source-ownership/projection contract tests and runtime snapshot regression tests
 Behavior preserved: Timeline JSON fields still populate the same private row properties before rendering and trend summaries
-Notes for future agents: keep the private MCP timeline row DTO with JSON projection methods in `PerformanceTimelineTools.Rows.cs`; split only if a projection group grows independent parsing policy
+Notes for future agents: superseded by the later MCP performance timeline report locality consolidation; keep the private row DTO and JSON projection methods with the timeline report owner unless a projection group grows independent parsing policy
 
 Date: 2026-05-24
 Area: MCP performance timeline Flashback trend rendering
@@ -2308,3 +2308,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: diagnostic-session ownership and runner reflection tests cover the moved sparse-cadence classifier; no CLI command names or automation payloads changed
 Behavior preserved: diagnostic health severity mapping, Flashback warmup filtering, source/signal/preview/Flashback health classifiers, sparse source cadence tolerance, sparse preview scheduler tolerance, and Flashback warning-tolerance predicates remain unchanged
 Notes for future agents: keep diagnostic-session health observation and health-warning tolerance policy together in `DiagnosticSessionHealthPolicy.cs`; do not recreate a separate tolerance bucket unless it becomes an independently tested collaborator with its own state or inputs.
+
+Date: 2026-05-25
+Area: MCP performance timeline report locality
+Problem: `PerformanceTimelineTools.Rendering.cs` owned the MCP tool entry point, table rendering, trend rendering, pressure summaries, and formatting helpers while `PerformanceTimelineTools.Rows.cs` held the private JSON-to-row projection and row DTO consumed only by that renderer. Understanding or changing timeline output required opening both files even though they form one report surface.
+Files consolidated: `tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `PerformanceTimelineTools` partial family removed
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`
+CLI/MCP/pipe checks, if applicable: MCP performance timeline contract tests cover row projection, row model, rendering, trend summaries, and command routing; no public MCP tool names or automation command IDs changed
+Behavior preserved: `get_performance_timeline` payload, automation command kind, JSON field projection, table columns, trend summaries, target 1% low summaries, pressure summaries, and formatting helpers remain unchanged
+Notes for future agents: keep the MCP performance timeline as one cohesive report owner in `PerformanceTimelineTools.Rendering.cs`; split only if row projection becomes a shared parser or a report subsection grows independent policy.
