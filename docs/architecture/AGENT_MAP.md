@@ -1157,7 +1157,7 @@ Primary current owners:
   The grouped stats composition context contracts for shell controls, snapshot
   sources, dock targets, hardware sources, and frame-time targets live with
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
-  `Sussudio/MainWindow.StatsOverlay.Composition.cs` owns the XAML-facing stats
+  `Sussudio/MainWindow.ShellChrome.Composition.cs` owns the XAML-facing stats
   overlay adapter surface: composition controller instantiation, shell-control
   wiring, snapshot sources, dock targets, MJPEG/NVML sources, compact frame-time
   targets, lifecycle/polling commands, and section chrome event adapters.
@@ -1173,14 +1173,14 @@ Primary current owners:
   presentation model is built. `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`
   keeps the local section chrome controller that owns stats dock section
   expand/collapse chrome and automation-visible section visibility application;
-  `Sussudio/MainWindow.StatsOverlay.Composition.cs`
+  `Sussudio/MainWindow.ShellChrome.Composition.cs`
   owns the XAML/automation adapter for that stats shell wiring.
   `Sussudio/Controllers/Stats/StatsWindowPresentationController.cs`
   owns detached stats-window metric text and dynamic telemetry detail rendering.
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns shell stats snapshot
   orchestration from capture-health, renderer metrics, and view state, including
   renderer cadence/recent-sample acquisition and null fallback policy.
-  `Sussudio/MainWindow.StatsOverlay.Composition.cs` is the XAML-facing
+  `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing
   surface for stats visibility, polling, snapshot source wiring, frame-time
   targets, and section chrome commands; stats provider/controller context
   contracts and provider/controller composition live in
@@ -1209,7 +1209,7 @@ Primary current owners:
 - `Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs` owns compact
   frame-time overlay text application, graph-line mutation, canvas sizing,
   sample projection, and expected-line geometry.
-  `Sussudio/MainWindow.StatsOverlay.Composition.cs` owns the XAML-facing
+  `Sussudio/MainWindow.ShellChrome.Composition.cs` owns the XAML-facing
   compact overlay adapter beside the stats overlay visibility route.
   `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns the cohesive pure stats
   presentation projection surface: shared formatting helpers, stats dock summary

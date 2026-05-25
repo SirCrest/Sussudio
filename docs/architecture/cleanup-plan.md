@@ -2159,7 +2159,7 @@ targets, hardware sources, and frame-time targets;
 stats dock presentation/diagnostic/hardware/refresh controller graph wiring
 and the dock graph context contract now live in
 `Sussudio/Controllers/Stats/StatsDockControllerGraph.cs`;
-`Sussudio/MainWindow.StatsOverlay.Composition.cs` owns the XAML-facing stats
+`Sussudio/MainWindow.ShellChrome.Composition.cs` owns the XAML-facing stats
 overlay adapter surface: binding setup, stats dock visibility, refresh hooks,
 snapshot inputs, frame-time targets, section commands, and polling commands.
 Stats toggle event hookup and checked/unchecked behavior, initial/property-changed
@@ -2177,7 +2177,7 @@ Stats dock metric value, visibility, and status brush application now live in
 Stats section expand/collapse chrome and automation-visible section application
 now live in the local section chrome controller inside
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
-`Sussudio/MainWindow.StatsOverlay.Composition.cs` owns the XAML/automation
+`Sussudio/MainWindow.ShellChrome.Composition.cs` owns the XAML/automation
 adapter for the stats shell wiring and delegates controller/provider composition to
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
 Detached stats-window metric text now lives in
@@ -2196,7 +2196,7 @@ projection checks live with stats presentation ownership coverage in
 Frame-time overlay compact text application and graph-line mutation now live in
 `Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs`, along
 with frame-time canvas sizing, sample projection, and expected-line geometry;
-`Sussudio/MainWindow.StatsOverlay.Composition.cs` owns the XAML-facing compact
+`Sussudio/MainWindow.ShellChrome.Composition.cs` owns the XAML-facing compact
 overlay adapter beside the stats overlay visibility route, while grouped stats
 composition context contracts and presentation-controller graph composition live
 in
@@ -2240,7 +2240,7 @@ The UI stats snapshot contract and projection from capture health, renderer
 metrics, and shell view state live in `Sussudio/ViewModels/StatsSnapshot.cs`;
 shell snapshot orchestration plus renderer cadence/recent-sample acquisition
 lives in `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`;
-`Sussudio/MainWindow.StatsOverlay.Composition.cs` is the XAML-facing provider
+`Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing provider
 composition adapter.
 Pure capture option construction lives in
 `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs`.

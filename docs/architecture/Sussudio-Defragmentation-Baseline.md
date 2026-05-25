@@ -2524,3 +2524,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: affected `AutomationClient`, `McpServer`, `ssctl`, and automation pipe sources were covered by the solution build and source-shape tests; no CLI/MCP command names, automation command IDs, or wire payloads changed
 Behavior preserved: declaration keyword cleanup only; type names, constructors, public members, command routes, automation pipe behavior, Flashback backend resource behavior, WASAPI helper/contract behavior, diagnostic-session scenario flow, and AutomationClient command protocol behavior remain unchanged
 Notes for future agents: do not add `partial` to these owners unless a generated/XAML/platform split or a genuine multi-file ownership boundary is introduced with tests/docs.
+
+Date: 2026-05-25
+Area: MainWindow stats overlay shell adapter locality
+Problem: `MainWindow.StatsOverlay.Composition.cs` was a 153-line XAML-facing adapter partial that only constructed `StatsOverlayCompositionController` contexts and forwarded stats visibility, polling, snapshot, and section chrome calls. The adjacent shell composition partial already owned shell chrome/fullscreen/status wiring that consumes those adapter methods, so reviewing shell stats behavior required an extra MainWindow partial even though controller behavior stayed elsewhere.
+Files consolidated: `Sussudio/MainWindow.StatsOverlay.Composition.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `MainWindow` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; no public automation command names, IDs, or wire payloads changed
+Behavior preserved: stats overlay controller construction, shell-control wiring, snapshot source callbacks, dock target wiring, MJPEG/NVML sources, frame-time targets, lifecycle/polling wrappers, section header tap handling, stats section visibility routing, and frame-time overlay visibility routing remain unchanged
+Notes for future agents: keep MainWindow's XAML-facing stats adapter with `MainWindow.ShellChrome.Composition.cs`; keep stats behavior in `StatsOverlayCompositionController`, `StatsOverlayController`, `StatsDockControllerGraph`, and related stats controllers.

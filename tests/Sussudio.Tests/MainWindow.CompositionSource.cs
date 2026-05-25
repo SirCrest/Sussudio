@@ -47,7 +47,7 @@ namespace Sussudio.Tests
                 "\n",
                 new[]
                 {
-                    "Sussudio/MainWindow.StatsOverlay.Composition.cs",
+                    "Sussudio/MainWindow.ShellChrome.Composition.cs",
                 }.Select(file => RuntimeContractSource.ReadRepoFile(file).Replace("\r\n", "\n")));
     }
 }
