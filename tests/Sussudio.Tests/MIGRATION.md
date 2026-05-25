@@ -137,22 +137,18 @@ add xUnit alongside, and port incrementally.
 - `XUnit.AutomationDiagnosticsLoopContractsTests.cs` owns the former legacy
   diagnostics-loop polling contract that keeps automation options snapshots out
   of hot diagnostics refresh paths.
-- `XUnit.ToolProbeContractsTests.cs` owns the former legacy PresentMon parser,
-  ssctl pipe transport, KS audio-node, and EGAVDS probe contract checks.
-- `XUnit.AutomationSnapshotFormatterContractsTests.cs` owns the former legacy
-  shared automation snapshot formatter core, Flashback, Preview D3D, and source
-  ownership contract checks.
+- `XUnit.ToolContractsTests.cs` owns the former legacy PresentMon parser, ssctl
+  pipe transport, KS audio-node, EGAVDS probe, shared automation snapshot
+  formatter core, Flashback, Preview D3D, source ownership, ssctl formatter,
+  NVML snapshot, CaptureSessionSnapshot default-state, and RTK I2C
+  unsafe-native-path contract checks. The public wrapper classes remain
+  separate inside this file so existing test identities stay stable while the
+  execution surface is easier to scan.
 - `XUnit.SsctlCommandHandlerContractsTests.cs` owns the former legacy ssctl
   command-handler routing, source ownership, and catalog-backed help contract
   checks.
-- `XUnit.SsctlFormatterContractsTests.cs` owns the former legacy ssctl
-  formatter snapshot, source ownership, and timeline output contract checks.
-- `XUnit.ToolModelContractsTests.cs` owns the former legacy NVML snapshot and
-  CaptureSessionSnapshot default-state tool-contract checks.
-  `XUnit.TargetAssemblyBootstrap.cs` lets xUnit wrapper facts initialize the
+- `XUnit.TargetAssemblyBootstrap.cs` lets xUnit wrapper facts initialize the
   staged app assembly before calling legacy reflection helpers.
-- `XUnit.NativeToolProbeContractsTests.cs` owns the former legacy RTK I2C probe
-  unsafe-native-path guard check.
 - `XUnit.McpWindowPreviewToolContractsTests.cs` owns the former legacy MCP
   window/preview wait, screenshot, frame-capture, window-action, and
   preview-toggle/probe checks.

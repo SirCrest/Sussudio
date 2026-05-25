@@ -1997,17 +1997,17 @@ Primary current owners:
   stay in `.Tests.cs`; Flashback output rendering lives in `.Flashback.Tests.cs`,
   Preview D3D output rendering lives in `.PreviewD3D.Tests.cs`, and shared
   formatter source ownership lives in `.Ownership.Tests.cs`.
-  `tests/Sussudio.Tests/XUnit.AutomationSnapshotFormatterContractsTests.cs`
-  owns the xUnit execution surface for those shared snapshot formatter checks
-  after their removal from the legacy offline harness catalog.
+  `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
+  surface for those shared snapshot formatter checks after their removal from
+  the legacy offline harness catalog.
 - `tests/Sussudio.Tests/Formatters.Tests.cs` owns ssctl formatted snapshot
   output smoke checks. `tests/Sussudio.Tests/Formatters.SnapshotOwnership.Tests.cs`
   owns ssctl formatter source ownership assertions, while
   `tests/Sussudio.Tests/Formatters.Timeline.Tests.cs` owns timeline table and
   summary output checks.
-  `tests/Sussudio.Tests/XUnit.SsctlFormatterContractsTests.cs` owns the xUnit
-  execution surface for those ssctl formatter checks after their removal from
-  the legacy offline harness catalog.
+  `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
+  surface for those ssctl formatter checks after their removal from the legacy
+  offline harness catalog.
 - `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` owns
   `RuntimeContractSource`, including shared tool source-family readers used by
   legacy harness and xUnit contract tests.
@@ -2031,10 +2031,12 @@ Primary current owners:
   versions, and app-present correlation.
 - `tests/Sussudio.Tests/PresentMonProbe.SourceOwnership.Tests.cs` owns
   PresentMonProbe split-family source ownership assertions.
-- `tests/Sussudio.Tests/XUnit.ToolProbeContractsTests.cs` owns the xUnit
-  execution surface for PresentMon parser/source-ownership, ssctl pipe
-  transport, KS audio-node, and EGAVDS probe checks after their removal from
-  the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
+  surface for PresentMon parser/source-ownership, ssctl pipe transport, KS
+  audio-node, EGAVDS probe, RTK I2C unsafe-native-path, NVML snapshot, and
+  CaptureSessionSnapshot tool-model checks after their removal from the legacy
+  offline harness catalog. Keep the public wrapper classes in this file unless
+  a group needs an independent fixture or executable helper state.
 - `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` owns shared tool
   assembly loading, isolated load contexts, freshness checks, and tool build
   command mapping used by the legacy harness and xUnit slices.
@@ -2164,12 +2166,9 @@ Primary current owners:
   registration groups. `tests/Sussudio.Tests/XUnit.FlashbackEncoderSinkContractsTests.cs`
   owns the xUnit execution surface for the former legacy Flashback encoder sink
   registration groups.
-- `tests/Sussudio.Tests/XUnit.ToolModelContractsTests.cs` owns the xUnit
-  execution surface for the former legacy NVML snapshot and
-  CaptureSessionSnapshot default-state tool-contract checks.
-  `tests/Sussudio.Tests/XUnit.NativeToolProbeContractsTests.cs` owns the xUnit
-  execution surface for the former legacy RTK I2C probe unsafe-native-path
-  guard check.
+- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
+  surface for the former legacy NVML snapshot, CaptureSessionSnapshot
+  default-state, and RTK I2C unsafe-native-path tool-contract checks.
 - `tests/Sussudio.FfmpegEncodeLab/Program.cs` owns standalone HDR encode-lab
   orchestration; `Program.Encoding.cs` owns FFmpeg argument and AV1 encoder
   selection policy; `Program.Support.cs` owns CLI parsing, tool-path resolution,

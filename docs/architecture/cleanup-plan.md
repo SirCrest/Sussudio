@@ -550,26 +550,25 @@ script checks, shared/ssctl snapshot formatter contracts, and tool-probe
 contracts. `tests/Sussudio.Tests/XUnit.AutomationCatalogContractsTests.cs` owns
 the xUnit execution surface for catalog, manifest, path-policy, and
 reliability-gates checks after their removal from the legacy offline harness
-catalog. `tests/Sussudio.Tests/XUnit.ToolProbeContractsTests.cs` owns the
-xUnit execution surface for the PresentMon parser, ssctl pipe transport, KS
-audio-node, and EGAVDS probe checks after their removal from the legacy
-offline harness catalog. `tests/Sussudio.Tests/XUnit.NativeToolProbeContractsTests.cs`
-owns the RTK I2C unsafe-native-path guard check, and
-`tests/Sussudio.Tests/XUnit.ToolModelContractsTests.cs` owns the former legacy
-NVML snapshot/CaptureSessionSnapshot tool-model checks; the legacy
-`HarnessCheckCatalog.ToolContracts.cs` registration file has been retired.
+catalog. `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit
+execution surface for the PresentMon parser, ssctl pipe transport, KS
+audio-node, EGAVDS probe, RTK I2C unsafe-native-path guard, and former legacy
+NVML snapshot/CaptureSessionSnapshot tool-model checks; the public wrapper
+classes remain separate inside that file so test identities stay stable. The
+legacy `HarnessCheckCatalog.ToolContracts.cs` registration file has been
+retired.
 Shared formatter tests now mirror the formatter partials: the root
 snapshot-formatter test owns accessors, invalid-response handling, section
 ordering, core section formatting, and the Flashback opt-in gate; Flashback
 output, Preview D3D output, and source ownership live in focused
 `AutomationToolContracts.SnapshotFormatter.*.Tests.cs` implementation owners,
-with `tests/Sussudio.Tests/XUnit.AutomationSnapshotFormatterContractsTests.cs`
-owning their xUnit execution surface after removal from the legacy offline
-harness catalog. ssctl formatter output smoke checks stay in
+with `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owning their xUnit
+execution surface after removal from the legacy offline harness catalog. ssctl
+formatter output smoke checks stay in
 `Formatters.Tests.cs`, while `Formatters.SnapshotOwnership.Tests.cs` owns ssctl
 formatter source ownership assertions through the shared `RuntimeContractSource`
 formatter source-family readers, `Formatters.Timeline.Tests.cs` owns timeline
-output contracts, and `tests/Sussudio.Tests/XUnit.SsctlFormatterContractsTests.cs`
+output contracts, and `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`
 owns their xUnit execution surface after removal from the legacy offline
 harness catalog.
 ssctl command-handler routing coverage now lives in focused

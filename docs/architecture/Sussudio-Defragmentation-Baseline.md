@@ -1921,3 +1921,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
 Behavior preserved: the same public test classes, constructors, `[Fact]` method names, target-assembly bootstrap calls, and delegated `Program` checks remain available inside the MainWindow, MainViewModel, and Startup presentation-preview contracts files
 Notes for future agents: keep these wrapper classes in their parent presentation-preview contracts files unless a group gains independent fixtures or executable helper state; public class identity matters more than one wrapper file per legacy catalog band
+
+Date: 2026-05-25
+Area: Tool xUnit execution-surface locality
+Problem: Five tiny tool-side xUnit wrapper files each contained only public wrapper classes that forwarded to legacy `Program` checks. Tool probe, formatter, model, and native-probe contract execution was still scattered across one shell file per former catalog band without independent fixtures or helper state.
+Files consolidated: `tests/Sussudio.Tests/XUnit.AutomationSnapshotFormatterContractsTests.cs`; `tests/Sussudio.Tests/XUnit.SsctlFormatterContractsTests.cs`; `tests/Sussudio.Tests/XUnit.ToolProbeContractsTests.cs`; `tests/Sussudio.Tests/XUnit.ToolModelContractsTests.cs`; `tests/Sussudio.Tests/XUnit.NativeToolProbeContractsTests.cs`
+Files added: `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`
+Net production .cs delta: 0
+Net test .cs delta: -4
+Partial clusters reduced: n/a; tool-side xUnit wrapper file count -4
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
+Behavior preserved: the same public test classes, `[Fact]` method names, target-assembly bootstrap calls where they existed, and delegated `Program` checks remain available under one tool contracts file
+Notes for future agents: keep tool-side xUnit wrapper classes in `XUnit.ToolContractsTests.cs`; add new wrapper classes there unless a group needs independent fixtures or executable helper state
