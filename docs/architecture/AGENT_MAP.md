@@ -1871,8 +1871,8 @@ Primary current owners:
   numerator/denominator pairing.
 - `tests/Sussudio.Tests/LibAvEncoder.*.Tests.cs` and
   `tests/Sussudio.Tests/LibAvEncoder.Helpers.cs` own LibAvEncoder codec policy,
-  frame-size, diagnostics, HDR metadata, output lifecycle, source-ownership,
-  and shared source-reading helpers.
+  diagnostics/frame-size helpers, HDR metadata, output lifecycle,
+  source-ownership, and shared source-reading helpers.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Helpers.cs` owns the live
   dispatcher source-family reader; `AutomationCommandDispatcher.*.Tests.cs`
   own authorization, manifest,
