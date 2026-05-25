@@ -1517,16 +1517,14 @@ Primary current owners:
   failure-stop contract assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.SessionReinit.Tests.cs`
   owns the source-shape ownership assertion that wires preview startup session
-  and reinit adapters to focused controllers.
+  and reinit adapters to focused controllers, plus pending Flashback encoder
+  settings cycle waits during preview reinitialization.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.SessionController.Tests.cs`
   owns preview startup session controller attempt-state and orchestration
   behavior assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.ReinitTransition.Tests.cs`
   owns preview reinit transition controller presentation and animation-state
   behavior assertions.
-- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.ReinitFlashbackCycle.Tests.cs`
-  owns ViewModel preview reinitialization waiting for pending Flashback encoder
-  settings cycles.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Signals.Tests.cs`
   owns preview startup signal controller/adapter ownership, readiness-signal
   controller, and startup/failure formatter assertions.
