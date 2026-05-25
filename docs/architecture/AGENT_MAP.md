@@ -1575,8 +1575,9 @@ Primary current owners:
   owns preview startup signal controller/adapter ownership, readiness-signal
   controller, and startup/failure formatter assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.StartupStopOrdering.Tests.cs`
-  owns preview lifecycle-event, fade-in, and preview-stop audio-ramp ordering
-  source-shape ownership assertions.
+  owns preview lifecycle-event, fade-in, preview-stop audio-ramp,
+  device-discovery-before-recording-capability, and UI/audio preview reveal
+  ordering source-shape ownership assertions.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs` owns
   xUnit execution for the former legacy presentation-preview preview-startup
   source-shape ownership, controller behavior, signal/failure text, and
@@ -1584,12 +1585,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs` also
   owns xUnit execution for the former legacy presentation-preview capture
   preview-lifecycle/audio-fallback catalog group.
-- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.DeviceDiscoveryOrdering.Tests.cs`
-  owns startup ordering assertions that device discovery begins before
-  recording-capability probe completion.
-- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.PreviewRevealOrdering.Tests.cs`
-  owns preview reveal priming assertions for UI, audio, fade-in, launch, and
-  unavailable-placeholder ordering.
 - Preview-startup ordering xUnit execution also lives in
   `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs`.
 - `tests/Sussudio.Tests/MainWindow.CompositionSource.cs` owns the shared
