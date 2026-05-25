@@ -27,7 +27,7 @@ static partial class Program
         var segmentSkipTrackingText = segmentPacketWritingText;
         var segmentTemplateText = segmentsText;
         var segmentInputPreflightText = segmentTemplateText;
-        var runtimePolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.RuntimePolicy.cs")
+        var executionPolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Execution.cs")
             .Replace("\r\n", "\n");
         var outputFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs")
             .Replace("\r\n", "\n");
@@ -129,18 +129,18 @@ static partial class Program
         AssertContains(segmentValidationText, "private static int FindDuplicateSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)");
         AssertDoesNotContain(segmentsText, "FindDuplicateSegmentPathIndex(segments)");
         AssertDoesNotContain(segmentsText, "FLASHBACK_EXPORT_PROGRESS_ESTIMATE_WARN");
-        AssertContains(runtimePolicyText, "private static void ReportProgress(IProgress<ExportProgress>? progress, ExportProgress value, string stage)");
-        AssertContains(runtimePolicyText, "private static bool ShouldReportProgressHeartbeat(ref long lastHeartbeatTick)");
-        AssertContains(runtimePolicyText, "private const int ExportWriterYieldPacketInterval = 256;");
-        AssertContains(runtimePolicyText, "private const int ExportWriterThrottlePacketInterval = 4096;");
-        AssertContains(runtimePolicyText, "private const int ExportWriterThrottleSleepMs = 1;");
-        AssertContains(runtimePolicyText, "private const int ExportWriterAdaptiveThrottlePacketInterval = 4;");
-        AssertContains(runtimePolicyText, "private const int ExportWriterMaxAdaptiveThrottleSleepMs = 25;");
-        AssertContains(runtimePolicyText, "private readonly object _adaptiveThrottleSync = new();");
-        AssertContains(runtimePolicyText, "private void SetNextAdaptiveThrottleDelayProvider(Func<int>? adaptiveThrottleDelayMsProvider)");
-        AssertContains(runtimePolicyText, "private Func<int>? ConsumeNextAdaptiveThrottleDelayProvider()");
-        AssertContains(runtimePolicyText, "private static FinalizeResult RunWithAdaptiveThrottle(");
-        AssertContains(runtimePolicyText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
+        AssertContains(executionPolicyText, "private static void ReportProgress(IProgress<ExportProgress>? progress, ExportProgress value, string stage)");
+        AssertContains(executionPolicyText, "private static bool ShouldReportProgressHeartbeat(ref long lastHeartbeatTick)");
+        AssertContains(executionPolicyText, "private const int ExportWriterYieldPacketInterval = 256;");
+        AssertContains(executionPolicyText, "private const int ExportWriterThrottlePacketInterval = 4096;");
+        AssertContains(executionPolicyText, "private const int ExportWriterThrottleSleepMs = 1;");
+        AssertContains(executionPolicyText, "private const int ExportWriterAdaptiveThrottlePacketInterval = 4;");
+        AssertContains(executionPolicyText, "private const int ExportWriterMaxAdaptiveThrottleSleepMs = 25;");
+        AssertContains(executionPolicyText, "private readonly object _adaptiveThrottleSync = new();");
+        AssertContains(executionPolicyText, "private void SetNextAdaptiveThrottleDelayProvider(Func<int>? adaptiveThrottleDelayMsProvider)");
+        AssertContains(executionPolicyText, "private Func<int>? ConsumeNextAdaptiveThrottleDelayProvider()");
+        AssertContains(executionPolicyText, "private static FinalizeResult RunWithAdaptiveThrottle(");
+        AssertContains(executionPolicyText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
         AssertDoesNotContain(lifecycleText, "ExportWriterYieldPacketInterval");
         AssertDoesNotContain(lifecycleText, "_adaptiveThrottleSync");
         AssertContains(outputFilesText, "private static void DeleteTempFileIfPresent(string tmpPath)");
@@ -240,13 +240,14 @@ static partial class Program
         foreach (var removedFile in new[]
         {
             "FlashbackExporter.Progress.cs",
-            "FlashbackExporter.WriterPacing.cs"
+            "FlashbackExporter.WriterPacing.cs",
+            "FlashbackExporter.RuntimePolicy.cs"
         })
         {
             AssertEqual(
                 false,
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
-                $"{removedFile} folded into FlashbackExporter.RuntimePolicy.cs");
+                $"{removedFile} folded into FlashbackExporter.Execution.cs");
         }
         AssertEqual(
             false,

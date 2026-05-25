@@ -1786,13 +1786,15 @@ export cancellation-source helpers, shared cancelled/disposed result creation,
 export-lock wait/release/disposal, native input/output cleanup, native-state
 cleanup on dispose, and dispose-timeout logging there.
 
-Flashback exporter execution scheduling now lives in
+Flashback exporter execution scheduling and runtime export policy now live in
 `Sussudio/Services/Flashback/FlashbackExporter.Execution.cs`. Keep public
 `ExportAsync` null/disposed guards, segment path normalization, adaptive
 throttle provider handoff, single-versus-segment export selection,
 single/multi-segment task wrappers, linked cancellation source disposal,
-background thread priority, and segment snapshots there so native export cores
-stay behind focused entry points.
+background thread priority, segment snapshots, progress normalization/reporting,
+heartbeat cadence, export writer adaptive throttling, fixed sleep/yield pacing,
+and per-export throttle provider scoping there so native export cores stay
+behind focused entry points.
 
 Flashback exporter single-file export shell now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.SingleFile.cs`. Keep the
@@ -1836,11 +1838,7 @@ math/saturated arithmetic lives in
 `Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs` so
 `FlashbackExporter.Lifecycle.cs` stays focused on export native state and
 lifetime policy.
-Progress normalization/reporting, heartbeat cadence, export writer adaptive
-throttling, fixed sleep/yield pacing, and per-export throttle provider scoping
-live in
-`Sussudio/Services/Flashback/FlashbackExporter.RuntimePolicy.cs`. Packet timestamp
-normalization, export time-span conversion, saturated time arithmetic, segment
+Packet timestamp normalization, export time-span conversion, saturated time arithmetic, segment
 boundary timestamp repair, packet clone/free helpers, and buffered packet
 flushes live in
 `Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs`. FFmpeg input and

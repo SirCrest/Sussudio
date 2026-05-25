@@ -7,7 +7,7 @@ static partial class Program
         var sourceText = ReadFlashbackExporterSource();
         var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs")
             .Replace("\r\n", "\n");
-        var runtimePolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.RuntimePolicy.cs")
+        var executionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Execution.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private readonly object _lifetimeSync = new();");
@@ -23,11 +23,11 @@ static partial class Program
         AssertContains(sourceText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");
         AssertContains(sourceText, "const string message = \"Flashback exporter is disposed.\";");
         AssertContains(sourceText, "private const int ExportLockWaitTimeoutSeconds = 30;");
-        AssertContains(runtimePolicyText, "private const int ExportWriterYieldPacketInterval = 256;");
-        AssertContains(runtimePolicyText, "private const int ExportWriterThrottlePacketInterval = 4096;");
-        AssertContains(runtimePolicyText, "private const int ExportWriterThrottleSleepMs = 1;");
-        AssertContains(runtimePolicyText, "private const int ExportWriterAdaptiveThrottlePacketInterval = 4;");
-        AssertContains(runtimePolicyText, "private const int ExportWriterMaxAdaptiveThrottleSleepMs = 25;");
+        AssertContains(executionText, "private const int ExportWriterYieldPacketInterval = 256;");
+        AssertContains(executionText, "private const int ExportWriterThrottlePacketInterval = 4096;");
+        AssertContains(executionText, "private const int ExportWriterThrottleSleepMs = 1;");
+        AssertContains(executionText, "private const int ExportWriterAdaptiveThrottlePacketInterval = 4;");
+        AssertContains(executionText, "private const int ExportWriterMaxAdaptiveThrottleSleepMs = 25;");
         AssertContains(sourceText, "_exportLock.Wait(TimeSpan.FromSeconds(ExportLockWaitTimeoutSeconds), ct)");
         AssertContains(sourceText, "FLASHBACK_EXPORT_LOCK_WAIT_TIMEOUT");
         AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => RunWithAdaptiveThrottle(\n                    adaptiveThrottleDelayMsProvider,\n                    () => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, allowOverwrite, progress, linkedCts.Token)),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"single_export\"));");
@@ -35,16 +35,16 @@ static partial class Program
         AssertContains(sourceText, "thread.Priority = ThreadPriority.BelowNormal;");
         AssertContains(sourceText, "thread.Priority = previousPriority;");
         AssertContains(sourceText, "Func<int>? adaptiveThrottleDelayMsProvider");
-        AssertContains(runtimePolicyText, "private readonly object _adaptiveThrottleSync = new();");
-        AssertContains(runtimePolicyText, "private void SetNextAdaptiveThrottleDelayProvider(Func<int>? adaptiveThrottleDelayMsProvider)");
-        AssertContains(runtimePolicyText, "private Func<int>? ConsumeNextAdaptiveThrottleDelayProvider()");
-        AssertContains(runtimePolicyText, "[ThreadStatic]\n    private static Func<int>? s_adaptiveThrottleDelayMsProvider;");
-        AssertContains(runtimePolicyText, "private static FinalizeResult RunWithAdaptiveThrottle(");
-        AssertContains(runtimePolicyText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
-        AssertContains(runtimePolicyText, "packetsWritten % ExportWriterAdaptiveThrottlePacketInterval == 0");
-        AssertContains(runtimePolicyText, "ExportWriterMaxAdaptiveThrottleSleepMs");
-        AssertContains(runtimePolicyText, "Thread.Sleep(ExportWriterThrottleSleepMs);");
-        AssertContains(runtimePolicyText, "Thread.Yield();");
+        AssertContains(executionText, "private readonly object _adaptiveThrottleSync = new();");
+        AssertContains(executionText, "private void SetNextAdaptiveThrottleDelayProvider(Func<int>? adaptiveThrottleDelayMsProvider)");
+        AssertContains(executionText, "private Func<int>? ConsumeNextAdaptiveThrottleDelayProvider()");
+        AssertContains(executionText, "[ThreadStatic]\n    private static Func<int>? s_adaptiveThrottleDelayMsProvider;");
+        AssertContains(executionText, "private static FinalizeResult RunWithAdaptiveThrottle(");
+        AssertContains(executionText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
+        AssertContains(executionText, "packetsWritten % ExportWriterAdaptiveThrottlePacketInterval == 0");
+        AssertContains(executionText, "ExportWriterMaxAdaptiveThrottleSleepMs");
+        AssertContains(executionText, "Thread.Sleep(ExportWriterThrottleSleepMs);");
+        AssertContains(executionText, "Thread.Yield();");
         AssertContains(sourceText, "ThrottleExportWriterIfNeeded(totalPackets);");
         AssertContains(sourceText, "ThrottleExportWriterIfNeeded(written);");
         AssertContains(sourceText, "private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)");
@@ -60,6 +60,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.PacketBuffers.cs")),
             "FlashbackExporter.PacketBuffers.cs folded into FlashbackExporter.PacketTiming.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.RuntimePolicy.cs")),
+            "FlashbackExporter.RuntimePolicy.cs folded into FlashbackExporter.Execution.cs");
         AssertContains(sourceText, "ReleaseExportLockBestEffort(\"single_export\");");
         AssertContains(sourceText, "ReleaseExportLockBestEffort(\"segment_export\");");
         AssertContains(sourceText, "private void ReleaseExportLockBestEffort(string operation)");
