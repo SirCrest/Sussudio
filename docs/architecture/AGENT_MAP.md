@@ -1497,16 +1497,15 @@ Primary current owners:
   owns xUnit execution for the former legacy presentation-preview MainWindow
   and adjacent selection/runtime guard catalog groups after their removal from
   the legacy offline harness catalog.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.ModeSelection.Tests.cs`
-  owns mode-selection reset and resolved automatic frame-rate application
-  assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Ownership.Tests.cs`
+  owns compact selection-policy ownership assertions for mode-selection reset,
+  resolved automatic frame-rate application, and recording format selection
+  policy ownership.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.DeviceFormatProbeRetarget.Tests.cs`
   owns late device-format probe retarget policy behavior assertions.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview late
   device-format probe retarget catalog group.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.RecordingFormat.Tests.cs`
-  owns recording format selection policy ownership assertions.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview
   mode-selection, capture-format, and recording-settings selection catalog group.
