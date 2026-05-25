@@ -2738,14 +2738,10 @@ Primary current owners:
   fade routed through `PreviewSurfaceShadowController`.
   `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing launch
   entrance adapter.
-- `Sussudio/Controllers/Shell/ControlBarAnimationController.cs` owns the control-bar
-  button list used by launch entrance animation plus hover/press/release scale
-  behavior. `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing
-  adapter.
-- `Sussudio/Controllers/Shell/ShellChromeController.cs` owns static shell
-  ThemeShadow and translation setup for the control bar and record button plus
-  shell property-change routing across stats overlay and settings shelf
-  controllers.
+- `Sussudio/Controllers/Shell/ShellChromeController.cs` owns control-bar
+  button entrance/hover/press/release animation, static shell ThemeShadow and
+  translation setup for the control bar and record button, plus shell
+  property-change routing across stats overlay and settings shelf controllers.
   `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
   shell/content fade and scale transitions, video-shadow fade timing,

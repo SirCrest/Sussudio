@@ -7,7 +7,7 @@ static partial class Program
         var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadMainWindowShellChromeAdapterSource();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ControlBarAnimationController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private ControlBarAnimationController _controlBarAnimationController = null!;");
         AssertContains(adapterText, "private void InitializeControlBarAnimationController()");
@@ -22,6 +22,10 @@ static partial class Program
         AssertContains(controllerText, "public IReadOnlyList<FrameworkElement> EntranceButtons");
         AssertContains(controllerText, "public void AttachHoverAnimations()");
         AssertContains(controllerText, "private static void AnimateScale(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "ControlBarAnimationController.cs")),
+            "control-bar hover animation lives with shell chrome controller concerns");
         AssertDoesNotContain(adapterText, "private FrameworkElement[] GetControlBarButtons()");
 
         return Task.CompletedTask;

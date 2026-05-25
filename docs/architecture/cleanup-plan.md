@@ -2742,14 +2742,10 @@ active-storyboard cleanup, and control-bar shadow fade.
 `Sussudio/MainWindow.ShellChrome.Composition.cs`
 is the XAML-facing adapter for launch entrance wiring.
 
-Control-bar button ownership and hover/press/release scale behavior now live in
-`Sussudio/Controllers/Shell/ControlBarAnimationController.cs`.
-`Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
-
-Static shell ThemeShadow and translation setup for the control bar and record
-button now live in `Sussudio/Controllers/Shell/ShellChromeController.cs`,
-alongside shell property-change routing across stats overlay and settings shelf
-controllers.
+Control-bar button ownership, hover/press/release scale behavior, static shell
+ThemeShadow and translation setup for the control bar and record button now live
+in `Sussudio/Controllers/Shell/ShellChromeController.cs`, alongside shell
+property-change routing across stats overlay and settings shelf controllers.
 `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
 
 Preview shell/content fade and scale transitions, video-shadow fade timing, and
