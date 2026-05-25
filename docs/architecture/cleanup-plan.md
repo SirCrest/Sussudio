@@ -1090,7 +1090,7 @@ directly. The policy/state-machine pair is a transition-entry gate plus steady-s
 mutations may pass the current state to the transition lock, while
 lifecycle-changing operations should pass an explicit target
 `CaptureSessionState`. Active recording backend resource ownership now lives in
-`Sussudio/Services/Capture/CaptureRecordingBackendResources.cs`.
+`Sussudio/Services/Capture/CapturePipelineResources.cs`.
 Capture session coordinator command enums, queue receipt records, session
 snapshots, and Flashback playback/buffer status projections now live in
 `Sussudio/Services/Capture/CaptureSessionCoordinator.Models.cs`.
@@ -1159,11 +1159,12 @@ restart/reattachment.
 Flashback preview/recording backend audio input restoration is folded into
 `Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs` beside
 Flashback audio attachment and recording topology validation.
-`Sussudio/Services/Capture/PreviewAudioGraphResources.cs` owns the live
+`Sussudio/Services/Capture/CapturePipelineResources.cs` owns the live
 program WASAPI capture, microphone capture, playback startup/shutdown,
 audio-monitor attach/detach order, preview volume/mute application, playback
-cleanup helpers, and capture-fault telemetry. CaptureService callers use this
-aggregate directly instead of private root resource shims. These files preserve
+cleanup helpers, capture-fault telemetry, active recording backend resources,
+and video pipeline resources. CaptureService callers use these aggregates
+directly instead of private root resource shims. These files preserve
 the root service transition lock while keeping preview lifecycle, input
 switching, mic cleanup, post-recording mic monitor restart, and playback routing
 from collapsing back into a general audio partial.
@@ -1205,7 +1206,7 @@ now live with the Flashback preview backend owner in
 `Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs`.
 Deferred unified-video cleanup after LibAv drains lives with the video pipeline
 resource owner. Pending LibAv drain task state and reentry policy live in
-`Sussudio/Services/Capture/CaptureRecordingBackendResources.cs`. Flashback backend
+`Sussudio/Services/Capture/CapturePipelineResources.cs`. Flashback backend
 artifact cleanup request/retry/dispose/purge mechanics live in
 `Sussudio/Services/Flashback/FlashbackBackendResources.cs`.
 
@@ -1359,7 +1360,7 @@ fatal/pixel callback attach/detach.
 Active video capture storage, preview-frame sink storage, negotiated video
 getters, cached MJPEG pipeline timing snapshots, and deferred unified-video
 cleanup after LibAv drains now live in
-`Sussudio/Services/Capture/CaptureVideoPipelineResources.cs`; CaptureService
+`Sussudio/Services/Capture/CapturePipelineResources.cs`; CaptureService
 callers use that aggregate directly instead of private root resource shims.
 
 Preview lifecycle now lives in focused CaptureService partials:
@@ -4020,16 +4021,13 @@ owner, fold it back into that owner and update the source-shape tests and
    `CaptureService.FlashbackPreviewBackend.cs` should stay the transition
    coordinator for AV1 probing, readiness waiting, cleanup handoff, and preview
    backend disposal request construction.
-   `CaptureRecordingBackendResources.cs` now owns active recording backend
-   resources: LibAv/Flashback sink identity, active recording context/settings,
-   pending LibAv drain task tracking, and pending-drain reentry policy. Recording
-   start, finalization, rollback, snapshot, and cleanup paths now use that owner
+   `CapturePipelineResources.cs` now owns active capture resource holders:
+   preview audio graph resources, recording backend resources, and video
+   pipeline resources. Recording start, finalization, rollback, snapshot,
+   cleanup, preview lifecycle, and audio preview paths use those aggregates
    directly instead of routing through private root shim properties. Keep later
-   recording backend resource mechanics there unless the behavior needs a larger,
-   proven boundary.
-   `CaptureVideoPipelineResources.cs` owns active unified-video capture and
-   preview-frame sink storage; CaptureService callers use that aggregate directly
-   instead of private root resource shim properties.
+   capture resource mechanics there unless the behavior needs a larger, proven
+   boundary.
 
 ## Guardrails
 

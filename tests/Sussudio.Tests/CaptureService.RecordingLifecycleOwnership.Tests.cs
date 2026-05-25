@@ -30,7 +30,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
-        var recordingBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureRecordingBackendResources.cs")
+        var recordingBackendText = ReadRepoFile("Sussudio/Services/Capture/CapturePipelineResources.cs")
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
@@ -61,6 +61,10 @@ static partial class Program
         AssertDoesNotContain(rootText, "get => _recordingBackend.Sink;");
         AssertDoesNotContain(rootText, "get => _recordingBackend.Context;");
         AssertContains(recordingBackendText, "internal sealed class CaptureRecordingBackendResources");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureRecordingBackendResources.cs")),
+            "recording backend resources folded into CapturePipelineResources.cs");
         AssertContains(recordingBackendText, "public LibAvRecordingSink? LibAvSink { get; set; }");
         AssertContains(recordingBackendText, "public IRecordingSink? Sink { get; set; }");
         AssertContains(recordingBackendText, "public RecordingContext? Context { get; set; }");

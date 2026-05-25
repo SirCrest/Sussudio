@@ -8,7 +8,7 @@ static partial class Program
     {
         "Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs",
         "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs",
-        "Sussudio/Services/Capture/PreviewAudioGraphResources.cs"
+        "Sussudio/Services/Capture/CapturePipelineResources.cs"
     };
 
     private static string ReadCaptureServiceAudioSource()
@@ -26,11 +26,15 @@ static partial class Program
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs");
         var audioPreviewText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs");
         var microphoneText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs");
-        var resourceText = ReadRepoFile("Sussudio/Services/Capture/PreviewAudioGraphResources.cs");
+        var resourceText = ReadRepoFile("Sussudio/Services/Capture/CapturePipelineResources.cs");
 
         AssertContains(rootText, "private readonly PreviewAudioGraphResources _previewAudioGraph = new();");
         AssertDoesNotContain(rootText, "private sealed class PreviewAudioGraphResources");
         AssertContains(resourceText, "internal sealed class PreviewAudioGraphResources");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "PreviewAudioGraphResources.cs")),
+            "preview audio graph resources folded into CapturePipelineResources.cs");
         AssertContains(resourceText, "public WasapiAudioCapture? ProgramCapture;");
         AssertContains(resourceText, "public WasapiAudioCapture? MicrophoneCapture;");
         AssertContains(resourceText, "public WasapiAudioPlayback? Playback;");
