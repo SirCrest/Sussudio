@@ -11,8 +11,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var submissionText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs")
             .Replace("\r\n", "\n");
-        var nv12SubmissionText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Nv12Submission.cs")
-            .Replace("\r\n", "\n");
+        var nv12SubmissionText = submissionText;
 
         AssertContains(nv12SubmissionText, "private bool _loggedNv12ShaderMissing;");
         AssertContains(nv12SubmissionText, "private int _lastNv12IsHdr = -1;");
@@ -24,11 +23,13 @@ static partial class Program
         AssertContains(submissionText, "public void SubmitRawFrame(");
         AssertContains(submissionText, "public void SubmitRawFrameLease(");
         AssertContains(submissionText, "public void SubmitTexture(");
-        AssertContains(nv12SubmissionText, "public void SubmitNv12PlaneTextures(");
-        AssertContains(nv12SubmissionText, "private void EnqueueNv12Frame(");
+        AssertContains(submissionText, "public void SubmitNv12PlaneTextures(");
+        AssertContains(submissionText, "private void EnqueueNv12Frame(");
         AssertContains(submissionText, "EnqueuePendingFrame(frame);");
-        AssertDoesNotContain(submissionText, "public void SubmitNv12PlaneTextures(");
-        AssertDoesNotContain(submissionText, "private void EnqueueNv12Frame(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Nv12Submission.cs")),
+            "NV12 texture submission folded into the D3D11 preview submission owner");
         AssertDoesNotContain(rootText, "public void SubmitRawFrame(");
         AssertDoesNotContain(rootText, "public void SubmitRawFrameLease(");
         AssertDoesNotContain(rootText, "public void SubmitTexture(");

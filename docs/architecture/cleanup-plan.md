@@ -1931,12 +1931,11 @@ labels stay in `Sussudio/Services/Preview/PreviewShaderSources.cs`.
 
 D3D preview renderer frame submission now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs`. Keep public raw
-frame, lease, and single shared-texture submission entry points there. The
-dual-plane NV12 submission guard, HDR transition logging, COM AddRef/release,
-and pending-frame adapter live in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.Nv12Submission.cs`; keep
-render-thread start/disposal and panel sizing in the root renderer, with stop
-and reinit stop in `D3D11PreviewRenderer.StopLifecycle.cs`.
+frame, lease, single shared-texture, and dual-plane NV12 submission entry
+points there, including NV12 shader guard, HDR transition logging, COM
+AddRef/release, and pending-frame adapters. Keep render-thread start/disposal
+and panel sizing in the root renderer, with stop and reinit stop in
+`D3D11PreviewRenderer.StopLifecycle.cs`.
 
 D3D preview renderer public lifecycle now lives in the root
 `Sussudio/Services/Preview/D3D11PreviewRenderer.cs` facade. Keep render-thread
