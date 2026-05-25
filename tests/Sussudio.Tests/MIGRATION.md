@@ -306,39 +306,11 @@ add xUnit alongside, and port incrementally.
 - `XUnit.ProjectBuildContractsTests.cs` owns the former legacy project-file
   build/publish policy execution check after its removal from the
   presentation-preview capture catalog.
-- `XUnit.PresentationPreviewD3DPacingContractsTests.cs` owns the former legacy
-  presentation-preview D3D pacing registration group: transition-drain,
-  frame-capture cancellation, and shared-device reference lifecycle checks.
-- `XUnit.PresentationPreviewD3DGeometryContractsTests.cs` owns the former
-  legacy presentation-preview D3D geometry/screenshot registration group:
-  letterbox, black-edge, PNG CRC, and 16-bit PNG capture checks.
-- `XUnit.PresentationPreviewD3DCadenceContractsTests.cs` owns the former legacy
-  presentation-preview D3D present-cadence registration group: cadence DTO
-  shape and suppression-baseline behavior checks.
-- `XUnit.PresentationPreviewD3DDeviceLostContractsTests.cs` owns the former
-  legacy presentation-preview D3D device-lost registration group:
-  device-lost classification and recovery ownership checks.
-- `XUnit.PresentationPreviewD3DDiagnosticsContractsTests.cs` owns the former
-  legacy presentation-preview D3D diagnostics registration group:
-  swap-chain/render timing, snapshot-model, and performance-timeline contract
-  checks.
-- `XUnit.PresentationPreviewD3DContractsAndMetricsOwnershipTests.cs` owns the
-  former legacy presentation-preview D3D contracts/metrics source-ownership
-  group: configuration, native interop, frame types, frame ownership, DXGI frame
-  statistics, slow-frame diagnostics, and metric tracking checks.
-- `XUnit.PresentationPreviewD3DRuntimeCaptureOwnershipTests.cs` owns the former
-  legacy presentation-preview D3D runtime-capture source-ownership group: public
-  frame submission and lifecycle checks.
-- `XUnit.PresentationPreviewD3DRenderSetupOwnershipTests.cs` owns the former
-  legacy presentation-preview D3D render setup/resource source-ownership group:
-  panel binding, shared-device handoff, frame upload, input resources, and
-  device initialization checks.
-- `XUnit.PresentationPreviewD3DRenderPipelineOwnershipTests.cs` owns the former
-  legacy presentation-preview D3D render-pipeline source-ownership group:
-  render passes, shader rendering cache, shader compilation/source contracts,
-  frame-latency wait, render thread, present accounting, viewport helpers, and screenshot encoding
-  checks. The legacy D3D catalog hook was removed after the final group moved
-  to xUnit.
+- `XUnit.PresentationPreviewD3DContractsTests.cs` owns the former legacy
+  presentation-preview D3D registration groups: pacing, geometry/screenshot,
+  present cadence, device-lost, diagnostics, contracts/metrics ownership,
+  runtime capture, render setup/resource, and render pipeline checks. The legacy
+  D3D catalog hook was removed after the final group moved to xUnit.
 - `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, and test-project shape guard checks.
 - `XUnit.ArchitectureDocsReferenceIntegrityTests.cs` owns the former legacy

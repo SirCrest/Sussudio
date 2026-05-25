@@ -1804,3 +1804,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; test source readers only
 Behavior preserved: all legacy `Program`-partial MainWindow adapter reader APIs and the namespaced `MainWindowStatsOverlaySource.Read()` API still read the same normalized source files
 Notes for future agents: keep MainWindow root and adapter source readers in `MainWindow.CompositionSource.cs`; do not add another one-method `MainWindow.*Ownership.Helpers.cs` file for an adapter source unless it gains executable assertions
+
+Date: 2026-05-25
+Area: D3D preview xUnit execution-surface locality
+Problem: The D3D preview xUnit execution surface was scattered across nine tiny wrapper files, each only loading the target assembly and delegating former legacy harness checks to `Program` methods. Reviewing the D3D xUnit coverage map required opening a file per subtopic even though the executable surface is one feature family.
+Files consolidated: `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DGeometryContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DCadenceContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DDeviceLostContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DDiagnosticsContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DContractsAndMetricsOwnershipTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DRuntimeCaptureOwnershipTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DRenderSetupOwnershipTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DRenderPipelineOwnershipTests.cs`
+Files added: `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DContractsTests.cs`
+Net production .cs delta: 0
+Net test .cs delta: -8
+Partial clusters reduced: n/a; D3D xUnit wrapper file count -8
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
+Behavior preserved: the same public test classes, constructors, `[Fact]` method names, and delegated `Program` checks remain available under one D3D contracts file
+Notes for future agents: keep D3D preview xUnit wrapper classes together in `XUnit.PresentationPreviewD3DContractsTests.cs`; add new D3D execution wrappers there unless they need independent fixtures or executable helper state

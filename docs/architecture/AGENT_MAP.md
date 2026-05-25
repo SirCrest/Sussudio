@@ -2226,46 +2226,11 @@ Primary current owners:
   owns the former presentation-preview capture Flashback buffer startup/recovery
   group for stale session cleanup and recovery-preserve behavior after their
   removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`
-  owns the former presentation-preview D3D pacing group for transition-drain,
-  frame-capture cancellation, and shared-device reference lifecycle checks after
-  their removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DGeometryContractsTests.cs`
-  owns the former presentation-preview D3D geometry/screenshot group for
-  letterbox, black-edge, PNG CRC, and 16-bit PNG capture checks after their
-  removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DCadenceContractsTests.cs`
-  owns the former presentation-preview D3D present-cadence group for cadence
-  DTO shape and suppression-baseline behavior checks after their removal from
-  the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DDeviceLostContractsTests.cs`
-  owns the former presentation-preview D3D device-lost group for device-lost
-  classification and recovery ownership checks after their removal from the
-  legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DDiagnosticsContractsTests.cs`
-  owns the former presentation-preview D3D diagnostics group for swap-chain and
-  render timing, snapshot-model, and performance-timeline contract checks after
-  their removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DContractsAndMetricsOwnershipTests.cs`
-  owns the former presentation-preview D3D contracts/metrics source-ownership
-  group for configuration, native interop, frame types, frame ownership, DXGI
-  frame statistics, slow-frame diagnostics, and metric tracking checks after
-  their removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DRuntimeCaptureOwnershipTests.cs`
-  owns the former presentation-preview D3D runtime-capture source-ownership
-  group for public frame submission and lifecycle checks after their removal
-  from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DRenderSetupOwnershipTests.cs`
-  owns the former presentation-preview D3D render setup/resource source-ownership
-  group for panel binding, shared-device handoff, frame upload, input resources,
-  and device initialization checks after their removal from the legacy offline
-  harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DRenderPipelineOwnershipTests.cs`
-  owns the former presentation-preview D3D render-pipeline source-ownership
-  group for render passes, shader rendering cache, shader compilation/source
-  contracts, frame-latency wait, render thread, present accounting, viewport helpers, and screenshot
-  encoding checks after their removal from the legacy offline D3D harness
-  catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DContractsTests.cs` owns the
+  xUnit execution surface for the former presentation-preview D3D harness
+  groups: pacing, geometry/screenshot, present cadence, device-lost,
+  diagnostics, contracts/metrics ownership, runtime capture, render setup, and
+  render pipeline checks.
 - `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral

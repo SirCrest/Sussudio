@@ -830,52 +830,13 @@ Project build/publish policy checks now execute through
 `tests/Sussudio.Tests/XUnit.ProjectBuildContractsTests.cs`, keeping the
 English-only publish locale and latest-build staging contracts in xUnit after
 their removal from the presentation-preview capture catalog.
-Presentation-preview D3D pacing checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DPacingContractsTests.cs`,
-keeping transition-drain, frame-capture cancellation, and shared-device
-reference lifecycle contracts in xUnit after their removal from the legacy
-harness catalog.
-Presentation-preview D3D geometry/screenshot checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DGeometryContractsTests.cs`,
-keeping letterbox, black-edge, PNG CRC, and 16-bit PNG capture contracts in
-xUnit after their removal from the legacy harness catalog.
-Presentation-preview D3D present-cadence checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DCadenceContractsTests.cs`,
-keeping cadence DTO shape and suppression-baseline behavior contracts in xUnit
-after their removal from the legacy harness catalog.
-Presentation-preview D3D device-lost checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DDeviceLostContractsTests.cs`,
-keeping device-lost classification and recovery ownership contracts in xUnit
-after their removal from the legacy harness catalog.
-Presentation-preview D3D diagnostics checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DDiagnosticsContractsTests.cs`,
-keeping swap-chain/render timing, snapshot-model, and performance-timeline
-contracts in xUnit after their removal from the legacy harness catalog.
-Presentation-preview D3D contracts/metrics source-ownership checks now execute
-through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DContractsAndMetricsOwnershipTests.cs`,
-keeping configuration, native interop, frame types, frame ownership, DXGI frame
-statistics, slow-frame diagnostics, and metric tracking contracts in xUnit after
-their removal from the legacy harness catalog.
-Presentation-preview D3D runtime-capture source-ownership checks now execute
-through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DRuntimeCaptureOwnershipTests.cs`,
-keeping public frame submission and lifecycle contracts in xUnit after their
-removal from the legacy harness catalog.
-Presentation-preview D3D render setup/resource source-ownership checks now
-execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DRenderSetupOwnershipTests.cs`,
-keeping panel binding, shared-device handoff, frame upload, input resources,
-and device initialization contracts in xUnit after their removal from the
-legacy harness catalog.
-Presentation-preview D3D render-pipeline source-ownership checks now execute
-through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DRenderPipelineOwnershipTests.cs`,
-keeping render passes, shader rendering cache, shader compilation/source
-contracts, frame-latency wait, render thread, present accounting, viewport helpers, and screenshot
-encoding contracts in xUnit after their removal from the legacy D3D harness
-catalog. The empty legacy D3D catalog hook was removed after this final group
-moved to xUnit.
+Presentation-preview D3D checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DContractsTests.cs`, keeping
+the former D3D pacing, geometry/screenshot, present-cadence, device-lost,
+diagnostics, contracts/metrics, runtime-capture, render setup/resource, and
+render-pipeline contracts in xUnit after their removal from the legacy D3D
+harness catalog. The empty legacy D3D catalog hook was removed after the final
+group moved to xUnit.
 
 Fullscreen transition mechanics now live in
 `Sussudio/Controllers/FullScreen/FullScreenController.cs`. Keep the controller
