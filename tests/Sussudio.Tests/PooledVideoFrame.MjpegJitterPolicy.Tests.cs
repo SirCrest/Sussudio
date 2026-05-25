@@ -13,8 +13,7 @@ static partial class Program
         var source = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FrameIngress.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FramePacing.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Adaptive.cs");
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FramePacing.cs");
         var pipelineSource = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs");
         var captureSource = ReadUnifiedVideoCaptureSource();
@@ -67,8 +66,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var framePacingText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FramePacing.cs")
             .Replace("\r\n", "\n");
-        var adaptiveText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Adaptive.cs")
-            .Replace("\r\n", "\n");
         var metricsText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs")
             .Replace("\r\n", "\n");
 
@@ -99,11 +96,15 @@ static partial class Program
         AssertContains(framePacingText, "private void WaitForTicks(long ticks)");
         AssertContains(framePacingText, "private static extern uint timeBeginPeriod(uint uPeriod);");
         AssertContains(framePacingText, "private static extern uint timeEndPeriod(uint uPeriod);");
+        AssertContains(framePacingText, "private void DropDeadlineExpiredFrames(long nowTick)");
+        AssertContains(framePacingText, "private void IncreaseTargetDepth(long nowTick)");
+        AssertContains(framePacingText, "private bool HasLatencyPressure(long nowTick)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MjpegPreviewJitterBuffer.Adaptive.cs")),
+            "MJPEG preview adaptive deadline/depth policy folded into frame pacing owner");
         AssertDoesNotContain(rootText, "private long AlignDueTickToDisplayClock(");
         AssertDoesNotContain(rootText, "private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)");
-        AssertContains(adaptiveText, "private void DropDeadlineExpiredFrames(long nowTick)");
-        AssertContains(adaptiveText, "private void IncreaseTargetDepth(long nowTick)");
-        AssertContains(adaptiveText, "private bool HasLatencyPressure(long nowTick)");
         AssertContains(metricsText, "public Metrics GetMetrics()");
         AssertContains(metricsText, "private void RecordInputInterval(long nowTick)");
         AssertContains(metricsText, "private void RecordDroppedFrame(long sourceSequenceNumber, string reason)");

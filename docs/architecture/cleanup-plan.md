@@ -2149,19 +2149,19 @@ telemetry, and tick/millisecond conversion helpers there; keep queue ordering,
 deadline drops, adaptive target depth, and emit-loop pacing in their focused
 owners.
 
-MJPEG preview jitter-buffer ingress/queueing and adaptive deadline policy now
-have focused owners. `MjpegPreviewJitterBuffer.FrameIngress.cs` owns decoded
+MJPEG preview jitter-buffer ingress/queueing and frame pacing now have focused
+owners. `MjpegPreviewJitterBuffer.FrameIngress.cs` owns decoded
 preview-frame ingress, the nested buffered payload type, ArrayPool/lease
 ownership transfer, input-interval recording, queue-full admission drops,
 enqueue signaling, queue depth, ordered frame insertion/dequeue,
 missing-sequence recovery, clear behavior, and resume reprime accounting.
-`MjpegPreviewJitterBuffer.Adaptive.cs` owns hard/soft
-deadline drops, adjusted output cadence, target-depth increase/decrease, and
-latency-pressure classification. `MjpegPreviewJitterBuffer.cs` owns the paced
-emit loop control flow and MMCSS registration beside construction, thread
-lifecycle, suppression/reprime lifecycle, and dispose-time queue teardown.
 `MjpegPreviewJitterBuffer.FramePacing.cs` owns display-clock alignment, frame
-submission to the preview sink, tick waits, and timer-resolution P/Invoke.
+submission to the preview sink, tick waits, hard/soft deadline drops, adjusted
+output cadence, target-depth increase/decrease, latency-pressure
+classification, and timer-resolution P/Invoke. `MjpegPreviewJitterBuffer.cs`
+owns the paced emit loop control flow and MMCSS registration beside
+construction, thread lifecycle, suppression/reprime lifecycle, and dispose-time
+queue teardown.
 
 Parallel MJPEG compressed input admission now lives with the bounded work-channel
 owner in `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs`. Keep startup
