@@ -2201,8 +2201,8 @@ diagnostic row pooling contract checks now live in two focused owners:
 lifecycle and section chrome, while
 `tests/Sussudio.Tests/StatsDockPresentation.Tests.cs` covers dock presentation
 application, diagnostic rows, hardware rows, and row chrome pooling. Source telemetry panel
-projection checks live with stats presentation coverage in
-`tests/Sussudio.Tests/StatsPresentation.SourceTelemetry.Tests.cs`.
+projection checks live with stats presentation ownership coverage in
+`tests/Sussudio.Tests/StatsPresentation.Ownership.Tests.cs`.
 Frame-time overlay compact text application and graph-line mutation now live in
 `Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs`, along
 with frame-time canvas sizing, sample projection, and expected-line geometry;

@@ -1261,9 +1261,8 @@ Primary current owners:
   frame-time range and frame-time graph geometry behavior checks, plus shared
   StatsPresentation xUnit reflection/file helpers.
   `tests/Sussudio.Tests/StatsPresentation.Ownership.Tests.cs` owns
-  builder/controller/DTO source-shape assertions,
-  `tests/Sussudio.Tests/StatsPresentation.SourceTelemetry.Tests.cs` owns HDMI
-  source telemetry panel projection checks,
+  builder/controller/DTO source-shape assertions and HDMI source telemetry
+  panel projection checks,
   `tests/Sussudio.Tests/XUnit.StatsHardwareRowsTests.cs` owns hardware row
   presentation behavior checks, `tests/Sussudio.Tests/XUnit.StatsHardwareRows.InputProvider.Tests.cs`
   owns hardware row input-provider behavior checks, and

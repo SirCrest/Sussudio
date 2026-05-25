@@ -63,7 +63,6 @@ static partial class Program
         "tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs",
         "tests/Sussudio.Tests/StatsDockPresentation.Tests.cs",
         "tests/Sussudio.Tests/StatsPresentation.Ownership.Tests.cs",
-        "tests/Sussudio.Tests/StatsPresentation.SourceTelemetry.Tests.cs",
         "tests/Sussudio.Tests/XUnit.StatsHardwareRows.InputProvider.Tests.cs",
         "tests/Sussudio.Tests/XUnit.StatsHardwareRowsTests.cs",
         "tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs",
