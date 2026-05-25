@@ -36,8 +36,13 @@ static partial class Program
             "shared source-reader frame layout helpers folded into the root source-reader state");
         AssertContains(sourceReaderLifecycleText, "public void StartReading(RawFrameCallback onFrame, CancellationToken ct)");
         AssertContains(sourceReaderLifecycleText, "public async Task StopAsync()");
+        AssertContains(sourceReaderLifecycleText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
         AssertContains(sourceReaderLifecycleText, "private void ReleaseReaderAndSource()");
         AssertContains(sourceReaderLifecycleText, "private void SignalFatalError(Exception ex)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.ReadLoop.cs")),
+            "source-reader read loop folded into active lifecycle owner");
         AssertDoesNotContain(sourceReaderRootText, "public void StartReading(RawFrameCallback onFrame, CancellationToken ct)");
         AssertDoesNotContain(sourceReaderRootText, "public async Task StopAsync()");
         AssertDoesNotContain(sourceReaderRootText, "private void ReleaseReaderAndSource()");

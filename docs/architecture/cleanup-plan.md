@@ -2074,11 +2074,11 @@ negotiated-output validation, runtime field reset, and COM/startup ownership
 handoff after successful initialization live in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.InitializedSession.cs`.
 
-Media Foundation source-reader read-loop ownership now lives in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.ReadLoop.cs`. Keep the
-read thread priority, `ReadSample` outstanding-state tracking, sample timestamp
-cadence handoff, frame-delivery invocation, frame-drop accounting, and fatal
-D3D output failure break behavior there.
+Media Foundation source-reader active lifetime now lives in
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.Lifecycle.cs`. Keep
+start/stop/dispose, read thread priority, `ReadSample` outstanding-state
+tracking, sample timestamp cadence handoff, frame-delivery invocation,
+frame-drop accounting, and fatal D3D output failure break behavior there.
 
 Media Foundation source-reader frame delivery now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs`. Keep
