@@ -8,8 +8,8 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
         var previewRuntimeSnapshotText = previewRendererText;
-        var previewRuntimeSnapshotSamplingControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotSamplingController.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs").Replace("\r\n", "\n");
+        var previewRuntimeSnapshotSamplingControllerText = previewRuntimeSnapshotControllerText;
         var previewRuntimeSnapshotMapperText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotMapper.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotSurfaceProjectionPolicyText = previewRuntimeSnapshotMapperText;
         var previewRuntimeSnapshotStartupProjectionPolicyText = previewRuntimeSnapshotMapperText;
@@ -118,7 +118,7 @@ static partial class Program
         AssertDoesNotContain(previewRuntimeSnapshotModelText, "partial class PreviewRuntimeSnapshot");
 
         AssertContains(agentMapText, "MainWindow.PreviewRenderer.Composition.cs");
-        AssertContains(agentMapText, "PreviewRuntimeSnapshotSamplingController.cs");
+        AssertContains(agentMapText, "PreviewRuntimeSnapshotController.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotController.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
@@ -130,7 +130,7 @@ static partial class Program
         AssertContains(cleanupPlanText, "surface/frame");
         AssertContains(cleanupPlanText, "display cadence");
         AssertContains(cleanupPlanText, "D3D renderer diagnostics");
-        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotSamplingController.cs");
+        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotController.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotController.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotMapper.cs");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotMapper.cs");
@@ -156,7 +156,6 @@ static partial class Program
         AssertDoesNotContain(previewRuntimeSnapshotText, "BuildPreviewStartupMissingSignals()");
         AssertDoesNotContain(previewRuntimeSnapshotText, "FramesArrived = _previewRendererHostController.FramesArrived,");
         AssertDoesNotContain(previewRuntimeSnapshotSamplingControllerText, "TaskCompletionSource<PreviewRuntimeSnapshot>");
-        AssertDoesNotContain(previewRuntimeSnapshotSamplingControllerText, "return new PreviewRuntimeSnapshot");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetRenderCpuTimingMetrics()");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetFrameOwnershipMetrics()");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetDxgiFrameStatisticsMetrics()");
@@ -170,6 +169,10 @@ static partial class Program
         AssertDoesNotContain(previewRuntimeSnapshotText, "IsStartupWaitingForFirstVisual = CurrentPreviewStartupState == PreviewStartupState.WaitingForFirstVisual");
         AssertDoesNotContain(mainWindowText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync");
         AssertDoesNotContain(previewRendererText, "private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Renderer", "PreviewRuntimeSnapshotSamplingController.cs")),
+            "preview runtime snapshot sampling lives with the snapshot controller");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewRuntimeSnapshot.cs")),
