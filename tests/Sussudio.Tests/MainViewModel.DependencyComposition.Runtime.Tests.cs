@@ -147,4 +147,18 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    internal static Task CaptureErrors_RefreshViewModelRuntimeFlags()
+    {
+        var runtimeEventIngressControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(runtimeEventIngressControllerText, "_context.SetIsInitialized(_context.IsCaptureInitialized());");
+        AssertContains(runtimeEventIngressControllerText, "_context.SetIsPreviewing(_context.IsVideoPreviewActive());");
+        AssertContains(runtimeEventIngressControllerText, "_context.SetIsRecording(_context.IsCaptureRecording());");
+        AssertContains(runtimeEventIngressControllerText, "_context.UpdateLiveCaptureInfo(runtimeSnapshot);");
+        AssertContains(runtimeEventIngressControllerText, "_context.UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);");
+
+        return Task.CompletedTask;
+    }
 }

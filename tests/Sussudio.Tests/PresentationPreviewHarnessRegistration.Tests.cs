@@ -76,7 +76,6 @@ static partial class Program
         "tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.RecordingFormat.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Behavior.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Ownership.Tests.cs",
-        "tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.RuntimeFlags.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.VideoFormat.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.SettingsProjection.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.DiskSpacePresentation.Tests.cs",
