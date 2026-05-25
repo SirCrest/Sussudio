@@ -1452,7 +1452,7 @@ Primary current owners:
   and Flashback diagnostic lane ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.RuntimeOwnership.Tests.cs`
   owns diagnostics refresh verification, snapshot query-port, preview pacing,
-  lifecycle, and HDR ownership assertions.
+  lifecycle, HDR ownership assertions, and HDR truth-verdict behavior.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotConstructionOwnership.Tests.cs`
   owns initial snapshot, BuildAutomationSnapshot composition, and snapshot
   flattening ownership assertions.
@@ -1472,8 +1472,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionScenarios.Tests.cs`
   owns diagnostic-session scenario, health-policy, Flashback stress, and
   warning-tolerance assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionToolSurface.Tests.cs`
-  owns `ssctl` and MCP diagnostic-session command-surface assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotProjection.Tests.cs`
   owns diagnostics-refresh snapshot projection integration wiring: the refresh
   path must route through the named projection-set composition and flattened
@@ -1490,8 +1488,6 @@ Primary current owners:
   ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.PreviewRuntime.Tests.cs`
   owns diagnostics snapshot preview runtime projection ownership assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Hdr.Tests.cs`
-  owns diagnostics HDR truth verdict behavior.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsLoop.Tests.cs`
   owns diagnostics-loop polling contracts that keep options snapshots out of
   hot diagnostics refresh paths.
