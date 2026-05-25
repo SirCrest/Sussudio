@@ -68,10 +68,14 @@ public sealed class RuntimeContractsTests
     [Fact]
     public void MmcssThreadRegistration_UsesUnicodeAvrtEntryPoint()
     {
-        var source = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Runtime/MmcssThreadRegistration.cs");
+        var source = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Runtime/RuntimeHelpers.cs");
 
+        Assert.Contains("internal sealed class MmcssThreadRegistration", source);
         Assert.Contains("EntryPoint = \"AvSetMmThreadCharacteristicsW\"", source);
         Assert.Contains("MMCSS registered task=", source);
+        Assert.False(
+            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "Sussudio", "Services", "Runtime", "MmcssThreadRegistration.cs")),
+            "MMCSS registration lives with shared runtime helpers");
     }
 
     [Fact]
