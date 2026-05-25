@@ -1760,14 +1760,11 @@ Primary current owners:
   RecordingContextRequest, FinalizeResult, and RecordingStats.
 - `tests/Sussudio.Tests/RecordingArtifactManager.Tests.cs` owns xUnit temp
   artifact finalize/rollback behavior for recording output cleanup.
-- `tests/Sussudio.Tests/LibAvEncoder.Options.Tests.cs` owns LibAvEncoder
-  ValidateOptions reflection coverage for valid options, output path and
-  dimension rejection, HDR codec/P010 constraints, and frame-rate
-  numerator/denominator pairing.
-- `tests/Sussudio.Tests/LibAvEncoder.*.Tests.cs` and
-  `tests/Sussudio.Tests/LibAvEncoder.Helpers.cs` own LibAvEncoder codec policy,
-  diagnostics/frame-size helpers, HDR metadata, output lifecycle,
-  source-ownership, and shared source-reading helpers.
+- `tests/Sussudio.Tests/LibAvEncoder.Contracts.Tests.cs` owns LibAvEncoder
+  codec policy, diagnostics/frame-size helpers, HDR metadata, ValidateOptions
+  reflection coverage, and shared source-reading helpers.
+- `tests/Sussudio.Tests/LibAvEncoder.SourceOwnership.Tests.cs` owns
+  LibAvEncoder source-ownership and output lifecycle layout assertions.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Helpers.cs` owns the live
   dispatcher source-family reader; `AutomationCommandDispatcher.*.Tests.cs`
   own consolidated root dispatcher authorization and manifest behavior,
