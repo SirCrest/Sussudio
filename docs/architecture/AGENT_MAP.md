@@ -1780,7 +1780,7 @@ Primary current owners:
   source-ownership, and shared source-reading helpers.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Helpers.cs` owns the live
   dispatcher source-family reader; `AutomationCommandDispatcher.*.Tests.cs`
-  own authorization, manifest,
+  own consolidated root dispatcher authorization and manifest behavior,
   Flashback failure response, Flashback command placement, verification command
   placement, command-kind handling, and helper coverage.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Extraction.Tests.cs`
