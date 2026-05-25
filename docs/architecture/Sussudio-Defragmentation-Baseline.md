@@ -1765,3 +1765,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; test source readers only
 Behavior preserved: diagnostics-refresh tests still read the same AutomationDiagnosticsHub source files, source-family fields, snapshot-projection fields, diagnostic-evaluation fields, alert fields, and aggregate `SourceFamilyText`
 Notes for future agents: keep the diagnostics source-family reader, field list, and aggregate text in `MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`; add a new helper file only for executable assertions or a genuinely reusable reader
+
+Date: 2026-05-25
+Area: MainWindow test source reader locality
+Problem: Legacy catalog tests and xUnit tests had two tiny files for the same `MainWindow.xaml.cs` source reader: `ReadMainWindowCompositionSource()` and `MainWindowCompositionSource.Read()`.
+Files consolidated: `tests/Sussudio.Tests/MainWindowCompositionSource.cs`
+Files added: none
+Net production .cs delta: 0
+Net test .cs delta: -1
+Partial clusters reduced: n/a; MainWindow test helper file count -1
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; test source readers only
+Behavior preserved: legacy `Program`-partial ownership tests and namespaced xUnit helper callers still read normalized `Sussudio/MainWindow.xaml.cs` text through their existing APIs
+Notes for future agents: keep both MainWindow root source-reader APIs together in `MainWindow.CompositionSource.cs` unless one harness is retired
