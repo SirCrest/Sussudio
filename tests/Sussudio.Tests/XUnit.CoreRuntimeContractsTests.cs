@@ -119,8 +119,8 @@ public sealed class CoreRuntimeContractsTests
         => global::Program.CaptureService_NormalizeObservedPixelFormat_NormalizesCorrectly();
 
     [Fact]
-    public Task CaptureServiceObservedPixelTelemetryLivesWithCaptureFormatTelemetry()
-        => global::Program.CaptureService_ObservedPixelTelemetry_LivesWithCaptureFormatTelemetry();
+    public Task CaptureServiceObservedPixelTelemetryLivesWithSourceTelemetry()
+        => global::Program.CaptureService_ObservedPixelTelemetry_LivesWithSourceTelemetry();
 
     [Fact]
     public Task CaptureServiceSourceTelemetryBackendMapsOrigins()

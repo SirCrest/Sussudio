@@ -8,8 +8,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Telemetry.cs")
             .Replace("\r\n", "\n");
-        var captureFormatTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.CaptureFormatTelemetry.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(rootText, "private static ISourceSignalTelemetryProvider CreateDefaultTelemetryProvider()");
         AssertContains(rootText, "public Task InitializeAsync(CaptureDevice device, CaptureSettings settings, CancellationToken cancellationToken = default)");
@@ -28,16 +26,17 @@ static partial class Program
             "old initialization partial removed");
         AssertContains(telemetryText, "private SourceSignalTelemetrySnapshot BuildFallbackTelemetry()");
         AssertContains(telemetryText, "private static SourceSignalTelemetrySnapshot MergeTelemetryWithFallback(");
+        AssertContains(telemetryText, "private void TryCorrectFrameRateFromTelemetry()");
+        AssertContains(telemetryText, "private static string ResolveFrameRateArg(");
+        AssertContains(telemetryText, "private void CaptureEncoderRuntimeTelemetry(");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.TelemetryFallback.cs")),
             "old telemetry fallback partial removed");
-        AssertContains(captureFormatTelemetryText, "private void TryCorrectFrameRateFromTelemetry()");
-        AssertContains(captureFormatTelemetryText, "private static string ResolveFrameRateArg(");
-        AssertContains(captureFormatTelemetryText, "private void CaptureEncoderRuntimeTelemetry(");
-        AssertDoesNotContain(telemetryText, "private void TryCorrectFrameRateFromTelemetry()");
-        AssertDoesNotContain(telemetryText, "private static string ResolveFrameRateArg(");
-        AssertDoesNotContain(telemetryText, "private void CaptureEncoderRuntimeTelemetry(");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.CaptureFormatTelemetry.cs")),
+            "old capture-format telemetry partial removed");
 
         return Task.CompletedTask;
     }

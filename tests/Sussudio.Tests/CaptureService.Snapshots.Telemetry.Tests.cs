@@ -7,28 +7,27 @@ static partial class Program
 {
     // CaptureService.Snapshots: observed and source telemetry helpers.
 
-    internal static Task CaptureService_ObservedPixelTelemetry_LivesWithCaptureFormatTelemetry()
+    internal static Task CaptureService_ObservedPixelTelemetry_LivesWithSourceTelemetry()
     {
         var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Telemetry.cs")
             .Replace("\r\n", "\n");
-        var captureFormatTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.CaptureFormatTelemetry.cs")
-            .Replace("\r\n", "\n");
 
-        AssertDoesNotContain(telemetryText, "private void ResetObservedPixelTelemetry(");
-        AssertDoesNotContain(telemetryText, "private static string? NormalizeObservedPixelFormat(");
-        AssertDoesNotContain(telemetryText, "private void RecordObservedPixelFormat(");
-        AssertContains(captureFormatTelemetryText, "private void ResetObservedPixelTelemetry()");
-        AssertContains(captureFormatTelemetryText, "private static string? NormalizeObservedPixelFormat(string? pixelFormat)");
-        AssertContains(captureFormatTelemetryText, "private void RecordObservedPixelFormat(string? pixelFormat, bool incrementAsFrame = true)");
-        AssertContains(captureFormatTelemetryText, "Interlocked.Exchange(ref _observedP010FrameCount, 0);");
-        AssertContains(captureFormatTelemetryText, "Interlocked.Increment(ref _observedP010FrameCount);");
-        AssertContains(captureFormatTelemetryText, "Interlocked.Increment(ref _observedNv12FrameCount);");
-        AssertContains(captureFormatTelemetryText, "Interlocked.Increment(ref _observedOtherFrameCount);");
-        AssertContains(captureFormatTelemetryText, "private void CaptureEncoderRuntimeTelemetry(LibAvRecordingSink? sink)");
+        AssertContains(telemetryText, "private void ResetObservedPixelTelemetry()");
+        AssertContains(telemetryText, "private static string? NormalizeObservedPixelFormat(string? pixelFormat)");
+        AssertContains(telemetryText, "private void RecordObservedPixelFormat(string? pixelFormat, bool incrementAsFrame = true)");
+        AssertContains(telemetryText, "Interlocked.Exchange(ref _observedP010FrameCount, 0);");
+        AssertContains(telemetryText, "Interlocked.Increment(ref _observedP010FrameCount);");
+        AssertContains(telemetryText, "Interlocked.Increment(ref _observedNv12FrameCount);");
+        AssertContains(telemetryText, "Interlocked.Increment(ref _observedOtherFrameCount);");
+        AssertContains(telemetryText, "private void CaptureEncoderRuntimeTelemetry(LibAvRecordingSink? sink)");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.ObservedPixelTelemetry.cs")),
             "old observed pixel telemetry partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.CaptureFormatTelemetry.cs")),
+            "old capture-format telemetry partial removed");
 
         return Task.CompletedTask;
     }
