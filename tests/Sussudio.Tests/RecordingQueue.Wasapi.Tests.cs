@@ -93,33 +93,33 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task WasapiAudioCapture_InitializationLivesInFocusedPartial()
+    internal static Task WasapiAudioCapture_InitializationLivesWithLifecycleRoot()
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
             .Replace("\r\n", "\n");
-        var initializationSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.Initialization.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(wasapiSource, "internal sealed partial class WasapiAudioCapture : IAsyncDisposable");
-        AssertContains(initializationSource, "internal sealed partial class WasapiAudioCapture");
-        AssertContains(initializationSource, "public Task InitializeAsync(string audioDeviceId, CancellationToken ct)");
-        AssertContains(initializationSource, "WasapiComInterop.CreateDeviceEnumerator()");
-        AssertContains(initializationSource, "audioClient.GetMixFormat(out mixFormat)");
-        AssertContains(initializationSource, "WasapiComInterop.AllocFloatStereo48kFormat()");
-        AssertContains(initializationSource, "audioClient.IsFormatSupported(");
-        AssertContains(initializationSource, "WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, selectedFormat)");
-        AssertContains(initializationSource, "\"IAudioClient.Initialize(capture)\"");
-        AssertContains(initializationSource, "audioClient.SetEventHandle(captureEvent.SafeWaitHandle.DangerousGetHandle())");
-        AssertContains(initializationSource, "audioClient.GetService(ref iidCaptureClient, out var captureClientObject)");
-        AssertContains(initializationSource, "_fastPathCopy = _captureFormat.SampleRate == OutputSampleRate");
-        AssertContains(initializationSource, "_resampleRemainderNumerator = 0;");
-        AssertContains(initializationSource, "Interlocked.Exchange(ref _initialized, 1);");
-        AssertContains(initializationSource, "WasapiComInterop.CoTaskMemFree(desiredFormat);");
-        AssertContains(initializationSource, "WasapiComInterop.ReleaseComObject(ref audioCaptureClient);");
-        AssertDoesNotContain(wasapiSource, "public Task InitializeAsync(string audioDeviceId, CancellationToken ct)");
+        AssertContains(wasapiSource, "public Task InitializeAsync(string audioDeviceId, CancellationToken ct)");
+        AssertContains(wasapiSource, "WasapiComInterop.CreateDeviceEnumerator()");
+        AssertContains(wasapiSource, "audioClient.GetMixFormat(out mixFormat)");
+        AssertContains(wasapiSource, "WasapiComInterop.AllocFloatStereo48kFormat()");
+        AssertContains(wasapiSource, "audioClient.IsFormatSupported(");
+        AssertContains(wasapiSource, "WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, selectedFormat)");
+        AssertContains(wasapiSource, "\"IAudioClient.Initialize(capture)\"");
+        AssertContains(wasapiSource, "audioClient.SetEventHandle(captureEvent.SafeWaitHandle.DangerousGetHandle())");
+        AssertContains(wasapiSource, "audioClient.GetService(ref iidCaptureClient, out var captureClientObject)");
+        AssertContains(wasapiSource, "_fastPathCopy = _captureFormat.SampleRate == OutputSampleRate");
+        AssertContains(wasapiSource, "_resampleRemainderNumerator = 0;");
+        AssertContains(wasapiSource, "Interlocked.Exchange(ref _initialized, 1);");
+        AssertContains(wasapiSource, "WasapiComInterop.CoTaskMemFree(desiredFormat);");
+        AssertContains(wasapiSource, "WasapiComInterop.ReleaseComObject(ref audioCaptureClient);");
         AssertContains(wasapiSource, "public void Start()");
         AssertContains(wasapiSource, "public Task StopAsync()");
         AssertContains(wasapiSource, "public async ValueTask DisposeAsync()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioCapture.Initialization.cs")),
+            "WASAPI capture initialization stays folded into capture lifecycle root");
 
         return Task.CompletedTask;
     }

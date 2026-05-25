@@ -71,8 +71,8 @@ public sealed class RecordingPipelineContractsTests
         => global::Program.WasapiAudioCapture_ConversionLivesInFocusedPartial();
 
     [Fact]
-    public Task WasapiAudioCaptureInitializationLivesInFocusedPartial()
-        => global::Program.WasapiAudioCapture_InitializationLivesInFocusedPartial();
+    public Task WasapiAudioCaptureInitializationLivesWithLifecycleRoot()
+        => global::Program.WasapiAudioCapture_InitializationLivesWithLifecycleRoot();
 
     [Fact]
     public Task WasapiAudioPlaybackInitializationLivesWithLifecycleRoot()

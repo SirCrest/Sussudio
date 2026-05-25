@@ -119,12 +119,11 @@ signal/ingest/source-reader/WASAPI fields consumed by the automation snapshot
 DTO, plus audio drop counter projection, derived real-time/file-writer drop
 totals, and final audio-drop projection-to-`AutomationSnapshot` field
 flattening.
-`WasapiAudioCapture.Initialization.cs` owns WASAPI endpoint binding, mix-format
-negotiation, AudioClient startup, capture event/client acquisition, and
-initialization-time metric resets. `WasapiAudioCapture.Conversion.cs` owns
-WASAPI sample decode, f32le 48 kHz stereo conversion, resampling, and pooled
-converted packet buffers. Keep state, start/stop/dispose, and capture-thread
-lifecycle in `WasapiAudioCapture.cs`.
+`WasapiAudioCapture.cs` owns WASAPI capture state, endpoint binding,
+mix-format negotiation, AudioClient startup, capture event/client acquisition,
+initialization-time metric resets, start/stop/dispose, and capture-thread
+lifecycle. `WasapiAudioCapture.Conversion.cs` owns WASAPI sample decode, f32le
+48 kHz stereo conversion, resampling, and pooled converted packet buffers.
 `WasapiAudioCapture.CaptureLoop.cs` owns the capture thread, packet drain,
 recording/Flashback/playback attachment points, converted-packet dispatch, and
 hot writer task-completion enforcement.
