@@ -261,3 +261,147 @@ static partial class Program
         return Task.CompletedTask;
     }
 }
+
+static partial class Program
+{
+    internal static Task FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation()
+    {
+        var sourceText = ReadFlashbackExporterSource();
+        var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs")
+            .Replace("\r\n", "\n");
+        var executionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Execution.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "private readonly object _lifetimeSync = new();");
+        AssertContains(sourceText, "return Task.FromResult(CreateDisposedExportResult(request.OutputPath));");
+        AssertEqual(2, sourceText.Split("return Task.FromResult(CreateDisposedExportResult(outputPath));", StringSplitOptions.None).Length - 1, "Single and segment wrappers return disposed result");
+        AssertContains(sourceText, "catch (ObjectDisposedException)\n        {\n            cancellationResult = CreateDisposedExportResult(outputPath);\n            return false;\n        }");
+        AssertContains(sourceText, "linkedCts = CreateExportCancellationSource(ct);");
+        AssertContains(sourceText, "var segmentSnapshot = SnapshotSegments(segments);");
+        AssertContains(sourceText, "private static IReadOnlyList<FlashbackExportSegment> SnapshotSegments(IReadOnlyList<FlashbackExportSegment>? segments)");
+        AssertContains(sourceText, "snapshot[i] = segment == null\n                ? new FlashbackExportSegment { Path = string.Empty }\n                : segment with { };");
+        AssertContains(sourceText, "CancellationTokenSource.CreateLinkedTokenSource(ct, disposeCts.Token)");
+        AssertContains(sourceText, "ObjectDisposedException.ThrowIf(_disposed, this);");
+        AssertContains(sourceText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");
+        AssertContains(sourceText, "const string message = \"Flashback exporter is disposed.\";");
+        AssertContains(sourceText, "private const int ExportLockWaitTimeoutSeconds = 30;");
+        AssertContains(executionText, "private const int ExportWriterYieldPacketInterval = 256;");
+        AssertContains(executionText, "private const int ExportWriterThrottlePacketInterval = 4096;");
+        AssertContains(executionText, "private const int ExportWriterThrottleSleepMs = 1;");
+        AssertContains(executionText, "private const int ExportWriterAdaptiveThrottlePacketInterval = 4;");
+        AssertContains(executionText, "private const int ExportWriterMaxAdaptiveThrottleSleepMs = 25;");
+        AssertContains(sourceText, "_exportLock.Wait(TimeSpan.FromSeconds(ExportLockWaitTimeoutSeconds), ct)");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_LOCK_WAIT_TIMEOUT");
+        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => RunWithAdaptiveThrottle(\n                    adaptiveThrottleDelayMsProvider,\n                    () => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, allowOverwrite, progress, linkedCts.Token)),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"single_export\"));");
+        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => RunWithAdaptiveThrottle(\n                    adaptiveThrottleDelayMsProvider,\n                    () => ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, allowOverwrite, progress, linkedCts.Token)),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"segment_export\"));");
+        AssertContains(sourceText, "thread.Priority = ThreadPriority.BelowNormal;");
+        AssertContains(sourceText, "thread.Priority = previousPriority;");
+        AssertContains(sourceText, "Func<int>? adaptiveThrottleDelayMsProvider");
+        AssertContains(executionText, "private readonly object _adaptiveThrottleSync = new();");
+        AssertContains(executionText, "private void SetNextAdaptiveThrottleDelayProvider(Func<int>? adaptiveThrottleDelayMsProvider)");
+        AssertContains(executionText, "private Func<int>? ConsumeNextAdaptiveThrottleDelayProvider()");
+        AssertContains(executionText, "[ThreadStatic]\n    private static Func<int>? s_adaptiveThrottleDelayMsProvider;");
+        AssertContains(executionText, "private static FinalizeResult RunWithAdaptiveThrottle(");
+        AssertContains(executionText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
+        AssertContains(executionText, "packetsWritten % ExportWriterAdaptiveThrottlePacketInterval == 0");
+        AssertContains(executionText, "ExportWriterMaxAdaptiveThrottleSleepMs");
+        AssertContains(executionText, "Thread.Sleep(ExportWriterThrottleSleepMs);");
+        AssertContains(executionText, "Thread.Yield();");
+        AssertContains(sourceText, "ThrottleExportWriterIfNeeded(totalPackets);");
+        AssertContains(sourceText, "ThrottleExportWriterIfNeeded(written);");
+        AssertContains(sourceText, "private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_LINKED_CTS_DISPOSE_WARN");
+        AssertContains(packetBuffersText, "private long FlushBufferedPackets(");
+        AssertContains(packetBuffersText, "NormalizePacketTimestampsBeforeWrite(buffPkt);");
+        AssertContains(packetBuffersText, "finally\n        {\n            FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);\n        }");
+        AssertContains(packetBuffersText, "private static void FreeBufferedPackets(List<IntPtr> bufferedPackets, List<int>? bufferedStreamIndices = null)");
+        AssertContains(packetBuffersText, "ffmpeg.av_packet_free(&p);");
+        AssertContains(packetBuffersText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
+        AssertContains(packetBuffersText, "var clone = ffmpeg.av_packet_clone(packet);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.PacketBuffers.cs")),
+            "FlashbackExporter.PacketBuffers.cs folded into FlashbackExporter.PacketTiming.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.RuntimePolicy.cs")),
+            "FlashbackExporter.RuntimePolicy.cs folded into FlashbackExporter.Execution.cs");
+        AssertContains(sourceText, "ReleaseExportLockBestEffort(\"single_export\");");
+        AssertContains(sourceText, "ReleaseExportLockBestEffort(\"segment_export\");");
+        AssertContains(sourceText, "private void ReleaseExportLockBestEffort(string operation)");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_LOCK_RELEASE_WARN");
+        AssertDoesNotContain(sourceText, "catch (ObjectDisposedException) { }");
+        AssertDoesNotContain(sourceText, "}, linkedCts.Token);");
+        AssertDoesNotContain(sourceText, "_disposeCts!.Token");
+
+        return Task.CompletedTask;
+    }
+
+}
+
+static partial class Program
+{
+    internal static Task FlashbackExporter_DisposeTimeoutDoesNotTearDownActiveNativeState()
+    {
+        var sourceText = ReadFlashbackExporterSource();
+
+        var disposeBlock = ExtractTextBetween(
+            sourceText,
+            "public void Dispose()",
+            "    private FinalizeResult ExportCore");
+        AssertContains(disposeBlock, "catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_EXPORT_DISPOSE_CANCEL_WARN type={ex.GetType().Name} msg='{ex.Message}'\");\n        }");
+        AssertOccursBefore(disposeBlock, "FLASHBACK_EXPORT_DISPOSE_CANCEL_WARN", "var lockAcquired = _exportLock.Wait(TimeSpan.FromSeconds(10));");
+        AssertContains(disposeBlock, "ReleaseExportLockBestEffort(\"dispose\");");
+        AssertContains(disposeBlock, "DisposeExportLockBestEffort();");
+        AssertContains(disposeBlock, "DisposeLinkedCtsBestEffort(disposeCts, \"dispose\");");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_LOCK_DISPOSE_WARN");
+
+        var timeoutBlock = ExtractTextBetween(
+            sourceText,
+            "if (!lockAcquired)",
+            "        try\n        {\n            CleanupNativeState();");
+
+        AssertContains(timeoutBlock, "FLASHBACK_EXPORT_DISPOSE: timed out waiting for export lock");
+        AssertContains(timeoutBlock, "DisposeLinkedCtsBestEffort(disposeCts, \"dispose_timeout\");");
+        AssertContains(timeoutBlock, "ClearDisposeCtsReference(disposeCts);");
+        AssertContains(timeoutBlock, "return;");
+        AssertDoesNotContain(timeoutBlock, "CleanupNativeState()");
+        AssertDoesNotContain(timeoutBlock, "_exportLock.Dispose()");
+
+        return Task.CompletedTask;
+    }
+}
+
+static partial class Program
+{
+    internal static Task FlashbackExporter_InputStreamCountsAreBounded()
+    {
+        var sourceText = ReadFlashbackExporterSource();
+        var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs")
+            .Replace("\r\n", "\n");
+        var streamTemplatesText = streamsText;
+        var singleFileText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Execution.cs")
+            .Replace("\r\n", "\n");
+        var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
+            .Replace("\r\n", "\n");
+        var segmentInputPreflightText = segmentTemplateText;
+
+        AssertContains(sourceText, "private const int MaxSupportedInputStreams = 64;");
+        AssertContains(streamsText, "private static bool TryGetInputStreamCount(");
+        AssertContains(streamsText, "if (nativeStreamCount == 0)");
+        AssertContains(streamsText, "if (nativeStreamCount > MaxSupportedInputStreams)");
+        AssertContains(streamsText, "streamCount = (int)nativeStreamCount;");
+        AssertContains(sourceText, "if (!TryGetInputStreamCount(_activeInputContext, \"single_export\", out var streamCount, out var streamCountFailure))");
+        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{streamCountFailure}'\");");
+        AssertContains(sourceText, "if (!TryGetInputStreamCount(_activeInputContext, \"segment_template\", out var candidateStreamCount, out var streamCountFailure))");
+        AssertContains(segmentInputPreflightText, "if (!TryGetInputStreamCount(_activeInputContext, \"segment_export\", out currentStreamCount, out var streamCountFailure))");
+        AssertContains(segmentInputPreflightText, "FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segmentPath)}' reason='invalid_stream_count'");
+        AssertContains(singleFileText, "CopyTemplateStreams(_activeInputContext, _activeOutputContext, streamCount)");
+        AssertContains(segmentTemplateText, "CopyTemplateStreams(_activeInputContext, _activeOutputContext, candidateStreamCount)");
+        AssertContains(streamTemplatesText, "private static int[] CopyTemplateStreams(AVFormatContext* inputContext, AVFormatContext* outputContext, int inputStreamCount)");
+        AssertDoesNotContain(sourceText, "checked((int)_activeInputContext->nb_streams)");
+        AssertDoesNotContain(sourceText, "checked((int)inputContext->nb_streams)");
+
+        return Task.CompletedTask;
+    }
+}
