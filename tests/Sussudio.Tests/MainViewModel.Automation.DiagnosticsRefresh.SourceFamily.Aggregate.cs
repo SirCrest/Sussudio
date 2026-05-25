@@ -9,7 +9,6 @@ static partial class Program
                 HubText,
                 EvaluationText,
                 DiagnosticEvaluationFlashbackText,
-                DiagnosticEvaluationFlashbackRecordingText,
                 DiagnosticEvaluationRealtimeText,
                 DiagnosticEvaluationLanesText,
                 AlertsText,

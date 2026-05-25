@@ -25,22 +25,25 @@ static partial class Program
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Playback.cs")),
             "Flashback playback diagnostic evaluation partial folded into Flashback evaluation owner");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "private static DiagnosticEvaluation? TryBuildFlashbackRecordingDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "BuildFlashbackRecordingDiagnosticConditions(");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "TryBuildFlashbackEncoderFailureDiagnosticEvaluation(health, lanes)");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "TryBuildFlashbackExportRotationDiagnosticEvaluation(conditions, lanes)");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "TryBuildFlashbackBackendSettingsDiagnosticEvaluation(conditions, lanes)");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "TryBuildFlashbackRecordingDegradationDiagnosticEvaluation(conditions, lanes)");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "private static FlashbackRecordingDiagnosticConditions BuildFlashbackRecordingDiagnosticConditions(");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "private static DiagnosticEvaluation? TryBuildFlashbackEncoderFailureDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "\"Flashback encoder has failed.\"");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "private static DiagnosticEvaluation? TryBuildFlashbackExportRotationDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "\"flashback_export\"");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "private static DiagnosticEvaluation? TryBuildFlashbackBackendSettingsDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "\"Flashback backend settings differ from requested settings.\"");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "private static DiagnosticEvaluation? TryBuildFlashbackRecordingDegradationDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackRecordingText, "\"Flashback recording path is dropping or backing up.\"");
-        AssertDoesNotContain(diagnostics.DiagnosticEvaluationFlashbackText, "\"flashback_recording\"");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Recording.cs")),
+            "Flashback recording diagnostic evaluation folded into Flashback evaluation owner");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "private static DiagnosticEvaluation? TryBuildFlashbackRecordingDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "BuildFlashbackRecordingDiagnosticConditions(");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "TryBuildFlashbackEncoderFailureDiagnosticEvaluation(health, lanes)");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "TryBuildFlashbackExportRotationDiagnosticEvaluation(conditions, lanes)");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "TryBuildFlashbackBackendSettingsDiagnosticEvaluation(conditions, lanes)");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "TryBuildFlashbackRecordingDegradationDiagnosticEvaluation(conditions, lanes)");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "private static FlashbackRecordingDiagnosticConditions BuildFlashbackRecordingDiagnosticConditions(");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "private static DiagnosticEvaluation? TryBuildFlashbackEncoderFailureDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "\"Flashback encoder has failed.\"");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "private static DiagnosticEvaluation? TryBuildFlashbackExportRotationDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "\"flashback_export\"");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "private static DiagnosticEvaluation? TryBuildFlashbackBackendSettingsDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "\"Flashback backend settings differ from requested settings.\"");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "private static DiagnosticEvaluation? TryBuildFlashbackRecordingDegradationDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "\"Flashback recording path is dropping or backing up.\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimeDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimeStateDiagnosticEvaluation(health, isPreviewing, isRecording, lanes)");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimeRecordingDiagnosticEvaluation(captureRuntime, health, isRecording, lanes)");
