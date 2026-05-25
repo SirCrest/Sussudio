@@ -115,7 +115,7 @@ static partial class Program
             (ReadRepoFile("tools/ssctl/CommandHandlers.cs")
                 + "\n" + ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"))
                 .Replace("\r\n", "\n"),
-            ReadNormalizedRepoFile("tools/McpServer/Tools/DiagnosticSessionTools.cs"));
+            ReadNormalizedRepoFile("tools/McpServer/Tools/AppStateTools.cs"));
     }
 
     private static string ReadDiagnosticSessionFlashbackValidationSource()

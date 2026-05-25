@@ -3496,7 +3496,9 @@ Primary owners:
 - `tools/ssctl/Formatters.Common.cs` owns shared result/JSON helpers, recent
   diagnostic-event output, and standalone memory/GC summaries.
 - `tools/McpServer/Tools/AppStateTools.cs` owns the public app-state,
-  diagnostic-event, and memory/GC/thread-pool MCP entry points.
+  diagnostic-event, memory/GC/thread-pool, and diagnostic-session MCP entry
+  points while preserving the `AppStateTools`, `DiagnosticsTools`,
+  `MemoryDiagnosticsTools`, and `DiagnosticSessionTools` tool types.
 - `tools/McpServer/Tools/CaptureSettingsTools.cs` owns the public device,
   capture settings, pipeline settings, and structured capture-options MCP entry
   points.
