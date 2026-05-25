@@ -122,31 +122,31 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task WasapiAudioPlayback_InitializationLivesInFocusedPartial()
+    internal static Task WasapiAudioPlayback_InitializationLivesWithLifecycleRoot()
     {
         var playbackSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs")
             .Replace("\r\n", "\n");
-        var initializationSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.Initialization.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(playbackSource, "internal sealed partial class WasapiAudioPlayback : IDisposable");
-        AssertContains(initializationSource, "internal sealed partial class WasapiAudioPlayback");
-        AssertContains(initializationSource, "public Task InitializeAsync(CancellationToken ct)");
-        AssertContains(initializationSource, "enumerator.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eConsole, out device)");
-        AssertContains(initializationSource, "WasapiComInterop.AllocFloatStereo48kFormat()");
-        AssertContains(initializationSource, "audioClient.IsFormatSupported(");
-        AssertContains(initializationSource, "WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, desiredFormat)");
-        AssertContains(initializationSource, "\"IAudioClient.Initialize(render)\"");
-        AssertContains(initializationSource, "audioClient.GetBufferSize(out _bufferFrameCount)");
-        AssertContains(initializationSource, "audioClient.GetStreamLatency(out var streamLatencyHundredNs)");
-        AssertContains(initializationSource, "audioClient.SetEventHandle(renderEvent.SafeWaitHandle.DangerousGetHandle())");
-        AssertContains(initializationSource, "audioClient.GetService(ref iidRenderClient, out var renderClientObject)");
-        AssertContains(initializationSource, "Interlocked.Exchange(ref _renderCallbackCount, 0)");
-        AssertContains(initializationSource, "Volatile.Write(ref _playbackQueueDepth, 0)");
-        AssertContains(initializationSource, "Interlocked.Exchange(ref _initialized, 1)");
-        AssertContains(initializationSource, "WasapiComInterop.CoTaskMemFree(desiredFormat)");
-        AssertContains(initializationSource, "WasapiComInterop.ReleaseComObject(ref audioRenderClient)");
-        AssertDoesNotContain(playbackSource, "public Task InitializeAsync(CancellationToken ct)");
+        AssertContains(playbackSource, "public Task InitializeAsync(CancellationToken ct)");
+        AssertContains(playbackSource, "enumerator.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eConsole, out device)");
+        AssertContains(playbackSource, "WasapiComInterop.AllocFloatStereo48kFormat()");
+        AssertContains(playbackSource, "audioClient.IsFormatSupported(");
+        AssertContains(playbackSource, "WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, desiredFormat)");
+        AssertContains(playbackSource, "\"IAudioClient.Initialize(render)\"");
+        AssertContains(playbackSource, "audioClient.GetBufferSize(out _bufferFrameCount)");
+        AssertContains(playbackSource, "audioClient.GetStreamLatency(out var streamLatencyHundredNs)");
+        AssertContains(playbackSource, "audioClient.SetEventHandle(renderEvent.SafeWaitHandle.DangerousGetHandle())");
+        AssertContains(playbackSource, "audioClient.GetService(ref iidRenderClient, out var renderClientObject)");
+        AssertContains(playbackSource, "Interlocked.Exchange(ref _renderCallbackCount, 0)");
+        AssertContains(playbackSource, "Volatile.Write(ref _playbackQueueDepth, 0)");
+        AssertContains(playbackSource, "Interlocked.Exchange(ref _initialized, 1)");
+        AssertContains(playbackSource, "WasapiComInterop.CoTaskMemFree(desiredFormat)");
+        AssertContains(playbackSource, "WasapiComInterop.ReleaseComObject(ref audioRenderClient)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioPlayback.Initialization.cs")),
+            "WASAPI playback initialization stays folded into playback lifecycle root");
         AssertContains(playbackSource, "public void Start()");
         AssertContains(playbackSource, "public void PauseRendering()");
         AssertContains(playbackSource, "public void ResumeRendering(double prebufferMs = 0, int prebufferTimeoutMs = 0)");
