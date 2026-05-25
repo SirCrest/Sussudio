@@ -15,7 +15,7 @@ static partial class Program
         AssertDoesNotContain(nativeXuProbeProjectText, "NativeXuAtCommandProvider.AnalogGain.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.AudioCommands.cs");
         AssertDoesNotContain(nativeXuProbeProjectText, "NativeXuAtCommandProvider.AudioSwitch.cs");
-        AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.DiagnosticSummary.cs");
+        AssertDoesNotContain(nativeXuProbeProjectText, "NativeXuAtCommandProvider.DiagnosticSummary.cs");
         AssertDoesNotContain(nativeXuProbeProjectText, "NativeXuAtCommandProvider.DeviceCommandReads.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.DeviceCommands.cs");
         AssertDoesNotContain(nativeXuProbeProjectText, "NativeXuAtCommandProvider.FullSnapshot.cs");

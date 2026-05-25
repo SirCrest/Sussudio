@@ -1541,11 +1541,6 @@ byte/number/hex/ascii display formatters together there. Keep it linked from
 family changes, since that tool links shared provider files explicitly instead
 of project-referencing the app.
 
-Native XU diagnostic summary strings now live in
-`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DiagnosticSummary.cs`.
-Keep the `nativexu:` token contract and extended AT result field formatting in
-that file.
-
 Native XU public device commands now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommands.cs`.
 Keep generic AT SET wrappers, named SET wrappers, and probe-facing raw AT reads
@@ -1581,7 +1576,8 @@ Native XU source snapshot assembly now lives in
 Keep the reference full-snapshot AT-command acquisition, full/rolling
 AT-command-result handoff contract, VIC/frame-rate lookup policy,
 AT-command-result decode into `SourceSignalTelemetrySnapshot`, diagnostic/detail
-assembly, and full-vs-rolling logging switches there.
+assembly, the `nativexu:` diagnostic-summary token contract, extended AT result
+field formatting, and full-vs-rolling logging switches there.
 Flash-audio analog-gain row insertion and snapshot audio-origin policy belong
 to the audio-input telemetry detail partial.
 Native XU payload decoding now lives in

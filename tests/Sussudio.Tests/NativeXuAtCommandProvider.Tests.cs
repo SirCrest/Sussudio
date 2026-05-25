@@ -72,10 +72,17 @@ static partial class Program
         AssertContains(snapshotAssemblyText, "SendAtCommand(handle, nodeId, \"CableConnect\", CmdCableConnect)");
         AssertContains(snapshotAssemblyText, "SendAtCommand(handle, nodeId, \"RawTiming\", CmdRawTiming)");
         AssertContains(snapshotAssemblyText, "private static NodeReadAttempt BuildSnapshotFromCommandResults(");
+        AssertContains(snapshotAssemblyText, "private static string BuildDiagnosticSummary(");
+        AssertContains(snapshotAssemblyText, "private static string AppendExtendedDiagnostics(");
+        AssertContains(snapshotAssemblyText, "private static void AppendResultField(");
         AssertContains(snapshotAssemblyText, "BuildDetailEntries(");
         AssertContains(snapshotAssemblyText, "AppendFlashAudioAnalogGainDetail(detailEntries, results.FlashAudio)");
         AssertContains(snapshotAssemblyText, "new SourceSignalTelemetrySnapshot");
         AssertDoesNotContain(snapshotAssemblyText, "private static string ResolveSnapshotAudioInputOrigin(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.DiagnosticSummary.cs")),
+            "diagnostic summary formatting folded into NativeXuAtCommandProvider.SnapshotAssembly.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.FullSnapshot.cs")),
@@ -95,6 +102,7 @@ static partial class Program
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.InterfaceRead.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.DiagnosticSummary.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.FullSnapshot.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.RollingCommandGroups.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.CommandResults.cs");
