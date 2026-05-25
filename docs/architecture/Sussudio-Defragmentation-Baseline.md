@@ -2356,3 +2356,15 @@ Build/tests/runtime checks: `dotnet build tools\KsAudioNodeProbe\KsAudioNodeProb
 CLI/MCP/pipe checks, if applicable: affected source-ownership tests updated; no app automation command names or public tool commands changed
 Behavior preserved: KS audio node probe CLI arguments, VID/PID parsing, MI_02 interface selection, handle open failure text, set-and-hold routing, full-probe routing, SetupAPI enumeration, KS property GET/SET transfer, topology enumeration, Win32 error formatting, and scan workflow behavior remain unchanged
 Notes for future agents: keep KS audio node probe-private native declarations with `tools/KsAudioNodeProbe/Program.cs`; keep scan and mutation probe workflows in `Program.ScanWorkflows.cs` while they remain the real behavior owner.
+
+Date: 2026-05-25
+Area: NativeXuAudioProbe service workflow locality
+Problem: `Program.cs` owned NativeXuAudioProbe routing and already-hosted top-level command workflows while `Program.ServiceProbe.cs` held the adjacent service-control and service-smoke command bodies. Reviewing the probe's service command surface required opening an extra small file even though these workflows are thin CLI actions called only by the root router.
+Files consolidated: `tools/NativeXuAudioProbe/Program.ServiceProbe.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; NativeXuAudioProbe support file count -1
+Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj -c Debug --no-restore`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: affected NativeXuAudioProbe build and source-ownership tests cover the moved service workflows; no public command names changed
+Behavior preserved: `service`, `--service-smoke`, `--device`, `--mode`, `--gain`, and `--dump-payload` handling, NativeXuAudioControlService state reads, service payload printing, set-mode/set-gain calls, service smoke output, and status/error text remain unchanged
+Notes for future agents: keep small top-level NativeXuAudioProbe service-control workflows with `Program.cs`; keep `Program.I2cTransport.cs` separate while multiple I2C command families share it.
