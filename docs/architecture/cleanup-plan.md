@@ -1691,22 +1691,17 @@ Flashback encoder stop/dispose ownership now lives in
 cancellation/disposal helpers, and best-effort encoder/buffer manager disposal
 there.
 
-Flashback encoder recording lifecycle now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.cs`. Keep recording
-PTS boundary state, active-recording projection, begin-recording availability
-checks, the `IRecordingSink.StartAsync` adapter, recording begin validation,
-eviction-pause handoff, active-state publication, start rollback, recording end
-rejection/failure/success results, end-PTS capture, eviction resume, PTS
-clamping, and ready logging there.
-
 Flashback encoder public runtime state now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.cs`. Keep public
 frame/audio/disk counters, drop counters, rotation-failure counts, frame-encoded
 events, queue-depth/capacity/max-depth projections, queue rejection summaries,
 GPU queue projections, video queue latency/backpressure metrics, encoding
 failure status, audio/microphone enablement, fatal-error callback registration,
-encoder format summaries, HDR P010 projection, and encoding completion task
-exposure there.
+encoder format summaries, HDR P010 projection, recording PTS boundary state,
+active-recording projection, begin-recording availability checks, the
+`IRecordingSink.StartAsync` adapter, recording begin/end validation,
+eviction-pause handoff/resume, start rollback, PTS clamping, ready logging, and
+encoding completion task exposure there.
 
 Flashback decoder audio output now lives in
 `Sussudio/Services/Flashback/FlashbackDecoder.AudioOutput.cs`. Keep audio packet

@@ -107,8 +107,8 @@ public sealed class FlashbackEncoderSinkContractsTests
         => global::Program.FlashbackEncoderSink_RuntimeStateLivesWithRoot();
 
     [Fact]
-    public Task FlashbackEncoderSinkRecordingLifecycleLivesInCohesivePartial()
-        => global::Program.FlashbackEncoderSink_RecordingLifecycleLivesInCohesivePartial();
+    public Task FlashbackEncoderSinkRecordingLifecycleLivesWithRootRuntimeSurface()
+        => global::Program.FlashbackEncoderSink_RecordingLifecycleLivesWithRootRuntimeSurface();
 
     [Fact]
     public Task FlashbackEncoderSinkOptionsHelpersLiveWithStartup()

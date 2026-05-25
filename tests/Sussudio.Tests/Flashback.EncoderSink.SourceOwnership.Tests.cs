@@ -410,35 +410,37 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackEncoderSink_RecordingLifecycleLivesInCohesivePartial()
+    internal static Task FlashbackEncoderSink_RecordingLifecycleLivesWithRootRuntimeSurface()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
-        var recordingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.cs")
             .Replace("\r\n", "\n");
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
             ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
 
-        AssertContains(recordingText, "public TimeSpan LastRecordingStartPts { get; private set; }");
-        AssertContains(recordingText, "public TimeSpan LastRecordingEndPts { get; private set; }");
-        AssertContains(recordingText, "public bool IsRecordingActive =>");
-        AssertContains(recordingText, "public bool CanBeginRecording");
-        AssertContains(recordingText, "!_bufferManager.IsSessionPreservedForRecovery");
-        AssertContains(recordingText, "Task IRecordingSink.StartAsync(RecordingContext context, CancellationToken cancellationToken)");
-        AssertContains(recordingText, "public void BeginRecording(string outputPath)");
-        AssertContains(recordingText, "Cannot begin recording: flashback export rotation is still draining.");
-        AssertContains(recordingText, "_bufferManager.PauseEviction();");
-        AssertContains(recordingText, "public void CancelRecordingStartRollback(string reason)");
-        AssertContains(recordingText, "ResumeEvictionBestEffort(_bufferManager, \"recording_start_rollback\")");
-        AssertContains(recordingText, "public async Task<FinalizeResult> EndRecordingAsync(CancellationToken cancellationToken)");
-        AssertContains(recordingText, "FLASHBACK_RECORDING_END_REJECTED");
-        AssertContains(recordingText, "FLASHBACK_RECORDING_FAIL");
-        AssertContains(recordingText, "ResumeEvictionBestEffort(_bufferManager, \"recording_end\")");
-        AssertContains(recordingText, "FLASHBACK_RECORDING_READY");
+        AssertContains(rootText, "public TimeSpan LastRecordingStartPts { get; private set; }");
+        AssertContains(rootText, "public TimeSpan LastRecordingEndPts { get; private set; }");
+        AssertContains(rootText, "public bool IsRecordingActive =>");
+        AssertContains(rootText, "public bool CanBeginRecording");
+        AssertContains(rootText, "!_bufferManager.IsSessionPreservedForRecovery");
+        AssertContains(rootText, "Task IRecordingSink.StartAsync(RecordingContext context, CancellationToken cancellationToken)");
+        AssertContains(rootText, "public void BeginRecording(string outputPath)");
+        AssertContains(rootText, "Cannot begin recording: flashback export rotation is still draining.");
+        AssertContains(rootText, "_bufferManager.PauseEviction();");
+        AssertContains(rootText, "public void CancelRecordingStartRollback(string reason)");
+        AssertContains(rootText, "ResumeEvictionBestEffort(_bufferManager, \"recording_start_rollback\")");
+        AssertContains(rootText, "public async Task<FinalizeResult> EndRecordingAsync(CancellationToken cancellationToken)");
+        AssertContains(rootText, "FLASHBACK_RECORDING_END_REJECTED");
+        AssertContains(rootText, "FLASHBACK_RECORDING_FAIL");
+        AssertContains(rootText, "ResumeEvictionBestEffort(_bufferManager, \"recording_end\")");
+        AssertContains(rootText, "FLASHBACK_RECORDING_READY");
 
-        AssertDoesNotContain(rootText, "public void BeginRecording(string outputPath)");
-        AssertContains(docsText, "FlashbackEncoderSink.Recording.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.cs");
+        AssertContains(docsText, "recording PTS boundary state");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Recording.cs")),
+            "FlashbackEncoderSink.Recording.cs folded into FlashbackEncoderSink.cs");
         foreach (var removedFile in new[]
         {
             "FlashbackEncoderSink.Recording.State.cs",
@@ -449,7 +451,7 @@ static partial class Program
             AssertEqual(
                 false,
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
-                $"{removedFile} folded into FlashbackEncoderSink.Recording.cs");
+                $"{removedFile} folded into FlashbackEncoderSink.cs");
         }
 
         return Task.CompletedTask;

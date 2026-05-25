@@ -40,7 +40,7 @@ static partial class Program
         var flashbackAudioEnqueue = ExtractSourceBlock(
             flashbackSource,
             "private bool TryEnqueueAudioPacket",
-            "public void BeginRecording");
+            "private static bool TryWriteAudioPacket");
         AssertOccursBefore(flashbackVideoEnqueue, "GetVideoEnqueueRejectReason(isGpu: false)", "TryWriteVideoPacket(queue, packet)");
         AssertOccursBefore(flashbackGpuEnqueue, "GetVideoEnqueueRejectReason(isGpu: true)", "TryWriteGpuPacket(queue, packet)");
         AssertOccursBefore(flashbackAudioEnqueue, "Volatile.Read(ref _forceRotateDraining)", "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio\")");
