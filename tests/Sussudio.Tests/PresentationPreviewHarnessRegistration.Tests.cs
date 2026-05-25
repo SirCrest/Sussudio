@@ -57,7 +57,6 @@ static partial class Program
         "tests/Sussudio.Tests/MainViewModel.AudioDeviceSelectionPolicy.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.AudioRuntime.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.AudioMonitoring.Tests.cs",
-        "tests/Sussudio.Tests/MainViewModel.Capture.OutputPath.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.DeviceDiscoveryOrdering.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.PreviewRevealOrdering.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.ReinitFlashbackCycle.Tests.cs",
