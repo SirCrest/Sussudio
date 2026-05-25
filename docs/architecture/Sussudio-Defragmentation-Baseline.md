@@ -2051,3 +2051,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; recording verifier integration test consolidation only
 Behavior preserved: the same internal `Program` test method names, fake supervisor seam, runtime snapshot helpers, and verifier invocation path remain in `RecordingVerifier.Integration.Tests.cs`
 Notes for future agents: keep fake-ffprobe RecordingVerifier integration scenarios in `RecordingVerifier.Integration.Tests.cs` unless a scenario grows a distinct fixture or external process seam
+
+Date: 2026-05-25
+Area: MCP command-routing test locality
+Problem: Eight MCP command-routing test fragments split one routing surface by tool band even though they all used the same pipe-capture helpers, reflection invocation seam, and command-request assertions. Reviewing MCP command routing required opening several small files before reaching the larger verification and host cases.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Device.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Capture.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Pipeline.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Recording.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Ui.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Formatting.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Host.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Verification.Tests.cs`
+Files added: `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs`
+Net production .cs delta: 0
+Net test .cs delta: -7
+Partial clusters reduced: `Program` MCP command-routing partial-family file count -7
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: MCP command-routing tests remain in the xUnit suite and exercise the same named-pipe tool calls
+Behavior preserved: the same internal `Program` test method names, tool reflection calls, command-id assertions, host JSON-RPC checks, and verification formatting checks remain in one command-routing owner file
+Notes for future agents: keep MCP command-routing tests in `McpToolSurface.CommandRouting.Tests.cs` unless a route group grows a distinct fixture, process lifecycle, or helper seam
