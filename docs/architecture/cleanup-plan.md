@@ -1276,7 +1276,10 @@ LibAv encoder option/result models now live with the core encoder state in
 encoder family.
 
 LibAv encoder D3D11 hardware frames setup, CUDA hardware frame context
-adoption, and ArraySize=1 texture-pool creation now live in
+adoption, ArraySize=1 texture-pool creation, D3D11/CUDA hardware-frame
+submission, texture-pool copy/reference setup, GPU device-removed checks,
+hardware-frame PTS/keyframe assignment, HDR side-data attachment, EAGAIN
+packet drains, and hardware-frame unref cleanup now live in
 `Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs`.
 Output rotation now lives in `LibAvEncoder.OutputRotation.cs`; final close,
 trailer/logging, native frame/context/buffer release, and encoder state reset
@@ -1286,12 +1289,7 @@ LibAv encoder video submission now lives in
 `Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs`. Keep CPU packed
 frame submission, packed NV12/P010 plane sizing, source-buffer validation,
 stride-aware plane copies, forced keyframe handling, per-frame HDR side-data
-attachment/removal, and video packet drains there. D3D11 and CUDA hardware-frame
-submission now live in
-`Sussudio/Services/Recording/LibAvEncoder.HardwareSubmission.cs`; keep
-texture-pool copy/reference setup, GPU device-removed checks, hardware-frame
-PTS/keyframe assignment, HDR side-data attachment, EAGAIN packet drains, and
-hardware-frame unref cleanup there.
+attachment/removal, and video packet drains there.
 
 LibAv encoder output lifecycle is split across focused partials.
 `Sussudio/Services/Recording/LibAvEncoder.OutputRotation.cs` owns rotation IO

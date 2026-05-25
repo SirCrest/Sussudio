@@ -51,7 +51,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs")
             .Replace("\r\n", "\n");
-        var hardwareSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareSubmission.cs")
+        var hardwareFramesText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(videoSubmissionText, "public void SendVideoFrame(ReadOnlySpan<byte> frameData, int width, int height)");
@@ -61,10 +61,14 @@ static partial class Program
         AssertContains(videoSubmissionText, "private bool AttachHdrFrameSideDataToHwFrame(LibAvEncoderOptions options)");
         AssertDoesNotContain(videoSubmissionText, "public void SendGpuVideoFrame(IntPtr d3d11Texture, int subresourceIndex)");
         AssertDoesNotContain(videoSubmissionText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");
-        AssertContains(hardwareSubmissionText, "public void SendGpuVideoFrame(IntPtr d3d11Texture, int subresourceIndex)");
-        AssertContains(hardwareSubmissionText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");
-        AssertContains(hardwareSubmissionText, "CopySubresourceRegion");
-        AssertContains(hardwareSubmissionText, "AttachHdrFrameSideDataToHwFrame(options)");
+        AssertContains(hardwareFramesText, "public void SendGpuVideoFrame(IntPtr d3d11Texture, int subresourceIndex)");
+        AssertContains(hardwareFramesText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");
+        AssertContains(hardwareFramesText, "CopySubresourceRegion");
+        AssertContains(hardwareFramesText, "AttachHdrFrameSideDataToHwFrame(options)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.HardwareSubmission.cs")),
+            "hardware frame submission lives with LibAvEncoder.HardwareFrames.cs");
         AssertDoesNotContain(rootText, "public void SendVideoFrame(ReadOnlySpan<byte> frameData, int width, int height)");
         AssertDoesNotContain(rootText, "public void SendGpuVideoFrame(IntPtr d3d11Texture, int subresourceIndex)");
         AssertDoesNotContain(rootText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");
@@ -108,8 +112,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var modelsText = rootText;
         var hardwareFramesText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs")
-            .Replace("\r\n", "\n");
-        var hardwareSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareSubmission.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(audioText, "public void SendAudioSamples(ReadOnlySpan<byte> f32leSamples)");
@@ -167,10 +169,18 @@ static partial class Program
         AssertContains(hardwareFramesText, "private void InitializeCudaHardwareFrames(LibAvEncoderOptions options)");
         AssertContains(hardwareFramesText, "_useCudaHardwareFrames = true;");
         AssertContains(hardwareFramesText, "AVPixelFormat.AV_PIX_FMT_CUDA");
+        AssertContains(hardwareFramesText, "public void SendGpuVideoFrame(IntPtr d3d11Texture, int subresourceIndex)");
+        AssertContains(hardwareFramesText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");
+        AssertContains(hardwareFramesText, "CopySubresourceRegion");
+        AssertContains(hardwareFramesText, "AttachHdrFrameSideDataToHwFrame(options)");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.HardwareFrames.Cuda.cs")),
             "CUDA hardware frame adoption lives with the hardware frame initializer");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.HardwareSubmission.cs")),
+            "hardware frame submission lives with LibAvEncoder.HardwareFrames.cs");
         AssertContains(initializationText, "private static void ValidateOptions(LibAvEncoderOptions options)");
         AssertContains(initializationText, "private static void ValidateRequiredVideoOptions(LibAvEncoderOptions options)");
         AssertContains(initializationText, "private static void ValidateAudioOptions(LibAvEncoderOptions options)");
@@ -190,7 +200,6 @@ static partial class Program
         AssertDoesNotContain(rootText, "private void AllocateAudioFrame()");
         AssertDoesNotContain(rootText, "private bool AttachHdrFrameSideDataIfNeeded(LibAvEncoderOptions options)");
         AssertDoesNotContain(rootText, "private bool AttachHdrFrameSideDataToHwFrame(LibAvEncoderOptions options)");
-        AssertDoesNotContain(hardwareSubmissionText, "private bool AttachHdrFrameSideDataToHwFrame(LibAvEncoderOptions options)");
         AssertDoesNotContain(initializationText, "private static IntPtr CreateSingleTexture2D(IntPtr d3d11Device, int width, int height, bool isP010, uint bindFlags)");
         AssertDoesNotContain(initializationText, "private void InitializeHardwareFramesIfNeeded(LibAvEncoderOptions options)");
         AssertDoesNotContain(initializationText, "private void InitializeCudaHardwareFrames(LibAvEncoderOptions options)");

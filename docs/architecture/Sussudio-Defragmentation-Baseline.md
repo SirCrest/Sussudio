@@ -2260,3 +2260,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: Flashback state/segment projections, enable/disable/restart transition gating, settings updates, playback GPU decode propagation, recording format updates, encoder-setting cycles, buffer-cycle lock ordering/rebuild fallbacks, rollback logging, and recording-active defer policy remain unchanged
 Notes for future agents: keep service-level Flashback state, enable/restart, settings, format, encoder-cycle, and buffer-cycle coordination in `CaptureService.FlashbackControls.cs`; keep preview-backend startup/disposal in `CaptureService.FlashbackPreviewBackend.cs` and recording backend/session-context policy in `CaptureService.FlashbackRecording.cs`.
+
+Date: 2026-05-25
+Area: LibAvEncoder hardware-frame locality
+Problem: `LibAvEncoder.HardwareFrames.cs` owned D3D11/CUDA hardware frame setup and pool adoption while `LibAvEncoder.HardwareSubmission.cs` owned the matching GPU/CUDA submit paths that consume the same state, frame context, and HDR side-data helper. Reviewing hardware encoding required opening two adjacent partials for one hardware-frame surface.
+Files consolidated: `Sussudio/Services/Recording/LibAvEncoder.HardwareSubmission.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `LibAvEncoder` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: D3D11/CUDA hardware frame initialization, ArraySize=1 pool setup, GPU texture copy/reference setup, device-removed checks, PTS/keyframe assignment, first-frame HDR side-data attachment/removal, EAGAIN packet drains, packet draining, drop accounting, and hardware-frame unref cleanup remain unchanged
+Notes for future agents: keep hardware frame setup and hardware submit paths together in `LibAvEncoder.HardwareFrames.cs`; keep CPU packed-frame submission and shared HDR side-data helper implementations in `LibAvEncoder.VideoSubmission.cs`.
