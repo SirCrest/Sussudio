@@ -1688,10 +1688,8 @@ Primary current owners:
   It also owns the CPU MJPEG property-list contract plus shared
   AutomationSnapshot property assertions used by the metric-shape checks.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.Tests.cs` owns xUnit
-  CaptureDiagnosticsSnapshot default, round-trip, reflection JSON, and MJPEG
-  source-ownership checks.
-- `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.PropertySpec.cs`
-  owns the CaptureDiagnosticsSnapshot registered property spec.
+  CaptureDiagnosticsSnapshot property spec, default, round-trip, reflection
+  JSON, and MJPEG source-ownership checks.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.Tests.cs` owns xUnit
   CaptureHealthSnapshot and SourceTelemetryDetailEntry DTO contracts: property
   specs, defaults/inheritance, populated round-trip fixture, direct assertions,

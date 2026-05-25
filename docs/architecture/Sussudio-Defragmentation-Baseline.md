@@ -1986,3 +1986,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; DTO contract test consolidation only
 Behavior preserved: the same CaptureHealthSnapshot/SourceTelemetryDetailEntry property specs, defaults, round-trip fixture, direct assertions, reflection JSON assertions, and source-shape checks remain in `SnapshotModels.CaptureHealth.Tests.cs`
 Notes for future agents: keep CaptureHealth snapshot DTO shape checks in `SnapshotModels.CaptureHealth.Tests.cs`; add a new file only for a distinct snapshot DTO family or independent fixture/helper boundary
+
+Date: 2026-05-25
+Area: CaptureDiagnostics snapshot-model test locality
+Problem: The CaptureDiagnosticsSnapshot DTO contract still split its registered property spec into a separate `SnapshotModelsTests` partial file while the neighboring defaults/round-trip/JSON/source-shape fact was the only direct owner. The helper also serves CaptureHealth inheritance coverage, but it is still part of the CaptureDiagnostics DTO contract and did not need an independent file boundary.
+Files consolidated: `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.PropertySpec.cs`
+Files added: none
+Net production .cs delta: 0
+Net test .cs delta: -1
+Partial clusters reduced: `SnapshotModelsTests` CaptureDiagnostics partial-family file count -1
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; DTO contract test consolidation only
+Behavior preserved: the same CaptureDiagnosticsSnapshot registered property spec remains available to CaptureDiagnostics and CaptureHealth snapshot tests through the same private helper on `SnapshotModelsTests`
+Notes for future agents: keep CaptureDiagnostics snapshot DTO shape checks in `SnapshotModels.CaptureDiagnostics.Tests.cs`; add a new file only for a distinct snapshot DTO family or independent fixture/helper boundary
