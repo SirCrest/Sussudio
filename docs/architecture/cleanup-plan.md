@@ -134,8 +134,7 @@ interval, discontinuity, timestamp-error, glitch, and audio-level event counters
 `WasapiAudioPlayback.cs` owns playback state, WASAPI render endpoint binding,
 format validation, AudioClient startup, render event/client acquisition,
 initialization-time metric resets, start/stop/pause/resume/flush/dispose
-lifecycle, and render-thread startup.
-`WasapiAudioPlayback.Queue.cs` owns playback chunk queue state, pooled-sample
+lifecycle, render-thread startup, playback chunk queue state, pooled-sample
 ingress, queue depth/frame accounting, buffered-duration projection, and pooled
 chunk returns.
 `WasapiAudioPlayback.RenderThread.cs` owns the WASAPI render-thread loop,

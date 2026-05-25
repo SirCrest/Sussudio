@@ -143,10 +143,18 @@ static partial class Program
         AssertContains(playbackSource, "Interlocked.Exchange(ref _initialized, 1)");
         AssertContains(playbackSource, "WasapiComInterop.CoTaskMemFree(desiredFormat)");
         AssertContains(playbackSource, "WasapiComInterop.ReleaseComObject(ref audioRenderClient)");
+        AssertContains(playbackSource, "internal void EnqueuePooledSamples(byte[] pooledBuffer, int validLength, long ptsTicks = 0)");
+        AssertContains(playbackSource, "private bool TryWriteChunk(PlaybackChunk chunk)");
+        AssertContains(playbackSource, "private bool TryDequeueChunk(out PlaybackChunk chunk)");
+        AssertContains(playbackSource, "private readonly record struct PlaybackChunk");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioPlayback.Initialization.cs")),
             "WASAPI playback initialization stays folded into playback lifecycle root");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioPlayback.Queue.cs")),
+            "WASAPI playback queue state stays folded into playback lifecycle root");
         AssertContains(playbackSource, "public void Start()");
         AssertContains(playbackSource, "public void PauseRendering()");
         AssertContains(playbackSource, "public void ResumeRendering(double prebufferMs = 0, int prebufferTimeoutMs = 0)");
