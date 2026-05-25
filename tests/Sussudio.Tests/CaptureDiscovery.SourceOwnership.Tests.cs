@@ -8,7 +8,7 @@ static partial class Program
         var deviceRootText = ReadRepoFile("Sussudio/Services/Capture/DeviceService.cs").Replace("\r\n", "\n");
         var sourceReaderRootText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs").Replace("\r\n", "\n");
         var sourceReaderNegotiationText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs").Replace("\r\n", "\n");
-        var sourceReaderDeviceEnumerationText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.DeviceEnumeration.cs").Replace("\r\n", "\n");
+        var sourceReaderDeviceEnumerationText = sourceReaderNegotiationText;
         var sourceReaderInteropText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Interop.cs").Replace("\r\n", "\n");
         var sourceReaderComContractsText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.ComContracts.cs").Replace("\r\n", "\n");
         var sourceReaderSampleBufferContractsText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.SampleBufferContracts.cs").Replace("\r\n", "\n");
@@ -36,6 +36,10 @@ static partial class Program
         AssertContains(sourceReaderDeviceEnumerationText, "ReleaseRemainingActivateObjects(activateArrayPtr, activateCount, i + 1);");
         AssertContains(sourceReaderDeviceEnumerationText, "Marshal.ReleaseComObject(activated)");
         AssertContains(sourceReaderDeviceEnumerationText, "Marshal.FreeCoTaskMem(activateArrayPtr);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.DeviceEnumeration.cs")),
+            "source-reader device enumeration fallback folded into negotiation/source-open owner");
         AssertContains(sourceReaderNegotiationText, "private IMFMediaType SelectMediaType(");
         AssertContains(sourceReaderNegotiationText, "private IMFMediaType SelectConvertedMediaType(");
         AssertContains(sourceReaderNegotiationText, "SelectMediaType(");
@@ -72,7 +76,6 @@ static partial class Program
         AssertDoesNotContain(sourceReaderSampleBufferContractsText, "DllImport(");
         AssertDoesNotContain(sourceReaderSampleBufferContractsText, "private static class MfInterop");
         AssertDoesNotContain(sourceReaderRootText, "private IMFMediaSource CreateMediaSource(");
-        AssertDoesNotContain(sourceReaderNegotiationText, "MFEnumDeviceSources(attrs, out activateArrayPtr, out var activateCount)");
         AssertDoesNotContain(sourceReaderRootText, "private IMFMediaType SelectMediaType(");
         AssertDoesNotContain(sourceReaderRootText, "private static class MfInterop");
         AssertDoesNotContain(sourceReaderRootText, "DllImport(\"mfplat.dll\", ExactSpelling = true)");
