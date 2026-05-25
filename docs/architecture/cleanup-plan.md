@@ -2811,10 +2811,13 @@ artifact paths into the named projection-set owner and flattening owner.
 `DiagnosticSessionResult` DTO assignment from the projection set; keep domain
 projection composition outside this initializer.
 `DiagnosticSessionResultBuilder.Projections.cs` owns projection-set assembly,
-the private projection-set handoff record, and the small result projection
-records/builders for overview, capture, Flashback recording/export, preview
-cadence/scheduler, preview D3D, and visual cadence. Diagnostic metric gathering
-for validation/result projections and analysis warning emission live in
+the private projection-set handoff record, and the result projection
+records/builders for overview, capture, Flashback playback/recording/export,
+preview cadence/scheduler, preview D3D, and visual cadence. The detailed
+Flashback playback command queue, cadence/slow-frame/dropped-frame, 1% low,
+audio-master, decode timing, and stage DTO value maps live with that projection
+owner. Diagnostic metric gathering for validation/result projections and
+analysis warning emission live in
 `DiagnosticSessionResultBuilder.Analysis.cs`, which also owns the private
 analysis handoff record plus Flashback playback/export warning text, threshold
 guards, tolerated Flashback scenario warning classification, and the named
@@ -2827,12 +2830,11 @@ checks, sparse deadline/drop tolerance selection, and the call into shared
 Flashback preview validation.
 `DiagnosticSessionResultBuilder.cs` owns the result-build request handoff
 created by `DiagnosticSessionRunner.cs` beside the summary orchestration that
-consumes it. Diagnostic
-health summary snapshot selection, health summary text projection, verdict
-composition, diagnostic-health warning tolerance, sparse source-cadence warning
-tolerance, sparse preview-scheduler warning tolerance, source-reader/ingest
-warning deltas, tolerated-warning reason selection, and emitted health warning
-text live in `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`.
+consumes it. Diagnostic health summary snapshot selection, health summary text
+projection, verdict composition, diagnostic-health warning tolerance, sparse
+source-cadence warning tolerance, sparse preview-scheduler warning tolerance,
+source-reader/ingest warning deltas, tolerated-warning reason selection, and
+emitted health warning text live in `DiagnosticSessionResultBuilder.Analysis.cs`.
 `DiagnosticSessionResultAnalysis.PreviewScheduler` is the single record
 property that carries those values into the scheduler result projection without
 rereading MJPEG jitter-buffer snapshot keys. Preview cadence, visual cadence,
@@ -2841,12 +2843,6 @@ CPU-timing result projection values live with the other small projection
 builders in `DiagnosticSessionResultBuilder.Projections.cs`. The D3D fields
 still travel through a distinct `PreviewD3D` projection set member so renderer
 timing semantics stay separate from scheduler/jitter policy.
-Flashback playback result composition lives in
-`DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`, which keeps the
-playback projection record as one cohesive handoff into the result projection
-set. The detailed command queue, cadence/slow-frame/dropped-frame, 1% low,
-audio-master, decode timing, and stage DTO value maps now live in that same
-file so the projection shape and the mappings that fill it stay together.
 Flashback recording backend/growth/integrity DTO projection values and export
 status/progress DTO projection values live in
 `DiagnosticSessionResultBuilder.Projections.cs`; result construction
@@ -3229,8 +3225,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.Flattening.cs`
 - `DiagnosticSessionResultBuilder.Projections.cs`
 - `DiagnosticSessionResultBuilder.Analysis.cs`
-- `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
-- `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionLiveStateWriter.cs`
 - `DiagnosticSessionRunContext.cs`

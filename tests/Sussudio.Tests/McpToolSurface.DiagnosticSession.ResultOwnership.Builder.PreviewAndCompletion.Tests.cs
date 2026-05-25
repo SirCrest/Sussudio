@@ -84,12 +84,11 @@ static partial class Program
         AssertContains(analysisText, "flashbackExportForceRotateFallbacksDelta <= 0");
     }
 
-    internal static Task DiagnosticSessionResultBuilder_DiagnosticHealthVerdictLivesInFocusedPartial()
+    internal static Task DiagnosticSessionResultBuilder_DiagnosticHealthVerdictLivesWithAnalysis()
     {
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
-        var healthText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs")
-            .Replace("\r\n", "\n");
+        var healthText = analysisText;
 
         AssertContains(analysisText, "var validationOutcome = ValidateAnalysis(");
         AssertContains(analysisText, "var diagnosticHealthSucceeded = AnalyzeDiagnosticHealth(");
@@ -114,13 +113,10 @@ static partial class Program
         AssertContains(healthText, "diagnostic health degraded during session");
         AssertContains(healthText, "diagnostic health {tolerance.WarningReason}:");
         AssertContains(healthText, "flashback force-rotate drain warning tolerated for flashback scenario");
-        AssertDoesNotContain(analysisText, "private static bool AnalyzeDiagnosticHealth(");
-        AssertDoesNotContain(analysisText, "DiagnosticHealthStatus");
-        AssertDoesNotContain(analysisText, "DiagnosticLikelyStage");
-        AssertDoesNotContain(analysisText, "MfSourceReaderFramesDropped");
-        AssertDoesNotContain(analysisText, "VideoIngestErrorCount");
-        AssertDoesNotContain(analysisText, "BuildSessionDiagnosticHealthObservation(");
-        AssertDoesNotContain(analysisText, "diagnostic health degraded during session");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.DiagnosticHealth.cs")),
+            "diagnostic health verdict helpers folded into analysis owner");
         AssertDoesNotContain(analysisText, "diagnostic health {toleratedReason}:");
 
         return Task.CompletedTask;

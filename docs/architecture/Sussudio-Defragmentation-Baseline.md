@@ -2536,3 +2536,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; no public automation command names, IDs, or wire payloads changed
 Behavior preserved: stats overlay controller construction, shell-control wiring, snapshot source callbacks, dock target wiring, MJPEG/NVML sources, frame-time targets, lifecycle/polling wrappers, section header tap handling, stats section visibility routing, and frame-time overlay visibility routing remain unchanged
 Notes for future agents: keep MainWindow's XAML-facing stats adapter with `MainWindow.ShellChrome.Composition.cs`; keep stats behavior in `StatsOverlayCompositionController`, `StatsOverlayController`, `StatsDockControllerGraph`, and related stats controllers.
+
+Date: 2026-05-25
+Area: diagnostic-session result builder projection locality
+Problem: `DiagnosticSessionResultBuilder.DiagnosticHealth.cs` and `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs` were private helper partials inside the same result-builder family. Diagnostic health verdict helpers are only used by the analysis pass, and Flashback playback result maps are only used by the projection-set owner, so reviewing result construction still required two extra files for subordinate behavior.
+Files consolidated: `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs`; `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `DiagnosticSessionResultBuilder` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: diagnostic-session result ownership tests cover the moved health verdict and Flashback playback projection maps; no CLI/MCP command names, automation command IDs, or wire payloads changed
+Behavior preserved: diagnostic health snapshot selection, verdict/tolerance warnings, sparse source and preview-scheduler warning tolerance, Flashback playback projection composition, command/cadence/1% low/decode/audio-master/stage result maps, and `summary.json` field shape remain unchanged
+Notes for future agents: keep diagnostic health verdict helpers with `DiagnosticSessionResultBuilder.Analysis.cs`; keep Flashback playback result projection maps with `DiagnosticSessionResultBuilder.Projections.cs` unless they become a reusable result-projection collaborator outside diagnostic-session summary construction.

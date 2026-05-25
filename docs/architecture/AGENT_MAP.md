@@ -3104,9 +3104,11 @@ Primary owners:
   owner, not in this initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.Projections.cs` owns the
   private projection-set handoff record, projection-set assembly, and the
-  small result projection records/builders for overview, capture, Flashback
-  recording/export, preview cadence/scheduler, preview D3D, and visual
-  cadence.
+  result projection records/builders for overview, capture, Flashback
+  playback/recording/export, preview cadence/scheduler, preview D3D, and
+  visual cadence. Flashback playback projection includes command, cadence,
+  1% low, decode, audio-master, and stage DTO value maps consumed by the final
+  result initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.Analysis.cs` owns
   diagnostic-session metric preparation for validation/result projections,
   analysis warning emission, Flashback playback/export analysis warning text,
@@ -3120,16 +3122,11 @@ Primary owners:
   jitter-buffer counters, deltas, last drop/underflow reasons, underflow ages,
   max schedule-late aggregation, target-FPS fallback, visual-cadence tolerance
   checks, sparse deadline/drop tolerance selection, and the call into shared
-  Flashback preview validation.
-- `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs` owns
-  diagnostic-session health summary snapshot selection, health verdict
-  composition, source-reader/ingest warning deltas for sparse source-capture
-  tolerance, sparse preview-scheduler warning tolerance, tolerated-warning
-  reason selection, and health warning text emitted during result construction.
-- `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs` owns
-  Flashback playback result projection composition plus the command, cadence,
-  1% low, decode, audio-master, and stage DTO value maps consumed by the final
-  result initializer.
+  Flashback preview validation. Diagnostic-health analysis includes health
+  summary snapshot selection, health verdict composition, source-reader/ingest
+  warning deltas for sparse source-capture tolerance, sparse preview-scheduler
+  warning tolerance, tolerated-warning reason selection, and health warning text
+  emitted during result construction.
 - `tools/Common/DiagnosticSessionLiveStateWriter.cs` owns the best-effort
   `session-live.json` breadcrumb path, payload shape, health projection,
   warning projection, terminal override mapping, and sampling live-state write

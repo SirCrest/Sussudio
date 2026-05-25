@@ -146,8 +146,8 @@ public sealed class McpDiagnosticSessionResultSurfaceContractsTests
         => global::Program.DiagnosticSessionResultBuilder_OwnsSummaryConstruction();
 
     [Fact]
-    public Task ResultBuilderDiagnosticHealthVerdictLivesInFocusedPartial()
-        => global::Program.DiagnosticSessionResultBuilder_DiagnosticHealthVerdictLivesInFocusedPartial();
+    public Task ResultBuilderDiagnosticHealthVerdictLivesWithAnalysis()
+        => global::Program.DiagnosticSessionResultBuilder_DiagnosticHealthVerdictLivesWithAnalysis();
 
     [Fact]
     public Task ResultBuilderOwnsSummaryWriteFailures()

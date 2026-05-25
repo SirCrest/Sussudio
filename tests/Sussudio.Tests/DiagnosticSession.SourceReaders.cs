@@ -62,9 +62,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultBuilder.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Projections.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Flattening.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.Analysis.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs");
+            "tools/Common/DiagnosticSessionResultBuilder.Analysis.cs");
 
     private static string ReadDiagnosticSessionResultFormatterSource()
         => ReadNormalizedSourceFiles(
