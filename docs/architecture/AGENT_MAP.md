@@ -2973,9 +2973,8 @@ Primary owners:
   `Program.AtCommands.cs` owns direct AT read/write/input subcommands;
   `Program.DefaultExperiment.cs` owns the default baseline/experiment/restore
   runner, experiment spec records, shared Native XU command IDs, shared
-  raw-payload formatting, and analog-gain sequence;
-  `Program.DefaultExperiment.Reporting.cs` owns default experiment AT
-  read/decode/diff/snapshot reporting plus readback/result-diff records;
+  raw-payload formatting, analog-gain sequence, default experiment AT
+  read/decode/diff/snapshot reporting, and readback/result-diff records;
   `Program.I2cCommands.cs` owns the exploratory `i2c-cmd` command family:
   router, basic get/set/scan paths, selector transport probing,
   high-selector probing, topology/property-set probing, and I2C
@@ -2983,7 +2982,6 @@ Primary owners:
   `Program.I2cLegacyProbe.cs` owns the legacy `i2c-probe` selector scan and
   raw/AT-wrapped I2C frame experiment;
   `Program.I2cSwitch.cs` owns the captured audio-switch replay workflow;
-  `Program.DefaultExperiment.cs` owns default experiment payload construction;
   `Program.I2cTransport.cs` owns I2C-over-AT transport helpers; and
   `Program.ServiceProbe.cs` owns service-control smoke/payload workflows.
 - `tools/KsAudioNodeProbe/Program.cs` owns KS audio node probe argument parsing,

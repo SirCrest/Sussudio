@@ -1606,7 +1606,7 @@ Partial clusters reduced: n/a; probe helper file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: affected `NativeXuAudioProbe` build covered by solution build; no command names changed
 Behavior preserved: short/int/byte experiment enumeration, invariant display-value formatting, width-based payload byte construction, unsupported-width exception behavior, and default experiment restore/set payload usage remain unchanged
-Notes for future agents: superseded on 2026-05-25 by the NativeXu support consolidation; keep shared Native XU command IDs and default-experiment-only payload construction with `Program.DefaultExperiment.cs`, with reporting/readback helpers in `Program.DefaultExperiment.Reporting.cs`
+Notes for future agents: superseded on 2026-05-25 by the NativeXu support consolidation and later default-experiment reporting consolidation; keep shared Native XU command IDs, default-experiment-only payload construction, and reporting/readback helpers in `Program.DefaultExperiment.cs`.
 
 Date: 2026-05-24
 Area: ssctl shared command helper locality
@@ -2200,3 +2200,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: ssctl/MCP still call `PresentMonProbe.Format(result)`; no automation command names/IDs changed
 Behavior preserved: PresentMon run orchestration, CSV parse handoff, result message shaping, successful/failed format output, stderr inclusion, summary context, metric rows, app correlation text, count fields, and swap-chain list rendering remain unchanged
 Notes for future agents: keep PresentMon run orchestration and text formatting in `PresentMonProbe.cs`; keep CSV parsing/aggregation in `PresentMonProbe.Csv.cs` and public DTOs in `PresentMonProbe.Models.cs`.
+
+Date: 2026-05-25
+Area: NativeXuAudioProbe default experiment reporting locality
+Problem: `Program.DefaultExperiment.Reporting.cs` held the AT read/decode/diff/snapshot reporting helpers and result records used only by `Program.DefaultExperiment.cs`. Reviewing the default Native XU experiment required opening two partial files for one exploratory experiment workflow.
+Files consolidated: `tools/NativeXuAudioProbe/Program.DefaultExperiment.Reporting.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `NativeXuProbeDefaultExperiment` partial family removed
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: NativeXuAudioProbe build remains covered by solution build; no automation command names/IDs changed
+Behavior preserved: baseline/final telemetry snapshot printing, AT getter reads, typed payload decoding, raw-payload formatting, before/after diff output, changed-result collection, interesting-change summary, analog gain sequence, restore behavior, and default experiment payload construction remain unchanged
+Notes for future agents: keep default Native XU experiment sequencing, payload construction, and reporting/readback helpers in `Program.DefaultExperiment.cs`; split only if the reporting grows into a reusable probe output formatter with its own callers.

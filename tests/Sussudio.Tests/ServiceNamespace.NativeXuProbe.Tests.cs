@@ -60,7 +60,7 @@ static partial class Program
         AssertContains(probeProgramText, "RtkI2cProbe.Run(rtkArgs, dev)");
         var probeAtCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.AtCommands.cs"));
         var probeDefaultExperimentText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.DefaultExperiment.cs"));
-        var probeDefaultExperimentReportingText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.DefaultExperiment.Reporting.cs"));
+        var probeDefaultExperimentReportingText = probeDefaultExperimentText;
         var probeI2cCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.cs"));
         var probeI2cLegacyProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cLegacyProbe.cs"));
         var probeI2cSwitchText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cSwitch.cs"));
@@ -106,7 +106,8 @@ static partial class Program
         AssertContains(probeDefaultExperimentText, "public const int CmdSetAuxOutVolume = 0x82;");
         AssertContains(probeDefaultExperimentText, "static class NativeXuProbeFormatting");
         AssertContains(probeDefaultExperimentText, "public static string FormatRaw");
-        AssertContains(probeDefaultExperimentText, "static partial class NativeXuProbeDefaultExperiment");
+        AssertContains(probeDefaultExperimentText, "static class NativeXuProbeDefaultExperiment");
+        AssertDoesNotContain(probeDefaultExperimentText, "partial class NativeXuProbeDefaultExperiment");
         AssertContains(probeDefaultExperimentText, "sealed record GetterSpec");
         AssertContains(probeDefaultExperimentText, "sealed record SetterSpec");
         AssertContains(probeDefaultExperimentText, "sealed record SetExperiment");
@@ -114,9 +115,6 @@ static partial class Program
         AssertContains(probeDefaultExperimentText, "RunAnalogGainSequenceAsync");
         AssertContains(probeDefaultExperimentText, "private static IEnumerable<SetExperiment> BuildShortExperiments");
         AssertContains(probeDefaultExperimentText, "private static byte[] BuildPayload(int width, long value)");
-        AssertDoesNotContain(probeDefaultExperimentText, "private static AtReadResult Decode(");
-        AssertDoesNotContain(probeDefaultExperimentText, "private static void PrintSnapshot(");
-        AssertContains(probeDefaultExperimentReportingText, "static partial class NativeXuProbeDefaultExperiment");
         AssertContains(probeDefaultExperimentReportingText, "sealed record AtReadResult");
         AssertContains(probeDefaultExperimentReportingText, "sealed record ChangedValue");
         AssertContains(probeDefaultExperimentReportingText, "sealed class ExperimentResult");
@@ -124,6 +122,10 @@ static partial class Program
         AssertContains(probeDefaultExperimentReportingText, "private static AtReadResult Decode");
         AssertContains(probeDefaultExperimentReportingText, "private static void PrintInterestingChanges");
         AssertContains(probeDefaultExperimentReportingText, "private static void PrintSnapshot");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.DefaultExperiment.Reporting.cs")),
+            "NativeXu default experiment reporting folded into default experiment owner");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ExperimentPayloads.cs")),
