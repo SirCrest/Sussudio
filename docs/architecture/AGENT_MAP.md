@@ -2971,9 +2971,8 @@ Primary owners:
   `Program.I2cCommands.cs` owns the exploratory `i2c-cmd` command family:
   router, basic get/set/scan paths, selector transport probing,
   high-selector probing, topology/property-set probing, and I2C
-  SET/readback/restore verification;
-  `Program.I2cLegacyProbe.cs` owns the legacy `i2c-probe` selector scan and
-  raw/AT-wrapped I2C frame experiment; and
+  SET/readback/restore verification, plus the legacy `i2c-probe` selector
+  scan and raw/AT-wrapped I2C frame experiment; and
   `Program.I2cTransport.cs` owns I2C-over-AT transport helpers.
 - `tools/KsAudioNodeProbe/Program.cs` owns KS audio node probe argument parsing,
   interface selection, open failure handling, workflow dispatch, SetupAPI,

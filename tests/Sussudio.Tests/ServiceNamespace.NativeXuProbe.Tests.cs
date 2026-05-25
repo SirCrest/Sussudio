@@ -62,7 +62,7 @@ static partial class Program
         var probeDefaultExperimentText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.DefaultExperiment.cs"));
         var probeDefaultExperimentReportingText = probeDefaultExperimentText;
         var probeI2cCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.cs"));
-        var probeI2cLegacyProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cLegacyProbe.cs"));
+        var probeI2cLegacyProbeText = probeI2cCommandsText;
         var probeI2cTransportText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cTransport.cs"));
         AssertDoesNotContain(probeProgramText, "sealed record GetterSpec");
         AssertDoesNotContain(probeProgramText, "sealed class ExperimentResult");
@@ -136,7 +136,8 @@ static partial class Program
             false,
             File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Commands.cs")),
             "NativeXu probe command IDs and shared raw formatting live with default experiment support");
-        AssertContains(probeI2cCommandsText, "static partial class NativeXuProbeI2cCommands");
+        AssertContains(probeI2cCommandsText, "static class NativeXuProbeI2cCommands");
+        AssertDoesNotContain(probeI2cCommandsText, "static partial class NativeXuProbeI2cCommands");
         AssertContains(probeI2cCommandsText, "public static async Task<int> RunAsync");
         AssertContains(probeI2cCommandsText, "Usage: i2c-cmd get|set|scan");
         AssertContains(probeI2cCommandsText, "RunVerifyAsync(dev)");
@@ -173,6 +174,10 @@ static partial class Program
         AssertContains(probeI2cLegacyProbeText, "ProbeRawI2cFrames");
         AssertContains(probeI2cLegacyProbeText, "ProbeAlternateSelectors");
         AssertContains(probeI2cLegacyProbeText, "ProbeAtWrappedI2cFrames");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cLegacyProbe.cs")),
+            "NativeXu legacy i2c-probe workflow lives with the I2C command family");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cSwitch.cs")),

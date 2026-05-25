@@ -2464,3 +2464,15 @@ Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudio
 CLI/MCP/pipe checks, if applicable: affected NativeXuAudioProbe build and source-ownership tests cover the moved supported-device locator; no public command names changed
 Behavior preserved: supported VID/PID list, preferred interface selection, no-filter ambiguity handling, device filter matching, ambiguous/missing-device error text, and `CaptureDevice.NativeXuInterfacePath` assignment remain unchanged
 Notes for future agents: keep the probe-only supported-device locator with `tools/NativeXuAudioProbe/Program.cs` while it is only consumed by top-level NativeXuAudioProbe command workflows.
+
+Date: 2026-05-25
+Area: NativeXuAudioProbe I2C legacy workflow locality
+Problem: `Program.I2cCommands.cs` owned the exploratory NativeXu I2C command family and transport-probe workflows, while `Program.I2cLegacyProbe.cs` held the adjacent legacy `i2c-probe` selector scan and raw/AT-wrapped I2C frame experiments. Understanding NativeXu I2C probing required opening both files even though they share the same device lookup, KS/XU helpers, and transport framing context.
+Files consolidated: `tools/NativeXuAudioProbe/Program.I2cLegacyProbe.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: stale `NativeXuProbeI2cCommands` partial marker removed
+Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj -c Debug --no-restore`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: affected NativeXuAudioProbe build and source-ownership tests cover the moved legacy `i2c-probe` workflow; no public command names changed
+Behavior preserved: `i2c-probe` routing, selector scan range, raw I2C frame probes, alternate selector probes, AT-wrapped I2C frame probes, error/status text, and KS/XU helper calls remain unchanged
+Notes for future agents: keep the legacy NativeXu `i2c-probe` workflow with `Program.I2cCommands.cs` while it is only another exploratory I2C probe path; keep `Program.I2cTransport.cs` separate while multiple I2C command families share it.
