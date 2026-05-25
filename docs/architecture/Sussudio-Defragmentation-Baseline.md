@@ -1882,3 +1882,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
 Behavior preserved: the same public test classes, `[Fact]` method names, and delegated diagnostic-session `Program` checks remain available under one diagnostic-session contracts file
 Notes for future agents: keep MCP diagnostic-session xUnit wrapper classes together in `XUnit.McpDiagnosticSessionContractsTests.cs`; add new wrapper classes there unless a band needs independent fixtures or executable helper state
+
+Date: 2026-05-25
+Area: MainViewModel presentation-preview xUnit execution-surface locality
+Problem: Six tiny xUnit wrapper files each owned one MainViewModel presentation-preview group, but every file only loaded the target assembly and delegated to `Program` checks. Reviewing MainViewModel presentation-preview xUnit coverage required opening a file per subtopic without gaining independent fixtures or helper state.
+Files consolidated: `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelInitialContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelAudioControlsContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelOutputPathContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelSourceTelemetryContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelDependencyCompositionContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelRuntimeContractsTests.cs`
+Files added: `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
+Net production .cs delta: 0
+Net test .cs delta: -5
+Partial clusters reduced: n/a; MainViewModel presentation-preview xUnit wrapper file count -5
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
+Behavior preserved: the same public test classes, constructors, `[Fact]` method names, target-assembly bootstrap calls, and delegated `Program` checks remain available under one MainViewModel contracts file
+Notes for future agents: keep MainViewModel presentation-preview xUnit wrapper classes together in `XUnit.PresentationPreviewMainViewModelContractsTests.cs`; add new wrapper classes there unless a group needs independent fixtures or executable helper state

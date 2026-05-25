@@ -1527,9 +1527,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.NativeXuAudioControlService.AudioMeters.Tests.cs`
   owns native XU audio-control service cohesion, profile, payload workflow, raw
   transport ownership, and audio meter callback-state assertions.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelAudioControlsContractsTests.cs`
-  owns the xUnit execution surface for MainViewModel audio-control source and
-  behavior contracts after their removal from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
+  owns the xUnit execution surface for MainViewModel source and behavior
+  contracts after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Tests.cs` owns the
   MainViewModel dependency-composition seam assertions for root construction,
   controller graph creation, state partial ownership, and default dependency
@@ -2121,10 +2121,6 @@ Primary current owners:
   `tests/Sussudio.Tests/XUnit.PresentationPreviewHarnessRegistrationTests.cs`
   owns the xUnit execution surface that audits those registration groups against
   the focused UI ownership test inventory.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelInitialContractsTests.cs`
-  owns the former presentation-preview MainViewModel initial registration group
-  for recording transition start/stop failure propagation after its removal from
-  the legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowInitialContractsTests.cs`
   owns the former presentation-preview MainWindow initial registration group for
   close cancellation, window screenshot helper ownership, and property changed
@@ -2169,12 +2165,14 @@ Primary current owners:
   owns the former presentation-preview MainWindow preview audio fade, audio
   presentation, preview button presentation, and microphone control checks
   after their removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelAudioControlsContractsTests.cs`
-  owns the former presentation-preview MainViewModel audio-control group for
-  analog gain mapping, preview audio monitoring volume persistence, microphone
-  and device guards, device-audio request lifetime, audio-device selection
-  policy, native XU audio-control service cohesion, and audio meter callback
-  ownership checks after their removal from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
+  owns the former presentation-preview MainViewModel xUnit execution groups:
+  initial recording-transition failure propagation, audio controls and
+  monitoring, output path and disk-space presentation, source telemetry text,
+  dependency-composition seams, automation/runtime routing, capture settings,
+  preview lifecycle ownership, and audio ramp trace telemetry. Keep the public
+  wrapper classes in this file unless a group needs an independent fixture or
+  executable helper state.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewResponsiveLayoutContractsTests.cs`
   owns the former presentation-preview MainWindow responsive shell layout and
   breakpoint policy checks after their removal from the legacy offline harness
@@ -2191,26 +2189,6 @@ Primary current owners:
   owns the former presentation-preview MainWindow output path display,
   truncation formatter, and button-action checks after their removal from the
   legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelOutputPathContractsTests.cs`
-  owns the former presentation-preview MainViewModel output path and disk-space
-  presentation group for retired output picker partial ownership, invalid-path
-  fallback behavior, and focused free-space presentation helper ownership after
-  their removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelSourceTelemetryContractsTests.cs`
-  owns the former presentation-preview MainViewModel source-telemetry
-  presentation group for source/target summary formatting, focused source
-  telemetry helper ownership, and live-signal pixel-format fallback order after
-  their removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelDependencyCompositionContractsTests.cs`
-  owns the former presentation-preview MainViewModel dependency-composition
-  group for root dependency seam, UI dispatch, presentation, recording,
-  capture/device, and runtime controller context ownership checks after their
-  removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelRuntimeContractsTests.cs`
-  owns the final former presentation-preview MainViewModel runtime group for
-  automation preview/HDR/volume routing, audio monitoring, capture settings
-  projection, preview lifecycle ownership, and audio ramp trace telemetry after
-  their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureRuntimeGuardContractsTests.cs`
   owns the former presentation-preview capture runtime guardrail group for
   recording stop failure propagation, preview stop overload/API compatibility,

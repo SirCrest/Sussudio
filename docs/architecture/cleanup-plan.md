@@ -709,10 +709,13 @@ Automation diagnostics snapshot-projection checks now execute through
 keeping snapshot/status, audio, capture and source, MJPEG, recording, system
 resources and A/V sync, preview, and Flashback owner checks in xUnit after their
 removal from the legacy harness catalog.
-Presentation-preview MainViewModel initial checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelInitialContractsTests.cs`,
-keeping recording transition start/stop failure propagation checks in xUnit
-after their removal from the legacy harness catalog.
+Presentation-preview MainViewModel checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`,
+keeping initial recording transition failure propagation, audio controls and
+monitoring, output path and disk-space presentation, source telemetry,
+dependency composition, automation/runtime routing, capture settings, preview
+lifecycle, and audio ramp trace telemetry in xUnit after their removal from the
+legacy harness catalog.
 Presentation-preview MainWindow initial checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowInitialContractsTests.cs`,
 keeping close cancellation, window screenshot helper ownership, and property
@@ -760,13 +763,6 @@ Presentation-preview audio/control checks now execute through
 keeping preview audio fade, audio presentation, preview button presentation,
 and microphone control contracts in xUnit after their removal from the legacy
 harness catalog.
-Presentation-preview MainViewModel audio-control checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelAudioControlsContractsTests.cs`,
-keeping analog gain mapping, preview audio monitoring volume persistence,
-microphone and device guards, device-audio request lifetime, audio-device
-selection policy, native XU audio-control service cohesion, and audio meter
-callback ownership contracts in xUnit after their removal from the legacy
-harness catalog.
 Presentation-preview responsive layout checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewResponsiveLayoutContractsTests.cs`,
 keeping responsive shell layout and breakpoint policy contracts in xUnit after
@@ -785,30 +781,8 @@ Presentation-preview output path checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewOutputPathContractsTests.cs`,
 keeping output path display, truncation formatter, and button-action contracts
 in xUnit after their removal from the legacy harness catalog.
-Presentation-preview MainViewModel output path checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelOutputPathContractsTests.cs`,
-keeping retired output picker partial ownership, invalid-path fallback behavior,
-and focused free-space presentation helper ownership in xUnit after their
-removal from the legacy harness catalog.
-Presentation-preview MainViewModel source-telemetry presentation checks now
-execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelSourceTelemetryContractsTests.cs`,
-keeping source/target summary formatting, focused source telemetry helper
-ownership, and live-signal pixel-format fallback order contracts in xUnit after
-their removal from the legacy harness catalog.
-Presentation-preview MainViewModel dependency-composition checks now execute
-through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelDependencyCompositionContractsTests.cs`,
-keeping root dependency seam, UI dispatch, presentation, recording,
-capture/device, and runtime controller context ownership contracts in xUnit
-after their removal from the legacy harness catalog.
-Presentation-preview MainViewModel runtime checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelRuntimeContractsTests.cs`,
-keeping automation preview/HDR/volume routing, audio monitoring, capture
-settings projection, preview lifecycle ownership, and audio ramp trace telemetry
-contracts in xUnit after their removal from the legacy harness catalog.
-MainViewModel presentation-preview contract execution is now owned by the
-focused xUnit wrappers above, with no remaining legacy catalog hook.
+MainViewModel presentation-preview contract execution is now owned by that
+focused xUnit wrapper file, with no remaining legacy catalog hook.
 Presentation-preview capture runtime guardrail checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureRuntimeGuardContractsTests.cs`,
 keeping recording stop failure propagation, preview stop overload/API

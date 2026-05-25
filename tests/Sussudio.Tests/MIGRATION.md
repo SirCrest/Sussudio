@@ -171,9 +171,14 @@ add xUnit alongside, and port incrementally.
   diagnostic-session catalog has no remaining legacy registrations.
 - `XUnit.PresentationPreviewHarnessRegistrationTests.cs` owns the former legacy
   presentation-preview harness registration guard.
-- `XUnit.PresentationPreviewMainViewModelInitialContractsTests.cs` owns the
-  former legacy presentation-preview MainViewModel initial registration group:
-  recording transition start/stop failure propagation.
+- `XUnit.PresentationPreviewMainViewModelContractsTests.cs` owns the former
+  legacy presentation-preview MainViewModel xUnit execution groups: initial
+  recording transition failure propagation, audio controls and monitoring,
+  output path and disk-space presentation, source telemetry, dependency
+  composition, runtime automation/capture settings, preview lifecycle, and
+  audio ramp trace telemetry. The public wrapper classes remain separate inside
+  this file so existing test identities stay stable while the execution surface
+  is easier to scan.
 - `XUnit.PresentationPreviewMainWindowInitialContractsTests.cs` owns the former
   legacy presentation-preview MainWindow initial registration group: close
   cancellation, window screenshot helper ownership, and property changed
@@ -209,12 +214,6 @@ add xUnit alongside, and port incrementally.
 - `XUnit.PresentationPreviewAudioControlContractsTests.cs` owns the former
   legacy presentation-preview MainWindow preview audio fade, audio presentation,
   preview button presentation, and microphone control checks.
-- `XUnit.PresentationPreviewMainViewModelAudioControlsContractsTests.cs` owns
-  the former legacy presentation-preview MainViewModel audio-control group:
-  analog gain mapping, preview audio monitoring volume persistence, microphone
-  and device guards, device-audio request lifetime, audio-device selection
-  policy, native XU audio-control service cohesion, and audio meter callback
-  ownership checks.
 - `XUnit.PresentationPreviewResponsiveLayoutContractsTests.cs` owns the former
   legacy presentation-preview MainWindow responsive shell layout and breakpoint
   policy checks.
@@ -243,22 +242,6 @@ add xUnit alongside, and port incrementally.
 - `XUnit.PresentationPreviewOutputPathContractsTests.cs` owns the former legacy
   presentation-preview MainWindow output path display, truncation formatter, and
   button-action checks.
-- `XUnit.PresentationPreviewMainViewModelOutputPathContractsTests.cs` owns the
-  former legacy presentation-preview MainViewModel output path and disk-space
-  presentation group: retired output picker partial ownership, invalid-path
-  fallback behavior, and focused free-space presentation helper ownership.
-- `XUnit.PresentationPreviewMainViewModelSourceTelemetryContractsTests.cs` owns
-  the former legacy presentation-preview MainViewModel source-telemetry
-  presentation group: source/target summary formatting, focused source
-  telemetry helper ownership, and live-signal pixel-format fallback order.
-- `XUnit.PresentationPreviewMainViewModelDependencyCompositionContractsTests.cs`
-  owns the former legacy presentation-preview MainViewModel dependency
-  composition group: root dependency seam, UI dispatch, presentation, recording,
-  capture/device, and runtime controller context ownership checks.
-- `XUnit.PresentationPreviewMainViewModelRuntimeContractsTests.cs` owns the
-  final former legacy presentation-preview MainViewModel runtime group:
-  automation preview/HDR/volume routing, audio monitoring, capture settings
-  projection, preview lifecycle ownership, and audio ramp trace telemetry.
 - `XUnit.PresentationPreviewStartupContractsTests.cs` owns the former legacy
   presentation-preview preview-startup groups: ownership, controller behavior,
   signal/failure text, and startup ordering checks.
