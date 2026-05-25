@@ -2296,3 +2296,15 @@ Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudio
 CLI/MCP/pipe checks, if applicable: affected NativeXuAudioProbe build and source-ownership tests cover the moved direct AT and audio-switch workflows; no public command names changed
 Behavior preserved: `at-read`, `at-write`, `at-set-input`, and `i2c-switch` route names, argument handling, output strings, restore behavior, I2C-over-AT helper calls, and selected-device behavior remain unchanged
 Notes for future agents: keep small top-level NativeXuAudioProbe command workflows with `Program.cs`; keep `Program.I2cTransport.cs` separate while multiple I2C command families share it.
+
+Date: 2026-05-25
+Area: diagnostic-session health policy locality
+Problem: Diagnostic-session health severity/observation logic lived in `DiagnosticSessionHealthPolicy.cs`, while the source/preview/Flashback classifiers and sparse-run tolerance helpers lived in adjacent `DiagnosticSessionHealthTolerances.cs`. Understanding why a diagnostic health warning was emitted or tolerated required opening two small policy files that shared the same severity model.
+Files consolidated: `tools/Common/DiagnosticSessionHealthTolerances.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; diagnostic-session support file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`
+CLI/MCP/pipe checks, if applicable: diagnostic-session ownership and runner reflection tests cover the moved sparse-cadence classifier; no CLI command names or automation payloads changed
+Behavior preserved: diagnostic health severity mapping, Flashback warmup filtering, source/signal/preview/Flashback health classifiers, sparse source cadence tolerance, sparse preview scheduler tolerance, and Flashback warning-tolerance predicates remain unchanged
+Notes for future agents: keep diagnostic-session health observation and health-warning tolerance policy together in `DiagnosticSessionHealthPolicy.cs`; do not recreate a separate tolerance bucket unless it becomes an independently tested collaborator with its own state or inputs.

@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionHealthPolicy;
-using static Sussudio.Tools.DiagnosticSessionHealthTolerances;
 using static Sussudio.Tools.DiagnosticSessionMetrics;
 using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;
 

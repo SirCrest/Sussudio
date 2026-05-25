@@ -3264,10 +3264,9 @@ Primary owners:
   recording, playback, and preview scheduler warning policy over already
   projected metrics.
 - `tools/Common/DiagnosticSessionHealthPolicy.cs` owns diagnostic-session health
-  observation, severity, and Flashback warmup filtering.
-- `tools/Common/DiagnosticSessionHealthTolerances.cs` owns diagnostic-session
-  source/preview/Flashback health-observation classifiers, sparse-cadence
-  tolerances, and tolerated Flashback warning classification.
+  observation, severity, Flashback warmup filtering, source/preview/Flashback
+  health-observation classifiers, sparse-cadence tolerances, and tolerated
+  Flashback warning classification.
 - `tools/Common/DiagnosticSessionResultFormatter.cs` owns the public
   human-readable diagnostic-session text flow used by ssctl and MCP plus
   all rendered section rows: overview/health/evidence, capture mode, recording

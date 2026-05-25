@@ -8,30 +8,29 @@ static partial class Program
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var policyText = ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs")
             .Replace("\r\n", "\n");
-        var tolerancesText = ReadRepoFile("tools/Common/DiagnosticSessionHealthTolerances.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(policyText, "internal static class DiagnosticSessionHealthPolicy");
         AssertContains(policyText, "internal readonly record struct DiagnosticHealthObservation");
         AssertContains(policyText, "internal static DiagnosticHealthObservation BuildSessionDiagnosticHealthObservation(");
         AssertContains(policyText, "private static DiagnosticHealthObservation BuildWorstDiagnosticHealthObservationAfterOffset(");
         AssertContains(policyText, "private const double FlashbackDiagnosticWarmupFraction = 0.20;");
-        AssertDoesNotContain(policyText, "internal static bool IsSparseSourceCaptureCadenceWarningRun(");
-        AssertDoesNotContain(policyText, "internal static bool IsToleratedFlashbackScenarioWarning(");
-        AssertContains(tolerancesText, "internal static class DiagnosticSessionHealthTolerances");
-        AssertContains(tolerancesText, "internal static bool IsSourceSignalDiagnosticHealthObservation(");
-        AssertContains(tolerancesText, "internal static bool IsSourceCaptureDiagnosticHealthObservation(");
-        AssertContains(tolerancesText, "internal static bool IsPreviewSchedulerDiagnosticHealthObservation(");
-        AssertContains(tolerancesText, "internal static bool IsFlashbackForceRotateDrainDiagnosticHealthObservation(");
-        AssertContains(tolerancesText, "internal static bool IsSparseSourceCaptureCadenceWarningRun(");
-        AssertContains(tolerancesText, "internal static bool IsSparsePreviewSchedulerDeadlineDropRun(");
-        AssertContains(tolerancesText, "internal static bool IsSparsePreviewSchedulerStressRun(");
-        AssertContains(tolerancesText, "internal static bool IsToleratedFlashbackScenarioWarning(");
+        AssertContains(policyText, "internal static bool IsSourceSignalDiagnosticHealthObservation(");
+        AssertContains(policyText, "internal static bool IsSourceCaptureDiagnosticHealthObservation(");
+        AssertContains(policyText, "internal static bool IsPreviewSchedulerDiagnosticHealthObservation(");
+        AssertContains(policyText, "internal static bool IsFlashbackForceRotateDrainDiagnosticHealthObservation(");
+        AssertContains(policyText, "internal static bool IsSparseSourceCaptureCadenceWarningRun(");
+        AssertContains(policyText, "internal static bool IsSparsePreviewSchedulerDeadlineDropRun(");
+        AssertContains(policyText, "internal static bool IsSparsePreviewSchedulerStressRun(");
+        AssertContains(policyText, "internal static bool IsToleratedFlashbackScenarioWarning(");
         AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionHealthPolicy;");
-        AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionHealthTolerances;");
+        AssertDoesNotContain(builderText, "using static Sussudio.Tools.DiagnosticSessionHealthTolerances;");
         AssertDoesNotContain(runnerText, "private readonly record struct DiagnosticHealthObservation");
         AssertDoesNotContain(runnerText, "private static DiagnosticHealthObservation BuildSessionDiagnosticHealthObservation(");
         AssertDoesNotContain(runnerText, "private static bool IsSparseSourceCaptureCadenceWarningRun(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionHealthTolerances.cs")),
+            "diagnostic-session health tolerance classifiers folded into the health policy owner");
 
         return Task.CompletedTask;
     }

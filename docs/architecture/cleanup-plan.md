@@ -3169,8 +3169,7 @@ metrics while the runner retains scenario orchestration.
 
 Diagnostic-session health policy now lives in
 `tools/Common/DiagnosticSessionHealthPolicy.cs`. It owns health severity,
-observation, and Flashback warmup filtering.
-`tools/Common/DiagnosticSessionHealthTolerances.cs` owns source/preview/Flashback
+observation, Flashback warmup filtering, source/preview/Flashback
 health-observation classifiers, sparse cadence tolerances, and tolerated warning
 classification while the runner still owns scenario execution and warning emission.
 
@@ -3233,7 +3232,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackWaits.cs`
 - `DiagnosticSessionFlashbackValidation.cs`
 - `DiagnosticSessionHealthPolicy.cs`
-- `DiagnosticSessionHealthTolerances.cs`
 - `DiagnosticSessionMetrics.cs`
 - `DiagnosticSessionModels.cs`
 - `DiagnosticSessionResult.cs`

@@ -126,13 +126,13 @@ static partial class Program
     internal static Task DiagnosticSessionRunner_ToleratesSparseSourceCadenceWarningsOnlyWithoutSourceDrops()
     {
         var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
-        var healthTolerancesType = assembly.GetType("Sussudio.Tools.DiagnosticSessionHealthTolerances")
-            ?? throw new InvalidOperationException("DiagnosticSessionHealthTolerances type was not found.");
+        var healthPolicyType = assembly.GetType("Sussudio.Tools.DiagnosticSessionHealthPolicy")
+            ?? throw new InvalidOperationException("DiagnosticSessionHealthPolicy type was not found.");
         var observationType = assembly.GetType("Sussudio.Tools.DiagnosticHealthObservation")
             ?? throw new InvalidOperationException("DiagnosticHealthObservation type was not found.");
         var sourceMetricsType = assembly.GetType("Sussudio.Tools.SourceCadenceSessionMetrics")
             ?? throw new InvalidOperationException("SourceCadenceSessionMetrics type was not found.");
-        var sparseSourceWarning = healthTolerancesType.GetMethod(
+        var sparseSourceWarning = healthPolicyType.GetMethod(
                 "IsSparseSourceCaptureCadenceWarningRun",
                 BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("Sparse source-cadence classifier was not found.");
