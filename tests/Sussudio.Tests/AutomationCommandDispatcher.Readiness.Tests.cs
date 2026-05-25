@@ -46,7 +46,7 @@ static partial class Program
 
     internal static Task AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.WindowCommands.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
         var windowActionBlock = ExtractTextBetween(
             sourceText,

@@ -369,8 +369,7 @@ tables, and ordered dispatch through those tables. Named partials own support
 responsibilities:
 `AutomationCommandDispatcher.CustomCommands.cs`
 also owns WaitForCondition response shaping, wait polling, and snapshot
-predicates; `AutomationCommandDispatcher.WindowCommands.cs`
-handles full-screen, recordings-folder, arm-close, close-arm gating, and
+predicates, full-screen, recordings-folder, arm-close, close-arm gating, and
 low-level window automation action execution; and
 `AutomationCommandDispatcher.Assertions.cs` handles AssertSnapshot response
 shaping, parsing, and comparison helpers. `AutomationCommandDispatcher.Payload.cs`

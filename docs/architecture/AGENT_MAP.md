@@ -217,15 +217,12 @@ Automation diagnostics ownership:
   and `AutomationCommandDispatcher.CustomCommands.cs` consumes the
   device-selection, audio, capture-settings, preview/recording, snapshot-query,
   diagnostics, probe, and window-control ports for custom command bodies,
-  including WaitForCondition response shaping, wait-condition polling, and
-  snapshot predicates.
+  including WaitForCondition response shaping, wait-condition polling, snapshot
+  predicates, full-screen, recordings-folder, arm-close, close-arm gating, and
+  low-level window action execution.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.cs` also owns
   shared response shaping, acknowledged responses, and Flashback rejection
   diagnostics for the dispatcher family.
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.WindowCommands.cs`
-  owns full-screen, recordings-folder, arm-close, and window-action command
-  bodies, including close-arm gating and low-level window action execution,
-  behind the custom command router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs`
   owns AssertSnapshot command response shaping, payload parsing, and snapshot
   comparison helpers.

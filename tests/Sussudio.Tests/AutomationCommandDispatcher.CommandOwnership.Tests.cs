@@ -130,8 +130,7 @@ static partial class Program
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
-        var windowCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.WindowCommands.cs")
-            .Replace("\r\n", "\n");
+        var windowCommandsText = customCommandsText;
 
         AssertContains(customCommandsText, "case AutomationCommandKind.SetFullScreenEnabled:");
         AssertContains(customCommandsText, "ExecuteSetFullScreenEnabledCommandAsync(payload, correlationId, cancellationToken)");
@@ -141,11 +140,6 @@ static partial class Program
         AssertContains(customCommandsText, "ExecuteArmCloseCommand(payload, correlationId)");
         AssertContains(customCommandsText, "case AutomationCommandKind.WindowAction:");
         AssertContains(customCommandsText, "ExecuteWindowActionCommandAsync(payload, correlationId, cancellationToken)");
-
-        AssertDoesNotContain(customCommandsText, "_windowControl.SetFullScreenEnabledAsync");
-        AssertDoesNotContain(customCommandsText, "_windowControl.OpenRecordingsFolderAsync");
-        AssertDoesNotContain(customCommandsText, "_closeArmed");
-        AssertDoesNotContain(customCommandsText, "window-close-not-armed");
 
         AssertContains(windowCommandsText, "_windowControl.SetFullScreenEnabledAsync(enabled, cancellationToken)");
         AssertContains(windowCommandsText, "Full screen {(enabled ? \"enter\" : \"exit\")} requested.");
@@ -166,7 +160,11 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.WindowActions.cs")),
-            "window action executor folded into AutomationCommandDispatcher.WindowCommands.cs");
+            "window action executor folded into AutomationCommandDispatcher.CustomCommands.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.WindowCommands.cs")),
+            "window command bodies folded into AutomationCommandDispatcher.CustomCommands.cs");
 
         return Task.CompletedTask;
     }
