@@ -3310,8 +3310,6 @@ Primary owners:
   policies, including the preview-cycle grouped predicate, used by the runner.
   Keep new scenario booleans and grouped derivations in the plan instead of
   adding string comparisons in `DiagnosticSessionRunner`.
-- `tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon option/result,
-  summary, swap-chain, app-correlation summary, and metric DTOs.
 - `tools/Common/PresentMon/PresentMonProbe.Csv.cs` owns PresentMon CSV parse overloads,
   selected-row filtering, summary assembly, swap-chain normalization/selection,
   header/field parsing, scalar metric reads, CSV line tokenization, row
@@ -3319,7 +3317,8 @@ Primary owners:
   parsed CSV row shapes, app-present correlation, displayed/not-displayed
   outcome classification, warnings, counted text fields, and percentile metric
   aggregation.
-- `tools/Common/PresentMon/PresentMonProbe.cs` owns PresentMon public option
+- `tools/Common/PresentMon/PresentMonProbe.cs` owns PresentMon option/result,
+  summary, swap-chain, app-correlation summary, and metric DTOs, public option
   construction, preview snapshot correlation extraction, run orchestration,
   target process/PresentMon executable/output-path resolution, command-line
   construction, argument quoting, process supervision, stdout/stderr drain,

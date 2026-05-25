@@ -8,7 +8,6 @@ static partial class Program
             => ReadRepoFile($"tools/Common/PresentMon/{fileName}").Replace("\r\n", "\n");
 
         var rootText = ReadPresentMonProbeFile("PresentMonProbe.cs");
-        var modelsText = ReadPresentMonProbeFile("PresentMonProbe.Models.cs");
         var formatText = rootText;
         var csvText = ReadPresentMonProbeFile("PresentMonProbe.Csv.cs");
 
@@ -39,12 +38,16 @@ static partial class Program
         AssertContains(rootText, "private static long? GetPositiveLong(");
         AssertContains(rootText, "private static long? GetNonNegativeLong(");
 
-        AssertContains(modelsText, "public sealed class PresentMonProbeOptions");
-        AssertContains(modelsText, "public sealed class PresentMonProbeResult");
-        AssertContains(modelsText, "public sealed class PresentMonCaptureSummary");
-        AssertContains(modelsText, "public sealed class PresentMonAppCorrelation");
-        AssertContains(modelsText, "public sealed class PresentMonSwapChainSummary");
-        AssertContains(modelsText, "public sealed class PresentMonMetricSummary");
+        AssertContains(rootText, "public sealed class PresentMonProbeOptions");
+        AssertContains(rootText, "public sealed class PresentMonProbeResult");
+        AssertContains(rootText, "public sealed class PresentMonCaptureSummary");
+        AssertContains(rootText, "public sealed class PresentMonAppCorrelation");
+        AssertContains(rootText, "public sealed class PresentMonSwapChainSummary");
+        AssertContains(rootText, "public sealed class PresentMonMetricSummary");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Models.cs")),
+            "PresentMon public DTOs live with PresentMonProbe.RunAsync and result formatting");
 
         AssertContains(formatText, "public static string Format(PresentMonProbeResult result)");
         AssertContains(formatText, "private static void AppendSummaryContext(");
@@ -101,7 +104,6 @@ static partial class Program
         AssertDoesNotContain(rootText, "private static PresentMonCaptureSummary ParseCsv(");
         AssertDoesNotContain(rootText, "private static IReadOnlyList<PresentMonSwapChainSummary> BuildSwapChainSummaries(");
         AssertDoesNotContain(rootText, "private static PresentMonMetricSummary Summarize(");
-        AssertDoesNotContain(modelsText, "PreviewD3DSwapChainAddress");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Csv.Rows.cs")),

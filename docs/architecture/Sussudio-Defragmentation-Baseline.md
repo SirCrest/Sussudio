@@ -2199,7 +2199,19 @@ Partial clusters reduced: `PresentMonProbe` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
 CLI/MCP/pipe checks, if applicable: ssctl/MCP still call `PresentMonProbe.Format(result)`; no automation command names/IDs changed
 Behavior preserved: PresentMon run orchestration, CSV parse handoff, result message shaping, successful/failed format output, stderr inclusion, summary context, metric rows, app correlation text, count fields, and swap-chain list rendering remain unchanged
-Notes for future agents: keep PresentMon run orchestration and text formatting in `PresentMonProbe.cs`; keep CSV parsing/aggregation in `PresentMonProbe.Csv.cs` and public DTOs in `PresentMonProbe.Models.cs`.
+Notes for future agents: superseded by the later PresentMon public model locality consolidation; keep PresentMon run orchestration, text formatting, and public DTOs in `PresentMonProbe.cs`; keep CSV parsing/aggregation in `PresentMonProbe.Csv.cs`.
+
+Date: 2026-05-25
+Area: PresentMon public model locality
+Problem: `PresentMonProbe.Models.cs` held only public DTOs for the single PresentMon probe runner and CSV parser. Changing the probe option/result surface required opening a small model bucket plus the root runner, even though the DTOs are not shared independently of the probe.
+Files consolidated: `tools/Common/PresentMon/PresentMonProbe.Models.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; PresentMon support file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`
+CLI/MCP/pipe checks, if applicable: PresentMon parser/source-ownership and MCP PresentMon tool tests cover the public DTOs, CSV parser, and formatted output; no public MCP tool names or automation command IDs changed
+Behavior preserved: PresentMon option defaults, result shape, capture summary DTOs, swap-chain/app-correlation/metric DTOs, run orchestration, CSV parsing, and result formatting remain unchanged
+Notes for future agents: keep PresentMon public DTOs with `PresentMonProbe.cs`; keep `PresentMonProbe.Csv.cs` as the parser/aggregation owner while it remains a distinct implementation surface.
 
 Date: 2026-05-25
 Area: NativeXuAudioProbe default experiment reporting locality

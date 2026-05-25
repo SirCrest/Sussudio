@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-25T21:44:58Z
+Generated UTC: 2026-05-25T21:51:07Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 411 |
+| Production .cs files | 410 |
 | Test .cs files | 336 |
 | Production .cs files under 60 lines | 7 (1.7%) |
 | Production .cs files under 80 lines | 14 (3.4%) |
@@ -37,7 +37,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | Formatters | 3 | 949 | tools/ssctl/Formatters.Common.cs, tools/ssctl/Formatters.Snapshot.cs, tools/ssctl/Formatters.Timeline.cs |
 | WasapiAudioCapture | 3 | 953 | Sussudio/Services/Audio/WasapiAudioCapture.CaptureLoop.cs, Sussudio/Services/Audio/WasapiAudioCapture.Conversion.cs, Sussudio/Services/Audio/WasapiAudioCapture.cs |
 | CudaD3D11InteropBridge | 2 | 581 | Sussudio/Services/Gpu/CudaD3D11Interop.Copy.cs, Sussudio/Services/Gpu/CudaD3D11Interop.Initialization.cs |
-| PresentMonProbe | 2 | 1094 | tools/Common/PresentMon/PresentMonProbe.cs, tools/Common/PresentMon/PresentMonProbe.Csv.cs |
+| PresentMonProbe | 2 | 1204 | tools/Common/PresentMon/PresentMonProbe.cs, tools/Common/PresentMon/PresentMonProbe.Csv.cs |
 | RecordingVerifier | 2 | 993 | Sussudio/Services/Recording/Verification/RecordingVerifier.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs |
 | CaptureSessionCoordinator | 2 | 961 | Sussudio/Services/Capture/CaptureSessionCoordinator.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs |
 | AutomationCommandDispatcher | 2 | 1638 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs |
@@ -76,11 +76,11 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 684 | Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs |
 | 683 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs |
 | 677 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
+| 662 | tools/Common/PresentMon/PresentMonProbe.cs |
 | 649 | tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs |
 | 647 | Sussudio/Services/Automation/NamedPipeAutomationServer.cs |
 | 646 | Sussudio/Services/Recording/Verification/RecordingVerifier.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
-| 638 | Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs |
 
 ## Sample production files under 60 lines
 

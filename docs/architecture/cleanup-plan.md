@@ -3187,21 +3187,21 @@ result handoff, pipe client exception taxonomy, response-state parsing,
 unknown-command handling, structured error-envelope creation, and common
 transport/protocol exception mapping for the shared command transport.
 
-PresentMon model ownership and CSV parsing are split from the probe runner.
-`tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon options, result,
-summary, swap-chain, app-correlation summary, and metric DTOs.
+PresentMon public DTOs and runner behavior live together in
+`tools/Common/PresentMon/PresentMonProbe.cs`: options, result, summary,
+swap-chain, app-correlation summary, metric DTOs, public option construction,
+preview snapshot correlation extraction, run orchestration, target
+process/PresentMon executable/output-path resolution, command-line
+construction, argument quoting, process supervision, stdout/stderr drain,
+timeout kill, temp CSV cleanup, probe-result message shaping, and result text
+formatting.
 `tools/Common/PresentMon/PresentMonProbe.Csv.cs` owns CSV parse overloads, selected-row
 filtering, summary assembly, swap-chain normalization/selection, header/field parsing,
 scalar metric reads, CSV line tokenization, row ingestion, header index
 construction, schema-presence detection, blank-line skipping, row index
 assignment, private parsed CSV row shapes, row projection from header-indexed
 fields, app-present correlation, warnings, counted text fields, and percentile
-metric aggregation. `tools/Common/PresentMon/PresentMonProbe.cs` keeps
-the public option construction, preview snapshot correlation extraction, run
-orchestration, target process/PresentMon executable/output-path resolution,
-command-line construction, argument quoting, process supervision, stdout/stderr
-drain, timeout kill, temp CSV cleanup, probe-result message shaping, and result
-text formatting.
+metric aggregation.
 
 EGAVDS audio probing keeps the CLI command flow, SetupAPI device lookup,
 audio input/gain actions, SWIG callback registration, EGAVDeviceSupport
