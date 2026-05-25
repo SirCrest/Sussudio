@@ -1367,8 +1367,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.SelectionOwners.Tests.cs`
   owns capture device, audio input, capture mode, recording selection, and
   selection-normalizer placement assertions.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.DeviceAudio.Tests.cs`
-  owns capture selection device-audio projection ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs`
+  also owns capture selection device-audio projection ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionNormalizer.Tests.cs`
   owns capture ComboBox selection normalizer fallback-policy assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.DeviceActions.Tests.cs`
@@ -1449,8 +1449,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.FlashbackExport.Tests.cs`
   owns capture-service and dispatcher Flashback export operation ownership
   assertions used by diagnostics refresh.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.CoreOwnership.Tests.cs`
-  owns the diagnostics refresh core ownership orchestrator.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
+  owns the diagnostics refresh root check and core ownership orchestrator.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.EvaluationOwnership.Tests.cs`
   owns diagnostics refresh evaluation-policy, diagnostic evaluation, realtime
   and Flashback diagnostic lane ownership assertions.
@@ -1877,9 +1877,8 @@ Primary current owners:
   `FfmpegRuntimeInit.cs` owns one-time native initialization, FFmpeg log callback
   routing, and recoverable seek-log suppression.
 - `tests/Sussudio.Tests/ProjectBuildContracts.Tests.cs` owns project-file build
-  and publish policy contract helpers. `tests/Sussudio.Tests/XUnit.ProjectBuildContractsTests.cs`
-  owns xUnit execution for those checks after their removal from the legacy
-  offline harness catalog.
+  and publish policy contract helpers plus xUnit execution for those checks
+  after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns recording
   service contract DTO checks such as GpuPipelineHandles,
   RecordingContextRequest, FinalizeResult, and RecordingStats.

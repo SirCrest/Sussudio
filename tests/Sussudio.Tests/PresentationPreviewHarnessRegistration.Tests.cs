@@ -20,7 +20,6 @@ static partial class Program
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionTooltipFormatter.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.CollectionSync.Tests.cs",
-        "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.DeviceAudio.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.PropertyRouter.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.SelectionOwners.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionNormalizer.Tests.cs",

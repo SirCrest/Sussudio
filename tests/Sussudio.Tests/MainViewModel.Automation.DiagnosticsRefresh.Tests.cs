@@ -29,4 +29,10 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static void AssertDiagnosticsRefreshCoreOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
+    {
+        AssertDiagnosticsRefreshEvaluationOwnership(diagnostics);
+        AssertDiagnosticsRefreshRuntimeOwnership(diagnostics);
+        AssertDiagnosticsRefreshSnapshotConstructionOwnership(diagnostics);
+    }
 }

@@ -172,9 +172,9 @@ add xUnit alongside, and port incrementally.
   Flashback buffer startup/recovery checks.
 - Preview-startup ordering checks also live in
   `XUnit.PresentationPreviewStartupContractsTests.cs`.
-- `XUnit.ProjectBuildContractsTests.cs` owns the former legacy project-file
-  build/publish policy execution check after its removal from the
-  presentation-preview capture catalog.
+- `ProjectBuildContracts.Tests.cs` owns the former legacy project-file
+  build/publish policy implementation and xUnit execution check after its
+  removal from the presentation-preview capture catalog.
 - `XUnit.PresentationPreviewD3DContractsTests.cs` owns the former legacy
   presentation-preview D3D registration groups: pacing, geometry/screenshot,
   present cadence, device-lost, diagnostics, contracts/metrics ownership,

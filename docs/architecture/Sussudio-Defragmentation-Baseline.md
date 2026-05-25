@@ -2025,3 +2025,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
 Behavior preserved: the same public test class names, `[Fact]` method names, delegated `Program` checks, and target-assembly bootstrap behavior remain available in neighboring xUnit owner files
 Notes for future agents: keep presentation-preview harness registration wrappers with `XUnit.PresentationPreviewStartupContractsTests.cs`, ssctl command-handler wrappers with `XUnit.ToolContractsTests.cs`, and architecture-doc reference wrappers with `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` unless a group needs independent fixtures or executable helper state
+
+Date: 2026-05-25
+Area: Small test dispatcher locality
+Problem: Three tiny test files only dispatched to nearby owner checks: the project-build xUnit wrapper, diagnostics-refresh core ownership dispatcher, and capture selection-binding device-audio projection check. Each belonged with a surrounding root/owner file and did not provide an independent fixture, helper boundary, or behavior owner.
+Files consolidated: `tests/Sussudio.Tests/XUnit.ProjectBuildContractsTests.cs`; `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.CoreOwnership.Tests.cs`; `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.DeviceAudio.Tests.cs`
+Files added: none
+Net production .cs delta: 0
+Net test .cs delta: -3
+Partial clusters reduced: small test dispatcher/wrapper file count -3
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; test wrapper/dispatcher consolidation only
+Behavior preserved: the same public xUnit class/fact names and `Program` helper names remain available from neighboring owner files, and the presentation-preview harness inventory now points at the consolidated selection-binding owner file
+Notes for future agents: keep project-build xUnit execution with `ProjectBuildContracts.Tests.cs`, diagnostics-refresh root orchestration with `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`, and capture selection-binding device-audio projection checks with `MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs`
