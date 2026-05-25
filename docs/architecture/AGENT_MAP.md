@@ -1502,7 +1502,8 @@ Primary current owners:
   resolved automatic frame-rate application, and recording format selection
   policy ownership.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.DeviceFormatProbeRetarget.Tests.cs`
-  owns late device-format probe retarget policy behavior assertions.
+  owns late device-format probe retarget policy behavior and application
+  ownership assertions.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview late
   device-format probe retarget catalog group.
