@@ -253,9 +253,13 @@ static partial class Program
 
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var d3d11Text = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs")
+        var d3d11Text = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs")
             .Replace("\r\n", "\n");
         AssertDoesNotContain(rootText, "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.D3D11.cs")),
+            "Flashback decoder D3D11VA initialization lives with video decoder setup.");
         var initializeBlock = ExtractTextBetween(
             d3d11Text,
             "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)",

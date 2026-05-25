@@ -8,7 +8,7 @@ static partial class Program
     internal static Task FlashbackSuppressedExceptionsUseAppLogs()
     {
         var decoderText = ReadFlashbackDecoderSource();
-        var d3d11Text = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs").Replace("\r\n", "\n");
+        var d3d11Text = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs").Replace("\r\n", "\n");
         var d3d11DiscoveryText = d3d11Text;
 
         var openFileBlock = ExtractTextBetween(
@@ -28,7 +28,11 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.D3D11Discovery.cs")),
-            "Flashback decoder D3D11VA discovery folded into D3D11 decoder initialization owner");
+            "Flashback decoder D3D11VA discovery folded into video decoder setup owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.D3D11.cs")),
+            "Flashback decoder D3D11VA setup folded into video decoder setup owner");
         AssertContains(d3d11DiscoveryText, "private static AVCodec* FindD3D11VADecoder(AVCodecID codecId, out string codecName)");
         AssertContains(d3d11DiscoveryText, "ffmpeg.avcodec_find_decoder_by_name(preferredName)");
         AssertContains(d3d11DiscoveryText, "AVCodecID.AV_CODEC_ID_AV1 => \"av1\"");

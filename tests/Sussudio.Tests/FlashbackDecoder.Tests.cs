@@ -137,7 +137,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackDecoder_VideoSetupLivesInFocusedPartial()
+    internal static Task FlashbackDecoder_VideoSetupOwnsHardwareAndSoftwareSetup()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
@@ -145,9 +145,17 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(videoSetupText, "private void InitializeVideoDecoder()");
+        AssertContains(videoSetupText, "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)");
+        AssertContains(videoSetupText, "private bool TryInitializeD3D11VADecoder(AVCodecParameters* codecPar)");
+        AssertContains(videoSetupText, "private static AVCodec* FindD3D11VADecoder(AVCodecID codecId, out string codecName)");
         AssertContains(videoSetupText, "private void AllocateVideoOutputBuffers()");
         AssertDoesNotContain(rootText, "private void InitializeVideoDecoder()");
+        AssertDoesNotContain(rootText, "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)");
         AssertDoesNotContain(rootText, "private void AllocateVideoOutputBuffers()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.D3D11.cs")),
+            "FlashbackDecoder D3D11VA setup folded into video setup owner");
 
         return Task.CompletedTask;
     }

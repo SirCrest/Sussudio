@@ -1706,11 +1706,7 @@ encoding completion task exposure there.
 Flashback decoder audio output now lives in
 `Sussudio/Services/Flashback/FlashbackDecoder.AudioOutput.cs`. Keep audio packet
 delivery, audio codec/resampler initialization, audio callback failure handling,
-resampler output conversion, and bounded audio sample/byte sizing there. D3D11 device-context initialization, get-format callback behavior, and hardware
-decoder context setup now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs`. Keep D3D11VA decoder
-selection and hardware-configuration diagnostics there beside hardware decoder
-context setup. Decoded video frame
+resampler output conversion, and bounded audio sample/byte sizing there. Decoded video frame
 output, PTS-to-TimeSpan conversion, and best-effort frame timestamp selection now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs` with software
 plane copies and YUV-to-NV12/P010 conversion kernels. Keep file
@@ -1730,9 +1726,11 @@ decode phase timing accumulation lives with
 `Sussudio/Services/Flashback/FlashbackDecoder.DecodeLoop.cs`.
 Decoded video/audio output DTOs now live in the root decoder beside the
 decoder's public output surface, instead of a sub-40-line output-type fragment.
-Video codec setup, D3D11VA/software fallback selection, frame-rate metadata
-initialization, MJPEG single-thread decode policy, and software output-buffer
-allocation now live in
+Video codec setup, D3D11 device-context initialization, get-format callback
+behavior, hardware decoder context setup, D3D11VA/software fallback selection,
+D3D11VA decoder selection, hardware-configuration diagnostics, frame-rate
+metadata initialization, MJPEG single-thread decode policy, and software
+output-buffer allocation now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs`.
 
 Flashback buffer retention now lives in

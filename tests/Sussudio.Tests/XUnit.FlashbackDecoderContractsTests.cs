@@ -35,8 +35,8 @@ public sealed class FlashbackDecoderContractsTests
         => global::Program.FlashbackDecoder_OutputTypesLiveWithDecoderRoot();
 
     [Fact]
-    public Task FlashbackDecoderVideoSetupLivesInFocusedPartial()
-        => global::Program.FlashbackDecoder_VideoSetupLivesInFocusedPartial();
+    public Task FlashbackDecoderVideoSetupOwnsHardwareAndSoftwareSetup()
+        => global::Program.FlashbackDecoder_VideoSetupOwnsHardwareAndSoftwareSetup();
 
     [Fact]
     public Task FlashbackDecoderSeekingLivesInFocusedPartial()
