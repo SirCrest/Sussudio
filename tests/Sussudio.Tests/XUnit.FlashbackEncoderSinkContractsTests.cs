@@ -75,8 +75,8 @@ public sealed class FlashbackEncoderSinkContractsTests
         => global::Program.FlashbackEncoderSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches();
 
     [Fact]
-    public Task FlashbackEncoderSinkPacketDrainsLiveInFocusedPartial()
-        => global::Program.FlashbackEncoderSink_PacketDrainLivesInFocusedPartial();
+    public Task FlashbackEncoderSinkEncodingThreadWorkLivesInEncodingLoop()
+        => global::Program.FlashbackEncoderSink_EncodingThreadWorkLivesInEncodingLoop();
 
     [Fact]
     public Task FlashbackEncoderSinkQueueCleanupLivesInFocusedPartial()

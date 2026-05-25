@@ -87,11 +87,11 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackEncoderSink_PacketDrainLivesInFocusedPartial()
+    internal static Task FlashbackEncoderSink_EncodingThreadWorkLivesInEncodingLoop()
     {
         var loopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs").Replace("\r\n", "\n");
-        var packetDrainText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.PacketDrain.cs").Replace("\r\n", "\n");
-        var encodingProgressText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingProgress.cs").Replace("\r\n", "\n");
+        var packetDrainText = loopText;
+        var encodingProgressText = loopText;
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
             ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
@@ -100,10 +100,6 @@ static partial class Program
         AssertContains(loopText, "DrainAudioPackets(audioQueue.Reader)");
         AssertContains(loopText, "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
         AssertContains(loopText, "var finalPts = ResolveEncoderPts();");
-        AssertDoesNotContain(loopText, "private bool DrainVideoPackets(");
-        AssertDoesNotContain(loopText, "private bool DrainGpuPackets(");
-        AssertDoesNotContain(loopText, "private TimeSpan ResolveEncoderPts()");
-        AssertDoesNotContain(loopText, "private void OnVideoFrameEncoded()");
 
         AssertContains(packetDrainText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(packetDrainText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
@@ -119,8 +115,16 @@ static partial class Program
         AssertContains(encodingProgressText, "FrameEncoded?.Invoke(this, encoded);");
         AssertContains(encodingProgressText, "FLASHBACK_SINK_ROTATE");
         AssertContains(encodingProgressText, "FLASHBACK_SINK_ROTATE_FAIL");
-        AssertContains(docsText, "FlashbackEncoderSink.PacketDrain.cs");
-        AssertContains(docsText, "FlashbackEncoderSink.EncodingProgress.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.EncodingLoop.cs");
+        AssertContains(docsText, "bounded video/GPU/audio/microphone packet drains");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.PacketDrain.cs")),
+            "FlashbackEncoderSink.PacketDrain.cs folded into FlashbackEncoderSink.EncodingLoop.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.EncodingProgress.cs")),
+            "FlashbackEncoderSink.EncodingProgress.cs folded into FlashbackEncoderSink.EncodingLoop.cs");
 
         return Task.CompletedTask;
     }
