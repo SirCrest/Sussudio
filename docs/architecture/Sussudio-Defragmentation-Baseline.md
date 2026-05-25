@@ -2248,3 +2248,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: audio frame counters, callback interval snapshot, severe-gap/discontinuity/timestamp/glitch counters, audio-level event throttling, peak/clipping calculation, callback tracking, packet flag tracking, and initialization-time metric reset consumers remain unchanged.
 Notes for future agents: keep WASAPI capture lifecycle state and diagnostics counters in `WasapiAudioCapture.cs`; keep capture-thread fan-out in `WasapiAudioCapture.CaptureLoop.cs` and sample conversion/resampling in `WasapiAudioCapture.Conversion.cs`.
+
+Date: 2026-05-25
+Area: CaptureService Flashback controls locality
+Problem: `CaptureService.FlashbackState.cs` owned public Flashback state, segment access, enable/disable, and restart while `CaptureService.FlashbackSettings.cs` owned adjacent settings, format, and encoder-cycle controls. Reviewing service-level Flashback controls required opening two adjacent partials for one transition surface.
+Files consolidated: `Sussudio/Services/Capture/CaptureService.FlashbackState.cs`; `Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs`
+Files added: `Sussudio/Services/Capture/CaptureService.FlashbackControls.cs`
+Net production .cs delta: -1
+Partial clusters reduced: `CaptureService` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: Flashback state/segment projections, enable/disable/restart transition gating, settings updates, playback GPU decode propagation, recording format updates, encoder-setting cycles, buffer-cycle lock ordering/rebuild fallbacks, rollback logging, and recording-active defer policy remain unchanged
+Notes for future agents: keep service-level Flashback state, enable/restart, settings, format, encoder-cycle, and buffer-cycle coordination in `CaptureService.FlashbackControls.cs`; keep preview-backend startup/disposal in `CaptureService.FlashbackPreviewBackend.cs` and recording backend/session-context policy in `CaptureService.FlashbackRecording.cs`.

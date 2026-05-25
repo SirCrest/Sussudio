@@ -150,7 +150,7 @@ static partial class Program
     internal static Task RecordingBackendFlashbackBufferCycle_PreservesPolicies()
     {
         var sources = ReadRecordingQueueOverloadPolicySources();
-        var bufferCycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs")
+        var bufferCycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
             .Replace("\r\n", "\n");
         var finalizeBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs")
             .Replace("\r\n", "\n");
@@ -190,10 +190,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackState.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
             + "\n" + ReadCaptureServiceAudioSource()
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Failures.cs")

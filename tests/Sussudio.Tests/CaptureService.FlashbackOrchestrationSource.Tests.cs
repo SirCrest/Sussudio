@@ -5,10 +5,9 @@ static partial class Program
 {
     private static readonly string[] CaptureServiceFlashbackOrchestrationFiles =
     {
-        "Sussudio/Services/Capture/CaptureService.FlashbackState.cs",
+        "Sussudio/Services/Capture/CaptureService.FlashbackControls.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs",
-        "Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs",
-        "Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs"
+        "Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs"
     };
 
     private static readonly string[] CaptureServiceRecordingFinalizationFiles =
@@ -61,10 +60,10 @@ static partial class Program
 
     internal static Task CaptureService_FlashbackOrchestrationLivesInFocusedPartials()
     {
-        var flashbackStateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackState.cs");
+        var flashbackStateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs");
         var flashbackRecordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs");
         var previewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs");
-        var settingsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs");
+        var settingsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
         var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
@@ -102,17 +101,17 @@ static partial class Program
         AssertContains(settingsText, "private void UpdateEncodingSettings(CaptureSettings source)");
         AssertContains(settingsText, "public Task CycleFlashbackEncoderSettingsAsync(");
         AssertContains(settingsText, "FLASHBACK_ENCODER_SETTINGS_CHANGE_ROLLBACK");
-        AssertContains(agentMapText, "CaptureService.FlashbackState.cs");
+        AssertContains(agentMapText, "CaptureService.FlashbackControls.cs");
         AssertDoesNotContain(agentMapText, "CaptureService.FlashbackEnable.cs");
         AssertDoesNotContain(agentMapText, "CaptureService.FlashbackRestart.cs");
-        AssertContains(agentMapText, "CaptureService.FlashbackSettings.cs");
-        AssertDoesNotContain(agentMapText, "CaptureService.FlashbackControls.cs");
+        AssertDoesNotContain(agentMapText, "CaptureService.FlashbackState.cs");
+        AssertDoesNotContain(agentMapText, "CaptureService.FlashbackSettings.cs");
         AssertDoesNotContain(agentMapText, "CaptureService.FlashbackSettingsControls.cs");
-        AssertContains(cleanupPlanText, "CaptureService.FlashbackState.cs");
+        AssertContains(cleanupPlanText, "CaptureService.FlashbackControls.cs");
         AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackEnable.cs");
         AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackRestart.cs");
-        AssertContains(cleanupPlanText, "CaptureService.FlashbackSettings.cs");
-        AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackControls.cs");
+        AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackState.cs");
+        AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackSettings.cs");
         AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackSettingsControls.cs");
         AssertContains(agentMapText, "FlashbackBackendResources.cs");
         AssertContains(cleanupPlanText, "FlashbackBackendResources.cs");
@@ -148,11 +147,14 @@ static partial class Program
         AssertDoesNotContain(flashbackStateText, "private async Task EnsureFlashbackAudioInputsAsync(");
         AssertDoesNotContain(flashbackStateText, "private async Task EnsureFlashbackPreviewBackendAsync(");
         AssertDoesNotContain(flashbackStateText, "private async Task DisposeFlashbackPreviewBackendAsync(");
-        AssertDoesNotContain(flashbackStateText, "private async Task CycleFlashbackBufferAsync(");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackControls.cs")),
-            "old broad Flashback controls file removed");
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackState.cs")),
+            "Flashback state owner folded into CaptureService.FlashbackControls.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackSettings.cs")),
+            "Flashback settings owner folded into CaptureService.FlashbackControls.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackSettingsControls.cs")),

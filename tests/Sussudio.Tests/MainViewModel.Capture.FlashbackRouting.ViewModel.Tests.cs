@@ -74,13 +74,7 @@ static partial class Program
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackState.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadCaptureServiceAudioSource();
 

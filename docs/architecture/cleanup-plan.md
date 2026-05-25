@@ -1058,11 +1058,9 @@ and faulted state writes route through root CaptureService transition helpers.
 Flashback backend cleanup must not write session state directly.
 
 Flashback-facing capture controls now live in focused CaptureService partials:
-`Sussudio/Services/Capture/CaptureService.FlashbackState.cs` owns public
+`Sussudio/Services/Capture/CaptureService.FlashbackControls.cs` owns public
 Flashback state, segment access, enable/disable transition gating, restart
-entry points, and committed restart orchestration after preview backend
-teardown.
-`Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs` owns
+entry points, committed restart orchestration after preview backend teardown,
 buffer/GPU settings updates, live playback-controller GPU decode propagation,
 recording-format changes, active encoding-setting application, encoder-setting
 cycles, and rollback after failed Flashback buffer cycles

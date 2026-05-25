@@ -139,7 +139,7 @@ static partial class Program
         var disposeBackendCore = ExtractTextBetween(
             captureServiceText,
             "private async Task DisposeFlashbackPreviewBackendCoreAsync",
-            "    private async Task CycleFlashbackBufferAsync");
+            "    private FlashbackPreviewBackendDisposalRequest CreateFlashbackPreviewBackendDisposalRequest");
         AssertContains(disposeBackendCore, "FlashbackPreviewBackendDisposalRequest request)");
         AssertContains(disposeBackendCore, "_flashbackBackend.DisposePreviewBackendAsync(request)");
 
