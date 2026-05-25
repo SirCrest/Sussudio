@@ -157,8 +157,8 @@ Entry points:
   retry policy.
 - `AutomationPipeSecurityPolicy.cs` owns the fallback-security predicate shared
   by app and tests.
-- `tests/Sussudio.Tests/AutomationToolContracts.CommandKinds.Tests.cs` owns the
-  golden numeric command-ID table. Routing tests should assert captured
+- `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns the golden
+  numeric command-ID adapter. Routing tests should assert captured
   `request.command` values through `AssertAutomationCommandId`, not raw numbers
   or direct golden-table lookups.
 
@@ -1899,29 +1899,26 @@ Primary current owners:
   owns ready-independent no-hardware command coverage and harness payload/fake
   device support.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
-  reflection helpers for automation tool contract tests.
+  reflection helpers plus automation command kind, catalog metadata, manifest,
+  path-policy, and reliability-gates contract checks for automation tool tests.
 - `tests/Sussudio.Tests/AutomationCommandGoldenTable.cs` owns the shared golden
   automation command table used by protocol, manifest, and MCP tests.
 - `tests/Sussudio.Tests/AutomationContracts.ProtocolXunit.Tests.cs` owns fast
   xUnit coverage for pure `Sussudio.Automation.Contracts` command IDs,
   manifest IDs, pipe protocol command resolution, timeout, auth-token, envelope,
   and `CommandMap` contracts.
-- `tests/Sussudio.Tests/AutomationToolContracts.CommandKinds.Tests.cs` owns
-  legacy harness coverage for window action enum membership and keeps the
+- `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns legacy harness
+  coverage for window action enum membership and keeps the
   `ExpectedAutomationCommands()` adapter used by protocol/MCP helpers.
 - `tests/Sussudio.Tests/AutomationToolContracts.ProtocolXunit.Tests.cs` owns
   automation client timeout policy, advanced command-map alignment,
   pipe-connect failure, tool delegation, script freshness, and response-state
   contract tests. It uses `RuntimeContractSource.ReadAutomationPipeClientSource()`
   for the shared AutomationPipeClient source family.
-- `tests/Sussudio.Tests/AutomationToolContracts.Catalog.Tests.cs` owns shared
-  implementations for automation command catalog and command policy metadata
+- `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` also owns shared
+  implementations for automation command catalog metadata, manifest projection,
+  path policy validation, manifest serialization, and reliability-gates script
   contract tests.
-- `tests/Sussudio.Tests/AutomationToolContracts.Manifest.Tests.cs` owns shared
-  implementations for automation manifest projection, path policy validation,
-  and manifest serialization contract tests.
-- `tests/Sussudio.Tests/AutomationToolContracts.Reliability.Tests.cs` owns the
-  shared implementation for the reliability-gates script contract test.
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns the
   xUnit execution surface for catalog, manifest, path-policy, and
   reliability-gates checks after their removal from the legacy offline harness

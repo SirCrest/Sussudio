@@ -2103,3 +2103,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: diagnostic-session runner tests remain in the xUnit suite and exercise the same reflective runner plus synthetic command delegates
 Behavior preserved: the same internal `Program` test method names, helper methods, reflective runner setup, JSON parsing, and scenario assertions remain in one runner owner file
 Notes for future agents: keep diagnostic-session runner helper and synthetic-command behavior tests in `McpToolSurface.DiagnosticSession.Runner.Tests.cs` unless a subgroup grows a distinct fixture or external-process seam
+
+Date: 2026-05-25
+Area: Automation tool contract test locality
+Problem: Automation tool contract coverage split shared reflection helpers away from command-kind, catalog metadata, manifest/path-policy, and reliability-gates checks. These fragments all use the same automation contract/tool reflection helper surface and are small enough to review as one contract owner while leaving larger protocol and snapshot-formatter seams separate.
+Files consolidated: `tests/Sussudio.Tests/AutomationToolContracts.CommandKinds.Tests.cs`; `tests/Sussudio.Tests/AutomationToolContracts.Catalog.Tests.cs`; `tests/Sussudio.Tests/AutomationToolContracts.Manifest.Tests.cs`; `tests/Sussudio.Tests/AutomationToolContracts.Reliability.Tests.cs`
+Files added: none
+Net production .cs delta: 0
+Net test .cs delta: -4
+Partial clusters reduced: `Program` automation tool contract partial-family file count -4
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: automation tool contract checks remain in the xUnit suite through existing wrappers
+Behavior preserved: the same internal `Program` test method names, `ExpectedAutomationCommands()` adapter, reflection helpers, catalog/manifest/path-policy assertions, and reliability-gates script checks remain in `AutomationToolContracts.Tests.cs`
+Notes for future agents: keep shared automation command catalog/manifest/path-policy/reliability contract checks in `AutomationToolContracts.Tests.cs`; use separate files only for distinct protocol, snapshot formatter, or tool-probe seams

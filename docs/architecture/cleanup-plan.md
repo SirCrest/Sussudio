@@ -527,10 +527,11 @@ diagnostics contract, device-lost behavior, and frame-flow/shared-device
 assertions. Source ownership coverage lives in focused ContractsAndMetrics,
 RenderPipeline, RenderThread, RuntimeCapture owner files.
 
-`tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` now keeps only shared
-reflection helpers. Pure `Sussudio.Automation.Contracts` command ID, manifest
-ID, protocol resolution, timeout/auth/envelope, and `CommandMap` checks now
-have fast xUnit coverage in
+`tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` keeps shared reflection
+helpers plus automation command kind, catalog metadata, manifest/path-policy,
+and reliability-gates contract checks. Pure `Sussudio.Automation.Contracts`
+command ID, manifest ID, protocol resolution, timeout/auth/envelope, and
+`CommandMap` checks now have fast xUnit coverage in
 `tests/Sussudio.Tests/AutomationContracts.ProtocolXunit.Tests.cs`, backed by
 the single golden command table in
 `tests/Sussudio.Tests/AutomationCommandGoldenTable.cs`. The legacy protocol
@@ -539,8 +540,7 @@ owns automation client timeout policy, advanced command-map alignment,
 pipe-failure contracts, tool delegation, script freshness, and response-state
 parsing, using `RuntimeContractSource.ReadAutomationPipeClientSource()` for
 the shared AutomationPipeClient source family. Automation tool contract coverage is
-otherwise split into catalog/manifest/path-policy contracts, reliability-gates
-script checks, shared/ssctl snapshot formatter contracts, and tool-probe
+otherwise split into shared/ssctl snapshot formatter contracts and tool-probe
 contracts. `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns
 the xUnit execution surface for catalog, manifest, path-policy, and
 reliability-gates checks after their removal from the legacy offline harness
