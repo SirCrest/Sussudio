@@ -13,7 +13,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var scannerText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackSessionRecoveryScanner.cs")
             .Replace("\r\n", "\n");
-        var playbackSegmentEdgesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs")
+        var playbackSegmentEdgesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
             .Replace("\r\n", "\n");
         var playbackSegmentSwitchText = playbackSegmentEdgesText;
         var decoderSegmentReopenText = playbackSegmentEdgesText;

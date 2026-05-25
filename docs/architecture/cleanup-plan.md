@@ -2662,7 +2662,7 @@ seek-display and playback-submit failure recovery plus decode-error snap,
 near-live snap, and software-decode-budget recovery back to live playback state
 now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`;
-keep seek commands and segment-edge handling in their named partials.
+keep seek commands in their named partial.
 
 Flashback playback decoder file handling now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs`.
@@ -2673,8 +2673,8 @@ timing, cleanup telemetry, active fMP4 reopen retry, keyframe-reopen recovery,
 near-live reopen guards, adjacent-segment seek fallback policy, segment-start
 probing, segment switch telemetry, and adjacent-seek failure handling.
 Segment-edge fMP4 reopen/reseek recovery and fMP4 reopen audio-gate restoration
-now live with segment-edge playback handling in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs`.
+now live with playback frame progression in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`.
 Keep seek-display and playback pacing in the controller core/thread partials.
 
 Flashback continuous playback progression and timing policy now live with
@@ -2695,7 +2695,7 @@ Segment-edge routing decisions, write-head waits, next-segment switch
 transactions, next-file probing, decoder open/seek, switch counters, audio
 gates, cadence-baseline reset, and active fMP4 reopen/reseek recovery during
 segment-edge handling now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs`.
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`.
 The live-state recovery implementation is local to
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`.
 Audio-master clock sample state, stale-clock detection, read-only A/V drift
