@@ -13,8 +13,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var rollingPollText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingPoll.cs")
             .Replace("\r\n", "\n");
-        var rollingCommandGroupsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingCommandGroups.cs")
-            .Replace("\r\n", "\n");
+        var rollingCommandGroupsText = rollingPollText;
         var snapshotAssemblyText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs")
             .Replace("\r\n", "\n");
         var telemetryDetailsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.cs")
@@ -50,9 +49,9 @@ static partial class Program
         AssertDoesNotContain(rollingPollText, "new SourceSignalTelemetrySnapshot");
         AssertContains(rollingPollText, "PopulateInitialRollingCache(handle, nodeId, cancellationToken);");
         AssertContains(rollingPollText, "RefreshRollingGroup(handle, nodeId, _rollingGroup, cancellationToken);");
-        AssertDoesNotContain(rollingPollText, "private AtCommandResult SendRollingCommand(");
-        AssertDoesNotContain(rollingPollText, "private void PopulateInitialRollingCache(");
-        AssertDoesNotContain(rollingPollText, "private void RefreshRollingGroup(");
+        AssertContains(rollingPollText, "private AtCommandResult SendRollingCommand(");
+        AssertContains(rollingPollText, "private void PopulateInitialRollingCache(");
+        AssertContains(rollingPollText, "private void RefreshRollingGroup(");
         AssertContains(rollingCommandGroupsText, "public sealed partial class NativeXuAtCommandProvider");
         AssertContains(rollingCommandGroupsText, "private AtCommandResult SendRollingCommand(");
         AssertContains(rollingCommandGroupsText, "cancellationToken.ThrowIfCancellationRequested();");
@@ -60,6 +59,10 @@ static partial class Program
         AssertContains(rollingCommandGroupsText, "private void RefreshRollingGroup(");
         AssertContains(rollingCommandGroupsText, "case 5: // Diagnostics");
         AssertDoesNotContain(rollingCommandGroupsText, "private static bool IsUnsupportedNodeFailure(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.RollingCommandGroups.cs")),
+            "rolling command batch dispatch folded into NativeXuAtCommandProvider.RollingPoll.cs");
         AssertContains(snapshotAssemblyText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
         AssertContains(snapshotAssemblyText, "private static readonly double[] CanonicalFrameRates");
         AssertContains(snapshotAssemblyText, "private readonly record struct VicTiming(");
@@ -84,8 +87,8 @@ static partial class Program
         AssertDoesNotContain(snapshotAssemblyText, "Math.Exp(4.0 * y)");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.InterfaceRead.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
-        AssertContains(probeProjectText, "NativeXuAtCommandProvider.RollingCommandGroups.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.RollingCommandGroups.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.CommandResults.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.Timing.cs");
 

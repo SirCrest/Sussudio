@@ -1572,9 +1572,8 @@ into the active rolling poll path.
 Native XU active rolling polling now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingPoll.cs`. Keep
 poll cadence gates, cached AT-command fields, incomplete-cache handling, and
-group advancement there. Rolling command batch construction/refresh and
-per-command cancellation checks now live in
-`NativeXuAtCommandProvider.RollingCommandGroups.cs`.
+group advancement there, along with rolling command batch construction/refresh
+and per-command cancellation checks.
 
 Native XU selected-interface reading now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.InterfaceRead.cs`. Keep
@@ -2246,9 +2245,8 @@ Native XU AT-command transport and payload parsing now live in
 AT read/write frames, LRC/envelope handling, device-ID parsing, and command
 failure formatting there; keep payload decoders in
 `NativeXuAtCommandProvider.PayloadDecoding.cs`, keep rolling telemetry polling
-in `NativeXuAtCommandProvider.RollingPoll.cs`, keep shared source snapshot
-assembly in `NativeXuAtCommandProvider.SnapshotAssembly.cs`, and keep rolling
-command batch dispatch in `NativeXuAtCommandProvider.RollingCommandGroups.cs`.
+in `NativeXuAtCommandProvider.RollingPoll.cs`, and keep shared source snapshot
+assembly in `NativeXuAtCommandProvider.SnapshotAssembly.cs`.
 
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples the
