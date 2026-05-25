@@ -1522,7 +1522,7 @@ Partial clusters reduced: `NvdecMjpegDecoder` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation/tool contract changes
 Behavior preserved: Packet/frame/context/buffer release order, packed CPU buffer free, initialized flag reset, disposal logging, and FFmpeg error string formatting remain unchanged
-Notes for future agents: keep NVDEC resource acquisition, disposal, and FFmpeg error text together in `NvdecMjpegDecoder.Initialization.cs`; keep packet decode in `Decode.cs`, CPU download/copy in `Download.cs`, and shared context adoption in `SharedInitialization.cs`
+Notes for future agents: keep NVDEC resource acquisition, caller-provided context adoption, packet decode, CPU download/copy, disposal, and FFmpeg error text together in `NvdecMjpegDecoder.cs` unless a real named collaborator emerges.
 
 Date: 2026-05-24
 Area: Capture session coordinator root locality

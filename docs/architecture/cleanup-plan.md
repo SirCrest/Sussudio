@@ -2256,13 +2256,13 @@ frame-copy paths, and `CudaD3D11Interop.Native.cs` owns CUDA constants, P/Invoke
 entry points, and the `CUDA_MEMCPY2D` native struct. Keep D3D11 locking,
 primary-context ownership, and fallback-to-staging behavior unchanged.
 
-NVDEC MJPEG decoder ownership is now split around the hot-path boundaries:
-`NvdecMjpegDecoder.Initialization.cs` owns shared decoder state plus standalone
-CUDA device and hardware-frame pool initialization, disposal, and FFmpeg error
-text. `NvdecMjpegDecoder.SharedInitialization.cs` owns adoption of caller-provided CUDA device/frame contexts,
-`NvdecMjpegDecoder.Decode.cs` owns packet decode and CUDA context access,
-and `NvdecMjpegDecoder.Download.cs` owns CPU download/packed-buffer copies. Keep
-shared-context ownership and disposal order unchanged when touching these files.
+NVDEC MJPEG decoder ownership now lives in
+`Sussudio/Services/Gpu/NvdecMjpegDecoder.cs`: shared decoder state, standalone
+CUDA device and hardware-frame pool initialization, caller-provided CUDA
+device/frame context adoption, packet decode, CUDA context access, CPU
+download/packed-buffer copies, disposal, and FFmpeg error text. Keep
+shared-context ownership, hot-path decode/download behavior, and disposal order
+unchanged when touching this file.
 
 NVML telemetry ownership is now split between
 `Sussudio/Services/Gpu/NvmlMonitor.cs`, which owns optional diagnostic polling,
