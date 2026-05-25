@@ -4,24 +4,24 @@ using System.Threading.Tasks;
 // Tests for recording sink queue limits, drops, and latency accounting.
 static partial class Program
 {
-    internal static Task UnifiedVideoCapture_SinkFanoutLivesInFocusedPartial()
+    internal static Task UnifiedVideoCapture_SinkFanoutOwnsRecordingAndFlashbackFanout()
     {
         var rootSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
             .Replace("\r\n", "\n");
         var fanoutSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.SinkFanout.cs")
             .Replace("\r\n", "\n");
-        var flashbackFanoutSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.SinkFanout.Flashback.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(fanoutSource, "private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
         AssertContains(fanoutSource, "private void EnqueueRecordingFrame(PooledVideoFrame frame)");
         AssertContains(fanoutSource, "private void EnqueueGpuRecordingFrame(IGpuVideoFrameEncoder encoder, IntPtr texture, int subresource, long sourceSequence)");
-        AssertContains(flashbackFanoutSource, "private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
-        AssertContains(flashbackFanoutSource, "private void EnqueueFlashbackFrame(PooledVideoFrame frame)");
-        AssertContains(flashbackFanoutSource, "private void EnqueueFlashbackGpuFrame(IntPtr texture, int subresource, long sourceSequence)");
-        AssertContains(flashbackFanoutSource, "private void TrackFlashbackRecordingAcceptedSequence(long sourceSequence)");
-        AssertDoesNotContain(fanoutSource, "private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
-        AssertDoesNotContain(flashbackFanoutSource, "private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
+        AssertContains(fanoutSource, "private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
+        AssertContains(fanoutSource, "private void EnqueueFlashbackFrame(PooledVideoFrame frame)");
+        AssertContains(fanoutSource, "private void EnqueueFlashbackGpuFrame(IntPtr texture, int subresource, long sourceSequence)");
+        AssertContains(fanoutSource, "private void TrackFlashbackRecordingAcceptedSequence(long sourceSequence)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.SinkFanout.Flashback.cs")),
+            "UnifiedVideoCapture Flashback fanout folded into the fanout owner");
         AssertDoesNotContain(rootSource, "private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
         AssertDoesNotContain(rootSource, "private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
         AssertDoesNotContain(rootSource, "private static bool TryLegacyRawVideoEnqueue(");

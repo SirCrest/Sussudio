@@ -51,8 +51,8 @@ public sealed class RecordingPipelineContractsTests
         => global::Program.RecordingVideoTryEnqueuePaths_DoNotBlockCaptureCallbacks();
 
     [Fact]
-    public Task UnifiedVideoCaptureSinkFanoutLivesInFocusedPartial()
-        => global::Program.UnifiedVideoCapture_SinkFanoutLivesInFocusedPartial();
+    public Task UnifiedVideoCaptureSinkFanoutOwnsRecordingAndFlashbackFanout()
+        => global::Program.UnifiedVideoCapture_SinkFanoutOwnsRecordingAndFlashbackFanout();
 
     [Fact]
     public Task UnifiedVideoCaptureFrameIngressLivesInFocusedPartial()
