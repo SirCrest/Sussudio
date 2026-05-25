@@ -19,8 +19,8 @@ public sealed class RecordingModelContractsTests
         => global::Program.LibAvRecordingSink_EncodingLoopLivesWithSinkRootAndPacketDrainsStayFocused();
 
     [Fact]
-    public Task LibAvRecordingAudioQueuesLiveInFocusedPartial()
-        => global::Program.LibAvRecordingSink_AudioQueuesLiveInFocusedPartial();
+    public Task LibAvRecordingAudioQueuesLiveWithQueueSurface()
+        => global::Program.LibAvRecordingSink_AudioQueuesLiveWithQueueSurface();
 
     [Fact]
     public Task LibAvRecordingVideoQueueSubmissionLivesInFocusedPartial()

@@ -1483,17 +1483,16 @@ best-effort artifact deletion.
 
 LibAv recording sink queue ownership now lives in
 `Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs`. Keep public
-video/GPU/CUDA enqueue entry points, caller-side validation, and shared
-work-signal/fatal-failure/queue-depth-underflow helpers there.
+video/GPU/CUDA enqueue entry points, hot audio/microphone WASAPI write adapters,
+caller-side validation, audio queue eviction, audio remaining-buffer cleanup,
+the audio packet DTO, and shared work-signal/fatal-failure/queue-depth-underflow
+helpers there.
 `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Queue.Tests.cs` owns the queue,
 submission, and cleanup assertions for this family.
 Video/GPU/CUDA queue admission policy, TryWrite depth accounting, overload
 fatal signaling, queue cleanup, pooled video buffer leasing, pooled packet
 return helpers, and video packet records now live in
-`LibAvRecordingSink.VideoQueueSubmission.cs`. Hot audio/microphone WASAPI write
-adapters, audio queue eviction, audio remaining-buffer cleanup, and
-`AudioSamplePacket` now live in
-`LibAvRecordingSink.AudioQueues.cs`. `LibAvRecordingSink.Startup.cs` owns the
+`LibAvRecordingSink.VideoQueueSubmission.cs`. `LibAvRecordingSink.Startup.cs` owns the
 `IRecordingSink.StartAsync` adapter, FFmpeg/runtime initialization, encoder
 option creation/application, per-recording video session setup, hardware-frame
 queue selection, video/GPU/CUDA channel creation, width/height session state,
