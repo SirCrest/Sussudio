@@ -1752,3 +1752,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; test helper source readers only
 Behavior preserved: fullscreen, shell chrome, shutdown cleanup, Flashback polling, preview runtime, recording-finalization, and window automation ownership assertions now use the same source text through the already-existing MainWindow helper readers
 Notes for future agents: prefer reusing the shared MainWindow root and shell-chrome source readers before adding another tiny `MainWindow.*Ownership.Helpers.cs` file
+
+Date: 2026-05-25
+Area: Automation diagnostics test source-family locality
+Problem: The private `AutomationDiagnosticsHubSourceFamily` test DTO was split across four tiny partial files that only added grouped source-text properties and aggregate text composition, forcing diagnostics-refresh ownership tests through five helper files before the assertions themselves.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.Aggregate.cs`; `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.Alerts.cs`; `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.DiagnosticEvaluation.cs`; `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.SnapshotProjection.cs`
+Files added: none
+Net production .cs delta: 0
+Net test .cs delta: -4
+Partial clusters reduced: `Program` test harness -4 files
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; test source readers only
+Behavior preserved: diagnostics-refresh tests still read the same AutomationDiagnosticsHub source files, source-family fields, snapshot-projection fields, diagnostic-evaluation fields, alert fields, and aggregate `SourceFamilyText`
+Notes for future agents: keep the diagnostics source-family reader, field list, and aggregate text in `MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`; add a new helper file only for executable assertions or a genuinely reusable reader

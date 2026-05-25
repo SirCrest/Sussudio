@@ -78,13 +78,85 @@ static partial class Program
 
         public string HubText { get; init; } = string.Empty;
         public string EvaluationText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationFlashbackText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationRealtimeText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesText { get; init; } = string.Empty;
+        public string AlertsText { get; init; } = string.Empty;
         public string VerificationText { get; init; } = string.Empty;
         public string HdrText { get; init; } = string.Empty;
         public string SnapshotsText { get; init; } = string.Empty;
         public string SnapshotsCoreText { get; init; } = string.Empty;
+        public string SnapshotProjectionText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlatteningAutomationSnapshotText { get; init; } = string.Empty;
+        public string SnapshotProjectionAudioText { get; init; } = string.Empty;
+        public string SnapshotProjectionCaptureIngestText { get; init; } = string.Empty;
+        public string SnapshotProjectionWasapiAudioText { get; init; } = string.Empty;
+        public string SnapshotProjectionCaptureFormatText { get; init; } = string.Empty;
+        public string SnapshotProjectionCaptureCadenceText { get; init; } = string.Empty;
+        public string SnapshotProjectionVisualCadenceText { get; init; } = string.Empty;
+        public string SnapshotProjectionMjpegText { get; init; } = string.Empty;
+        public string SnapshotProjectionMjpegPreviewJitterText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlashbackExportText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlashbackPlaybackText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlashbackRecordingText { get; init; } = string.Empty;
+        public string SnapshotProjectionFlashbackRecordingQueuesText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewD3DText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewD3DFrameFlowText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewD3DCpuTimingText { get; init; } = string.Empty;
+        public string SnapshotProjectionPreviewRuntimeText { get; init; } = string.Empty;
+        public string SnapshotProjectionProcessResourcesText { get; init; } = string.Empty;
+        public string SnapshotProjectionRecordingIntegrityText { get; init; } = string.Empty;
+        public string SnapshotProjectionRecordingPipelineText { get; init; } = string.Empty;
+        public string SnapshotProjectionSourceSignalText { get; init; } = string.Empty;
+        public string SnapshotProjectionSourceTelemetryText { get; init; } = string.Empty;
+        public string SnapshotProjectionUserSettingsText { get; init; } = string.Empty;
         public string PreviewPacingText { get; init; } = string.Empty;
         public string TimelineText { get; init; } = string.Empty;
         public string TimelineProjectionPreviewText { get; init; } = string.Empty;
         public string TimelineProjectionFlashbackPlaybackText { get; init; } = string.Empty;
+
+        public string SourceFamilyText => _sourceFamilyText ??= string.Join(
+            "\n",
+            new[]
+            {
+                HubText,
+                EvaluationText,
+                DiagnosticEvaluationFlashbackText,
+                DiagnosticEvaluationRealtimeText,
+                DiagnosticEvaluationLanesText,
+                AlertsText,
+                VerificationText,
+                HdrText,
+                SnapshotsText,
+                SnapshotProjectionText,
+                SnapshotProjectionFlatteningText,
+                SnapshotProjectionAudioText,
+                SnapshotProjectionCaptureIngestText,
+                SnapshotProjectionWasapiAudioText,
+                SnapshotProjectionCaptureFormatText,
+                SnapshotProjectionCaptureCadenceText,
+                SnapshotProjectionMjpegText,
+                SnapshotProjectionMjpegPreviewJitterText,
+                SnapshotProjectionFlashbackExportText,
+                SnapshotProjectionFlashbackPlaybackText,
+                SnapshotProjectionFlashbackRecordingText,
+                SnapshotProjectionFlashbackRecordingQueuesText,
+                SnapshotProjectionPreviewD3DText,
+                SnapshotProjectionPreviewD3DFrameFlowText,
+                SnapshotProjectionPreviewRuntimeText,
+                SnapshotProjectionProcessResourcesText,
+                SnapshotProjectionRecordingIntegrityText,
+                SnapshotProjectionRecordingPipelineText,
+                SnapshotProjectionSourceSignalText,
+                SnapshotProjectionSourceTelemetryText,
+                SnapshotProjectionUserSettingsText,
+                HdrText,
+                PreviewPacingText,
+                TimelineText,
+                TimelineProjectionPreviewText,
+                TimelineProjectionFlashbackPlaybackText,
+                SnapshotProjectionPreviewD3DCpuTimingText,
+            });
     }
 }

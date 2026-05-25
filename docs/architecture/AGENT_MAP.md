@@ -1484,16 +1484,8 @@ Primary current owners:
   projection handoff instead of reasserting every leaf projection contract.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`
   owns the diagnostics hub source-family reader and core/runtime source-text
-  fields used by refresh ownership assertions. Its focused partials own the
-  large grouped helper surfaces:
-  `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.DiagnosticEvaluation.cs`
-  owns diagnostic evaluation and diagnostic lane source fields;
-  `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.Alerts.cs`
-  owns signal, Flashback recording, and Flashback playback alert source fields;
-  `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.SnapshotProjection.cs`
-  owns snapshot projection and projection-flattening source fields; and
-  `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.Aggregate.cs`
-  owns the aggregate `SourceFamilyText` composition.
+  fields used by refresh ownership assertions, including diagnostic-evaluation,
+  alerts, snapshot-projection, and aggregate `SourceFamilyText` composition.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceReaders.cs`
   owns diagnostics refresh source/fixture readers for capture service, source
   reader, and tool-surface source text used by refresh ownership assertions.
