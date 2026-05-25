@@ -145,11 +145,11 @@ Entry points:
   renumber or reuse values.
 - `AutomationCommandCatalog.cs` owns command lookup, canonical name resolution,
   default metadata helpers, path-policy types/validation, manifest DTO
-  projection, and stable manifest JSON serialization.
-- `AutomationCommandCatalog.Entries.cs` owns the command metadata table registration orchestration plus grouped core,
-  capture, UI, Flashback, and verification metadata rows; keep payload shape,
-  readiness gating, timeout policy, CLI help, MCP descriptions, and path-policy
-  assignments beside the command family they describe.
+  projection, stable manifest JSON serialization, and command metadata table
+  registration orchestration plus grouped core, capture, UI, Flashback, and
+  verification metadata rows; keep payload shape, readiness gating, timeout
+  policy, CLI help, MCP descriptions, and path-policy assignments beside the
+  command family they describe.
 - `AutomationPipeProtocol.cs` owns pipe names, auth env var, manifest revision,
   command resolution, and request envelope shape.
 - `AutomationPipeClientModels.cs` owns the pipe command result handoff, pipe

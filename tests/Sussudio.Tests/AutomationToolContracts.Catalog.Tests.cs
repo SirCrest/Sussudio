@@ -8,7 +8,7 @@ static partial class Program
         var catalogType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandCatalog");
         var catalogText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
             .Replace("\r\n", "\n");
-        var catalogEntriesText = ReadAutomationCommandCatalogEntriesSource();
+        var catalogEntriesText = catalogText;
         var enumType = RequireAutomationContractType("Sussudio.Models.AutomationCommandKind");
         var pathPolicyType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandPathPolicy");
         var entriesProperty = catalogType.GetProperty("Entries", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
@@ -34,14 +34,13 @@ static partial class Program
             AssertEqual(false, mcpDescription == $"Automation command {enumValue}.", $"Catalog explicit MCP description for {enumValue}");
         }
 
-        AssertContains(catalogText, "public static partial class AutomationCommandCatalog");
+        AssertContains(catalogText, "public static class AutomationCommandCatalog");
         AssertContains(catalogEntriesText, "private static IReadOnlyList<AutomationCommandMetadata> BuildEntries()");
         AssertContains(catalogEntriesText, "RegisterCaptureEntries(entries);");
         AssertContains(catalogEntriesText, "private static void RegisterCaptureEntries(");
         AssertContains(catalogEntriesText, "private static void RegisterFlashbackEntries(");
         AssertContains(catalogEntriesText, "Set(entries, AutomationCommandKind.SetRecordingEnabled");
         AssertContains(catalogEntriesText, "Set(entries, AutomationCommandKind.FlashbackExport");
-        AssertDoesNotContain(catalogText, "private static IReadOnlyList<AutomationCommandMetadata> BuildEntries()");
         AssertContains(catalogText, "public enum AutomationCommandPathPolicy");
         AssertContains(catalogText, "public static AutomationManifest CreateManifest()");
         AssertContains(catalogText, "public static string CreateManifestJson()");
@@ -136,14 +135,6 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-
-    private static string ReadAutomationCommandCatalogEntriesSource()
-        => string.Join(
-            "\n",
-            new[]
-            {
-                "AutomationCommandCatalog.Entries.cs"
-            }.Select(file => ReadRepoFile($"Sussudio.Automation.Contracts/{file}").Replace("\r\n", "\n")));
 
     private static void AssertOptionalPayloadField(
         object[] entries,

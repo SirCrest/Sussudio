@@ -50,7 +50,8 @@ static partial class Program
             "Sussudio.Automation.Contracts/AutomationCommandCatalog.cs" =>
                 agentMapText.Contains("Primary owner: `Sussudio.Automation.Contracts/`", StringComparison.Ordinal) &&
                 agentMapText.Contains("`AutomationCommandCatalog.cs` owns command lookup", StringComparison.Ordinal) &&
-                agentMapText.Contains("`AutomationCommandCatalog.Entries.cs` owns the", StringComparison.Ordinal),
+                agentMapText.Contains("command metadata table", StringComparison.Ordinal) &&
+                agentMapText.Contains("registration orchestration", StringComparison.Ordinal),
             "Sussudio.Automation.Contracts/AutomationPipeProtocol.cs" =>
                 agentMapText.Contains("Primary owner: `Sussudio.Automation.Contracts/`", StringComparison.Ordinal) &&
                 agentMapText.Contains("`AutomationPipeProtocol.cs` owns pipe names", StringComparison.Ordinal),

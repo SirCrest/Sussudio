@@ -32,12 +32,8 @@ public sealed class AutomationToolContractsProtocolXunitTests
     {
         var protocolText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationPipeProtocol.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var catalogEntriesText = string.Join(
-            "\n",
-            new[]
-            {
-                "AutomationCommandCatalog.Entries.cs"
-            }.Select(file => RuntimeContractSource.ReadRepoFile($"Sussudio.Automation.Contracts/{file}").Replace("\r\n", "\n", StringComparison.Ordinal)));
+        var catalogEntriesText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
         var clientText = RuntimeContractSource.ReadRepoFile("tools/AutomationClient/Program.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var pipeClientText = RuntimeContractSource.ReadAutomationPipeClientSource();
