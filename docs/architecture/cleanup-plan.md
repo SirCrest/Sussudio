@@ -1079,7 +1079,7 @@ feature adapters/controllers.
 
 Capture session transition legality, mutable session state, and transition
 generation now live in
-`Sussudio/Models/Capture/CaptureSessionTransitionPolicy.cs`. The state machine
+`Sussudio/Models/Capture/CaptureModels.cs`. The state machine
 applies the policy before entering a transition and delegates steady-state
 resolution to the same pure policy. `CaptureService.cs` owns serialized transition execution,
 transition-state entry, steady-state input sampling and resolution, fault
@@ -1183,7 +1183,7 @@ steady-state resolution, fault publication, transition-lock release,
 current-state/generation projection, steady-state input sampling,
 cleanup/disposal state helpers, and initialization/disposal guards. Mutable
 session state and transition generation live with
-`Sussudio/Models/Capture/CaptureSessionTransitionPolicy.cs`. Cleanup, disposal,
+`Sussudio/Models/Capture/CaptureModels.cs`. Cleanup, disposal,
 and fatal cleanup paths call those helpers while preserving their special
 teardown order.
 Best-effort resource release helpers are delegated to
@@ -2437,7 +2437,7 @@ lives in `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`;
 composition adapter; and projection from capture health, renderer metrics, and shell view state lives in
 `Sussudio/ViewModels/StatsSnapshotBuilder.cs`.
 Pure capture option construction lives in
-`Sussudio/ViewModels/CaptureModeOptionsBuilder.cs`.
+`Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs`.
 
 Dynamic stats dock row chrome now lives in
 `Sussudio/Controllers/Stats/StatsDockRowsController.cs`. It owns decode/GPU row

@@ -94,7 +94,6 @@ static partial class Program
             (fileName.StartsWith("StatsPresentationBuilder", StringComparison.Ordinal) ||
              fileName.StartsWith("StatsSnapshot", StringComparison.Ordinal) ||
              string.Equals(fileName, "StatsPresentationModels.cs", StringComparison.Ordinal) ||
-             string.Equals(fileName, "CaptureModeOptionsBuilder.cs", StringComparison.Ordinal) ||
              fileName.StartsWith("AudioRampTraceRecorder", StringComparison.Ordinal) ||
              string.Equals(fileName, "ViewModelPresentationBuilders.cs", StringComparison.Ordinal));
     }
@@ -113,7 +112,6 @@ static partial class Program
                  fileName.StartsWith("StatsPresentationBuilder", StringComparison.Ordinal) ||
                  fileName.StartsWith("StatsSnapshot", StringComparison.Ordinal) ||
                  string.Equals(fileName, "StatsPresentationModels.cs", StringComparison.Ordinal) ||
-                 string.Equals(fileName, "CaptureModeOptionsBuilder.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "DeviceFormatProbeRetargetPolicy.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "ViewModelPresentationBuilders.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "RecordingSettingsSelectionPolicy.cs", StringComparison.Ordinal))) ||
