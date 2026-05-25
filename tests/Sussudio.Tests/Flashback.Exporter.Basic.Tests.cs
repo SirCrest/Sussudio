@@ -8,7 +8,7 @@ static partial class Program
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var resolve = serviceType.GetMethod("ResolveFlashbackExportThrottleDelayMs", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveFlashbackExportThrottleDelayMs not found.");
-        var exportOperationsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
+        var exportOperationsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             .Replace("\r\n", "\n");
         var exportCoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             .Replace("\r\n", "\n");
@@ -36,7 +36,6 @@ static partial class Program
         AssertOccursBefore(sourceText, "ct: ct,", "requireCompleteLiveEdge: true");
         AssertOccursBefore(sourceText, "requireCompleteLiveEdge: true", "throttleHighResolutionBaseline: false");
         AssertContains(sourceText, "FLASHBACK_EXPORT_LIVE_THROTTLE");
-        AssertDoesNotContain(exportOperationsText, "private static int ResolveFlashbackExportThrottleDelayMs(");
         AssertContains(exportPlanningText, "private static int ResolveFlashbackExportThrottleDelayMs(");
         AssertContains(exportPlanningText, "private static IReadOnlyList<FlashbackExportSegment>? BuildFlashbackExportSegments(");
         AssertEqual(

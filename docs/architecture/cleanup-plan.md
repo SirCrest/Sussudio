@@ -1158,7 +1158,7 @@ Keep the export failure-kind taxonomy there because automation responses and
 capture diagnostics both consume the diagnostic result classification.
 
 Flashback export entry points now live in
-`Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs`.
+`Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`.
 Keep range export, last-N export, lock-scoped backend reference capture,
 session/backend lock release before native export, and routing into
 range-resolution and shared-core owners there. Flashback export range

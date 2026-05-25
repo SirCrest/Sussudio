@@ -10,7 +10,7 @@ static partial class Program
             "ClassifyFlashbackExportFailureKind",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("CaptureService.ClassifyFlashbackExportFailureKind was not found.");
-        var exportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
+        var exportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             .Replace("\r\n", "\n");
         var diagnosticsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs")
             .Replace("\r\n", "\n");
