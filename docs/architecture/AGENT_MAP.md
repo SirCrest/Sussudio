@@ -1572,9 +1572,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Behavior.Tests.cs`
   owns resolution-selection policy behavior assertions, including HDR and SDR
   source retarget behavior.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewResolutionSelectionContractsTests.cs`
-  owns xUnit execution for the former legacy presentation-preview
-  resolution-selection catalog group.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowContractsTests.cs`
+  owns xUnit execution for the former legacy presentation-preview MainWindow
+  and adjacent selection/runtime guard catalog groups after their removal from
+  the legacy offline harness catalog.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.ModeSelection.Tests.cs`
   owns mode-selection reset and resolved automatic frame-rate application
   assertions.
@@ -2125,29 +2126,13 @@ Primary current owners:
   owns the former presentation-preview MainWindow initial registration group for
   close cancellation, window screenshot helper ownership, and property changed
   routing delegation after its removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewWindowLifecycleContractsTests.cs`
-  owns the former presentation-preview MainWindow window lifecycle group for
-  native bootstrap, close lifecycle split, close request/app closing, recording
-  finalization, and shutdown cleanup checks after their removal from the legacy
-  offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewLaunchStartupContractsTests.cs`
-  owns the former presentation-preview MainWindow launch/startup group for
-  splash loading phrase ownership, splash pacing policy, launch entrance
-  animation, and startup hosting checks after their removal from the legacy
-  offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewScreenshotContractsTests.cs`
-  owns the former presentation-preview MainWindow preview screenshot workflow
-  and plan-policy checks after their removal from the legacy offline harness
-  catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewShellChromeContractsTests.cs`
-  owns the former presentation-preview MainWindow shell chrome, window title,
-  live signal, and status-strip checks after their removal from the legacy
-  offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewVisualShellContractsTests.cs`
-  owns the former presentation-preview MainWindow visual shell group for
-  control-bar hover animation, shell elevation, preview transition, startup
-  overlay, and fade-in reveal checks after their removal from the legacy
-  offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowContractsTests.cs`
+  owns the former presentation-preview MainWindow xUnit execution groups:
+  window lifecycle, launch/startup, preview screenshot workflow, shell chrome,
+  visual shell, recording controls, audio controls, responsive layout, capture
+  selection, resolution selection, and capture runtime guardrails. Keep the
+  public wrapper classes in this file unless a group needs an independent
+  fixture or executable helper state.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewRuntimeShellContractsTests.cs`
   owns the former presentation-preview MainWindow preview runtime shell/host
   group for resize telemetry, renderer host state, snapshot mapping, D3D
@@ -2157,14 +2142,6 @@ Primary current owners:
   owns the former presentation-preview MainWindow preview runtime policy group
   for snapshot health/projection policies and D3D projection policy defaults
   after their removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewRecordingContractsTests.cs`
-  owns the former presentation-preview MainWindow recording button chrome,
-  state presentation, lockout policy, and button-action checks after their
-  removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewAudioControlContractsTests.cs`
-  owns the former presentation-preview MainWindow preview audio fade, audio
-  presentation, preview button presentation, and microphone control checks
-  after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
   owns the former presentation-preview MainViewModel xUnit execution groups:
   initial recording-transition failure propagation, audio controls and
@@ -2173,14 +2150,6 @@ Primary current owners:
   preview lifecycle ownership, and audio ramp trace telemetry. Keep the public
   wrapper classes in this file unless a group needs an independent fixture or
   executable helper state.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewResponsiveLayoutContractsTests.cs`
-  owns the former presentation-preview MainWindow responsive shell layout and
-  breakpoint policy checks after their removal from the legacy offline harness
-  catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureSelectionContractsTests.cs`
-  owns the former presentation-preview MainWindow capture selection binding,
-  routing, collection sync, focused owner, device-audio projection, and
-  normalizer checks after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureOptionContractsTests.cs`
   owns the former presentation-preview MainWindow capture device action, option
   presentation, affordance policy, option binding, and tooltip formatter checks
@@ -2189,11 +2158,6 @@ Primary current owners:
   owns the former presentation-preview MainWindow output path display,
   truncation formatter, and button-action checks after their removal from the
   legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureRuntimeGuardContractsTests.cs`
-  owns the former presentation-preview capture runtime guardrail group for
-  recording stop failure propagation, preview stop overload/API compatibility,
-  and emergency recording stop threading after their removal from the legacy
-  offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureFlashbackBufferContractsTests.cs`
   owns the former presentation-preview capture Flashback buffer startup/recovery
   group for stale session cleanup and recovery-preserve behavior after their

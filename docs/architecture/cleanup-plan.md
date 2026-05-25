@@ -721,29 +721,12 @@ Presentation-preview MainWindow initial checks now execute through
 keeping close cancellation, window screenshot helper ownership, and property
 changed routing delegation checks in xUnit after their removal from the legacy
 harness catalog.
-Presentation-preview window lifecycle checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewWindowLifecycleContractsTests.cs`,
-keeping native bootstrap, close lifecycle split, close request/app closing,
-recording finalization, and shutdown cleanup contracts in xUnit after their
-removal from the legacy harness catalog.
-Presentation-preview launch/startup checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewLaunchStartupContractsTests.cs`,
-keeping splash loading phrase ownership, splash pacing policy, launch entrance
-animation, and startup hosting contracts in xUnit after their removal from the
-legacy harness catalog.
-Presentation-preview preview screenshot checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewScreenshotContractsTests.cs`,
-keeping button workflow and plan-policy contracts in xUnit after their removal
-from the legacy harness catalog.
-Presentation-preview shell chrome checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewShellChromeContractsTests.cs`,
-keeping settings shelf, window title, live signal, and status-strip contracts
-in xUnit after their removal from the legacy harness catalog.
-Presentation-preview visual shell checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewVisualShellContractsTests.cs`,
-keeping control-bar hover animation, shell elevation, preview transition,
-startup overlay, and fade-in reveal contracts in xUnit after their removal from
-the legacy harness catalog.
+Presentation-preview MainWindow checks now execute through
+`tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowContractsTests.cs`,
+keeping window lifecycle, launch/startup, preview screenshot, shell chrome,
+visual shell, recording controls, audio controls, responsive layout, capture
+selection, resolution selection, and capture runtime guardrail contracts in
+xUnit after their removal from the legacy harness catalog.
 Presentation-preview preview runtime shell checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewRuntimeShellContractsTests.cs`,
 keeping resize telemetry, renderer host state, snapshot mapping, D3D projection
@@ -753,25 +736,6 @@ Presentation-preview preview runtime policy checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewRuntimePolicyContractsTests.cs`,
 keeping snapshot health/projection policies and D3D projection policy defaults
 in xUnit after their removal from the legacy harness catalog.
-Presentation-preview recording checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewRecordingContractsTests.cs`,
-keeping recording button chrome, state presentation, lockout policy, and
-button-action contracts in xUnit after their removal from the legacy harness
-catalog.
-Presentation-preview audio/control checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewAudioControlContractsTests.cs`,
-keeping preview audio fade, audio presentation, preview button presentation,
-and microphone control contracts in xUnit after their removal from the legacy
-harness catalog.
-Presentation-preview responsive layout checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewResponsiveLayoutContractsTests.cs`,
-keeping responsive shell layout and breakpoint policy contracts in xUnit after
-their removal from the legacy harness catalog.
-Presentation-preview capture selection checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureSelectionContractsTests.cs`,
-keeping selection binding, property routing, collection sync, focused owner,
-device-audio projection, and normalizer contracts in xUnit after their removal
-from the legacy harness catalog.
 Presentation-preview capture option checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureOptionContractsTests.cs`,
 keeping capture device action, option presentation, affordance policy, option
@@ -783,10 +747,10 @@ keeping output path display, truncation formatter, and button-action contracts
 in xUnit after their removal from the legacy harness catalog.
 MainViewModel presentation-preview contract execution is now owned by that
 focused xUnit wrapper file, with no remaining legacy catalog hook.
-Presentation-preview capture runtime guardrail checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureRuntimeGuardContractsTests.cs`,
-keeping recording stop failure propagation, preview stop overload/API
-compatibility, and emergency recording stop threading contracts in xUnit after
+Presentation-preview capture runtime guardrail checks execute through the
+MainWindow xUnit wrapper above, keeping recording stop failure propagation,
+preview stop overload/API compatibility, and emergency recording stop threading
+contracts in xUnit after
 their removal from the legacy harness catalog.
 Presentation-preview capture Flashback buffer checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureFlashbackBufferContractsTests.cs`,
@@ -3782,7 +3746,7 @@ owner, fold it back into that owner and update the source-shape tests and
     live in `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs`; auto-resolution
     display text used by status and telemetry presentation lives in
     `MainViewModel.CaptureState.cs`.
-   `tests/Sussudio.Tests/XUnit.PresentationPreviewResolutionSelectionContractsTests.cs`
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowContractsTests.cs`
    owns xUnit execution for the resolution-selection ownership and behavior
    checks after their removal from the legacy presentation-preview capture catalog.
    Pure resolution selection policy now lives in

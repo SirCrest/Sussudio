@@ -1895,3 +1895,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
 Behavior preserved: the same public test classes, constructors, `[Fact]` method names, target-assembly bootstrap calls, and delegated `Program` checks remain available under one MainViewModel contracts file
 Notes for future agents: keep MainViewModel presentation-preview xUnit wrapper classes together in `XUnit.PresentationPreviewMainViewModelContractsTests.cs`; add new wrapper classes there unless a group needs independent fixtures or executable helper state
+
+Date: 2026-05-25
+Area: MainWindow presentation-preview xUnit execution-surface locality
+Problem: Eleven tiny presentation-preview xUnit wrapper files each owned one MainWindow or adjacent capture/selection group, but every file only loaded the target assembly and delegated to `Program` checks. Reviewing the MainWindow presentation-preview xUnit execution surface required opening a file per subtopic without gaining independent fixtures or helper state.
+Files consolidated: `tests/Sussudio.Tests/XUnit.PresentationPreviewAudioControlContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureRuntimeGuardContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureSelectionContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewLaunchStartupContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewRecordingContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewResolutionSelectionContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewResponsiveLayoutContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewScreenshotContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewShellChromeContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewVisualShellContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewWindowLifecycleContractsTests.cs`
+Files added: `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowContractsTests.cs`
+Net production .cs delta: 0
+Net test .cs delta: -10
+Partial clusters reduced: n/a; MainWindow presentation-preview xUnit wrapper file count -10
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
+Behavior preserved: the same public test classes, constructors, `[Fact]` method names, target-assembly bootstrap calls, and delegated `Program` checks remain available under one MainWindow contracts file
+Notes for future agents: keep MainWindow presentation-preview xUnit wrapper classes together in `XUnit.PresentationPreviewMainWindowContractsTests.cs`; add new wrapper classes there unless a group needs independent fixtures or executable helper state
