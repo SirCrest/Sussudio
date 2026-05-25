@@ -76,7 +76,7 @@ static partial class Program
         AssertContains(lifecycleText, "_lastFinalizeUtc = DateTimeOffset.UtcNow;");
         AssertContains(lifecycleText, "_lastPreservedArtifacts = result.PreservedArtifacts;");
 
-        var flashbackStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartFlashback.cs")
+        var flashbackStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
             .Replace("\r\n", "\n");
         var libAvStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
             .Replace("\r\n", "\n");

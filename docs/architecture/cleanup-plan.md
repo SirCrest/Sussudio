@@ -1258,7 +1258,7 @@ Recording start lifecycle now lives in
 the public recording start transition surface, startup-path routing, the private
 rollback-state holder, recording output-folder resolution, LibAv and Flashback
 `RecordingContextRequest` assembly, and delegation to the recording-start
-rollback owner. `CaptureService.RecordingStartFlashback.cs`
+rollback owner. `CaptureService.FlashbackRecording.cs`
 owns Flashback recording fast-path reuse and backend startup, and
 `CaptureService.RecordingStartLibAv.cs` owns standard LibAv recording startup
 sequencing, video-capture reuse/creation, source-reader compatibility checks,

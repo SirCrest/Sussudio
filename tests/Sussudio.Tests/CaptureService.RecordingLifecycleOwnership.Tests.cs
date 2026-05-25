@@ -34,8 +34,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
-        var flashbackStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartFlashback.cs")
-            .Replace("\r\n", "\n");
         var libAvStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
             .Replace("\r\n", "\n");
         var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
@@ -47,6 +45,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackRecordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
             .Replace("\r\n", "\n");
+        var flashbackStartText = ExtractTextBetween(
+            flashbackRecordingText,
+            "private async Task DisposeUnusableFlashbackRecordingBackendAsync(",
+            "private bool IsFlashbackRecordingBackendActive()");
 
         AssertDoesNotContain(rootText, "public Task StartRecordingAsync(");
         AssertDoesNotContain(rootText, "public Task StopRecordingAsync(");
@@ -119,6 +121,10 @@ static partial class Program
         AssertDoesNotContain(flashbackStartText, "StorageFolder.GetFolderFromPathAsync");
         AssertDoesNotContain(flashbackStartText, "new RecordingContextRequest");
         AssertDoesNotContain(flashbackStartText, "HDR_NEGOTIATION");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingStartFlashback.cs")),
+            "Flashback recording start folded into Flashback recording owner");
         AssertContains(libAvStartText, "private async Task StartLibAvRecordingAsync(");
         AssertContains(libAvStartText, "_recordingBackend.InstallLibAv(");
         AssertContains(libAvStartText, "await OpenRecordingOutputFolderAsync(settings)");
