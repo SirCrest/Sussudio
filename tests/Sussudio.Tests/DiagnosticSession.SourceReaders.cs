@@ -30,9 +30,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs",
-            "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs",
-            "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs");
+            "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs");
 
     private static string ReadDiagnosticSessionFlashbackRecordingSettingsScenariosSource()
         => ReadNormalizedSourceFiles(

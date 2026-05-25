@@ -3706,16 +3706,9 @@ Primary owners:
   Flashback preview-cycle diagnostic task registration, priorities, task labels,
   started action strings, normal Flashback preview-cycle stop/restart command
   choreography, pre-stop encoded-frame capture, preview-off Flashback/encoder
-  validation, export-while-preview-off verification, and restart frame-flow
-  validation.
-- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
-  owns playback-under-preview-stop diagnostic command choreography, pre-stop
-  playback-frame warmup, preview-stopped playback/live-state validation,
-  export-while-preview-off verification, and restart frame-flow validation.
-- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
-  owns Flashback-recording-backed preview stop/restart diagnostic command
-  choreography, readiness and pre-stop encoder counter capture, preview-off
-  recording/backend/counter validation, and restart frame-flow validation.
+  validation, export-while-preview-off verification, playback-under-preview-stop
+  validation, recording-backed readiness/counter validation, and restart
+  frame-flow validation.
 - `tools/Common/DiagnosticSessionFlashbackRejectedExports.cs` owns Flashback
   rejected-export diagnostic scenario dispatch, inactive-buffer failure-kind
   assertions, and active-Flashback-recording backend-stability assertions.

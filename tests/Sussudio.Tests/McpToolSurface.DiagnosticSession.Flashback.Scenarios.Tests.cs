@@ -50,12 +50,11 @@ static partial class Program
         var cyclesText = ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource();
         var flashbackCycleText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs")
             .Replace("\r\n", "\n");
-        var playbackCycleText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs")
-            .Replace("\r\n", "\n");
-        var recordingCycleText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs")
-            .Replace("\r\n", "\n");
+        var playbackCycleText = flashbackCycleText;
+        var recordingCycleText = flashbackCycleText;
 
-        AssertContains(cyclesText, "internal static partial class DiagnosticSessionFlashbackPreviewCycleScenarios");
+        AssertContains(cyclesText, "internal static class DiagnosticSessionFlashbackPreviewCycleScenarios");
+        AssertDoesNotContain(cyclesText, "internal static partial class DiagnosticSessionFlashbackPreviewCycleScenarios");
         AssertContains(cyclesText, "internal static async Task RunFlashbackPreviewCycleAsync(");
         AssertContains(flashbackCycleText, "flashback preview cycle preview stopped");
         AssertContains(flashbackCycleText, "CaptureFlashbackPreviewCycleEncodedFramesBeforeStopAsync(");
@@ -106,6 +105,14 @@ static partial class Program
         AssertContains(cyclesText, "13,\n                \"flashback-preview-cycle-task\",");
         AssertContains(cyclesText, "14,\n                \"flashback-playback-preview-cycle-task\",");
         AssertContains(cyclesText, "15,\n                \"flashback-recording-preview-cycle-task\",");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs")),
+            "Flashback playback preview-cycle scenario stays with the preview-cycle scenario family");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs")),
+            "Flashback recording preview-cycle scenario stays with the preview-cycle scenario family");
         AssertContains(startupText, "DiagnosticSessionFlashbackPreviewCycleScenarios.RegisterSelectedFlashbackPreviewCycleScenarioTasks(");
         AssertDoesNotContain(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackPreviewCycleScenarios;");
         AssertDoesNotContain(startupText, "RunFlashbackPreviewCycleAsync(");

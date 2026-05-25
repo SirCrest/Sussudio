@@ -3380,21 +3380,12 @@ diagnostic-session command callbacks, and intentionally unconverted compatibilit
 surfaces with focused coverage.
 
 Diagnostic-session Flashback preview-cycle scenarios now live in a focused
-partial family. `.Registrations.cs` owns task registration, priority,
-task-label, and started-action wiring while preview-cycle scenario selection
-stays in the `DiagnosticSessionScenarioCatalog` family and grouped
-preview-cycle policy stays in `DiagnosticSessionScenarioPlan.cs`.
-`.Flashback.cs`, `.Playback.cs`, and `.Recording.cs` own preview stop/restart
-command choreography for normal Flashback, playback, and recording-backed
-diagnostics. Normal Flashback preview-cycle validation, pre-stop encoded-frame
-capture, export-while-preview-off verification, and restart frame-flow
-validation now live together in `.Flashback.cs`.
-Playback-preview-cycle validation, pre-stop frame warmup, export-while-preview-off
-verification, and restart frame-flow validation now live together in
-`.Playback.cs`. Recording-backed readiness, pre-stop encoder counter capture,
-preview-off recording/backend/counter validation, and restart frame-flow
-validation now live together in `.Recording.cs` while startup only delegates
-selected scenario registration.
+scenario-family owner. `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
+owns task registration, priority, task-label, started-action wiring, and the
+preview stop/restart command choreography for normal Flashback, playback, and
+recording-backed diagnostics. Preview-cycle scenario selection stays in the
+`DiagnosticSessionScenarioCatalog` family and grouped preview-cycle policy stays
+in `DiagnosticSessionScenarioPlan.cs`.
 
 Diagnostic-session Flashback rejected-export scenarios now live in the
 `tools/Common/DiagnosticSessionFlashbackRejectedExports*.cs` partial family.
@@ -3525,8 +3516,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
-- `DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
-- `DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
