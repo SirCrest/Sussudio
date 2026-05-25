@@ -3084,7 +3084,9 @@ Primary owners:
   constant, the `Names` projection, normalization, entry lookup, requirement
   queries, export-verification lookup, scenario ordering, and core, Flashback
   playback, Flashback export/lifecycle, Flashback recording/rejection, and
-  combined scenario metadata.
+  combined scenario metadata. It also owns the scenario plan DTO, creation
+  factory, catalog lookup handoff, and grouped warning/validation policies,
+  including the preview-cycle grouped predicate, used by the runner.
 - `tools/Common/DiagnosticSessionResult.cs` owns diagnostic-session summary DTO
   fields: core metadata, artifact paths, terminal state, actions, warnings,
   end-of-run overview, capture/source, Flashback playback/recording/export,
@@ -3304,11 +3306,10 @@ Primary owners:
   command send overloads, connect-retry wrapping, local failure-response
   fallback when connect retry returns no response, and fixed wait command
   payload shaping. Keep the underlying runner delegate string-compatible.
-- `tools/Common/DiagnosticSessionScenarioPlan.cs` owns the scenario plan DTO,
-  creation factory, catalog lookup handoff, and grouped warning/validation
-  policies, including the preview-cycle grouped predicate, used by the runner.
-  Keep new scenario booleans and grouped derivations in the plan instead of
-  adding string comparisons in `DiagnosticSessionRunner`.
+- Keep new scenario booleans and grouped derivations with
+  `DiagnosticSessionScenarioPlan` in
+  `tools/Common/DiagnosticSessionScenarioCatalog.cs` instead of adding string
+  comparisons in `DiagnosticSessionRunner`.
 - `tools/Common/PresentMon/PresentMonProbe.Csv.cs` owns PresentMon CSV parse overloads,
   selected-row filtering, summary assembly, swap-chain normalization/selection,
   header/field parsing, scalar metric reads, CSV line tokenization, row
@@ -3375,5 +3376,6 @@ Invariants:
   `tools/Common/DiagnosticSessionScenarioCatalog.cs` before wiring scenario
   behavior into `DiagnosticSessionRunner`. Preserve the final order there.
 - Keep diagnostic-session grouped policy derivation in
-  `tools/Common/DiagnosticSessionScenarioPlan.cs`; the runner should consume
+  `DiagnosticSessionScenarioPlan` inside
+  `tools/Common/DiagnosticSessionScenarioCatalog.cs`; the runner should consume
   named properties instead of comparing normalized scenario strings directly.

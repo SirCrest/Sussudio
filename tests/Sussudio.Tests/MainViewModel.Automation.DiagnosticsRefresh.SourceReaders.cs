@@ -93,8 +93,7 @@ static partial class Program
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
                 + "\n" + ReadDiagnosticSessionResultFormatterSource()
-                + "\n" + ReadDiagnosticSessionScenarioCatalogSource()
-                + "\n" + ReadDiagnosticSessionScenarioPlanSource(),
+                + "\n" + ReadDiagnosticSessionScenarioCatalogSource(),
             ReadDiagnosticSessionModelsSource(),
             ReadDiagnosticSessionScenarioCatalogSource());
     }
@@ -116,11 +115,6 @@ static partial class Program
     private static string ReadDiagnosticSessionScenarioCatalogSource()
     {
         return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs");
-    }
-
-    private static string ReadDiagnosticSessionScenarioPlanSource()
-    {
-        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs");
     }
 
     private static string ReadDiagnosticSessionFlashbackExportsSource()

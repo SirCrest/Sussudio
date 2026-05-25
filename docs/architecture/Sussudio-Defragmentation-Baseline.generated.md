@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-25T22:04:06Z
+Generated UTC: 2026-05-25T22:10:34Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 408 |
+| Production .cs files | 407 |
 | Test .cs files | 336 |
 | Production .cs files under 60 lines | 6 (1.5%) |
 | Production .cs files under 80 lines | 13 (3.2%) |
@@ -43,7 +43,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | AutomationCommandDispatcher | 2 | 1638 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs |
 | FlashbackTools | 1 | 162 | tools/McpServer/Tools/FlashbackTools.cs |
 | KsAudioNodeProbeScanWorkflows | 1 | 311 | tools/KsAudioNodeProbe/Program.ScanWorkflows.cs |
-| DiagnosticSessionScenarioCatalog | 1 | 253 | tools/Common/DiagnosticSessionScenarioCatalog.cs |
+| DiagnosticSessionScenarioCatalog | 1 | 385 | tools/Common/DiagnosticSessionScenarioCatalog.cs |
 | LoggingJsonContext | 1 | 306 | Sussudio/Logger.cs |
 | EgavdsProbe | 1 | 397 | tools/EgavdsAudioProbe/Program.cs |
 

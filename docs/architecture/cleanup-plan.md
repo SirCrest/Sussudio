@@ -3025,9 +3025,8 @@ the `Names` projection, requirement queries, export-verification lookup, and
 scenario ordering by composing focused entry groups for core, Flashback
 playback, Flashback export, Flashback recording, and combined setup
 requirement metadata, export verification filenames, and plan assigned to each
-normalized scenario group.
-`tools/Common/DiagnosticSessionScenarioPlan.cs` owns the plan DTO, creation
-factory, catalog lookup handoff, and grouped warning/validation policy switches,
+normalized scenario group. It also owns the plan DTO, creation factory,
+catalog lookup handoff, and grouped warning/validation policy switches,
 including the preview-cycle grouped predicate, so the runner does not grow
 direct scenario string comparisons.
 
@@ -3100,8 +3099,8 @@ scenario-family owner. `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
 owns task registration, priority, task-label, started-action wiring, and the
 preview stop/restart command choreography for normal Flashback, playback, and
 recording-backed diagnostics. Preview-cycle scenario selection stays in the
-`DiagnosticSessionScenarioCatalog` family and grouped preview-cycle policy stays
-in `DiagnosticSessionScenarioPlan.cs`.
+`DiagnosticSessionScenarioCatalog` family, including grouped preview-cycle
+policy.
 
 Diagnostic-session Flashback rejected-export scenarios now live in the
 `tools/Common/DiagnosticSessionFlashbackRejectedExports*.cs` partial family.
@@ -3245,7 +3244,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRunContext.cs`
 - `DiagnosticSessionScenarioCatalog.cs`
 - `DiagnosticSessionScenarioCatalog.cs`
-- `DiagnosticSessionScenarioPlan.cs`
 - `DiagnosticSessionScenarioSetup.cs`
 - `DiagnosticSessionScenarioStartup.cs`
 - `DiagnosticSessionRunner.cs`

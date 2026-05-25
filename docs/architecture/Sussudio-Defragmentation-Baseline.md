@@ -2368,3 +2368,15 @@ Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudio
 CLI/MCP/pipe checks, if applicable: affected NativeXuAudioProbe build and source-ownership tests cover the moved service workflows; no public command names changed
 Behavior preserved: `service`, `--service-smoke`, `--device`, `--mode`, `--gain`, and `--dump-payload` handling, NativeXuAudioControlService state reads, service payload printing, set-mode/set-gain calls, service smoke output, and status/error text remain unchanged
 Notes for future agents: keep small top-level NativeXuAudioProbe service-control workflows with `Program.cs`; keep `Program.I2cTransport.cs` separate while multiple I2C command families share it.
+
+Date: 2026-05-25
+Area: diagnostic-session scenario planning locality
+Problem: `DiagnosticSessionScenarioCatalog.cs` owned every scenario entry and constructed every `DiagnosticSessionScenarioPlan`, while `DiagnosticSessionScenarioPlan.cs` held the adjacent flag DTO, creation factory, catalog lookup handoff, and grouped scenario predicates. Reviewing scenario requirements, plan metadata, and grouped warning policy required opening two small files that called back into each other.
+Files consolidated: `tools/Common/DiagnosticSessionScenarioPlan.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; diagnostic-session support file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: diagnostic-session scenario ownership tests cover catalog entries, plan creation, grouped policy flags, and runner handoff; no CLI/MCP command names or automation command IDs changed
+Behavior preserved: diagnostic scenario names, HelpList/Description text, scenario ordering, requirement queries, export verification filenames, plan flag construction, grouped Flashback warning/validation predicates, preview-cycle predicates, and runner consumption of named plan properties remain unchanged
+Notes for future agents: keep scenario name metadata and `DiagnosticSessionScenarioPlan` flag policy together in `DiagnosticSessionScenarioCatalog.cs`; do not add scenario string comparisons in the runner.

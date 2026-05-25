@@ -39,8 +39,6 @@ static partial class Program
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var bootstrapText = ReadDiagnosticSessionRunContextSource();
-        var planText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs")
-            .Replace("\r\n", "\n");
         var catalogText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs")
             .Replace("\r\n", "\n");
 
@@ -77,18 +75,22 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionScenarioCatalog.Entries.cs")),
             "Diagnostic session scenario entries folded into the catalog owner");
-        AssertContains(planText, "internal readonly record struct DiagnosticSessionScenarioPlan(");
-        AssertContains(planText, "internal static DiagnosticSessionScenarioPlan Create(");
-        AssertContains(planText, "internal static DiagnosticSessionScenarioPlan From(string scenario)");
-        AssertContains(planText, "DiagnosticSessionScenarioCatalog.TryGetEntry(scenario, out var entry)");
-        AssertContains(planText, "? entry.Plan");
-        AssertContains(planText, "internal bool RequiresFlashbackRecordingReadiness");
-        AssertContains(planText, "internal bool UsesFlashbackScenarioWarningPolicy");
-        AssertContains(planText, "internal bool ToleratesSourceSignalHealthWarning");
-        AssertContains(planText, "internal bool ToleratesFlashbackForceRotateDrainWarning");
-        AssertContains(planText, "internal bool IsPreviewCycleScenario");
-        AssertContains(planText, "internal bool ToleratesSparsePreviewSchedulerStressTransitions");
-        AssertContains(planText, "RunFlashbackSegmentPlayback");
+        AssertContains(catalogText, "internal readonly record struct DiagnosticSessionScenarioPlan(");
+        AssertContains(catalogText, "internal static DiagnosticSessionScenarioPlan Create(");
+        AssertContains(catalogText, "internal static DiagnosticSessionScenarioPlan From(string scenario)");
+        AssertContains(catalogText, "DiagnosticSessionScenarioCatalog.TryGetEntry(scenario, out var entry)");
+        AssertContains(catalogText, "? entry.Plan");
+        AssertContains(catalogText, "internal bool RequiresFlashbackRecordingReadiness");
+        AssertContains(catalogText, "internal bool UsesFlashbackScenarioWarningPolicy");
+        AssertContains(catalogText, "internal bool ToleratesSourceSignalHealthWarning");
+        AssertContains(catalogText, "internal bool ToleratesFlashbackForceRotateDrainWarning");
+        AssertContains(catalogText, "internal bool IsPreviewCycleScenario");
+        AssertContains(catalogText, "internal bool ToleratesSparsePreviewSchedulerStressTransitions");
+        AssertContains(catalogText, "RunFlashbackSegmentPlayback");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionScenarioPlan.cs")),
+            "Diagnostic session scenario plan flags live with the catalog that constructs every plan");
         AssertContains(bootstrapText, "var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);");
         AssertContains(runnerText, "ScenarioPlan = RunBootstrap.ScenarioPlan;");
         AssertDoesNotContain(runnerText, "scenario == \"flashback-playback\"");
