@@ -84,8 +84,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewScreenshotCaptureText = ReadRepoFile("Sussudio/Services/Preview/PreviewScreenshotCapture.cs")
             .Replace("\r\n", "\n");
-        var previewPngEncoderText = ReadRepoFile("Sussudio/Services/Preview/PreviewPng16Encoder.cs")
-            .Replace("\r\n", "\n");
+        var previewPngEncoderText = previewScreenshotCaptureText;
 
         AssertContains(captureText, "private void TryCaptureFrameBeforePresent(string rendererMode)");
         AssertContains(captureText, "public Task<PreviewFrameCaptureResult> CaptureNextFrameAsync(string outputPath, CancellationToken cancellationToken)");
@@ -133,8 +132,10 @@ static partial class Program
         AssertContains(previewPngEncoderText, "internal static uint[] InitPngCrc32Table()");
         AssertContains(previewPngEncoderText, "private static void WritePngChunk(");
         AssertContains(previewPngEncoderText, "private static uint UpdatePngCrc32(");
-        AssertDoesNotContain(previewScreenshotCaptureText, "private static void WritePngChunk(");
-        AssertDoesNotContain(previewScreenshotCaptureText, "private static uint UpdatePngCrc32(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "PreviewPng16Encoder.cs")),
+            "16-bit PNG encoder folded into PreviewScreenshotCapture.cs");
         AssertContains(captureText, "private ID3D11Texture2D? _captureStagingTexture;");
         AssertContains(captureText, "private ID3D11Texture2D EnsureFrameCaptureStagingTexture(");
         AssertContains(captureText, "_captureStagingTexture = _device!.CreateTexture2D(");

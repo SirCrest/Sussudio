@@ -2440,3 +2440,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: diagnostic-session infrastructure and protocol contract tests cover retry classification, local failure envelopes, and command-channel usage; no CLI/MCP command names or automation command IDs changed
 Behavior preserved: access-denied remains permanent, pipe connect failed/timeout synthetic responses remain retryable, non-connect pipe exceptions and JSON exceptions still produce local failure responses, command-channel no-response fallback remains unchanged, and Flashback export diagnostics still call the named retry policy helpers
 Notes for future agents: keep the named `DiagnosticSessionPipeRetryPolicy` type with `DiagnosticSessionCommandChannel.cs`; do not move retry classification into the runner.
+
+Date: 2026-05-25
+Area: preview screenshot PNG encoding locality
+Problem: `PreviewScreenshotCapture.cs` owned preview-frame screenshot pixel conversion, BMP writing, 16-bit PNG frame capture, and the only call site for `PreviewPng16Encoder`, while `PreviewPng16Encoder.cs` held the subordinate PNG container/chunk/CRC helpers. Reviewing screenshot capture required opening two files even though the encoder is not shared outside the screenshot capture surface.
+Files consolidated: `Sussudio/Services/Preview/PreviewPng16Encoder.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; preview screenshot support file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: screenshot capture source-ownership and PNG geometry tests cover the preserved internal `PreviewPng16Encoder` type and capture flow; no CLI/MCP command names or automation command IDs changed
+Behavior preserved: preview BMP/PNG capture paths, HDR 10-bit to 16-bit PNG expansion, output-directory creation, PNG chunk writing, CRC table generation, CRC updates, and reflection-visible internal encoder helper names remain unchanged
+Notes for future agents: keep `PreviewPng16Encoder` as a sibling type in `PreviewScreenshotCapture.cs` while it is only used by preview screenshot capture; split only if another capture/export path needs the PNG container writer.

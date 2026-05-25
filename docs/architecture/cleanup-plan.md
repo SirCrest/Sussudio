@@ -747,9 +747,8 @@ Preview-frame capture staging-resource reuse and teardown also live there.
 Preview-frame BMP/PNG pixel conversion, mapped-frame buffer copying, luminance
 analysis, and letterbox/pillarbox measurement live in
 `Sussudio/Services/Preview/PreviewScreenshotCapture.cs`: mapped-frame copying,
-shared pixel analysis, 16-bit PNG frame capture, and BMP capture/header writing, while
-`Sussudio/Services/Preview/PreviewPng16Encoder.cs` owns the 16-bit PNG file
-container, chunk writing, output-directory creation, and CRC helpers.
+shared pixel analysis, 16-bit PNG frame capture, BMP capture/header writing,
+and the 16-bit PNG file container/chunk/CRC helpers.
 
 Window geometry automation and the recordings-folder command now live in
 `Sussudio/Controllers/Window/WindowAutomationController.cs`. Display-area/AppWindow
