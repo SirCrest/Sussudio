@@ -12,8 +12,7 @@ static partial class Program
         var segmentSwitchText = segmentEdgesText;
         var decoderFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs")
             .Replace("\r\n", "\n");
-        var decoderReopenText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs")
-            .Replace("\r\n", "\n");
+        var decoderReopenText = decoderFilesText;
         var decoderSegmentReopenText = segmentEdgesText;
         var seekDisplayText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
             .Replace("\r\n", "\n");
@@ -91,8 +90,12 @@ static partial class Program
         AssertContains(decoderFilesText, "private static void CloseDecoderFileBestEffort(FlashbackDecoder decoder, string operation)");
         AssertContains(decoderFilesText, "private void CleanupDecoder(ref FlashbackDecoder? decoder, ref bool fileOpen)");
         AssertContains(decoderFilesText, "FLASHBACK_PLAYBACK_DECODER_CLEANUP_COMPLETE");
-        AssertDoesNotContain(decoderReopenText, "private void ReopenDecoderPlaybackFile(");
-        AssertDoesNotContain(decoderReopenText, "private void MarkDecoderPlaybackFileClosed(ref bool fileOpen)");
+        AssertContains(decoderReopenText, "private void ReopenDecoderPlaybackFile(");
+        AssertContains(decoderReopenText, "private void MarkDecoderPlaybackFileClosed(ref bool fileOpen)");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackPlaybackController.DecoderReopen.cs")),
+            "active fMP4 reopen recovery folded into decoder file ownership");
         AssertContains(sourceText, "private long SuppressAudioForFmp4Reopen(FlashbackDecoder decoder)");
         AssertContains(sourceText, "Interlocked.Increment(ref _playbackReopenAudioNullWindowCount);\n        decoder.AudioChunkCallback = null;");
         AssertContains(sourceText, "private void RestoreAudioAfterFmp4Reopen(");
