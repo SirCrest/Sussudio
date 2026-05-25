@@ -46,7 +46,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var stopLifecycleText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.StopLifecycle.cs")
+        var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
             .Replace("\r\n", "\n");
 
         AssertEqual(
@@ -59,14 +59,14 @@ static partial class Program
         AssertContains(rootText, "private double _startupFps = 60.0;");
         AssertContains(rootText, "public void Start(int width, int height, double fps, bool isHdr)");
         AssertContains(rootText, "public void Dispose()");
-        AssertContains(stopLifecycleText, "private int _stopRequested;");
-        AssertContains(stopLifecycleText, "private int _inNativeCall;");
-        AssertContains(stopLifecycleText, "public void StopRenderThread()");
-        AssertContains(stopLifecycleText, "public void Stop()");
-        AssertContains(stopLifecycleText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
-        AssertContains(stopLifecycleText, "WaitForNativeCallToDrainOrThrow(\"stop\");");
-        AssertContains(stopLifecycleText, "FailPendingFrameCapture(\"Preview renderer stopped before frame capture completed.\");");
-        AssertContains(stopLifecycleText, "WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel)");
+        AssertContains(renderThreadText, "private int _stopRequested;");
+        AssertContains(renderThreadText, "private int _inNativeCall;");
+        AssertContains(renderThreadText, "public void StopRenderThread()");
+        AssertContains(renderThreadText, "public void Stop()");
+        AssertContains(renderThreadText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
+        AssertContains(renderThreadText, "WaitForNativeCallToDrainOrThrow(\"stop\");");
+        AssertContains(renderThreadText, "FailPendingFrameCapture(\"Preview renderer stopped before frame capture completed.\");");
+        AssertContains(renderThreadText, "WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel)");
         AssertDoesNotContain(rootText, "public void StopRenderThread()");
         AssertDoesNotContain(rootText, "public void Stop()");
         AssertDoesNotContain(rootText, "private void WaitForNativeCallToDrainOrThrow(string operation)");

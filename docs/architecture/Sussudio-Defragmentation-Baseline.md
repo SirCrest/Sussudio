@@ -1474,7 +1474,7 @@ Partial clusters reduced: `D3D11PreviewRenderer` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation/tool contract changes
 Behavior preserved: Public start/dispose semantics, startup dimension/FPS/HDR reset, first-frame reset, shared-device reset flag, frame-ready reset, render-thread creation, stop-before-start, shared-device disposal, and frame-ready event disposal remain unchanged
-Notes for future agents: keep public lifecycle with `D3D11PreviewRenderer.cs`; keep stop/reinit-stop, panel unbind, native-call fencing, and pending-frame shutdown cleanup in `D3D11PreviewRenderer.StopLifecycle.cs`
+Notes for future agents: keep public lifecycle with `D3D11PreviewRenderer.cs`; keep stop/reinit-stop, panel unbind, native-call fencing, and pending-frame shutdown cleanup in `D3D11PreviewRenderer.RenderThread.cs`
 
 Date: 2026-05-24
 Area: CUDA D3D11 bridge lifecycle locality

@@ -53,8 +53,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
             .Replace("\r\n", "\n");
-        var stopLifecycleText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.StopLifecycle.cs")
-            .Replace("\r\n", "\n");
         var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
         var shaderRenderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs")
@@ -89,10 +87,10 @@ static partial class Program
         AssertContains(renderPassesText, "EnsureHdrInputResources(frame.Width, frame.Height)");
         AssertContains(renderPassesText, "TryResolveInputView(frame, out var inputView, out var disposeInputView)");
         AssertContains(renderPassesText, "D3D11_PREVIEW_HDR_SHADER_FALLBACK");
-        AssertContains(stopLifecycleText, "private bool TryEnterNativeRenderCall()");
-        AssertContains(stopLifecycleText, "private void ExitNativeRenderCall()");
-        AssertContains(stopLifecycleText, "Interlocked.Exchange(ref _inNativeCall, 1);");
-        AssertContains(stopLifecycleText, "Interlocked.Exchange(ref _inNativeCall, 0);");
+        AssertContains(renderThreadText, "private bool TryEnterNativeRenderCall()");
+        AssertContains(renderThreadText, "private void ExitNativeRenderCall()");
+        AssertContains(renderThreadText, "Interlocked.Exchange(ref _inNativeCall, 1);");
+        AssertContains(renderThreadText, "Interlocked.Exchange(ref _inNativeCall, 0);");
         AssertDoesNotContain(rootText, "private bool TryEnterNativeRenderCall()");
         AssertDoesNotContain(rootText, "private void ExitNativeRenderCall()");
         AssertContains(renderThreadText, "ProcessRenderThreadFrameOrIdle()");
