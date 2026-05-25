@@ -96,7 +96,7 @@ static partial class Program
             startVideoPreviewRaw,
             "await StartPreviewAudioGraphAsync(settings, audioDeviceId, transitionToken)",
             "// Start flashback AFTER");
-        var previewAudioGraphRaw = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs")
+        var previewAudioGraphRaw = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs")
             .Replace("\r\n", "\n");
         var previewMicMonitorStart = ExtractTextBetween(
             previewAudioGraphRaw,

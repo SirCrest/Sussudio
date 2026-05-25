@@ -1379,7 +1379,7 @@ Flashback backend recycle decisions before start, retained-backend fast-path
 reattachment, retained video/Flashback backend reuse checks, capture-settings
 cloning, fresh UVC startup, preview-start rollback, and fresh preview backend
 startup ordering;
-`Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs` owns preview
+`Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs` owns preview
 WASAPI capture startup, video-only audio fallback logging, preview playback
 attach, preview-time microphone monitor startup, and partially-started audio
 rollback;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -81,7 +81,7 @@ static partial class Program
 
     internal static Task PreviewStartup_ToleratesMissingAudioCaptureDevices()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs").Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs").Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "if (settings.AudioEnabled && !string.IsNullOrWhiteSpace(audioDeviceId))");
         AssertContains(captureServiceText, "Audio preview requested but no audio capture device is available; continuing with video-only preview.");
@@ -93,7 +93,7 @@ static partial class Program
     internal static Task CaptureService_PreviewLifecycleLivesInFocusedPartials()
     {
         var startText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStart.cs").Replace("\r\n", "\n");
-        var audioGraphText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs").Replace("\r\n", "\n");
+        var audioGraphText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs").Replace("\r\n", "\n");
         var stopText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStop.cs").Replace("\r\n", "\n");
         var videoPipelineResourcesText = ReadRepoFile("Sussudio/Services/Capture/CaptureVideoPipelineResources.cs").Replace("\r\n", "\n");
         var flashbackPreviewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs").Replace("\r\n", "\n");
@@ -249,7 +249,7 @@ static partial class Program
 
     internal static Task PreviewBackendLog_ReflectsVideoOnlyFallback()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs").Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs").Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "_previewAudioGraph.ProgramCapture != null");
         AssertContains(captureServiceText, "\"Preview backend active: IMFSourceReader video + WASAPI audio ingest.\"");
