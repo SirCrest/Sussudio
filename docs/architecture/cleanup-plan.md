@@ -1451,8 +1451,8 @@ resampler/frame/buffer setup calls, microphone-specific setup, AAC codec
 context configuration, resampler setup, audio frame allocation, accumulator
 allocation, and sample-queue allocation there.
 
-LibAv encoder HDR frame side-data helpers now live in
-`Sussudio/Services/Recording/LibAvEncoder.HdrSideData.cs`. Keep software-frame
+LibAv encoder HDR frame side-data helpers now live with video submission in
+`Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs`. Keep software-frame
 and hardware-frame HDR mastering display and content-light metadata attachment
 there, including parsing/applying mastering-display metadata strings.
 
