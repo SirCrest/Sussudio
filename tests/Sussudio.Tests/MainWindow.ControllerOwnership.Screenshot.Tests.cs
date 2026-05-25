@@ -191,17 +191,20 @@ static partial class Program
     {
         var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs")
             .Replace("\r\n", "\n");
-        var encoderText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotImageEncoder.cs")
-            .Replace("\r\n", "\n");
+        var encoderText = controllerText;
 
         AssertContains(controllerText, "private static void SaveHBitmapAsImage(");
         AssertContains(controllerText, "WindowScreenshotImageEncoder.WriteToStream(");
-        AssertDoesNotContain(controllerText, "private static void WritePngToStream");
-        AssertDoesNotContain(controllerText, "private static void WriteBmpToStream");
+        AssertContains(controllerText, "internal static void WritePngToStream");
+        AssertContains(controllerText, "internal static void WriteBmpToStream");
         AssertContains(encoderText, "internal static class WindowScreenshotImageEncoder");
         AssertContains(encoderText, "internal static void WritePngToStream");
         AssertContains(encoderText, "internal static void WriteBmpToStream");
         AssertContains(encoderText, "internal static uint[] InitCrc32Table()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Screenshot", "Window", "WindowScreenshotImageEncoder.cs")),
+            "whole-window screenshot image encoder folded into WindowScreenshotController");
 
         var encoderType = RequireType("Sussudio.Controllers.WindowScreenshotImageEncoder");
         var writePng = encoderType.GetMethod("WritePngToStream", BindingFlags.Static | BindingFlags.NonPublic)
