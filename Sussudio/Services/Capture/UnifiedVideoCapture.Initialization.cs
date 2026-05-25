@@ -107,4 +107,61 @@ internal sealed partial class UnifiedVideoCapture
 
         capture.FatalErrorOccurred += OnCaptureFatalError;
     }
+
+    private static bool ShouldUseExternalMjpegDecode(
+        bool useMjpegHighFrameRateMode,
+        bool requireP010,
+        string? requestedPixelFormat)
+    {
+        // 4K120 MJPEG is compressed on the USB wire. In that mode the source
+        // reader must hand compressed samples to our decoder instead of trying
+        // to expose D3D textures directly from Media Foundation.
+        return useMjpegHighFrameRateMode &&
+            !requireP010 &&
+            string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private ParallelMjpegDecodePipeline? CreateExternalMjpegPipelineIfNeeded(
+        bool useExternalMjpegDecode,
+        int mjpegDecoderCount,
+        int width,
+        int height)
+    {
+        if (!useExternalMjpegDecode)
+        {
+            return null;
+        }
+
+        ParallelMjpegDecodePipeline? mjpegPipeline = null;
+        try
+        {
+            mjpegPipeline = new ParallelMjpegDecodePipeline(
+                mjpegDecoderCount,
+                width,
+                height,
+                OnMjpegPipelineFrameEmitted,
+                OnMjpegPipelineFatalError,
+                OnMjpegPipelinePreviewFrameDecoded);
+            return mjpegPipeline;
+        }
+        catch (Exception ex)
+        {
+            mjpegPipeline?.Dispose();
+            Logger.Log($"SW_MJPEG_PIPELINE_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            throw new InvalidOperationException(
+                $"CPU MJPEG decode pipeline failed to initialize: {ex.Message}", ex);
+        }
+    }
+
+    private void InstallMjpegPreviewJitterBuffer(double fps)
+    {
+        Volatile.Write(
+            ref _mjpegPreviewJitterBuffer,
+            new MjpegPreviewJitterBuffer(
+                fps,
+                () => Volatile.Read(ref _previewSink),
+                () => _previewSuppressed,
+                previewFrameProbe: null,
+                targetDepth: 3));
+    }
 }

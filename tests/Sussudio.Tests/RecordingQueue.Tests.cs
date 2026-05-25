@@ -29,7 +29,6 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.FrameIngress.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Initialization.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Lifecycle.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.MjpegPipelineLifecycle.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.SinkFanout.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.SinkFanout.Flashback.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Preview.cs").Replace("\r\n", "\n")

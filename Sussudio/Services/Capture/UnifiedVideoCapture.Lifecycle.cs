@@ -191,4 +191,44 @@ internal sealed partial class UnifiedVideoCapture
             $"UNIFIED_VIDEO_FATAL_CAPTURE_ERROR type={ex.GetType().Name} msg={ex.Message}");
     }
 
+    private void StopAndDisposeMjpegPipeline(ParallelMjpegDecodePipeline mjpegPipelineToStop)
+    {
+        var jitterBuffer = Interlocked.Exchange(ref _mjpegPreviewJitterBuffer, null);
+        jitterBuffer?.Dispose();
+
+        if (!mjpegPipelineToStop.TryStop(TimeSpan.FromSeconds(5), out var failureReason))
+        {
+            var stopException = new InvalidOperationException(
+                $"CPU MJPEG pipeline stop did not quiesce cleanly: {failureReason ?? "unknown"}");
+            SignalFatalError(
+                stopException,
+                $"UNIFIED_VIDEO_MJPEG_STOP_FAIL reason='{failureReason ?? "unknown"}'");
+            throw stopException;
+        }
+
+        lock (_sync)
+        {
+            if (ReferenceEquals(_mjpegPipeline, mjpegPipelineToStop))
+            {
+                _mjpegPipeline = null;
+            }
+        }
+
+        mjpegPipelineToStop.Dispose();
+    }
+
+    private static void DisposeMjpegPipelineResources(
+        ParallelMjpegDecodePipeline? mjpegPipeline,
+        MjpegPreviewJitterBuffer? jitterBuffer)
+    {
+        mjpegPipeline?.Dispose();
+        jitterBuffer?.Dispose();
+    }
+
+    private void OnMjpegPipelineFatalError(Exception ex)
+    {
+        SignalFatalError(
+            ex,
+            $"UNIFIED_VIDEO_FATAL_MJPEG_ERROR type={ex.GetType().Name} msg={ex.Message}");
+    }
 }
