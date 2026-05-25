@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Sussudio.Models;
 
@@ -97,4 +98,215 @@ public sealed class WindowScreenshotResult
     public int CapturedWidth { get; init; }
     public int CapturedHeight { get; init; }
     public long FileSizeBytes { get; init; }
+}
+
+public sealed class RecordingVerificationResult
+{
+    public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+    public bool Succeeded { get; init; }
+    public string Message { get; init; } = string.Empty;
+    public string? OutputPath { get; init; }
+    public bool FileExists { get; init; }
+    public long FileSizeBytes { get; init; }
+    public string VerificationMode { get; init; } = "None";
+    public string? DetectedContainer { get; init; }
+    public string? DetectedVideoCodec { get; init; }
+    public string? DetectedPixelFormat { get; init; }
+    public string? DetectedColorPrimaries { get; init; }
+    public string? DetectedColorTransfer { get; init; }
+    public string? DetectedColorSpace { get; init; }
+    public IReadOnlyList<string> DetectedHdrSideDataTypes { get; init; } = Array.Empty<string>();
+    public bool? HdrMetadataPresent { get; init; }
+    public bool? HdrColorimetryValid { get; init; }
+    public bool? HdrMasteringMetadataPresent { get; init; }
+    public string HdrVerificationLevel { get; init; } = "NotHdr";
+    public uint? DetectedWidth { get; init; }
+    public uint? DetectedHeight { get; init; }
+    public double? DetectedFrameRate { get; init; }
+    public int? CadenceSampleCount { get; init; }
+    public double? CadenceObservedFps { get; init; }
+    public double? CadenceExpectedIntervalMs { get; init; }
+    public double? CadenceAverageIntervalMs { get; init; }
+    public double? CadenceP95IntervalMs { get; init; }
+    public double? CadenceMaxIntervalMs { get; init; }
+    public double? CadenceJitterStdDevMs { get; init; }
+    public long? CadenceSevereGapCount { get; init; }
+    public double? CadenceSevereGapPercent { get; init; }
+    public long? CadenceEstimatedDroppedFrames { get; init; }
+    public double? CadenceEstimatedDropPercent { get; init; }
+    public string? PrimaryMismatchCode { get; init; }
+    public string? PrimaryMismatchExpected { get; init; }
+    public string? PrimaryMismatchActual { get; init; }
+    public IReadOnlyList<string> Mismatches { get; init; } = Array.Empty<string>();
+    public HdrParityResult? HdrParity { get; init; }
+}
+
+public sealed class HdrParityResult
+{
+    public bool Requested { get; init; }
+    public bool Activated { get; init; }
+    public bool Verified { get; init; }
+    public bool Downgraded { get; init; }
+    public string VerificationLevel { get; init; } = "NotHdr";
+    public string Status { get; init; } = "NotRequested";
+    public IReadOnlyList<MismatchTaxonomyEntry> MismatchTaxonomy { get; init; } = Array.Empty<MismatchTaxonomyEntry>();
+}
+
+public sealed class HdrTruthVerdict
+{
+    public string PipelineFormat { get; init; } = "unknown";
+    public string EffectiveBitDepth { get; init; } = "unknown";
+    public string HdrMetadataState { get; init; } = "unknown";
+    public string SourceVsCaptureParity { get; init; } = "unknown";
+    public string FinalClassification { get; init; } = "inconclusive";
+    public IReadOnlyList<string> Evidence { get; init; } = Array.Empty<string>();
+}
+
+public sealed class MismatchTaxonomyEntry
+{
+    public string Category { get; init; } = "General";
+    public string Code { get; init; } = string.Empty;
+    public string Severity { get; init; } = "Warning";
+    public string? Expected { get; init; }
+    public string? Actual { get; init; }
+}
+
+public sealed class VideoSourceFormatEntry
+{
+    public string Subtype { get; init; } = string.Empty;
+    public int Width { get; init; }
+    public int Height { get; init; }
+    public double FrameRate { get; init; }
+    public string Summary { get; init; } = string.Empty;
+}
+
+public sealed class VideoSourceProbeResult
+{
+    public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+    public bool SessionActive { get; init; }
+    public string MemoryPreference { get; init; } = "Unknown";
+    public string CurrentSubtype { get; init; } = "Unknown";
+    public int CurrentWidth { get; init; }
+    public int CurrentHeight { get; init; }
+    public double CurrentFrameRate { get; init; }
+    public bool P010Available { get; init; }
+    public bool Nv12Available { get; init; }
+    public IReadOnlyList<string> SupportedSubtypes { get; init; } = Array.Empty<string>();
+    public int TotalFormatCount { get; init; }
+    public IReadOnlyList<VideoSourceFormatEntry> Formats { get; init; } = Array.Empty<VideoSourceFormatEntry>();
+}
+
+public sealed class PreviewColorProbeResult
+{
+    public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+    public bool SessionActive { get; init; }
+    public string RendererMode { get; init; } = "None";
+    public string NegotiatedSubtype { get; init; } = "Unknown";
+    public int SourceWidth { get; init; }
+    public int SourceHeight { get; init; }
+    public double SourceFrameRate { get; init; }
+
+    // MF_MT_VIDEO_NOMINAL_RANGE: 0=Unknown, 1=Normal(0-255), 2=Wide(16-235)
+    public int NominalRange { get; init; }
+    public string NominalRangeLabel { get; init; } = "Unknown";
+
+    // MF_MT_TRANSFER_FUNCTION: 1=Unknown, 6=BT709, 8=sRGB, 12=SMPTE2084(PQ), 16=HLG
+    public int TransferFunction { get; init; }
+    public string TransferFunctionLabel { get; init; } = "Unknown";
+
+    // MF_MT_VIDEO_PRIMARIES: 1=Unknown, 2=BT709, 9=BT2020
+    public int VideoPrimaries { get; init; }
+    public string VideoPrimariesLabel { get; init; } = "Unknown";
+
+    // MF_MT_YUV_MATRIX: 0=Unknown, 1=BT709, 2=BT601, 4=BT2020_non_const
+    public int YuvMatrix { get; init; }
+    public string YuvMatrixLabel { get; init; } = "Unknown";
+
+    // Luma (Y plane) analysis from the preview adapter.
+    public int? LumaMin { get; init; }
+    public int? LumaMax { get; init; }
+    public double? LumaMean { get; init; }
+    public int? LumaBelow16Count { get; init; }
+    public int? LumaAbove235Count { get; init; }
+    public int? LumaSampleCount { get; init; }
+
+    // Raw MF properties dump.
+    public IReadOnlyDictionary<string, string> FormatProperties { get; init; } = new Dictionary<string, string>();
+
+    // D3D11 Video Processor color spaces.
+    public string D3DInputColorSpace { get; init; } = "None";
+    public string D3DOutputColorSpace { get; init; } = "None";
+}
+
+public sealed class ViewModelRuntimeSnapshot
+{
+    public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+    public bool IsInitialized { get; init; }
+    public bool IsPreviewing { get; init; }
+    public bool IsRecording { get; init; }
+    public bool IsAudioEnabled { get; init; }
+    public bool IsAudioPreviewEnabled { get; init; }
+    public bool IsCustomAudioInputEnabled { get; init; }
+    public string StatusText { get; init; } = string.Empty;
+    public string? SelectedDeviceId { get; init; }
+    public string? SelectedDeviceName { get; init; }
+    public string? SelectedAudioInputDeviceId { get; init; }
+    public string? SelectedAudioInputDeviceName { get; init; }
+    public string? SelectedResolution { get; init; }
+    public double SelectedFrameRate { get; init; }
+    public double? SelectedFriendlyFrameRate { get; init; }
+    public double? SelectedExactFrameRate { get; init; }
+    public string? SelectedExactFrameRateArg { get; init; }
+    public string? DisabledResolutionReason { get; init; }
+    public string? DisabledFrameRateReason { get; init; }
+    public string HdrResolutionSupportHint { get; init; } = string.Empty;
+    public double? DetectedSourceFrameRate { get; init; }
+    public string? DetectedSourceFrameRateArg { get; init; }
+    public string SourceFrameRateOrigin { get; init; } = "Unknown";
+    public int? SourceWidth { get; init; }
+    public int? SourceHeight { get; init; }
+    public bool? SourceIsHdr { get; init; }
+    public string SourceTelemetryAvailability { get; init; } = "Unknown";
+    public string SourceTelemetryOriginDetail { get; init; } = "Unknown";
+    public string SourceTelemetryConfidence { get; init; } = "Unknown";
+    public string? SourceTelemetryDiagnosticSummary { get; init; }
+    public DateTimeOffset? SourceTelemetryTimestampUtc { get; init; }
+    public int? SourceTelemetryAgeSeconds { get; init; }
+    public string SourceTelemetrySummaryText { get; init; } = string.Empty;
+    public string SourceTargetSummaryText { get; init; } = string.Empty;
+    public long CaptureCommandCommandsEnqueued { get; init; }
+    public long CaptureCommandCommandsCompleted { get; init; }
+    public long CaptureCommandCommandsFailed { get; init; }
+    public long CaptureCommandCommandsCanceled { get; init; }
+    public long CaptureCommandCommandsCoalesced { get; init; }
+    public int CaptureCommandPendingCommands { get; init; }
+    public int CaptureCommandMaxPendingCommands { get; init; }
+    public long CaptureCommandOldestPendingCommandAgeMs { get; init; }
+    public long CaptureCommandLastQueueLatencyMs { get; init; }
+    public long CaptureCommandMaxQueueLatencyMs { get; init; }
+    public string CaptureCommandLastCommand { get; init; } = "None";
+    public string CaptureCommandLastOutcome { get; init; } = "None";
+    public string CaptureCommandLastCorrelationId { get; init; } = string.Empty;
+    public string CaptureCommandLastError { get; init; } = string.Empty;
+    public string SelectedRecordingFormat { get; init; } = string.Empty;
+    public string SelectedQuality { get; init; } = string.Empty;
+    public string SelectedPreset { get; init; } = string.Empty;
+    public string SelectedSplitEncodeMode { get; init; } = string.Empty;
+    public string SelectedVideoFormat { get; init; } = string.Empty;
+    public double CustomBitrateMbps { get; init; }
+    public double PreviewVolumePercent { get; init; }
+    public bool IsStatsVisible { get; init; }
+    public bool IsHdrAvailable { get; init; }
+    public bool IsHdrEnabled { get; init; }
+    public string HdrRuntimeState { get; init; } = "Inactive";
+    public string HdrReadinessReason { get; init; } = string.Empty;
+    public string LiveResolution { get; init; } = "—";
+    public string LiveFrameRate { get; init; } = "—";
+    public string LivePixelFormat { get; init; } = "—";
+    public string OutputPath { get; init; } = string.Empty;
+    public string RecordingTime { get; init; } = string.Empty;
+    public string RecordingSizeInfo { get; init; } = string.Empty;
+    public string RecordingBitrateInfo { get; init; } = string.Empty;
+    public double AudioPeak { get; init; }
+    public bool AudioClipping { get; init; }
 }
