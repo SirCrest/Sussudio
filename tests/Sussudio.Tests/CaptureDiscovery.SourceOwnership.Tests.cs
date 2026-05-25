@@ -9,7 +9,6 @@ static partial class Program
         var sourceReaderRootText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs").Replace("\r\n", "\n");
         var sourceReaderNegotiationText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs").Replace("\r\n", "\n");
         var sourceReaderDeviceEnumerationText = sourceReaderNegotiationText;
-        var sourceReaderInteropText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Interop.cs").Replace("\r\n", "\n");
         var sourceReaderComContractsText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.ComContracts.cs").Replace("\r\n", "\n");
         var sourceReaderSampleBufferContractsText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.SampleBufferContracts.cs").Replace("\r\n", "\n");
         var mfInteropHelpersText = ReadRepoFile("Sussudio/Services/Capture/MfInteropHelpers.cs").Replace("\r\n", "\n");
@@ -52,14 +51,15 @@ static partial class Program
             "converted source-reader media type construction folded into negotiation owner");
         AssertContains(sourceReaderNegotiationText, "private static bool TryGetFrameSize(");
         AssertContains(sourceReaderNegotiationText, "private static bool TryGetFrameRate(");
-        AssertContains(sourceReaderInteropText, "private static class MfInterop");
-        AssertContains(sourceReaderInteropText, "DllImport(\"mfplat.dll\", ExactSpelling = true)");
-        AssertContains(sourceReaderInteropText, "private static class MfConstants");
-        AssertContains(sourceReaderInteropText, "private static class MfHResults");
-        AssertContains(sourceReaderInteropText, "private static class MfGuids");
-        AssertDoesNotContain(sourceReaderInteropText, "internal interface IMFSourceReader");
-        AssertDoesNotContain(sourceReaderInteropText, "internal interface IMFMediaBuffer");
-        AssertDoesNotContain(sourceReaderInteropText, "internal interface IMFDXGIBuffer");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.Interop.cs")),
+            "source-reader MF P/Invokes and constants folded into COM contract owner");
+        AssertContains(sourceReaderComContractsText, "private static class MfInterop");
+        AssertContains(sourceReaderComContractsText, "DllImport(\"mfplat.dll\", ExactSpelling = true)");
+        AssertContains(sourceReaderComContractsText, "private static class MfConstants");
+        AssertContains(sourceReaderComContractsText, "private static class MfHResults");
+        AssertContains(sourceReaderComContractsText, "private static class MfGuids");
         AssertContains(sourceReaderComContractsText, "internal interface IMFSourceReader");
         AssertDoesNotContain(sourceReaderComContractsText, "internal interface IMFMediaBuffer");
         AssertDoesNotContain(sourceReaderComContractsText, "internal interface IMFDXGIBuffer");
@@ -71,8 +71,6 @@ static partial class Program
         AssertContains(sourceReaderSampleBufferContractsText, "does NOT use C# interface inheritance");
         AssertContains(sourceReaderSampleBufferContractsText, "[PreserveSig] int _Attr_GetItem(ref Guid guidKey, IntPtr pValue);");
         AssertContains(sourceReaderSampleBufferContractsText, "int GetSampleTime(out long phnsSampleTime);");
-        AssertDoesNotContain(sourceReaderComContractsText, "DllImport(");
-        AssertDoesNotContain(sourceReaderComContractsText, "private static class MfInterop");
         AssertDoesNotContain(sourceReaderSampleBufferContractsText, "DllImport(");
         AssertDoesNotContain(sourceReaderSampleBufferContractsText, "private static class MfInterop");
         AssertDoesNotContain(sourceReaderRootText, "private IMFMediaSource CreateMediaSource(");
