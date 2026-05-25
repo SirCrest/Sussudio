@@ -44,8 +44,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var catalogText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs")
             .Replace("\r\n", "\n");
-        var catalogEntriesText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(catalogText, "internal static partial class DiagnosticSessionScenarioCatalog");
         AssertContains(catalogText, "TryGetEntry(normalized, out _)");
@@ -54,30 +52,32 @@ static partial class Program
         AssertContains(catalogText, "internal static IReadOnlyList<string> Names => Entries.Select");
         AssertContains(catalogText, "TryGetEntry(scenario, out var entry) && entry.RequiresPreview");
         AssertContains(catalogText, "entry.FlashbackExportVerificationFileName");
-        AssertDoesNotContain(catalogText, "internal static IReadOnlyList<DiagnosticSessionScenarioCatalogEntry> Entries { get; }");
-        AssertContains(catalogEntriesText, "internal static partial class DiagnosticSessionScenarioCatalog");
-        AssertContains(catalogEntriesText, "internal static IReadOnlyList<DiagnosticSessionScenarioCatalogEntry> Entries { get; }");
-        AssertContains(catalogEntriesText, ".. CreateCoreScenarioEntries(),");
-        AssertContains(catalogEntriesText, ".. CreateFlashbackPlaybackScenarioEntries(),");
-        AssertContains(catalogEntriesText, ".. CreateFlashbackExportScenarioEntries(),");
-        AssertContains(catalogEntriesText, ".. CreateFlashbackRecordingScenarioEntries(),");
-        AssertContains(catalogEntriesText, "CreateCombinedScenarioEntry()");
-        AssertContains(catalogEntriesText, "internal readonly record struct DiagnosticSessionScenarioCatalogEntry(");
-        AssertContains(catalogEntriesText, "private static DiagnosticSessionScenarioCatalogEntry[] CreateCoreScenarioEntries()");
-        AssertContains(catalogEntriesText, "new(Observe)");
-        AssertContains(catalogEntriesText, "FlashbackExportVerificationFileName: \"flashback-stress-export.mp4\"");
-        AssertContains(catalogEntriesText, "private static DiagnosticSessionScenarioCatalogEntry[] CreateFlashbackPlaybackScenarioEntries()");
-        AssertContains(catalogEntriesText, "FlashbackPlayback,");
-        AssertContains(catalogEntriesText, "DiagnosticSessionScenarioPlan.Create(runFlashbackPlayback: true)");
-        AssertContains(catalogEntriesText, "DiagnosticSessionScenarioPlan.Create(runFlashbackSegmentPlayback: true)");
-        AssertContains(catalogEntriesText, "private static DiagnosticSessionScenarioCatalogEntry[] CreateFlashbackExportScenarioEntries()");
-        AssertContains(catalogEntriesText, "FlashbackExportVerificationFileName: \"flashback-range-export.mp4\"");
-        AssertContains(catalogEntriesText, "DiagnosticSessionScenarioPlan.Create(runFlashbackPlaybackPreviewCycle: true)");
-        AssertContains(catalogEntriesText, "private static DiagnosticSessionScenarioCatalogEntry[] CreateFlashbackRecordingScenarioEntries()");
-        AssertContains(catalogEntriesText, "RequiresRecording: true");
-        AssertContains(catalogEntriesText, "DiagnosticSessionScenarioPlan.Create(runFlashbackExportRejected: true)");
-        AssertContains(catalogEntriesText, "private static DiagnosticSessionScenarioCatalogEntry CreateCombinedScenarioEntry()");
-        AssertContains(catalogEntriesText, "DiagnosticSessionScenarioPlan.Create(runCombined: true)");
+        AssertContains(catalogText, "internal static IReadOnlyList<DiagnosticSessionScenarioCatalogEntry> Entries { get; }");
+        AssertContains(catalogText, ".. CreateCoreScenarioEntries(),");
+        AssertContains(catalogText, ".. CreateFlashbackPlaybackScenarioEntries(),");
+        AssertContains(catalogText, ".. CreateFlashbackExportScenarioEntries(),");
+        AssertContains(catalogText, ".. CreateFlashbackRecordingScenarioEntries(),");
+        AssertContains(catalogText, "CreateCombinedScenarioEntry()");
+        AssertContains(catalogText, "internal readonly record struct DiagnosticSessionScenarioCatalogEntry(");
+        AssertContains(catalogText, "private static DiagnosticSessionScenarioCatalogEntry[] CreateCoreScenarioEntries()");
+        AssertContains(catalogText, "new(Observe)");
+        AssertContains(catalogText, "FlashbackExportVerificationFileName: \"flashback-stress-export.mp4\"");
+        AssertContains(catalogText, "private static DiagnosticSessionScenarioCatalogEntry[] CreateFlashbackPlaybackScenarioEntries()");
+        AssertContains(catalogText, "FlashbackPlayback,");
+        AssertContains(catalogText, "DiagnosticSessionScenarioPlan.Create(runFlashbackPlayback: true)");
+        AssertContains(catalogText, "DiagnosticSessionScenarioPlan.Create(runFlashbackSegmentPlayback: true)");
+        AssertContains(catalogText, "private static DiagnosticSessionScenarioCatalogEntry[] CreateFlashbackExportScenarioEntries()");
+        AssertContains(catalogText, "FlashbackExportVerificationFileName: \"flashback-range-export.mp4\"");
+        AssertContains(catalogText, "DiagnosticSessionScenarioPlan.Create(runFlashbackPlaybackPreviewCycle: true)");
+        AssertContains(catalogText, "private static DiagnosticSessionScenarioCatalogEntry[] CreateFlashbackRecordingScenarioEntries()");
+        AssertContains(catalogText, "RequiresRecording: true");
+        AssertContains(catalogText, "DiagnosticSessionScenarioPlan.Create(runFlashbackExportRejected: true)");
+        AssertContains(catalogText, "private static DiagnosticSessionScenarioCatalogEntry CreateCombinedScenarioEntry()");
+        AssertContains(catalogText, "DiagnosticSessionScenarioPlan.Create(runCombined: true)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionScenarioCatalog.Entries.cs")),
+            "Diagnostic session scenario entries folded into the catalog owner");
         AssertContains(planText, "internal readonly record struct DiagnosticSessionScenarioPlan(");
         AssertContains(planText, "internal static DiagnosticSessionScenarioPlan Create(");
         AssertContains(planText, "internal static DiagnosticSessionScenarioPlan From(string scenario)");

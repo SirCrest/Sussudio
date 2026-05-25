@@ -122,8 +122,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionScenarioCatalogSource()
     {
-        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs")
-            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs");
+        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs");
     }
 
     private static string ReadDiagnosticSessionScenarioPlanSource()

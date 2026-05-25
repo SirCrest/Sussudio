@@ -3505,10 +3505,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionScenarioCatalog.cs` owns scenario name
   constants, MCP-compatible scenario description text, the CLI help-list
   constant, the `Names` projection, normalization, entry lookup, requirement
-  queries, and export-verification lookup.
-  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs` owns scenario
-  ordering plus core, Flashback playback, Flashback export/lifecycle, Flashback
-  recording/rejection, and combined scenario metadata.
+  queries, export-verification lookup, scenario ordering, and core, Flashback
+  playback, Flashback export/lifecycle, Flashback recording/rejection, and
+  combined scenario metadata.
 - `tools/Common/DiagnosticSessionResult.cs` owns diagnostic-session summary DTO
   fields: core metadata, artifact paths, terminal state, actions, warnings,
   end-of-run overview, capture/source, Flashback playback/recording/export,
@@ -3811,9 +3810,8 @@ Invariants:
 - Add new diagnostic-session scenario names and requirement/query helpers in
   `tools/Common/DiagnosticSessionScenarioCatalog.cs` only when a new entry shape
   needs them, plus export verification metadata and plan metadata in
-  `tools/Common/DiagnosticSessionScenarioCatalog.Entries.cs` before wiring
-  scenario behavior into `DiagnosticSessionRunner`. Preserve the final order
-  there.
+  `tools/Common/DiagnosticSessionScenarioCatalog.cs` before wiring scenario
+  behavior into `DiagnosticSessionRunner`. Preserve the final order there.
 - Keep diagnostic-session grouped policy derivation in
   `tools/Common/DiagnosticSessionScenarioPlan.cs`; the runner should consume
   named properties instead of comparing normalized scenario strings directly.

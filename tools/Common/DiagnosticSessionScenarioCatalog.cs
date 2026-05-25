@@ -32,7 +32,165 @@ internal static partial class DiagnosticSessionScenarioCatalog
     internal const string Description =
         "Session scenario: observe, preview-only, recording-only, flashback, flashback-playback, flashback-stress, flashback-scrub-stress, flashback-restart-cycle, flashback-encoder-cycle, flashback-export-playback, flashback-segment-playback, flashback-range-export, flashback-range-export-audio-switch, flashback-lifecycle, flashback-export-concurrent, flashback-disable-during-export, flashback-rotated-export, flashback-preview-cycle, flashback-playback-preview-cycle, flashback-recording, flashback-recording-preview-cycle, flashback-recording-settings-deferred, flashback-recording-export-rejected, flashback-export-rejected, or combined.";
 
+    internal static IReadOnlyList<DiagnosticSessionScenarioCatalogEntry> Entries { get; } =
+    [
+        .. CreateCoreScenarioEntries(),
+        .. CreateFlashbackPlaybackScenarioEntries(),
+        .. CreateFlashbackExportScenarioEntries(),
+        .. CreateFlashbackRecordingScenarioEntries(),
+        CreateCombinedScenarioEntry()
+    ];
+
     internal static IReadOnlyList<string> Names => Entries.Select(static entry => entry.Name).ToArray();
+
+    private static DiagnosticSessionScenarioCatalogEntry[] CreateCoreScenarioEntries()
+        => [
+        new(Observe),
+        new(
+            PreviewOnly,
+            RequiresPreview: true),
+        new(
+            RecordingOnly,
+            RequiresRecording: true),
+        new(
+            Flashback,
+            RequiresPreview: true,
+            RequiresFlashback: true,
+            FlashbackExportVerificationFileName: "flashback-stress-export.mp4")
+    ];
+
+    private static DiagnosticSessionScenarioCatalogEntry[] CreateFlashbackPlaybackScenarioEntries()
+        => [
+        new(
+            FlashbackPlayback,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackPlayback: true),
+            RequiresPreview: true,
+            RequiresFlashback: true),
+        new(
+            FlashbackStress,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackStress: true),
+            RequiresPreview: true,
+            RequiresFlashback: true,
+            FlashbackExportVerificationFileName: "flashback-stress-export.mp4"),
+        new(
+            FlashbackScrubStress,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackScrubStress: true),
+            RequiresPreview: true,
+            RequiresFlashback: true),
+        new(
+            FlashbackRestartCycle,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackRestartCycle: true),
+            RequiresPreview: true,
+            RequiresFlashback: true,
+            FlashbackExportVerificationFileName: "flashback-restart-cycle-export.mp4"),
+        new(
+            FlashbackEncoderCycle,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackEncoderCycle: true),
+            RequiresPreview: true,
+            RequiresFlashback: true,
+            FlashbackExportVerificationFileName: "flashback-encoder-cycle-export.mp4"),
+        new(
+            FlashbackExportPlayback,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackExportPlayback: true),
+            RequiresPreview: true,
+            RequiresFlashback: true,
+            FlashbackExportVerificationFileName: "flashback-export-playback.mp4"),
+        new(
+            FlashbackSegmentPlayback,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackSegmentPlayback: true),
+            RequiresPreview: true,
+            RequiresFlashback: true)
+    ];
+
+    private static DiagnosticSessionScenarioCatalogEntry[] CreateFlashbackExportScenarioEntries()
+        => [
+        new(
+            FlashbackRangeExport,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackRangeExport: true),
+            RequiresPreview: true,
+            RequiresFlashback: true,
+            FlashbackExportVerificationFileName: "flashback-range-export.mp4"),
+        new(
+            FlashbackRangeExportAudioSwitch,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackRangeExportAudioSwitch: true),
+            RequiresPreview: true,
+            RequiresFlashback: true,
+            FlashbackExportVerificationFileName: "flashback-range-export-audio-switch.mp4"),
+        new(
+            FlashbackLifecycle,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackLifecycle: true),
+            RequiresPreview: true,
+            RequiresFlashback: true),
+        new(
+            FlashbackExportConcurrent,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackExportConcurrent: true),
+            RequiresPreview: true,
+            RequiresFlashback: true,
+            FlashbackExportVerificationFileName: "flashback-concurrent-a.mp4"),
+        new(
+            FlashbackDisableDuringExport,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackDisableDuringExport: true),
+            RequiresPreview: true,
+            RequiresFlashback: true,
+            FlashbackExportVerificationFileName: "flashback-disable-during-export.mp4"),
+        new(
+            FlashbackRotatedExport,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackRotatedExport: true),
+            RequiresPreview: true,
+            RequiresFlashback: true,
+            FlashbackExportVerificationFileName: "flashback-rotated-export.mp4"),
+        new(
+            FlashbackPreviewCycle,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackPreviewCycle: true),
+            RequiresPreview: true,
+            RequiresFlashback: true,
+            FlashbackExportVerificationFileName: "flashback-preview-off-export.mp4"),
+        new(
+            FlashbackPlaybackPreviewCycle,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackPlaybackPreviewCycle: true),
+            RequiresPreview: true,
+            RequiresFlashback: true,
+            FlashbackExportVerificationFileName: "flashback-playback-preview-cycle.mp4")
+    ];
+
+    private static DiagnosticSessionScenarioCatalogEntry[] CreateFlashbackRecordingScenarioEntries()
+        => [
+        new(
+            FlashbackRecording,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackRecording: true),
+            RequiresPreview: true,
+            RequiresRecording: true,
+            RequiresFlashback: true),
+        new(
+            FlashbackRecordingPreviewCycle,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackRecordingPreviewCycle: true),
+            RequiresPreview: true,
+            RequiresRecording: true,
+            RequiresFlashback: true),
+        new(
+            FlashbackRecordingSettingsDeferred,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackRecordingSettingsDeferred: true),
+            RequiresPreview: true,
+            RequiresRecording: true,
+            RequiresFlashback: true),
+        new(
+            FlashbackRecordingExportRejected,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackRecordingExportRejected: true),
+            RequiresPreview: true,
+            RequiresRecording: true,
+            RequiresFlashback: true),
+        new(
+            FlashbackExportRejected,
+            DiagnosticSessionScenarioPlan.Create(runFlashbackExportRejected: true))
+    ];
+
+    private static DiagnosticSessionScenarioCatalogEntry CreateCombinedScenarioEntry()
+        => new(
+            Combined,
+            DiagnosticSessionScenarioPlan.Create(runCombined: true),
+            RequiresPreview: true,
+            RequiresRecording: true,
+            RequiresFlashback: true);
 
     internal static string Normalize(string? scenario)
     {
@@ -85,3 +243,11 @@ internal static partial class DiagnosticSessionScenarioCatalog
         return exportPath.Length > 0;
     }
 }
+
+internal readonly record struct DiagnosticSessionScenarioCatalogEntry(
+    string Name,
+    DiagnosticSessionScenarioPlan Plan = default,
+    bool RequiresPreview = false,
+    bool RequiresRecording = false,
+    bool RequiresFlashback = false,
+    string? FlashbackExportVerificationFileName = null);

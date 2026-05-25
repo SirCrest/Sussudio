@@ -2967,10 +2967,10 @@ explicit scenario phase input handoff, immutable completion handoff, and mutable
 in-flight phase state,
 while `DiagnosticSessionScenarioCatalog.cs` owns scenario name constants, the
 MCP-compatible scenario description, the CLI help-list constant, normalization,
-entry lookup, requirement queries, and export verification artifact lookup.
-`DiagnosticSessionScenarioCatalog.Entries.cs` owns scenario ordering by
-composing core, Flashback playback, Flashback export/lifecycle, Flashback
-recording/rejection, and combined scenario requirement metadata.
+entry lookup, requirement queries, export verification artifact lookup, and
+scenario ordering by composing core, Flashback playback, Flashback
+export/lifecycle, Flashback recording/rejection, and combined scenario
+requirement metadata.
 `DiagnosticSessionRunner.cs` owns the public compatibility entry points and the
 visible run phase sequence around context creation, initial snapshot, scenario
 execution, cleanup, and completion handoff. `DiagnosticSessionRunContext.cs`
@@ -3232,15 +3232,12 @@ Diagnostic-session post-run snapshot fetches now live in
 orders them. It owns performance timeline artifact input and final health
 snapshot refresh.
 
-Diagnostic-session scenario metadata now lives in the
-`tools/Common/DiagnosticSessionScenarioCatalog.*.cs` family. The root catalog
-owns normalization and entry lookup. `.Names.cs` owns scenario names,
-HelpList/Description text, and the `Names` projection. `.Requirements.cs` owns
-requirement queries and export-verification lookup.
-`DiagnosticSessionScenarioCatalog.Entries.cs` owns scenario ordering by
-spreading focused entry groups; `.Entries.Core.cs`,
-`.Entries.FlashbackPlayback.cs`, `.Entries.FlashbackExport.cs`,
-`.Entries.FlashbackRecording.cs`, and `.Entries.Combined.cs` own the setup
+Diagnostic-session scenario metadata now lives in
+`tools/Common/DiagnosticSessionScenarioCatalog.cs`. The catalog owns
+normalization and entry lookup, scenario names, HelpList/Description text,
+the `Names` projection, requirement queries, export-verification lookup, and
+scenario ordering by composing focused entry groups for core, Flashback
+playback, Flashback export, Flashback recording, and combined setup
 requirement metadata, export verification filenames, and plan assigned to each
 normalized scenario group.
 `tools/Common/DiagnosticSessionScenarioPlan.cs` owns the plan DTO, creation
@@ -3477,7 +3474,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionLiveStateWriter.cs`
 - `DiagnosticSessionRunContext.cs`
 - `DiagnosticSessionScenarioCatalog.cs`
-- `DiagnosticSessionScenarioCatalog.Entries.cs`
+- `DiagnosticSessionScenarioCatalog.cs`
 - `DiagnosticSessionScenarioPlan.cs`
 - `DiagnosticSessionScenarioSetup.cs`
 - `DiagnosticSessionScenarioStartup.cs`
