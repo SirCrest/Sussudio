@@ -1,4 +1,5 @@
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -133,6 +134,95 @@ static partial class Program
         AssertContains(dispatcherText, "return CreateResponse(correlationId, $\"Recording {(enabled ? \"started\" : \"stopped\")}.\"");
         AssertContains(dispatcherText, "var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "snapshot: snapshot");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task BitrateSampleWindow_PreservesBoundedAverageBehavior()
+    {
+        var windowType = RequireType("Sussudio.ViewModels.BitrateSampleWindow");
+        var window = Activator.CreateInstance(
+                         windowType,
+                         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                         binder: null,
+                         args: new object[] { 10_000L },
+                         culture: null)
+                     ?? throw new InvalidOperationException("BitrateSampleWindow instance could not be created.");
+        var sampleMethod = windowType.GetMethod("AddSampleAndCompute", BindingFlags.Instance | BindingFlags.Public)
+            ?? throw new InvalidOperationException("BitrateSampleWindow.AddSampleAndCompute was not found.");
+        var clearMethod = windowType.GetMethod("Clear", BindingFlags.Instance | BindingFlags.Public)
+            ?? throw new InvalidOperationException("BitrateSampleWindow.Clear was not found.");
+
+        AssertEqual(null, (double?)sampleMethod.Invoke(window, new object[] { 0L, 100L }), "first sample bitrate");
+        AssertNearlyEqual(
+            8000.0,
+            (double)sampleMethod.Invoke(window, new object[] { 1000L, 1100L })!,
+            0.0001,
+            "two sample bitrate");
+        AssertNearlyEqual(
+            4000.0,
+            (double)sampleMethod.Invoke(window, new object[] { 11_000L, 6100L })!,
+            0.0001,
+            "trimmed sample bitrate");
+
+        clearMethod.Invoke(window, null);
+        AssertEqual(null, (double?)sampleMethod.Invoke(window, new object[] { 12_000L, 6100L }), "cleared sample bitrate");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task MainViewModelCapture_RecordingFailuresPropagateToCallers()
+    {
+        var recordingTransitionControllerRootText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
+            .Replace("\r\n", "\n");
+        var recordingTransitionControllerText = recordingTransitionControllerRootText;
+
+        AssertContains(recordingTransitionControllerText, "Logger.LogException(ex);");
+        AssertContains(recordingTransitionControllerText, "_context.SetIsRecording(_context.GetSessionIsRecording());");
+        AssertContains(recordingTransitionControllerText, "catch (OperationCanceledException ex)");
+        AssertContains(recordingTransitionControllerText, "transitionError = ex;");
+        AssertContains(recordingTransitionControllerText, "Logger.Log($\"Recording transition wait canceled: {ex.Message}\");");
+        AssertContains(recordingTransitionControllerText, "if (transitionError is OperationCanceledException transitionCanceled && inFlightTarget == (enabled ? 1 : 0))");
+        AssertContains(recordingTransitionControllerText, "throw transitionCanceled;");
+        AssertContains(recordingTransitionControllerText, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
+        AssertContains(recordingTransitionControllerText, "_context.SetStatusText(\"Recording start canceled\");");
+        AssertContains(recordingTransitionControllerText, "_context.SetStatusText(\"Stop recording canceled\");");
+        AssertContains(recordingTransitionControllerText, "_context.SetStatusText($\"Recording failed: {ex.Message}\");");
+        AssertContains(recordingTransitionControllerText, "_context.SetStatusText($\"Stop recording failed: {ex.Message}\");");
+        AssertContains(recordingTransitionControllerText, "throw;");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task EmergencyRecordingStop_DoesNotDispatchBackToBlockedUiThread()
+    {
+        var appText = ReadRepoFile("Sussudio/App.xaml.cs")
+            .Replace("\r\n", "\n");
+        var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n");
+        var recordingStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingState.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(recordingStateText, "internal Task StopRecordingForEmergencyAsync");
+        // Fix #12: emergency stop now routes through the coordinator's emergency-flagged path
+        // so LibAvRecordingSink applies EmergencyStopTimeoutMs (5s) instead of StopTimeoutMs (30s).
+        AssertContains(recordingStateText, "=> _sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);");
+        AssertDoesNotContain(rootViewModelText, "internal Task StopRecordingForEmergencyAsync");
+        AssertDoesNotContain(ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs"), "StopRecordingForEmergencyAsync");
+        AssertContains(appText, "var task = viewModel.StopRecordingForEmergencyAsync();");
+        AssertContains(appText, "if (e.IsTerminating || !recoverable)");
+        AssertDoesNotContain(appText, "Task.Run(async () =>");
+        AssertDoesNotContain(appText, "StopRecordingAndWaitAsync().ConfigureAwait(false)");
+        AssertDoesNotContain(appText, "viewModel == null || !viewModel.IsRecording");
+        AssertDoesNotContain(recordingStateText, "if (!IsRecording)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Capture.cs")),
+            "MainViewModel capture lifecycle facade partial");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.RecordingLifecycle.cs")),
+            "MainViewModel recording lifecycle facade partial");
 
         return Task.CompletedTask;
     }
