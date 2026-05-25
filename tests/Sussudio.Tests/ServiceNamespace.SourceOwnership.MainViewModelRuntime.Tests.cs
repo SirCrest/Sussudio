@@ -6,7 +6,6 @@ static partial class Program
         var mainViewModelText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
         var mainViewModelAudioCapturePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioState.cs"));
         var mainViewModelAudioStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioState.cs"));
-        var mainViewModelAudioInputSelectionText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioInputSelection.cs"));
         var mainViewModelDeviceAudioRequestControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceAudioRequestController.cs"));
         var mainViewModelCaptureModePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureModeTransactions.cs"));
         var mainViewModelCompositionText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Composition.cs"));
@@ -56,13 +55,17 @@ static partial class Program
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioPropertyChanges.cs")),
             "MainViewModel legacy audio property-change partial");
-        AssertContains(mainViewModelAudioInputSelectionText, "OnIsCustomAudioInputEnabledChanged");
-        AssertContains(mainViewModelAudioInputSelectionText, "OnSelectedAudioInputDeviceChanged");
-        AssertContains(mainViewModelAudioInputSelectionText, "private async Task ApplyAudioInputSelectionAsync");
+        AssertContains(mainViewModelAudioStateText, "OnIsCustomAudioInputEnabledChanged");
+        AssertContains(mainViewModelAudioStateText, "OnSelectedAudioInputDeviceChanged");
+        AssertContains(mainViewModelAudioStateText, "private async Task ApplyAudioInputSelectionAsync");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioInputPropertyChanges.cs")),
             "MainViewModel audio-input property-change partial");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioInputSelection.cs")),
+            "MainViewModel.AudioInputSelection.cs folded into MainViewModel.AudioState.cs");
         AssertContains(mainViewModelAudioStateText, "OnIsMicrophoneEnabledChanged");
         AssertContains(mainViewModelAudioStateText, "OnSelectedMicrophoneDeviceChanged");
         AssertContains(mainViewModelAudioStateText, "OnMicrophoneVolumeChanged");
@@ -104,9 +107,7 @@ static partial class Program
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureModePropertyChanges.cs")),
             "MainViewModel.CaptureModePropertyChanges.cs folded into MainViewModel.CaptureModeTransactions.cs");
         AssertDoesNotContain(mainViewModelAudioCapturePropertyChangesText, "OnSelectedDeviceAudioModeChanged");
-        AssertDoesNotContain(mainViewModelAudioCapturePropertyChangesText, "OnSelectedAudioInputDeviceChanged");
         AssertDoesNotContain(mainViewModelAudioStateText, "OnSelectedDeviceAudioModeChanged");
-        AssertDoesNotContain(mainViewModelAudioStateText, "OnSelectedAudioInputDeviceChanged");
         AssertContains(mainViewModelAudioStateText, "SetAudioMonitoringEnabledWithVolumeTransitionAsync");
         AssertEqual(
             false,

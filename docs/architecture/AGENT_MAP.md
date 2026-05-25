@@ -2945,12 +2945,13 @@ Primary current owners:
   preview reinitialize coordination, and preview request events; `MainViewModel.CaptureState.cs` owns capture-selection
   state, option collections, HDR capture/runtime presentation state, and
   source signal/source-telemetry presentation state; `MainViewModel.AudioState.cs` owns audio and
-  microphone state plus audio-preview property-change routing; `MainViewModel.DeviceAudioState.cs` owns device-native
+  microphone state, live meter callback state, custom audio-input retargeting,
+  preview-monitoring ramp handoff, and audio-preview property-change routing; `MainViewModel.DeviceAudioState.cs` owns device-native
   audio/XU UI state; `MainViewModel.FlashbackState.cs` owns Flashback
   timeline/export state plus buffer, bitrate, playback-state, in/out marker,
-  and gap-from-live UI projection. `MainViewModel.AudioMeters.cs` owns live
-  audio/microphone meter callback state; keep callback-thread meter targets
-  out of the root facade file. `Sussudio/ViewModels/AudioRampTraceRecorder.cs`
+  and gap-from-live UI projection. Keep callback-thread meter targets
+  in `MainViewModel.AudioState.cs` and out of the root facade file.
+  `Sussudio/ViewModels/AudioRampTraceRecorder.cs`
   owns audio ramp diagnostic state, bounded ring-buffer storage, snapshot
   projection, trace session start/complete, trace-point capture, sampler loop,
   and delayed sampler shutdown.
@@ -2965,11 +2966,10 @@ Primary current owners:
   `MainViewModel.AudioState.cs` owns audio-preview monitoring toggle routing,
   preview-volume save suppression/override properties, change notification,
   ramp adapter methods, persisted preview-volume save routing, preview
-  monitoring coordinator sequencing, microphone observable state, endpoint
-  volume synchronization, persistence, and microphone property-change routing.
-  `MainViewModel.AudioInputSelection.cs`
-  owns custom audio-input property handlers, retargeting, and
-  preview-monitoring ramp handoff.
+  monitoring coordinator sequencing, custom audio-input property handlers,
+  retargeting, preview-monitoring ramp handoff, microphone observable state,
+  endpoint volume synchronization, persistence, and microphone property-change
+  routing.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs`
   is a top-level `Sussudio.Controllers` owner for device-native audio request
   lifetime: selected-device refresh scheduling, mode-change scheduling, shared

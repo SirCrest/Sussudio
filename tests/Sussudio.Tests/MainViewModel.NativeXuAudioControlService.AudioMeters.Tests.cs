@@ -73,18 +73,22 @@ static partial class Program
             .Replace("\r\n", "\n");
         var runtimeEventIngressControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs")
             .Replace("\r\n", "\n");
-        var metersText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioMeters.cs")
+        var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(metersText, "public double AudioMeterTarget;");
-        AssertContains(metersText, "public double MicrophoneMeterTarget;");
-        AssertContains(metersText, "public event Action? AudioMeterActivated;");
-        AssertContains(metersText, "public event Action? MicrophoneMeterActivated;");
-        AssertContains(metersText, "private void OnAudioLevelUpdated(object? sender, AudioLevelEventArgs e)");
-        AssertContains(metersText, "private void OnMicrophoneAudioLevelUpdated(object? sender, AudioLevelEventArgs e)");
-        AssertContains(metersText, "private void ResetAudioMeter()");
-        AssertContains(metersText, "public void ResetAudioMeterTimerFlag()");
-        AssertContains(metersText, "private double UpdateMeterLevel(double peak, ref double meterDb, ref long lastTick)");
+        AssertContains(audioStateText, "public double AudioMeterTarget;");
+        AssertContains(audioStateText, "public double MicrophoneMeterTarget;");
+        AssertContains(audioStateText, "public event Action? AudioMeterActivated;");
+        AssertContains(audioStateText, "public event Action? MicrophoneMeterActivated;");
+        AssertContains(audioStateText, "private void OnAudioLevelUpdated(object? sender, AudioLevelEventArgs e)");
+        AssertContains(audioStateText, "private void OnMicrophoneAudioLevelUpdated(object? sender, AudioLevelEventArgs e)");
+        AssertContains(audioStateText, "private void ResetAudioMeter()");
+        AssertContains(audioStateText, "public void ResetAudioMeterTimerFlag()");
+        AssertContains(audioStateText, "private double UpdateMeterLevel(double peak, ref double meterDb, ref long lastTick)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AudioMeters.cs")),
+            "MainViewModel.AudioMeters.cs folded into MainViewModel.AudioState.cs");
         AssertContains(runtimeEventIngressControllerText, "_context.AttachAudioLevelUpdated(_context.OnAudioLevelUpdated);");
         AssertContains(runtimeEventIngressControllerText, "_context.AttachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);");
         AssertDoesNotContain(baseText, "_captureService.AudioLevelUpdated += OnAudioLevelUpdated;");

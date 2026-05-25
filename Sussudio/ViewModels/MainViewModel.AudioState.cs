@@ -60,6 +60,30 @@ public partial class MainViewModel
     [ObservableProperty]
     public partial bool AudioClipping { get; set; }
 
+    /// <summary>
+    /// Written by WASAPI callback thread via Volatile.Write, read by UI timer.
+    /// Bypasses PropertyChanged to avoid per-frame dispatch + 53-case switch overhead.
+    /// </summary>
+    public double AudioMeterTarget;
+    public double MicrophoneMeterTarget;
+    public bool MicrophoneClipping { get; set; }
+    private int _audioMeterTimerNeeded;
+    private int _microphoneMeterTimerNeeded;
+
+    /// <summary>
+    /// Fires once when audio transitions from silent to active, signaling MainWindow
+    /// to start the audio meter animation timer. Reset when the timer stops itself.
+    /// </summary>
+    public event Action? AudioMeterActivated;
+    public event Action? MicrophoneMeterActivated;
+
+    private const double MeterFloorDb = -60.0;
+    private const double MeterDecayDbPerSecond = 40.0 / 1.7; // OBS-like PPM decay
+    private double _audioMeterDb = MeterFloorDb;
+    private long _audioMeterLastTick;
+    private double _micMeterDb = MeterFloorDb;
+    private long _micMeterLastTick;
+
     private void OnAudioDevicesChanged()
     {
         if (!_dispatcherQueue.TryEnqueue(() =>
@@ -164,6 +188,109 @@ public partial class MainViewModel
         }
 
         SaveSettings();
+    }
+
+    partial void OnIsCustomAudioInputEnabledChanged(bool value)
+    {
+        if (IsRecording)
+        {
+            Logger.Log("Custom audio input change ignored while recording");
+            return;
+        }
+
+        if (value)
+        {
+            if (AudioInputDevices.Count == 0)
+            {
+                Logger.Log("Custom audio input enabled but no audio devices found");
+                IsCustomAudioInputEnabled = false;
+                return;
+            }
+
+            if (SelectedAudioInputDevice == null)
+            {
+                SelectedAudioInputDevice = AudioInputDevices[0];
+            }
+        }
+
+        EnqueueUiOperation(() => ApplyAudioInputSelectionAsync("custom audio toggle"), "custom audio toggle");
+        SaveSettings();
+    }
+
+    partial void OnSelectedAudioInputDeviceChanged(AudioInputDevice? value)
+    {
+        if (IsRecording)
+        {
+            return;
+        }
+
+        if (!IsCustomAudioInputEnabled || value == null)
+        {
+            return;
+        }
+
+        EnqueueUiOperation(() => ApplyAudioInputSelectionAsync("custom audio device change"), "custom audio device change");
+        SaveSettings();
+    }
+
+    private async Task ApplyAudioInputSelectionAsync(string reason)
+    {
+        if (!IsInitialized)
+        {
+            return;
+        }
+
+        string? audioDeviceId = null;
+        string? audioDeviceName = null;
+
+        if (IsCustomAudioInputEnabled)
+        {
+            audioDeviceId = SelectedAudioInputDevice?.Id;
+            audioDeviceName = SelectedAudioInputDevice?.Name;
+        }
+        else
+        {
+            audioDeviceId = SelectedDevice?.AudioDeviceId;
+            audioDeviceName = SelectedDevice?.AudioDeviceName;
+        }
+
+        Logger.Log($"=== Updating audio input ({reason}) ===");
+        Logger.Log($"  Audio device: {audioDeviceName ?? "(none)"}");
+
+        var shouldRampMonitoring = IsPreviewing && _captureService.IsAudioPreviewActive;
+        var volumeTarget = _previewAudioVolumeTransitionController.PersistedVolumeTarget;
+        var traceSessionId = shouldRampMonitoring
+            ? BeginAudioRampTraceSession(reason, volumeTarget)
+            : 0;
+        try
+        {
+            if (shouldRampMonitoring)
+            {
+                await RampPreviewVolumeDownForAudioTransitionAsync(reason, traceSession: false);
+            }
+
+            await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);
+            RecordAudioRampTracePoint("audio-input-updated", reason, volumeTarget);
+
+            if (shouldRampMonitoring)
+            {
+                if (_captureService.IsAudioPreviewActive && IsAudioEnabled && IsAudioPreviewEnabled)
+                {
+                    await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, traceSession: false);
+                }
+                else
+                {
+                    RestorePreviewVolumeAfterUnavailableAudio(volumeTarget, reason);
+                }
+            }
+        }
+        finally
+        {
+            if (shouldRampMonitoring)
+            {
+                CompleteAudioRampTraceSession(traceSessionId, reason);
+            }
+        }
     }
 
     internal bool SuppressVolumeSave
@@ -376,6 +503,88 @@ public partial class MainViewModel
         }
 
         SaveSettings();
+    }
+
+    private void OnAudioLevelUpdated(object? sender, AudioLevelEventArgs e)
+    {
+        var level = UpdateMeterLevel(e.Peak, ref _audioMeterDb, ref _audioMeterLastTick);
+        Volatile.Write(ref AudioMeterTarget, level);
+        AudioPeak = e.Peak;
+
+        if (level > 0 && Interlocked.CompareExchange(ref _audioMeterTimerNeeded, 1, 0) == 0)
+        {
+            _dispatcherQueue.TryEnqueue(() => AudioMeterActivated?.Invoke());
+        }
+
+        if (e.Clipped)
+        {
+            _dispatcherQueue.TryEnqueue(() => AudioClipping = true);
+        }
+    }
+
+    private void OnMicrophoneAudioLevelUpdated(object? sender, AudioLevelEventArgs e)
+    {
+        var level = UpdateMeterLevel(e.Peak, ref _micMeterDb, ref _micMeterLastTick);
+        Volatile.Write(ref MicrophoneMeterTarget, level);
+        MicrophoneClipping = e.Clipped;
+
+        if (level > 0 && Interlocked.CompareExchange(ref _microphoneMeterTimerNeeded, 1, 0) == 0)
+        {
+            _dispatcherQueue.TryEnqueue(() => MicrophoneMeterActivated?.Invoke());
+        }
+    }
+
+    private void ResetAudioMeter()
+    {
+        _audioMeterDb = MeterFloorDb;
+        _audioMeterLastTick = 0;
+        _micMeterDb = MeterFloorDb;
+        _micMeterLastTick = 0;
+        AudioPeak = 0;
+        Volatile.Write(ref AudioMeterTarget, 0.0);
+        Volatile.Write(ref MicrophoneMeterTarget, 0.0);
+        Interlocked.Exchange(ref _audioMeterTimerNeeded, 0);
+        Interlocked.Exchange(ref _microphoneMeterTimerNeeded, 0);
+        AudioClipping = false;
+        MicrophoneClipping = false;
+    }
+
+    public void ResetAudioMeterTimerFlag()
+    {
+        Interlocked.Exchange(ref _audioMeterTimerNeeded, 0);
+        Interlocked.Exchange(ref _microphoneMeterTimerNeeded, 0);
+    }
+
+    private double UpdateMeterLevel(double peak, ref double meterDb, ref long lastTick)
+    {
+        var targetDb = peak > 0 ? 20.0 * Math.Log10(peak) : MeterFloorDb;
+        if (targetDb < MeterFloorDb) targetDb = MeterFloorDb;
+        if (targetDb > 0) targetDb = 0;
+
+        var nowTick = Environment.TickCount64;
+        if (lastTick == 0)
+        {
+            meterDb = targetDb;
+            lastTick = nowTick;
+        }
+        else
+        {
+            var dtSeconds = Math.Max(0, (nowTick - lastTick) / 1000.0);
+            lastTick = nowTick;
+
+            if (targetDb >= meterDb)
+            {
+                meterDb = targetDb;
+            }
+            else
+            {
+                var decay = MeterDecayDbPerSecond * dtSeconds;
+                meterDb = Math.Max(targetDb, meterDb - decay);
+            }
+        }
+
+        var level = (meterDb - MeterFloorDb) / -MeterFloorDb;
+        return Math.Clamp(level, 0, 1);
     }
 
     private async Task RampPreviewVolumeDownForStopAsync(CancellationToken cancellationToken)

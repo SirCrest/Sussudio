@@ -3671,8 +3671,8 @@ owner, fold it back into that owner and update the source-shape tests and
    diagnostics, and automation. `MainViewModel.Composition.cs` owns the default
    service graph for the root compatibility view model, which gives the next
    facade slices a small construction seam without changing XAML bindings or
-   automation contracts. The live audio/microphone meter callback state
-   now has a named owner in `MainViewModel.AudioMeters.cs`; keep future meter
+   automation contracts. The live audio/microphone meter callback state now
+   lives with audio state in `MainViewModel.AudioState.cs`; keep future meter
    behavior there instead of growing the root facade file. Audio ramp trace
    state, bounded ring-buffer storage, snapshot projection, trace session
    start/complete, trace-point capture, sampler loop, and delayed sampler
@@ -3680,11 +3680,9 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.AudioState.cs` kept as the automation-facing adapter and
    trace/preview-volume controller wiring owner;
    preview-volume save/override, ramp adapter methods, preview monitoring
-   coordinator sequencing, and audio-preview property handlers now live in
-   `MainViewModel.AudioState.cs`; keep audio capture property handlers in
-   `MainViewModel.AudioState.cs`, while custom audio-input
-   property handlers, retargeting, and preview-monitoring ramp handoff live in
-   `MainViewModel.AudioInputSelection.cs`.
+   coordinator sequencing, audio-preview property handlers, audio capture
+   property handlers, custom audio-input property handlers, retargeting, and
+   preview-monitoring ramp handoff now live in `MainViewModel.AudioState.cs`.
    Microphone observable state, endpoint volume synchronization, persistence,
    and property-change routing now live in `MainViewModel.AudioState.cs`;
    device-native audio request lifetime,
