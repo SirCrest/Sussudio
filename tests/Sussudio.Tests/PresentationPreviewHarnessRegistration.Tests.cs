@@ -65,7 +65,6 @@ static partial class Program
         "tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.SessionReinit.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Signals.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.StartupStopOrdering.Tests.cs",
-        "tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.StopAudioRampOrdering.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Watchdog.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.Reinitialization.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.DeviceFormatProbeRetarget.Tests.cs",
@@ -81,9 +80,7 @@ static partial class Program
         "tests/Sussudio.Tests/MainViewModel.DeviceFormatProbeRetarget.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.DependencyComposition.CaptureDevice.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.DependencyComposition.Presentation.Tests.cs",
-        "tests/Sussudio.Tests/MainViewModel.DependencyComposition.Recording.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.DependencyComposition.Tests.cs",
-        "tests/Sussudio.Tests/MainViewModel.DependencyComposition.UiDispatch.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.DependencyComposition.Runtime.Tests.cs"
     };
 
