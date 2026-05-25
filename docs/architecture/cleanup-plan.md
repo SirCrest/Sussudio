@@ -438,23 +438,18 @@ thread-health rows, recording output/backend/integrity/audio-integrity/
 last-finalize, diagnostics, legacy performance, process CPU/Memory/GC/
 thread-pool text, capture cadence, MJPEG packet fingerprint, visual cadence,
 AV-sync, preview routing, source-signal rows emitted from the cadence tail,
-snapshot response-success detection, tolerant JSON string/bool/numeric
-accessors, and shared byte/number/interval, frame-budget, and tick-age display
-helpers. The Flashback gate/header/order,
-encoding status/health text, export progress/result text, playback command text,
-and playback cadence/decode/frame/stage/A/V drift text now live together in
-`AutomationSnapshotFormatter.Flashback.cs`. MJPEG activation/header/order, decode/copy/callback/per-decoder
-timing text, compressed queue/drop-reason/reorder/pipeline timing text, and
-MJPEG preview-jitter queue/latency/ownership/underflow text now live together in
-`AutomationSnapshotFormatter.MjpegTiming.cs`. Preview routing and D3D preview
-text live in the remaining focused formatter partials. The
-`AutomationSnapshotFormatter.PreviewD3D.cs` owner keeps D3D header/routing and
-output order, D3D CPU timing, pipeline latency, frame-latency wait text, D3D
-frame ownership, DXGI frame-stat text, and slow-frame diagnostics shared by
-`ssctl`. Tests that reason about formatter source use the
-shared `RuntimeContractSource` snapshot formatter source-family readers so
-ownership checks cover the full partial family from both the legacy harness and
-xUnit formatter contracts.
+Flashback gate/header/order, encoding status/health text, export
+progress/result text, playback command text, playback cadence/decode/frame/
+stage/A/V drift text, MJPEG activation/header/order, decode/copy/callback/
+per-decoder timing text, compressed queue/drop-reason/reorder/pipeline timing
+text, MJPEG preview-jitter queue/latency/ownership/underflow text, D3D preview
+header/routing and output order, D3D CPU timing, pipeline latency,
+frame-latency wait text, D3D frame ownership, DXGI frame-stat text,
+slow-frame diagnostics shared by `ssctl`, snapshot response-success detection,
+tolerant JSON string/bool/numeric accessors, and shared byte/number/interval,
+frame-budget, and tick-age display helpers. Tests that reason about formatter
+source use the shared `RuntimeContractSource` snapshot formatter source reader
+from both the legacy harness and xUnit formatter contracts.
 
 Diagnostic-session MCP surface coverage is split into
 `McpToolSurface.DiagnosticSession.Tool.Artifacts.Tests.cs` and

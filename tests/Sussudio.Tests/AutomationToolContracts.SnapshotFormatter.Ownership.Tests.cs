@@ -18,10 +18,10 @@ static partial class Program
         var sharedFormatterSourceSource = sharedFormatterCaptureCadenceSource;
         var sharedFormatterValuesSource = sharedFormatterRootSource;
         var sharedFormatterDisplayValuesSource = sharedFormatterValuesSource;
-        var sharedFormatterFlashbackSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.cs");
-        var sharedFormatterMjpegTimingSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs");
+        var sharedFormatterFlashbackSource = sharedFormatterRootSource;
+        var sharedFormatterMjpegTimingSource = sharedFormatterRootSource;
         var sharedFormatterPreviewSource = sharedFormatterCaptureCadenceSource;
-        var sharedFormatterPreviewD3DSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs");
+        var sharedFormatterPreviewD3DSource = sharedFormatterRootSource;
         var sharedFormatterThreadHealthSource = sharedFormatterVideoPipelineSource;
         AssertContains(sharedFormatterRootSource, "AppendStateSection(builder, snapshot);");
         AssertContains(sharedFormatterRootSource, "AppendCaptureSettingsSection(builder, snapshot);");
@@ -166,8 +166,8 @@ static partial class Program
         AssertContains(sharedFormatterAvSyncSource, "var avSyncDrift = Get(snapshot, \"AvSyncCaptureDriftMs\", string.Empty);");
         AssertContains(sharedFormatterPreviewSource, "private static void AppendPreviewSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterPreviewSource, "AppendPreviewD3DSection(builder, snapshot);");
-        AssertDoesNotContain(sharedFormatterPreviewSource, "AppendPreviewSlowFrameDiagnostics(builder, snapshot);");
-        AssertDoesNotContain(sharedFormatterPreviewSource, "D3D CPU timing:");
+        AssertContains(sharedFormatterPreviewSource, "AppendPreviewSlowFrameDiagnostics(builder, snapshot);");
+        AssertContains(sharedFormatterPreviewSource, "D3D CPU timing:");
         AssertContains(sharedFormatterPreviewD3DSource, "private static void AppendPreviewD3DSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterPreviewD3DSource, "private static bool IsPreviewD3DRendererMode(string rendererMode)");
         AssertContains(sharedFormatterPreviewD3DSource, "AppendPreviewD3DCpuTiming(builder, snapshot);");
@@ -212,6 +212,18 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "AutomationSnapshotFormatter.Values.cs")),
             "shared snapshot value accessors live with the root snapshot formatter flow");
+        foreach (var removedFile in new[]
+        {
+            "AutomationSnapshotFormatter.Flashback.cs",
+            "AutomationSnapshotFormatter.MjpegTiming.cs",
+            "AutomationSnapshotFormatter.PreviewD3D.cs"
+        })
+        {
+            AssertEqual(
+                false,
+                File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", removedFile)),
+                $"{removedFile} folded into root snapshot formatter");
+        }
 
         return Task.CompletedTask;
     }

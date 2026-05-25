@@ -195,10 +195,7 @@ internal static class RuntimeContractSource
     public static string ReadAutomationSnapshotFormatterSource()
         => ReadSourceFamily(new[]
         {
-            "tools/Common/AutomationSnapshotFormatter.cs",
-            "tools/Common/AutomationSnapshotFormatter.Flashback.cs",
-            "tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs",
-            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs"
+            "tools/Common/AutomationSnapshotFormatter.cs"
         });
 
     public static string ReadSsctlSnapshotFormatterSource()

@@ -3736,21 +3736,17 @@ Primary owners:
   text, capture cadence, low-FPS, jitter/drop, MJPEG packet fingerprint, sampled
   visual cadence, AV-sync drift and encoder correction text, preview routing,
   source dimensions, source frame-rate summary, HDR, source telemetry text,
-  routing to MJPEG/Preview D3D sections, automation response-success detection,
+  routing to MJPEG/Preview D3D sections, Flashback gate/header/subsection
+  ordering, encoding status/health text, export progress/result text, playback
+  command text, playback cadence/decode/frame stage/A/V drift text, MJPEG
+  timing activation/header/output order, decode/copy/callback/per-decoder
+  timing text, compressed queue/drop-reason/reorder/pipeline timing text, MJPEG
+  preview-jitter queue/input/output/latency/ownership/underflow text, D3D
+  routing/header order, CPU timing, pipeline-latency, frame-latency wait text,
+  frame-ownership, DXGI frame-stat text, reusable slow-frame diagnostics,
+  diagnostic millisecond formatting, automation response-success detection,
   tolerant JSON string/bool/numeric accessors, and shared byte, number,
   interval, frame-budget, and tick-age display helpers.
-  `tools/Common/AutomationSnapshotFormatter.Flashback.cs` owns the Flashback
-  gate, header, subsection ordering, encoding status/health text, export
-  progress/result text, playback command text, and playback cadence/decode/frame
-  stage/A/V drift text.
-  `tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs` owns MJPEG timing
-  activation, header, output order, decode/copy/callback/per-decoder timing
-  text, compressed queue/drop-reason/reorder/pipeline timing text, and MJPEG
-  preview-jitter queue/input/output/latency/ownership/underflow text. The
-  `tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs` owns the remaining
-  named D3D snapshot section: routing/header order, CPU timing, pipeline-latency,
-  frame-latency wait text, frame-ownership, DXGI frame-stat text, reusable
-  slow-frame diagnostics, and diagnostic millisecond formatting.
 - `tools/Common/DiagnosticSessionPipeRetryPolicy.cs` owns diagnostic-session
   connect retry classification and local failure-response envelopes.
 - `tools/Common/DiagnosticSessionCommandChannel.cs` owns serialized
