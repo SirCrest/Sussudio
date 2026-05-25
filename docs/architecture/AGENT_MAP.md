@@ -1606,8 +1606,9 @@ Primary current owners:
   telemetry provider ownership, rolling command-group split, shared snapshot
   assembly ownership, and supported 4K X product-revision checks.
 - `tests/Sussudio.Tests/CaptureDiscovery.SourceOwnership.Tests.cs` owns
-  DeviceService scoring, source-reader negotiation/interop ownership, and MF
-  symbolic-link matching assertions.
+  DeviceService scoring, cohesive MF device enumerator ownership,
+  source-reader negotiation/interop ownership, and MF symbolic-link matching
+  assertions.
 - `tests/Sussudio.Tests/XUnit.CapturePoliciesTests.cs` owns the ported
   HdrOutputPolicy and HDR output environment-switch behavior checks.
 - `tests/Sussudio.Tests/RecordingQueue.Tests.cs` owns shared recording queue
