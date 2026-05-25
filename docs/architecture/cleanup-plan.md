@@ -975,11 +975,10 @@ now lives in `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostControlle
 `Sussudio/MainWindow.PreviewRenderer.Composition.cs`
 wires renderer-host context callbacks, the `SizeChanged` adapter, renderer-host
 reset handoff, and stable start/stop/shutdown/reinit-unsafe-window automation
-adapters. Preview surface sizing and GPU panel visibility now live in
-`Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs`, while
-video/control-bar composition shadow visuals, bounds alignment, clear behavior,
-and compositor opacity fade routing live in
-`Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs`.
+adapters. Preview surface sizing, GPU panel visibility, video/control-bar
+composition shadow visuals, bounds alignment, clear behavior, and compositor
+opacity fade routing now live together in
+`Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs`.
 `Sussudio/MainWindow.PreviewRenderer.Composition.cs` is the XAML-facing adapter
 for preview renderer and surface wiring.
 `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns renderer
@@ -2709,7 +2708,8 @@ unavailable-placeholder presentation now live in
 `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`.
 `Sussudio/MainWindow.PreviewTransitions.Composition.cs` wires preview-transition
 animation callbacks; video-shadow fade callbacks and shared compositor shadow
-opacity fades route through `PreviewSurfaceShadowController`.
+opacity fades route through the preview surface shadow controller kept in
+`PreviewSurfacePresentationController.cs`.
 
 Preview button glyph/tooltip presentation for Start Preview and Stop Preview
 now lives in `Sussudio/Controllers/Preview/PreviewButtonActionController.cs`.
@@ -2812,9 +2812,8 @@ Top-level preview resize telemetry throttling now lives in
 `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires renderer-host context
 callbacks, the `SizeChanged` adapter, renderer-host reset handoff, renderer
 start/stop/shutdown, and reinit-unsafe-window adapters; reinit renderer-stop/timeout policy lives with
-`PreviewRendererHostController.cs`; preview surface presentation lives with
-`PreviewSurfacePresentationController`, and preview shadow visuals live with
-`PreviewSurfaceShadowController`.
+`PreviewRendererHostController.cs`; preview surface presentation and shadow
+visuals live together with `PreviewSurfacePresentationController`.
 
 Preview-specific ViewModel event lifecycle and preview property-change routing
 now live in `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`.

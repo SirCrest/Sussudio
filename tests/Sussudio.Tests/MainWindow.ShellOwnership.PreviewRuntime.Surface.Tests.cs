@@ -7,12 +7,15 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
         var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs").Replace("\r\n", "\n");
-        var previewSurfaceShadowControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs").Replace("\r\n", "\n");
 
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewSurface.cs")),
             "preview surface XAML adapter lives with preview renderer composition");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "PreviewSurfaceShadowController.cs")),
+            "preview surface shadow controller lives with preview surface presentation owner");
         AssertContains(previewRendererText, "XAML-facing preview surface adapter");
         AssertContains(previewRendererText, "private PreviewSurfacePresentationController _previewSurfacePresentationController = null!;");
         AssertContains(previewRendererText, "private PreviewSurfaceShadowController _previewSurfaceShadowController = null!;");
@@ -38,23 +41,20 @@ static partial class Program
         AssertContains(previewSurfaceControllerText, "_shadowController.ClearVideoFrameBounds();");
         AssertContains(previewSurfaceControllerText, "_shadowController.UpdateVideoFrameBounds(marginH, marginV, fitW, fitH);");
 
-        AssertContains(previewSurfaceShadowControllerText, "internal sealed class PreviewSurfaceShadowController");
-        AssertContains(previewSurfaceShadowControllerText, "private SpriteVisual? _videoShadowVisual;");
-        AssertContains(previewSurfaceShadowControllerText, "private SpriteVisual? _controlBarShadowVisual;");
-        AssertContains(previewSurfaceShadowControllerText, "public void UpdateVideoFrameBounds(double marginH, double marginV, double fitW, double fitH)");
-        AssertContains(previewSurfaceShadowControllerText, "public void ClearVideoFrameBounds()");
-        AssertContains(previewSurfaceShadowControllerText, "_videoShadowVisual.Size = Vector2.Zero;");
-        AssertContains(previewSurfaceShadowControllerText, "public void SetupVideoFrameShadow()");
-        AssertContains(previewSurfaceShadowControllerText, "public void SetupControlBarShadow()");
-        AssertContains(previewSurfaceShadowControllerText, "public void ClearVideoFrameShadow()");
-        AssertContains(previewSurfaceShadowControllerText, "public void FadeInVideoFrameShadow(int delayMs, int durationMs)");
-        AssertContains(previewSurfaceShadowControllerText, "public void FadeInControlBarShadow(int delayMs, int durationMs)");
+        AssertContains(previewSurfaceControllerText, "internal sealed class PreviewSurfaceShadowController");
+        AssertContains(previewSurfaceControllerText, "private SpriteVisual? _videoShadowVisual;");
+        AssertContains(previewSurfaceControllerText, "private SpriteVisual? _controlBarShadowVisual;");
+        AssertContains(previewSurfaceControllerText, "public void UpdateVideoFrameBounds(double marginH, double marginV, double fitW, double fitH)");
+        AssertContains(previewSurfaceControllerText, "public void ClearVideoFrameBounds()");
+        AssertContains(previewSurfaceControllerText, "_videoShadowVisual.Size = Vector2.Zero;");
+        AssertContains(previewSurfaceControllerText, "public void SetupVideoFrameShadow()");
+        AssertContains(previewSurfaceControllerText, "public void SetupControlBarShadow()");
+        AssertContains(previewSurfaceControllerText, "public void ClearVideoFrameShadow()");
+        AssertContains(previewSurfaceControllerText, "public void FadeInVideoFrameShadow(int delayMs, int durationMs)");
+        AssertContains(previewSurfaceControllerText, "public void FadeInControlBarShadow(int delayMs, int durationMs)");
 
         AssertDoesNotContain(mainWindowText, "private SpriteVisual? _videoShadowVisual;");
         AssertDoesNotContain(mainWindowText, "private SpriteVisual? _controlBarShadowVisual;");
-        AssertDoesNotContain(previewSurfaceControllerText, "private SpriteVisual? _videoShadowVisual;");
-        AssertDoesNotContain(previewSurfaceControllerText, "private SpriteVisual? _controlBarShadowVisual;");
-        AssertDoesNotContain(previewSurfaceControllerText, "ElementCompositionPreview.SetElementChildVisual");
         AssertDoesNotContain(previewRendererText, "private SpriteVisual? _videoShadowVisual;");
         AssertDoesNotContain(previewRendererText, "private SpriteVisual? _controlBarShadowVisual;");
 
