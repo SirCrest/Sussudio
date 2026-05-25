@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-25T14:55:04Z
+Generated UTC: 2026-05-25T15:01:48Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 437 |
+| Production .cs files | 436 |
 | Test .cs files | 525 |
-| Production .cs files under 60 lines | 8 (1.8%) |
-| Production .cs files under 80 lines | 15 (3.4%) |
+| Production .cs files under 60 lines | 7 (1.6%) |
+| Production .cs files under 80 lines | 14 (3.2%) |
 
 ## Largest partial-type clusters
 
@@ -42,7 +42,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | AutomationCommandDispatcher | 3 | 1649 | Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs |
 | EgavdsProbe | 2 | 402 | tools/EgavdsAudioProbe/Program.cs, tools/EgavdsAudioProbe/Program.NativeInterop.cs |
 | PerformanceTimelineTools | 2 | 769 | tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs |
-| NativeXuProbeDefaultExperiment | 2 | 426 | tools/NativeXuAudioProbe/Program.DefaultExperiment.cs, tools/NativeXuAudioProbe/Program.DefaultExperiment.Reporting.cs |
+| NativeXuProbeDefaultExperiment | 2 | 467 | tools/NativeXuAudioProbe/Program.DefaultExperiment.cs, tools/NativeXuAudioProbe/Program.DefaultExperiment.Reporting.cs |
 | CaptureSessionCoordinator | 2 | 961 | Sussudio/Services/Capture/CaptureSessionCoordinator.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs |
 | DeviceService | 2 | 707 | Sussudio/Services/Capture/DeviceService.cs, Sussudio/Services/Capture/DeviceService.FormatProbe.cs |
 | CudaD3D11InteropBridge | 2 | 581 | Sussudio/Services/Gpu/CudaD3D11Interop.Copy.cs, Sussudio/Services/Gpu/CudaD3D11Interop.Initialization.cs |
@@ -74,8 +74,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 647 | Sussudio/Services/Automation/NamedPipeAutomationServer.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
 | 638 | Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs |
-| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
+| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 | 612 | Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs |
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 585 | Sussudio/Services/Gpu/NvdecMjpegDecoder.cs |
@@ -92,7 +92,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 14 | Sussudio.Automation.Contracts/AutomationPipeSecurityPolicy.cs |
 | 14 | Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs |
 | 37 | tools/KsAudioNodeProbe/Program.cs |
-| 40 | tools/NativeXuAudioProbe/Program.Commands.cs |
 | 56 | Sussudio/DisplayFormatters.cs |
 
 ## Notes

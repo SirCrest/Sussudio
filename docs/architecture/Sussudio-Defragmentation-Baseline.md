@@ -1606,7 +1606,7 @@ Partial clusters reduced: n/a; probe helper file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: affected `NativeXuAudioProbe` build covered by solution build; no command names changed
 Behavior preserved: short/int/byte experiment enumeration, invariant display-value formatting, width-based payload byte construction, unsupported-width exception behavior, and default experiment restore/set payload usage remain unchanged
-Notes for future agents: keep default-experiment-only payload construction with `Program.DefaultExperiment.cs`; keep shared Native XU command IDs in `Program.Commands.cs` and reporting/readback helpers in `Program.DefaultExperiment.Reporting.cs`
+Notes for future agents: superseded on 2026-05-25 by the NativeXu support consolidation; keep shared Native XU command IDs and default-experiment-only payload construction with `Program.DefaultExperiment.cs`, with reporting/readback helpers in `Program.DefaultExperiment.Reporting.cs`
 
 Date: 2026-05-24
 Area: ssctl shared command helper locality
@@ -1856,3 +1856,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: ssctl routing/source-ownership/help/protocol tests still cover typed command IDs, request payloads, Flashback export flags, UI visibility routes, observability routes, and diagnostic-session runner invocation
 Behavior preserved: public ssctl command names, accepted aliases, argument parsing, automation command IDs, payload field names, response formatting, and diagnostic-session dynamic command forwarding are unchanged
 Notes for future agents: keep ssctl command handlers in `CommandHandlers.cs`; add a new `CommandHandlers.*.cs` file only for a real independently tested collaborator, not as a partial-class section marker
+
+Date: 2026-05-25
+Area: NativeXuAudioProbe command support locality
+Problem: `Program.Commands.cs` was a 40-line support file containing Native XU command IDs plus one raw-payload formatter. Those helpers are not an independent workflow; they are consumed by the default experiment, AT command, and reporting flows inside the same probe tool.
+Files consolidated: `tools/NativeXuAudioProbe/Program.Commands.cs`
+Files added: none
+Net production .cs delta: -1
+Net test .cs delta: 0
+Partial clusters reduced: n/a; NativeXuAudioProbe support file count -1
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: affected NativeXuAudioProbe build and source-ownership tests cover the moved command IDs and raw formatter
+Behavior preserved: `NativeXuProbeCommands` constants, `NativeXuProbeFormatting.FormatRaw`, AT command read/write/set-input behavior, default experiment payloads, and reporting text stay unchanged
+Notes for future agents: keep shared Native XU command IDs and raw-payload formatting with `Program.DefaultExperiment.cs` unless they become a shared library contract or an independently tested command-support type

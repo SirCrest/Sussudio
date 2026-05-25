@@ -3284,11 +3284,10 @@ Primary owners:
   real boundary.
 - `tools/NativeXuAudioProbe/Program.cs` owns probe command routing, command
   workflows, and probe-local runtime shims for linked app service sources;
-  `Program.Commands.cs` owns Native XU command IDs and shared
-  raw-payload formatting;
   `Program.AtCommands.cs` owns direct AT read/write/input subcommands;
   `Program.DefaultExperiment.cs` owns the default baseline/experiment/restore
-  runner, experiment spec records, and analog-gain sequence;
+  runner, experiment spec records, shared Native XU command IDs, shared
+  raw-payload formatting, and analog-gain sequence;
   `Program.DefaultExperiment.Reporting.cs` owns default experiment AT
   read/decode/diff/snapshot reporting plus readback/result-diff records;
   `Program.I2cCommands.cs` owns the exploratory `i2c-cmd` command family:
