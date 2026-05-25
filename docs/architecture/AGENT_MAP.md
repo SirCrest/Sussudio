@@ -2201,8 +2201,6 @@ Primary current owners:
   Flashback exporter task-wrapper infrastructure tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Ownership.Tests.cs` owns
   Flashback exporter source-ownership tests.
-- `tests/Sussudio.Tests/Flashback.Exporter.Cleanup.Tests.cs` owns Flashback
-  exporter orphan temp-file cleanup and output-directory scan guard tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Cancellation.Tests.cs` owns
   Flashback exporter cancellation precedence and cancelled lock-wait behavior.
 - `tests/Sussudio.Tests/Flashback.Exporter.Lifetime.Tests.cs` owns Flashback
@@ -2221,7 +2219,8 @@ Primary current owners:
   temp-path tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.OutputFinalization.Tests.cs` owns
   Flashback exporter final-output replacement, overwrite refusal/force
-  behavior, and final validation cleanup tests.
+  behavior, final validation cleanup, orphan temp-file cleanup, and
+  output-directory scan guard tests.
 - `tests/Sussudio.Tests/XUnit.FlashbackExporterContractsTests.cs` owns the
   xUnit execution surface for the former legacy Flashback exporter cleanup,
   request validation, failure classification, segment, cancellation, output
