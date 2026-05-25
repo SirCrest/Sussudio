@@ -3364,10 +3364,10 @@ Primary owners:
   capture settings, pipeline settings, and structured capture-options MCP entry
   points.
 - `tools/McpServer/Tools/WindowTools.cs` owns the public window action,
-  full-screen, recordings-folder, and UI visibility/settings MCP entry points.
-- `tools/McpServer/Tools/PreviewTools.cs` owns the public preview-toggle,
+  full-screen, recordings-folder, UI visibility/settings, preview-toggle,
   recording-toggle, and condition-wait MCP entry points while preserving the
-  `PreviewTools`, `RecordingTools`, and `WaitTools` tool types.
+  `WindowTools`, `UiSettingsTools`, `PreviewTools`, `RecordingTools`, and
+  `WaitTools` tool types.
 - `tools/McpServer/Tools/PreviewColorProbeTools.cs` owns the public preview
   color and video-source probe MCP entry points while preserving the
   `PreviewColorProbeTools` and `VideoSourceProbeTools` tool types.

@@ -56,7 +56,7 @@ static partial class Program
         var memoryDiagnosticsToolsText = appStateToolText;
         var pipelineSettingsToolsText = captureSettingsToolsText;
         var performanceTimelineToolsText = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs");
-        var previewToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewTools.cs");
+        var previewToolsText = ReadRepoFile("tools/McpServer/Tools/WindowTools.cs");
         var previewColorProbeToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewColorProbeTools.cs");
         var recordingToolsText = previewToolsText;
         var presentMonToolsText = ReadRepoFile("tools/McpServer/Tools/PresentMonTools.cs");

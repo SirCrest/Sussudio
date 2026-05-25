@@ -1830,3 +1830,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
 Behavior preserved: the same public test classes, constructors, `[Fact]` method names, and delegated `Program` checks remain available under one preview-startup contracts file
 Notes for future agents: keep preview-startup xUnit wrapper classes together in `XUnit.PresentationPreviewStartupContractsTests.cs`; add new startup execution wrappers there unless they need independent fixtures or executable helper state
+
+Date: 2026-05-25
+Area: MCP window and preview tool locality
+Problem: `PreviewTools.cs` was a 108-line MCP tool file containing the preview toggle, recording toggle, and wait-condition tool types, while `WindowTools.cs` owned adjacent window, full-screen, recordings-folder, and UI visibility/settings automation controls. Changing user-visible window/preview control routes still required opening two small MCP files even though all public tool types use the same pipe-client formatting path.
+Files consolidated: `tools/McpServer/Tools/PreviewTools.cs`
+Files added: none
+Net production .cs delta: -1
+Net test .cs delta: 0
+Partial clusters reduced: n/a; MCP window/preview tool file count -1
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: MCP tool routing tests cover preview, recording, wait-condition, window actions, and typed automation command routing; public MCP tool class names and method names remain unchanged
+Behavior preserved: `PreviewTools.control_preview`, `RecordingTools.control_recording`, `WaitTools.wait_for_condition`, response-timeout selection, formatted condition text, `WindowTools`, and `UiSettingsTools` remain on the same public MCP surface
+Notes for future agents: keep window, UI settings, preview/recording controls, and wait-condition MCP wrappers together in `WindowTools.cs` unless a tool type gains independent helper state or a separate transport seam

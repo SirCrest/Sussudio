@@ -3025,9 +3025,10 @@ The verification MCP tool follows the same ownership rule: keep public
 names, payloads, 60s verification timeouts, assertion JSON parsing, clone
 lifetime safety, and `Data.Verification` / `Snapshot.LastVerification` lookup
 alongside recording/file/assertion result text in `VerificationTools.cs`.
-Preview/recording control and condition-wait MCP methods stay in
-`PreviewTools.cs`; keep the public `PreviewTools`, `RecordingTools`, and
-`WaitTools` type names stable while avoiding one-method tool files.
+Window, UI settings, preview/recording control, and condition-wait MCP methods
+stay in `WindowTools.cs`; keep the public `WindowTools`, `UiSettingsTools`,
+`PreviewTools`, `RecordingTools`, and `WaitTools` type names stable while
+avoiding one-method tool files.
 Preview color/source probe MCP methods stay in `PreviewColorProbeTools.cs`;
 keep the public `PreviewColorProbeTools` and `VideoSourceProbeTools` type names
 stable while avoiding one-method probe files.
