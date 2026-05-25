@@ -15,8 +15,12 @@ static partial class Program
         var sourceReaderText = sourceReaderSources.SourceFamilyText;
         AssertContains(sourceReaderText, "Keep source cadence state coherent with diagnostics snapshots");
         AssertContains(sourceReaderText, "lock (_cadenceLock)");
-        AssertContains(sourceReaderDiagnosticsText, "private unsafe void DiagnoseVtable(IMFSample sample)");
-        AssertContains(sourceReaderDiagnosticsText, "VTABLE_DIAG RAW slot35_GetSampleTime");
+        AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DiagnoseVtable(IMFSample sample)");
+        AssertContains(sourceReaderFrameDeliveryText, "VTABLE_DIAG RAW slot35_GetSampleTime");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.Diagnostics.cs")),
+            "source-reader vtable diagnostic folded into frame delivery");
         AssertDoesNotContain(sourceReaderRootText, "private unsafe void DiagnoseVtable(IMFSample sample)");
         AssertContains(sourceReaderFrameDeliveryText, "private bool TryGetDxgiTexture(IMFMediaBuffer buffer, out IntPtr gpuTexture, out int gpuSubresource)");
         AssertContains(sourceReaderFrameDeliveryText, "private static readonly Guid ID3D11Texture2DIid");

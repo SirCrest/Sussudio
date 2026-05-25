@@ -2109,10 +2109,10 @@ reset, timestamp interval tracking, and percentile/drop estimate calculations
 there; keep sample reading and frame delivery in their named source-reader
 partials.
 
-Media Foundation source-reader diagnostics now live in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.Diagnostics.cs`. Keep the
-debug-only COM vtable diagnostic there; keep sample reading, frame delivery,
-and read-loop control flow in their named source-reader partials.
+Media Foundation source-reader diagnostics now live with frame delivery in
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs`. Keep
+the debug-only COM vtable diagnostic there beside the sample dispatch that
+invokes it.
 
 Media Foundation source-reader frame delivery now keeps IMFDXGIBuffer
 texture/subresource extraction, D3D texture IID lookup, DXGI fallback
