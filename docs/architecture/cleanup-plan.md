@@ -898,10 +898,9 @@ auto-hide adapters. Flashback command execution remains in
 `Sussudio/Controllers/Flashback/FlashbackCommandController.cs`.
 
 Automation whole-window screenshot capture now lives in
-`Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs`, which now only owns
-UI-thread dispatch, cancellation, and failure wrapping. Native PrintWindow/GDI
-capture and screenshot result shaping live in
-`Sussudio/Controllers/Screenshot/Window/WindowScreenshotNativeCapture.cs`, while pure PNG/BMP
+`Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs`, which owns
+UI-thread dispatch, cancellation, failure wrapping, native PrintWindow/GDI
+capture, output directory creation, and screenshot result shaping. Pure PNG/BMP
 byte-stream encoding lives in
 `Sussudio/Controllers/Screenshot/Window/WindowScreenshotImageEncoder.cs`.
 Whole-window screenshot automation stays on `MainWindow.ShellChrome.Composition.cs` with the

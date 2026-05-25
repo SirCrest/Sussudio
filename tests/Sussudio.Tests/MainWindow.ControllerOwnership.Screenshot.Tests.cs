@@ -159,32 +159,30 @@ static partial class Program
         AssertContains(method, "cancellationRegistration.Dispose()");
         AssertContains(method, "if (!_dispatcherQueue.TryEnqueue(() =>");
         AssertContains(method, "Message = \"Failed to enqueue screenshot capture on the UI thread.\"");
-        AssertContains(controllerText, "=> WindowScreenshotNativeCapture.Capture(_windowHandleProvider(), outputPath);");
+        AssertContains(controllerText, "=> CaptureNative(_windowHandleProvider(), outputPath);");
 
         return Task.CompletedTask;
     }
 
-    internal static Task WindowScreenshotNativeCapture_LivesInFocusedHelper()
+    internal static Task WindowScreenshotNativeCapture_LivesWithWindowScreenshotController()
     {
         var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs")
             .Replace("\r\n", "\n");
-        var nativeCaptureText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotNativeCapture.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(controllerText, "=> WindowScreenshotNativeCapture.Capture(_windowHandleProvider(), outputPath);");
-        AssertDoesNotContain(controllerText, "[DllImport(");
-        AssertDoesNotContain(controllerText, "PrintWindow(");
-        AssertDoesNotContain(controllerText, "CreateCompatibleBitmap(");
-        AssertDoesNotContain(controllerText, "GetDIBits(");
-        AssertDoesNotContain(controllerText, "struct BITMAPINFOHEADER");
-        AssertContains(nativeCaptureText, "internal static class WindowScreenshotNativeCapture");
-        AssertContains(nativeCaptureText, "internal static WindowScreenshotResult Capture(IntPtr hwnd, string outputPath)");
-        AssertContains(nativeCaptureText, "Message = \"Window handle not available.\"");
-        AssertContains(nativeCaptureText, "Message = \"PrintWindow failed.\"");
-        AssertContains(nativeCaptureText, "var hBitmap = CreateCompatibleBitmap(hdcWindow, width, height);");
-        AssertContains(nativeCaptureText, "GetDIBits(hdcScreen, hBitmap, 0, (uint)height, pixelData, ref bmi, 0);");
-        AssertContains(nativeCaptureText, "WindowScreenshotImageEncoder.WriteToStream(");
-        AssertContains(nativeCaptureText, "Message = $\"Window screenshot saved: {width}x{height}\"");
+        AssertContains(controllerText, "=> CaptureNative(_windowHandleProvider(), outputPath);");
+        AssertContains(controllerText, "private static WindowScreenshotResult CaptureNative(IntPtr hwnd, string outputPath)");
+        AssertContains(controllerText, "Message = \"Window handle not available.\"");
+        AssertContains(controllerText, "Message = \"PrintWindow failed.\"");
+        AssertContains(controllerText, "var hBitmap = CreateCompatibleBitmap(hdcWindow, width, height);");
+        AssertContains(controllerText, "GetDIBits(hdcScreen, hBitmap, 0, (uint)height, pixelData, ref bmi, 0);");
+        AssertContains(controllerText, "WindowScreenshotImageEncoder.WriteToStream(");
+        AssertContains(controllerText, "Message = $\"Window screenshot saved: {width}x{height}\"");
+        AssertContains(controllerText, "[DllImport(\"user32.dll\")]");
+        AssertContains(controllerText, "private struct BITMAPINFOHEADER");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Screenshot", "Window", "WindowScreenshotNativeCapture.cs")),
+            "native whole-window capture stays with WindowScreenshotController");
 
         return Task.CompletedTask;
     }
@@ -193,13 +191,11 @@ static partial class Program
     {
         var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs")
             .Replace("\r\n", "\n");
-        var nativeCaptureText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotNativeCapture.cs")
-            .Replace("\r\n", "\n");
         var encoderText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotImageEncoder.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(controllerText, "WindowScreenshotNativeCapture.Capture(");
-        AssertContains(nativeCaptureText, "WindowScreenshotImageEncoder.WriteToStream(");
+        AssertContains(controllerText, "private static void SaveHBitmapAsImage(");
+        AssertContains(controllerText, "WindowScreenshotImageEncoder.WriteToStream(");
         AssertDoesNotContain(controllerText, "private static void WritePngToStream");
         AssertDoesNotContain(controllerText, "private static void WriteBmpToStream");
         AssertContains(encoderText, "internal static class WindowScreenshotImageEncoder");

@@ -19,8 +19,8 @@ public sealed class PresentationPreviewMainWindowInitialContractsTests
         => global::Program.MainWindowScreenshot_CompletesOnDispatcherFailureAndCancellation();
 
     [Fact]
-    public Task WindowScreenshotNativeCaptureLivesInFocusedHelper()
-        => global::Program.WindowScreenshotNativeCapture_LivesInFocusedHelper();
+    public Task WindowScreenshotNativeCaptureLivesWithController()
+        => global::Program.WindowScreenshotNativeCapture_LivesWithWindowScreenshotController();
 
     [Fact]
     public Task WindowScreenshotImageEncodingLivesInFocusedHelper()

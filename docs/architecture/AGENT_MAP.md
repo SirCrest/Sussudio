@@ -1026,9 +1026,8 @@ Primary current owners:
   `Sussudio/Controllers/Flashback/FlashbackCommandController.cs`.
 - `Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs` owns automation whole-
   window screenshot dispatch, UI-thread enqueue/cancellation, and failure
-  wrapping. `Sussudio/Controllers/Screenshot/Window/WindowScreenshotNativeCapture.cs` owns native
-  PrintWindow capture, GDI/DIB lifetime, output directory creation, and
-  screenshot result shaping. `Sussudio/Controllers/Screenshot/Window/WindowScreenshotImageEncoder.cs`
+  wrapping, native PrintWindow capture, GDI/DIB lifetime, output directory
+  creation, and screenshot result shaping. `Sussudio/Controllers/Screenshot/Window/WindowScreenshotImageEncoder.cs`
   owns the pure PNG/BMP byte-stream encoding helpers. Keep whole-window
   screenshot automation on `MainWindow.ShellChrome.Composition.cs` with the rest of the
   `IAutomationWindowControl` adapter.
