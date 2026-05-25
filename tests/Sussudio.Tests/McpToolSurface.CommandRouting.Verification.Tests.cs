@@ -180,8 +180,6 @@ static partial class Program
 
         var verificationRootText = ReadRepoFile("tools/McpServer/Tools/VerificationTools.cs")
             .Replace("\r\n", "\n");
-        var verificationFormattingText = ReadRepoFile("tools/McpServer/Tools/VerificationTools.Formatting.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(verificationRootText, "[McpServerToolType]");
         AssertContains(verificationRootText, "public static partial class VerificationTools");
@@ -195,8 +193,6 @@ static partial class Program
         AssertContains(verificationRootText, "BuildRecordingVerificationText(response, verification, message)");
         AssertContains(verificationRootText, "BuildSnapshotAssertionText(response)");
         AssertContains(verificationRootText, "BuildFileVerificationText(filePath, response, verification, message)");
-        AssertDoesNotContain(verificationRootText, "new StringBuilder()");
-        AssertDoesNotContain(verificationRootText, "Mismatches:");
 
         AssertContains(verificationRootText, "private static bool TryParseAssertionArray(");
         AssertContains(verificationRootText, "string.IsNullOrWhiteSpace(assertions)");
@@ -209,14 +205,18 @@ static partial class Program
         AssertContains(verificationRootText, "response.TryGetProperty(\"Snapshot\", out var snapshot)");
         AssertContains(verificationRootText, "snapshot.TryGetProperty(\"LastVerification\", out verification)");
 
-        AssertContains(verificationFormattingText, "private static string BuildRecordingVerificationText(");
-        AssertContains(verificationFormattingText, "== Recording Verification: PASS ==");
-        AssertContains(verificationFormattingText, "FormatJsonArrayList(verification, \"Mismatches\", \"Mismatches\")");
-        AssertContains(verificationFormattingText, "private static string BuildSnapshotAssertionText(");
-        AssertContains(verificationFormattingText, "FormatJsonArrayList(failures, \"Failures\")");
-        AssertContains(verificationFormattingText, "\"{label}: None\"");
-        AssertContains(verificationFormattingText, "private static string BuildFileVerificationText(");
-        AssertContains(verificationFormattingText, "== File Verification: PASS ==");
+        AssertContains(verificationRootText, "private static string BuildRecordingVerificationText(");
+        AssertContains(verificationRootText, "== Recording Verification: PASS ==");
+        AssertContains(verificationRootText, "FormatJsonArrayList(verification, \"Mismatches\", \"Mismatches\")");
+        AssertContains(verificationRootText, "private static string BuildSnapshotAssertionText(");
+        AssertContains(verificationRootText, "FormatJsonArrayList(failures, \"Failures\")");
+        AssertContains(verificationRootText, "\"{label}: None\"");
+        AssertContains(verificationRootText, "private static string BuildFileVerificationText(");
+        AssertContains(verificationRootText, "== File Verification: PASS ==");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "VerificationTools.Formatting.cs")),
+            "MCP verification response formatting lives with the verification tool commands");
 
         AssertMcpCommandRoutingTestsUseCommandIdHelper();
     }

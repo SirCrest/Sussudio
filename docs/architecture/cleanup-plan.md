@@ -3176,8 +3176,7 @@ The verification MCP tool follows the same ownership rule: keep public
 `verify_recording`, `assert_snapshot`, and `verify_file` methods, command
 names, payloads, 60s verification timeouts, assertion JSON parsing, clone
 lifetime safety, and `Data.Verification` / `Snapshot.LastVerification` lookup
-in `VerificationTools.cs`; keep recording/file/assertion text in
-`VerificationTools.Formatting.cs`.
+alongside recording/file/assertion result text in `VerificationTools.cs`.
 Preview frame capture MCP reporting stays together without changing visible
 text: keep the public `capture_preview_frame` entry point, default output path,
 payload, enum-backed `CapturePreviewFrame` routing, report layout, 16-bin

@@ -3529,9 +3529,8 @@ Primary owners:
   methods, command names, payload shaping, and verification response timeout
   policy, assertion JSON parsing and `JsonElement.Clone()` lifetime safety,
   and verification lookup from `Data.Verification` and
-  `Snapshot.LastVerification`.
-  `tools/McpServer/Tools/VerificationTools.Formatting.cs` owns recording,
-  file, assertion, mismatch, and failure result text.
+  `Snapshot.LastVerification`, plus recording, file, assertion, mismatch, and
+  failure result text.
 - `tools/McpServer/Tools/PreviewFrameCaptureTools.cs` owns the public preview
   frame-capture and window-screenshot MCP entry points, default output paths,
   payload shaping, enum command routing, failure/missing-data response handling, operator-facing
