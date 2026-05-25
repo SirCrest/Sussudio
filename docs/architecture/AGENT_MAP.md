@@ -1397,9 +1397,9 @@ Primary current owners:
   owns Flashback playback presentation/coordinator ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Settings.Tests.cs` owns
   Flashback settings binding and command controller ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Helpers.cs` owns the
-  shared source reader for the consolidated Flashback interaction and
-  presentation adapter files.
+- `tests/Sussudio.Tests/MainWindow.CompositionSource.cs` owns the shared
+  MainWindow source readers used by root, Flashback, preview, shell-chrome,
+  capture-binding, and stats-overlay ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Preview.Tests.cs` owns
   automation preview enable/disable and start/stop routing through the preview
   lifecycle controller.
@@ -1637,30 +1637,16 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupOrderingContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview preview
   startup ordering catalog group.
-- `tests/Sussudio.Tests/MainWindow.PreviewStartupOwnership.Helpers.cs` owns
-  the shared source reader for the split `MainWindow.PreviewStartup.*.cs`
-  adapter family.
-- `tests/Sussudio.Tests/MainWindow.PreviewTransitionsOwnership.Helpers.cs` owns
-  the shared source reader for the consolidated `MainWindow.PreviewTransitions.Composition.cs`
-  adapter.
-- `tests/Sussudio.Tests/MainWindow.ShellChromeOwnership.Helpers.cs` owns the
-  shared source reader for the consolidated `MainWindow.ShellChrome.Composition.cs`
-  adapter.
-- `tests/Sussudio.Tests/MainWindow.StatsOverlayOwnership.Helpers.cs` owns the
-  shared source reader for the consolidated `MainWindow.StatsOverlay.Composition.cs`
-  adapter.
-- `tests/Sussudio.Tests/MainWindow.CaptureSelectionBindingsOwnership.Helpers.cs`
-  owns the shared source reader for the split
-  `MainWindow.CaptureBindings.cs` adapter.
-- `tests/Sussudio.Tests/MainWindow.PreviewRendererOwnership.Helpers.cs` owns the
-  shared source reader for the consolidated `MainWindow.PreviewRenderer.Composition.cs`
-  adapter.
+- `tests/Sussudio.Tests/MainWindow.CompositionSource.cs` owns the shared
+  source readers for the split `MainWindow.PreviewStartup.*.cs` adapter family,
+  consolidated preview-transition, shell-chrome, stats-overlay, capture-binding,
+  Flashback, and preview-renderer adapters.
 - Fullscreen tests use the shared shell-chrome helper for
   `MainWindow.ShellChrome.Composition.cs`; shutdown cleanup tests use the shared
   MainWindow root helper for `MainWindow.xaml.cs`.
-- `tests/Sussudio.Tests/MainWindow.PropertyChangedPreviewOwnership.Helpers.cs`
-  owns the shared source reader for the consolidated
-  preview lifecycle adapter in `MainWindow.PreviewRenderer.Composition.cs`.
+- `tests/Sussudio.Tests/MainWindow.CompositionSource.cs` also owns the source
+  reader for property-changed preview assertions over
+  `MainWindow.PreviewRenderer.Composition.cs`.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
   Flashback export backend-lease, export-operation lock, ViewModel export
   routing, and export CTS lifecycle assertions.

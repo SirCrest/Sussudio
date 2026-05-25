@@ -1791,3 +1791,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: offline runtime harness still runs through `dotnet exec tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll ...`
 Behavior preserved: the offline compatibility runner still returns an empty check list and reports success after the app assembly loads; executable coverage remains in focused xUnit slices
 Notes for future agents: keep the no-op `RunAllChecksAsync` shim with `Program.cs`; add new coverage to xUnit instead of restoring a harness catalog
+
+Date: 2026-05-25
+Area: MainWindow adapter test source-reader locality
+Problem: Eight tiny MainWindow ownership helper files each exposed a single source-reader method for adjacent adapter files. That kept the test helper file count high and scattered the source-reader map for the same MainWindow adapter family.
+Files consolidated: `tests/Sussudio.Tests/MainWindow.CaptureSelectionBindingsOwnership.Helpers.cs`; `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Helpers.cs`; `tests/Sussudio.Tests/MainWindow.PreviewRendererOwnership.Helpers.cs`; `tests/Sussudio.Tests/MainWindow.PreviewStartupOwnership.Helpers.cs`; `tests/Sussudio.Tests/MainWindow.PreviewTransitionsOwnership.Helpers.cs`; `tests/Sussudio.Tests/MainWindow.PropertyChangedPreviewOwnership.Helpers.cs`; `tests/Sussudio.Tests/MainWindow.ShellChromeOwnership.Helpers.cs`; `tests/Sussudio.Tests/MainWindow.StatsOverlayOwnership.Helpers.cs`
+Files added: none
+Net production .cs delta: 0
+Net test .cs delta: -8
+Partial clusters reduced: `Program` test harness -7 files; namespaced MainWindow stats source reader -1 file
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; test source readers only
+Behavior preserved: all legacy `Program`-partial MainWindow adapter reader APIs and the namespaced `MainWindowStatsOverlaySource.Read()` API still read the same normalized source files
+Notes for future agents: keep MainWindow root and adapter source readers in `MainWindow.CompositionSource.cs`; do not add another one-method `MainWindow.*Ownership.Helpers.cs` file for an adapter source unless it gains executable assertions
