@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Microsoft.Win32.SafeHandles;
 using Sussudio.Models;
 
 namespace Sussudio.Services.Telemetry;
@@ -80,6 +81,87 @@ public sealed partial class NativeXuAtCommandProvider
         AtCommandResult Vtem,
         AtCommandResult BitError,
         AtCommandResult RawTiming);
+
+    /// <summary>
+    /// Original monolithic read - fires all commands. Kept for callers that
+    /// need a guaranteed-complete snapshot, while rolling poll handles periodic reads.
+    /// </summary>
+    private static NodeReadAttempt TryReadSnapshot(
+        SafeFileHandle handle,
+        int nodeId,
+        string interfacePath)
+    {
+        var cable = SendAtCommand(handle, nodeId, "CableConnect", CmdCableConnect);
+        if (!cable.Success)
+        {
+            return HandleFailedCommand("nativexu-read-failed", interfacePath, cable);
+        }
+
+        if (TryReadInt32(cable.Response, out var cableState) && cableState == 0)
+        {
+            Logger.Log($"NATIVEXU_SIGNAL_UNAVAILABLE path='{interfacePath}' node={nodeId} reason=no-cable");
+            return CreateUnavailableNodeResult(interfacePath, "nativexu-no-cable");
+        }
+
+        var videoStable = SendAtCommand(handle, nodeId, "VideoStable", CmdVideoStable);
+        if (!videoStable.Success)
+        {
+            return HandleFailedCommand("nativexu-read-failed", interfacePath, videoStable);
+        }
+
+        if (TryReadInt32(videoStable.Response, out var stableValue) && stableValue == 0)
+        {
+            Logger.Log($"NATIVEXU_SIGNAL_UNAVAILABLE path='{interfacePath}' node={nodeId} reason=signal-unstable");
+            return CreateUnavailableNodeResult(interfacePath, "nativexu-signal-unstable");
+        }
+
+        var results = new NativeXuSnapshotCommandResults(
+            SendAtCommand(handle, nodeId, "VIC", CmdVic),
+            SendAtCommand(handle, nodeId, "Vfreq", CmdVfreq),
+            SendAtCommand(handle, nodeId, "AviInfoFrame", CmdAviInfoFrame),
+            SendAtCommand(handle, nodeId, "HdrMetadata", CmdHdrMetadata),
+            SendAtCommand(handle, nodeId, "SystemInfo", CmdSystemInfo),
+            SendAtCommand(handle, nodeId, "Hdr2Sdr", CmdHdr2Sdr),
+            SendAtCommand(handle, nodeId, "AudioFormat", CmdAudioFormat),
+            SendAtCommand(handle, nodeId, "AudioSamplingRate", CmdAudioSamplingRate),
+            SendAtCommand(handle, nodeId, "InputSource", CmdInputSource),
+            SendAtCommand(handle, nodeId, "FlashAudioInput", CmdFlashGetCustomerProprietary),
+            SendAtCommand(handle, nodeId, "AdcOnOff", CmdAdcOnOff),
+            SendAtCommand(handle, nodeId, "AdcVolumeGain", CmdAdcVolumeGain),
+            SendAtCommand(handle, nodeId, "UacVolumeGain", CmdUacVolumeGain),
+            SendAtCommand(handle, nodeId, "UacOut1Mute", CmdUacOut1Mute),
+            SendAtCommand(handle, nodeId, "UacOut2Mute", CmdUacOut2Mute),
+            SendAtCommand(handle, nodeId, "UacOut2MixerSource", CmdUacOut2MixerSource),
+            SendAtCommand(handle, nodeId, "UsbHostProtocol", CmdUsbHostProtocol),
+            SendAtCommand(handle, nodeId, "UsbCdc", CmdUsbCdcOnOff),
+            SendAtCommand(handle, nodeId, "UsbLinkState", CmdUsbLinkState),
+            SendAtCommand(handle, nodeId, "UsbForceSpeed", CmdUsbForceSpeed),
+            SendAtCommand(handle, nodeId, "TxHpd", CmdTxHpdStatus),
+            SendAtCommand(handle, nodeId, "TxVrr", CmdTxVrr),
+            SendAtCommand(handle, nodeId, "TxEdidValid", CmdTxEdidValid),
+            SendAtCommand(handle, nodeId, "UvcOutputTiming", CmdUvcOutputTiming),
+            SendAtCommand(handle, nodeId, "UvcVideoFormat", CmdUvcVideoFormat),
+            SendAtCommand(handle, nodeId, "UvcErrStatus", CmdUvcErrStatus),
+            SendAtCommand(handle, nodeId, "HdcpMode", CmdHdcpMode),
+            SendAtCommand(handle, nodeId, "HdcpVersion", CmdHdcpVersion),
+            SendAtCommand(handle, nodeId, "RxTxHdcpVersion", CmdRxTxHdcpVersion),
+            SendAtCommand(handle, nodeId, "Hdr2SdrExtended", CmdHdr2SdrExtended),
+            SendAtCommand(handle, nodeId, "CustomerVersion", CmdCustomerVersion),
+            SendAtCommand(handle, nodeId, "RescueVersion", CmdRescueVersion),
+            SendAtCommand(handle, nodeId, "Hdr2SdrColorParam", CmdHdr2SdrColorParam),
+            SendAtCommand(handle, nodeId, "ColorRangeSetting", CmdColorRangeSetting),
+            SendAtCommand(handle, nodeId, "Vtem", CmdVtem),
+            SendAtCommand(handle, nodeId, "BitError", CmdBitError),
+            SendAtCommand(handle, nodeId, "RawTiming", CmdRawTiming));
+
+        return BuildSnapshotFromCommandResults(
+            results,
+            interfacePath,
+            nodeId,
+            logDecodeSummary: true,
+            logNoDecodableSourceData: true,
+            useDetailedAudioInputOrigin: true);
+    }
 
     private static NodeReadAttempt BuildSnapshotFromCommandResults(
         NativeXuSnapshotCommandResults results,

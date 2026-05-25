@@ -1563,12 +1563,6 @@ the analog gain register mapping/writes used by `SetAnalogGainAsync`.
 Selector-4 I2C payload writes now live with the AT transport helpers in
 `NativeXuAtCommandProvider.AtProtocol.cs`.
 
-Native XU reference full-snapshot reads now live in
-`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.FullSnapshot.cs`. Keep
-the legacy all-command AT-command acquisition and full-snapshot logging policy
-there; the root provider uses shared Native XU device support before dispatching
-into the active rolling poll path.
-
 Native XU active rolling polling now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingPoll.cs`. Keep
 poll cadence gates, cached AT-command fields, incomplete-cache handling, and
@@ -1584,9 +1578,10 @@ interface enumeration.
 
 Native XU source snapshot assembly now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs`.
-Keep the full/rolling AT-command-result handoff contract, VIC/frame-rate lookup
-policy, AT-command-result decode into `SourceSignalTelemetrySnapshot`,
-diagnostic/detail assembly, and full-vs-rolling logging switches there.
+Keep the reference full-snapshot AT-command acquisition, full/rolling
+AT-command-result handoff contract, VIC/frame-rate lookup policy,
+AT-command-result decode into `SourceSignalTelemetrySnapshot`, diagnostic/detail
+assembly, and full-vs-rolling logging switches there.
 Flash-audio analog-gain row insertion and snapshot audio-origin policy belong
 to the audio-input telemetry detail partial.
 Native XU payload decoding now lives in
