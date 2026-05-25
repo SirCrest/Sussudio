@@ -19,8 +19,8 @@ public sealed class FlashbackDecoderContractsTests
         => global::Program.FlashbackDecoder_CalculateFrameBufferSize_P010();
 
     [Fact]
-    public Task FlashbackDecoderValidationHelpersLiveInFocusedPartial()
-        => global::Program.FlashbackDecoder_ValidationHelpersLiveInFocusedPartial();
+    public Task FlashbackDecoderValidationHelpersLiveWithRootLifecycle()
+        => global::Program.FlashbackDecoder_ValidationHelpersLiveWithRootLifecycle();
 
     [Fact]
     public Task FlashbackDecoderLifetimeCleanupLivesWithRootLifecycle()

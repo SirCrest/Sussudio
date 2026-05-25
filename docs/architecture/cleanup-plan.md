@@ -1514,7 +1514,7 @@ pending-frame transfer, seek-cap diagnostics, and seek-buffer flushing now live
 in `Sussudio/Services/Flashback/FlashbackDecoder.Seeking.cs` with its seek timestamp conversion helpers.
 Decoded frame-size calculation, video-dimension validation, D3D11/software
 decoded-frame validation, input stream-count bounds, and stream-index bounds now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.Validation.cs`.
+the root decoder at `Sussudio/Services/Flashback/FlashbackDecoder.cs`.
 File-close native cleanup, software buffer returns, pending held-frame release,
 decoder state reset, held-frame best-effort release helpers, open/disposed
 state guards, and FFmpeg decoder error formatting now live in the root decoder;

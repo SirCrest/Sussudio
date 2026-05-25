@@ -2500,3 +2500,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; no public automation command names, IDs, or wire payloads changed
 Behavior preserved: `AudioDeviceWatcher` type name, constructor, `DevicesChanged` event, COM endpoint registration/unregistration, 500 ms debounce, notification callback handling, disposal guard, and view-model dependency graph construction remain unchanged
 Notes for future agents: keep the debounced endpoint watcher with `WasapiComInterop.cs` while it is only a thin user of the centralized WASAPI/Core Audio COM declarations; split it again only if watcher behavior grows into an independently tested runtime policy.
+
+Date: 2026-05-25
+Area: Flashback decoder validation locality
+Problem: `FlashbackDecoder.Validation.cs` was a 147-line validation-only partial on a seven-file decoder cluster. It held frame-size/dimension guards and stream/frame validation helpers used directly by the decoder root/open path and output path, so reviewing decoder guard behavior required an extra partial even though no independent collaborator existed.
+Files consolidated: `Sussudio/Services/Flashback/FlashbackDecoder.Validation.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `FlashbackDecoder` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; no public automation command names, IDs, or wire payloads changed
+Behavior preserved: frame buffer sizing, video dimension bounds, D3D11/software decoded-frame validation, input stream-count bounds, stream-index checks, and Flashback decoder error text remain unchanged
+Notes for future agents: keep decoder state guards, error helpers, and validation helpers with `FlashbackDecoder.cs`; keep decode-loop timing in `DecodeLoop.cs`, seeking in `Seeking.cs`, codec setup in `VideoSetup.cs`, and video/audio output conversion in their focused output owners.

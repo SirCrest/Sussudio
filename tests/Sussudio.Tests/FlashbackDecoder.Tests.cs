@@ -48,24 +48,20 @@ static partial class Program
 
     // ── FlashbackDecoder: state guard properties ──
 
-    internal static Task FlashbackDecoder_ValidationHelpersLiveInFocusedPartial()
+    internal static Task FlashbackDecoder_ValidationHelpersLiveWithRootLifecycle()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
-        var validationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Validation.cs")
             .Replace("\r\n", "\n");
         var videoOutputText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(validationText, "private static int CalculateFrameBufferSize(int width, int height, bool isHdr)");
-        AssertContains(validationText, "private static void ValidateVideoDimensions(int width, int height)");
-        AssertContains(validationText, "private static bool TryValidateSoftwareVideoFrame(");
-        AssertContains(validationText, "private static bool TryValidatePlane(AVFrame* frame, int planeIndex, int minLineSize, out string failure)");
-        AssertContains(validationText, "private static bool TryValidateD3D11VideoFrame(AVFrame* frame, int width, int height, out string failure)");
-        AssertContains(validationText, "private static bool TryGetInputStreamCount(AVFormatContext* formatCtx, out int streamCount, out string failureMessage)");
-        AssertContains(validationText, "private static bool IsValidStreamIndex(int streamIndex, int streamCount)");
-        AssertDoesNotContain(rootText, "private static int CalculateFrameBufferSize(int width, int height, bool isHdr)");
-        AssertDoesNotContain(rootText, "private static void ValidateVideoDimensions(int width, int height)");
+        AssertContains(rootText, "private static int CalculateFrameBufferSize(int width, int height, bool isHdr)");
+        AssertContains(rootText, "private static void ValidateVideoDimensions(int width, int height)");
+        AssertContains(rootText, "private static bool TryValidateSoftwareVideoFrame(");
+        AssertContains(rootText, "private static bool TryValidatePlane(AVFrame* frame, int planeIndex, int minLineSize, out string failure)");
+        AssertContains(rootText, "private static bool TryValidateD3D11VideoFrame(AVFrame* frame, int width, int height, out string failure)");
+        AssertContains(rootText, "private static bool TryGetInputStreamCount(AVFormatContext* formatCtx, out int streamCount, out string failureMessage)");
+        AssertContains(rootText, "private static bool IsValidStreamIndex(int streamIndex, int streamCount)");
         AssertDoesNotContain(videoOutputText, "private static bool TryValidateSoftwareVideoFrame(");
         AssertDoesNotContain(videoOutputText, "private static bool TryValidatePlane(AVFrame* frame, int planeIndex, int minLineSize, out string failure)");
         AssertDoesNotContain(videoOutputText, "private static bool TryValidateD3D11VideoFrame(AVFrame* frame, int width, int height, out string failure)");
@@ -77,8 +73,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.VideoConversion.cs")),
             "FlashbackDecoder.VideoConversion.cs folded into FlashbackDecoder.VideoOutput.cs");
-        AssertDoesNotContain(rootText, "private static bool TryGetInputStreamCount(AVFormatContext* formatCtx, out int streamCount, out string failureMessage)");
-        AssertDoesNotContain(rootText, "private static bool IsValidStreamIndex(int streamIndex, int streamCount)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.Validation.cs")),
+            "FlashbackDecoder validation helpers folded into decoder root");
 
         return Task.CompletedTask;
     }
