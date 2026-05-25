@@ -183,12 +183,11 @@ dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore
 Automation diagnostics ownership:
 
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.cs` owns the
-  command envelope, correlation setup, dispatch pipeline shell, and error
-  shaping. Construct it with `AutomationViewModelPorts`; this dispatcher root
-  should not expose or store the aggregate automation ViewModel dependency.
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.Preflight.cs`
-  owns manifest revision validation, authentication command handling,
-  unauthorized-command rejection, and device-readiness gating.
+  command envelope, correlation setup, manifest revision validation,
+  authentication command handling, unauthorized-command rejection,
+  device-readiness gating, dispatch pipeline shell, and error shaping. Construct
+  it with `AutomationViewModelPorts`; this dispatcher root should not expose or
+  store the aggregate automation ViewModel dependency.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs`
   owns UI/settings command application, the compatibility no-op for the public
   show-all capture options command, stats-section expand/collapse response
@@ -211,10 +210,11 @@ Automation diagnostics ownership:
   composition-time adapter from the aggregate compatibility contract to named
   port targets. Keep those ports grouped in this file until a consumer needs a
   separate file; do not create many tiny interface files for line-count optics.
-  `AutomationCommandDispatcher.Preflight.cs` owns manifest revision, auth-token,
-  and readiness gating, `AutomationCommandDispatcher.PortMappedDispatch.cs`
-  owns the port-grouped tables and ordered dispatch for UI/settings plus simple
-  one-property commands, and `AutomationCommandDispatcher.CustomCommands.cs` consumes the
+  `AutomationCommandDispatcher.cs` owns manifest revision, auth-token, and
+  readiness gating beside the command envelope,
+  `AutomationCommandDispatcher.PortMappedDispatch.cs` owns the port-grouped
+  tables and ordered dispatch for UI/settings plus simple one-property commands,
+  and `AutomationCommandDispatcher.CustomCommands.cs` consumes the
   device-selection, audio, capture-settings, preview/recording, snapshot-query,
   diagnostics, probe, and window-control ports for custom command bodies,
   including WaitForCondition response shaping, wait-condition polling, and

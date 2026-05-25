@@ -320,9 +320,9 @@ events, automatic post-recording verification scheduling, and recording-start
 verification reset.
 
 Automation command dispatch now keeps the root router focused on the command
-envelope, correlation setup, dispatch pipeline shell, and error shaping.
-`AutomationCommandDispatcher.Preflight.cs` owns manifest revision checks,
-auth command handling, unauthorized-command rejection, and readiness gating.
+envelope, correlation setup, manifest revision checks, auth command handling,
+unauthorized-command rejection, readiness gating, dispatch pipeline shell, and
+error shaping.
 `AutomationCommandDispatcher.PortMappedDispatch.cs` owns UI/settings pre-routing
 and port-typed trivial-handler dispatch.
 `AutomationCommandDispatcher.CustomCommands.cs`
@@ -337,7 +337,7 @@ named port targets for the automation host. Keep these ports grouped there
 until a consumer needs a separate file; avoid tiny interface files that only
 reduce line count. The dispatcher no longer exposes or stores the aggregate
 ViewModel; its port-bundle constructor assigns narrow ports and invokes
-trivial/UI handler tables through matching port targets. The preflight owner
+trivial/UI handler tables through matching port targets. The dispatcher root
 consumes the readiness port for device-ready gating. Device commands consume
 the device-selection/snapshot-query ports, audio commands consume the audio
 port, and the port-mapped dispatch owner routes capture-settings plus
@@ -360,14 +360,14 @@ snapshot refresh.
 `AutomationCommandDispatcher.FlashbackCommands.cs` owns Flashback action,
 export, segment, restart, and enable command bodies behind the custom command
 router.
-`AutomationCommandDispatcher.Preflight.cs` owns manifest revision, auth-token,
-and readiness gating. `AutomationCommandDispatcher.PortMappedDispatch.cs` owns
+`AutomationCommandDispatcher.cs` owns manifest revision, auth-token, and
+readiness gating beside shared response shaping and Flashback rejection
+diagnostics. `AutomationCommandDispatcher.PortMappedDispatch.cs` owns
 UI/settings command application, the show-all compatibility no-op,
 stats-section response text, simple one-property capture and pipeline command
 tables, and ordered dispatch through those tables. Named partials own support
 responsibilities:
-`AutomationCommandDispatcher.cs` handles shared response shaping and
-Flashback rejection diagnostics; `AutomationCommandDispatcher.CustomCommands.cs`
+`AutomationCommandDispatcher.CustomCommands.cs`
 also owns WaitForCondition response shaping, wait polling, and snapshot
 predicates; `AutomationCommandDispatcher.WindowCommands.cs`
 handles full-screen, recordings-folder, arm-close, close-arm gating, and

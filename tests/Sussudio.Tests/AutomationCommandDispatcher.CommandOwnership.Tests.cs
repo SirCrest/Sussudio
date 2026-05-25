@@ -68,8 +68,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
-        var preflightText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.Preflight.cs")
-            .Replace("\r\n", "\n");
+        var preflightText = rootText;
         var portMappedDispatchText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs")
             .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
@@ -78,7 +77,6 @@ static partial class Program
         AssertContains(rootText, "var preflightResponse = TryCreatePreflightResponse(request, correlationId);");
         AssertContains(rootText, "var portMappedResponse = await TryExecutePortMappedCommandAsync(");
         AssertContains(rootText, "return await ExecuteCustomCommandAsync(request, payload, correlationId, cancellationToken)");
-        AssertDoesNotContain(rootText, "AUTOMATION_MANIFEST_MISMATCH");
         AssertDoesNotContain(rootText, "TrivialDeviceSelectionHandlers.TryGetValue");
 
         AssertContains(preflightText, "private AutomationCommandResponse? TryCreatePreflightResponse(");
@@ -92,7 +90,11 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.Authorization.cs")),
-            "auth gate folded into AutomationCommandDispatcher.Preflight.cs");
+            "auth gate folded into AutomationCommandDispatcher.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.Preflight.cs")),
+            "preflight gate folded into AutomationCommandDispatcher.cs");
 
         AssertContains(portMappedDispatchText, "private async Task<AutomationCommandResponse?> TryExecutePortMappedCommandAsync(");
         AssertContains(portMappedDispatchText, "private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationDeviceSelectionPort>> TrivialDeviceSelectionHandlers");
@@ -114,10 +116,10 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.UiSettingsCommands.cs")),
             "UI settings command tables folded into AutomationCommandDispatcher.PortMappedDispatch.cs");
 
-        AssertContains(agentMapText, "`Sussudio/Services/Automation/AutomationCommandDispatcher.Preflight.cs`");
+        AssertContains(agentMapText, "`Sussudio/Services/Automation/AutomationCommandDispatcher.cs`");
         AssertContains(agentMapText, "`Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs`");
         AssertContains(agentMapText, "`Sussudio/Services/Automation/AutomationCommandDispatcher.Payload.cs`");
-        AssertContains(cleanupPlanText, "`AutomationCommandDispatcher.Preflight.cs`");
+        AssertContains(cleanupPlanText, "`AutomationCommandDispatcher.cs`");
         AssertContains(cleanupPlanText, "`AutomationCommandDispatcher.PortMappedDispatch.cs`");
         AssertContains(cleanupPlanText, "`AutomationCommandDispatcher.Payload.cs`");
 
