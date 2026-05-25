@@ -2033,11 +2033,10 @@ Primary current owners:
   their removal from the legacy offline harness catalog. Keep the public
   wrapper classes in this file unless a group needs an independent fixture or
   executable helper state.
-- `tests/Sussudio.Tests/ServiceNamespace.Tests.cs` owns the harness-visible
-  service namespace/source ownership orchestrator.
 - `tests/Sussudio.Tests/ServiceNamespace.FolderRules.Tests.cs` owns service
-  folder-to-namespace architecture assertions and flat `Sussudio.Services`
-  import bans.
+  folder-to-namespace architecture assertions, flat `Sussudio.Services`
+  import bans, and the harness-visible service namespace/source ownership
+  orchestrator.
 - `tests/Sussudio.Tests/ServiceNamespace.Helpers.Tests.cs` owns the shared source
   enumeration, project XML, and C# comment/string stripping helpers used by
   service namespace architecture assertions.
@@ -2045,10 +2044,8 @@ Primary current owners:
   NativeXuAudioProbe linked-source, split-source, locator, and no-reflection
   source ownership assertions.
 - `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs`
-  owns DeviceService, NativeXu support, GPU interop, decoder, and capture
-  telemetry source ownership assertions.
-- `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.MainViewModelSource.Tests.cs`
-  owns the MainViewModel source ownership orchestrator.
+  owns DeviceService, NativeXu support, GPU interop, decoder, capture
+  telemetry, and MainViewModel source ownership orchestration assertions.
 - `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.MainViewModelDeviceAudio.Tests.cs`
   owns MainViewModel device-native audio state, mode/gain, and request-controller
   source ownership assertions.

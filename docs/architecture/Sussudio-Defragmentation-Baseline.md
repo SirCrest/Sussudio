@@ -1999,3 +1999,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; DTO contract test consolidation only
 Behavior preserved: the same CaptureDiagnosticsSnapshot registered property spec remains available to CaptureDiagnostics and CaptureHealth snapshot tests through the same private helper on `SnapshotModelsTests`
 Notes for future agents: keep CaptureDiagnostics snapshot DTO shape checks in `SnapshotModels.CaptureDiagnostics.Tests.cs`; add a new file only for a distinct snapshot DTO family or independent fixture/helper boundary
+
+Date: 2026-05-25
+Area: Service namespace architecture test locality
+Problem: Two very small `Program` partial files only orchestrated existing service namespace checks: the harness-visible entry point and the MainViewModel source-ownership dispatcher. They did not own independent assertions or fixtures, so maintaining them as separate files inflated the architecture-test shell count.
+Files consolidated: `tests/Sussudio.Tests/ServiceNamespace.Tests.cs`; `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.MainViewModelSource.Tests.cs`
+Files added: none
+Net production .cs delta: 0
+Net test .cs delta: -2
+Partial clusters reduced: service namespace architecture-test partial file count -2
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; architecture test locality only
+Behavior preserved: the same harness-visible `ServiceNamespaces_FollowServiceFolders` entry point and MainViewModel source ownership dispatcher remain on the `Program` partial type
+Notes for future agents: keep the service namespace harness entry point with `ServiceNamespace.FolderRules.Tests.cs` and keep MainViewModel source ownership orchestration with `ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs`; create a new service namespace file only for a distinct assertion owner or helper boundary

@@ -7,6 +7,13 @@ static partial class Program
         AssertServiceNamespaceMainViewModelSourceOwnership(repoRoot);
     }
 
+    private static void AssertServiceNamespaceMainViewModelSourceOwnership(string repoRoot)
+    {
+        AssertServiceNamespaceMainViewModelDeviceAudioSourceOwnership(repoRoot);
+        AssertServiceNamespaceMainViewModelRuntimeSourceOwnership(repoRoot);
+        AssertServiceNamespaceMainViewModelDeviceAndCaptureSourceOwnership(repoRoot);
+    }
+
     private static void AssertServiceNamespaceServicesLayerOwnership(string repoRoot)
     {
         var deviceServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.cs"));
