@@ -2208,17 +2208,18 @@ lifecycle, suppression/reprime lifecycle, and dispose-time queue teardown.
 `MjpegPreviewJitterBuffer.FramePacing.cs` owns display-clock alignment, frame
 submission to the preview sink, tick waits, and timer-resolution P/Invoke.
 
-Parallel MJPEG compressed input admission now lives in
-`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.CompressedQueue.cs`. Keep
-startup invalid-MJPG drops, work-item construction, compressed byte-budget
-rejection, queue-depth accounting, queue-full rejection, and packet-hash
-recording there.
+Parallel MJPEG compressed input admission now lives with the bounded work-channel
+owner in `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs`. Keep startup
+invalid-MJPG drops, work-item construction, compressed byte-budget rejection,
+queue-depth accounting, queue-full rejection, and packet-hash recording beside
+pipeline construction and channel creation.
 
 Parallel MJPEG worker execution now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Workers.cs`. Keep decoder
 array ownership, worker thread creation/naming, worker decode-loop execution,
 and worker liveness checks there; keep the root pipeline focused on
-construction, callback storage, channel creation, and startup sequencing.
+construction, callback storage, channel creation, compressed input admission,
+and startup sequencing.
 Software MJPEG decode/copy execution now lives with its decoder state in
 `Sussudio/Services/Gpu/SoftwareMjpegDecoder.cs`. Keep FFmpeg decoder context
 allocation, frame/packet ownership, hot MJPEG send/receive,

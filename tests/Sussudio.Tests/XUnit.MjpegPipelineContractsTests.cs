@@ -23,8 +23,8 @@ public sealed class MjpegPipelineContractsTests
         => global::Program.ParallelMjpegDecodePipeline_LifecycleLivesInFocusedPartial();
 
     [Fact]
-    public Task ParallelMjpegDecodePipelineCompressedQueueLivesInFocusedPartial()
-        => global::Program.ParallelMjpegDecodePipeline_CompressedQueueLivesInFocusedPartial();
+    public Task ParallelMjpegDecodePipelineCompressedQueueLivesWithRoot()
+        => global::Program.ParallelMjpegDecodePipeline_CompressedQueueLivesWithRoot();
 
     [Fact]
     public Task ParallelMjpegDecodePipelineWorkersLiveInFocusedPartial()

@@ -9,7 +9,6 @@ static partial class Program
     {
         var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Workers.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.CompressedQueue.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs");
         AssertContains(source, "MJPEG_PIPELINE_STARTUP_DROP");
@@ -49,27 +48,25 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task ParallelMjpegDecodePipeline_CompressedQueueLivesInFocusedPartial()
+    internal static Task ParallelMjpegDecodePipeline_CompressedQueueLivesWithRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
             .Replace("\r\n", "\n");
-        var compressedQueueText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.CompressedQueue.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(compressedQueueText, "private const int WorkQueueItemCapacityPerDecoder = 8;");
-        AssertContains(compressedQueueText, "private readonly Channel<MjpegWorkItem> _workQueue;");
-        AssertContains(compressedQueueText, "private readonly FrameFingerprintCadenceTracker _packetHashTracker = new();");
-        AssertContains(compressedQueueText, "private readonly long _compressedQueueByteBudget = DefaultCompressedQueueByteBudget;");
-        AssertContains(compressedQueueText, "private readonly record struct MjpegWorkItem(");
-        AssertContains(compressedQueueText, "public bool EnqueueFrame(ReadOnlySpan<byte> jpegData, int width, int height, long arrivalTick)");
-        AssertContains(compressedQueueText, "private static bool HasJpegStartOfImage(ReadOnlySpan<byte> data)");
-        AssertContains(compressedQueueText, "private void DecrementCompressedQueueDepth(string operation)");
-        AssertContains(compressedQueueText, "FrameFingerprintCadenceTracker.ComputeHash(jpegData)");
-        AssertContains(compressedQueueText, "MJPEG_PIPELINE_COMPRESSED_DEPTH_UNDERFLOW");
-        AssertDoesNotContain(rootText, "public bool EnqueueFrame(");
-        AssertDoesNotContain(rootText, "private static bool HasJpegStartOfImage(");
-        AssertDoesNotContain(rootText, "FrameFingerprintCadenceTracker _packetHashTracker");
-        AssertDoesNotContain(rootText, "private readonly record struct MjpegWorkItem(");
+        AssertContains(rootText, "private const int WorkQueueItemCapacityPerDecoder = 8;");
+        AssertContains(rootText, "private readonly Channel<MjpegWorkItem> _workQueue;");
+        AssertContains(rootText, "private readonly FrameFingerprintCadenceTracker _packetHashTracker = new();");
+        AssertContains(rootText, "private readonly long _compressedQueueByteBudget = DefaultCompressedQueueByteBudget;");
+        AssertContains(rootText, "private readonly record struct MjpegWorkItem(");
+        AssertContains(rootText, "public bool EnqueueFrame(ReadOnlySpan<byte> jpegData, int width, int height, long arrivalTick)");
+        AssertContains(rootText, "private static bool HasJpegStartOfImage(ReadOnlySpan<byte> data)");
+        AssertContains(rootText, "private void DecrementCompressedQueueDepth(string operation)");
+        AssertContains(rootText, "FrameFingerprintCadenceTracker.ComputeHash(jpegData)");
+        AssertContains(rootText, "MJPEG_PIPELINE_COMPRESSED_DEPTH_UNDERFLOW");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "ParallelMjpegDecodePipeline.CompressedQueue.cs")),
+            "MJPEG compressed queue admission stays folded into pipeline root/channel owner");
 
         return Task.CompletedTask;
     }
@@ -169,7 +166,7 @@ static partial class Program
 
     internal static Task ParallelMjpegDecodePipeline_DropsStartupNonJpegBeforeSequencing()
     {
-        var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.CompressedQueue.cs");
+        var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs");
         var guardIndex = source.IndexOf("!HasJpegStartOfImage(jpegData)", StringComparison.Ordinal);
         var sequenceIndex = source.IndexOf("Interlocked.Increment(ref _nextDispatchSeq)", StringComparison.Ordinal);
 
