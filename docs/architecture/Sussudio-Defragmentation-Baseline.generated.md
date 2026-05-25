@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-24T23:55:38Z
+Generated UTC: 2026-05-25T00:01:46Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 583 |
+| Production .cs files | 582 |
 | Test .cs files | 552 |
 | Production .cs files under 60 lines | 20 (3.4%) |
 | Production .cs files under 80 lines | 36 (6.2%) |
@@ -43,7 +43,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | AutomationSnapshotFormatter | 4 | 779 | tools/Common/AutomationSnapshotFormatter.cs, tools/Common/AutomationSnapshotFormatter.Flashback.cs, tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs, tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs |
 | Formatters | 4 | 959 | tools/ssctl/Formatters.Common.cs, tools/ssctl/Formatters.Options.cs, tools/ssctl/Formatters.Snapshot.cs, tools/ssctl/Formatters.Timeline.cs |
 | WasapiAudioPlayback | 4 | 847 | Sussudio/Services/Audio/WasapiAudioPlayback.cs, Sussudio/Services/Audio/WasapiAudioPlayback.Initialization.cs, Sussudio/Services/Audio/WasapiAudioPlayback.Queue.cs, Sussudio/Services/Audio/WasapiAudioPlayback.RenderThread.cs |
-| CaptureSessionCoordinator | 3 | 843 | Sussudio/Services/Capture/CaptureSessionCoordinator.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.Disposal.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs |
+| DeviceService | 3 | 716 | Sussudio/Services/Capture/DeviceService.cs, Sussudio/Services/Capture/DeviceService.FormatCache.cs, Sussudio/Services/Capture/DeviceService.FormatProbe.cs |
 | DiagnosticSessionFlashbackMetrics | 3 | 746 | tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs, tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs, tools/Common/DiagnosticSessionFlashbackMetrics.RecordingExport.cs |
 | PerformanceTimelineTools | 3 | 777 | tools/McpServer/Tools/PerformanceTimelineTools.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs |
 
@@ -69,6 +69,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 610 | Sussudio/Controllers/FullScreen/FullScreenController.cs |
 | 583 | Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs |
 | 580 | Sussudio/Controllers/Window/WindowCloseLifecycleController.cs |
+| 578 | Sussudio/Services/Capture/CaptureSessionCoordinator.cs |
 | 575 | tools/NativeXuAudioProbe/Program.I2cCommands.cs |
 | 574 | tools/Common/DiagnosticSessionFlashbackStressScenario.cs |
 | 552 | Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.cs |
@@ -80,7 +81,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 522 | Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs |
 | 516 | tools/ssctl/Formatters.Snapshot.cs |
 | 515 | Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs |
-| 506 | Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs |
 
 ## Sample production files under 60 lines
 

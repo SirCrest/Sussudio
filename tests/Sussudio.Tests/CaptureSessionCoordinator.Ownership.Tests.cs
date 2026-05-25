@@ -122,23 +122,23 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureSessionCoordinator_DisposalLivesInFocusedPartial()
+    internal static Task CaptureSessionCoordinator_DisposalLivesInCoordinatorRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
-        var disposalText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Disposal.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(disposalText, "private const int DefaultDisposeDrainTimeoutMs = 15_000;");
-        AssertContains(disposalText, "public void Dispose()");
-        AssertContains(disposalText, "public async ValueTask DisposeAsync()");
-        AssertContains(disposalText, "private async ValueTask CoreDisposeAsync()");
-        AssertContains(disposalText, "private async Task WaitForWorkerCancellationAsync()");
-        AssertContains(disposalText, "private void DisposeWorkerCancellationWhenSafe()");
-        AssertContains(disposalText, "private void CancelWorkerBestEffort()");
-        AssertDoesNotContain(rootText, "private async ValueTask CoreDisposeAsync()");
-        AssertDoesNotContain(rootText, "SUSSUDIO_COORDINATOR_DISPOSE_TIMEOUT_MS");
-        AssertDoesNotContain(rootText, "private void DisposeWorkerCancellationWhenSafe()");
+        AssertContains(rootText, "private const int DefaultDisposeDrainTimeoutMs = 15_000;");
+        AssertContains(rootText, "public void Dispose()");
+        AssertContains(rootText, "public async ValueTask DisposeAsync()");
+        AssertContains(rootText, "private async ValueTask CoreDisposeAsync()");
+        AssertContains(rootText, "private async Task WaitForWorkerCancellationAsync()");
+        AssertContains(rootText, "private void DisposeWorkerCancellationWhenSafe()");
+        AssertContains(rootText, "private void CancelWorkerBestEffort()");
+        AssertContains(rootText, "SUSSUDIO_COORDINATOR_DISPOSE_TIMEOUT_MS");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionCoordinator.Disposal.cs")),
+            "CaptureSessionCoordinator disposal lifecycle folded into the coordinator root");
 
         return Task.CompletedTask;
     }

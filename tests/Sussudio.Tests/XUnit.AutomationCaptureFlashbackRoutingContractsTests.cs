@@ -131,8 +131,8 @@ public sealed class AutomationCaptureFlashbackRoutingContractsTests
         => global::Program.CaptureSessionCoordinator_SnapshotProjectionLivesInFocusedPartial();
 
     [Fact]
-    public Task CaptureSessionCoordinatorDisposalLivesInFocusedPartial()
-        => global::Program.CaptureSessionCoordinator_DisposalLivesInFocusedPartial();
+    public Task CaptureSessionCoordinatorDisposalLivesInCoordinatorRoot()
+        => global::Program.CaptureSessionCoordinator_DisposalLivesInCoordinatorRoot();
 
     [Fact]
     public Task ServiceNamespacesFollowServiceFolders()

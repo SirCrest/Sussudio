@@ -470,11 +470,10 @@ Important entry points:
   enqueueing, enqueue-failure handling, disposed-state ingress guards,
   worker-loop execution, command coalescing, operation cancellation/failure
   accounting, pending-command failure drain, and pending-command counter
-  decrement policy.
+  decrement policy, plus dispose/drain/cancel lifecycle for the worker queue
+  and cancellation token source.
 - `CaptureSessionCoordinator.Models.cs` owns command enums, queue receipts,
   session snapshots, and Flashback playback/buffer status projections.
-- `CaptureSessionCoordinator.Disposal.cs` owns dispose/drain/cancel lifecycle
-  for the worker queue and cancellation token source.
 - `CaptureSessionCoordinator.Flashback.cs` owns queued Flashback mutations,
   read-only Flashback status, playback snapshot projection, Flashback export
   and segment query forwarding, playback/scrub/marker/go-live command adapters,

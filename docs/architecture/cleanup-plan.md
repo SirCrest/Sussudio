@@ -1130,9 +1130,8 @@ non-Flashback lifecycle/audio command facade into the serialized worker, and
 queue/session snapshot projection, queue work item creation, command enqueueing,
 enqueue-failure handling, disposed-state ingress guards, worker-loop execution,
 command coalescing, operation cancellation/failure accounting, pending-command
-failure drain, and pending-command counter decrement policy. Dispose/drain/cancel
-lifecycle for the worker queue and cancellation token source now lives in
-`CaptureSessionCoordinator.Disposal.cs`.
+failure drain, pending-command counter decrement policy, and dispose/drain/cancel
+lifecycle for the worker queue and cancellation token source.
 Capture session coordinator API/command/snapshot contracts, focused
 source-ownership contracts, queue behavior, Flashback/cancellation behavior,
 transition policy, and shared reflection harness helpers now live in separate
