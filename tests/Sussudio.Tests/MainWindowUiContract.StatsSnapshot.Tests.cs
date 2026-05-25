@@ -15,8 +15,8 @@ public class MainWindowUiContractStatsSnapshotTests
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
         var statsSnapshotProviderText = statsOverlayCompositionText;
         var mainWindowText = MainWindowCompositionSource.Read();
-        var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs");
         var statsSnapshotText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshot.cs");
+        var statsSnapshotBuilderText = statsSnapshotText;
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs");
 
         AssertContains(statsSnapshotBuilderText, "internal static class StatsSnapshotBuilder");

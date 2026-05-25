@@ -162,8 +162,8 @@ public partial class StatsPresentationTests
         var frameTimeOverlayControllerText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs");
         var frameTimeOverlayGeometryText = frameTimeOverlayControllerText;
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs");
-        var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs");
         var statsSnapshotText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshot.cs");
+        var statsSnapshotBuilderText = statsSnapshotText;
         var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs");
 

@@ -2430,12 +2430,12 @@ stats lane status classification, and the visual-repeat drift result all live in
 one pure builder instead of ten partial fragments.
 Stats presentation DTO records/enums now live in
 `Sussudio/ViewModels/StatsPresentationModels.cs`.
-The UI stats snapshot contract lives in `Sussudio/ViewModels/StatsSnapshot.cs`;
+The UI stats snapshot contract and projection from capture health, renderer
+metrics, and shell view state live in `Sussudio/ViewModels/StatsSnapshot.cs`;
 shell snapshot orchestration plus renderer cadence/recent-sample acquisition
 lives in `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`;
 `Sussudio/MainWindow.StatsOverlay.Composition.cs` is the XAML-facing provider
-composition adapter; and projection from capture health, renderer metrics, and shell view state lives in
-`Sussudio/ViewModels/StatsSnapshotBuilder.cs`.
+composition adapter.
 Pure capture option construction lives in
 `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs`.
 

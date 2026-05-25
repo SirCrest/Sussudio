@@ -1257,9 +1257,9 @@ Primary current owners:
   stats lane status classification, and the visual-repeat drift result.
   `Sussudio/ViewModels/StatsPresentationModels.cs` owns the internal DTO
   records/enums consumed by the stats overlay and stats-window controllers.
-  `Sussudio/ViewModels/StatsSnapshot.cs` owns the UI stats snapshot DTO, and
-  `Sussudio/ViewModels/StatsSnapshotBuilder.cs` owns capture-health, renderer,
-  and shell view-state projection into that DTO after acquisition.
+  `Sussudio/ViewModels/StatsSnapshot.cs` owns the UI stats snapshot DTO plus
+  capture-health, renderer, and shell view-state projection into that DTO after
+  acquisition.
 - `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs` owns pure resolution and
   video-format option construction, HDR mode enablement, and source aspect-ratio
   filtering. Shell files bind and display those options.
