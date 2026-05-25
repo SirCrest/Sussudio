@@ -1539,12 +1539,10 @@ verification orchestration, early failure results, primary mismatch parsing, HDR
 parity, and mismatch taxonomy in `Sussudio/Services/Recording/Verification/RecordingVerifier.cs`,
 ffprobe process/spec/side-data probing in
 `Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs`,
-including probe scalar parsing,
+including probe scalar parsing and ffprobe frame timestamp cadence analysis,
 dimensions, frame-rate, cadence, container/codec format, Flashback export
 verification format resolution, and HDR validation policy in
-`Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs`,
-ffprobe frame timestamp cadence analysis in
-`Sussudio/Services/Recording/Verification/RecordingVerifier.Cadence.cs`.
+`Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs`.
 `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` now keeps only
 shared fake process-supervisor, runtime snapshot, verifier construction, and
 verification invocation helpers. Recording verifier integration scenarios are

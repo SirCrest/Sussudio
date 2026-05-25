@@ -27,8 +27,8 @@ public sealed class CoreRuntimeRecordingContractsTests
         => global::Program.RecordingVerifier_ImplementsIRecordingVerifier();
 
     [Fact]
-    public Task RecordingVerifierCadenceAnalysisLivesInFocusedPartial()
-        => global::Program.RecordingVerifier_CadenceAnalysisLivesInFocusedPartial();
+    public Task RecordingVerifierCadenceAnalysisLivesWithFfprobeProbes()
+        => global::Program.RecordingVerifier_CadenceAnalysisLivesWithFfprobeProbes();
 
     [Fact]
     public Task RecordingVerifierProbeValidationAndResultShapingOwnership()

@@ -112,18 +112,22 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task RecordingVerifier_CadenceAnalysisLivesInFocusedPartial()
+    internal static Task RecordingVerifier_CadenceAnalysisLivesWithFfprobeProbes()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.cs")
             .Replace("\r\n", "\n");
-        var cadenceText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Cadence.cs")
+        var ffprobeText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "public sealed partial class RecordingVerifier : IRecordingVerifier");
-        AssertContains(cadenceText, "private async Task<CadenceMetrics?> AnalyzeCadenceMetricsAsync(");
-        AssertContains(cadenceText, "private static CadenceMetrics ComputeCadenceMetrics(");
-        AssertContains(cadenceText, "private static double? TryGetFrameTimestampSeconds(JsonElement frame)");
-        AssertContains(cadenceText, "private static double? TryGetJsonDouble(JsonElement element, string propertyName)");
+        AssertContains(ffprobeText, "private async Task<CadenceMetrics?> AnalyzeCadenceMetricsAsync(");
+        AssertContains(ffprobeText, "private static CadenceMetrics ComputeCadenceMetrics(");
+        AssertContains(ffprobeText, "private static double? TryGetFrameTimestampSeconds(JsonElement frame)");
+        AssertContains(ffprobeText, "private static double? TryGetJsonDouble(JsonElement element, string propertyName)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "Verification", "RecordingVerifier.Cadence.cs")),
+            "RecordingVerifier cadence ffprobe pass folded into ffprobe probe owner");
         AssertDoesNotContain(rootText, "private async Task<CadenceMetrics?> AnalyzeCadenceMetricsAsync(");
         AssertDoesNotContain(rootText, "private static CadenceMetrics ComputeCadenceMetrics(");
         AssertDoesNotContain(rootText, "private static double? TryGetFrameTimestampSeconds(JsonElement frame)");
@@ -142,6 +146,7 @@ static partial class Program
 
         AssertContains(rootText, "public async Task<RecordingVerificationResult> VerifyAsync(");
         AssertContains(ffprobeText, "private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(");
+        AssertContains(ffprobeText, "private async Task<CadenceMetrics?> AnalyzeCadenceMetricsAsync(");
         AssertContains(ffprobeText, "private static Dictionary<string, string> ParseKeyValueOutput(string output)");
         AssertContains(ffprobeText, "private static double? TryParseRational(string? value)");
         AssertContains(ffprobeText, "private ProcessSpec CreateFfprobeProcessSpec(");
