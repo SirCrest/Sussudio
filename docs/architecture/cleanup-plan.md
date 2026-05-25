@@ -108,8 +108,9 @@ cleanup, and force-rotate timeline projection.
 timestamp/status projection, view-model lifecycle/audio flags,
 verification-in-progress, session state, status-text projection, performance
 score, diagnostic lane, preview pacing classifier, performance threshold
-projection, AV-sync projection, capture command projection, and final
-status/evaluation/AV-sync/capture-command flattening.
+projection, selected device/capture/recording settings, preview volume/stats
+visibility projection, AV-sync projection, capture command projection, and final
+status/evaluation/settings/AV-sync/capture-command flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Audio.cs` owns audio/ingest
 projection routing, view-model audio peak/clipping and detected audio-signal
 projection inputs, capture-ingest and WASAPI projection groups, capture
@@ -161,9 +162,10 @@ normalization/rehydration, and retrying the shared native transport gate from
 `NativeXuDeviceSupport.cs`.
 `AutomationDiagnosticsHub.SnapshotProjection.cs` owns snapshot construction
 routing, AV-sync projection/flattening, capture session command queue counters,
-latency, last-command, last-error projection inputs consumed by the automation
-snapshot DTO, and final capture-command projection-to-`AutomationSnapshot`
-field flattening.
+latency, last-command, last-error projection inputs, selected device/capture/
+recording settings, preview volume, and stats visibility consumed by the
+automation snapshot DTO, plus final capture-command and settings projection-to-
+`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns
 capture-format projection routing and groups requested, HDR-request, actual,
 negotiated, reader-observation, and encoder format modules consumed by the
@@ -245,11 +247,6 @@ dimensions, frame-rate, HDR, video/audio format, firmware, input, USB, HDCP, raw
 timing field flattening, and final source telemetry availability, confidence,
 detail, age, backend, suppression, circuit-state, summary, and target-summary
 field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.UserSettings.cs` owns selected
-device, selected capture/recording options, preview volume, and stats
-visibility projection consumed by the automation snapshot DTO, plus final
-selected device, selected capture/recording options, preview volume, and stats
-visibility projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.Hdr.cs` owns HDR truth classification from capture
 runtime, UI state, and recording verification plus HDR availability/request
 state, runtime/readiness fallback, HDR warmup/downgrade, pipeline parity,

@@ -36,13 +36,12 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationDiagnosticsUserSettingsProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsUserSettingsProjection_LivesWithSnapshotProjection()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var userSettingsProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.UserSettings.cs")
-            .Replace("\r\n", "\n");
+        var userSettingsProjectionText = snapshotProjectionText;
 
         AssertContains(snapshotProjectionText, "var userSettings = BuildUserSettingsProjection(viewModelSnapshot);");
         AssertContains(snapshotProjectionText, "var recordingSettings = BuildRecordingSettingsProjection(userSettings);");
@@ -81,6 +80,10 @@ static partial class Program
         AssertContains(userSettingsProjectionText, "SelectedVideoFormat = userSettings.SelectedVideoFormat,");
         AssertContains(userSettingsProjectionText, "CustomBitrateMbps = userSettings.CustomBitrateMbps");
         AssertContains(userSettingsProjectionText, "private readonly record struct RecordingSettingsProjection");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.UserSettings.cs")),
+            "user settings projection lives with AutomationDiagnosticsHub.SnapshotProjection.cs");
 
         return Task.CompletedTask;
     }

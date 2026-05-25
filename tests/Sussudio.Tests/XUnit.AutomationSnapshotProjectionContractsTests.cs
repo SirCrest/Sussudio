@@ -27,8 +27,8 @@ public sealed class AutomationSnapshotProjectionContractsTests
         => global::Program.AutomationDiagnosticsCaptureCommandProjection_LivesInFocusedPartial();
 
     [Fact]
-    public Task AutomationDiagnosticsUserSettingsProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsUserSettingsProjection_LivesInFocusedPartial();
+    public Task AutomationDiagnosticsUserSettingsProjectionLivesWithSnapshotProjection()
+        => global::Program.AutomationDiagnosticsUserSettingsProjection_LivesWithSnapshotProjection();
 
     [Fact]
     public Task AutomationDiagnosticsCaptureFormatProjectionLivesInFocusedPartial()
