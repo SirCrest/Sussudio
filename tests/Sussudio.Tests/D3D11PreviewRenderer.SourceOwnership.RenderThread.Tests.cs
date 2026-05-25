@@ -1,4 +1,5 @@
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -74,6 +75,47 @@ static partial class Program
         AssertDoesNotContain(renderPassesText, "private void RenderThreadMain()");
         AssertDoesNotContain(renderPassesText, "private void NotifyRenderThreadFailed(Exception ex)");
         AssertDoesNotContain(renderPassesText, "FirstFrameRendered?.Invoke()");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task D3D11PreviewRenderer_IsDeviceLostException_ClassifiesCorrectly()
+    {
+        var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
+        var method = rendererType.GetMethod(
+            "IsDeviceLostException",
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("IsDeviceLostException not found.");
+
+        var regularEx = new InvalidOperationException("test");
+        AssertEqual(false, (bool)method.Invoke(null, new object[] { regularEx })!, "Regular exception is not device lost");
+
+        var deviceRemovedEx = new System.Runtime.InteropServices.COMException("Device removed", unchecked((int)0x887A0005));
+        AssertEqual(true, (bool)method.Invoke(null, new object[] { deviceRemovedEx })!, "DeviceRemoved COMException is device lost");
+
+        var deviceResetEx = new System.Runtime.InteropServices.COMException("Device reset", unchecked((int)0x887A0007));
+        AssertEqual(true, (bool)method.Invoke(null, new object[] { deviceResetEx })!, "DeviceReset COMException is device lost");
+
+        var otherComEx = new System.Runtime.InteropServices.COMException("Other", unchecked((int)0x80004005));
+        AssertEqual(false, (bool)method.Invoke(null, new object[] { otherComEx })!, "Other COMException is not device lost");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task D3D11PreviewRenderer_DeviceLostRecoveryLivesInFocusedPartial()
+    {
+        var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
+            .Replace("\r\n", "\n");
+        var deviceInitializationText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(deviceInitializationText, "private void HandleDeviceLost(Exception ex)");
+        AssertContains(deviceInitializationText, "private static bool IsDeviceLostException(Exception ex)");
+        AssertContains(deviceInitializationText, "TrackFrameDropped(stalePending, \"device-lost\");");
+        AssertContains(deviceInitializationText, "ResultCode.DeviceRemoved");
+        AssertContains(deviceInitializationText, "unchecked((int)0x887A0005)");
+        AssertDoesNotContain(resourcesText, "private void HandleDeviceLost(Exception ex)");
+        AssertDoesNotContain(resourcesText, "private static bool IsDeviceLostException(Exception ex)");
 
         return Task.CompletedTask;
     }

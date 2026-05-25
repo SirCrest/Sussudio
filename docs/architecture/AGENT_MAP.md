@@ -1743,13 +1743,12 @@ Primary current owners:
   frame-latency, viewport, render-pass, shader-rendering, and shader-source
   assertions.
   `D3D11PreviewRenderer.SourceOwnership.RenderThread.Tests.cs` owns
-  render-thread loop, first-frame notification, failure telemetry method/state,
-  and Present shared present-accounting source-ownership assertions.
+  render-thread loop, device-lost classification/recovery, first-frame
+  notification, failure telemetry method/state, and Present shared
+  present-accounting source-ownership assertions.
   `D3D11PreviewRenderer.SourceOwnership.RuntimeCapture.Tests.cs` owns public
   submission state, lifecycle/stop-lifecycle state, pending-frame state, and
   screenshot assertions.
-- `tests/Sussudio.Tests/D3D11PreviewRenderer.DeviceLost.Tests.cs` owns device
-  lost classification and recovery ownership assertions.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.FrameFlow.Tests.cs` owns pending
   frame draining, frame-capture cancellation, and shared D3D device reference
   lifecycle assertions.
