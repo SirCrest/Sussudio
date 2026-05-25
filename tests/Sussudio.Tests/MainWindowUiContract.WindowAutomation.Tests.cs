@@ -2,7 +2,7 @@ static partial class Program
 {
     internal static Task MainWindowFullScreenAutomation_AwaitsTransitionTask()
     {
-        var fullScreenSource = ReadMainWindowFullScreenAdapterSource();
+        var fullScreenSource = ReadMainWindowShellChromeAdapterSource();
         var fullScreenControllerRootSource = ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.cs")
             .Replace("\r\n", "\n");
         var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs")

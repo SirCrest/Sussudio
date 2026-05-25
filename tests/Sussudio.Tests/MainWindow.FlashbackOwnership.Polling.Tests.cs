@@ -8,7 +8,7 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var pollingAdapterText = ReadMainWindowFlashbackAdapterSource();
         var timelineAdapterText = ReadMainWindowFlashbackAdapterSource();
-        var shutdownCleanupText = ReadMainWindowShutdownCleanupAdapterSource();
+        var shutdownCleanupText = ReadMainWindowCompositionSource();
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs").Replace("\r\n", "\n");
         var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");

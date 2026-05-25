@@ -1660,15 +1660,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.CaptureSelectionBindingsOwnership.Helpers.cs`
   owns the shared source reader for the split
   `MainWindow.CaptureBindings.cs` adapter.
-- `tests/Sussudio.Tests/MainWindow.FullScreenOwnership.Helpers.cs` owns the
-  shared source reader for the consolidated `MainWindow.ShellChrome.Composition.cs`
-  adapter.
 - `tests/Sussudio.Tests/MainWindow.PreviewRendererOwnership.Helpers.cs` owns the
   shared source reader for the consolidated `MainWindow.PreviewRenderer.Composition.cs`
   adapter.
-- `tests/Sussudio.Tests/MainWindow.ShutdownCleanupOwnership.Helpers.cs` owns the
-  shared source reader for shutdown cleanup delegates now folded into
-  `MainWindow.xaml.cs`.
+- Fullscreen tests use the shared shell-chrome helper for
+  `MainWindow.ShellChrome.Composition.cs`; shutdown cleanup tests use the shared
+  MainWindow root helper for `MainWindow.xaml.cs`.
 - `tests/Sussudio.Tests/MainWindow.PropertyChangedPreviewOwnership.Helpers.cs`
   owns the shared source reader for the consolidated
   preview lifecycle adapter in `MainWindow.PreviewRenderer.Composition.cs`.

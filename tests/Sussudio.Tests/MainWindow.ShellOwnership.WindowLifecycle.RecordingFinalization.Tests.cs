@@ -5,7 +5,7 @@ static partial class Program
     internal static Task MainWindowCloseRecordingFinalization_OwnsRecordingStopPolicy()
     {
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
-        var shutdownCleanupText = ReadMainWindowShutdownCleanupAdapterSource();
+        var shutdownCleanupText = ReadMainWindowCompositionSource();
         var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
         var stopBeforeCloseMethodOffset = closeRecordingFinalizationControllerText.IndexOf("public async Task<bool> StopBeforeCloseAsync(");
         var stopAfterClosedMethodOffset = closeRecordingFinalizationControllerText.IndexOf("public async Task StopAfterClosedBestEffortAsync(");

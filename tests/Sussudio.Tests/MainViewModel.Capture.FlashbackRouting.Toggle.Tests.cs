@@ -14,7 +14,7 @@ static partial class Program
         var flashbackCommandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackCommandController.cs")
             .Replace("\r\n", "\n");
         var flashbackTimelineText = ReadMainWindowFlashbackAdapterSource();
-        var fullScreenText = ReadMainWindowFullScreenAdapterSource();
+        var fullScreenText = ReadMainWindowShellChromeAdapterSource();
         var flashbackSettingsText = ReadMainWindowFlashbackAdapterSource();
         var flashbackTimelineControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineController.cs")
             .Replace("\r\n", "\n");

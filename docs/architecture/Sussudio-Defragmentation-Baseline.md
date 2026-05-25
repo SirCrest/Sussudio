@@ -1739,3 +1739,16 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: HDR validator script resolution, codec selection, HDR/static-metadata arguments, expected-FPS argument formatting, 30-second process-supervisor timeout, stdout/stderr logging, timeout/start/exit-code failure details, missing-script skip behavior, and final `FinalizeResult` failure shaping remain unchanged
 Notes for future agents: keep stop-time HDR script validation with `LibAvRecordingSink.StopLifecycle.cs`; keep ffprobe-based recording verification HDR policy in `RecordingVerifier.Validation.cs`
+
+Date: 2026-05-25
+Area: MainWindow test helper locality
+Problem: Two tiny test helper files only re-read sources already covered by existing shared readers: fullscreen tests and shell-chrome tests both read `MainWindow.ShellChrome.Composition.cs`, while shutdown cleanup tests read `MainWindow.xaml.cs` through a duplicate helper.
+Files consolidated: `tests/Sussudio.Tests/MainWindow.FullScreenOwnership.Helpers.cs`; `tests/Sussudio.Tests/MainWindow.ShutdownCleanupOwnership.Helpers.cs`
+Files added: none
+Net production .cs delta: 0
+Net test .cs delta: -2
+Partial clusters reduced: `Program` test harness -2 files
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; test helper source readers only
+Behavior preserved: fullscreen, shell chrome, shutdown cleanup, Flashback polling, preview runtime, recording-finalization, and window automation ownership assertions now use the same source text through the already-existing MainWindow helper readers
+Notes for future agents: prefer reusing the shared MainWindow root and shell-chrome source readers before adding another tiny `MainWindow.*Ownership.Helpers.cs` file

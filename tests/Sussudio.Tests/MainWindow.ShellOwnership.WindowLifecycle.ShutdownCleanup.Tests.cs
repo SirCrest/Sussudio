@@ -5,7 +5,7 @@ static partial class Program
 {
     internal static Task MainWindowShutdownCleanup_OwnsPostCloseCleanupOrder()
     {
-        var shutdownCleanupText = ReadMainWindowShutdownCleanupAdapterSource();
+        var shutdownCleanupText = ReadMainWindowCompositionSource();
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs").Replace("\r\n", "\n");
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
 
