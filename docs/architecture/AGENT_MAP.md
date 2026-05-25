@@ -1679,8 +1679,9 @@ Primary current owners:
   registered-property coverage helpers.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.Tests.cs` owns xUnit
   AutomationSnapshot and AutomationOptions DTO shape checks for CPU MJPEG,
-  MJPEG preview, preview diagnostics, capture-command, recording, Flashback
-  recording/playback/export, visual cadence, and advanced control-state options.
+  MJPEG preview, preview diagnostics, capture-command/cadence, recording,
+  Flashback recording/playback/export, visual cadence, and advanced
+  control-state options.
   It also owns the CPU MJPEG property-list contract plus shared
   AutomationSnapshot property assertions used by the metric-shape checks.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.Tests.cs` owns xUnit
