@@ -113,7 +113,7 @@ static partial class Program
     {
         var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
         var leaseType = RequireType("Sussudio.Services.Contracts.PooledVideoFrameLease");
-        var leaseEncoderType = RequireType("Sussudio.Services.Recording.IRawVideoFrameLeaseEncoder");
+        var leaseEncoderType = RequireType("Sussudio.Services.Contracts.IRawVideoFrameLeaseEncoder");
         var pipelineEmitCallbackType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+EmitFrameCallback");
         var previewSinkType = RequireType("Sussudio.Services.Contracts.IPreviewFrameSink");
         var jitterBufferType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");

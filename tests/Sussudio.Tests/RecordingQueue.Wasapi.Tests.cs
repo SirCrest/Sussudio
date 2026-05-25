@@ -12,9 +12,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var captureLoopSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.CaptureLoop.cs")
             .Replace("\r\n", "\n");
-        var contractsSource = (ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs")
-                + "\n"
-                + ReadRepoFile("Sussudio/Services/Contracts/RecordingContracts.cs"))
+        var contractsSource = ReadRepoFile("Sussudio/Services/Contracts/RecordingContracts.cs")
             .Replace("\r\n", "\n");
         var libAvSource = ReadLibAvRecordingSinkSource();
         var flashbackSource = ReadFlashbackEncoderSinkSource();

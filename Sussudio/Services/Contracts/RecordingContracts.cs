@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using FFmpeg.AutoGen;
 using Sussudio.Models;
 
 namespace Sussudio.Services.Contracts;
@@ -121,6 +122,35 @@ public interface IGpuVideoFrameEncoder
 public interface IGpuVideoFrameTryEncoder
 {
     bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex);
+}
+
+public interface IRawVideoFrameEncoder
+{
+    void EnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize);
+}
+
+public interface IRawVideoFrameTryEncoder
+{
+    bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize);
+}
+
+internal interface IRawVideoFrameLeaseEncoder
+{
+    void EnqueueRawVideoFrame(PooledVideoFrameLease frame);
+}
+
+internal interface IRawVideoFrameLeaseTryEncoder
+{
+    bool TryEnqueueRawVideoFrame(PooledVideoFrameLease frame);
+}
+
+/// <summary>
+/// Accepts decoded CUDA AVFrame references for GPU-resident NVENC encoding.
+/// Callee clones the frame; caller retains ownership.
+/// </summary>
+public unsafe interface ICudaVideoFrameEncoder
+{
+    void EnqueueCudaVideoFrame(AVFrame* cudaFrame);
 }
 
 public interface IRecordingSink : IDisposable, IAsyncDisposable
