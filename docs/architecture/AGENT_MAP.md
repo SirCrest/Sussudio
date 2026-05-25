@@ -83,18 +83,16 @@ Preview renderer notes:
   owns `InitializeD3D` orchestration, shared-vs-owned device setup, shared-device
   COM reference handoff/reinit retirement/reset scheduling, device-lost
   classification and recovery, video interface acquisition, media present
-  duration setup, initial panel binding, shader compilation handoff, and
-  renderer-owned device fallback.
+  duration setup, composition swap-chain creation, startup dimensions, HDR
+  swap-chain capability probing, SDR swap-chain fallback, initial color-space
+  selection, configured output size publication, initial panel binding, shader
+  compilation handoff, and renderer-owned device fallback.
 - `Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs` owns
   shader resource/cache state, NV12 SRV reuse, shader bytecode compilation
   orchestration, `D3DCompileNative` invocation plus `ID3DBlob` byte/error-string
   extraction, shader/sampler/viewport constant-buffer creation, and
   compile-fallback logging.
   `PreviewShaderSources.cs` owns HLSL source strings and renderer mode labels.
-- `Sussudio/Services/Preview/D3D11PreviewRenderer.SwapChainInitialization.cs`
-  owns composition swap-chain creation, startup dimensions, HDR swap-chain
-  capability probing, SDR swap-chain fallback, initial color-space selection,
-  and configured output size publication.
 - `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs` owns D3D
   device/swap-chain/video-processor fields, VideoProcessor input texture
   resources, HDR shader input resources, and top-level cleanup orchestration.

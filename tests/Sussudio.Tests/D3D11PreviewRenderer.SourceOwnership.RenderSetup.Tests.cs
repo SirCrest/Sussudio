@@ -31,15 +31,13 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task D3D11PreviewRenderer_DeviceInitializationLivesInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_DeviceInitializationOwnsSwapChainSetup()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
         var deviceInitializationText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs")
-            .Replace("\r\n", "\n");
-        var swapChainInitializationText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.SwapChainInitialization.cs")
             .Replace("\r\n", "\n");
         var videoProcessorPipelineText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.VideoProcessorPipeline.cs")
             .Replace("\r\n", "\n");
@@ -52,15 +50,18 @@ static partial class Program
         AssertContains(deviceInitializationText, "var sharedDeviceActive = TryInitializeWithSharedDevice(out var featureLevel);");
         AssertContains(deviceInitializationText, "var (swapChain, pixelWidth, pixelHeight) = InitializeCompositionSwapChain(device);");
         AssertContains(deviceInitializationText, "private void CreateRendererOwnedDevice(out FeatureLevel featureLevel)");
-        AssertDoesNotContain(deviceInitializationText, "_factory.CreateSwapChainForComposition(device,");
-        AssertContains(swapChainInitializationText, "private (IDXGISwapChain1 SwapChain, int PixelWidth, int PixelHeight) InitializeCompositionSwapChain(ID3D11Device device)");
-        AssertContains(swapChainInitializationText, "DXGI.CreateDXGIFactory2(false, out _factory)");
-        AssertContains(swapChainInitializationText, "_factory.CreateSwapChainForComposition(device, swapChainDescription, null);");
-        AssertContains(swapChainInitializationText, "private void EnsureHdrCapableSwapChainOrFallbackToSdr(");
-        AssertContains(swapChainInitializationText, "_swapChain3.CheckColorSpaceSupport(ColorSpaceType.RgbFullG2084NoneP2020)");
-        AssertContains(swapChainInitializationText, "private void RecreateSdrCompositionSwapChain(");
-        AssertContains(swapChainInitializationText, "Format.B8G8R8A8_UNorm");
-        AssertContains(swapChainInitializationText, "_configuredOutputWidth = pixelWidth;");
+        AssertContains(deviceInitializationText, "private (IDXGISwapChain1 SwapChain, int PixelWidth, int PixelHeight) InitializeCompositionSwapChain(ID3D11Device device)");
+        AssertContains(deviceInitializationText, "DXGI.CreateDXGIFactory2(false, out _factory)");
+        AssertContains(deviceInitializationText, "_factory.CreateSwapChainForComposition(device, swapChainDescription, null);");
+        AssertContains(deviceInitializationText, "private void EnsureHdrCapableSwapChainOrFallbackToSdr(");
+        AssertContains(deviceInitializationText, "_swapChain3.CheckColorSpaceSupport(ColorSpaceType.RgbFullG2084NoneP2020)");
+        AssertContains(deviceInitializationText, "private void RecreateSdrCompositionSwapChain(");
+        AssertContains(deviceInitializationText, "Format.B8G8R8A8_UNorm");
+        AssertContains(deviceInitializationText, "_configuredOutputWidth = pixelWidth;");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.SwapChainInitialization.cs")),
+            "D3D11 preview swap-chain setup folded into device initialization owner");
         AssertContains(videoProcessorPipelineText, "private void EnsurePipeline(int width, int height, bool isHdr, bool useExternalTexture)");
         AssertContains(videoProcessorPipelineText, "private void EnsureSwapChainRTV()");
         AssertContains(videoProcessorPipelineText, "private void RecreateOutputView()");
@@ -87,7 +88,6 @@ static partial class Program
         AssertContains(deviceInitializationText, "private static bool IsDeviceLostException(Exception ex)");
         AssertDoesNotContain(resourcesText, "private bool TryInitializeWithSharedDevice(");
         AssertDoesNotContain(resourcesText, "private void HandleDeviceLost(Exception ex)");
-        AssertDoesNotContain(deviceInitializationText, "CheckColorSpaceSupport(ColorSpaceType.RgbFullG2084NoneP2020)");
         AssertDoesNotContain(resourcesText, "private void CreateRendererOwnedDevice(");
         AssertDoesNotContain(rootText, "private ID3D11Device? _device;");
         AssertDoesNotContain(rootText, "private IDXGISwapChain1? _swapChain;");

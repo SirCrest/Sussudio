@@ -27,6 +27,6 @@ public sealed class PresentationPreviewD3DRenderSetupOwnershipTests
         => global::Program.D3D11PreviewRenderer_InputResourcesLiveWithD3DResources();
 
     [Fact]
-    public Task DeviceInitializationLivesInFocusedPartial()
-        => global::Program.D3D11PreviewRenderer_DeviceInitializationLivesInFocusedPartial();
+    public Task DeviceInitializationOwnsSwapChainSetup()
+        => global::Program.D3D11PreviewRenderer_DeviceInitializationOwnsSwapChainSetup();
 }

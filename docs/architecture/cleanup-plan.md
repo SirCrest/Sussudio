@@ -1991,12 +1991,12 @@ reference duplication/release policy, reinit retirement, reset request
 scheduling, `TryInitializeWithSharedDevice`, device-loss classification,
 device-lost frame drops, stop-guarded cleanup, reinitialize scheduling, video
 interface acquisition, media present duration setup, initial panel binding, and
-renderer-owned device fallback there. Keep generic resource disposal in
+renderer-owned device fallback there. Composition swap-chain creation, startup
+dimensions, HDR swap-chain capability probing, SDR swap-chain fallback, initial
+color-space selection, and configured output size publication also live there
+with the device initialization path. Keep generic resource disposal in
 `D3D11PreviewRenderer.Resources.cs` and render-thread reset consumption in
-`D3D11PreviewRenderer.RenderThread.cs`. Composition swap-chain creation, startup
-dimensions, HDR swap-chain capability probing, SDR swap-chain fallback, and
-initial color-space selection now live in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.SwapChainInitialization.cs`.
+`D3D11PreviewRenderer.RenderThread.cs`.
 
 D3D preview renderer resource management now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep
