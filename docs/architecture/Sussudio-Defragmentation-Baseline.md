@@ -2236,3 +2236,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: automation command names/IDs and manifest metadata unchanged; coverage remains in automation command dispatcher tests
 Behavior preserved: AssertSnapshot response shaping, payload parsing, field lookup cache, numeric/boolean/string comparison behavior, error code, status, and refreshed snapshot inclusion moved unchanged beside the custom command router.
 Notes for future agents: keep custom command bodies and support helpers in `AutomationCommandDispatcher.CustomCommands.cs` unless a command grows an independent service/collaborator seam; keep manifest/auth/preflight/payload helpers and one-field handler tables in `AutomationCommandDispatcher.cs`.
+
+Date: 2026-05-25
+Area: WASAPI capture diagnostics locality
+Problem: `WasapiAudioCapture.Diagnostics.cs` held the read-only metric properties, audio-level event projection, and callback/glitch accounting used directly by initialization resets and the capture loop. Reviewing capture lifecycle metrics required opening a small diagnostics partial plus the root lifecycle owner that owns the fields and reset policy.
+Files consolidated: `Sussudio/Services/Audio/WasapiAudioCapture.Diagnostics.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `WasapiAudioCapture` production partial-family file count 4 -> 3
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: audio frame counters, callback interval snapshot, severe-gap/discontinuity/timestamp/glitch counters, audio-level event throttling, peak/clipping calculation, callback tracking, packet flag tracking, and initialization-time metric reset consumers remain unchanged.
+Notes for future agents: keep WASAPI capture lifecycle state and diagnostics counters in `WasapiAudioCapture.cs`; keep capture-thread fan-out in `WasapiAudioCapture.CaptureLoop.cs` and sample conversion/resampling in `WasapiAudioCapture.Conversion.cs`.

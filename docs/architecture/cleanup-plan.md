@@ -121,14 +121,13 @@ totals, and final audio-drop projection-to-`AutomationSnapshot` field
 flattening.
 `WasapiAudioCapture.cs` owns WASAPI capture state, endpoint binding,
 mix-format negotiation, AudioClient startup, capture event/client acquisition,
-initialization-time metric resets, start/stop/dispose, and capture-thread
-lifecycle. `WasapiAudioCapture.Conversion.cs` owns WASAPI sample decode, f32le
+initialization-time metric resets, start/stop/dispose, capture-thread
+lifecycle, audio-level event projection, callback interval, discontinuity,
+timestamp-error, glitch, and audio-level event counters. `WasapiAudioCapture.Conversion.cs` owns WASAPI sample decode, f32le
 48 kHz stereo conversion, resampling, and pooled converted packet buffers.
 `WasapiAudioCapture.CaptureLoop.cs` owns the capture thread, packet drain,
 recording/Flashback/playback attachment points, converted-packet dispatch, and
 hot writer task-completion enforcement.
-`WasapiAudioCapture.Diagnostics.cs` owns audio-level event projection, callback
-interval, discontinuity, timestamp-error, glitch, and audio-level event counters.
 `WasapiAudioPlayback.cs` owns playback state, WASAPI render endpoint binding,
 format validation, AudioClient startup, render event/client acquisition,
 initialization-time metric resets, start/stop/pause/resume/flush/dispose
