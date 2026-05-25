@@ -8,7 +8,7 @@ static partial class Program
     internal static Task AudioDeviceSelectionPolicy_LivesInFocusedHelper()
     {
         var adapterText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
-        var policyText = ReadRepoFile("Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs").Replace("\r\n", "\n");
+        var policyText = ReadRepoFile("Sussudio/ViewModels/ViewModelSelectionPolicies.cs").Replace("\r\n", "\n");
 
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AudioDeviceDiscovery.cs")), "audio device discovery adapter stays folded into AudioState");
         AssertContains(policyText, "internal static class AudioDeviceSelectionPolicy");

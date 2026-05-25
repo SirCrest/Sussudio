@@ -3800,7 +3800,7 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.AudioState.cs` beside the audio collections and saved-device
    restore state. Pure audio-device filtering and
    previous/saved/default audio and microphone selection fallback policy now
-   lives in `Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs`. Pure
+   lives in `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`. Pure
    recording codec filtering, selected-codec fallback policy, string-to-model
    format/quality parsing, and custom bitrate clamp policy now live in
    `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`, while startup
@@ -3830,7 +3830,7 @@ owner, fold it back into that owner and update the source-shape tests and
     `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs`;
     its graph-port contract now lives with that applier, while
     pure late-probe retarget decisions live in
-    `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`.
+    `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`.
     `tests/Sussudio.Tests/XUnit.PresentationPreviewDeviceFormatProbeRetargetContractsTests.cs`
     owns xUnit execution for the late device-format probe retarget ownership,
     behavior, and application checks after their removal from the legacy

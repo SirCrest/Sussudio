@@ -3135,7 +3135,7 @@ Primary current owners:
   device-native audio-control refresh handoff live in `MainViewModel.CaptureSelection.cs`; capture-mode property-change hooks live
   in `MainViewModel.CaptureModeTransactions.cs`; startup audio-list and
   watcher-driven audio endpoint refresh adaptation live in `MainViewModel.AudioState.cs`.
-  `Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs` owns pure capture-card
+  `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` owns pure capture-card
   endpoint filtering plus previous/saved/default audio and microphone selection
   fallback policy.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`
@@ -3154,7 +3154,7 @@ Primary current owners:
   It also owns the late-probe retarget graph-port contract for capture-mode
   state, resolution/frame-rate mutation, reinitialize dispatch, runtime
   snapshot checks, frame-rate rebuild, and target-summary refresh.
-  `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`
+  `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`
   owns the pure late-probe decision policy for HDR retarget, SDR NV12 retarget,
   MJPG HFR preservation, session mismatch, and active-capture restore.
   `MainViewModel.CaptureModeTransactions.cs` keeps the compatibility adapter for
