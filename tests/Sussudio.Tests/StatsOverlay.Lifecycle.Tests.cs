@@ -9,7 +9,6 @@ public class StatsOverlayLifecycleTests
     {
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
-        var statsOverlayCompositionContextsText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.Contexts.cs");
         var frameTimeOverlayText = statsOverlayCompositionText;
         var statsDockGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockControllerGraph.cs");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs");
@@ -23,17 +22,17 @@ public class StatsOverlayLifecycleTests
         AssertContains(statsOverlayText, "private StatsOverlayCompositionController _statsOverlayCompositionController = null!;");
         AssertContains(statsOverlayText, "private void InitializeStatsOverlayCompositionController()");
         AssertContains(statsOverlayCompositionText, "internal sealed class StatsOverlayCompositionController");
-        AssertContains(statsOverlayCompositionContextsText, "internal sealed class StatsOverlayCompositionControllerContext");
+        AssertContains(statsOverlayCompositionText, "internal sealed class StatsOverlayCompositionControllerContext");
         AssertContains(statsOverlayCompositionText, "private readonly StatsOverlayController _statsOverlayController;");
         AssertContains(statsOverlayCompositionText, "private readonly StatsDockControllerGraph _statsDockControllerGraph;");
         AssertContains(statsOverlayCompositionText, "private readonly StatsSnapshotProvider _statsSnapshotProvider;");
         AssertContains(statsOverlayCompositionText, "private readonly FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController;");
         AssertContains(statsOverlayCompositionText, "private readonly StatsSectionChromeController _statsSectionChromeController;");
-        AssertContains(statsOverlayCompositionContextsText, "public required StatsOverlayShellContext Shell { get; init; }");
-        AssertContains(statsOverlayCompositionContextsText, "public required StatsOverlaySnapshotSourceContext SnapshotSources { get; init; }");
-        AssertContains(statsOverlayCompositionContextsText, "public required StatsOverlayDockTargetsContext DockTargets { get; init; }");
-        AssertContains(statsOverlayCompositionContextsText, "public required StatsOverlayHardwareSourceContext HardwareSources { get; init; }");
-        AssertContains(statsOverlayCompositionContextsText, "public required StatsOverlayFrameTimeTargetsContext FrameTimeTargets { get; init; }");
+        AssertContains(statsOverlayCompositionText, "public required StatsOverlayShellContext Shell { get; init; }");
+        AssertContains(statsOverlayCompositionText, "public required StatsOverlaySnapshotSourceContext SnapshotSources { get; init; }");
+        AssertContains(statsOverlayCompositionText, "public required StatsOverlayDockTargetsContext DockTargets { get; init; }");
+        AssertContains(statsOverlayCompositionText, "public required StatsOverlayHardwareSourceContext HardwareSources { get; init; }");
+        AssertContains(statsOverlayCompositionText, "public required StatsOverlayFrameTimeTargetsContext FrameTimeTargets { get; init; }");
         AssertContains(statsOverlayCompositionText, "_statsSnapshotProvider = CreateSnapshotProvider(context);");
         AssertContains(statsOverlayCompositionText, "_frameTimeOverlayPresentationController = CreateFrameTimeOverlayPresentationController(context);");
         AssertContains(statsOverlayCompositionText, "_statsDockControllerGraph = CreateDockControllerGraph(context);");
@@ -58,7 +57,10 @@ public class StatsOverlayLifecycleTests
         AssertContains(statsOverlayCompositionText, "GetMjpegPipelineTimingDetails = context.HardwareSources.GetMjpegPipelineTimingDetails,");
         AssertContains(statsOverlayCompositionText, "UpdateStatsDock = _statsDockControllerGraph.RefreshDock,");
         AssertContains(statsOverlayCompositionText, "UpdateFrameTimeOverlay = UpdateFrameTimeOverlay,");
-        AssertDoesNotContain(statsOverlayCompositionText, "internal sealed class StatsOverlayShellContext");
+        AssertContains(statsOverlayCompositionText, "internal sealed class StatsOverlayShellContext");
+        Assert.False(
+            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsOverlayCompositionController.Contexts.cs")),
+            "stats overlay composition context DTOs stay with the stats overlay composition owner");
         AssertContains(statsDockGraphText, "internal sealed class StatsDockControllerGraph");
         AssertContains(statsDockGraphText, "public void RefreshDock()");
         AssertContains(bindingsText, "AttachStatsOverlayToggleBindings();");

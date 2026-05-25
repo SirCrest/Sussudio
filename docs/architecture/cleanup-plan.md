@@ -2354,11 +2354,9 @@ Stats dock, stats toggle, and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/Stats/StatsOverlayController.cs`. Stats overlay controller
 composition stays split by role: `StatsOverlayCompositionController.cs` owns the
 runtime facade, construction-order entry point, snapshot provider, frame-time
-presentation, dock graph, overlay controller, and section chrome factory wiring
-from the grouped contexts, while
-`StatsOverlayCompositionController.Contexts.cs` owns the grouped composition
-context DTOs for shell controls, snapshot sources, dock targets, hardware
-sources, and frame-time targets;
+presentation, dock graph, overlay controller, section chrome factory wiring, and
+grouped composition context DTOs for shell controls, snapshot sources, dock
+targets, hardware sources, and frame-time targets;
 stats dock presentation/diagnostic/hardware/refresh controller graph wiring
 and the dock graph context contract now live in
 `Sussudio/Controllers/Stats/StatsDockControllerGraph.cs`;
@@ -2400,10 +2398,9 @@ Frame-time overlay compact text application and graph-line mutation now live in
 `Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs`, along
 with frame-time canvas sizing, sample projection, and expected-line geometry;
 `Sussudio/MainWindow.StatsOverlay.Composition.cs` owns the XAML-facing compact
-overlay adapter beside the stats overlay visibility route, while
-`Sussudio/Controllers/Stats/StatsOverlayCompositionController.Contexts.cs`
-owns the grouped stats composition context contracts; presentation-controller
-graph composition from those contexts lives in
+overlay adapter beside the stats overlay visibility route, while grouped stats
+composition context contracts and presentation-controller graph composition live
+in
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
 `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` keeps the stats dock
 projection refresh adapter.
