@@ -185,12 +185,9 @@ totals, compressed queue, timing, and packet-hash field flattening.
 preview jitter projection routing, queue counters, timing samples, adaptive
 drop/depth counters, last scheduler event projection, and final
 projection-to-`AutomationSnapshot` flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs` owns active
-Flashback export progress, failure, force-rotate fallback, and last-result
-projection consumed by the automation snapshot DTO, plus final Flashback export
-projection-to-`AutomationSnapshot` field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs` owns
-Flashback recording failure, cleanup, force-rotate, temp-drive/startup-cache,
+`AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs` owns active
+Flashback export progress, failure, force-rotate fallback, last-result
+projection, recording failure, cleanup, force-rotate, temp-drive/startup-cache,
 active output/runtime, backend settings drift, export-verification, codec
 downgrade, encoder identity/bitrate/dimensions/frame-rate, focused projection
 routing, and final projection-to-`AutomationSnapshot` flattening.

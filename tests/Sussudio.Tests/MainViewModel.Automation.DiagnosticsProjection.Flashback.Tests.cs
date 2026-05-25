@@ -7,7 +7,7 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var flashbackExportProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs")
+        var flashbackExportProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var flashbackExport = BuildFlashbackExportProjection(health);");
@@ -43,6 +43,10 @@ static partial class Program
         AssertContains(flashbackExportProjectionText, "LastExportId = health.LastExportId,");
         AssertContains(flashbackExportProjectionText, "LastExportMessage = health.LastExportMessage");
         AssertContains(flashbackExportProjectionText, "private readonly record struct FlashbackExportLastResultProjection");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs")),
+            "Flashback export projection folded into Flashback projection owner");
 
         return Task.CompletedTask;
     }
@@ -52,7 +56,7 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var flashbackRecordingProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs")
+        var flashbackRecordingProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs")
             .Replace("\r\n", "\n");
         var flashbackRecordingQueuesProjectionText = flashbackRecordingProjectionText;
 
@@ -162,6 +166,10 @@ static partial class Program
         AssertContains(flashbackRecordingProjectionText, "CodecName = encoder.CodecName,");
         AssertContains(flashbackRecordingProjectionText, "FrameRateDenominator = encoder.FrameRateDenominator");
         AssertContains(flashbackRecordingProjectionText, "private readonly record struct FlashbackRecordingEncoderFlattenedProjection");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs")),
+            "Flashback recording projection folded into Flashback projection owner");
 
         return Task.CompletedTask;
     }
