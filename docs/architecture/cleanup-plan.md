@@ -319,9 +319,8 @@ verification reset.
 Automation command dispatch now keeps the root router focused on the command
 envelope, correlation setup, manifest revision checks, auth command handling,
 unauthorized-command rejection, readiness gating, dispatch pipeline shell, and
-error shaping.
-`AutomationCommandDispatcher.PortMappedDispatch.cs` owns UI/settings pre-routing
-and port-typed trivial-handler dispatch.
+error shaping, plus payload extraction, path/catalog helpers, UI/settings
+pre-routing, and port-typed trivial-handler dispatch.
 `AutomationCommandDispatcher.CustomCommands.cs`
 owns the custom command switch/router for commands that need multi-field
 payloads, special response shapes, capture/Flashback routing, or domain command
@@ -337,7 +336,7 @@ ViewModel; its port-bundle constructor assigns narrow ports and invokes
 trivial/UI handler tables through matching port targets. The dispatcher root
 consumes the readiness port for device-ready gating. Device commands consume
 the device-selection/snapshot-query ports, audio commands consume the audio
-port, and the port-mapped dispatch owner routes capture-settings plus
+port, and the root dispatcher routes capture-settings plus
 preview-recording ports for MJPEG decoder, output path, recording, preview, and
 related one-field commands. Visual probe commands
 consume the probe port while window screenshots remain on the window-control
@@ -357,19 +356,17 @@ snapshot refresh, plus Flashback action, export, segment, restart, and enable
 command bodies behind the custom command router.
 `AutomationCommandDispatcher.cs` owns manifest revision, auth-token, and
 readiness gating beside shared response shaping and Flashback rejection
-diagnostics. `AutomationCommandDispatcher.PortMappedDispatch.cs` owns
-UI/settings command application, the show-all compatibility no-op,
+diagnostics, UI/settings command application, the show-all compatibility no-op,
 stats-section response text, simple one-property capture and pipeline command
-tables, and ordered dispatch through those tables. Named partials own support
-responsibilities:
+tables, ordered dispatch through those tables, JSON payload extraction helpers,
+command metadata lookups, path-validation forwarding, and enum payload parsing.
+Named partials own support responsibilities:
 `AutomationCommandDispatcher.CustomCommands.cs`
 also owns WaitForCondition response shaping, wait polling, and snapshot
 predicates, full-screen, recordings-folder, arm-close, close-arm gating, and
 low-level window automation action execution; and
 `AutomationCommandDispatcher.Assertions.cs` handles AssertSnapshot response
-shaping, parsing, and comparison helpers. `AutomationCommandDispatcher.Payload.cs`
-owns JSON payload extraction helpers, command metadata lookups, path-validation
-forwarding, and enum payload parsing, and `AutomationCommandHandler.cs` owns the reusable
+shaping, parsing, and comparison helpers. `AutomationCommandHandler.cs` owns the reusable
 trivial-handler wrapper plus the payload field name/type metadata checked
 against the shared automation command catalog.
 

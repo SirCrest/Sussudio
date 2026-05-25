@@ -185,14 +185,13 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.cs` owns the
   command envelope, correlation setup, manifest revision validation,
   authentication command handling, unauthorized-command rejection,
-  device-readiness gating, dispatch pipeline shell, and error shaping. Construct
-  it with `AutomationViewModelPorts`; this dispatcher root should not expose or
-  store the aggregate automation ViewModel dependency.
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs`
-  owns UI/settings command application, the compatibility no-op for the public
-  show-all capture options command, stats-section expand/collapse response
-  text, and port-typed trivial-handler dispatch before the custom command
-  router.
+  device-readiness gating, payload extraction, command metadata/path helpers,
+  enum payload parsing, shared response shaping, Flashback rejection
+  diagnostics, UI/settings command application, the show-all compatibility
+  no-op, stats-section expand/collapse response text, and port-typed
+  trivial-handler dispatch before the custom command router. Construct it with
+  `AutomationViewModelPorts`; this dispatcher root should not expose or store
+  the aggregate automation ViewModel dependency.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs`
   owns the custom automation command router for multi-field payloads, special
   response shapes, capture routing, domain command handoff, read-only
@@ -209,25 +208,19 @@ Automation diagnostics ownership:
   port targets. Keep those ports grouped in this file until a consumer needs a
   separate file; do not create many tiny interface files for line-count optics.
   `AutomationCommandDispatcher.cs` owns manifest revision, auth-token, and
-  readiness gating beside the command envelope,
-  `AutomationCommandDispatcher.PortMappedDispatch.cs` owns the port-grouped
-  tables and ordered dispatch for UI/settings plus simple one-property commands,
-  and `AutomationCommandDispatcher.CustomCommands.cs` consumes the
+  readiness gating beside the command envelope, the port-grouped tables and
+  ordered dispatch for UI/settings plus simple one-property commands, and the
+  payload/path/enum helpers used by all dispatcher command bodies.
+  `AutomationCommandDispatcher.CustomCommands.cs` consumes the
   device-selection, audio, capture-settings, preview/recording, snapshot-query,
   diagnostics, probe, and window-control ports for custom command bodies,
   including WaitForCondition response shaping, wait-condition polling, snapshot
   predicates, full-screen, recordings-folder, arm-close, close-arm gating, and
   low-level window action execution. It also consumes the Flashback port for
   Flashback action/export/segment/restart/enable command bodies.
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.cs` also owns
-  shared response shaping, acknowledged responses, and Flashback rejection
-  diagnostics for the dispatcher family.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs`
   owns AssertSnapshot command response shaping, payload parsing, and snapshot
   comparison helpers.
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.Payload.cs` owns
-  JSON payload extraction helpers, command metadata lookups, path validation
-  forwarding, and enum payload parsing for dispatcher command bodies.
 - `Sussudio/Services/Automation/AutomationCommandHandler.cs` owns the shared
   target-typed trivial-handler wrapper used by simple one-property automation
   commands, including the payload field name/type metadata checked against the

@@ -65,11 +65,11 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationCommandDispatcher_UiSettingsCommands_LiveWithPortMappedDispatch()
+    internal static Task AutomationCommandDispatcher_UiSettingsCommands_LiveWithRootDispatch()
     {
         var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
-        var portMappedDispatchText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs")
+        var portMappedDispatchText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
 
         AssertDoesNotContain(customCommandsText, "case AutomationCommandKind.SetStatsSectionVisible:");
@@ -92,7 +92,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.UiSettingsCommands.cs")),
-            "UI settings handlers folded into AutomationCommandDispatcher.PortMappedDispatch.cs");
+            "UI settings handlers folded into AutomationCommandDispatcher.cs");
 
         return Task.CompletedTask;
     }

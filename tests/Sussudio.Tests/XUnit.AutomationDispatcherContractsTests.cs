@@ -47,8 +47,8 @@ public sealed class AutomationDispatcherContractsTests
         => global::Program.AutomationCommandDispatcher_WaitAndAssertCommands_LiveWithSupportOwners();
 
     [Fact]
-    public Task AutomationDispatcherEntryPipelineLivesInFocusedPartials()
-        => global::Program.AutomationCommandDispatcher_EntryPipeline_LivesInFocusedPartials();
+    public Task AutomationDispatcherEntryPipelineLivesInRootDispatcher()
+        => global::Program.AutomationCommandDispatcher_EntryPipeline_LivesInRootDispatcher();
 
     [Fact]
     public Task AutomationDispatcherTrivialHandlerPayloadFieldsMatchCatalog()
@@ -80,7 +80,7 @@ public sealed class AutomationDispatcherContractsTests
 
     [Fact]
     public Task AutomationDispatcherUiSettingsCommandsOwnUiSettingsApplication()
-        => global::Program.AutomationCommandDispatcher_UiSettingsCommands_LiveWithPortMappedDispatch();
+        => global::Program.AutomationCommandDispatcher_UiSettingsCommands_LiveWithRootDispatch();
 
     [Fact]
     public Task AutomationDispatcherWindowCloseWaitsForCompletion()

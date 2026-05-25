@@ -64,20 +64,18 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationCommandDispatcher_EntryPipeline_LivesInFocusedPartials()
+    internal static Task AutomationCommandDispatcher_EntryPipeline_LivesInRootDispatcher()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
         var preflightText = rootText;
-        var portMappedDispatchText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs")
-            .Replace("\r\n", "\n");
+        var portMappedDispatchText = rootText;
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
 
         AssertContains(rootText, "var preflightResponse = TryCreatePreflightResponse(request, correlationId);");
         AssertContains(rootText, "var portMappedResponse = await TryExecutePortMappedCommandAsync(");
         AssertContains(rootText, "return await ExecuteCustomCommandAsync(request, payload, correlationId, cancellationToken)");
-        AssertDoesNotContain(rootText, "TrivialDeviceSelectionHandlers.TryGetValue");
 
         AssertContains(preflightText, "private AutomationCommandResponse? TryCreatePreflightResponse(");
         AssertContains(preflightText, "AUTOMATION_MANIFEST_MISMATCH");
@@ -86,7 +84,6 @@ static partial class Program
         AssertContains(preflightText, "CryptographicOperations.FixedTimeEquals(expected, actual)");
         AssertContains(preflightText, "RequiresReadyDevices(request.Command) && !IsAutomationReady()");
         AssertContains(preflightText, "_readinessPort.IsInitialized || _readinessPort.Devices.Count > 0");
-        AssertDoesNotContain(preflightText, "TrivialDeviceSelectionHandlers.TryGetValue");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.Authorization.cs")),
@@ -95,6 +92,14 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.Preflight.cs")),
             "preflight gate folded into AutomationCommandDispatcher.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.Payload.cs")),
+            "payload helpers folded into AutomationCommandDispatcher.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.PortMappedDispatch.cs")),
+            "port-mapped dispatch folded into AutomationCommandDispatcher.cs");
 
         AssertContains(portMappedDispatchText, "private async Task<AutomationCommandResponse?> TryExecutePortMappedCommandAsync(");
         AssertContains(portMappedDispatchText, "private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationDeviceSelectionPort>> TrivialDeviceSelectionHandlers");
@@ -106,22 +111,21 @@ static partial class Program
         AssertContains(portMappedDispatchText, "TrivialCaptureSettingsHandlers.TryGetValue(command");
         AssertContains(portMappedDispatchText, "TrivialAudioHandlers.TryGetValue(command");
         AssertContains(portMappedDispatchText, "TrivialPreviewRecordingHandlers.TryGetValue(command");
-        AssertDoesNotContain(portMappedDispatchText, "ExecuteCustomCommandAsync");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.TrivialHandlers.cs")),
-            "trivial port handler tables folded into AutomationCommandDispatcher.PortMappedDispatch.cs");
+            "trivial port handler tables folded into AutomationCommandDispatcher.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.UiSettingsCommands.cs")),
-            "UI settings command tables folded into AutomationCommandDispatcher.PortMappedDispatch.cs");
+            "UI settings command tables folded into AutomationCommandDispatcher.cs");
 
         AssertContains(agentMapText, "`Sussudio/Services/Automation/AutomationCommandDispatcher.cs`");
-        AssertContains(agentMapText, "`Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs`");
-        AssertContains(agentMapText, "`Sussudio/Services/Automation/AutomationCommandDispatcher.Payload.cs`");
+        AssertDoesNotContain(agentMapText, "`Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs`");
+        AssertDoesNotContain(agentMapText, "`Sussudio/Services/Automation/AutomationCommandDispatcher.Payload.cs`");
         AssertContains(cleanupPlanText, "`AutomationCommandDispatcher.cs`");
-        AssertContains(cleanupPlanText, "`AutomationCommandDispatcher.PortMappedDispatch.cs`");
-        AssertContains(cleanupPlanText, "`AutomationCommandDispatcher.Payload.cs`");
+        AssertDoesNotContain(cleanupPlanText, "`AutomationCommandDispatcher.PortMappedDispatch.cs`");
+        AssertDoesNotContain(cleanupPlanText, "`AutomationCommandDispatcher.Payload.cs`");
 
         return Task.CompletedTask;
     }
