@@ -2449,11 +2449,10 @@ MJPEG/NVML input acquisition through its local hardware input provider plus
 hardware row availability, text-row presentation building, and minimum
 pool sizing before delegating row chrome.
 
-Flashback timeline visibility, lockout, toggle synchronization, and track
-layout sizing now live in
-`Sussudio/Controllers/Flashback/FlashbackTimelineController.cs`. Show/hide
-storyboard state, immediate collapse, and fullscreen animation reset live in
-`Sussudio/Controllers/Flashback/FlashbackTimelineAnimationController.cs`.
+Flashback timeline visibility, lockout, toggle synchronization, track layout
+sizing, show/hide storyboard state, immediate collapse, and fullscreen animation
+reset now live in
+`Sussudio/Controllers/Flashback/FlashbackTimelineController.cs`.
 `Sussudio/MainWindow.Flashback.Interactions.cs` owns the consolidated
 XAML-facing adapter surface for commands, polling, playhead motion, scrub
 input, settings, timeline visibility, and presentation. Command semantics live in

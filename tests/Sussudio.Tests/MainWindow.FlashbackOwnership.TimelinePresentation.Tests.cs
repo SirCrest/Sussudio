@@ -7,7 +7,7 @@ static partial class Program
         var flashbackText = ReadMainWindowFlashbackAdapterSource();
         var timelineAdapterText = ReadMainWindowFlashbackAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineController.cs").Replace("\r\n", "\n");
-        var animationControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineAnimationController.cs").Replace("\r\n", "\n");
+        var animationControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineController.cs").Replace("\r\n", "\n");
         var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
 
@@ -40,8 +40,12 @@ static partial class Program
         AssertContains(animationControllerText, "public void CollapseImmediately()");
         AssertContains(animationControllerText, "public void ResetForFullScreen()");
         AssertContains(animationControllerText, "private void CompleteAnimation(Storyboard storyboard)");
-        AssertDoesNotContain(controllerText, "private Storyboard? _timelineStoryboard;");
-        AssertDoesNotContain(controllerText, "new DoubleAnimation");
+        AssertContains(controllerText, "private Storyboard? _timelineStoryboard;");
+        AssertContains(controllerText, "new DoubleAnimation");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackTimelineAnimationController.cs")),
+            "timeline animation folded into FlashbackTimelineController.cs");
         AssertContains(flashbackText, "private void FlashbackTrack_SizeChanged(object sender, SizeChangedEventArgs e)");
         AssertContains(flashbackText, "=> _flashbackPlaybackUiCoordinator.HandleTrackSizeChanged(e.NewSize.Width, e.NewSize.Height);");
         AssertContains(playbackCoordinatorText, "public void HandleTrackSizeChanged(double width, double height)");
@@ -50,8 +54,9 @@ static partial class Program
         AssertOccursBefore(playbackCoordinatorText, "_context.RequestPlayheadSnapOnNextUpdate();", "UpdatePosition();");
         AssertOccursBefore(playbackCoordinatorText, "UpdatePosition();", "_context.UpdateMarkers();");
         AssertOccursBefore(playbackCoordinatorText, "_context.UpdateMarkers();", "_context.RefreshCtiMotion(\"size_changed\");");
-        AssertContains(agentMapText, "timeline track layout sizing");
-        AssertContains(agentMapText, "FlashbackTimelineAnimationController.cs");
+        AssertContains(agentMapText, "timeline visibility, lockout, toggle synchronization, timeline track layout");
+        AssertContains(agentMapText, "sizing, show/hide storyboard state");
+        AssertContains(agentMapText, "show/hide storyboard state");
         AssertDoesNotContain(flashbackText, "FlashbackTrackBackground.Width =");
         AssertDoesNotContain(flashbackText, "FlashbackTrackBackground.Height =");
         AssertDoesNotContain(flashbackText, "FlashbackScrubArea.Width =");

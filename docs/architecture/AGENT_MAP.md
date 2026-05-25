@@ -2628,10 +2628,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.Support.Tests.cs` owns cross-cutting Flashback
   support/logging contract tests.
 - `Sussudio/Controllers/Flashback/FlashbackTimelineController.cs` owns Flashback
-  timeline visibility, lockout, toggle synchronization, and timeline track layout sizing.
-  `Sussudio/Controllers/Flashback/FlashbackTimelineAnimationController.cs`
-  owns show/hide storyboard state, immediate collapse, and fullscreen animation
-  reset. `Sussudio/MainWindow.Flashback.Interactions.cs` owns the XAML-facing
+  timeline visibility, lockout, toggle synchronization, timeline track layout
+  sizing, show/hide storyboard state, immediate collapse, and fullscreen
+  animation reset. `Sussudio/MainWindow.Flashback.Interactions.cs` owns the XAML-facing
   command, polling, playhead, scrub, settings, timeline, and presentation
   adapter surface.
   Command semantics live in
