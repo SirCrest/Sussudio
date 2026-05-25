@@ -2596,7 +2596,7 @@ scrub, seek, play/pause, go-live, and nudge request gating there with raw queue
 writes/drop policy, command identity and payload shape, seek/scrub coalesced
 command admission, queued-position resolution, queued-slot barriers, and
 playback-thread control-yield peek policy.
-Keep playback-thread execution in the thread partials. Do not grow the root
+Keep playback-thread execution in the thread command owner. Do not grow the root
 controller with new coalescing slot fields.
 Public read-only command counters, command queue latency/timestamps, last
 command failure projection, playback-thread liveness, command readiness guards,
@@ -2604,19 +2604,17 @@ skipped-not-ready accounting, command status counters, pending-command
 accounting, active-command timing, queue telemetry bookkeeping,
 failure-detail formatting, last-command failure state, and no-op logging now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs`.
-Playback thread lifecycle now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs`:
-state fields, stop timeout policy, start/recovery, start-failure rollback,
+Playback thread lifecycle, command dispatch, and active-command completion
+telemetry now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`;
+keep state fields, stop timeout policy, start/recovery, start-failure rollback,
 stop/cancel/join diagnostics, post-stop cleanup, command-channel
 capacity/state, bounded-channel recreation/completion, abandoned-command
 draining, scheduling policy, exit transactions, live-restore cleanup, CTS
-disposal warnings, `PlaybackThreadEntry` queue waiting, cancellation exits, and
-playback pacing handoff. Keep queue write/coalescing/drop policy in the command
-queue partial. Playback-thread command dispatch and active-command completion
-telemetry now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`;
-keep the command switch and command-complete logging there instead of expanding
-the loop shell.
+disposal warnings, `PlaybackThreadEntry` queue waiting, cancellation exits,
+playback pacing handoff, the command switch, and command-complete logging there
+instead of expanding the root controller. Keep queue write/coalescing/drop policy
+in the command queue partial.
 Playback-thread seek, scrub begin/update, end-scrub resume, and paused
 exact-resume target handling now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`.

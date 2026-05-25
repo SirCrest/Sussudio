@@ -8,9 +8,12 @@ static partial class Program
     internal static Task FlashbackPlaybackController_PlaybackThreadExit_RearmsWorkerStart()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
-        var threadLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs")
+        var threadLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
             .Replace("\r\n", "\n");
-        var threadLoopText = threadLifecycleText;
+        var threadLoopText = ExtractTextBetween(
+            threadLifecycleText,
+            "private void PlaybackThreadEntry(",
+            "    private bool EnsurePlaybackThread(");
         var threadCommandDispatchText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
             .Replace("\r\n", "\n");
         var threadSeekCommandsText = threadCommandDispatchText;
@@ -61,8 +64,8 @@ static partial class Program
         AssertContains(cleanupPlanText, "FlashbackPlaybackController.ThreadCommands.cs");
         AssertContains(cleanupPlanText, "FlashbackPlaybackController.ThreadCommands.cs");
         AssertContains(cleanupPlanText, "FlashbackPlaybackController.ThreadCommands.cs");
-        AssertContains(agentMapText, "FlashbackPlaybackController.ThreadLifecycle.cs");
-        AssertContains(cleanupPlanText, "FlashbackPlaybackController.ThreadLifecycle.cs");
+        AssertContains(agentMapText, "FlashbackPlaybackController.ThreadCommands.cs");
+        AssertContains(cleanupPlanText, "FlashbackPlaybackController.ThreadCommands.cs");
         AssertContains(threadCommandDispatchText, "HandleSeekCommand(ref cmd, commandChannel, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch);");
         AssertContains(threadCommandDispatchText, "HandleGoLiveCommand(ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref pendingExactResumeTarget);");
         AssertContains(threadLoopText, "if (!ExecutePlaybackCommand(ref cmd, commandChannel, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch))");
