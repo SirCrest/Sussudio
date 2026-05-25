@@ -2153,8 +2153,6 @@ Primary current owners:
   reflection/tool-result, pipe-capture, and JSON assertion helpers respectively.
 - `tests/Sussudio.Tests/Flashback.Tests.cs` owns shared Flashback test helper
   source readers and helper methods only.
-- `tests/Sussudio.Tests/Flashback.Buffer.Tests.cs` owns Flashback buffer manager
-  initialization contract tests.
 - `tests/Sussudio.Tests/Flashback.Buffer.Helpers.cs` owns shared Flashback
   buffer test factories, completed-segment insertion, and sized-file helpers.
 - `tests/Sussudio.Tests/Flashback.Buffer.SourceOwnership.Tests.cs` owns
@@ -2175,7 +2173,8 @@ Primary current owners:
   Flashback buffer segment range query, active path, segment-count, and
   segment-list behavior tests.
 - `tests/Sussudio.Tests/Flashback.Buffer.Retention.Eviction.Tests.cs` owns
-  Flashback buffer eviction accounting and eviction-pause behavior tests.
+  Flashback buffer eviction accounting, eviction-pause behavior, and
+  initialization recording-PTS reset tests.
 - `tests/Sussudio.Tests/Flashback.Buffer.Retention.Purge.Tests.cs` owns
   Flashback buffer purge retention and active-byte accounting tests.
 - `tests/Sussudio.Tests/Flashback.Buffer.Retention.StartupCleanup.Tests.cs`
