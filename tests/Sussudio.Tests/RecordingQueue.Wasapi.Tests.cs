@@ -129,7 +129,7 @@ static partial class Program
         var playbackSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(playbackSource, "internal sealed partial class WasapiAudioPlayback : IDisposable");
+        AssertContains(playbackSource, "internal sealed class WasapiAudioPlayback : IDisposable");
         AssertContains(playbackSource, "public Task InitializeAsync(CancellationToken ct)");
         AssertContains(playbackSource, "enumerator.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eConsole, out device)");
         AssertContains(playbackSource, "WasapiComInterop.AllocFloatStereo48kFormat()");
@@ -163,6 +163,14 @@ static partial class Program
         AssertContains(playbackSource, "public void Flush()");
         AssertContains(playbackSource, "public void Stop()");
         AssertContains(playbackSource, "public void Dispose()");
+        AssertContains(playbackSource, "private void RenderThreadMain()");
+        AssertContains(playbackSource, "private unsafe void RenderAvailableFrames()");
+        AssertContains(playbackSource, "private void ApplyVolume(Span<byte> buffer)");
+        AssertContains(playbackSource, "private void UpdateOutputLevel(ReadOnlySpan<byte> buffer)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioPlayback.RenderThread.cs")),
+            "WASAPI playback render thread stays folded into playback lifecycle root");
 
         return Task.CompletedTask;
     }

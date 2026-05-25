@@ -25,8 +25,7 @@ static partial class Program
         var audioMasterClockText = audioMasterText;
         var wasapiPlaybackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs")
             .Replace("\r\n", "\n");
-        var wasapiPlaybackRenderText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.RenderThread.cs")
-            .Replace("\r\n", "\n");
+        var wasapiPlaybackRenderText = wasapiPlaybackText;
 
         AssertContains(sourceText, "private void SafeSuppressPreviewSubmission(string operation)");
         AssertContains(sourceText, "private void SafeResumePreviewSubmission(string operation)");
@@ -195,15 +194,17 @@ static partial class Program
         AssertContains(wasapiPlaybackText, "public void ResumeRendering(double prebufferMs = 0, int prebufferTimeoutMs = 0)");
         AssertContains(wasapiPlaybackText, "Volatile.Write(ref _resumePrebufferFrames, Math.Max(0, prebufferFrames));");
         AssertContains(wasapiPlaybackText, "_resumeRequested = true;\n        _renderEvent?.Set();");
-        AssertContains(wasapiPlaybackRenderText, "internal sealed partial class WasapiAudioPlayback");
+        AssertContains(wasapiPlaybackRenderText, "internal sealed class WasapiAudioPlayback : IDisposable");
         AssertContains(wasapiPlaybackRenderText, "private void RenderThreadMain()");
         AssertContains(wasapiPlaybackRenderText, "if (!_resumeRequested)\n                {\n                    continue;\n                }");
         AssertContains(wasapiPlaybackRenderText, "WASAPI_PLAYBACK_RENDER_RESUME_CANCELED_PENDING_PAUSE");
         AssertContains(wasapiPlaybackRenderText, "WaitForResumePrebuffer();");
         AssertContains(wasapiPlaybackRenderText, "WASAPI_PLAYBACK_RENDER_PREBUFFER target_ms={FramesToMilliseconds(targetFrames):F1}");
         AssertContains(wasapiPlaybackRenderText, "private int PlaybackBufferedFramesForResume()");
-        AssertDoesNotContain(wasapiPlaybackText, "private void RenderThreadMain()");
-        AssertDoesNotContain(wasapiPlaybackText, "private unsafe void RenderAvailableFrames()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioPlayback.RenderThread.cs")),
+            "WASAPI playback render thread folded into the playback lifecycle root");
         AssertDoesNotContain(wasapiPlaybackText, "public void ResumeRendering()\n    {\n        if (Volatile.Read(ref _started) == 0) return;\n        if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested) return;\n\n        _pauseRequested = false;");
         AssertDoesNotContain(wasapiPlaybackRenderText, "GetCurrentPadding(pre-fill)");
         AssertDoesNotContain(wasapiPlaybackRenderText, "IAudioRenderClient.GetBuffer(pre-fill)");

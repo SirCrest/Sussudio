@@ -74,8 +74,8 @@ static partial class Program
         var audioRampTraceRecorderRootText = ReadRepoFile("Sussudio/ViewModels/AudioRampTraceRecorder.cs").Replace("\r\n", "\n");
         var audioRampTraceRecorderText = audioRampTraceRecorderRootText;
         var playbackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs").Replace("\r\n", "\n");
-        var playbackRenderText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.RenderThread.cs").Replace("\r\n", "\n");
-        var playbackVolumeText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.RenderThread.cs").Replace("\r\n", "\n");
+        var playbackRenderText = playbackText;
+        var playbackVolumeText = playbackText;
         var runtimeContractsText = string.Join(
             "\n",
             ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.cs"))
@@ -135,19 +135,21 @@ static partial class Program
 
         AssertContains(playbackRenderText, "UpdateOutputLevel(destinationSpan);");
         AssertContains(playbackRenderText, "private unsafe void RenderAvailableFrames()");
-        AssertContains(playbackVolumeText, "internal sealed partial class WasapiAudioPlayback");
+        AssertContains(playbackVolumeText, "internal sealed class WasapiAudioPlayback : IDisposable");
         AssertContains(playbackVolumeText, "public float TargetVolume => _targetVolume;");
         AssertContains(playbackVolumeText, "public float CurrentVolume => _currentVolume;");
         AssertContains(playbackVolumeText, "public float LastOutputPeak => _lastOutputPeak;");
         AssertContains(playbackVolumeText, "public float LastOutputRms => _lastOutputRms;");
         AssertContains(playbackVolumeText, "private void ApplyVolume(Span<byte> buffer)");
         AssertContains(playbackVolumeText, "private void UpdateOutputLevel(ReadOnlySpan<byte> buffer)");
-        AssertDoesNotContain(playbackText, "private void ApplyVolume(Span<byte> buffer)");
-        AssertDoesNotContain(playbackText, "private void UpdateOutputLevel(ReadOnlySpan<byte> buffer)");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioPlayback.Volume.cs")),
-            "WASAPI playback render-side volume telemetry folded into the render-thread owner");
+            "WASAPI playback render-side volume telemetry folded into the playback lifecycle root");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioPlayback.RenderThread.cs")),
+            "WASAPI playback render thread folded into the playback lifecycle root");
 
         AssertContains(runtimeContractsText, "public double WasapiPlaybackTargetVolumePercent { get; init; }");
         AssertContains(runtimeContractsText, "public double WasapiPlaybackCurrentVolumePercent { get; init; }");
