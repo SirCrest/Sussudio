@@ -141,8 +141,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var ffprobeText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs")
             .Replace("\r\n", "\n");
-        var validationText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(rootText, "public async Task<RecordingVerificationResult> VerifyAsync(");
         AssertContains(ffprobeText, "private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(");
@@ -150,28 +148,29 @@ static partial class Program
         AssertContains(ffprobeText, "private static Dictionary<string, string> ParseKeyValueOutput(string output)");
         AssertContains(ffprobeText, "private static double? TryParseRational(string? value)");
         AssertContains(ffprobeText, "private ProcessSpec CreateFfprobeProcessSpec(");
-        AssertContains(validationText, "private static void ValidateContainer(");
-        AssertContains(validationText, "private static void ValidateCodec(");
-        AssertContains(validationText, "private static void ValidateDimensions(");
-        AssertContains(validationText, "private static double? ResolveExpectedFrameRate(");
-        AssertContains(validationText, "private static void ValidateCadence(");
-        AssertContains(validationText, "private readonly record struct HdrValidationResult(");
-        AssertContains(validationText, "private static HdrValidationResult ValidateHdrMetadata(");
-        AssertContains(validationText, "private static string ResolveExpectedFormat(");
-        AssertContains(validationText, "private static bool IsFlashbackRecording(");
+        AssertContains(rootText, "private static void ValidateContainer(");
+        AssertContains(rootText, "private static void ValidateCodec(");
+        AssertContains(rootText, "private static void ValidateDimensions(");
+        AssertContains(rootText, "private static double? ResolveExpectedFrameRate(");
+        AssertContains(rootText, "private static void ValidateCadence(");
+        AssertContains(rootText, "private readonly record struct HdrValidationResult(");
+        AssertContains(rootText, "private static HdrValidationResult ValidateHdrMetadata(");
+        AssertContains(rootText, "private static string ResolveExpectedFormat(");
+        AssertContains(rootText, "private static bool IsFlashbackRecording(");
         AssertContains(rootText, "private static (string? Code, string? Expected, string? Actual) ParsePrimaryMismatch(");
         AssertContains(rootText, "private static HdrParityResult BuildHdrParityResult(");
         AssertContains(rootText, "private static IReadOnlyList<MismatchTaxonomyEntry> BuildMismatchTaxonomy(");
         AssertContains(rootText, "private static string? TryGetMismatchPart(");
         AssertContains(rootText, "private static RecordingVerificationResult CreateEarlyFailure(");
         AssertDoesNotContain(rootText, "private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(");
-        AssertDoesNotContain(rootText, "private static void ValidateContainer(");
-        AssertDoesNotContain(validationText, "private static (string? Code, string? Expected, string? Actual) ParsePrimaryMismatch(");
-        AssertDoesNotContain(validationText, "private static IReadOnlyList<MismatchTaxonomyEntry> BuildMismatchTaxonomy(");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "Verification", "RecordingVerifier.Results.cs")),
             "RecordingVerifier.Results.cs folded into RecordingVerifier.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "Verification", "RecordingVerifier.Validation.cs")),
+            "RecordingVerifier validation policy folded into RecordingVerifier.cs");
 
         return Task.CompletedTask;
     }

@@ -1738,7 +1738,7 @@ Partial clusters reduced: n/a; recording helper file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: HDR validator script resolution, codec selection, HDR/static-metadata arguments, expected-FPS argument formatting, 30-second process-supervisor timeout, stdout/stderr logging, timeout/start/exit-code failure details, missing-script skip behavior, and final `FinalizeResult` failure shaping remain unchanged
-Notes for future agents: keep stop-time HDR script validation with `LibAvRecordingSink.StopLifecycle.cs`; keep ffprobe-based recording verification HDR policy in `RecordingVerifier.Validation.cs`
+Notes for future agents: keep stop-time HDR script validation with `LibAvRecordingSink.StopLifecycle.cs`; keep ffprobe-based recording verification HDR policy in `RecordingVerifier.cs`
 
 Date: 2026-05-25
 Area: MainWindow test helper locality
@@ -2212,3 +2212,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: NativeXuAudioProbe build remains covered by solution build; no automation command names/IDs changed
 Behavior preserved: baseline/final telemetry snapshot printing, AT getter reads, typed payload decoding, raw-payload formatting, before/after diff output, changed-result collection, interesting-change summary, analog gain sequence, restore behavior, and default experiment payload construction remain unchanged
 Notes for future agents: keep default Native XU experiment sequencing, payload construction, and reporting/readback helpers in `Program.DefaultExperiment.cs`; split only if the reporting grows into a reusable probe output formatter with its own callers.
+
+Date: 2026-05-25
+Area: RecordingVerifier validation locality
+Problem: `RecordingVerifier.Validation.cs` held only private validation policy called by the root `VerifyAsync` flow, so understanding verification outcomes required opening the root orchestration/result owner plus a small policy partial while the separate ffprobe process/probe owner was the only remaining distinct boundary.
+Files consolidated: `Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `RecordingVerifier` production partial-family file count 3 -> 2
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: container, codec, dimensions, frame-rate, cadence, Flashback export verification format, and HDR validation logic moved unchanged beside the strict verifier orchestration and result shaping; ffprobe path/process/scalar/HDR/cadence probing remains in `RecordingVerifier.Ffprobe.cs`.
+Notes for future agents: keep pure recording verification policy in the root verifier unless it grows a separate collaborator seam; keep external ffprobe process and JSON probe mechanics in `RecordingVerifier.Ffprobe.cs`.

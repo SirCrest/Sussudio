@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-25T20:25:00Z
+Generated UTC: 2026-05-25T20:33:26Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 422 |
+| Production .cs files | 421 |
 | Test .cs files | 336 |
 | Production .cs files under 60 lines | 7 (1.7%) |
 | Production .cs files under 80 lines | 14 (3.3%) |
@@ -36,11 +36,11 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | WasapiAudioCapture | 4 | 961 | Sussudio/Services/Audio/WasapiAudioCapture.CaptureLoop.cs, Sussudio/Services/Audio/WasapiAudioCapture.Conversion.cs, Sussudio/Services/Audio/WasapiAudioCapture.cs, Sussudio/Services/Audio/WasapiAudioCapture.Diagnostics.cs |
 | MjpegPreviewJitterBuffer | 4 | 1264 | Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FrameIngress.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FramePacing.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs |
 | ParallelMjpegDecodePipeline | 4 | 1216 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Metrics.cs, Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs |
-| RecordingVerifier | 3 | 1002 | Sussudio/Services/Recording/Verification/RecordingVerifier.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs |
 | AutomationCommandDispatcher | 3 | 1649 | Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs |
+| RecordingVerifier | 2 | 993 | Sussudio/Services/Recording/Verification/RecordingVerifier.cs, Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs |
+| PerformanceTimelineTools | 2 | 769 | tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs |
 | PresentMonProbe | 2 | 1094 | tools/Common/PresentMon/PresentMonProbe.cs, tools/Common/PresentMon/PresentMonProbe.Csv.cs |
 | EgavdsProbe | 2 | 402 | tools/EgavdsAudioProbe/Program.cs, tools/EgavdsAudioProbe/Program.NativeInterop.cs |
-| PerformanceTimelineTools | 2 | 769 | tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs, tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs |
 | CaptureSessionCoordinator | 2 | 961 | Sussudio/Services/Capture/CaptureSessionCoordinator.cs, Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs |
 | CudaD3D11InteropBridge | 2 | 581 | Sussudio/Services/Gpu/CudaD3D11Interop.Copy.cs, Sussudio/Services/Gpu/CudaD3D11Interop.Initialization.cs |
 | FlashbackTools | 1 | 162 | tools/McpServer/Tools/FlashbackTools.cs |
@@ -77,10 +77,10 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 677 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
 | 649 | tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs |
 | 647 | Sussudio/Services/Automation/NamedPipeAutomationServer.cs |
+| 646 | Sussudio/Services/Recording/Verification/RecordingVerifier.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
 | 638 | Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs |
 | 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
-| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
 
 ## Sample production files under 60 lines
 
