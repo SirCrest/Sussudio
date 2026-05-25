@@ -52,11 +52,9 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task LibAvRecordingSink_EncodingLoopLivesWithSinkRootAndPacketDrainsStayFocused()
+    internal static Task LibAvRecordingSink_EncodingLoopAndPacketDrainsLiveWithSinkRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
-            .Replace("\r\n", "\n");
-        var packetDrainText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.PacketDrain.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "private void EncodingLoop(CancellationToken cancellationToken)");
@@ -68,21 +66,19 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.EncodingLoop.cs")),
             "LibAvRecordingSink encoding loop stays folded into the sink root");
-        AssertContains(packetDrainText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
-        AssertContains(packetDrainText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
-        AssertContains(packetDrainText, "private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)");
-        AssertContains(packetDrainText, "private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader)");
-        AssertContains(packetDrainText, "private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader)");
-        AssertContains(packetDrainText, "Marshal.Release(packet.Texture);");
-        AssertContains(packetDrainText, "ffmpeg.av_frame_free(&frame);");
-        AssertContains(packetDrainText, "ReturnVideoPacket(packet);");
-        AssertContains(packetDrainText, "ReturnBuffer(packet.Buffer);");
-        AssertDoesNotContain(rootText, "private bool DrainVideoPackets(");
-        AssertDoesNotContain(rootText, "private bool DrainGpuPackets(");
-        AssertDoesNotContain(rootText, "private unsafe bool DrainCudaPackets(");
-        AssertDoesNotContain(rootText, "private bool DrainAudioPackets(");
-        AssertDoesNotContain(rootText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
-        AssertDoesNotContain(rootText, "private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.PacketDrain.cs")),
+            "LibAvRecordingSink packet drains stay folded into the sink root with the encoding loop");
+        AssertContains(rootText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
+        AssertContains(rootText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
+        AssertContains(rootText, "private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)");
+        AssertContains(rootText, "private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader)");
+        AssertContains(rootText, "private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader)");
+        AssertContains(rootText, "Marshal.Release(packet.Texture);");
+        AssertContains(rootText, "ffmpeg.av_frame_free(&frame);");
+        AssertContains(rootText, "ReturnVideoPacket(packet);");
+        AssertContains(rootText, "ReturnBuffer(packet.Buffer);");
 
         return Task.CompletedTask;
     }

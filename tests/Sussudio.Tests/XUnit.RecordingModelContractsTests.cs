@@ -15,8 +15,8 @@ public sealed class RecordingModelContractsTests
         => global::Program.LibAvRecordingSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches();
 
     [Fact]
-    public Task LibAvRecordingEncodingLoopLivesWithSinkRootAndPacketDrainsStayFocused()
-        => global::Program.LibAvRecordingSink_EncodingLoopLivesWithSinkRootAndPacketDrainsStayFocused();
+    public Task LibAvRecordingEncodingLoopAndPacketDrainsLiveWithSinkRoot()
+        => global::Program.LibAvRecordingSink_EncodingLoopAndPacketDrainsLiveWithSinkRoot();
 
     [Fact]
     public Task LibAvRecordingAudioQueuesLiveWithQueueSurface()

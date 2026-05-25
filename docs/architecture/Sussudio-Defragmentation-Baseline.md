@@ -1654,7 +1654,7 @@ Partial clusters reduced: `LibAvRecordingSink` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: synchronous dispose fallback, async dispose idempotence, writer completion, cancellation, encode-task observation, deferred cleanup timeout logging, queue buffer returns, queue-depth reset, cancellation-source disposal, queue nulling, GPU/CUDA/microphone flag reset, work semaphore disposal, and encoder dispose failure logging remain unchanged
-Notes for future agents: keep sink diagnostics, encoding loop, queue completion signal, and dispose/deferred cleanup in `LibAvRecordingSink.cs`; keep startup in `Startup.cs`, stop/final output validation in `StopLifecycle.cs`, and packet drains in `PacketDrain.cs`
+Notes for future agents: keep sink diagnostics, encoding loop, packet drains, queue completion signal, and dispose/deferred cleanup in `LibAvRecordingSink.cs`; keep startup in `Startup.cs` and stop/final output validation in `StopLifecycle.cs`
 
 Date: 2026-05-25
 Area: shared automation pipe client locality
@@ -2116,3 +2116,15 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: automation tool contract checks remain in the xUnit suite through existing wrappers
 Behavior preserved: the same internal `Program` test method names, `ExpectedAutomationCommands()` adapter, reflection helpers, catalog/manifest/path-policy assertions, and reliability-gates script checks remain in `AutomationToolContracts.Tests.cs`
 Notes for future agents: keep shared automation command catalog/manifest/path-policy/reliability contract checks in `AutomationToolContracts.Tests.cs`; use separate files only for distinct protocol, snapshot formatter, or tool-probe seams
+
+Date: 2026-05-25
+Area: LibAv recording sink packet-drain locality
+Problem: `LibAvRecordingSink.PacketDrain.cs` split the bounded video/GPU/CUDA and audio/microphone drain methods away from the encoding loop that orders and calls them. Reviewing queue drain fairness, frame-encoded events, and packet cleanup required opening a tiny partial plus the sink root loop.
+Files consolidated: `Sussudio/Services/Recording/LibAvRecordingSink.PacketDrain.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `LibAvRecordingSink` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: encoding-loop drain order, bounded video/GPU/CUDA batch limits, unbounded audio/microphone drains, frame-encoded event dispatch, GPU texture release, CUDA frame free, pooled video packet return, and pooled audio buffer return remain unchanged
+Notes for future agents: keep `EncodingLoop` and its `Drain*Packets` helpers together in `LibAvRecordingSink.cs` unless a distinct queue-drain collaborator with its own state/test seam is introduced.

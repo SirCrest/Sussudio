@@ -1340,15 +1340,13 @@ encoder drift accessors, the background encode loop, and dispose/deferred
 cleanup in `LibAvRecordingSink.cs`, and stopped-output validation in
 `LibAvRecordingSink.StopLifecycle.cs`.
 
-LibAv recording sink encode-loop ownership now lives in
+LibAv recording sink encode-loop and packet-drain ownership now lives in
 `Sussudio/Services/Recording/LibAvRecordingSink.cs`. Keep the
 background loop ordering, second audio/microphone drain pass, cancellation
-cleanup, and fatal encoder failure handling there. Queue-to-encoder packet
-drain ownership now lives in
-`Sussudio/Services/Recording/LibAvRecordingSink.PacketDrain.cs`. Keep bounded
-video/GPU/CUDA drain batches, unbounded LibAv audio/microphone drains,
-frame-encoded event dispatch, GPU texture release, CUDA frame free, and pooled
-buffer returns there. `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Lifecycle.Tests.cs`
+cleanup, fatal encoder failure handling, bounded video/GPU/CUDA drain batches,
+unbounded LibAv audio/microphone drains, frame-encoded event dispatch, GPU
+texture release, CUDA frame free, and pooled buffer returns there.
+`tests/Sussudio.Tests/RecordingQueue.LibAvSink.Lifecycle.Tests.cs`
 owns the LibAv sink lifecycle, output-validation, drain-loop, and packet-drain
 assertions.
 
