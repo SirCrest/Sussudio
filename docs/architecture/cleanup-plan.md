@@ -1096,12 +1096,11 @@ duration combo sync now live in
 lockout projection, and stats visibility sync route through their existing
 feature adapters/controllers.
 
-Capture session transition legality now lives in
-`Sussudio/Models/Capture/CaptureSessionTransitionPolicy.cs`. Mutable capture
-session state and transition generation now live in
-`Sussudio/Services/Capture/CaptureSessionStateMachine.cs`, which applies the
-policy before entering a transition and delegates steady-state resolution to the
-same pure policy. `CaptureService.cs` owns serialized transition execution,
+Capture session transition legality, mutable session state, and transition
+generation now live in
+`Sussudio/Models/Capture/CaptureSessionTransitionPolicy.cs`. The state machine
+applies the policy before entering a transition and delegates steady-state
+resolution to the same pure policy. `CaptureService.cs` owns serialized transition execution,
 transition-state entry, steady-state input sampling and resolution, fault
 publication, lock release, public initialization, and cleanup/disposal/current-state
 helpers, so cleanup, disposal,
@@ -1205,8 +1204,8 @@ entry point. That file owns `RunTransitionAsync`, transition-state entry,
 steady-state resolution, fault publication, transition-lock release,
 current-state/generation projection, steady-state input sampling,
 cleanup/disposal state helpers, and initialization/disposal guards. Mutable
-session state and transition generation live in
-`Sussudio/Services/Capture/CaptureSessionStateMachine.cs`. Cleanup, disposal,
+session state and transition generation live with
+`Sussudio/Models/Capture/CaptureSessionTransitionPolicy.cs`. Cleanup, disposal,
 and fatal cleanup paths call those helpers while preserving their special
 teardown order.
 Best-effort resource release helpers are delegated to

@@ -24,7 +24,7 @@ static partial class Program
 
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
         var transitionExecutionText = rootText;
-        var stateMachineText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionStateMachine.cs").Replace("\r\n", "\n");
+        var stateMachineText = ReadRepoFile("Sussudio/Models/Capture/CaptureSessionTransitionPolicy.cs").Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs").Replace("\r\n", "\n");
         var resourceReleaseText = cleanupText;
         var failuresText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Failures.cs").Replace("\r\n", "\n");
@@ -56,6 +56,10 @@ static partial class Program
         AssertContains(transitionExecutionText, "private void ResetSessionStateAfterCleanup()");
         AssertContains(transitionExecutionText, "=> _sessionStateMachine.ResetAfterCleanup(_isDisposed != 0);");
         AssertContains(stateMachineText, "internal sealed class CaptureSessionStateMachine");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionStateMachine.cs")),
+            "mutable capture session state machine lives with transition policy owner");
         AssertContains(stateMachineText, "private CaptureSessionState _state = CaptureSessionState.Uninitialized;");
         AssertContains(stateMachineText, "private long _generation;");
         AssertContains(stateMachineText, "public long Generation => Interlocked.Read(ref _generation);");

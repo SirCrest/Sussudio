@@ -117,7 +117,7 @@ static partial class Program
     internal static Task CaptureService_RunTransition_UsesTransitionPolicy()
     {
         var transitionExecutionText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs");
-        var stateMachineText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionStateMachine.cs");
+        var stateMachineText = ReadRepoFile("Sussudio/Models/Capture/CaptureSessionTransitionPolicy.cs");
 
         AssertContains(
             transitionExecutionText,
@@ -134,6 +134,10 @@ static partial class Program
         AssertContains(
             stateMachineText,
             "CaptureSessionTransitionPolicy.ResolveSteadyState(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionStateMachine.cs")),
+            "capture session state machine folded into transition policy owner");
 
         return Task.CompletedTask;
     }
