@@ -2064,3 +2064,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: MCP command-routing tests remain in the xUnit suite and exercise the same named-pipe tool calls
 Behavior preserved: the same internal `Program` test method names, tool reflection calls, command-id assertions, host JSON-RPC checks, and verification formatting checks remain in one command-routing owner file
 Notes for future agents: keep MCP command-routing tests in `McpToolSurface.CommandRouting.Tests.cs` unless a route group grows a distinct fixture, process lifecycle, or helper seam
+
+Date: 2026-05-25
+Area: MCP window-preview test locality
+Problem: Seven MCP window-preview tool-surface fragments split wait, window action, preview toggle, Flashback toggle, screenshot, preview-frame-capture, and probe checks across separate `Program` partial files while sharing the same MCP reflection and pipe helper seams. Reviewing this tool surface required opening many small files for one behavior family.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Preview.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Screenshot.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.WindowPreview.WindowActions.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Wait.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Flashback.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Probes.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.WindowPreview.PreviewFrameCapture.Tests.cs`
+Files added: `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Tests.cs`
+Net production .cs delta: 0
+Net test .cs delta: -6
+Partial clusters reduced: `Program` MCP window-preview partial-family file count -6
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: MCP window/preview tests remain in the xUnit suite and exercise the same named-pipe tool calls
+Behavior preserved: the same internal `Program` test method names, helper methods, reflection calls, command assertions, and response-formatting checks remain in one window-preview owner file
+Notes for future agents: keep MCP wait/window/preview/screenshot/probe tests in `McpToolSurface.WindowPreview.Tests.cs` unless a subgroup grows a distinct fixture, process lifecycle, or helper seam

@@ -2246,12 +2246,12 @@ Primary current owners:
   `tests/Sussudio.Tests/XUnit.McpToolContractsTests.cs` owns the xUnit
   execution surface for these performance/probe contracts after their removal
   from the legacy harness catalog.
-- `tests/Sussudio.Tests/McpToolSurface.WindowPreview.*.Tests.cs` owns MCP
-  wait, window action, preview toggle, Flashback toggle, screenshot, and probe
-  tests. `tests/Sussudio.Tests/XUnit.McpToolContractsTests.cs` owns the xUnit
-  execution surface for the wait/window/screenshot/preview-frame/
-  preview-toggle/probe checks after their removal from the legacy harness
-  catalog.
+- `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Tests.cs` owns MCP wait,
+  window action, preview toggle, Flashback toggle, screenshot,
+  preview-frame-capture, and probe tests. `tests/Sussudio.Tests/XUnit.McpToolContractsTests.cs`
+  owns the xUnit execution surface for the wait/window/screenshot/
+  preview-frame/preview-toggle/probe checks after their removal from the
+  legacy harness catalog.
 - `tests/Sussudio.Tests/McpToolSurface.Helpers.Process.cs`,
   `McpToolSurface.Helpers.Reflection.cs`,
   `McpToolSurface.Helpers.PipeCapture.cs`, and
