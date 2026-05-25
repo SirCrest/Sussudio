@@ -2140,3 +2140,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: health snapshot public DTO mapping, capture-cadence and MJPEG projection, source telemetry health projection, Flashback buffer/backend staleness and queue projection, Flashback playback cadence/decode/audio-master/command projection, and recording LibAv/Flashback queue and failure precedence remain unchanged
 Notes for future agents: keep private health snapshot field builders in `CaptureService.HealthSnapshots.cs`; keep `CaptureService.HealthSnapshotAssembler.cs` as the pure final DTO construction boundary.
+
+Date: 2026-05-25
+Area: Flashback encoder producer ingress locality
+Problem: Flashback encoder producer input validation lived in `FlashbackEncoderSink.Inputs.cs`, while the immediately-called video/GPU/audio/microphone queue admission, write, and rejection helpers lived in `FlashbackEncoderSink.VideoQueueSubmission.cs`. Reviewing the hot producer path required opening two partials for one enqueue transaction family.
+Files consolidated: `Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `FlashbackEncoderSink` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: raw/lease/GPU video validation, texture AddRef ownership, hot audio/microphone write adapters, accepted/rejected/overloaded queue transactions, force-rotate audio queue guard policy, depth/max-depth accounting, backlog eviction accounting, rejection counters, and throttled queue diagnostics remain unchanged
+Notes for future agents: keep Flashback encoder producer input validation and queue admission/write/rejection helpers together in `FlashbackEncoderSink.Inputs.cs`; keep queue DTOs, packet buffer ownership, and queued-buffer cleanup in `FlashbackEncoderSink.Queues.cs`.
