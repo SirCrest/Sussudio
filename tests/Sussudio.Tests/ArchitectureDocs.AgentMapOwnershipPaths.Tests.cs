@@ -164,7 +164,7 @@ static partial class Program
         var previewBackendEntry = ExtractTextBetween(
             agentMapText,
             "- `CaptureService.FlashbackPreviewBackend.cs` owns Flashback preview backend",
-            "- `CaptureService.FlashbackBufferCycle.cs` owns buffer-cycle");
+            "- `CaptureService.FlashbackSettings.cs` owns buffer-cycle");
 
         AssertContains(previewBackendEntry, "transition coordination");
         AssertContains(previewBackendEntry, "AV1 encoder support probing");

@@ -5,7 +5,7 @@ static partial class Program
     internal static Task RecordingBackendFlashbackBufferCycle_PreservesPolicies()
     {
         var sources = ReadRecordingQueueOverloadPolicySources();
-        var bufferCycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackBufferCycle.cs")
+        var bufferCycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs")
             .Replace("\r\n", "\n");
         var finalizeBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs")
             .Replace("\r\n", "\n");

@@ -8,7 +8,6 @@ static partial class Program
         "Sussudio/Services/Capture/CaptureService.FlashbackState.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs",
-        "Sussudio/Services/Capture/CaptureService.FlashbackBufferCycle.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs"
     };
 
@@ -66,7 +65,6 @@ static partial class Program
         var flashbackStateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackState.cs");
         var flashbackRecordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs");
         var previewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs");
-        var bufferCycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackBufferCycle.cs");
         var settingsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
@@ -94,8 +92,8 @@ static partial class Program
             "old Flashback preview backend disposal partial removed");
         AssertContains(backendResourcesText, "internal readonly record struct FlashbackPreviewBackendDisposalRequest(");
         AssertContains(backendResourcesText, "public async Task DisposePreviewBackendAsync(");
-        AssertContains(bufferCycleText, "private async Task CycleFlashbackBufferAsync(");
-        AssertContains(bufferCycleText, "_flashbackBackend.CycleSinkOnlyAsync(");
+        AssertContains(settingsText, "private async Task CycleFlashbackBufferAsync(");
+        AssertContains(settingsText, "_flashbackBackend.CycleSinkOnlyAsync(");
         AssertContains(settingsText, "public Task UpdateFlashbackSettingsAsync(");
         AssertContains(settingsText, "_currentSettings.FlashbackBufferMinutes = bufferMinutes;");
         AssertContains(settingsText, "_flashbackBackend.PlaybackController.GpuDecodeEnabled = gpuDecode;");
