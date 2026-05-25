@@ -9,7 +9,7 @@ static partial class Program
     {
         var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
             .Replace("\r\n", "\n");
-        var flashbackBufferText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.cs")
+        var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
         var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs")
             .Replace("\r\n", "\n");
@@ -45,7 +45,7 @@ static partial class Program
         AssertContains(snapshotsText, "Math.Max(0, Interlocked.Read(ref _observedP010FrameCount))");
         AssertContains(snapshotsText, "Math.Max(0, Interlocked.Read(ref _observedNv12FrameCount))");
         AssertContains(snapshotsText, "Math.Max(0, Interlocked.Read(ref _observedOtherFrameCount))");
-        AssertContains(flashbackBufferText, "private static string ResolveFlashbackBackendSettingsStaleReason(");
+        AssertContains(healthSnapshotText, "private static string ResolveFlashbackBackendSettingsStaleReason(");
         AssertContains(flashbackExportText, "private static long ComputeFlashbackExportElapsedMs(");
         AssertContains(flashbackExportText, "private static long ComputeFlashbackExportLastProgressAgeMs(");
         AssertContains(flashbackExportText, "private static long GetFileLengthOrZero(string? path)");
@@ -54,6 +54,10 @@ static partial class Program
         AssertDoesNotContain(snapshotsText, "private static long ComputeFlashbackExportElapsedMs(");
         AssertDoesNotContain(snapshotsText, "private static long ComputeFlashbackExportLastProgressAgeMs(");
         AssertDoesNotContain(snapshotsText, "private static long GetFileLengthOrZero(string? path)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.HealthSnapshotFlashbackBackend.cs")),
+            "Flashback backend health fields folded into health snapshot sampler");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.SnapshotRecordingStats.cs")),

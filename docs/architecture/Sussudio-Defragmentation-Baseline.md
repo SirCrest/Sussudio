@@ -2128,3 +2128,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: encoding-loop drain order, bounded video/GPU/CUDA batch limits, unbounded audio/microphone drains, frame-encoded event dispatch, GPU texture release, CUDA frame free, pooled video packet return, and pooled audio buffer return remain unchanged
 Notes for future agents: keep `EncodingLoop` and its `Drain*Packets` helpers together in `LibAvRecordingSink.cs` unless a distinct queue-drain collaborator with its own state/test seam is introduced.
+
+Date: 2026-05-25
+Area: CaptureService health snapshot sampler locality
+Problem: Capture health snapshot sampling was split across `CaptureService.HealthSnapshots.cs`, `CaptureService.HealthSnapshotFlashbackBackend.cs`, `CaptureService.HealthSnapshotFlashbackPlayback.cs`, and `CaptureService.HealthSnapshotRecording.cs`, even though the retired files only contained private field builders and records called by `GetHealthSnapshot()`. Reviewing health projection required opening four CaptureService partials plus the assembler.
+Files consolidated: `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.cs`; `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs`; `Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs`
+Files added: none
+Net production .cs delta: -3
+Partial clusters reduced: `CaptureService` -3 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: health snapshot public DTO mapping, capture-cadence and MJPEG projection, source telemetry health projection, Flashback buffer/backend staleness and queue projection, Flashback playback cadence/decode/audio-master/command projection, and recording LibAv/Flashback queue and failure precedence remain unchanged
+Notes for future agents: keep private health snapshot field builders in `CaptureService.HealthSnapshots.cs`; keep `CaptureService.HealthSnapshotAssembler.cs` as the pure final DTO construction boundary.

@@ -5,13 +5,11 @@ using Xunit;
 public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
 {
     [Fact]
-    public void CaptureService_HealthSnapshotRecordingFields_LiveInFocusedPartial()
+    public void CaptureService_HealthSnapshotRecordingFields_LiveWithHealthSampler()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
-        var recordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var recordingHealth = CaptureRecordingHealthSnapshotFields(sink, fbSink);");
@@ -24,34 +22,37 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(healthSnapshotAssemblerText, "RecordingCudaFramesDropped = recordingHealth.CudaFramesDropped,");
         AssertDoesNotContain(healthSnapshotAssemblerText, "RecordingCudaQueueDepth = sink?.CudaQueueCount ?? 0,");
         AssertDoesNotContain(healthSnapshotAssemblerText, "RecordingCudaFramesDropped = sink?.CudaFramesDropped ?? 0,");
-        AssertDoesNotContain(healthSnapshotText, "var activeRecordingVideoQueueLatencyMetrics");
-        AssertDoesNotContain(healthSnapshotText, "var flashbackIsRecordingBackend = IsFlashbackRecordingBackendOwnedByRecording();");
-
-        AssertContains(recordingText, "private RecordingHealthSnapshotFields CaptureRecordingHealthSnapshotFields(");
-        AssertContains(recordingText, "GetLastFailureTelemetry()");
-        AssertContains(recordingText, "IsFlashbackRecordingBackendOwnedByRecording()");
-        AssertContains(recordingText, "CaptureActiveRecordingBackendHealthSnapshotFields(");
-        AssertContains(recordingText, "activeRecording.FlashbackVideoQueueLatencyMetrics");
-        AssertContains(recordingText, "sink?.CudaQueueCount ?? 0");
-        AssertContains(recordingText, "sink?.CudaQueueCapacityFrames ?? 0");
-        AssertContains(recordingText, "sink?.CudaQueueMaxDepth ?? 0");
-        AssertContains(recordingText, "sink?.CudaFramesEnqueued ?? 0");
-        AssertContains(recordingText, "sink?.CudaFramesDropped ?? 0");
-        AssertContains(recordingText, "int CudaQueueDepth");
-        AssertContains(recordingText, "long CudaFramesDropped");
-        AssertContains(recordingText, "private readonly record struct RecordingHealthSnapshotFields");
-        AssertContains(recordingText, "private ActiveRecordingBackendHealthSnapshotFields CaptureActiveRecordingBackendHealthSnapshotFields(");
-        AssertContains(recordingText, "var flashbackVideoQueueLatencyMetrics");
-        AssertContains(recordingText, "sink?.VideoQueueLatencyMetrics ??");
-        AssertContains(recordingText, "flashbackIsRecordingBackend ? fbSink?.VideoQueueCount ?? 0 : 0");
-        AssertContains(recordingText, "Interlocked.Read(ref _videoFramesDropped)");
-        AssertContains(recordingText, "private readonly record struct ActiveRecordingBackendHealthSnapshotFields");
+        AssertContains(healthSnapshotText, "private RecordingHealthSnapshotFields CaptureRecordingHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "GetLastFailureTelemetry()");
+        AssertContains(healthSnapshotText, "IsFlashbackRecordingBackendOwnedByRecording()");
+        AssertContains(healthSnapshotText, "CaptureActiveRecordingBackendHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "activeRecording.FlashbackVideoQueueLatencyMetrics");
+        AssertContains(healthSnapshotText, "sink?.CudaQueueCount ?? 0");
+        AssertContains(healthSnapshotText, "sink?.CudaQueueCapacityFrames ?? 0");
+        AssertContains(healthSnapshotText, "sink?.CudaQueueMaxDepth ?? 0");
+        AssertContains(healthSnapshotText, "sink?.CudaFramesEnqueued ?? 0");
+        AssertContains(healthSnapshotText, "sink?.CudaFramesDropped ?? 0");
+        AssertContains(healthSnapshotText, "int CudaQueueDepth");
+        AssertContains(healthSnapshotText, "long CudaFramesDropped");
+        AssertContains(healthSnapshotText, "private readonly record struct RecordingHealthSnapshotFields");
+        AssertContains(healthSnapshotText, "private ActiveRecordingBackendHealthSnapshotFields CaptureActiveRecordingBackendHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "var flashbackVideoQueueLatencyMetrics");
+        AssertContains(healthSnapshotText, "sink?.VideoQueueLatencyMetrics ??");
+        AssertContains(healthSnapshotText, "flashbackIsRecordingBackend ? fbSink?.VideoQueueCount ?? 0 : 0");
+        AssertContains(healthSnapshotText, "Interlocked.Read(ref _videoFramesDropped)");
+        AssertContains(healthSnapshotText, "private readonly record struct ActiveRecordingBackendHealthSnapshotFields");
         Assert.False(System.IO.File.Exists(System.IO.Path.Combine(
             FindRepoRoot(),
             "Sussudio",
             "Services",
             "Capture",
             "CaptureService.HealthSnapshotRecordingActiveBackend.cs")));
+        Assert.False(System.IO.File.Exists(System.IO.Path.Combine(
+            FindRepoRoot(),
+            "Sussudio",
+            "Services",
+            "Capture",
+            "CaptureService.HealthSnapshotRecording.cs")));
 
     }
 

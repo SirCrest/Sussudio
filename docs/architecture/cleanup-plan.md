@@ -2103,7 +2103,7 @@ partials.
 
 Capture health snapshot sampling now lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`. That file
-captures current service references, invokes the focused field builders, and
+captures current service references, owns the private field builders, and
 populates the final service-state/scalar handoff passed to the assembler.
 Source-cadence metric projection, MJPEG timing, preview jitter, visual cadence,
 packet hash, per-decoder projection, and their health field records live with
@@ -2112,8 +2112,8 @@ the read-only sampler in
 diagnostics/automation DTO construction lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs`.
 The private assembler field handoff contract lives with the assembler, while
-cadence and MJPEG field records live beside their samplers. The assembler remains intentionally
-allocation-neutral final DTO construction from captured fields; do not split it
+health field records live beside their samplers. The assembler remains
+intentionally allocation-neutral final DTO construction from captured fields; do not split it
 into post-construction mutators or shallow fragment records just to reduce line
 count.
 source telemetry, backend, suppression, and circuit-state projection lives with
@@ -2122,23 +2122,23 @@ the health snapshot sampler in
 Flashback buffer, startup-cache, backend-staleness reason policy, encoder
 summary, live Flashback audio/video queue, force-rotate, backpressure, and GPU
 queue projection lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.cs`;
+`Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`;
 recording health orchestration and LibAv-only CUDA queue projection live in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs`, along
+`Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`, along
 with active recording backend selection, LibAv-vs-Flashback fallback, and
 backend-specific queue/counter normalization;
 Flashback export diagnostics and derived health progress/throughput projection
 lives in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs`.
 Flashback playback health snapshot orchestration now lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs`
+`Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`
 with the aggregate playback field record, state/frame/segment/PTS/seek-cap/
 submit-failure/A/V drift sampling, playback cadence metric sampling, decode
 timing and max-phase metric sampling, audio-master pacing/fallback sampling,
 playback command telemetry sampling, and each matching private field record.
 The general snapshot partial is now the diagnostics-snapshot compatibility
 entry point plus shared tick-age snapshot helper policy. Flashback
-backend-staleness reason policy now stays with the buffer health partial, while
+backend-staleness reason policy now stays with the health snapshot sampler, while
 export elapsed/progress-age/file-length helpers stay with the export
 diagnostics partial.
 

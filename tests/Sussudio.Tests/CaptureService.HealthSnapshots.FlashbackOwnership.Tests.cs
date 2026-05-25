@@ -41,39 +41,38 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
     }
 
     [Fact]
-    public void CaptureService_HealthSnapshotFlashbackBufferFields_LiveWithFlashbackBackendProjection()
+    public void CaptureService_HealthSnapshotFlashbackBufferFields_LiveWithHealthSampler()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
-        var flashbackBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var flashbackBuffer = CaptureFlashbackBufferHealthSnapshotFields(");
         AssertContains(healthSnapshotAssemblerText, "FlashbackBufferedDurationMs = flashbackBuffer.BufferedDurationMs,");
         AssertContains(healthSnapshotAssemblerText, "FlashbackBackendSettingsStaleReason = flashbackBuffer.BackendSettingsStaleReason,");
         AssertContains(healthSnapshotAssemblerText, "EncoderTargetBitRate = flashbackBuffer.EncoderTargetBitRate,");
-        AssertDoesNotContain(healthSnapshotText, "FlashbackBufferedDurationMs = (long)(bufMgr?.BufferedDuration.TotalMilliseconds ?? 0)");
-        AssertDoesNotContain(healthSnapshotText, "ResolveFlashbackBackendSettingsStaleReason(flashbackBackendSettings, _currentSettings)");
-
-        AssertContains(flashbackBackendText, "private FlashbackBufferHealthSnapshotFields CaptureFlashbackBufferHealthSnapshotFields(");
-        AssertContains(flashbackBackendText, "ResolveFlashbackBackendSettingsStaleReason(flashbackBackendSettings, currentSettings)");
-        AssertContains(flashbackBackendText, "private static string ResolveFlashbackBackendSettingsStaleReason(");
-        AssertContains(flashbackBackendText, "bufMgr?.StartupCacheOverBudget ?? false");
-        AssertContains(flashbackBackendText, "fbSink?.EncoderFrameRateDenominator");
-        AssertContains(flashbackBackendText, "private readonly record struct FlashbackBufferHealthSnapshotFields");
+        AssertContains(healthSnapshotText, "private FlashbackBufferHealthSnapshotFields CaptureFlashbackBufferHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "ResolveFlashbackBackendSettingsStaleReason(flashbackBackendSettings, currentSettings)");
+        AssertContains(healthSnapshotText, "private static string ResolveFlashbackBackendSettingsStaleReason(");
+        AssertContains(healthSnapshotText, "bufMgr?.StartupCacheOverBudget ?? false");
+        AssertContains(healthSnapshotText, "fbSink?.EncoderFrameRateDenominator");
+        AssertContains(healthSnapshotText, "private readonly record struct FlashbackBufferHealthSnapshotFields");
+        Assert.False(System.IO.File.Exists(System.IO.Path.Combine(
+            FindRepoRoot(),
+            "Sussudio",
+            "Services",
+            "Capture",
+            "CaptureService.HealthSnapshotFlashbackBackend.cs")));
 
     }
 
     [Fact]
-    public void CaptureService_HealthSnapshotFlashbackQueueFields_LiveWithFlashbackBackendProjection()
+    public void CaptureService_HealthSnapshotFlashbackQueueFields_LiveWithHealthSampler()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
-        var flashbackBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var flashbackQueues = CaptureFlashbackQueueHealthSnapshotFields(");
@@ -81,69 +80,71 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(healthSnapshotAssemblerText, "FlashbackForceRotateActive = flashbackQueues.ForceRotateActive,");
         AssertContains(healthSnapshotAssemblerText, "FlashbackVideoQueueLatencyP99Ms = flashbackQueues.VideoQueueLatencyMetrics.P99Ms,");
         AssertContains(healthSnapshotAssemblerText, "FlashbackGpuQueueLastRejectReason = flashbackQueues.GpuQueueLastRejectReason,");
-        AssertDoesNotContain(healthSnapshotText, "FlashbackVideoQueueDepth = fbSink?.VideoQueueCount");
-        AssertDoesNotContain(healthSnapshotText, "FlashbackForceRotateActive = fbSink?.IsForceRotateActive");
-        AssertDoesNotContain(healthSnapshotText, "FlashbackGpuQueueLastRejectReason = fbSink?.LastGpuQueueRejectReason");
-
-        AssertContains(flashbackBackendText, "private static FlashbackQueueHealthSnapshotFields CaptureFlashbackQueueHealthSnapshotFields(");
-        AssertContains(flashbackBackendText, "fbSink?.VideoQueueOldestFrameAgeMs ?? 0");
-        AssertContains(flashbackBackendText, "fbSink?.IsForceRotateActive ?? false");
-        AssertContains(flashbackBackendText, "fbSink?.LastGpuQueueRejectReason ?? string.Empty");
-        AssertContains(flashbackBackendText, "private readonly record struct FlashbackQueueHealthSnapshotFields");
+        AssertContains(healthSnapshotText, "private static FlashbackQueueHealthSnapshotFields CaptureFlashbackQueueHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "fbSink?.VideoQueueOldestFrameAgeMs ?? 0");
+        AssertContains(healthSnapshotText, "fbSink?.IsForceRotateActive ?? false");
+        AssertContains(healthSnapshotText, "fbSink?.LastGpuQueueRejectReason ?? string.Empty");
+        AssertContains(healthSnapshotText, "private readonly record struct FlashbackQueueHealthSnapshotFields");
+        Assert.False(System.IO.File.Exists(System.IO.Path.Combine(
+            FindRepoRoot(),
+            "Sussudio",
+            "Services",
+            "Capture",
+            "CaptureService.HealthSnapshotFlashbackBackend.cs")));
 
     }
 
     [Fact]
-    public void CaptureService_HealthSnapshotFlashbackPlaybackFields_LiveInFocusedPartial()
+    public void CaptureService_HealthSnapshotFlashbackPlaybackFields_LiveWithHealthSampler()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
-        var flashbackPlaybackText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var flashbackPlayback = CaptureFlashbackPlaybackHealthSnapshotFields(fbPlayback);");
         AssertContains(healthSnapshotAssemblerText, "FlashbackPlaybackState = flashbackPlayback.State,");
         AssertContains(healthSnapshotAssemblerText, "FlashbackPlaybackDecodeP95Ms = flashbackPlayback.DecodeP95Ms,");
         AssertContains(healthSnapshotAssemblerText, "FlashbackPlaybackLastCommandFailure = flashbackPlayback.LastCommandFailure,");
-        AssertDoesNotContain(healthSnapshotText, "var playbackCadence = fbPlayback?.GetPlaybackCadenceMetrics()");
-        AssertDoesNotContain(healthSnapshotText, "var playbackDecode = fbPlayback?.GetPlaybackDecodeMetrics()");
-        AssertDoesNotContain(healthSnapshotText, "FlashbackPlaybackFrameCount = fbPlayback?.PlaybackFrameCount");
-
-        AssertContains(flashbackPlaybackText, "private static FlashbackPlaybackHealthSnapshotFields CaptureFlashbackPlaybackHealthSnapshotFields(");
-        AssertContains(flashbackPlaybackText, "var state = CaptureFlashbackPlaybackStateHealthSnapshotFields(fbPlayback);");
-        AssertContains(flashbackPlaybackText, "var cadence = CaptureFlashbackPlaybackCadenceHealthSnapshotFields(fbPlayback);");
-        AssertContains(flashbackPlaybackText, "var decode = CaptureFlashbackPlaybackDecodeHealthSnapshotFields(fbPlayback);");
-        AssertContains(flashbackPlaybackText, "var audioMaster = CaptureFlashbackPlaybackAudioMasterHealthSnapshotFields(fbPlayback);");
-        AssertContains(flashbackPlaybackText, "var commands = CaptureFlashbackPlaybackCommandHealthSnapshotFields(fbPlayback);");
-        AssertContains(flashbackPlaybackText, "private readonly record struct FlashbackPlaybackHealthSnapshotFields");
-        AssertContains(flashbackPlaybackText, "private static FlashbackPlaybackStateHealthSnapshotFields CaptureFlashbackPlaybackStateHealthSnapshotFields(");
-        AssertContains(flashbackPlaybackText, "private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(");
-        AssertContains(flashbackPlaybackText, "fbPlayback?.State.ToString() ?? \"N/A\"");
-        AssertContains(flashbackPlaybackText, "fbPlayback?.PlaybackFrameCount ?? 0");
-        AssertContains(flashbackPlaybackText, "fbPlayback?.PlaybackThreadAlive ?? false");
-        AssertContains(flashbackPlaybackText, "private static FlashbackPlaybackCadenceHealthSnapshotFields CaptureFlashbackPlaybackCadenceHealthSnapshotFields(");
-        AssertContains(flashbackPlaybackText, "private readonly record struct FlashbackPlaybackCadenceHealthSnapshotFields(");
-        AssertContains(flashbackPlaybackText, "fbPlayback?.GetPlaybackCadenceMetrics() ?? default");
-        AssertContains(flashbackPlaybackText, "private static FlashbackPlaybackDecodeHealthSnapshotFields CaptureFlashbackPlaybackDecodeHealthSnapshotFields(");
-        AssertContains(flashbackPlaybackText, "private readonly record struct FlashbackPlaybackDecodeHealthSnapshotFields(");
-        AssertContains(flashbackPlaybackText, "fbPlayback?.GetPlaybackDecodeMetrics() ?? default");
-        AssertContains(flashbackPlaybackText, "fbPlayback?.PlaybackMaxDecodePhase ?? string.Empty");
-        AssertContains(flashbackPlaybackText, "private static FlashbackPlaybackAudioMasterHealthSnapshotFields CaptureFlashbackPlaybackAudioMasterHealthSnapshotFields(");
-        AssertContains(flashbackPlaybackText, "private readonly record struct FlashbackPlaybackAudioMasterHealthSnapshotFields(");
-        AssertContains(flashbackPlaybackText, "fbPlayback?.PlaybackAudioMasterFallbacks ?? 0");
-        AssertContains(flashbackPlaybackText, "private static FlashbackPlaybackCommandHealthSnapshotFields CaptureFlashbackPlaybackCommandHealthSnapshotFields(");
-        AssertContains(flashbackPlaybackText, "private readonly record struct FlashbackPlaybackCommandHealthSnapshotFields(");
-        AssertContains(flashbackPlaybackText, "fbPlayback?.CommandsEnqueued ?? 0");
-        AssertContains(flashbackPlaybackText, "double[] RecentFrameIntervalsMs");
-        AssertContains(flashbackPlaybackText, "string LastCommandFailure");
+        AssertContains(healthSnapshotText, "private static FlashbackPlaybackHealthSnapshotFields CaptureFlashbackPlaybackHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "var state = CaptureFlashbackPlaybackStateHealthSnapshotFields(fbPlayback);");
+        AssertContains(healthSnapshotText, "var cadence = CaptureFlashbackPlaybackCadenceHealthSnapshotFields(fbPlayback);");
+        AssertContains(healthSnapshotText, "var decode = CaptureFlashbackPlaybackDecodeHealthSnapshotFields(fbPlayback);");
+        AssertContains(healthSnapshotText, "var audioMaster = CaptureFlashbackPlaybackAudioMasterHealthSnapshotFields(fbPlayback);");
+        AssertContains(healthSnapshotText, "var commands = CaptureFlashbackPlaybackCommandHealthSnapshotFields(fbPlayback);");
+        AssertContains(healthSnapshotText, "private readonly record struct FlashbackPlaybackHealthSnapshotFields");
+        AssertContains(healthSnapshotText, "private static FlashbackPlaybackStateHealthSnapshotFields CaptureFlashbackPlaybackStateHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "fbPlayback?.State.ToString() ?? \"N/A\"");
+        AssertContains(healthSnapshotText, "fbPlayback?.PlaybackFrameCount ?? 0");
+        AssertContains(healthSnapshotText, "fbPlayback?.PlaybackThreadAlive ?? false");
+        AssertContains(healthSnapshotText, "private static FlashbackPlaybackCadenceHealthSnapshotFields CaptureFlashbackPlaybackCadenceHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "private readonly record struct FlashbackPlaybackCadenceHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "fbPlayback?.GetPlaybackCadenceMetrics() ?? default");
+        AssertContains(healthSnapshotText, "private static FlashbackPlaybackDecodeHealthSnapshotFields CaptureFlashbackPlaybackDecodeHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "private readonly record struct FlashbackPlaybackDecodeHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "fbPlayback?.GetPlaybackDecodeMetrics() ?? default");
+        AssertContains(healthSnapshotText, "fbPlayback?.PlaybackMaxDecodePhase ?? string.Empty");
+        AssertContains(healthSnapshotText, "private static FlashbackPlaybackAudioMasterHealthSnapshotFields CaptureFlashbackPlaybackAudioMasterHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "private readonly record struct FlashbackPlaybackAudioMasterHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "fbPlayback?.PlaybackAudioMasterFallbacks ?? 0");
+        AssertContains(healthSnapshotText, "private static FlashbackPlaybackCommandHealthSnapshotFields CaptureFlashbackPlaybackCommandHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "private readonly record struct FlashbackPlaybackCommandHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "fbPlayback?.CommandsEnqueued ?? 0");
+        AssertContains(healthSnapshotText, "double[] RecentFrameIntervalsMs");
+        AssertContains(healthSnapshotText, "string LastCommandFailure");
         Assert.False(System.IO.File.Exists(System.IO.Path.Combine(
             FindRepoRoot(),
             "Sussudio",
             "Services",
             "Capture",
             "CaptureService.HealthSnapshotFlashbackPlayback.State.cs")));
+        Assert.False(System.IO.File.Exists(System.IO.Path.Combine(
+            FindRepoRoot(),
+            "Sussudio",
+            "Services",
+            "Capture",
+            "CaptureService.HealthSnapshotFlashbackPlayback.cs")));
 
     }
 }
