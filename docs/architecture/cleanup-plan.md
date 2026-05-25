@@ -2237,8 +2237,7 @@ Parallel MJPEG decode pipeline decoded-frame ordering now lives in
 missing-sequence waits, known-missing skips, decoded reorder state, and decoded
 reorder capacity policy there. Emit-loop ordered draining, preview
 decoded-frame notification, and reorder/pipeline latency samples recorded during
-emission now live in
-`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.ReorderEmission.cs`.
+emission also live there beside the decoded-frame state they consume.
 
 Parallel MJPEG decode pipeline lifecycle now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs`. Keep
