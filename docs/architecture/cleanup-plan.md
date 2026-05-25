@@ -1393,11 +1393,6 @@ selection, NVENC preset/split-encode mapping, frame-size math, sample-format
 support, and rational conversion helpers there; leave live send/drain/finalize
 paths in the owner partials.
 
-LibAv encoder A/V sync diagnostics now live in
-`Sussudio/Services/Recording/LibAvEncoder.AvSync.cs`. Keep drift-correction
-thresholds, sync counters, current-drift reporting, and sync warning logs there
-so the root encoder stays focused on rotation lifecycle and teardown.
-
 LibAv encoder initialization now lives in
 `Sussudio/Services/Recording/LibAvEncoder.Initialization.cs`. Keep FFmpeg
 runtime initialization forwarding and the public encoder open/setup sequence
@@ -1425,7 +1420,9 @@ pending-sample flush, and accumulator ingress there.
 Audio queue/drain mechanics now live in
 `Sussudio/Services/Recording/LibAvEncoder.AudioQueue.cs`; keep sample
 queue/drain helpers, drift-corrected encode chunks, planar sample copies, and
-prepared-frame drains there.
+prepared-frame drains there. Keep drift-correction thresholds, sync counters,
+current-drift reporting, and sync warning logs with this queue path so the
+small A/V sync fragment does not become a separate boundary.
 
 LibAv encoder audio submission now lives in
 `Sussudio/Services/Recording/LibAvEncoder.Audio.cs`. Keep the public
