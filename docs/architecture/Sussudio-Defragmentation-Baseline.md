@@ -1817,3 +1817,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
 Behavior preserved: the same public test classes, constructors, `[Fact]` method names, and delegated `Program` checks remain available under one D3D contracts file
 Notes for future agents: keep D3D preview xUnit wrapper classes together in `XUnit.PresentationPreviewD3DContractsTests.cs`; add new D3D execution wrappers there unless they need independent fixtures or executable helper state
+
+Date: 2026-05-25
+Area: Preview startup xUnit execution-surface locality
+Problem: The preview-startup xUnit execution surface was split across four tiny wrapper files for ownership, behavior, signal/failure text, and ordering checks. Each file only loaded the target assembly and delegated former legacy harness checks to `Program` methods.
+Files consolidated: `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupOwnershipContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupBehaviorContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupSignalContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupOrderingContractsTests.cs`
+Files added: `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs`
+Net production .cs delta: 0
+Net test .cs delta: -3
+Partial clusters reduced: n/a; preview-startup xUnit wrapper file count -3
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
+Behavior preserved: the same public test classes, constructors, `[Fact]` method names, and delegated `Program` checks remain available under one preview-startup contracts file
+Notes for future agents: keep preview-startup xUnit wrapper classes together in `XUnit.PresentationPreviewStartupContractsTests.cs`; add new startup execution wrappers there unless they need independent fixtures or executable helper state

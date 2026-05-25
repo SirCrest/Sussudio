@@ -279,23 +279,15 @@ add xUnit alongside, and port incrementally.
   final former legacy presentation-preview MainViewModel runtime group:
   automation preview/HDR/volume routing, audio monitoring, capture settings
   projection, preview lifecycle ownership, and audio ramp trace telemetry.
-- `XUnit.PresentationPreviewStartupOwnershipContractsTests.cs` owns the former
-  legacy presentation-preview preview-startup ownership group: session/reinit,
-  watchdog, signal, and lifecycle-event controller/adapters.
-- `XUnit.PresentationPreviewStartupBehaviorContractsTests.cs` owns the former
-  legacy presentation-preview preview-startup behavior group: watchdog timeout
-  and failure-stop gating, session attempt-state orchestration, reinit
-  transition state, and pending Flashback-cycle wait checks.
-- `XUnit.PresentationPreviewStartupSignalContractsTests.cs` owns the former
-  legacy presentation-preview preview-startup signal group: signal formatter,
-  readiness-signal controller state, and failure text formatter contracts.
+- `XUnit.PresentationPreviewStartupContractsTests.cs` owns the former legacy
+  presentation-preview preview-startup groups: ownership, controller behavior,
+  signal/failure text, and startup ordering checks.
 - `XUnit.PresentationPreviewCapturePreviewLifecycleContractsTests.cs` owns the
   former legacy presentation-preview capture preview-lifecycle group: video-only
   preview fallback, missing audio endpoint behavior, focused CaptureService
   preview lifecycle ownership, audio monitoring visuals, and backend log text.
-- `XUnit.PresentationPreviewStartupOrderingContractsTests.cs` owns the final
-  former legacy presentation-preview capture catalog checks: device-discovery
-  ordering, preview reveal priming, and preview stop audio-ramp ordering.
+- Preview-startup ordering checks also live in
+  `XUnit.PresentationPreviewStartupContractsTests.cs`.
 - `XUnit.PresentationPreviewCaptureRuntimeGuardContractsTests.cs` owns the
   former legacy presentation-preview capture runtime guardrail group: recording
   stop failure propagation, preview stop overload/API compatibility, and

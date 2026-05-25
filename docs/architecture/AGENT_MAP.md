@@ -1613,15 +1613,10 @@ Primary current owners:
   controller, and startup/failure formatter assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.StartupStopOrdering.Tests.cs`
   owns preview lifecycle-event and fade-in source-shape ownership assertions.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupOwnershipContractsTests.cs`
-  owns xUnit execution for the former legacy presentation-preview preview-startup
-  source-shape ownership catalog group.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupBehaviorContractsTests.cs`
-  owns xUnit execution for the former legacy presentation-preview preview-startup
-  controller behavior catalog group.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupSignalContractsTests.cs`
-  owns xUnit execution for the former legacy presentation-preview preview-startup
-  signal/failure text catalog group.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs` owns
+  xUnit execution for the former legacy presentation-preview preview-startup
+  source-shape ownership, controller behavior, signal/failure text, and
+  startup ordering catalog groups.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewCapturePreviewLifecycleContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview
   capture preview-lifecycle/audio-fallback catalog group.
@@ -1634,9 +1629,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.StopAudioRampOrdering.Tests.cs`
   owns preview stop ordering assertions that audio ramps down before preview
   teardown.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupOrderingContractsTests.cs`
-  owns xUnit execution for the former legacy presentation-preview preview
-  startup ordering catalog group.
+- Preview-startup ordering xUnit execution also lives in
+  `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs`.
 - `tests/Sussudio.Tests/MainWindow.CompositionSource.cs` owns the shared
   source readers for the split `MainWindow.PreviewStartup.*.cs` adapter family,
   consolidated preview-transition, shell-chrome, stats-overlay, capture-binding,

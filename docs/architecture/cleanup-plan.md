@@ -3493,23 +3493,18 @@ owner, fold it back into that owner and update the source-shape tests and
    segment lookup/list projection coverage. Preview startup session/reinit
    harness coverage is split between source ownership, session controller,
    reinit transition controller, and pending Flashback-cycle wait owners.
-   `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupOwnershipContractsTests.cs`
-   owns xUnit execution for the preview-startup source-shape ownership checks
-   after their removal from the legacy presentation-preview capture catalog.
-   `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupBehaviorContractsTests.cs`
-   owns xUnit execution for the preview-startup controller behavior checks after
-   their removal from the legacy presentation-preview capture catalog.
-   `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupSignalContractsTests.cs`
-   owns xUnit execution for the preview-startup signal and failure-text checks
-   after their removal from the legacy presentation-preview capture catalog.
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs`
+   owns xUnit execution for the preview-startup source-shape ownership,
+   controller behavior, signal/failure-text, and ordering checks after their
+   removal from the legacy presentation-preview capture catalog.
    `tests/Sussudio.Tests/XUnit.PresentationPreviewCapturePreviewLifecycleContractsTests.cs`
    owns xUnit execution for the capture preview-lifecycle/audio-fallback checks
    after their removal from the legacy presentation-preview capture catalog.
    Preview startup ordering coverage is split between lifecycle-event
    ownership, device-discovery ordering, reveal priming, and stop audio-ramp
-   owners. `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupOrderingContractsTests.cs`
-   owns xUnit execution for the former legacy presentation-preview capture
-   catalog's final ordering checks, and the legacy catalog hook is removed.
+   owners. Startup ordering xUnit execution also lives in
+   `XUnit.PresentationPreviewStartupContractsTests.cs`, and the legacy catalog
+   hook is removed.
    MainViewModel automation recording-transition coverage is split
    between shared transition-gate routing, failure propagation, emergency stop,
    bitrate sampling, and recording-settings/Flashback-cycle owners.
