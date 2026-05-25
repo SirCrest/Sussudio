@@ -1,6 +1,7 @@
 using System;
 using Sussudio.Models;
 using Sussudio.Services.Contracts;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture;
 
@@ -178,5 +179,29 @@ public partial class CaptureService
         }
 
         return isRecording ? "Degraded" : "Pending";
+    }
+}
+
+// Single policy gate for enabling HDR output. Environment overrides live beside
+// the HDR runtime projection so capture setup and UI readiness stay consistent.
+internal static class HdrOutputPolicy
+{
+    public static bool IsEnabled(CaptureSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        var hdrRequested = settings.HdrEnabled && settings.HdrOutputMode == HdrOutputMode.Hdr10Pq;
+        if (!hdrRequested)
+        {
+            return false;
+        }
+
+        if (EnvironmentHelpers.TryGetBoolFromEnv("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", out var forceOff) && forceOff)
+        {
+            Logger.Log("HDR output requested but SUSSUDIO_HDR_OUTPUT_FORCE_OFF disables the HDR pipeline.");
+            return false;
+        }
+
+        return true;
     }
 }

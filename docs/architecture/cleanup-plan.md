@@ -290,7 +290,8 @@ diagnostic verdict ordering plus idle, warmup, recording integrity, audio
 integrity, source/capture cadence, duplicate source-signal, and MJPEG
 decode/reorder diagnostic verdicts, plus realtime preview scheduler, renderer
 pacing, present/display cadence, and preview display 1% low diagnostic
-verdicts.
+verdicts. It also owns the shared renderer-drop diagnostic threshold constants
+used by the realtime evaluation and stats presentation.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs` owns diagnostic lane text
 orchestration, MJPEG decode lane formatting, recording/audio lane formatting,
 source cadence/source-signal lane formatting, preview scheduler/renderer/
@@ -2350,6 +2351,8 @@ private handoff models now live with the runtime snapshot sampler in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`,
 HDR pipeline parity/downgrade, warmup state/count projection, and their private handoff models now live in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs`,
+along with the `HdrOutputPolicy` environment gate used by capture setup and
+preview readiness checks,
 and source telemetry detail/frame-rate-origin/age/alignment projection and its private handoff model now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs`.
 Recording-format and observed-frame helper policy live in focused snapshot

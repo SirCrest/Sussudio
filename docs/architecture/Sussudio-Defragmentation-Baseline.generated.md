@@ -1,23 +1,23 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-25T00:23:40Z
+Generated UTC: 2026-05-25T00:33:04Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 577 |
+| Production .cs files | 575 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 20 (3.5%) |
-| Production .cs files under 80 lines | 35 (6.1%) |
+| Production .cs files under 60 lines | 18 (3.1%) |
+| Production .cs files under 80 lines | 33 (5.7%) |
 
 ## Largest partial-type clusters
 
 | Type | Files | Total lines | Sample paths |
 | --- | ---: | ---: | --- |
-| CaptureService | 38 | 9704 | Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs, Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs, Sussudio/Services/Capture/CaptureService.CaptureFormatTelemetry.cs, Sussudio/Services/Capture/CaptureService.Cleanup.cs, Sussudio/Services/Capture/CaptureService.cs, Sussudio/Services/Capture/CaptureService.Failures.cs, Sussudio/Services/Capture/CaptureService.FlashbackBufferCycle.cs, Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs |
-| AutomationDiagnosticsHub | 29 | 10050 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.RealtimePreview.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Recording.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvents.cs |
+| CaptureService | 38 | 9729 | Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs, Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs, Sussudio/Services/Capture/CaptureService.CaptureFormatTelemetry.cs, Sussudio/Services/Capture/CaptureService.Cleanup.cs, Sussudio/Services/Capture/CaptureService.cs, Sussudio/Services/Capture/CaptureService.Failures.cs, Sussudio/Services/Capture/CaptureService.FlashbackBufferCycle.cs, Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs |
+| AutomationDiagnosticsHub | 29 | 10065 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.RealtimePreview.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Recording.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvents.cs |
 | D3D11PreviewRenderer | 19 | 4647 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Diagnostics.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.NativeInterop.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Nv12Submission.cs |
 | MainViewModel | 17 | 4447 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs, Sussudio/ViewModels/MainViewModel.AudioInputSelection.cs, Sussudio/ViewModels/MainViewModel.AudioMeters.cs, Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.AutomationCommands.cs, Sussudio/ViewModels/MainViewModel.AutomationSnapshots.cs, Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs, Sussudio/ViewModels/MainViewModel.CaptureSelection.cs |
 | FlashbackPlaybackController | 14 | 4954 | Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.Markers.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs |
@@ -60,8 +60,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 684 | Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs |
 | 677 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
 | 649 | tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs |
-| 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 647 | Sussudio/Services/Automation/NamedPipeAutomationServer.cs |
+| 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
 | 638 | Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs |
 | 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
@@ -93,10 +93,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 12 | Sussudio/Services/Preview/ILiveVideoSource.cs |
 | 14 | Sussudio.Automation.Contracts/AutomationPipeSecurityPolicy.cs |
 | 14 | Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs |
-| 18 | Sussudio/Services/Automation/DiagnosticThresholds.cs |
 | 19 | Sussudio/Services/Telemetry/DisabledSourceSignalTelemetryProvider.cs |
 | 28 | tools/Common/DiagnosticSessionModels.cs |
-| 29 | Sussudio/Services/Capture/HdrOutputPolicy.cs |
 | 37 | tools/KsAudioNodeProbe/Program.cs |
 | 39 | Sussudio/Services/Recording/RecordingContracts.cs |
 | 40 | tools/NativeXuAudioProbe/Program.Commands.cs |

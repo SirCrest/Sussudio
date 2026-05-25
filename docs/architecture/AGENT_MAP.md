@@ -284,7 +284,7 @@ Automation diagnostics ownership:
   integrity, audio integrity, source/capture cadence, duplicate source-signal,
   MJPEG decode/reorder diagnostic verdicts, realtime preview scheduler,
   renderer pacing, present/display cadence, and preview display 1% low
-  diagnostic verdicts.
+  diagnostic verdicts, plus the shared renderer-drop threshold constants.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs`
   owns diagnostic lane text orchestration, MJPEG decode lane formatting,
   source cadence/source-signal lane formatting, recording/audio lane formatting,
@@ -709,7 +709,8 @@ Important entry points:
   handoff contract consumed by that map.
 - `CaptureService.RuntimeSnapshotHdrPipeline.cs` owns runtime HDR/encoder
   pipeline parity, downgrade reason, encoder format projection, and HDR warmup
-  state/count projection/classification, and its private HDR pipeline/warmup handoff models.
+  state/count projection/classification, the `HdrOutputPolicy` environment
+  gate, and its private HDR pipeline/warmup handoff models.
 - `CaptureService.RuntimeSnapshotSourceTelemetry.cs` owns runtime snapshot
   projection for source telemetry details, frame-rate origin, age, request
   alignment, and its private source-telemetry handoff model.
