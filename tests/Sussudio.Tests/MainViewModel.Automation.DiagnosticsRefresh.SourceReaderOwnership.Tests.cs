@@ -30,9 +30,10 @@ static partial class Program
         AssertContains(sourceReaderFrameLayoutText, "public static int GetFrameSizeBytes(int width, int height, bool isP010)");
         AssertContains(sourceReaderFrameLayoutText, "private unsafe static void CopyYuvWithStride(");
         AssertContains(sourceReaderFrameLayoutText, "private static string SubtypeGuidToName(Guid subtype)");
-        AssertDoesNotContain(sourceReaderRootText, "public static int GetFrameSizeBytes(int width, int height, bool isP010)");
-        AssertDoesNotContain(sourceReaderRootText, "private unsafe static void CopyYuvWithStride(");
-        AssertDoesNotContain(sourceReaderRootText, "private static string SubtypeGuidToName(Guid subtype)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.FrameLayout.cs")),
+            "shared source-reader frame layout helpers folded into the root source-reader state");
         AssertContains(sourceReaderLifecycleText, "public void StartReading(RawFrameCallback onFrame, CancellationToken ct)");
         AssertContains(sourceReaderLifecycleText, "public async Task StopAsync()");
         AssertContains(sourceReaderLifecycleText, "private void ReleaseReaderAndSource()");

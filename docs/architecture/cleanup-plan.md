@@ -2121,8 +2121,8 @@ diagnostics, and dual GPU/CPU delivery orchestration in
 delivery helpers in `MfSourceReaderVideoCapture.RawFrameDelivery.cs` and reader
 start/stop/dispose in the lifecycle partial.
 
-Media Foundation packed-frame layout helpers now live in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameLayout.cs`. Keep
+Media Foundation packed-frame layout helpers now live with the source-reader
+state in `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`. Keep
 frame-size/row-byte calculation, packed-stride inference, stride-aware YUV
 copying, and source subtype labels there; keep frame delivery in
 `MfSourceReaderVideoCapture.FrameDelivery.cs` plus
