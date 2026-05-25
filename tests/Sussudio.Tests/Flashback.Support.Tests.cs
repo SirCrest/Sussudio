@@ -9,7 +9,7 @@ static partial class Program
     {
         var decoderText = ReadFlashbackDecoderSource();
         var d3d11Text = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs").Replace("\r\n", "\n");
-        var d3d11DiscoveryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.D3D11Discovery.cs").Replace("\r\n", "\n");
+        var d3d11DiscoveryText = d3d11Text;
 
         var openFileBlock = ExtractTextBetween(
             decoderText,
@@ -24,7 +24,11 @@ static partial class Program
         AssertContains(d3d11Text, "var codec = FindD3D11VADecoder(codecPar->codec_id, out var codecName);");
         AssertContains(d3d11Text, "FLASHBACK_DECODER_D3D11VA_SKIP reason=no_d3d11_device_ctx_decoder");
         AssertContains(d3d11Text, "FLASHBACK_DECODER_D3D11VA_SKIP reason=exception type={ex.GetType().Name} msg='{ex.Message}'");
-        AssertDoesNotContain(d3d11Text, "private static string DescribeHardwareConfigs");
+        AssertContains(d3d11Text, "private static string DescribeHardwareConfigs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.D3D11Discovery.cs")),
+            "Flashback decoder D3D11VA discovery folded into D3D11 decoder initialization owner");
         AssertContains(d3d11DiscoveryText, "private static AVCodec* FindD3D11VADecoder(AVCodecID codecId, out string codecName)");
         AssertContains(d3d11DiscoveryText, "ffmpeg.avcodec_find_decoder_by_name(preferredName)");
         AssertContains(d3d11DiscoveryText, "AVCodecID.AV_CODEC_ID_AV1 => \"av1\"");

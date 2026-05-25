@@ -1726,9 +1726,9 @@ Flashback decoder audio output now lives in
 delivery, audio codec/resampler initialization, audio callback failure handling,
 resampler output conversion, and bounded audio sample/byte sizing there. D3D11 device-context initialization, get-format callback behavior, and hardware
 decoder context setup now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs`. D3D11VA decoder
-selection and hardware-configuration diagnostics now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.D3D11Discovery.cs`. Decoded video frame
+`Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs`. Keep D3D11VA decoder
+selection and hardware-configuration diagnostics there beside hardware decoder
+context setup. Decoded video frame
 output, PTS-to-TimeSpan conversion, and best-effort frame timestamp selection now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs`. Software plane
 copies and YUV-to-NV12/P010 conversion kernels now live in
