@@ -451,14 +451,13 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackEncoderSink_OptionsHelpersLiveInFocusedPartials()
+    internal static Task FlashbackEncoderSink_OptionsHelpersLiveWithStartup()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs")
             .Replace("\r\n", "\n");
-        var optionsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs")
-            .Replace("\r\n", "\n");
+        var optionsText = startupText;
         var sessionContextText = optionsText;
         var queuesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs")
             .Replace("\r\n", "\n");
@@ -504,11 +503,15 @@ static partial class Program
         AssertContains(inputsText, "private static bool TryValidateAudioPacketLength(int byteLength, string source)");
         AssertDoesNotContain(rootText, "private static FlashbackSessionContext CreateSessionContext");
         AssertDoesNotContain(rootText, "private static byte[] GetBuffer");
-        AssertContains(docsText, "FlashbackEncoderSink.Options.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.Startup.cs");
         AssertContains(docsText, "recording-to-Flashback session mapping");
         AssertContains(docsText, "generated session ID formatting");
         AssertContains(docsText, "FlashbackEncoderSink.Queues.cs");
         AssertContains(docsText, "packet DTOs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Options.cs")),
+            "FlashbackEncoderSink.Options.cs folded into FlashbackEncoderSink.Startup.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.PacketBuffers.cs")),
