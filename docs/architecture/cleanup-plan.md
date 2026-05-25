@@ -1615,7 +1615,7 @@ output-template initialization, segment input sequencing, segment export
 range/window projection, segment offset updates, completion progress, and
 requested-segment skip validation there. The
 active segment packet pump lives in
-`Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketReadLoop.cs`; keep
+`Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs`; keep
 native frame reads, per-read packet unref, stream filtering, timestamp-base
 discovery, buffered packet transition, rebased packet writes, writer throttling,
 and EOF partial-base rescue/freeing there, along with the per-segment packet

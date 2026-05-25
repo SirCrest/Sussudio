@@ -1630,7 +1630,7 @@ Partial clusters reduced: `FlashbackExporter` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: template selection order, stream-info lookup, bounded stream-count validation, missing-video and incomplete-video skip diagnostics, output context/header setup, per-segment input open, stream-count mismatch handling, layout mismatch skip tracking, and close-on-failed-preflight behavior remain unchanged
-Notes for future agents: keep multi-segment export shell, template selection, and segment input preflight together in `FlashbackExporter.Segments.cs`; keep packet writing orchestration in `SegmentPacketWriting.cs` and packet read/rebase hot loop behavior in `SegmentPacketReadLoop.cs`
+Notes for future agents: keep multi-segment export shell, template selection, and segment input preflight together in `FlashbackExporter.Segments.cs`; keep packet writing orchestration and packet read/rebase hot loop behavior together in `SegmentPacketWriting.cs`
 
 Date: 2026-05-24
 Area: Flashback decoder lifecycle cleanup locality

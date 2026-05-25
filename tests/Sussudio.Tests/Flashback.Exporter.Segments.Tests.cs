@@ -117,7 +117,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentPacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
-        var segmentPacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketReadLoop.cs")
+        var segmentPacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
         var segmentPacketWriteStateText = segmentPacketReadLoopText;
         var segmentPacketRebasingText = segmentPacketReadLoopText;
@@ -143,7 +143,6 @@ static partial class Program
         AssertDoesNotContain(segmentsText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
         AssertContains(segmentPacketWritingText, "private SegmentPacketWriteResult WriteSegmentPacketsToActiveOutput(");
         AssertContains(segmentPacketWritingText, "WriteSegmentPacketReadLoop(");
-        AssertDoesNotContain(segmentPacketWritingText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
         AssertContains(segmentPacketReadLoopText, "private void WriteSegmentPacketReadLoop(");
         AssertContains(segmentPacketReadLoopText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
 
@@ -203,7 +202,7 @@ static partial class Program
     internal static Task FlashbackExporter_ProgressCallbacksAreBestEffort()
     {
         var sourceText = ReadFlashbackExporterSource();
-        var segmentPacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketReadLoop.cs")
+        var segmentPacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
 
         AssertDoesNotContain(sourceText, "progress?.Report(new ExportProgress");

@@ -17,7 +17,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentPacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
-        var segmentPacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketReadLoop.cs")
+        var segmentPacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
         var segmentPacketWriteStateText = segmentPacketReadLoopText;
         var segmentPacketRebasingText = segmentPacketReadLoopText;
@@ -86,7 +86,6 @@ static partial class Program
         AssertContains(segmentPacketWritingText, "var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);");
         AssertContains(segmentPacketWritingText, "var segmentExportWindow = ProjectSegmentExportWindow(segment, inPoint, outPoint, outPtsLimitUs);");
         AssertContains(segmentPacketWritingText, "WriteSegmentPacketReadLoop(");
-        AssertDoesNotContain(segmentPacketWritingText, "var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);");
         AssertContains(segmentPacketReadLoopText, "private void WriteSegmentPacketReadLoop(");
         AssertContains(segmentPacketReadLoopText, "var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);");
         AssertContains(segmentPacketReadLoopText, "ffmpeg.av_packet_unref(packet);");
@@ -252,7 +251,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.SegmentPacketRebasing.cs")),
-            "FlashbackExporter.SegmentPacketRebasing.cs folded into FlashbackExporter.SegmentPacketReadLoop.cs");
+            "FlashbackExporter.SegmentPacketRebasing.cs folded into FlashbackExporter.SegmentPacketWriting.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.SegmentTemplate.cs")),
