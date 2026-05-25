@@ -8,7 +8,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var viewModelRuntimeSnapshotText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSnapshots.cs")
             .Replace("\r\n", "\n");
-        var viewModelRuntimeSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/ViewModelRuntimeSnapshotBuilder.cs")
+        var viewModelRuntimeSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs")
             .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
@@ -38,10 +38,10 @@ static partial class Program
         AssertContains(automationSnapshotsText, "=> FromSynchronousSnapshot(ProbePreviewColor, cancellationToken);");
         AssertContains(automationSnapshotsText, "public Task<CaptureRuntimeSnapshot> GetCaptureRuntimeSnapshotAsync(CancellationToken cancellationToken = default)\n        => FromSynchronousSnapshot(_captureService.GetRuntimeSnapshot, cancellationToken);");
         AssertContains(agentMapText, "`MainViewModel.AutomationSnapshots.cs` owns automation-facing view-model runtime snapshot UI-thread capture.");
-        AssertContains(agentMapText, "`ViewModelRuntimeSnapshotBuilder.cs` owns pure view-model runtime snapshot DTO construction.");
+        AssertContains(agentMapText, "`ViewModelBuilders.cs` owns pure view-model runtime snapshot DTO construction.");
         AssertContains(agentMapText, "also owns automation-facing source/preview probes and preview frame capture.");
         AssertContains(cleanupPlanText, "`MainViewModel.AutomationSnapshots.cs`; pure view-model runtime snapshot DTO");
-        AssertContains(cleanupPlanText, "construction lives in `ViewModelRuntimeSnapshotBuilder.cs`");
+        AssertContains(cleanupPlanText, "construction lives in `ViewModelBuilders.cs`");
         AssertContains(cleanupPlanText, "source/preview probes, and preview\n   frame capture also live in `MainViewModel.AutomationSnapshots.cs`");
 
         return Task.CompletedTask;

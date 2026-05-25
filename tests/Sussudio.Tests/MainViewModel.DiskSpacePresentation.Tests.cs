@@ -24,7 +24,7 @@ static partial class Program
     {
         var bridgeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingState.cs")
             .Replace("\r\n", "\n");
-        var builderText = ReadRepoFile("Sussudio/ViewModels/ViewModelPresentationBuilders.cs")
+        var builderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs")
             .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
@@ -45,8 +45,8 @@ static partial class Program
         AssertDoesNotContain(builderText, "DiskSpaceInfo =");
 
         AssertContains(agentMapText, "`MainViewModel.RecordingState.cs` owns recording-runtime counters and the DiskSpaceInfo assignment bridge");
-        AssertContains(agentMapText, "`Sussudio/ViewModels/ViewModelPresentationBuilders.cs` owns output drive probing");
-        AssertContains(cleanupPlanText, "`ViewModelPresentationBuilders.cs`");
+        AssertContains(agentMapText, "`Sussudio/ViewModels/ViewModelBuilders.cs` owns output drive probing");
+        AssertContains(cleanupPlanText, "`ViewModelBuilders.cs`");
 
         return Task.CompletedTask;
     }

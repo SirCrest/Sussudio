@@ -80,7 +80,11 @@ static partial class Program
         var telemetryText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs").Replace("\r\n", "\n");
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
         var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs").Replace("\r\n", "\n");
-        var builderText = ReadRepoFile("Sussudio/ViewModels/ViewModelPresentationBuilders.cs").Replace("\r\n", "\n");
+        var builderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs").Replace("\r\n", "\n");
+        var sourceTelemetryBuilderText = ExtractTextBetween(
+            builderText,
+            "internal static class SourceTelemetryPresentationBuilder",
+            "internal static class AutomationOptionsSnapshotBuilder");
 
         AssertContains(telemetryText, "_context.BuildSourceTelemetrySummary(_context.GetLatestSourceTelemetry(), DateTimeOffset.UtcNow);");
         AssertContains(telemetryText, "_context.SetSourceTelemetrySummaryText(_context.BuildSourceTelemetrySummary(snapshot, DateTimeOffset.UtcNow));");
@@ -120,17 +124,17 @@ static partial class Program
         AssertDoesNotContain(telemetryText, "private static string BuildTelemetryAgeText(");
         AssertDoesNotContain(telemetryText, "Source: waiting for signal telemetry");
         AssertDoesNotContain(telemetryText, "Target: {GetSelectedResolutionDisplayText()}");
-        AssertContains(builderText, "internal static class SourceTelemetryPresentationBuilder");
-        AssertContains(builderText, "internal static string BuildSourceSummary(SourceSignalTelemetrySnapshot snapshot, DateTimeOffset nowUtc)");
-        AssertContains(builderText, "internal static string BuildAgeText(DateTimeOffset? timestampUtc, DateTimeOffset nowUtc)");
-        AssertContains(builderText, "TelemetryAgeHelper.ComputeAgeSeconds(timestampUtc, nowUtc)");
-        AssertContains(builderText, "snapshot.FrameRateArg ??");
-        AssertContains(builderText, "snapshot.FrameRateExact?.ToString(\"0.###\")");
-        AssertContains(builderText, "snapshot.IsHdr.HasValue ? (snapshot.IsHdr.Value ? \"HDR\" : \"SDR\") : \"HDR?\"");
-        AssertContains(builderText, "internal static string BuildTargetSummary(");
-        AssertContains(builderText, "string.IsNullOrWhiteSpace(hdrRuntimeState) ? \"Unknown\" : hdrRuntimeState");
-        AssertDoesNotContain(builderText, "GetSelectedResolutionDisplayText()");
-        AssertDoesNotContain(builderText, "SourceTelemetrySummaryText =");
+        AssertContains(sourceTelemetryBuilderText, "internal static class SourceTelemetryPresentationBuilder");
+        AssertContains(sourceTelemetryBuilderText, "internal static string BuildSourceSummary(SourceSignalTelemetrySnapshot snapshot, DateTimeOffset nowUtc)");
+        AssertContains(sourceTelemetryBuilderText, "internal static string BuildAgeText(DateTimeOffset? timestampUtc, DateTimeOffset nowUtc)");
+        AssertContains(sourceTelemetryBuilderText, "TelemetryAgeHelper.ComputeAgeSeconds(timestampUtc, nowUtc)");
+        AssertContains(sourceTelemetryBuilderText, "snapshot.FrameRateArg ??");
+        AssertContains(sourceTelemetryBuilderText, "snapshot.FrameRateExact?.ToString(\"0.###\")");
+        AssertContains(sourceTelemetryBuilderText, "snapshot.IsHdr.HasValue ? (snapshot.IsHdr.Value ? \"HDR\" : \"SDR\") : \"HDR?\"");
+        AssertContains(sourceTelemetryBuilderText, "internal static string BuildTargetSummary(");
+        AssertContains(sourceTelemetryBuilderText, "string.IsNullOrWhiteSpace(hdrRuntimeState) ? \"Unknown\" : hdrRuntimeState");
+        AssertDoesNotContain(sourceTelemetryBuilderText, "GetSelectedResolutionDisplayText()");
+        AssertDoesNotContain(sourceTelemetryBuilderText, "SourceTelemetrySummaryText =");
 
         return Task.CompletedTask;
     }

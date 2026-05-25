@@ -9,7 +9,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
         var automationSnapshotText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSnapshots.cs");
         var automationOptionsText = automationSnapshotText;
-        var automationOptionsBuilderText = ReadRepoFile("Sussudio/ViewModels/AutomationOptionsSnapshotBuilder.cs");
+        var automationOptionsBuilderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs");
 
         AssertDoesNotContain(diagnosticsHubText, "GetAutomationOptionsSnapshotAsync(cancellationToken)");
         AssertDoesNotContain(diagnosticsHubText, "Options = optionsSnapshot");
