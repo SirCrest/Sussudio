@@ -4,7 +4,7 @@ static partial class Program
 {
     internal static Task McpWaitTools_UsesCatalogResponseTimeoutForConditionWaits()
     {
-        var waitToolsSource = ReadRepoFile("tools/McpServer/Tools/WaitTools.cs");
+        var waitToolsSource = ReadRepoFile("tools/McpServer/Tools/PreviewTools.cs");
         AssertContains(waitToolsSource, "AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.WaitForCondition)");
         AssertContains(waitToolsSource, "SendCommandAsync(AutomationCommandKind.WaitForCondition, payload, responseTimeoutMs)");
         AssertDoesNotContain(waitToolsSource, "WaitForConditionCommandName");

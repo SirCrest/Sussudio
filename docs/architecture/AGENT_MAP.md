@@ -3502,6 +3502,9 @@ Primary owners:
   points.
 - `tools/McpServer/Tools/WindowTools.cs` owns the public window action,
   full-screen, recordings-folder, and UI visibility/settings MCP entry points.
+- `tools/McpServer/Tools/PreviewTools.cs` owns the public preview-toggle,
+  recording-toggle, and condition-wait MCP entry points while preserving the
+  `PreviewTools`, `RecordingTools`, and `WaitTools` tool types.
 - `tools/McpServer/Tools/PerformanceTimelineTools.cs` owns the public MCP
   tool entry point and command response handling.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs` owns timeline JSON

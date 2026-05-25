@@ -65,7 +65,7 @@ static partial class Program
         var videoSourceProbeToolsText = ReadRepoFile("tools/McpServer/Tools/VideoSourceProbeTools.cs");
         var windowToolsText = ReadRepoFile("tools/McpServer/Tools/WindowTools.cs");
         var windowScreenshotToolsText = previewFrameCaptureToolsText;
-        var waitToolsText = ReadRepoFile("tools/McpServer/Tools/WaitTools.cs");
+        var waitToolsText = previewToolsText;
 
         AssertContains(formatterText, "AutomationCommandKind Kind,");
         AssertContains(formatterText, "pipeClient.SendCommandAsync(command.Kind, command.Payload)");

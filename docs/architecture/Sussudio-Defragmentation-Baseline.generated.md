@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-25T00:33:04Z
+Generated UTC: 2026-05-25T00:40:08Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 575 |
+| Production .cs files | 574 |
 | Test .cs files | 552 |
-| Production .cs files under 60 lines | 18 (3.1%) |
-| Production .cs files under 80 lines | 33 (5.7%) |
+| Production .cs files under 60 lines | 17 (3.0%) |
+| Production .cs files under 80 lines | 31 (5.4%) |
 
 ## Largest partial-type clusters
 
@@ -60,8 +60,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 684 | Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs |
 | 677 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
 | 649 | tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs |
-| 647 | Sussudio/Services/Automation/NamedPipeAutomationServer.cs |
 | 647 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
+| 647 | Sussudio/Services/Automation/NamedPipeAutomationServer.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
 | 638 | Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs |
 | 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
@@ -103,7 +103,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 48 | Sussudio/Services/Contracts/AutomationInterfaces.cs |
 | 48 | tools/McpServer/Tools/PerformanceTimelineTools.cs |
 | 56 | Sussudio/DisplayFormatters.cs |
-| 56 | tools/McpServer/Tools/PreviewTools.cs |
 
 ## Notes
 
