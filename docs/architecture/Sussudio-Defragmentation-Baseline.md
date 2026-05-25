@@ -1655,3 +1655,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: synchronous dispose fallback, async dispose idempotence, writer completion, cancellation, encode-task observation, deferred cleanup timeout logging, queue buffer returns, queue-depth reset, cancellation-source disposal, queue nulling, GPU/CUDA/microphone flag reset, work semaphore disposal, and encoder dispose failure logging remain unchanged
 Notes for future agents: keep sink diagnostics, encoding loop, queue completion signal, and dispose/deferred cleanup in `LibAvRecordingSink.cs`; keep startup in `Startup.cs`, stop/final output validation in `StopLifecycle.cs`, and packet drains in `PacketDrain.cs`
+
+Date: 2026-05-25
+Area: shared automation pipe client locality
+Problem: `AutomationPipeClient.Commands.cs` and `AutomationPipeClient.Transport.cs` split the shared pipe client's command envelope/retry/response-state logic from the single request/response transport it immediately calls, leaving shared CLI/MCP pipe behavior in a tiny two-part partial family.
+Files consolidated: `tools/Common/AutomationPipeClient/AutomationPipeClient.Commands.cs`; `tools/Common/AutomationPipeClient/AutomationPipeClient.Transport.cs`
+Files added: `tools/Common/AutomationPipeClient/AutomationPipeClient.cs`
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationPipeClient` -1 file; no longer appears as a partial cluster
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: shared automation tool contract tests cover enum command routing, exact pipe connect error classification, response-state parsing, and synthetic error shaping; no automation command names/IDs changed
+Behavior preserved: command resolution, typed `AutomationCommandKind` command-id handoff, request envelope serialization, `not_ready` retry delay bounds, response-state parsing, named-pipe connect classification, UTF-8 request/response framing, response timeout, and cancellation behavior remain unchanged
+Notes for future agents: keep command envelope/retry/response-state parsing and named-pipe request transport together in `AutomationPipeClient.cs`; keep higher-level timeout selection, response validation, and synthetic error handling in `AutomationCommandTransport.cs`

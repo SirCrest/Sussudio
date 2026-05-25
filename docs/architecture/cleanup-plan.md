@@ -3392,19 +3392,18 @@ observation, and Flashback warmup filtering.
 health-observation classifiers, sparse cadence tolerances, and tolerated warning
 classification while the runner still owns scenario execution and warning emission.
 
-Shared automation pipe client ownership is split from a single helper into a
-focused partial family under `tools/Common/AutomationPipeClient/`.
-`AutomationPipeClient.Transport.cs` owns named-pipe connect orchestration,
-connect failure classification with exact CLI/MCP diagnostic error codes,
-write/read framing, and response timeout, `AutomationPipeClient.Commands.cs`
-owns command envelope sending and
-typed `AutomationCommandKind` command-id routing plus `not_ready` retry policy,
+Shared automation pipe client ownership lives under
+`tools/Common/AutomationPipeClient/`. `AutomationPipeClient.cs` owns command
+envelope sending, typed `AutomationCommandKind` command-id routing,
+`not_ready` retry policy, named-pipe connect orchestration, connect failure
+classification with exact CLI/MCP diagnostic error codes, write/read framing,
+and response timeout,
 `AutomationCommandTransport.cs` owns command-specific timeout selection for
 string and typed commands, shared response-element validation, synthetic error
 shaping, and handoff to
 `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`,
-`AutomationPipeClient.Commands.cs` owns tolerant response-state parsing handoff
-to `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`,
+`AutomationPipeClient.cs` owns tolerant response-state parsing handoff to
+`Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`,
 `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs` owns the command
 result handoff, pipe client exception taxonomy, response-state parsing,
 unknown-command handling, structured error-envelope creation, and common
@@ -3433,8 +3432,7 @@ DTOs live in `tools/EgavdsAudioProbe/Program.NativeInterop.cs`.
 
 Remaining `tools/Common` ownership:
 
-- `AutomationPipeClient/AutomationPipeClient.Transport.cs`
-- `AutomationPipeClient/AutomationPipeClient.Commands.cs`
+- `AutomationPipeClient/AutomationPipeClient.cs`
 - `AutomationPipeClient/AutomationCommandTransport.cs`
 - `DiagnosticSessionBackgroundTasks.cs`
 - `DiagnosticSessionCleanupActions.cs`

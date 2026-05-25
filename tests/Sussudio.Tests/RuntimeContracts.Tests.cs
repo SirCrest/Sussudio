@@ -187,8 +187,7 @@ internal static class RuntimeContractSource
     public static string ReadAutomationPipeClientSource()
         => ReadSourceFamily(new[]
         {
-            "tools/Common/AutomationPipeClient/AutomationPipeClient.Transport.cs",
-            "tools/Common/AutomationPipeClient/AutomationPipeClient.Commands.cs",
+            "tools/Common/AutomationPipeClient/AutomationPipeClient.cs",
             "tools/Common/AutomationPipeClient/AutomationCommandTransport.cs"
         });
 

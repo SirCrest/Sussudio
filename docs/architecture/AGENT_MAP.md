@@ -3322,14 +3322,12 @@ Primary owners:
   shared JSON options.
 - `tools/Common/AutomationPipeClient/` owns the shared pipe-client helper family
   used by ssctl, MCP, diagnostic sessions, and smoke tools.
-- `tools/Common/AutomationPipeClient/AutomationPipeClient.Transport.cs` owns
-  named-pipe connect orchestration, pipe connect failure classification,
-  exact CLI/MCP diagnostic error codes, request/response framing, and response
-  timeout.
-- `tools/Common/AutomationPipeClient/AutomationPipeClient.Commands.cs` owns
-  command envelope sending, typed `AutomationCommandKind` command-id routing,
-  `not_ready` retry behavior, and response-state parsing handoff to
-  `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`.
+- `tools/Common/AutomationPipeClient/AutomationPipeClient.cs` owns command
+  envelope sending, typed `AutomationCommandKind` command-id routing,
+  `not_ready` retry behavior, response-state parsing handoff to
+  `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`, named-pipe
+  connect orchestration, pipe connect failure classification, exact CLI/MCP
+  diagnostic error codes, request/response framing, and response timeout.
 - `tools/Common/AutomationPipeClient/AutomationCommandTransport.cs` owns
   command-specific timeout selection for string and typed commands, shared
   response-element validation, synthetic error shaping, and the handoff to
