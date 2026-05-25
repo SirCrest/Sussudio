@@ -161,32 +161,12 @@ add xUnit alongside, and port incrementally.
 - `XUnit.McpToolSurfaceContractsTests.cs` owns the former legacy MCP tool
   surface, command-routing, host/pipe, verification, Flashback tool, and
   diagnostic-session tool entry checks.
-- `XUnit.McpDiagnosticSessionInfrastructureContractsTests.cs` owns the former
-  legacy diagnostic-session infrastructure band for runner terminal artifacts,
-  model/runner split ownership, initial snapshot capture, and compatibility
-  wrapper ownership.
-- `XUnit.McpDiagnosticSessionResultSurfaceContractsTests.cs` owns the former
-  legacy diagnostic-session result-surface band for formatter, builder,
-  diagnostic-health verdict, summary-write failure, result artifact, and
-  optional text formatting ownership checks.
-- `XUnit.McpDiagnosticSessionCommandRunContextContractsTests.cs` owns the
-  former legacy diagnostic-session command/run-context band for pipe retry,
-  command sending, JSON artifacts, run state, live-state breadcrumbs, run
-  context, run bootstrap, and output lock ownership checks.
-- `XUnit.McpDiagnosticSessionScenarioExecutionContractsTests.cs` owns the
-  former legacy diagnostic-session scenario execution band for scenario phase,
-  completion phase, plan/setup, background tasks, PresentMon startup, cleanup,
-  recording verification, and post-run snapshot ownership checks.
-- `XUnit.McpDiagnosticSessionFlashbackContractsTests.cs` owns the former
-  legacy diagnostic-session Flashback band for scenario flow, export/helper,
-  metric projection, wait, warning-policy, stress, and audio-master fallback
-  classification ownership checks.
-- `XUnit.McpDiagnosticSessionCoreContractsTests.cs` owns the former legacy
-  diagnostic-session sampler, metric projection, and health tolerance checks.
-- `XUnit.McpDiagnosticSessionRunnerBehaviorContractsTests.cs` owns the former
-  legacy diagnostic-session runner behavior band for Flashback export playback,
-  warmup warning tolerance, sparse source-cadence tolerance, initial snapshot
-  failure, pipe retry, and concurrent-output lock checks.
+- `XUnit.McpDiagnosticSessionContractsTests.cs` owns the former legacy
+  diagnostic-session xUnit execution bands: infrastructure, result surface,
+  command/run context, scenario execution, Flashback scenarios/helpers/metrics,
+  core sampler/metric/health checks, and runner behavior checks. The public
+  wrapper classes remain separate inside this file so existing test identities
+  stay stable while the execution surface is easier to scan.
 - `Program.cs` keeps the legacy runner entry point, but the
   diagnostic-session catalog has no remaining legacy registrations.
 - `XUnit.PresentationPreviewHarnessRegistrationTests.cs` owns the former legacy

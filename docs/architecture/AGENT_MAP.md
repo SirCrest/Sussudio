@@ -2372,28 +2372,13 @@ Primary current owners:
   `Runner.FlashbackPlayback`, `Runner.InitialSnapshot`, `Runner.PipeRetry`,
   and `Runner.Concurrency` files that execute the reflective runner against
   synthetic command delegates.
-- `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionInfrastructureContractsTests.cs`
-  owns xUnit execution for the former legacy diagnostic-session infrastructure
-  runner/model ownership catalog band.
-- `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionResultSurfaceContractsTests.cs`
-  owns xUnit execution for the former legacy diagnostic-session result-surface
-  ownership catalog band.
-- `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionCommandRunContextContractsTests.cs`
-  owns xUnit execution for the former legacy diagnostic-session command-channel
-  and run-context ownership catalog band.
-- `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionScenarioExecutionContractsTests.cs`
-  owns xUnit execution for the former legacy diagnostic-session general scenario
-  execution and post-run ownership catalog band.
-- `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionFlashbackContractsTests.cs`
-  owns xUnit execution for the former legacy diagnostic-session Flashback
-  scenario, export/helper, metric, wait, validation, stress, and audio-master
-  fallback catalog band.
-- `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionCoreContractsTests.cs`
-  owns xUnit execution for the former legacy diagnostic-session sampler,
-  metric projection, and health tolerance catalog band.
-- `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionRunnerBehaviorContractsTests.cs`
-  owns xUnit execution for the former legacy diagnostic-session runner behavior
-  catalog band.
+- `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionContractsTests.cs` owns the
+  xUnit execution surface for the former legacy diagnostic-session catalog
+  bands: infrastructure, result surface, command/run context, scenario
+  execution, Flashback scenarios/helpers/metrics/waits/validation/stress,
+  sampler/metric/health core checks, and runner behavior checks. Keep the
+  public wrapper classes in this file unless a band needs an independent
+  fixture or executable helper state.
 - `tests/Sussudio.Tests/Program.cs` keeps the compatibility runner entry point;
   diagnostic-session checks now execute through xUnit wrappers.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Helpers.cs`

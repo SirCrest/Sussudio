@@ -1869,3 +1869,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: affected NativeXuAudioProbe build and source-ownership tests cover the moved command IDs and raw formatter
 Behavior preserved: `NativeXuProbeCommands` constants, `NativeXuProbeFormatting.FormatRaw`, AT command read/write/set-input behavior, default experiment payloads, and reporting text stay unchanged
 Notes for future agents: keep shared Native XU command IDs and raw-payload formatting with `Program.DefaultExperiment.cs` unless they become a shared library contract or an independently tested command-support type
+
+Date: 2026-05-25
+Area: MCP diagnostic-session xUnit execution-surface locality
+Problem: Seven tiny xUnit wrapper files each owned one former legacy diagnostic-session catalog band, but every file only exposed public wrapper classes and delegated to `Program` checks. Reviewing the diagnostic-session xUnit execution surface required opening a file per band without gaining independent fixtures or helper state.
+Files consolidated: `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionInfrastructureContractsTests.cs`; `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionResultSurfaceContractsTests.cs`; `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionCommandRunContextContractsTests.cs`; `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionScenarioExecutionContractsTests.cs`; `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionFlashbackContractsTests.cs`; `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionCoreContractsTests.cs`; `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionRunnerBehaviorContractsTests.cs`
+Files added: `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionContractsTests.cs`
+Net production .cs delta: 0
+Net test .cs delta: -6
+Partial clusters reduced: n/a; MCP diagnostic-session xUnit wrapper file count -6
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
+Behavior preserved: the same public test classes, `[Fact]` method names, and delegated diagnostic-session `Program` checks remain available under one diagnostic-session contracts file
+Notes for future agents: keep MCP diagnostic-session xUnit wrapper classes together in `XUnit.McpDiagnosticSessionContractsTests.cs`; add new wrapper classes there unless a band needs independent fixtures or executable helper state
