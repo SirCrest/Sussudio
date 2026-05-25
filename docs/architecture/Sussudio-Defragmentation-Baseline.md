@@ -2077,3 +2077,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: MCP window/preview tests remain in the xUnit suite and exercise the same named-pipe tool calls
 Behavior preserved: the same internal `Program` test method names, helper methods, reflection calls, command assertions, and response-formatting checks remain in one window-preview owner file
 Notes for future agents: keep MCP wait/window/preview/screenshot/probe tests in `McpToolSurface.WindowPreview.Tests.cs` unless a subgroup grows a distinct fixture, process lifecycle, or helper seam
+
+Date: 2026-05-25
+Area: MCP performance timeline test locality
+Problem: MCP performance timeline checks split one timeline source-loading seam across source-ownership, rendering, projection, and Flashback command-counter partial files. Changing timeline fields or rendering required opening the root orchestrator plus several small helper/assertion fragments.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.Performance.TimelineContract.SourceOwnership.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.Performance.TimelineContract.Rendering.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.Performance.TimelineContract.Projection.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.Performance.TimelineFlashback.Tests.cs`
+Files added: none
+Net production .cs delta: 0
+Net test .cs delta: -4
+Partial clusters reduced: `Program` MCP performance timeline partial-family file count -4
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: MCP performance timeline tests remain in the xUnit suite and exercise the same timeline tool pipe calls
+Behavior preserved: the same internal `Program` test method names, timeline source loader, source-ownership assertions, rendering/projection contracts, and Flashback command-counter formatting check remain in `McpToolSurface.Performance.TimelineContract.Tests.cs`
+Notes for future agents: keep MCP performance timeline source-loading, projection, rendering, and Flashback timeline formatting checks in `McpToolSurface.Performance.TimelineContract.Tests.cs` unless a subgroup grows a distinct fixture or helper seam
