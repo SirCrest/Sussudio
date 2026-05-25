@@ -1370,17 +1370,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Screenshot.Tests.cs`
   owns MainWindow preview screenshot workflow, preview screenshot text-policy,
   and whole-window screenshot ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Polling.Tests.cs` owns
-  Flashback status/playback polling controller ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.TimelinePresentation.Tests.cs`
-  owns Flashback timeline track layout, marker presentation, and export progress
-  presentation controller ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Playhead.Tests.cs` owns
-  Flashback playhead/CTI motion controller ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.PlaybackPresentation.Tests.cs`
-  owns Flashback playback presentation/coordinator ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Settings.Tests.cs` owns
-  Flashback settings binding and command controller ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Tests.cs` owns Flashback
+  status/playback polling, timeline track layout, marker/export presentation,
+  playhead/CTI motion, playback presentation/coordinator, settings binding, and
+  command controller ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.CompositionSource.cs` owns the shared
   MainWindow source readers used by root, Flashback, preview, shell-chrome,
   capture-binding, and stats-overlay ownership assertions.

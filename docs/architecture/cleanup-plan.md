@@ -880,9 +880,10 @@ Preview runtime source-shape coverage is split across renderer-host,
 snapshot, D3D-projection, and surface test owners so failures point at the
 runtime owner that actually drifted instead of one combined harness check.
 MainWindow Flashback ownership tests mirror the Flashback controller owners
-through focused `MainWindow.FlashbackOwnership.*.Tests.cs` files: polling,
-timeline presentation, playhead/CTI motion, playback presentation/coordinator
-behavior, and settings/command binding each have a named test owner.
+through `MainWindow.FlashbackOwnership.Tests.cs`: polling, timeline
+presentation, playhead/CTI motion, playback presentation/coordinator behavior,
+and settings/command binding remain named test methods in one Flashback
+ownership spec.
 
 Audio and microphone meter rendering now lives in the
 `Sussudio/Controllers/Audio/Meter/AudioMeterController.cs`: the controller owns
