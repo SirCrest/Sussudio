@@ -8,7 +8,7 @@ namespace Sussudio.ViewModels;
 
 public partial class MainViewModel
 {
-    private sealed partial class MainViewModelControllerGraph
+    private sealed class MainViewModelControllerGraph
     {
         private MainViewModelControllerGraph(
             MainViewModelUiDispatchController uiDispatchController,

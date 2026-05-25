@@ -90,7 +90,7 @@ internal readonly record struct FlashbackPreviewBackendStartRequest(
 /// CaptureService remains the transition coordinator; this aggregate keeps the
 /// sink, buffer, exporter, playback controller, and settings snapshot together.
 /// </summary>
-internal sealed partial class FlashbackBackendResources
+internal sealed class FlashbackBackendResources
 {
     public FlashbackBufferManager? BufferManager { get; set; }
 

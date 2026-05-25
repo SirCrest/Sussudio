@@ -61,7 +61,7 @@ static partial class Program
         AssertDoesNotContain(compositionText, "_captureService.AudioLevelUpdated += OnAudioLevelUpdated;");
         AssertDoesNotContain(compositionText, "SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;");
 
-        AssertContains(controllerGraphText, "private sealed partial class MainViewModelControllerGraph");
+        AssertContains(controllerGraphText, "private sealed class MainViewModelControllerGraph");
         AssertContains(controllerGraphText, "public static MainViewModelControllerGraph Create(MainViewModel viewModel)");
         AssertContains(controllerGraphText, "var uiDispatchController = CreateUiDispatchController(viewModel);");
         AssertContains(controllerGraphText, "var previewLifecycleController = CreatePreviewLifecycleController(viewModel);");
@@ -160,7 +160,7 @@ static partial class Program
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
         var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs").Replace("\r\n", "\n");
 
-        AssertContains(controllerGraphText, "private sealed partial class MainViewModelControllerGraph");
+        AssertContains(controllerGraphText, "private sealed class MainViewModelControllerGraph");
         AssertContains(controllerGraphText, "private static MainViewModelUiDispatchController CreateUiDispatchController(MainViewModel viewModel)");
         AssertContains(controllerGraphText, "DispatcherQueue = viewModel._dispatcherQueue,");
         AssertContains(controllerGraphText, "IsDisposing = () => Volatile.Read(ref viewModel._disposeState) != 0,");

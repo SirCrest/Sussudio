@@ -2512,3 +2512,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; no public automation command names, IDs, or wire payloads changed
 Behavior preserved: frame buffer sizing, video dimension bounds, D3D11/software decoded-frame validation, input stream-count bounds, stream-index checks, and Flashback decoder error text remain unchanged
 Notes for future agents: keep decoder state guards, error helpers, and validation helpers with `FlashbackDecoder.cs`; keep decode-loop timing in `DecodeLoop.cs`, seeking in `Seeking.cs`, codec setup in `VideoSetup.cs`, and video/audio output conversion in their focused output owners.
+
+Date: 2026-05-25
+Area: stale one-file partial marker cleanup
+Problem: Five one-file production owners still declared `partial`, implying extension seams that no longer exist. These were not generated, XAML, platform-specific, or real 2-3 way splits, so the declarations contradicted the defragmentation partial-class policy and made partial-sprawl scans noisier.
+Files consolidated: none
+Files added: none
+Net production .cs delta: 0
+Partial clusters reduced: removed stale one-file partial markers from `DiagnosticSessionFlashbackExportScenarios`, `FlashbackBackendResources`, `NamedPipeAutomationServer`, `MainViewModelControllerGraph`, `WasapiComInterop`, and `tools/AutomationClient/Program`
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: affected `AutomationClient`, `McpServer`, `ssctl`, and automation pipe sources were covered by the solution build and source-shape tests; no CLI/MCP command names, automation command IDs, or wire payloads changed
+Behavior preserved: declaration keyword cleanup only; type names, constructors, public members, command routes, automation pipe behavior, Flashback backend resource behavior, WASAPI helper/contract behavior, diagnostic-session scenario flow, and AutomationClient command protocol behavior remain unchanged
+Notes for future agents: do not add `partial` to these owners unless a generated/XAML/platform split or a genuine multi-file ownership boundary is introduced with tests/docs.

@@ -141,7 +141,7 @@ static partial class Program
         var backendSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(backendSource, "internal sealed partial class FlashbackBackendResources");
+        AssertContains(backendSource, "internal sealed class FlashbackBackendResources");
         AssertContains(backendSource, "public FlashbackBufferManager? BufferManager { get; set; }");
         AssertContains(backendSource, "public FlashbackEncoderSink? Sink { get; set; }");
         AssertContains(backendSource, "public FlashbackExporter? Exporter { get; set; }");

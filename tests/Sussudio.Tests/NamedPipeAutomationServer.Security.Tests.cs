@@ -13,7 +13,7 @@ static partial class Program
 
         var pipeServerRootText = ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.cs")
             .Replace("\r\n", "\n");
-        AssertContains(pipeServerRootText, "public sealed partial class NamedPipeAutomationServer : IDisposable, IAsyncDisposable");
+        AssertContains(pipeServerRootText, "public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable");
         AssertContains(pipeServerRootText, "public bool Start()");
         AssertContains(pipeServerRootText, "private async Task HandleConnectionAsync(");
         AssertContains(pipeServerRootText, "new ConnectionSession(this, server, cancellationToken);");

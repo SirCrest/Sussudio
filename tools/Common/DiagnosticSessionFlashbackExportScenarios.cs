@@ -9,7 +9,7 @@ using static Sussudio.Tools.DiagnosticSessionMetrics;
 
 namespace Sussudio.Tools;
 
-internal static partial class DiagnosticSessionFlashbackExportScenarios
+internal static class DiagnosticSessionFlashbackExportScenarios
 {
     internal static async Task RunFlashbackExportConcurrentAsync(
         string outputDirectory,

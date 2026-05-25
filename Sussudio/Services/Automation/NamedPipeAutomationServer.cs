@@ -16,7 +16,7 @@ using Sussudio.Tools;
 
 namespace Sussudio.Services.Automation;
 
-public sealed partial class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
+public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 {
     public const string DefaultPipeName = AutomationPipeProtocol.DefaultPipeName;
 

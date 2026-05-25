@@ -14,7 +14,7 @@ static partial class Program
         var rangeText = rootText;
         var scenariosTextWithoutSpaces = scenariosText.Replace(" ", string.Empty);
 
-        AssertContains(scenariosText, "internal static partial class DiagnosticSessionFlashbackExportScenarios");
+        AssertContains(scenariosText, "internal static class DiagnosticSessionFlashbackExportScenarios");
         AssertContains(scenariosText, "internal static async Task RunFlashbackExportConcurrentAsync(");
         AssertContains(scenariosText, "\"flashback-concurrent-a.mp4\"");
         AssertContains(scenariosText, "flashback concurrent exports verified");

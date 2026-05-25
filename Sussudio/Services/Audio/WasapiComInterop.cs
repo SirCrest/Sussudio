@@ -7,7 +7,7 @@ namespace Sussudio.Services.Audio;
 // Minimal WASAPI/Core Audio interop surface used by capture, playback, and
 // device watching. Keeping the COM declarations centralized avoids subtle ABI
 // drift between the low-latency audio feature blocks.
-internal static partial class WasapiComInterop
+internal static class WasapiComInterop
 {
     internal const uint CLSCTX_ALL = 0x17;
     internal const uint DEVICE_STATE_ACTIVE = 0x00000001;

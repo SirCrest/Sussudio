@@ -208,7 +208,7 @@ static partial class Program
         var audioClientContractsSource = ReadRepoFile("Sussudio/Services/Audio/WasapiComInterop.AudioClient.Contracts.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(rootSource, "internal static partial class WasapiComInterop");
+        AssertContains(rootSource, "internal static class WasapiComInterop");
         AssertContains(rootSource, "internal static void ThrowIfFailed(int hr, string operation)");
         AssertContains(rootSource, "internal static void ReleaseComObject<T>(ref T? comObject)");
         AssertContains(rootSource, "internal static WasapiAudioFormat ReadAudioFormat(IntPtr formatPtr)");
