@@ -94,7 +94,7 @@ static partial class Program
     {
         var startText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStart.cs").Replace("\r\n", "\n");
         var audioGraphText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs").Replace("\r\n", "\n");
-        var stopText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStop.cs").Replace("\r\n", "\n");
+        var stopText = startText;
         var videoPipelineResourcesText = ReadRepoFile("Sussudio/Services/Capture/CapturePipelineResources.cs").Replace("\r\n", "\n");
         var flashbackPreviewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs").Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs").Replace("\r\n", "\n");
@@ -144,6 +144,10 @@ static partial class Program
         AssertContains(stopText, "private async Task DisposePreviewPipelineAsync(");
         AssertEqual(
             false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewStop.cs")),
+            "preview stop and disposal folded into preview lifecycle owner");
+        AssertEqual(
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewReuse.cs")),
             "preview reuse helper partial folded into preview start");
         AssertContains(videoPipelineResourcesText, "internal sealed class CaptureVideoPipelineResources");
@@ -190,13 +194,8 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewPipeline.cs")),
             "old preview pipeline partial removed after video lifecycle promotion");
-        AssertDoesNotContain(startText, "private Task StopVideoPreviewCoreAsync(");
-        AssertDoesNotContain(startText, "private async Task DisposePreviewPipelineAsync(");
         AssertDoesNotContain(startText, "new WasapiAudioCapture()");
         AssertDoesNotContain(startText, "micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
-        AssertDoesNotContain(stopText, "public Task StartVideoPreviewAsync(");
-        AssertDoesNotContain(stopText, "private bool CanReuseVideoCaptureForPreview(");
-        AssertDoesNotContain(stopText, "private static CaptureSettings CloneCaptureSettings(");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewDisposal.cs")),

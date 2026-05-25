@@ -1361,20 +1361,19 @@ callers use that aggregate directly instead of private root resource shims.
 
 Preview lifecycle now lives in focused CaptureService partials:
 `Sussudio/Services/Capture/CaptureService.PreviewStart.cs` owns the
-video-preview start transition entry point and sequencing, preview pipeline and
-Flashback backend recycle decisions before start, retained-backend fast-path
-reattachment, retained video/Flashback backend reuse checks, capture-settings
-cloning, fresh UVC startup, preview-start rollback, and fresh preview backend
-startup ordering;
+video-preview start/stop transition entry points and sequencing, preview
+pipeline and Flashback backend recycle decisions before start, retained-backend
+fast-path reattachment, retained video/Flashback backend reuse checks,
+capture-settings cloning, fresh UVC startup, preview-start rollback, fresh
+preview backend startup ordering, keep-pipeline-alive detach semantics,
+stopped-state/telemetry commit, preview pipeline disposal ordering, Flashback
+backend disposal, WASAPI disposal, and microphone cleanup;
 `Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs` owns preview
 WASAPI capture startup, video-only audio fallback logging, preview playback
 attach, preview-time microphone monitor startup, and partially-started audio
 rollback, plus committed live audio input switching and Flashback audio attach;
-`Sussudio/Services/Capture/CaptureService.PreviewStop.cs` owns video-preview
-stop transitions, keep-pipeline-alive detach semantics, and stopped-state/
-telemetry commit plus preview pipeline disposal ordering, Flashback backend
-disposal, WASAPI disposal, and microphone cleanup while delegating shared
-unified-video cleanup mechanics to the video pipeline resource owner;
+shared unified-video cleanup mechanics still delegate to the video pipeline
+resource owner;
 
 Recording integrity policy now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs`. That owner

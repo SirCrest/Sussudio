@@ -163,7 +163,6 @@ static partial class Program
             "Sussudio/Services/Capture/CaptureService.cs",
             "Sussudio/Services/Capture/CaptureService.Cleanup.cs",
             "Sussudio/Services/Capture/CaptureService.PreviewStart.cs",
-            "Sussudio/Services/Capture/CaptureService.PreviewStop.cs",
             "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs",
             "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs"
         };
