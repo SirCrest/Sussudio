@@ -1,6 +1,6 @@
 namespace Sussudio.Tools;
 
-public sealed partial class DiagnosticSessionResult
+public sealed class DiagnosticSessionResult
 {
     // Session summary and artifact paths.
     public string SessionId { get; init; } = string.Empty;

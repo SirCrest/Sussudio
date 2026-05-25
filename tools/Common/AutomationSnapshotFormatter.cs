@@ -9,7 +9,7 @@ namespace Sussudio.Tools;
 // Converts broad automation snapshots into terse console text. The formatter is
 // intentionally tolerant of missing JSON properties so old/new app builds can
 // still be inspected during live investigations.
-internal static partial class AutomationSnapshotFormatter
+internal static class AutomationSnapshotFormatter
 {
     internal static string FormatSnapshot(JsonElement snapshotResponse, bool includeFlashback = false)
     {

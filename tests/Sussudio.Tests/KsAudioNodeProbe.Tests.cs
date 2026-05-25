@@ -20,7 +20,8 @@ static partial class Program
         AssertDoesNotContain(programText, "var anyHit = false");
         AssertDoesNotContain(programText, "== Extended node tests ==");
         AssertDoesNotContain(programText, "== ADC volume probe ==");
-        AssertContains(scanWorkflowsText, "static partial class KsAudioNodeProbeScanWorkflows");
+        AssertContains(scanWorkflowsText, "static class KsAudioNodeProbeScanWorkflows");
+        AssertDoesNotContain(scanWorkflowsText, "static partial class KsAudioNodeProbeScanWorkflows");
         AssertContains(scanWorkflowsText, "public static int RunSetAndHold(SafeFileHandle handle)");
         AssertContains(scanWorkflowsText, "public static void RunFullProbe(SafeFileHandle handle)");
         AssertContains(scanWorkflowsText, "private static void EnumerateTopologyNodes(SafeFileHandle handle)");
@@ -48,7 +49,8 @@ static partial class Program
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
 
-        AssertContains(programText, "static partial class EgavdsProbe");
+        AssertContains(programText, "static class EgavdsProbe");
+        AssertDoesNotContain(programText, "static partial class EgavdsProbe");
         AssertContains(programText, "static string? FindElgato4KXDevicePath()");
         AssertContains(programText, "EGAVDS_SetAudioInputSelection(handleRef, targetInput)");
         AssertContains(programText, "EGAVDS_SetLineInAudioGain(handleRef, setGain.Value)");

@@ -10,7 +10,7 @@ namespace McpServer.Tools;
 
 [McpServerToolType]
 // MCP tools for verifying recordings and exported Flashback files.
-public static partial class VerificationTools
+public static class VerificationTools
 {
     [McpServerTool, Description("Run ffprobe validation on the last recording. Checks codec, resolution, HDR metadata parity.")]
     public static async Task<CallToolResult> verify_recording(PipeClient pipeClient)

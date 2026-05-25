@@ -705,7 +705,8 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(verificationRootText, "[McpServerToolType]");
-        AssertContains(verificationRootText, "public static partial class VerificationTools");
+        AssertContains(verificationRootText, "public static class VerificationTools");
+        AssertDoesNotContain(verificationRootText, "public static partial class VerificationTools");
         AssertContains(verificationRootText, "public static async Task<CallToolResult> verify_recording");
         AssertContains(verificationRootText, "public static async Task<CallToolResult> assert_snapshot");
         AssertContains(verificationRootText, "public static async Task<CallToolResult> verify_file");

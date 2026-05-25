@@ -203,7 +203,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private static bool EvaluateFlashbackWarningsSucceeded(");
         AssertContains(diagnosticSessionText, "IsToleratedFlashbackScenarioWarning(");
         AssertContains(diagnosticSessionText, "FlashbackWarningsSucceeded: EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
-        AssertContains(diagnosticScenariosText, "internal static partial class DiagnosticSessionScenarioCatalog");
+        AssertContains(diagnosticScenariosText, "internal static class DiagnosticSessionScenarioCatalog");
+        AssertDoesNotContain(diagnosticScenariosText, "internal static partial class DiagnosticSessionScenarioCatalog");
         AssertContains(diagnosticScenariosText, "internal static IReadOnlyList<DiagnosticSessionScenarioCatalogEntry> Entries { get; }");
         AssertContains(diagnosticScenariosText, "internal const string HelpList =");
         AssertContains(diagnosticScenariosText, "internal const string Description =");

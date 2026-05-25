@@ -78,7 +78,8 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "[McpServerToolType]");
-        AssertContains(rootText, "public static partial class PresentMonTools");
+        AssertContains(rootText, "public static class PresentMonTools");
+        AssertDoesNotContain(rootText, "public static partial class PresentMonTools");
         AssertContains(rootText, "public static async Task<CallToolResult> capture_presentmon");
         AssertContains(rootText, "public static async Task<object> capture_presentmon_raw");
         AssertContains(rootText, "[McpServerTool(UseStructuredContent = true)");

@@ -9,7 +9,8 @@ static partial class Program
         var resultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.cs");
 
         AssertContains(modelText, "public sealed class DiagnosticSessionOptions");
-        AssertContains(modelText, "public sealed partial class DiagnosticSessionResult");
+        AssertContains(modelText, "public sealed class DiagnosticSessionResult");
+        AssertDoesNotContain(modelText, "public sealed partial class DiagnosticSessionResult");
         AssertContains(resultText, "public string SessionId { get; init; } = string.Empty;");
         AssertContains(resultText, "public string[] Warnings { get; set; } = Array.Empty<string>();");
         AssertContains(resultText, "// End-of-run overview.");

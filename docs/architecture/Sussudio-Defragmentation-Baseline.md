@@ -2476,3 +2476,15 @@ Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudio
 CLI/MCP/pipe checks, if applicable: affected NativeXuAudioProbe build and source-ownership tests cover the moved legacy `i2c-probe` workflow; no public command names changed
 Behavior preserved: `i2c-probe` routing, selector scan range, raw I2C frame probes, alternate selector probes, AT-wrapped I2C frame probes, error/status text, and KS/XU helper calls remain unchanged
 Notes for future agents: keep the legacy NativeXu `i2c-probe` workflow with `Program.I2cCommands.cs` while it is only another exploratory I2C probe path; keep `Program.I2cTransport.cs` separate while multiple I2C command families share it.
+
+Date: 2026-05-25
+Area: stale one-file partial marker cleanup
+Problem: Several tool and model owners were still declared as `partial` after earlier consolidations removed their sibling files. That made generated partial-cluster reports look noisier and kept implying extension boundaries where the current architecture has a single cohesive owner.
+Files consolidated: none
+Files added: none
+Net production .cs delta: 0
+Partial clusters reduced: removed stale one-file partial markers from `PresentMonTools`, `FlashbackTools`, `VerificationTools`, `PerformanceTimelineTools`, `AutomationSnapshotFormatter`, `DiagnosticSessionResult`, `DiagnosticSessionScenarioCatalog`, `KsAudioNodeProbeScanWorkflows`, `EgavdsProbe`, and `CommandHandlers`
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: source-ownership tests cover the updated tool/model declarations; no public command names, tool names, automation IDs, or wire payloads changed
+Behavior preserved: declaration keyword cleanup only; method bodies, route names, MCP attributes, diagnostic-session scenarios, formatter output, and command payload shaping remain unchanged
+Notes for future agents: do not reintroduce `partial` on one-file owners unless a generated/XAML/platform split or a genuine two-to-three-way type split exists.

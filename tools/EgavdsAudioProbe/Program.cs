@@ -15,7 +15,7 @@ using System.Threading;
 
 return EgavdsProbe.Run(args);
 
-static partial class EgavdsProbe
+static class EgavdsProbe
 {
     public static int Run(string[] args)
     {

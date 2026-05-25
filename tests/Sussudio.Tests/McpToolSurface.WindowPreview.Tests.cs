@@ -380,7 +380,8 @@ static partial class Program
         var flashbackToolsActionText = flashbackToolsRootText;
         var flashbackToolsExportText = flashbackToolsRootText;
         AssertContains(flashbackToolsRootText, "[McpServerToolType]");
-        AssertContains(flashbackToolsRootText, "public static partial class FlashbackTools");
+        AssertContains(flashbackToolsRootText, "public static class FlashbackTools");
+        AssertDoesNotContain(flashbackToolsRootText, "public static partial class FlashbackTools");
         AssertContains(flashbackToolsRootText, "public static async Task<CallToolResult> flashback_enabled");
         AssertContains(flashbackToolsRootText, "public static async Task<CallToolResult> flashback_apply");
         AssertContains(flashbackToolsRootText, "public static async Task<CallToolResult> flashback_segments");

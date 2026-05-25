@@ -8,7 +8,7 @@ namespace Sussudio.Tools.Ssctl;
 // CLI command layer over the shared automation pipe. Handlers keep console
 // parsing, command payload shape, and human-readable output together while
 // leaving transport details in AutomationPipeClient.
-internal static partial class CommandHandlers
+internal static class CommandHandlers
 {
     public static Task<int> ExecuteAsync(PipeTransport transport, IReadOnlyList<string> arguments, bool globalJson)
     {

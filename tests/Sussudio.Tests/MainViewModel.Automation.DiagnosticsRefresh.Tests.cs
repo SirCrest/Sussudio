@@ -294,7 +294,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "_liveStateWriter = new DiagnosticSessionLiveStateWriter(");
         AssertContains(diagnosticSessionText, ".CompleteRegisteredScenarioWorkAsync(");
         AssertContains(diagnosticSessionText, "backgroundTasks.ObserveAfterFaultAsync(");
-        AssertContains(diagnosticScenariosText, "internal static partial class DiagnosticSessionScenarioCatalog");
+        AssertContains(diagnosticScenariosText, "internal static class DiagnosticSessionScenarioCatalog");
+        AssertDoesNotContain(diagnosticScenariosText, "internal static partial class DiagnosticSessionScenarioCatalog");
         AssertContains(diagnosticScenariosText, "internal const string FlashbackPlayback = \"flashback-playback\";");
         AssertContains(diagnosticScenariosText, "internal const string FlashbackStress = \"flashback-stress\";");
         AssertContains(diagnosticScenariosText, "internal const string FlashbackScrubStress = \"flashback-scrub-stress\";");
@@ -319,7 +320,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "catch (AutomationPipeException ex) when (ex is not AutomationPipeConnectException)");
         AssertContains(diagnosticSessionText, "return BuildLocalFailureResponse(command, ex.Message);");
         AssertContains(diagnosticSessionText, "catch (JsonException ex)");
-        AssertContains(diagnosticSessionModelsText, "public sealed partial class DiagnosticSessionResult");
+        AssertContains(diagnosticSessionModelsText, "public sealed class DiagnosticSessionResult");
+        AssertDoesNotContain(diagnosticSessionModelsText, "public sealed partial class DiagnosticSessionResult");
         AssertContains(diagnosticSessionModelsText, "public string TerminalState { get; set; }");
         AssertContains(diagnosticSessionText, "LivePath = _liveStateWriter.LivePath;");
         AssertContains(diagnosticSessionText, "CreateUnknownInitialSnapshot()");

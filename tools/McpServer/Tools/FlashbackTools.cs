@@ -10,7 +10,7 @@ namespace McpServer.Tools;
 
 [McpServerToolType]
 // MCP tools for Flashback timeline playback, export, and backend settings.
-public static partial class FlashbackTools
+public static class FlashbackTools
 {
     [McpServerTool, Description("Enable or disable the Flashback rolling buffer. Disable it before dedicated LibAv recording verification.")]
     public static async Task<CallToolResult> flashback_enabled(

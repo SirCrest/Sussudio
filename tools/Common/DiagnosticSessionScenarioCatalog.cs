@@ -1,6 +1,6 @@
 namespace Sussudio.Tools;
 
-internal static partial class DiagnosticSessionScenarioCatalog
+internal static class DiagnosticSessionScenarioCatalog
 {
     internal const string Observe = "observe";
     internal const string PreviewOnly = "preview-only";

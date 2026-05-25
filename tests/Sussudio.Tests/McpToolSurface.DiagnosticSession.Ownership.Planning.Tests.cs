@@ -42,7 +42,8 @@ static partial class Program
         var catalogText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(catalogText, "internal static partial class DiagnosticSessionScenarioCatalog");
+        AssertContains(catalogText, "internal static class DiagnosticSessionScenarioCatalog");
+        AssertDoesNotContain(catalogText, "internal static partial class DiagnosticSessionScenarioCatalog");
         AssertContains(catalogText, "TryGetEntry(normalized, out _)");
         AssertContains(catalogText, "internal const string HelpList =");
         AssertContains(catalogText, "internal const string Description =");

@@ -1,7 +1,7 @@
 using Microsoft.Win32.SafeHandles;
 using static KsAudioNodeProbeNative;
 
-static partial class KsAudioNodeProbeScanWorkflows
+static class KsAudioNodeProbeScanWorkflows
 {
     private static readonly Dictionary<int, string> PropertyNames = new()
     {
