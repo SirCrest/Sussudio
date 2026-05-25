@@ -27,8 +27,8 @@ public sealed class MjpegPipelineContractsTests
         => global::Program.ParallelMjpegDecodePipeline_CompressedQueueLivesWithRoot();
 
     [Fact]
-    public Task ParallelMjpegDecodePipelineWorkersLiveInFocusedPartial()
-        => global::Program.ParallelMjpegDecodePipeline_WorkersLiveInFocusedPartial();
+    public Task ParallelMjpegDecodePipelineWorkersLiveWithRoot()
+        => global::Program.ParallelMjpegDecodePipeline_WorkersLiveWithRoot();
 
     [Fact]
     public Task ParallelMjpegDecodePipelineReorderLivesInFocusedPartial()

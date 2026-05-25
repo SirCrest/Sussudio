@@ -2214,12 +2214,11 @@ invalid-MJPG drops, work-item construction, compressed byte-budget rejection,
 queue-depth accounting, queue-full rejection, and packet-hash recording beside
 pipeline construction and channel creation.
 
-Parallel MJPEG worker execution now lives in
-`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Workers.cs`. Keep decoder
-array ownership, worker thread creation/naming, worker decode-loop execution,
-and worker liveness checks there; keep the root pipeline focused on
-construction, callback storage, channel creation, compressed input admission,
-and startup sequencing.
+Parallel MJPEG worker execution now lives with the bounded work-channel owner in
+`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs`. Keep decoder array
+ownership, worker thread creation/naming, worker decode-loop execution, worker
+liveness checks, construction, callback storage, channel creation, compressed
+input admission, and startup sequencing together.
 Software MJPEG decode/copy execution now lives with its decoder state in
 `Sussudio/Services/Gpu/SoftwareMjpegDecoder.cs`. Keep FFmpeg decoder context
 allocation, frame/packet ownership, hot MJPEG send/receive,

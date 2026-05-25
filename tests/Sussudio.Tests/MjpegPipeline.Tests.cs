@@ -8,7 +8,6 @@ static partial class Program
     internal static Task ParallelMjpegDecodePipeline_SharedReorder_DoesNotSynthesizeRecordingSkips()
     {
         var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Workers.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs");
         AssertContains(source, "MJPEG_PIPELINE_STARTUP_DROP");
@@ -71,23 +70,23 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task ParallelMjpegDecodePipeline_WorkersLiveInFocusedPartial()
+    internal static Task ParallelMjpegDecodePipeline_WorkersLiveWithRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
             .Replace("\r\n", "\n");
-        var workersText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Workers.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(workersText, "private readonly SoftwareMjpegDecoder[] _decoders;");
-        AssertContains(workersText, "private readonly Thread[] _workers;");
-        AssertContains(workersText, "private void StartDecodeWorkers(int width, int height)");
-        AssertContains(workersText, "Name = $\"MjpegWorker-{i}\"");
-        AssertContains(workersText, "private void WorkerLoop(int workerIndex)");
-        AssertContains(workersText, "private bool HasAliveWorkers()");
+        AssertContains(rootText, "private readonly SoftwareMjpegDecoder[] _decoders;");
+        AssertContains(rootText, "private readonly Thread[] _workers;");
         AssertContains(rootText, "StartDecodeWorkers(width, height);");
-        AssertDoesNotContain(rootText, "private void WorkerLoop(int workerIndex)");
-        AssertDoesNotContain(rootText, "private bool HasAliveWorkers()");
-        AssertDoesNotContain(rootText, "private readonly SoftwareMjpegDecoder[] _decoders;");
+        AssertContains(rootText, "private void StartDecodeWorkers(int width, int height)");
+        AssertContains(rootText, "Name = $\"MjpegWorker-{i}\"");
+        AssertContains(rootText, "private void WorkerLoop(int workerIndex)");
+        AssertContains(rootText, "private bool HasAliveWorkers()");
+        AssertContains(rootText, "DecrementCompressedQueueDepth(\"dequeue\");");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "ParallelMjpegDecodePipeline.Workers.cs")),
+            "MJPEG worker execution stays folded into pipeline root/channel owner");
 
         return Task.CompletedTask;
     }
