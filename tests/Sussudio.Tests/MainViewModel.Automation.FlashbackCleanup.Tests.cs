@@ -9,8 +9,7 @@ static partial class Program
         var bufferText = ReadFlashbackBufferManagerSource();
         var cleanupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs")
             .Replace("\r\n", "\n");
-        var budgetText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupSessionCacheBudget.cs")
-            .Replace("\r\n", "\n");
+        var budgetText = cleanupText;
         var scannerText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackSessionRecoveryScanner.cs")
             .Replace("\r\n", "\n");
         var playbackSegmentEdgesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")

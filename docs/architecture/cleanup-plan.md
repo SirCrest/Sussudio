@@ -1788,11 +1788,9 @@ state in `Sussudio/Services/Flashback/FlashbackBufferManager.cs`.
 Flashback startup cleanup now lives in
 `Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs`. Keep stale root
 segment cleanup, stale session-directory cleanup, recovery-preserve marker
-skips, and temp-drive free-space probing there. Startup session-cache budget
-enforcement now lives in
-`Sussudio/Services/Flashback/FlashbackStartupSessionCacheBudget.cs`. Keep
-startup cache budget calculation, session-directory stats, preserved-session
-skips, oldest-session deletion, and cache-budget cleanup telemetry there.
+skips, temp-drive free-space probing, startup cache budget calculation,
+session-directory stats, preserved-session skips, oldest-session deletion, and
+cache-budget cleanup telemetry there.
 
 Flashback exporter lifecycle behavior now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs`. Keep shared native

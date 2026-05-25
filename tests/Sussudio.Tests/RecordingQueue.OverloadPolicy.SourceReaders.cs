@@ -19,8 +19,7 @@ static partial class Program
         var flashbackSource = ReadFlashbackEncoderSinkSource();
         var flashbackBackendSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
         var flashbackBufferSource = ReadFlashbackBufferManagerSource();
-        var flashbackCleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupSessionCacheBudget.cs");
+        var flashbackCleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs");
         var captureServiceSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartFlashback.cs")

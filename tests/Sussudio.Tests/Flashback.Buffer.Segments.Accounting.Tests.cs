@@ -29,8 +29,7 @@ static partial class Program
         var source = ReadFlashbackBufferManagerSource();
         var cleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs")
             .Replace("\r\n", "\n");
-        var budgetSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupSessionCacheBudget.cs")
-            .Replace("\r\n", "\n");
+        var budgetSource = cleanupSource;
 
         AssertContains(source, "var maxTicks = Math.Max(0, _options.BufferDuration.Ticks);");
         AssertContains(source, "var duration = NonNegativeDeltaTicks(ptsTicks, startTicks);");
