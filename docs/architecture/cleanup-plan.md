@@ -3831,7 +3831,7 @@ owner, fold it back into that owner and update the source-shape tests and
    lives in `Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs`. Pure
    recording codec filtering, selected-codec fallback policy, string-to-model
    format/quality parsing, and custom bitrate clamp policy now live in
-   `Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs`, while startup
+   `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`, while startup
    FFmpeg capability probes and observable recording-format option mutation through graph-built context ports live
    in the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`. `MainViewModel.CaptureModeTransactions.cs`

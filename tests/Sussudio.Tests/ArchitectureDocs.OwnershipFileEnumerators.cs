@@ -113,8 +113,7 @@ static partial class Program
                  fileName.StartsWith("StatsSnapshot", StringComparison.Ordinal) ||
                  string.Equals(fileName, "StatsPresentationModels.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "DeviceFormatProbeRetargetPolicy.cs", StringComparison.Ordinal) ||
-                 string.Equals(fileName, "ViewModelPresentationBuilders.cs", StringComparison.Ordinal) ||
-                 string.Equals(fileName, "RecordingSettingsSelectionPolicy.cs", StringComparison.Ordinal))) ||
+                 string.Equals(fileName, "ViewModelPresentationBuilders.cs", StringComparison.Ordinal))) ||
             ((string.Equals(directory, "Sussudio/Controllers", StringComparison.OrdinalIgnoreCase) ||
               directory.StartsWith("Sussudio/Controllers/", StringComparison.OrdinalIgnoreCase)) &&
                 fileName.EndsWith(".cs", StringComparison.OrdinalIgnoreCase));

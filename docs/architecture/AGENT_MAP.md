@@ -3125,7 +3125,7 @@ Primary current owners:
   `MainViewModel.CaptureModeTransactions.cs`
   owns HDR toggle side effects: recording-time revert/status, mode option
   rebuilds, immediate reinitialize scheduling, and settings persistence.
-  `Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs` owns pure recording
+  `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs` also owns pure recording
   codec filtering, selected-codec fallback policy, string-to-model format/quality
   parsing, and custom bitrate clamp policy shared by UI and automation.
   the root `MainViewModel.cs` keeps the public capture-device refresh facade,
