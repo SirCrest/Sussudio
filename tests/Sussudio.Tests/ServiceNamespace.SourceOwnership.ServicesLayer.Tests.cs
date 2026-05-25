@@ -68,7 +68,6 @@ static partial class Program
 
         var cudaInteropInitializationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Initialization.cs"));
         var cudaInteropCopyText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Copy.cs"));
-        var cudaInteropNativeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Native.cs"));
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.cs")),
@@ -85,8 +84,8 @@ static partial class Program
         AssertContains(cudaInteropInitializationText, "CUDA_D3D11_INTEROP_CTX_INIT");
         AssertContains(cudaInteropInitializationText, "CUDA_D3D11_ZEROCOPY_REGISTER_OK");
         AssertDoesNotContain(cudaInteropInitializationText, "public void CopyFrameToTexture");
-        AssertDoesNotContain(cudaInteropInitializationText, "DllImport(\"nvcuda.dll\")");
-        AssertDoesNotContain(cudaInteropInitializationText, "private struct CUDA_MEMCPY2D");
+        AssertContains(cudaInteropInitializationText, "DllImport(\"nvcuda.dll\")");
+        AssertContains(cudaInteropInitializationText, "private struct CUDA_MEMCPY2D");
         AssertContains(cudaInteropCopyText, "public void CopyFrameToTexture");
         AssertContains(cudaInteropCopyText, "private void CopyFrameZeroCopy");
         AssertContains(cudaInteropCopyText, "private void CopyFrameStaging");
@@ -95,9 +94,11 @@ static partial class Program
         AssertContains(cudaInteropInitializationText, "public void Dispose()");
         AssertContains(cudaInteropInitializationText, "private void TryUnregisterResource");
         AssertContains(cudaInteropInitializationText, "cuDevicePrimaryCtxRelease");
-        AssertContains(cudaInteropNativeText, "private const uint CU_MEMORYTYPE_DEVICE");
-        AssertContains(cudaInteropNativeText, "DllImport(\"nvcuda.dll\")");
-        AssertContains(cudaInteropNativeText, "private struct CUDA_MEMCPY2D");
+        AssertContains(cudaInteropInitializationText, "private const uint CU_MEMORYTYPE_DEVICE");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Native.cs")),
+            "CUDA/D3D11 native declarations folded into bridge initialization");
 
         var nvdecText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.cs"));
         AssertContains(nvdecText, "internal sealed unsafe class NvdecMjpegDecoder : IDisposable");

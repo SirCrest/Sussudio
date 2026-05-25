@@ -1486,7 +1486,7 @@ Partial clusters reduced: `CudaD3D11InteropBridge` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation/tool contract changes
 Behavior preserved: CUDA resource unregistration, D3D texture disposal order, primary-context release, COM reference release, initialized flag reset, and disposal logging remain unchanged
-Notes for future agents: keep bridge resource acquisition and disposal together in `CudaD3D11Interop.Initialization.cs`; keep zero-copy/staging copy hot paths in `CudaD3D11Interop.Copy.cs` and native declarations in `CudaD3D11Interop.Native.cs`
+Notes for future agents: keep bridge resource acquisition, disposal, native declarations, and CUDA struct/constant definitions together in `CudaD3D11Interop.Initialization.cs`; keep zero-copy/staging copy hot paths in `CudaD3D11Interop.Copy.cs`
 
 Date: 2026-05-24
 Area: MainViewModel device audio analog gain locality

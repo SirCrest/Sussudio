@@ -2233,11 +2233,11 @@ emit-signal disposal with the stop/dispose owner.
 CUDA/D3D11 preview interop ownership is split by runtime boundary:
 `Sussudio/Services/Gpu/CudaD3D11Interop.Initialization.cs` owns bridge state,
 public texture handles, constructor setup, zero-copy registration, disposal,
-and CUDA resource unregistration,
+CUDA resource unregistration, native CUDA constants, P/Invoke entry points, and
+the `CUDA_MEMCPY2D` native struct,
 `CudaD3D11Interop.Copy.cs` owns the zero-copy and staging
-frame-copy paths, and `CudaD3D11Interop.Native.cs` owns CUDA constants, P/Invoke
-entry points, and the `CUDA_MEMCPY2D` native struct. Keep D3D11 locking,
-primary-context ownership, and fallback-to-staging behavior unchanged.
+frame-copy paths. Keep D3D11 locking, primary-context ownership, and
+fallback-to-staging behavior unchanged.
 
 NVDEC MJPEG decoder ownership now lives in
 `Sussudio/Services/Gpu/NvdecMjpegDecoder.cs`: shared decoder state, standalone
@@ -2247,13 +2247,12 @@ download/packed-buffer copies, disposal, and FFmpeg error text. Keep
 shared-context ownership, hot-path decode/download behavior, and disposal order
 unchanged when touching this file.
 
-NVML telemetry ownership is now split between
-`Sussudio/Services/Gpu/NvmlMonitor.cs`, which owns optional diagnostic polling,
-snapshot publication, timer/lifetime behavior, and graceful unavailable
-handling, and `Sussudio/Services/Gpu/NvmlMonitor.NativeInterop.cs`, which owns
-raw NVML constants, structs, library loading, device-name lookup, and P/Invoke
-declarations. Keep native declarations out of the polling lifecycle file so
-the diagnostic-only runtime contract stays easy to audit.
+NVML telemetry ownership now lives in `Sussudio/Services/Gpu/NvmlMonitor.cs`,
+which owns optional diagnostic polling, snapshot publication, timer/lifetime
+behavior, graceful unavailable handling, raw NVML constants, structs, library
+loading, device-name lookup, and P/Invoke declarations. Keep the monitor
+diagnostic-only and do not let missing NVML support affect capture, preview, or
+recording startup.
 
 Automation snapshot contracts now live in named model files under
 `Sussudio/Models/Automation/`. The broad automation evidence DTO is split as an

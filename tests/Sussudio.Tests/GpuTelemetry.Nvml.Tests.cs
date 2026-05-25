@@ -42,23 +42,21 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task NvmlMonitor_NativeInteropLivesInFocusedPartial()
+    private static Task NvmlMonitor_NativeInteropLivesWithMonitorOwner()
     {
         var monitorText = ReadRepoFile("Sussudio/Services/Gpu/NvmlMonitor.cs");
-        var nativeInteropText = ReadRepoFile("Sussudio/Services/Gpu/NvmlMonitor.NativeInterop.cs");
 
-        AssertContains(monitorText, "public sealed partial class NvmlMonitor : IDisposable");
+        AssertContains(monitorText, "public sealed class NvmlMonitor : IDisposable");
         AssertContains(monitorText, "private void Poll(object? state)");
         AssertContains(monitorText, "public NvmlSnapshot? GetLatestSnapshot()");
         AssertContains(monitorText, "TryLoadNativeLibrary()");
-        AssertDoesNotContain(monitorText, "[DllImport(\"nvml.dll\"");
-        AssertDoesNotContain(monitorText, "private struct NvmlUtilization");
-
-        AssertContains(nativeInteropText, "public sealed partial class NvmlMonitor");
-        AssertContains(nativeInteropText, "private static bool TryLoadNativeLibrary()");
-        AssertContains(nativeInteropText, "private static unsafe string? GetDeviceName(IntPtr device)");
-        AssertContains(nativeInteropText, "private struct NvmlUtilization");
-        AssertContains(nativeInteropText, "[DllImport(\"nvml.dll\"");
+        AssertContains(monitorText, "private static unsafe string? GetDeviceName(IntPtr device)");
+        AssertContains(monitorText, "private struct NvmlUtilization");
+        AssertContains(monitorText, "[DllImport(\"nvml.dll\"");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "NvmlMonitor.NativeInterop.cs")),
+            "NvmlMonitor.NativeInterop.cs folded into NvmlMonitor.cs");
 
         return Task.CompletedTask;
     }
