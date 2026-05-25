@@ -12,8 +12,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var exportCoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             .Replace("\r\n", "\n");
-        var exportPlanningText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportPlanning.cs")
-            .Replace("\r\n", "\n");
+        var exportPlanningText = exportCoreText;
         var sourceText = exportOperationsText
             + "\n" + exportCoreText
             + "\n" + exportPlanningText
@@ -40,6 +39,10 @@ static partial class Program
         AssertDoesNotContain(exportOperationsText, "private static int ResolveFlashbackExportThrottleDelayMs(");
         AssertContains(exportPlanningText, "private static int ResolveFlashbackExportThrottleDelayMs(");
         AssertContains(exportPlanningText, "private static IReadOnlyList<FlashbackExportSegment>? BuildFlashbackExportSegments(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackExportPlanning.cs")),
+            "CaptureService.FlashbackExportPlanning.cs folded into CaptureService.FlashbackExportCore.cs");
 
         return Task.CompletedTask;
     }

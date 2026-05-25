@@ -1703,3 +1703,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: single-file input/range/output validation, source overwrite refusal, temp-path overwrite refusal, export lock acquisition/release, FFmpeg initialization, stream-info lookup, bounded stream-count validation, seek warning behavior, output context/header setup, packet writing handoff, final output replacement, success/failure result shaping, native cleanup, temp cleanup, and cancellation handling remain unchanged
 Notes for future agents: keep single-file request scheduling and the synchronous single-file export shell together in `FlashbackExporter.Execution.cs`; keep packet pump/rebasing state in `FlashbackExporter.SingleFilePacketReadLoop.cs`, shared stream setup in `Streams.cs`, temp/final output replacement in `OutputFiles.cs`, and validation helpers in `Validation.cs`
+
+Date: 2026-05-25
+Area: CaptureService Flashback export request locality
+Problem: `CaptureService.FlashbackExportPlanning.cs` held segment metadata mapping, path normalization, PTS repair, and live-export throttle helpers that are only used while `CaptureService.FlashbackExportCore.cs` assembles `FlashbackExportRequest`, forcing request construction review across a tiny adjacent partial.
+Files consolidated: `Sussudio/Services/Capture/CaptureService.FlashbackExportPlanning.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `CaptureService` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: segment path metadata lookup, active-segment exclusion, path normalization warning, segment PTS clamping, request segment construction, live queue-pressure throttle thresholds, high-resolution baseline throttling, throttle log cadence, active-file fallback request shape, force-rotate fallback behavior, and export diagnostics handoff remain unchanged
+Notes for future agents: keep Flashback export request assembly, segment metadata mapping, live-export throttle policy, and force-rotate preparation together in `CaptureService.FlashbackExportCore.cs`; keep public range/last-N entry points and backend snapshot lock handoff in `FlashbackExportOperations.cs`
