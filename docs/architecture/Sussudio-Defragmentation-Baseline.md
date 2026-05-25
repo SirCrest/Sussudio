@@ -1973,3 +1973,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; DTO contract test consolidation only
 Behavior preserved: the same xUnit facts, shared property-list helpers, reflection checks, source-text assertions, and AutomationSnapshot/AutomationOptions property coverage remain under one automation snapshot-model test file
 Notes for future agents: keep automation snapshot DTO shape checks in `SnapshotModels.Automation.Tests.cs`; add a new file only for a distinct snapshot DTO family or independent fixture/helper boundary
+
+Date: 2026-05-25
+Area: CaptureHealth snapshot-model test locality
+Problem: Six `SnapshotModelsTests` partial files split the CaptureHealthSnapshot and SourceTelemetryDetailEntry DTO contract into property spec, defaults, source-telemetry detail, round-trip fixture, JSON, and root orchestration fragments. All fragments contributed helper methods or one fact to the same DTO contract surface, so changing CaptureHealth snapshot shape required opening several tiny files.
+Files consolidated: `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.PropertySpec.cs`; `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.Defaults.Tests.cs`; `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.SourceTelemetryDetail.Tests.cs`; `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.RoundTrip.Tests.cs`; `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.Json.Tests.cs`
+Files added: none
+Net production .cs delta: 0
+Net test .cs delta: -5
+Partial clusters reduced: `SnapshotModelsTests` CaptureHealth partial-family file count -5
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; DTO contract test consolidation only
+Behavior preserved: the same CaptureHealthSnapshot/SourceTelemetryDetailEntry property specs, defaults, round-trip fixture, direct assertions, reflection JSON assertions, and source-shape checks remain in `SnapshotModels.CaptureHealth.Tests.cs`
+Notes for future agents: keep CaptureHealth snapshot DTO shape checks in `SnapshotModels.CaptureHealth.Tests.cs`; add a new file only for a distinct snapshot DTO family or independent fixture/helper boundary

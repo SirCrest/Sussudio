@@ -1693,17 +1693,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.PropertySpec.cs`
   owns the CaptureDiagnosticsSnapshot registered property spec.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.Tests.cs` owns xUnit
-  CaptureHealthSnapshot registered orchestration and source-ownership checks;
-  `SnapshotModels.CaptureHealth.Defaults.Tests.cs` owns defaults and inherited
-  diagnostics assertions;
-  `SnapshotModels.CaptureHealth.SourceTelemetryDetail.Tests.cs` owns
-  SourceTelemetryDetailEntry direct and JSON assertions;
-  `SnapshotModels.CaptureHealth.RoundTrip.Tests.cs` owns the populated
-  CaptureHealthSnapshot fixture and direct round-trip assertions;
-  `SnapshotModels.CaptureHealth.Json.Tests.cs` owns CaptureHealthSnapshot
-  reflection JSON assertions; and `SnapshotModels.CaptureHealth.PropertySpec.cs`
-  owns the CaptureHealthSnapshot and SourceTelemetryDetailEntry property-list
-  contracts.
+  CaptureHealthSnapshot and SourceTelemetryDetailEntry DTO contracts: property
+  specs, defaults/inheritance, populated round-trip fixture, direct assertions,
+  reflection JSON assertions, and source-shape checks.
 - `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` owns the
   SourceSignalTelemetrySnapshot and source telemetry automation projection
   contract checks.
