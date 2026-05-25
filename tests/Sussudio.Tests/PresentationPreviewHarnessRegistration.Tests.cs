@@ -28,8 +28,6 @@ static partial class Program
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.Recording.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.ShellPreview.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.Chrome.Tests.cs",
-        "tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.RendererHost.Tests.cs",
-        "tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Surface.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.Startup.Launch.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.Startup.SplashPhrase.Tests.cs",
