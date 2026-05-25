@@ -11,16 +11,19 @@ static partial class Program
     {
         var deviceServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.cs"));
         var deviceServiceRootText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.cs"));
-        var deviceServiceFormatCacheText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.FormatCache.cs"));
         var deviceServiceFormatProbeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.FormatProbe.cs"));
         AssertContains(deviceServiceText, "NativeXuInterfacePath = ResolveNativeXuInterfacePath(videoDevice.SymbolicLink)");
         AssertContains(deviceServiceText, "Native XU interface resolution found no matching interface");
         AssertDoesNotContain(deviceServiceText, "SelectOnlyUnambiguousDeviceGroup");
         AssertContains(deviceServiceRootText, "public async Task<ObservableCollection<CaptureDevice>> EnumerateVideoCaptureDevicesAsync(");
-        AssertContains(deviceServiceFormatCacheText, "internal sealed class CachedMediaFormat");
-        AssertContains(deviceServiceFormatCacheText, "private static void TryLoadFormatCache(CaptureDevice device)");
+        AssertContains(deviceServiceFormatProbeText, "internal sealed class CachedMediaFormat");
+        AssertContains(deviceServiceFormatProbeText, "private static void TryLoadFormatCache(CaptureDevice device)");
         AssertContains(deviceServiceFormatProbeText, "public void BeginBackgroundFormatProbe(CaptureDevice device, long requestId = 0)");
         AssertContains(deviceServiceFormatProbeText, "private async Task<bool> QuerySupportedFormatsAsync(CaptureDevice device)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.FormatCache.cs")),
+            "DeviceService format cache folded into format probe owner");
         AssertContains(deviceServiceRootText, "private static void AttachBestAudioDevice(");
         AssertContains(deviceServiceRootText, "private static int ScoreAudioAssociation(");
         AssertEqual(

@@ -1120,8 +1120,8 @@ adapters, and active playback-controller readiness/rejection logging now live in
 Device discovery ownership is split across a small `DeviceService` family. Keep
 capture/audio enumeration orchestration, the combined discovery result, device
 priority/capability scoring, audio endpoint association, and native XU interface path resolution in
-`DeviceService.cs`, format cache serialization in `DeviceService.FormatCache.cs`,
-and inline/background format probing in `DeviceService.FormatProbe.cs`.
+`DeviceService.cs`, and keep format cache serialization plus inline/background
+format probing in `DeviceService.FormatProbe.cs`.
 
 Native XU Kernel Streaming calls are grouped under
 `Sussudio/Services/Capture/NativeXu/`. Keep KS category constants, DTOs,
