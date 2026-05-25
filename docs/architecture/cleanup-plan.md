@@ -379,7 +379,10 @@ on app identity, assets, packages, runtime config, and project references, while
 `Sussudio/Sussudio.Build.targets` owns publish flags, English-only locale
 stripping, and repo-local `latest-build` staging.
 
-`tools/ssctl/CommandHandlers.cs` is now only the top-level CLI router.
+`tools/ssctl/CommandHandlers.cs` owns the top-level CLI router,
+per-invocation command context, shared command sending, response exit-code
+shaping, generic argument helpers, flag parsing, JSON detection/pretty
+printing, and primitive/domain value parsing.
 `CommandHandlers.Observability.cs` owns diagnostic and observability CLI
 commands: state, diagnostics, options, manifest, timeline, memory, audio-ramp,
 `presentmon` command parsing, swap-chain discovery, probe invocation, and
@@ -400,14 +403,7 @@ wait/assert/probe and recording/file verification scripting flow commands.
 `CommandHandlers.Flashback.cs` owns Flashback enablement, timeline, segment,
 restart, playback/scrub/marker/range CLI actions, position parsing, export
 flags, output path defaulting, directory creation, and `FlashbackAction`/
-`FlashbackExport` payload shapes. The root `CommandHandlers.cs` owns the
-per-invocation command context,
-shared command sending, and response exit-code shaping.
-Support partials remain:
-`CommandHandlers.Arguments.cs` owns usage validation, argument joining, flag
-consumption, optional flag values, and JSON detection/pretty-printing,
-`CommandHandlers.Values.cs`
-owns primitive/domain value parsing. Command-family payload helpers stay with
+`FlashbackExport` payload shapes. Command-family payload helpers stay with
 their owning command partials.
 
 The `tools/ssctl/Formatters.*.cs` partial family is only the projection facade

@@ -87,17 +87,17 @@ static partial class Program
         AssertContains(flashbackRouterSource, "[\"action\"] = \"clear-in-out-points\"");
         AssertContains(flashbackRouterSource, "private static double ParseFlashbackPositionMs(string value)");
         AssertContains(flashbackRouterSource, "Flashback position must be finite, non-negative, and within TimeSpan range.");
-        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Values.cs"), "private static double ParseFlashbackPositionMs(string value)");
+        AssertDoesNotContain(commandHandlersRootSource, "private static double ParseFlashbackPositionMs(string value)");
         AssertContains(flashbackRouterSource, "private static Task<int> HandleFlashbackExportAsync(CommandContext context)");
         AssertContains(flashbackRouterSource, "ConsumeFlag(context.Rest, \"--range\")");
         AssertContains(flashbackRouterSource, "ConsumeFlag(context.Rest, \"--force\")");
         AssertContains(flashbackRouterSource, "? ParseFlashbackExportSeconds(context.Rest[1])");
         AssertContains(flashbackRouterSource, "Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? \".\")");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Arguments.cs"), "private static string JoinRemaining(IReadOnlyList<string> args, int startIndex)");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Arguments.cs"), "private static bool ConsumeFlag(List<string> args, string flag)");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Arguments.cs"), "private static bool LooksLikeJson(string value)");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Arguments.cs"), "private static string PrettyJson<T>(T value)");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Values.cs"), "private static object? ParseAssertionValue(string value)");
+        AssertContains(commandHandlersRootSource, "private static string JoinRemaining(IReadOnlyList<string> args, int startIndex)");
+        AssertContains(commandHandlersRootSource, "private static bool ConsumeFlag(List<string> args, string flag)");
+        AssertContains(commandHandlersRootSource, "private static bool LooksLikeJson(string value)");
+        AssertContains(commandHandlersRootSource, "private static string PrettyJson<T>(T value)");
+        AssertContains(commandHandlersRootSource, "private static object? ParseAssertionValue(string value)");
         AssertContains(commandHandlersSource, "\"manifest\" => HandleManifestAsync(context)");
         AssertContains(commandHandlersSource, "\"audio-ramp-trace\" => HandleAudioRampTraceAsync(context)");
         AssertContains(commandHandlersSource, "\"recordings\" => HandleRecordingsAsync(context)");
@@ -140,6 +140,14 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.Context.cs")),
             "ssctl command context lives with the root command dispatcher");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.Arguments.cs")),
+            "generic ssctl argument helpers live with the root command dispatcher");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.Values.cs")),
+            "generic ssctl value parsing helpers live with the root command dispatcher");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.Flashback.Export.cs")),

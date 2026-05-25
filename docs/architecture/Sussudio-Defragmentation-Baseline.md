@@ -442,7 +442,7 @@ Partial clusters reduced: `CommandHandlers` -2 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by ssctl command-handler routing/source-ownership tests and runtime snapshot regression tests
 Behavior preserved: Flag removal, optional flag value parsing, usage exceptions, JSON detection, and pretty JSON formatting are unchanged
-Notes for future agents: keep generic ssctl command argument parsing helpers in `CommandHandlers.Arguments.cs`; keep primitive/domain value parsing in `CommandHandlers.Values.cs`; keep shared command sending and response exit-code handling in `CommandHandlers.cs`
+Notes for future agents: superseded on 2026-05-24 by the ssctl shared helper consolidation; generic argument/value helpers now live in `CommandHandlers.cs` with shared command sending and response exit-code handling.
 
 Date: 2026-05-24
 Area: ssctl simple snapshot section formatting
@@ -1607,3 +1607,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: affected `NativeXuAudioProbe` build covered by solution build; no command names changed
 Behavior preserved: short/int/byte experiment enumeration, invariant display-value formatting, width-based payload byte construction, unsupported-width exception behavior, and default experiment restore/set payload usage remain unchanged
 Notes for future agents: keep default-experiment-only payload construction with `Program.DefaultExperiment.cs`; keep shared Native XU command IDs in `Program.Commands.cs` and reporting/readback helpers in `Program.DefaultExperiment.Reporting.cs`
+
+Date: 2026-05-24
+Area: ssctl shared command helper locality
+Problem: `CommandHandlers.Arguments.cs` and `CommandHandlers.Values.cs` were tiny generic support partials for the ssctl root command handler. They did not own a command family; they only supplied usage, flag, JSON, and primitive/domain value helpers consumed by the root router and feature command partials.
+Files consolidated: `tools/ssctl/CommandHandlers.Arguments.cs`; `tools/ssctl/CommandHandlers.Values.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: `CommandHandlers` -2 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: ssctl command routing tests cover command IDs/payloads; no automation command names/IDs changed
+Behavior preserved: argument count checks, required word parsing, flag consumption, optional flag values, JSON pretty-printing/detection, primitive parsing, Flashback export duration validation, on/off and show/hide parsing, recording format normalization, snap action mapping, and assertion value parsing remain unchanged
+Notes for future agents: keep generic ssctl argument/value helpers with `CommandHandlers.cs`; keep command-family payload shaping in `CaptureControls`, `Window`, `AutomationFlow`, `Flashback`, and `Observability`

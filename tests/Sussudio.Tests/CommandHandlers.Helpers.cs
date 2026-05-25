@@ -129,12 +129,10 @@ static partial class Program
         var files = new[]
         {
             "tools/ssctl/CommandHandlers.cs",
-            "tools/ssctl/CommandHandlers.Arguments.cs",
             "tools/ssctl/CommandHandlers.AutomationFlow.cs",
             "tools/ssctl/CommandHandlers.CaptureControls.cs",
             "tools/ssctl/CommandHandlers.Flashback.cs",
             "tools/ssctl/CommandHandlers.Observability.cs",
-            "tools/ssctl/CommandHandlers.Values.cs",
             "tools/ssctl/CommandHandlers.Window.cs",
         };
 

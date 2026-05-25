@@ -3370,7 +3370,13 @@ Primary owners:
 - `tools/AutomationClient/README.md` owns AutomationClient usage notes.
 - `tools/send-automation-command.ps1` owns the PowerShell helper wrapper and
   its AutomationClient rebuild freshness inputs.
-- `tools/ssctl/CommandHandlers.cs` owns top-level CLI routing only.
+- `tools/ssctl/CommandHandlers.cs` owns top-level CLI routing, the
+  per-invocation command context wrapper, shared command sending, response
+  exit-code shaping, usage validation, required words, argument joining, flag
+  consumption, optional flag value parsing, command-handler JSON
+  detection/pretty-printing, primitive parsing, Flashback export numeric
+  validation, on/off and show/hide parsing, recording format normalization,
+  snap action mapping, and assertion value parsing.
 - `tools/ssctl/CommandHandlers.Observability.cs` owns diagnostic and
   observability CLI commands: state, diagnostics, options, manifest, timeline,
   memory, audio-ramp, `presentmon` parsing/swap-chain discovery/probe
@@ -3428,14 +3434,12 @@ Primary owners:
 - `tools/ssctl/SsctlHelpWriter.cs` owns the `ssctl` help facade,
   operator-facing help section text, and catalog-backed CLI help lines.
 - `tools/ssctl/CommandHandlers.cs` owns the root command dispatcher, the
-  per-invocation command context wrapper, shared command sending, and response
-  exit-code shaping.
-- `tools/ssctl/CommandHandlers.Arguments.cs` owns usage validation, required
-  words, argument joining, flag consumption, optional flag value parsing, and
-  command-handler JSON detection/pretty-printing. `CommandHandlers.Values.cs`
-  owns primitive parsing, Flashback numeric validation, on/off and show/hide
-  parsing, recording format normalization, snap action mapping, and assertion
-  value parsing.
+  per-invocation command context wrapper, shared command sending, response
+  exit-code shaping, usage validation, required words, argument joining, flag
+  consumption, optional flag value parsing, command-handler JSON
+  detection/pretty-printing, primitive parsing, Flashback export numeric
+  validation, on/off and show/hide parsing, recording format normalization,
+  snap action mapping, and assertion value parsing.
 - The `tools/ssctl/Formatters.*.cs` partial family is the console projection
   facade only.
 - `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration, section
