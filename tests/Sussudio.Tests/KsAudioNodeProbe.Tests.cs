@@ -6,7 +6,6 @@ static partial class Program
     {
         var programText = ReadRepoFile("tools/KsAudioNodeProbe/Program.cs");
         var scanWorkflowsText = ReadRepoFile("tools/KsAudioNodeProbe/Program.ScanWorkflows.cs");
-        var extendedWorkflowsText = ReadRepoFile("tools/KsAudioNodeProbe/Program.ScanWorkflows.Extended.cs");
         var nativeInteropText = ReadRepoFile("tools/KsAudioNodeProbe/Program.NativeInterop.cs");
 
         AssertContains(programText, "using static KsAudioNodeProbeNative;");
@@ -25,13 +24,15 @@ static partial class Program
         AssertContains(scanWorkflowsText, "public static void RunFullProbe(SafeFileHandle handle)");
         AssertContains(scanWorkflowsText, "private static void EnumerateTopologyNodes(SafeFileHandle handle)");
         AssertContains(scanWorkflowsText, "private static void RunBruteForceNodePropertyScan(SafeFileHandle handle)");
-        AssertDoesNotContain(scanWorkflowsText, "private static void RunExtendedSetTest(");
-        AssertContains(extendedWorkflowsText, "static partial class KsAudioNodeProbeScanWorkflows");
-        AssertContains(extendedWorkflowsText, "private static void RunExtendedNodeTests(SafeFileHandle handle)");
-        AssertContains(extendedWorkflowsText, "private static void RunExtendedSetTest(");
-        AssertContains(extendedWorkflowsText, "private static void RunAdcVolumeProbe(SafeFileHandle handle)");
-        AssertContains(extendedWorkflowsText, "private static void RunMuxProbe(SafeFileHandle handle)");
-        AssertContains(extendedWorkflowsText, "private static void RunMuteProbe(SafeFileHandle handle)");
+        AssertContains(scanWorkflowsText, "private static void RunExtendedNodeTests(SafeFileHandle handle)");
+        AssertContains(scanWorkflowsText, "private static void RunExtendedSetTest(");
+        AssertContains(scanWorkflowsText, "private static void RunAdcVolumeProbe(SafeFileHandle handle)");
+        AssertContains(scanWorkflowsText, "private static void RunMuxProbe(SafeFileHandle handle)");
+        AssertContains(scanWorkflowsText, "private static void RunMuteProbe(SafeFileHandle handle)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "KsAudioNodeProbe", "Program.ScanWorkflows.Extended.cs")),
+            "KS audio node scan workflow probes live with the main scan workflow owner");
         AssertContains(nativeInteropText, "static class KsAudioNodeProbeNative");
         AssertContains(nativeInteropText, "private const uint IoctlKsProperty = 0x002F0003;");
         AssertContains(nativeInteropText, "private const int ErrorMoreData = 234;");
