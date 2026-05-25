@@ -1398,11 +1398,9 @@ Primary current owners:
   device/audio-input selection routing contracts, plus HDR/true-HDR preview
   enablement guards and HDR mode change side-effect ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
-  owns the serialized diagnostics refresh ownership check and coordinates the
-  focused diagnostics refresh assertion helpers.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.RefreshPipeline.Tests.cs`
-  owns diagnostics refresh pipeline, refresh gate, snapshot, and dispatcher
-  ownership assertions.
+  owns the serialized diagnostics refresh ownership check, core ownership
+  orchestration, runtime/HDR verification checks, refresh pipeline/gate,
+  snapshot/dispatcher assertions, and preview-runtime projection assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.AlertEvents.Tests.cs`
   owns diagnostics alert/event ownership assertions for UpdateAlerts,
   diagnostic events, signal alerts, and Flashback alert routing.
@@ -1415,14 +1413,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.FlashbackExport.Tests.cs`
   owns capture-service and dispatcher Flashback export operation ownership
   assertions used by diagnostics refresh.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
-  owns the diagnostics refresh root check and core ownership orchestrator.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.EvaluationOwnership.Tests.cs`
   owns diagnostics refresh evaluation-policy, diagnostic evaluation, realtime
   and Flashback diagnostic lane ownership assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.RuntimeOwnership.Tests.cs`
-  owns diagnostics refresh verification, snapshot query-port, preview pacing,
-  lifecycle, HDR ownership assertions, and HDR truth-verdict behavior.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotConstructionOwnership.Tests.cs`
   owns initial snapshot, BuildAutomationSnapshot composition, and snapshot
   flattening ownership assertions.
@@ -1456,8 +1449,6 @@ Primary current owners:
   `tests/Sussudio.Tests/DiagnosticSession.SourceReaders.cs` owns shared
   diagnostic-session source-family readers used by refresh, MCP, and tool
   ownership assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.PreviewRuntime.Tests.cs`
-  owns diagnostics snapshot preview runtime projection ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.AutomationSnapshots.Ownership.Tests.cs`
   owns automation snapshot/options source-shape assertions, including the
   diagnostics-loop contract that keeps options snapshots out of hot diagnostics
