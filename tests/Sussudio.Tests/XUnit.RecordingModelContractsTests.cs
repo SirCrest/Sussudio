@@ -27,8 +27,8 @@ public sealed class RecordingModelContractsTests
         => global::Program.LibAvRecordingSink_VideoQueueSubmissionLivesInFocusedPartial();
 
     [Fact]
-    public Task LibAvRecordingStartupAndStopLifecycleLiveInFocusedPartials()
-        => global::Program.LibAvRecordingSink_LifecycleHelpersLiveInFocusedPartials();
+    public Task LibAvRecordingLifecycleHelpersLiveWithTheirOwners()
+        => global::Program.LibAvRecordingSink_LifecycleHelpersLiveWithTheirOwners();
 
     [Fact]
     public Task StrictHfrFatalHandlerClearsActiveSessionState()

@@ -1518,8 +1518,8 @@ rollback cleanup. `LibAvRecordingSink.StopLifecycle.cs` owns public and emergenc
 emergency cancellation/flush fallback, encoding-failure classification, HDR
 validation, stopped-output validation handoff, stop logging, and
 `FinalizeResult` shaping. Keep root state/construction, read-only telemetry,
-encoder drift accessors, and the background encode loop in `LibAvRecordingSink.cs`, dispose/deferred cleanup in
-`LibAvRecordingSink.Lifetime.cs`, and stopped-output validation in
+encoder drift accessors, the background encode loop, and dispose/deferred
+cleanup in `LibAvRecordingSink.cs`, and stopped-output validation in
 `LibAvRecordingSink.StopLifecycle.cs`.
 
 LibAv recording sink encode-loop ownership now lives in

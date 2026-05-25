@@ -87,7 +87,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task LibAvRecordingSink_LifecycleHelpersLiveInFocusedPartials()
+    internal static Task LibAvRecordingSink_LifecycleHelpersLiveWithTheirOwners()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
             .Replace("\r\n", "\n");
@@ -96,8 +96,6 @@ static partial class Program
         var startupText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Startup.cs")
             .Replace("\r\n", "\n");
         var stopText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.StopLifecycle.cs")
-            .Replace("\r\n", "\n");
-        var lifetimeText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Lifetime.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "public long DroppedVideoFrames =>");
@@ -144,8 +142,8 @@ static partial class Program
         AssertContains(stopText, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
         AssertContains(stopText, "if (context?.HdrPipelineActive == true)");
         AssertContains(stopText, "LIBAV_SINK_STOP output='{outputPath}' bytes={outputBytes}");
-        AssertContains(lifetimeText, "public async ValueTask DisposeAsync()");
-        AssertContains(lifetimeText, "private void ScheduleDeferredDisposeCleanup(Task encodingTask)");
+        AssertContains(rootText, "public async ValueTask DisposeAsync()");
+        AssertContains(rootText, "private void ScheduleDeferredDisposeCleanup(Task encodingTask)");
         AssertContains(rootText, "private void CompleteWriter<TPacket>(Channel<TPacket>? channel)");
         AssertContains(rootText, "SignalWork(\"complete_writer\");");
         AssertDoesNotContain(rootText, "public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)");
@@ -153,7 +151,6 @@ static partial class Program
         AssertDoesNotContain(rootText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
         AssertDoesNotContain(rootText, "internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(rootText, "private async Task<FinalizeResult> StopCoreAsync(bool emergency, CancellationToken cancellationToken)");
-        AssertDoesNotContain(rootText, "public async ValueTask DisposeAsync()");
         AssertDoesNotContain(rootText, "private LibAvEncoderOptions CreateOptions(RecordingContext context)");
         AssertDoesNotContain(rootText, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
 
@@ -169,6 +166,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.VideoSession.cs")),
             "LibAvRecordingSink video session startup helpers folded into LibAvRecordingSink.Startup.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Lifetime.cs")),
+            "LibAvRecordingSink dispose/deferred cleanup lives with the sink root");
 
         return Task.CompletedTask;
     }

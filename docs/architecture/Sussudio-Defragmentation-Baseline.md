@@ -1643,3 +1643,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: close logging, pending held-frame release, software buffer return, AVPacket/AVFrame/free cleanup, resampler/codec/input-context release, decoder state reset, D3D11 hardware context persistence, and best-effort held-frame release logging remain unchanged
 Notes for future agents: keep decoder open/close/dispose and per-file cleanup in `FlashbackDecoder.cs`; keep decode-loop timing in `DecodeLoop.cs`, video codec setup in `VideoSetup.cs`, and output validation in `Validation.cs`
+
+Date: 2026-05-24
+Area: LibAv recording sink dispose locality
+Problem: `LibAvRecordingSink.Lifetime.cs` only contained `Dispose`/`DisposeAsync`, deferred cleanup scheduling, and final dispose reset, while the root sink owned the state, queue completion helper, and encoding task those disposal paths manipulate.
+Files consolidated: `Sussudio/Services/Recording/LibAvRecordingSink.Lifetime.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `LibAvRecordingSink` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: synchronous dispose fallback, async dispose idempotence, writer completion, cancellation, encode-task observation, deferred cleanup timeout logging, queue buffer returns, queue-depth reset, cancellation-source disposal, queue nulling, GPU/CUDA/microphone flag reset, work semaphore disposal, and encoder dispose failure logging remain unchanged
+Notes for future agents: keep sink diagnostics, encoding loop, queue completion signal, and dispose/deferred cleanup in `LibAvRecordingSink.cs`; keep startup in `Startup.cs`, stop/final output validation in `StopLifecycle.cs`, and packet drains in `PacketDrain.cs`
