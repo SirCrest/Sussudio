@@ -258,13 +258,11 @@ recording alert orchestration, export progress/force-rotation gap alerts,
 temp-cache pressure alerts, encoder failure alerts, recording path degradation
 alerts, Flashback playback alert orchestration, Flashback playback performance
 alert routing, and frame-submission failure alerts.
-`AutomationDiagnosticsHub.Alerts.cs` owns Flashback playback alert
+`AutomationDiagnosticsHub.Alerts.cs` also owns Flashback playback alert
 orchestration, command queue/failure alerts, target-rate/present-cadence/
 slow-playback/frametime alerts, submit-failure alerts, audio-master fallback
-alerts, and audio-queue backlog alerts.
-`AutomationDiagnosticsHub.DiagnosticEvents.cs` owns diagnostics event
-publication, event throttling, Flashback export completion events, and recent
-event storage.
+alerts, audio-queue backlog alerts, diagnostics event publication, event
+throttling, Flashback export completion events, and recent event storage.
 `AutomationDiagnosticsHub.Verification.cs` owns manual recording/file
 verification entry points, flashback-export verification profile shaping, event
 publication for explicit verification, last-verification snapshot state,

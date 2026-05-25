@@ -11,7 +11,6 @@ static partial class Program
             DiagnosticEvaluationRealtimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs"),
             DiagnosticEvaluationLanesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs"),
             AlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Alerts.cs"),
-            EventsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvents.cs"),
             VerificationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Verification.cs"),
             HdrText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Hdr.cs"),
             SnapshotsText = ReadAutomationDiagnosticsHubSnapshotsSource(),
@@ -80,7 +79,6 @@ static partial class Program
 
         public string HubText { get; init; } = string.Empty;
         public string EvaluationText { get; init; } = string.Empty;
-        public string EventsText { get; init; } = string.Empty;
         public string VerificationText { get; init; } = string.Empty;
         public string HdrText { get; init; } = string.Empty;
         public string SnapshotsText { get; init; } = string.Empty;

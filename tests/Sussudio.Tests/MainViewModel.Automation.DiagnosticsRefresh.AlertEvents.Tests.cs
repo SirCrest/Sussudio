@@ -3,12 +3,14 @@ static partial class Program
     private static void AssertDiagnosticsAlertEventOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
         AssertContains(diagnostics.AlertsText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
-        AssertDoesNotContain(diagnostics.AlertsText, "private void AddEventThrottled(");
-        AssertDoesNotContain(diagnostics.AlertsText, "public IReadOnlyList<DiagnosticsEvent> GetRecentEvents");
-        AssertContains(diagnostics.EventsText, "private void ObserveFlashbackExportCompletion(AutomationSnapshot snapshot)");
-        AssertContains(diagnostics.EventsText, "private void AddEventThrottled(");
-        AssertContains(diagnostics.EventsText, "private void SetAlertState(");
-        AssertContains(diagnostics.EventsText, "public IReadOnlyList<DiagnosticsEvent> GetRecentEvents");
+        AssertContains(diagnostics.AlertsText, "private void ObserveFlashbackExportCompletion(AutomationSnapshot snapshot)");
+        AssertContains(diagnostics.AlertsText, "private void AddEventThrottled(");
+        AssertContains(diagnostics.AlertsText, "private void SetAlertState(");
+        AssertContains(diagnostics.AlertsText, "public IReadOnlyList<DiagnosticsEvent> GetRecentEvents");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvents.cs")),
+            "diagnostic event state helpers folded into AutomationDiagnosticsHub.Alerts.cs");
         AssertContains(diagnostics.AlertsText, "UpdateSignalAlerts(");
         AssertContains(diagnostics.AlertsText, "private void UpdateSignalAlerts(");
         AssertContains(diagnostics.AlertsText, "UpdatePreviewSignalAlerts(");
