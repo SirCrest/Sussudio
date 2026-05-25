@@ -32,13 +32,14 @@ static partial class Program
         AssertDoesNotContain(nativeXuProbeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs");
         AssertContains(File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Models", "Capture", "CaptureModels.cs")), "NativeXuInterfacePath");
 
-        var nativeXuLocatorText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "NativeXuProbeDeviceLocator.cs"));
+        var nativeXuLocatorText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.cs"));
         AssertContains(nativeXuLocatorText, "NativeXuInterfacePath = interfacePath");
         AssertContains(nativeXuLocatorText, "matches.Length > 1");
         AssertDoesNotContain(nativeXuLocatorText, "return firstCandidate");
-        AssertDoesNotContain(
-            File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.cs")),
-            "KsExtensionUnitNative.EnumerateKsInterfaces(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "NativeXuProbeDeviceLocator.cs")),
+            "NativeXu probe device lookup lives with top-level probe command routing");
 
         foreach (var file in EnumerateSourceFiles(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe"), SearchOption.AllDirectories))
         {
@@ -53,7 +54,7 @@ static partial class Program
         var probeProgramText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.cs"));
         AssertContains(probeProgramText, "Probe-local runtime shims used by linked app service sources.");
         AssertContains(probeProgramText, "NativeXuInterfacePath");
-        AssertDoesNotContain(probeProgramText, "KsExtensionUnitNative.EnumerateKsInterfaces(");
+        AssertContains(probeProgramText, "EnumerateKsInterfaces(ElgatoVendorId");
         AssertContains(probeProgramText, "RTK_IO selects by name, not by native XU path");
         AssertContains(probeProgramText, "string.Equals(arg, \"--device\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(probeProgramText, "NativeXuProbeDeviceLocator.Find(null)");

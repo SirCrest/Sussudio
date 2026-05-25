@@ -2452,3 +2452,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: screenshot capture source-ownership and PNG geometry tests cover the preserved internal `PreviewPng16Encoder` type and capture flow; no CLI/MCP command names or automation command IDs changed
 Behavior preserved: preview BMP/PNG capture paths, HDR 10-bit to 16-bit PNG expansion, output-directory creation, PNG chunk writing, CRC table generation, CRC updates, and reflection-visible internal encoder helper names remain unchanged
 Notes for future agents: keep `PreviewPng16Encoder` as a sibling type in `PreviewScreenshotCapture.cs` while it is only used by preview screenshot capture; split only if another capture/export path needs the PNG container writer.
+
+Date: 2026-05-25
+Area: NativeXuAudioProbe device locator locality
+Problem: `tools/NativeXuAudioProbe/Program.cs` owned NativeXuAudioProbe routing, top-level command workflows, service smoke/payload commands, and probe-local runtime shims while `NativeXuProbeDeviceLocator.cs` held the adjacent supported-device lookup used only by those probe commands. Reviewing the device-selection path required opening a small sidecar file before returning to the root CLI owner.
+Files consolidated: `tools/NativeXuAudioProbe/NativeXuProbeDeviceLocator.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; NativeXuAudioProbe support file count -1
+Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj -c Debug --no-restore`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: affected NativeXuAudioProbe build and source-ownership tests cover the moved supported-device locator; no public command names changed
+Behavior preserved: supported VID/PID list, preferred interface selection, no-filter ambiguity handling, device filter matching, ambiguous/missing-device error text, and `CaptureDevice.NativeXuInterfacePath` assignment remain unchanged
+Notes for future agents: keep the probe-only supported-device locator with `tools/NativeXuAudioProbe/Program.cs` while it is only consumed by top-level NativeXuAudioProbe command workflows.
