@@ -1220,11 +1220,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/StatsDockPresentation.Tests.cs` owns xUnit contract
   checks for stats dock refresh orchestration, diagnostic row update
   delegation, hardware row projection, and row chrome pooling.
-- `Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs` owns diagnostic row
-  presentation, empty-state rows, group headers, and diagnostic row pooling.
-  `Sussudio/Controllers/Stats/StatsDockRowChromePresenter.cs` owns shared stats
-  dock row creation, label/value text mutation, visibility toggles, dock row
-  style application, and dynamic decode/GPU simple row pools.
+- `Sussudio/Controllers/Stats/StatsDockRowsController.cs` owns stats dock row
+  chrome: shared row creation, label/value text mutation, visibility toggles,
+  dock row style application, dynamic decode/GPU simple row pools, diagnostic
+  row presentation, empty-state rows, group headers, and diagnostic row pooling.
   `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` delegates diagnostic row
   presentation to `StatsDiagnosticRowsController`, and owns hardware row
   refresh, availability, and decode/GPU minimum pool sizing before delegating row

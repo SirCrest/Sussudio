@@ -72,9 +72,10 @@ public partial class StatsPresentationTests
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsDockCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockControllerGraph.cs").Replace("\r\n", "\n");
         var mainWindowText = MainWindowCompositionSource.Read();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs").Replace("\r\n", "\n");
-        var rowChromePresenterText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRowChromePresenter.cs").Replace("\r\n", "\n");
-        var rowChromeControllerText = rowChromePresenterText;
+        var statsDockRowsText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRowsController.cs").Replace("\r\n", "\n");
+        var controllerText = statsDockRowsText;
+        var rowChromePresenterText = statsDockRowsText;
+        var rowChromeControllerText = statsDockRowsText;
         var refreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
         var hardwareRowsControllerStart = refreshControllerText.IndexOf(
             "internal sealed class StatsHardwareRowsController\n",
@@ -176,8 +177,10 @@ public partial class StatsPresentationTests
         AssertContains(controllerText, "var rowSlot = _rowChrome.CreateRowSlot();");
         AssertContains(controllerText, "_rowChrome.UpdateRowSlot(slot.RowSlot, label, value, alt);");
         AssertContains(controllerText, "StatsDockRowChromePresenter.SetVisibilityIfChanged(slot.RowSlot.Row, Visibility.Collapsed);");
-        AssertDoesNotContain(controllerText, "StatsDockRowChromeController");
         AssertDoesNotContain(controllerText, "_context.RowChromeController.UpdateDiagnosticsRows(presentation);");
+        Assert.False(
+            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDiagnosticRowsController.cs")),
+            "diagnostic stats rows folded into StatsDockRowsController.cs");
         AssertContains(rowChromeControllerText, "internal sealed class StatsDockRowChromeControllerContext");
         AssertContains(rowChromeControllerText, "internal sealed class StatsDockRowChromeController");
         AssertContains(rowChromeControllerText, "internal enum StatsDockSimpleRowPool");
@@ -196,11 +199,10 @@ public partial class StatsPresentationTests
         AssertContains(rowChromePresenterText, "Style = GetStyle(\"DockStatsValueStyle\"),");
         AssertContains(rowChromePresenterText, "=> GetStyle(alt ? \"DockStatsRowAltStyle\" : \"DockStatsRowStyle\");");
         AssertContains(rowChromePresenterText, "public static void CollapseRows(IReadOnlyList<StatsDockRowChromeSlot> pool, int startIndex = 0)");
+        Assert.False(
+            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockRowChromePresenter.cs")),
+            "stats dock row chrome folded into StatsDockRowsController.cs");
         AssertDoesNotContain(rowChromeControllerText, "public void UpdateDiagnosticsRows(StatsDiagnosticRowsPresentation presentation)");
-        AssertDoesNotContain(rowChromeControllerText, "private readonly List<DiagnosticsPoolSlot> _diagnosticsRowPool = new();");
-        AssertDoesNotContain(rowChromeControllerText, "private TextBlock? _diagnosticsEmptyStateTextBlock;");
-        AssertDoesNotContain(rowChromeControllerText, "Text = \"No diagnostics available\",");
-        AssertDoesNotContain(rowChromeControllerText, "DiagnosticsContent");
         AssertDoesNotContain(rowChromeControllerText, "private Border CreateRow(");
         AssertDoesNotContain(controllerText, "private Border CreateRow(");
         AssertDoesNotContain(rowChromeControllerText, "Style = GetStyle(alt ? \"DockStatsRowAltStyle\" : \"DockStatsRowStyle\"),");
