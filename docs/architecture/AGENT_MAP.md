@@ -2922,8 +2922,7 @@ Primary owners:
   `not_ready` retry behavior, response-state parsing handoff to
   `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`, named-pipe
   connect orchestration, pipe connect failure classification, exact CLI/MCP
-  diagnostic error codes, request/response framing, and response timeout.
-- `tools/Common/AutomationPipeClient/AutomationCommandTransport.cs` owns
+  diagnostic error codes, request/response framing, response timeout,
   command-specific timeout selection for string and typed commands, shared
   response-element validation, synthetic error shaping, and the handoff to
   `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`.

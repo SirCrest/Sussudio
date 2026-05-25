@@ -1666,7 +1666,19 @@ Partial clusters reduced: `AutomationPipeClient` -1 file; no longer appears as a
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: shared automation tool contract tests cover enum command routing, exact pipe connect error classification, response-state parsing, and synthetic error shaping; no automation command names/IDs changed
 Behavior preserved: command resolution, typed `AutomationCommandKind` command-id handoff, request envelope serialization, `not_ready` retry delay bounds, response-state parsing, named-pipe connect classification, UTF-8 request/response framing, response timeout, and cancellation behavior remain unchanged
-Notes for future agents: keep command envelope/retry/response-state parsing and named-pipe request transport together in `AutomationPipeClient.cs`; keep higher-level timeout selection, response validation, and synthetic error handling in `AutomationCommandTransport.cs`
+Notes for future agents: keep command envelope/retry/response-state parsing and named-pipe request transport together in `AutomationPipeClient.cs`; the follow-up command transport locality slice below folds higher-level timeout selection, response validation, and synthetic error handling into the same file while preserving the named `AutomationCommandTransport` type
+
+Date: 2026-05-25
+Area: shared automation command transport locality
+Problem: `AutomationCommandTransport.cs` was a 72-line wrapper used only as the higher-level timeout/JSON/synthetic-error layer over `AutomationPipeClient`, leaving the shared CLI/MCP pipe client split across an extra tiny file after the partial-family consolidation.
+Files consolidated: `tools/Common/AutomationPipeClient/AutomationCommandTransport.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: none
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: shared automation tool contract tests cover enum command routing, exact pipe connect error classification, response-state parsing, synthetic error shaping, and ssctl/MCP callers using the named `AutomationCommandTransport` type
+Behavior preserved: public automation command names/IDs, typed and string command overloads, timeout selection, response-element validation, synthetic error shaping, pipe connect classification, JSON framing, and caller type names remain unchanged
+Notes for future agents: keep `AutomationCommandTransport` as a named type in `AutomationPipeClient.cs` so ssctl/MCP callers still read as command transport users while the shared pipe-client implementation lives in one file.
 
 Date: 2026-05-25
 Area: diagnostic-session run context locality

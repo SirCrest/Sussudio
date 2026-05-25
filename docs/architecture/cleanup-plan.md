@@ -3171,11 +3171,10 @@ Shared automation pipe client ownership lives under
 envelope sending, typed `AutomationCommandKind` command-id routing,
 `not_ready` retry policy, named-pipe connect orchestration, connect failure
 classification with exact CLI/MCP diagnostic error codes, write/read framing,
-and response timeout,
-`AutomationCommandTransport.cs` owns command-specific timeout selection for
-string and typed commands, shared response-element validation, synthetic error
-shaping, and handoff to
-`Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`,
+response timeout, command-specific timeout selection for string and typed
+commands, shared response-element validation, synthetic error shaping, and
+handoff to
+`Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`.
 `AutomationPipeClient.cs` owns tolerant response-state parsing handoff to
 `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`,
 `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs` owns the command
@@ -3207,7 +3206,6 @@ imports, SetupAPI imports, and native interface DTOs in
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient/AutomationPipeClient.cs`
-- `AutomationPipeClient/AutomationCommandTransport.cs`
 - `DiagnosticSessionBackgroundTasks.cs`
 - `DiagnosticSessionCleanupActions.cs`
 - `DiagnosticSessionRecordingChecks.cs`
