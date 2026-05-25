@@ -73,8 +73,7 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var channelText = ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
             .Replace("\r\n", "\n");
-        var retryText = ReadRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")
-            .Replace("\r\n", "\n");
+        var retryText = channelText;
 
         AssertContains(retryText, "internal static class DiagnosticSessionPipeRetryPolicy");
         AssertContains(retryText, "BuildLocalFailureResponse(command, ex.Message)");
@@ -83,6 +82,10 @@ static partial class Program
         AssertContains(retryText, "\"pipe-access-denied\"");
         AssertContains(channelText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
         AssertContains(channelText, "SendCommandWithConnectRetryAsync(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionPipeRetryPolicy.cs")),
+            "diagnostic-session pipe retry policy lives with the command channel transport owner");
         AssertDoesNotContain(runnerText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
         AssertDoesNotContain(runnerText, "private static bool IsSyntheticPipeConnectFailure(");
         AssertDoesNotContain(runnerText, "private static bool IsPermanentPipeConnectFailure(");

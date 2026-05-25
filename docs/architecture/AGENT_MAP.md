@@ -3297,14 +3297,13 @@ Primary owners:
   diagnostic millisecond formatting, automation response-success detection,
   tolerant JSON string/bool/numeric accessors, and shared byte, number,
   interval, frame-budget, and tick-age display helpers.
-- `tools/Common/DiagnosticSessionPipeRetryPolicy.cs` owns diagnostic-session
-  connect retry classification and local failure-response envelopes.
 - `tools/Common/DiagnosticSessionCommandChannel.cs` owns serialized
   diagnostic-session automation command sending, command failure accounting,
   and `AutomationCommandKind`-to-catalog command-name resolution for fixed
   channel-owned commands, including setup and cleanup lifecycle mutations, raw
   command send overloads, connect-retry wrapping, local failure-response
-  fallback when connect retry returns no response, and fixed wait command
+  fallback when connect retry returns no response, pipe connect retry
+  classification, local failure-response envelopes, and fixed wait command
   payload shaping. Keep the underlying runner delegate string-compatible.
 - Keep new scenario booleans and grouped derivations with
   `DiagnosticSessionScenarioPlan` in

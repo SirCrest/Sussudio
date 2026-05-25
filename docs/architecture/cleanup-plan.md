@@ -2913,17 +2913,14 @@ snapshot/pipe-failure fallback there too.
 Shared option precedence and preview-present field extraction belong to
 `tools/Common/PresentMon/PresentMonProbe.cs`.
 
-Diagnostic-session pipe retry/error classification now lives in
-`tools/Common/DiagnosticSessionPipeRetryPolicy.cs`, keeping access-denied as a
-permanent failure and connect failed/timeout responses retryable.
-
 Diagnostic-session command sending now lives in
 `tools/Common/DiagnosticSessionCommandChannel.cs`. It owns serialized command
 execution, command failure accounting, and enum-backed command-name resolution
 for fixed diagnostic-session commands, raw command send overloads,
 connect-retry wrapping, local failure-response fallback when connect retry
-returns no response, and wait command helper payload shaping. Scenario setup
-and cleanup pass the channel itself for lifecycle mutations so
+returns no response, pipe retry/error classification, access-denied permanent
+failure policy, connect failed/timeout retry policy, and wait command helper
+payload shaping. Scenario setup and cleanup pass the channel itself for lifecycle mutations so
 `SetFlashbackEnabled`, `SetPreviewEnabled`, `SetRecordingEnabled`, and
 `FlashbackAction` flow through `AutomationCommandKind` overloads; the runner
 keeps phase orchestration and its public string delegate compatibility.
@@ -3231,7 +3228,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionMetrics.cs`
 - `DiagnosticSessionModels.cs`
 - `DiagnosticSessionResult.cs`
-- `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionCommandChannel.cs`
 - `DiagnosticSessionResultBuilder.cs`
 - `DiagnosticSessionResultBuilder.Flattening.cs`

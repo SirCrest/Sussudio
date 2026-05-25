@@ -200,8 +200,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
         var diagnosticSessionText = ReadDiagnosticSessionRunnerSource();
         var diagnosticSessionCommandChannelText = RuntimeContractSource.ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var diagnosticSessionPipeRetryText = RuntimeContractSource.ReadRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")
-            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var diagnosticSessionPipeRetryText = diagnosticSessionCommandChannelText;
         var automationPipeClientModelsText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationPipeClientModels.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
 
@@ -283,6 +282,9 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("\"pipe-connect-timeout\"", diagnosticSessionPipeRetryText);
         Assert.Contains("IsPermanentPipeConnectFailure(ex.ErrorCode)", diagnosticSessionPipeRetryText);
         Assert.Contains("\"pipe-access-denied\"", diagnosticSessionPipeRetryText);
+        Assert.False(
+            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "Common", "DiagnosticSessionPipeRetryPolicy.cs")),
+            "diagnostic-session pipe retry policy should stay with the command channel transport owner.");
         Assert.DoesNotContain("private static async Task<JsonElement?> SendCommandWithConnectRetryAsync(", diagnosticSessionText);
     }
 

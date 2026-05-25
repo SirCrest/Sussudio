@@ -2380,3 +2380,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: diagnostic-session scenario ownership tests cover catalog entries, plan creation, grouped policy flags, and runner handoff; no CLI/MCP command names or automation command IDs changed
 Behavior preserved: diagnostic scenario names, HelpList/Description text, scenario ordering, requirement queries, export verification filenames, plan flag construction, grouped Flashback warning/validation predicates, preview-cycle predicates, and runner consumption of named plan properties remain unchanged
 Notes for future agents: keep scenario name metadata and `DiagnosticSessionScenarioPlan` flag policy together in `DiagnosticSessionScenarioCatalog.cs`; do not add scenario string comparisons in the runner.
+
+Date: 2026-05-25
+Area: diagnostic-session command transport locality
+Problem: `DiagnosticSessionCommandChannel.cs` owned serialized diagnostic-session command sending and connect-retry invocation, while `DiagnosticSessionPipeRetryPolicy.cs` held the adjacent retry classifier and local failure-envelope helpers used by that transport surface and Flashback export diagnostics. Reviewing command transport failure behavior required opening two small files for one retry/error-envelope path.
+Files consolidated: `tools/Common/DiagnosticSessionPipeRetryPolicy.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; diagnostic-session support file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: diagnostic-session infrastructure and protocol contract tests cover retry classification, local failure envelopes, and command-channel usage; no CLI/MCP command names or automation command IDs changed
+Behavior preserved: access-denied remains permanent, pipe connect failed/timeout synthetic responses remain retryable, non-connect pipe exceptions and JSON exceptions still produce local failure responses, command-channel no-response fallback remains unchanged, and Flashback export diagnostics still call the named retry policy helpers
+Notes for future agents: keep the named `DiagnosticSessionPipeRetryPolicy` type with `DiagnosticSessionCommandChannel.cs`; do not move retry classification into the runner.
