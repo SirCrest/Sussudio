@@ -105,7 +105,7 @@ public sealed class RuntimeContractsTests
     {
         var ffmpegText = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Runtime/FfmpegRuntimeLocator.cs")
             .Replace("\r\n", "\n");
-        var hdrText = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Recording/HdrValidationRunner.cs")
+        var hdrText = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.StopLifecycle.cs")
             .Replace("\r\n", "\n");
 
         Assert.Contains("internal static class FfmpegRuntimeLocator", ffmpegText);

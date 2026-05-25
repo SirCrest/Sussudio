@@ -1727,3 +1727,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: automation surface tests cover Flashback action dispatch and async view-model ports; no automation command names/IDs changed
 Behavior preserved: Flashback segment snapshot access, playback snapshot access, rejection status text/logging, scrub/seek/play/pause/go-live/nudge routing, in/out marker routing, clear-marker routing, automation Flashback action dispatch, UI-thread invocation, and buffer/status projection remain unchanged
 Notes for future agents: keep Flashback playback state projection and the thin ViewModel playback command facade together in `MainViewModel.FlashbackState.cs`; keep export/save-picker behavior in `MainViewModel.FlashbackExport.cs`
+
+Date: 2026-05-25
+Area: Recording sink HDR validation locality
+Problem: `HdrValidationRunner.cs` was a 100-line stop-time helper called only by `LibAvRecordingSink.StopLifecycle.cs`, splitting final-output validation from the lifecycle that decides whether a completed recording should succeed or fail.
+Files consolidated: `Sussudio/Services/Recording/HdrValidationRunner.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; recording helper file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
+Behavior preserved: HDR validator script resolution, codec selection, HDR/static-metadata arguments, expected-FPS argument formatting, 30-second process-supervisor timeout, stdout/stderr logging, timeout/start/exit-code failure details, missing-script skip behavior, and final `FinalizeResult` failure shaping remain unchanged
+Notes for future agents: keep stop-time HDR script validation with `LibAvRecordingSink.StopLifecycle.cs`; keep ffprobe-based recording verification HDR policy in `RecordingVerifier.Validation.cs`
