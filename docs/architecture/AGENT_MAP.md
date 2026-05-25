@@ -1293,23 +1293,10 @@ Primary current owners:
   fallback policy, preview surface/shadow, renderer host lifecycle, D3D
   startup/reinit, stats adapter, preview runtime snapshot mapping, and D3D
   projection ownership assertions.
-- `tests/Sussudio.Tests/PreviewRuntimeSnapshotController.D3DPolicies.Tests.cs`
-  owns preview runtime snapshot D3D frame-counter CPU fallback and projection
-  composition regression checks.
-- `tests/Sussudio.Tests/PreviewRuntimeSnapshotController.D3DPolicies.RendererTiming.Tests.cs`
-  owns preview runtime snapshot D3D renderer-state, display-cadence,
-  render-CPU-timing, and pipeline-latency null-renderer regression checks.
-- `tests/Sussudio.Tests/PreviewRuntimeSnapshotController.D3DPolicies.FrameFlow.Tests.cs`
-  owns preview runtime snapshot D3D frame-statistics, frame-latency-wait, and
-  frame-ownership null-renderer regression checks.
-- `tests/Sussudio.Tests/PreviewRuntimeSnapshotController.Integration.Tests.cs`
-  owns preview runtime snapshot controller Build integration regression checks.
-- `tests/Sussudio.Tests/PreviewRuntimeSnapshotController.Health.Tests.cs` owns
-  preview runtime snapshot health policy and health input factory regression
-  checks.
-- `tests/Sussudio.Tests/PreviewRuntimeSnapshotController.ProjectionPolicies.Tests.cs`
-  owns preview runtime snapshot surface, startup, and GPU playback projection
-  policy regression checks.
+- `tests/Sussudio.Tests/PreviewRuntimeSnapshotController.Tests.cs` owns preview
+  runtime snapshot controller Build integration, D3D policy null-renderer
+  defaults, health policy/input factory, and surface/startup/GPU playback
+  projection policy regression checks.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.NativeBootstrap.Tests.cs`
   owns MainWindow native bootstrap, adapter, and first-frame reveal ownership
   assertions.
