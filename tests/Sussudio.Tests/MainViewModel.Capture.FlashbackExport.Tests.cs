@@ -165,7 +165,7 @@ static partial class Program
         var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
         var rawDisposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs")
+        var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
             .Replace("\r\n", "\n");
         var rawFlashbackExportText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExport.cs")
             .Replace("\r\n", "\n");

@@ -3676,12 +3676,12 @@ owner, fold it back into that owner and update the source-shape tests and
    periodic timer refresh orchestration and initial
    source-telemetry/HDR/live-info/timer/disk-space bootstrap through
    graph-built context ports now live in
-   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs`,
+   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`,
    The runtime lifecycle graph-port contract for timer creation, runtime
    snapshot sampling, telemetry bootstrap, live-info/HDR projection, recording
    stats refresh, Flashback bitrate refresh, disk-space refresh, watcher
    disposal, and the runtime lifecycle graph-port contract live in
-   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs`,
+   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`,
    while runtime event handling through graph-built context ports now lives in
    `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs`
    for system-resume preview rebind handling, audio-device-invalidated rebind
@@ -3748,7 +3748,7 @@ owner, fold it back into that owner and update the source-shape tests and
    live in `MainViewModel.RecordingState.cs`. Bounded teardown, dispose timeout policy,
    watcher disposal, coordinator cleanup/dispose, and capture-service
    async-dispose fallback through graph-built context ports now live in
-   `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs`.
+   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`.
    The disposal graph-port contract for one-shot disposal entry, teardown
    cancellations, runtime stop, coordinator cleanup/dispose, and capture-service
    async/sync disposal fallback lives with that controller.

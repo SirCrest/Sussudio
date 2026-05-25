@@ -2974,7 +2974,7 @@ Primary current owners:
   `MainViewModel.Composition.cs` owns the stable private UI-dispatch adapter
   names plus preview event fan-out for the partial family, beside the
   controller graph construction that consumes those ports.
-  `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`
   is a top-level `Sussudio.Controllers` owner for periodic timer refresh orchestration, initial
   source-telemetry/HDR/live-info/timer/disk-space bootstrap, and the
   runtime lifecycle graph-port contract for timer creation, runtime
@@ -3050,7 +3050,7 @@ Primary current owners:
   concrete start/stop operation execution, failure/cancellation state repair,
   recording timer state, status/count presentation updates, and direct use of
   the preview lifecycle owner for recording startup initialization.
-  `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs` is a
+  `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs` is a
   top-level `Sussudio.Controllers` owner for bounded teardown, dispose timeout policy, watcher disposal, coordinator
   cleanup/dispose, capture-service async-dispose fallback, disposal-step
   logging, and the disposal graph-port contract for one-shot disposal entry, teardown

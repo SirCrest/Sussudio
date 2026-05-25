@@ -5,7 +5,7 @@ static partial class Program
 {
     internal static Task LiveSignalTextProjection_PreservesPixelFormatFallbackOrder()
     {
-        var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs")
+        var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
             .Replace("\r\n", "\n");
         var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs")
             .Replace("\r\n", "\n");

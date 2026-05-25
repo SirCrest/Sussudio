@@ -6,10 +6,10 @@ static partial class Program
     {
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
         var sourceTelemetryControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs").Replace("\r\n", "\n");
-        var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs").Replace("\r\n", "\n");
+        var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs").Replace("\r\n", "\n");
         var runtimeEventIngressControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs").Replace("\r\n", "\n");
         var disposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs").Replace("\r\n", "\n");
+        var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs").Replace("\r\n", "\n");
 
         AssertContains(sourceTelemetryControllerText, "namespace Sussudio.Controllers;");
         AssertContains(sourceTelemetryControllerText, "internal sealed class MainViewModelSourceTelemetryController");
@@ -50,6 +50,10 @@ static partial class Program
         AssertContains(runtimeLifecycleControllerText, "private readonly MainViewModelRuntimeEventIngressController _eventIngressController;");
         AssertContains(runtimeLifecycleControllerText, "internal sealed class MainViewModelRuntimeLifecycleControllerContext");
         AssertContains(runtimeLifecycleControllerText, "private readonly MainViewModelRuntimeLifecycleControllerContext _context;");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeLifecycleController.cs")),
+            "runtime lifecycle controller folded into MainViewModelLifecycleController.cs");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(runtimeLifecycleControllerText, "_viewModel.");
         AssertContains(runtimeLifecycleControllerText, "_eventIngressController = _context.CreateEventIngressController();");
@@ -119,6 +123,10 @@ static partial class Program
         AssertContains(disposalControllerText, "internal sealed class MainViewModelDisposalController");
         AssertContains(disposalControllerText, "internal sealed class MainViewModelDisposalControllerContext");
         AssertContains(disposalControllerText, "private readonly MainViewModelDisposalControllerContext _context;");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelDisposalController.cs")),
+            "disposal controller folded into MainViewModelLifecycleController.cs");
         AssertContains(disposalControllerText, "public required Func<Task, int, string, Task> AwaitWithTimeoutAsync { get; init; }");
         AssertDoesNotContain(disposalControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(disposalControllerText, "_viewModel.");
