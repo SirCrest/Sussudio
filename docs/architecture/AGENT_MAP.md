@@ -1400,9 +1400,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.CompositionSource.cs` owns the shared
   MainWindow source readers used by root, Flashback, preview, shell-chrome,
   capture-binding, and stats-overlay ownership assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.Preview.Tests.cs` owns
-  automation preview enable/disable and start/stop routing through the preview
-  lifecycle controller.
 - `tests/Sussudio.Tests/MainViewModel.Automation.RecordingTransition.Tests.cs`
   owns automation recording routing through the shared transition gate and
   recording runtime ownership assertions, recording start/stop failure
@@ -1484,9 +1481,10 @@ Primary current owners:
   ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.PreviewRuntime.Tests.cs`
   owns diagnostics snapshot preview runtime projection ownership assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsLoop.Tests.cs`
-  owns diagnostics-loop polling contracts that keep options snapshots out of
-  hot diagnostics refresh paths.
+- `tests/Sussudio.Tests/MainViewModel.AutomationSnapshots.Ownership.Tests.cs`
+  owns automation snapshot/options source-shape assertions, including the
+  diagnostics-loop contract that keeps options snapshots out of hot diagnostics
+  refresh paths.
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
   owns xUnit execution for the former legacy diagnostics-loop polling catalog
   check.
@@ -1522,7 +1520,8 @@ Primary current owners:
   contexts, state partial ownership, and default dependency factory wiring.
 - `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Presentation.Tests.cs`
   owns the MainViewModel preview lifecycle, preview reinitialize, preview-state,
-  and presentation controller graph dependency-context assertions.
+  preview automation enablement, and presentation controller graph
+  dependency-context assertions.
 - `tests/Sussudio.Tests/MainViewModel.DependencyComposition.CaptureDevice.Tests.cs`
   owns the MainViewModel capture/device composition assertions for device
   refresh, device-native audio, capture mode rebuild, capture settings
@@ -2078,7 +2077,8 @@ Primary current owners:
   selection policy; `Program.Support.cs` owns CLI parsing, tool-path resolution,
   and child-process log capture.
 - `tests/Sussudio.Tests/HarnessCore.SourceText.cs` owns shared repo-root/file
-  reads and source-text extraction helpers used by harness ownership checks.
+  reads, automation snapshot source family readers, and source-text extraction
+  helpers used by harness ownership checks.
 - `tests/Sussudio.Tests/HarnessCore.Reflection.cs` owns shared reflection,
   private-field/property access, enum/type lookup, and field-value fixture
   helpers.

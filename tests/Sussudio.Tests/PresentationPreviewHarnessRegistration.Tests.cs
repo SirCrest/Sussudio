@@ -48,7 +48,6 @@ static partial class Program
         "tests/Sussudio.Tests/PreviewRuntimeSnapshotController.Health.Tests.cs",
         "tests/Sussudio.Tests/PreviewRuntimeSnapshotController.Integration.Tests.cs",
         "tests/Sussudio.Tests/PreviewRuntimeSnapshotController.ProjectionPolicies.Tests.cs",
-        "tests/Sussudio.Tests/MainViewModel.Automation.Preview.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.AudioControls.DeviceAudio.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.AudioControls.GainAndMonitoring.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.NativeXuAudioControlService.AudioMeters.Tests.cs",

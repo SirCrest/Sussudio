@@ -79,4 +79,27 @@ static partial class Program
         return ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs")
             .Replace("\r\n", "\n");
     }
+
+    private static string ReadAutomationSnapshotFlatteningFamilyText()
+        => string.Join(
+            "\n",
+            ReadAutomationSnapshotFlatteningOrchestrationText(),
+            ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs"))
+            .Replace("\r\n", "\n");
+
+    private static string ReadAutomationSnapshotFlatteningOrchestrationText()
+    {
+        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
+            .Replace("\r\n", "\n");
+        const string startToken = "private static AutomationSnapshotFlattenedProjectionSet BuildAutomationSnapshotFlattenedProjectionSet(";
+        const string endToken = "private SnapshotStatusProjection BuildSnapshotStatusProjection(";
+        var startIndex = snapshotProjectionText.IndexOf(startToken, StringComparison.Ordinal);
+        var endIndex = snapshotProjectionText.IndexOf(endToken, StringComparison.Ordinal);
+        if (startIndex < 0 || endIndex <= startIndex)
+        {
+            throw new InvalidOperationException("Unable to locate automation snapshot flattening orchestration in the root snapshot projection file.");
+        }
+
+        return snapshotProjectionText[startIndex..endIndex];
+    }
 }
