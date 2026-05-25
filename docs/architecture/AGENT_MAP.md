@@ -1877,9 +1877,9 @@ Primary current owners:
   `tests/Sussudio.Tests/LibAvEncoder.Helpers.cs` own LibAvEncoder codec policy,
   frame-size, diagnostics, HDR metadata, output lifecycle, source-ownership,
   and shared source-reading helpers.
-- `tests/Sussudio.Tests/AutomationCommandDispatcher.Tests.cs` owns the live
+- `tests/Sussudio.Tests/AutomationCommandDispatcher.Helpers.cs` owns the live
   dispatcher source-family reader; `AutomationCommandDispatcher.*.Tests.cs`
-  and `AutomationCommandDispatcher.Helpers.cs` own authorization, manifest,
+  own authorization, manifest,
   Flashback failure response, Flashback command placement, verification command
   placement, command-kind handling, and helper coverage.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Extraction.Tests.cs`
