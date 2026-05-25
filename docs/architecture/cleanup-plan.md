@@ -3535,7 +3535,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioStartup.cs`
 - `DiagnosticSessionRunner.cs`
 - `DiagnosticSessionScenarioPhaseRunner.cs`
-- `ToolJsonOptions.cs`
 - `tools/Common/PresentMon/PresentMonProbe.cs`
 
 ## Next Slices

@@ -3,6 +3,11 @@ using static Sussudio.Tools.AutomationSnapshotFormatter;
 
 namespace Sussudio.Tools;
 
+internal static class ToolJsonOptions
+{
+    internal static readonly JsonSerializerOptions Pretty = new() { WriteIndented = true };
+}
+
 internal static class DiagnosticSessionResultArtifacts
 {
     internal static async Task<DiagnosticSessionResultArtifactPaths> WritePreSummaryAsync(
