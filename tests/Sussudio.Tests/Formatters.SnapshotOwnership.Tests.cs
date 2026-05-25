@@ -145,7 +145,12 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "Formatters.Snapshot.ThreadHealth.cs")),
             "ssctl thread-health snapshot text lives with the root formatter flow");
         AssertContains(ssctlFormatterCommonSource, "public static string FormatDiagnostics");
-        AssertContains(ReadRepoFile("tools/ssctl/Formatters.Options.cs"), "public static string FormatOptions");
+        AssertContains(ssctlFormatterCommonSource, "public static string FormatOptions");
+        AssertContains(ssctlFormatterCommonSource, "public static string FormatDeviceList");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "Formatters.Options.cs")),
+            "ssctl capture option and device-list output lives with the root formatter helpers");
         var ssctlTimelineRootSource = ReadRepoFile("tools/ssctl/Formatters.Timeline.cs");
         AssertContains(ssctlTimelineRootSource, "public static string FormatTimeline");
         AssertContains(ssctlTimelineRootSource, "var entries = ReadTimelineRows(data);");

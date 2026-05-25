@@ -2272,3 +2272,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: D3D11/CUDA hardware frame initialization, ArraySize=1 pool setup, GPU texture copy/reference setup, device-removed checks, PTS/keyframe assignment, first-frame HDR side-data attachment/removal, EAGAIN packet drains, packet draining, drop accounting, and hardware-frame unref cleanup remain unchanged
 Notes for future agents: keep hardware frame setup and hardware submit paths together in `LibAvEncoder.HardwareFrames.cs`; keep CPU packed-frame submission and shared HDR side-data helper implementations in `LibAvEncoder.VideoSubmission.cs`.
+
+Date: 2026-05-25
+Area: ssctl general formatter locality
+Problem: `Formatters.Common.cs` owned generic ssctl result/JSON, diagnostic, and memory projections while `Formatters.Options.cs` held a small capture-options/device-list projection that used the same `TryGetData` and `AutomationSnapshotFormatter` helper flow. Reviewing non-snapshot/non-timeline CLI projection behavior required opening two small adjacent partials.
+Files consolidated: `tools/ssctl/Formatters.Options.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `Formatters` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`
+CLI/MCP/pipe checks, if applicable: ssctl formatter coverage and command-handler routing tests cover the public formatter methods; no automation command names/IDs changed
+Behavior preserved: generic command result output, pretty JSON, diagnostic-event output, memory/GC output, capture options summary, device-list output, selected-option markers, disabled suffixes, and capture option list ordering remain unchanged
+Notes for future agents: keep general ssctl projections in `Formatters.Common.cs`; keep app snapshot rendering in `Formatters.Snapshot.cs` and performance timeline table/trend rendering in `Formatters.Timeline.cs`.

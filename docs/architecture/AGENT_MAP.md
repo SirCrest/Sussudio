@@ -3020,12 +3020,12 @@ Primary owners:
   cleanup text, Flashback export/playback text, MJPEG timing activation, decode/
   copy/callback/per-decoder timing, compressed queue/drop/reorder/pipeline
   timing, and preview-jitter snapshot text.
-- `tools/ssctl/Formatters.Options.cs` owns capture option and device lists.
 - `tools/ssctl/Formatters.Timeline.cs` owns performance timeline response
   validation, JSON row projection, private row model, table output, and
   first-vs-last trend summary text.
 - `tools/ssctl/Formatters.Common.cs` owns shared result/JSON helpers, recent
-  diagnostic-event output, and standalone memory/GC summaries.
+  diagnostic-event output, standalone memory/GC summaries, capture option
+  summaries, and device-list output.
 - `tools/McpServer/Tools/AppStateTools.cs` owns the public app-state,
   diagnostic-event, memory/GC/thread-pool, and diagnostic-session MCP entry
   points while preserving the `AppStateTools`, `DiagnosticsTools`,
