@@ -13,7 +13,7 @@ static partial class Program
         var previewActionsText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
         var previewFadeInText = ReadMainWindowPreviewTransitionsAdapterSource();
-        var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewFadeInController.cs")
+        var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewButtonActionController.cs")
             .Replace("\r\n", "\n");
         var previewAudioFadeText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewAudioFadeControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewAudioFadeController.cs")

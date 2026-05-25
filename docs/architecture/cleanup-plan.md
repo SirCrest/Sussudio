@@ -2880,7 +2880,7 @@ timeout status, and failure-stop status text live inside
 and failure-stop decisions are made. This keeps the root shell focused on wiring
 while leaving the existing startup state machine behavior unchanged.
 Delayed preview reveal after first visual now lives in
-`Sussudio/Controllers/Preview/PreviewFadeInController.cs`; the adapter is
+`Sussudio/Controllers/Preview/PreviewButtonActionController.cs`; the adapter is
 `Sussudio/MainWindow.PreviewTransitions.Composition.cs`. Watchdog/timeout recovery remains in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`.
 Preview startup loading overlay presentation now lives in

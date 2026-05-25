@@ -2781,7 +2781,9 @@ Primary current owners:
   button glyph/tooltip presentation for Start Preview and Stop Preview plus
   preview button command choreography: pending-reinit cancel, user stop intent,
   audio/visual fade-out ordering, preview start/stop calls, reinit animation
-  reset, and unavailable-placeholder reveal.
+  reset, unavailable-placeholder reveal, and delayed preview reveal after first
+  visual while preserving the `PreviewButtonActionController`,
+  `PreviewButtonPresentationController`, and `PreviewFadeInController` types.
   `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires preview button presentation callbacks and preview
   lifecycle property/event routing.
 - `Sussudio/MainWindow.PreviewTransitions.Composition.cs`
@@ -2855,9 +2857,9 @@ Primary current owners:
   `Sussudio/MainWindow.PreviewTransitions.Composition.cs` keeps the renderer-stop-before-teardown
   handoff and XAML callback endpoints for completion presentation.
   Keep preview startup fields out of the composition root.
-- `Sussudio/Controllers/Preview/PreviewFadeInController.cs` owns delayed preview
-  reveal after first visual: rendered-frame threshold, fade-in timer, renderer
-  replacement fallback, and preview-audio fade start ordering.
+- `Sussudio/Controllers/Preview/PreviewButtonActionController.cs` owns delayed
+  preview reveal after first visual: rendered-frame threshold, fade-in timer,
+  renderer replacement fallback, and preview-audio fade start ordering.
   `Sussudio/MainWindow.PreviewTransitions.Composition.cs` wires the XAML-facing adapter. Keep
   timeout/watchdog recovery in `PreviewStartupWatchdogController`.
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview-
