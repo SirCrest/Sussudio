@@ -1657,23 +1657,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/RecordingQueue.Tests.cs` owns shared recording queue
   source readers and source-block extraction helpers.
 - `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` owns the
-  recording/Flashback queue overload, fatal-failure, lifecycle, and recording
-  backend start-policy assertion.
+  recording/Flashback queue overload, fatal-failure, lifecycle, recording
+  backend start-policy, source-loading, buffer-cycle, LibAv/Flashback overload,
+  buffer recovery, and health/automation telemetry assertions.
 - `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Finalize.Tests.cs` owns
   recording backend finalization, Flashback cleanup, microphone restart, and
-  post-finalize telemetry assertions. `RecordingQueue.OverloadPolicy.SourceReaders.cs`
-  owns source-loading setup for the overload policy assertions.
-- `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.BufferCycle.Tests.cs`
-  owns Flashback buffer-cycle committed-token, detach/attach, playback
-  controller handoff, and recording-backend ownership policy assertions.
-  `RecordingQueue.OverloadPolicy.LibAvSpec.cs` owns the LibAv overload and
-  queue-depth assertion subgroup.
-  `RecordingQueue.OverloadPolicy.FlashbackSpec.cs` owns the Flashback overload,
-  fatal-failure, queue-depth, and frame-validation assertion subgroup.
-  `RecordingQueue.OverloadPolicy.FlashbackBuffer.cs` owns Flashback buffer
-  recovery, eviction, active-segment, and enqueue-gating assertions.
-  `RecordingQueue.OverloadPolicy.Telemetry.cs` owns unified capture, health
-  snapshot, and automation formatter telemetry assertions.
+  post-finalize telemetry assertions.
   `CaptureService.RecordingLifecycleOwnership.Tests.cs` owns CaptureService
   recording lifecycle, recording-stop finalization failure propagation, and
   active recording backend resource aggregate ownership assertions.

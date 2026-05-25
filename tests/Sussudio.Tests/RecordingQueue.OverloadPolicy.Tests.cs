@@ -147,4 +147,462 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    internal static Task RecordingBackendFlashbackBufferCycle_PreservesPolicies()
+    {
+        var sources = ReadRecordingQueueOverloadPolicySources();
+        var bufferCycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs")
+            .Replace("\r\n", "\n");
+        var finalizeBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(bufferCycleText, "private async Task CycleFlashbackBufferAsync(");
+        AssertContains(bufferCycleText, "_flashbackBackend.CycleSinkOnlyAsync(");
+        AssertDoesNotContain(finalizeBackendText, "private async Task CycleFlashbackBufferAsync(");
+        AssertDoesNotContain(finalizeBackendText, "public async Task<FlashbackBufferCycleResult> CycleSinkOnlyAsync(");
+        AssertFlashbackBufferCyclePolicies(
+            sources.CaptureServiceSource,
+            sources.FlashbackBackendSource);
+
+        return Task.CompletedTask;
+    }
+
+    private readonly record struct RecordingQueueOverloadPolicySources(
+        string LibAvSource,
+        string FlashbackSource,
+        string FlashbackBackendSource,
+        string FlashbackBufferSource,
+        string FlashbackCleanupSource,
+        string CaptureServiceSource,
+        string CaptureHealthSnapshotRootSource,
+        string CaptureSnapshotsSource,
+        string UnifiedVideoCaptureSource,
+        string RecordingContractsSource);
+
+    private static RecordingQueueOverloadPolicySources ReadRecordingQueueOverloadPolicySources()
+    {
+        var libAvSource = ReadLibAvRecordingSinkSource();
+        var flashbackSource = ReadFlashbackEncoderSinkSource();
+        var flashbackBackendSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
+        var flashbackBufferSource = ReadFlashbackBufferManagerSource();
+        var flashbackCleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs");
+        var captureServiceSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackState.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
+            + "\n" + ReadCaptureServiceAudioSource()
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Failures.cs")
+            + "\n" + ReadCaptureServicePreviewLifecycleSource()
+            + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
+            + "\n" + ReadCaptureServiceRecordingFinalizationSource()
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingRollback.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs");
+        var captureHealthSnapshotRootSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs");
+        var captureSnapshotsSource = captureHealthSnapshotRootSource
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.cs");
+        var unifiedVideoCaptureSource = ReadUnifiedVideoCaptureSource();
+        var recordingContractsSource = ReadRepoFile("Sussudio/Services/Contracts/RecordingContracts.cs");
+
+        return new RecordingQueueOverloadPolicySources(
+            libAvSource,
+            flashbackSource,
+            flashbackBackendSource,
+            flashbackBufferSource,
+            flashbackCleanupSource,
+            captureServiceSource,
+            captureHealthSnapshotRootSource,
+            captureSnapshotsSource,
+            unifiedVideoCaptureSource,
+            recordingContractsSource);
+    }
+
+    private static void AssertLibAvRecordingQueueOverloadPolicy(string libAvSource, string recordingContractsSource)
+    {
+        AssertContains(libAvSource, "LibAv recording video queue overloaded");
+        AssertDoesNotContain(libAvSource, "QueueBackpressureTimeoutMs");
+        AssertDoesNotContain(libAvSource, "Thread.Sleep(");
+        AssertDoesNotContain(libAvSource, "backpressure_retry");
+        AssertContains(libAvSource, "LIBAV_SINK_VIDEO_OVERLOAD");
+        AssertContains(libAvSource, "LIBAV_SINK_FATAL");
+        AssertContains(libAvSource, "OnEncodingFailed?.Invoke");
+        AssertContains(libAvSource, "public bool EncodingFailed");
+        AssertContains(libAvSource, "public string? EncodingFailureMessage");
+        AssertContains(libAvSource, "public int VideoQueueMaxDepth");
+        AssertContains(libAvSource, "public long VideoFramesSubmittedToEncoder");
+        AssertContains(libAvSource, "public long VideoEncoderPacketsWritten");
+        AssertContains(libAvSource, "public long VideoSequenceGaps");
+        AssertContains(libAvSource, "public long VideoQueueOldestFrameAgeMs");
+        AssertContains(libAvSource, "public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics");
+        AssertContains(libAvSource, "public double VideoQueueLatencyP95Ms");
+        AssertContains(libAvSource, "public double VideoQueueLatencyP99Ms");
+        AssertContains(libAvSource, "public long VideoBackpressureWaitMs");
+        AssertContains(libAvSource, "public long VideoBackpressureEvents");
+        AssertDoesNotContain(libAvSource, "_videoLatencyTracker.RecordBackpressure(backpressureStartTick");
+        AssertContains(libAvSource, "_videoLatencyTracker.TrackEnqueueUnderLock(packet.EnqueueTick)");
+        AssertContains(libAvSource, "_videoLatencyTracker.TrackDequeueUnderLock(packet.EnqueueTick)");
+        AssertContains(libAvSource, "_videoLatencyTracker.RecordPacketDequeued(packet.EnqueueTick, packet.SequenceNumber)");
+        AssertContains(libAvSource, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
+        AssertContains(libAvSource, "var depth = Interlocked.Increment(ref _videoQueueDepth);\n        if (queue.Writer.TryWrite(packet))");
+        AssertContains(libAvSource, "AtomicMax.Update(ref _videoQueueMaxDepth, depth);");
+        AssertContains(libAvSource, "DecrementQueueDepth(ref _videoQueueDepth, \"video_write_failed\");");
+        AssertContains(libAvSource, "public int GpuQueueMaxDepth");
+        AssertContains(libAvSource, "public int CudaQueueMaxDepth");
+        AssertContains(libAvSource, "private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
+        AssertContains(libAvSource, "var depth = Interlocked.Increment(ref _gpuQueueDepth);\n        if (queue.Writer.TryWrite(packet))");
+        AssertContains(libAvSource, "AtomicMax.Update(ref _gpuQueueMaxDepth, depth);");
+        AssertContains(libAvSource, "DecrementQueueDepth(ref _gpuQueueDepth, \"gpu_write_failed\");");
+        AssertContains(libAvSource, "private bool TryWriteCudaPacket(Channel<CudaFramePacket> queue, CudaFramePacket packet)");
+        AssertContains(libAvSource, "var depth = Interlocked.Increment(ref _cudaQueueDepth);\n        if (queue.Writer.TryWrite(packet))");
+        AssertContains(libAvSource, "AtomicMax.Update(ref _cudaQueueMaxDepth, depth);");
+        AssertContains(libAvSource, "DecrementQueueDepth(ref _cudaQueueDepth, \"cuda_write_failed\");");
+        AssertContains(libAvSource, "private static bool TryWriteAudioPacket(");
+        AssertContains(libAvSource, "DecrementQueueDepth(ref queueDepth, $\"{queueName}_write_failed\");");
+        AssertContains(libAvSource, "private static void DecrementQueueDepth(ref int target, string queueName)");
+        AssertContains(libAvSource, "LIBAV_SINK_QUEUE_DEPTH_UNDERFLOW");
+        AssertContains(libAvSource, "private void SignalWork(string operation)");
+        AssertContains(libAvSource, "LIBAV_SINK_WORK_SIGNAL_SKIPPED");
+        AssertContains(libAvSource, "SignalWork(\"complete_writer\");");
+        AssertEqual(1, libAvSource.Split("_workAvailable.Release();", StringSplitOptions.None).Length - 1, "All LibAv work-signal wakeups go through SignalWork");
+        AssertContains(libAvSource, "ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);");
+        AssertContains(libAvSource, "ReturnRemainingCudaFrames(_cudaQueue, ref _cudaQueueDepth);");
+        AssertDoesNotContain(libAvSource, "AtomicMax.Update(ref _videoQueueMaxDepth, Interlocked.Increment(ref _videoQueueDepth))");
+        AssertDoesNotContain(libAvSource, "AtomicMax.Update(ref _gpuQueueMaxDepth, Interlocked.Increment(ref _gpuQueueDepth))");
+        AssertDoesNotContain(libAvSource, "AtomicMax.Update(ref _cudaQueueMaxDepth, Interlocked.Increment(ref _cudaQueueDepth))");
+        AssertDoesNotContain(libAvSource, "Interlocked.Decrement(ref _videoQueueDepth)");
+        AssertDoesNotContain(libAvSource, "Interlocked.Decrement(ref _gpuQueueDepth)");
+        AssertDoesNotContain(libAvSource, "Interlocked.Decrement(ref _cudaQueueDepth)");
+        AssertContains(recordingContractsSource, "IRawVideoFrameTryEncoder");
+        AssertContains(recordingContractsSource, "IGpuVideoFrameTryEncoder");
+        AssertContains(libAvSource, "IRawVideoFrameTryEncoder");
+        AssertContains(libAvSource, "IGpuVideoFrameTryEncoder");
+        AssertContains(libAvSource, "public bool TryEnqueueRawVideoFrame");
+        AssertContains(libAvSource, "public bool TryEnqueueGpuVideoFrame");
+        AssertContains(libAvSource, "VideoEnqueueResult.Rejected");
+        AssertContains(libAvSource, "TryEnqueueGpuPacket");
+        AssertContains(libAvSource, "TryEnqueueCudaPacket");
+        AssertContains(libAvSource, "LibAv GPU recording queue overloaded");
+        AssertContains(libAvSource, "LibAv CUDA recording queue overloaded");
+        AssertContains(libAvSource, "if (!_started");
+        AssertContains(libAvSource, "Volatile.Read(ref _encodingFailure) != null");
+    }
+
+    private static void AssertFlashbackRecordingQueueOverloadPolicy(string flashbackSource)
+    {
+        AssertDoesNotContain(flashbackSource, "QueueBackpressureTimeoutMs");
+        AssertDoesNotContain(flashbackSource, "WaitForBackpressureRetryCancellation");
+        AssertDoesNotContain(flashbackSource, "FLASHBACK_SINK_VIDEO_BACKPRESSURE_DROP");
+        AssertDoesNotContain(flashbackSource, "FLASHBACK_SINK_GPU_BACKPRESSURE_DROP");
+        AssertContains(flashbackSource, "var p010FrameSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(_width, _height, isP010: true)");
+        AssertContains(flashbackSource, "VideoFramePacket.Frame(buffer, expectedSize, enqueueTick, isP010)");
+        AssertContains(flashbackSource, "MfSourceReaderVideoCapture.GetFrameSizeBytes(w, h, packet.IsP010)");
+        AssertContains(flashbackSource, "lease.PixelFormat == PooledVideoPixelFormat.P010");
+        AssertContains(flashbackSource, "FLASHBACK_SINK_VIDEO_OVERLOAD");
+        AssertContains(flashbackSource, "FLASHBACK_SINK_GPU_OVERLOAD");
+        AssertContains(flashbackSource, "_onFatalError?.Invoke");
+        AssertDoesNotContain(flashbackSource, "catch { /* Callback must not mask the original error */ }");
+        AssertContains(flashbackSource, "Logger.Log($\"FLASHBACK_SINK_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}\");");
+        AssertContains(flashbackSource, "private void OnVideoFrameEncoded()\n    {\n        if (_disposed)\n        {\n            return;\n        }");
+        AssertContains(flashbackSource, "if (!_disposed && Volatile.Read(ref _recordingActive) == 1)");
+        AssertContains(flashbackSource, "public bool EncodingFailed");
+        AssertContains(flashbackSource, "public string? EncodingFailureMessage");
+        AssertContains(flashbackSource, "public bool CanBeginRecording");
+        AssertContains(flashbackSource, "public bool IsRecordingActive");
+        AssertContains(flashbackSource, "Volatile.Read(ref _recordingActive) == 0");
+        AssertContains(flashbackSource, "!_bufferManager.IsSessionPreservedForRecovery");
+        AssertContains(flashbackSource, "Cannot begin recording: flashback recording is already active.");
+        AssertContains(flashbackSource, "Cannot begin recording: flashback session is preserved for recovery.");
+        AssertOccursBefore(flashbackSource, "Cannot begin recording: flashback recording is already active.", "_bufferManager.PauseEviction();");
+        AssertOccursBefore(flashbackSource, "Cannot begin recording: flashback session is preserved for recovery.", "_bufferManager.PauseEviction();");
+        AssertOccursBefore(flashbackSource, "_bufferManager.PauseEviction();", "Volatile.Write(ref _recordingActive, 1);");
+        AssertContains(flashbackSource, "public bool IsForceRotateActive");
+        AssertContains(flashbackSource, "public bool IsForceRotateRequested");
+        AssertContains(flashbackSource, "public bool IsForceRotateDraining");
+        AssertContains(flashbackSource, "WaitForForceRotateIdle");
+        AssertContains(flashbackSource, "CompletePendingForceRotateWithEmptyResult");
+        AssertContains(flashbackSource, "ForceRotateRequest? supersededRequest;");
+        AssertContains(flashbackSource, "supersededRequest = _forceRotateRequest;");
+        AssertContains(flashbackSource, "FLASHBACK_SINK_FORCE_ROTATE_SUPERSEDED");
+        AssertContains(flashbackSource, "supersededRequest.TryCancel();");
+        AssertContains(flashbackSource, "if (!RotateSegment(currentPts))\n                {\n                    localRequest.CompleteEmpty();\n                    return true;\n                }");
+        AssertContains(flashbackSource, "private bool RotateSegment(TimeSpan currentPts)");
+        AssertContains(flashbackSource, "return true;\n        }\n        catch (Exception ex)");
+        AssertContains(flashbackSource, "Logger.Log($\"FLASHBACK_SINK_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}\");\n            return false;");
+        AssertContains(flashbackSource, "TryCancelForceRotate(request)");
+        AssertContains(flashbackSource, "ReferenceEquals(_forceRotateRequest, request)");
+        AssertContains(flashbackSource, "cancelled={cancelled}");
+        AssertContains(flashbackSource, "_forceRotateRequested = false;");
+        AssertContains(flashbackSource, "Volatile.Write(ref _forceRotateDraining, false);");
+        AssertContains(flashbackSource, "CancelEncodingCts(\"stop_timeout\");\n                CompletePendingForceRotateWithEmptyResult();\n                Logger.Log(\"FLASHBACK_SINK_STOP_DRAIN_TIMEOUT\");");
+        AssertContains(flashbackSource, "Cannot begin recording: flashback export rotation is still draining.");
+        AssertContains(flashbackSource, "if (_ownsBufferManager)");
+        AssertOccursBefore(flashbackSource, "if (_ownsBufferManager)\n        {\n            _bufferManager.PurgeAllSegments();", "_encoder.Dispose();");
+        AssertContains(flashbackSource, "CancelRecordingStartRollback");
+        AssertContains(flashbackSource, "var wasRecording = Interlocked.Exchange(ref _recordingActive, 0) != 0");
+        AssertContains(flashbackSource, "if (!wasRecording)\n        {\n            const string message = \"Flashback recording was not active.\";");
+        AssertContains(flashbackSource, "FLASHBACK_RECORDING_END_REJECTED");
+        AssertContains(flashbackSource, "finally");
+        AssertContains(flashbackSource, "ResumeEvictionBestEffort(_bufferManager, \"recording_end\")");
+        AssertContains(flashbackSource, "ResumeEvictionBestEffort(_bufferManager, \"recording_start_rollback\")");
+        AssertContains(flashbackSource, "if (Interlocked.Exchange(ref _recordingActive, 0) != 0)\n        {\n            ResumeEvictionBestEffort(_bufferManager, \"dispose\");\n        }");
+        AssertContains(flashbackSource, "_gpuEncodingEnabled = false;\n        _audioEnabled = false;\n        _microphoneEnabled = false;\n        _sessionContext = null;\n        _width = 0;\n        _height = 0;\n        _tsFilePath = null;\n        _recordingOutputPath = string.Empty;\n        _segmentStartPts = TimeSpan.Zero;\n        _segmentDuration = TimeSpan.Zero;\n        _ptsBaseOffset = TimeSpan.Zero;\n        Interlocked.Exchange(ref _segmentStartBytes, 0);");
+        AssertContains(flashbackSource, "FLASHBACK_SINK_EVICTION_RESUME_WARN");
+        AssertContains(flashbackSource, "if (LastRecordingEndPts < LastRecordingStartPts)\n                {\n                    LastRecordingEndPts = _bufferManager.LatestPts;\n                    if (LastRecordingEndPts < LastRecordingStartPts)\n                    {\n                        LastRecordingEndPts = LastRecordingStartPts;\n                    }\n                }");
+        AssertContains(flashbackSource, "Cannot begin recording: flashback encoder is not running.");
+        AssertContains(flashbackSource, "public int VideoQueueMaxDepth");
+        AssertContains(flashbackSource, "public long VideoFramesSubmittedToEncoder");
+        AssertContains(flashbackSource, "public long VideoEncoderPacketsWritten");
+        AssertContains(flashbackSource, "public long VideoSequenceGaps");
+        AssertContains(flashbackSource, "public long VideoQueueOldestFrameAgeMs");
+        AssertContains(flashbackSource, "public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics");
+        AssertContains(flashbackSource, "public double VideoQueueLatencyP95Ms");
+        AssertContains(flashbackSource, "public double VideoQueueLatencyP99Ms");
+        AssertContains(flashbackSource, "public long VideoBackpressureWaitMs");
+        AssertContains(flashbackSource, "public long VideoBackpressureEvents");
+        AssertDoesNotContain(flashbackSource, "_videoLatencyTracker.RecordBackpressure(backpressureStartTick");
+        AssertContains(flashbackSource, "_videoLatencyTracker.TrackEnqueueUnderLock(packet.EnqueueTick)");
+        AssertContains(flashbackSource, "_videoLatencyTracker.TrackDequeueUnderLock(packet.EnqueueTick)");
+        AssertContains(flashbackSource, "_videoLatencyTracker.RecordPacketDequeued(packet.EnqueueTick, packet.SequenceNumber)");
+        AssertContains(flashbackSource, "public int GpuQueueMaxDepth");
+        AssertContains(flashbackSource, "IRawVideoFrameTryEncoder");
+        AssertContains(flashbackSource, "IGpuVideoFrameTryEncoder");
+        AssertContains(flashbackSource, "public bool TryEnqueueRawVideoFrame");
+        AssertContains(flashbackSource, "public bool TryEnqueueGpuVideoFrame");
+        AssertContains(flashbackSource, "VideoEnqueueResult.Rejected");
+        AssertContains(flashbackSource, "TryEnqueueGpuPacket");
+        AssertContains(flashbackSource, "Volatile.Read(ref _forceRotateDraining)");
+        AssertContains(flashbackSource, "Volatile.Read(ref _encodingFailure) != null");
+        AssertContains(flashbackSource, "var maxFrameSize = Math.Max(nv12FrameSize, p010FrameSize);");
+        AssertContains(flashbackSource, "var matchesConfiguredFrameSize =\n            expectedSize == nv12FrameSize ||\n            (p010FrameSize > 0 && expectedSize == p010FrameSize);");
+        AssertContains(flashbackSource, "if (maxFrameSize <= 0 || !matchesConfiguredFrameSize)");
+        AssertContains(flashbackSource, "FLASHBACK_SINK_VIDEO_FRAME_INVALID_SIZE expected={expectedSize} max={maxFrameSize}");
+        AssertContains(flashbackSource, "if (expectedSize <= 0)\n        {\n            Logger.Log($\"FLASHBACK_SINK_VIDEO_FRAME_INVALID_SIZE expected={expectedSize} actual={frame.Width}x{frame.Height}\");\n            frame.Dispose();\n            return false;\n        }");
+        AssertContains(flashbackSource, "if (subresourceIndex < 0)\n        {\n            TrackGpuQueueRejected(\"invalid_subresource\");\n            Logger.Log($\"FLASHBACK_SINK_GPU_FRAME_INVALID_SUBRESOURCE subresource={subresourceIndex}\");\n            return false;\n        }");
+        AssertOccursBefore(flashbackSource, "FLASHBACK_SINK_GPU_FRAME_INVALID_SUBRESOURCE", "Marshal.AddRef(d3d11Texture2D);");
+    }
+
+    private static void AssertFlashbackBufferRecoveryPolicy(
+        string flashbackSource,
+        string flashbackBufferSource,
+        string flashbackCleanupSource)
+    {
+        var flashbackBufferDispose = ExtractSourceBlock(
+            flashbackBufferSource,
+            "public void Dispose()",
+            "private void ThrowIfDisposed()");
+        AssertDoesNotContain(flashbackBufferDispose, "PurgeAllSegments()");
+        AssertContains(flashbackBufferSource, "RecoveryPreserveMarkerFileName");
+        AssertContains(flashbackBufferSource, "MarkSessionPreservedForRecovery");
+        AssertContains(flashbackBufferSource, "public bool IsSessionPreservedForRecovery");
+        AssertContains(flashbackBufferSource, "private bool _preserveSessionForRecovery;");
+        AssertContains(flashbackBufferSource, "private bool IsSessionPreservedForRecoveryUnsafe()");
+        AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_PURGE_SKIP reason=recovery_preserved");
+        AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_DISPOSE_PRESERVE_RECOVERY");
+        AssertContains(flashbackCleanupSource, "FLASHBACK_STALE_SESSION_PRESERVE_SKIP");
+        AssertContains(flashbackCleanupSource, "File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName))");
+        AssertContains(flashbackBufferSource, "DeleteFileForEviction(oldest.Path, oldest.SizeBytes, \"valid_window\")");
+        AssertContains(flashbackBufferSource, "DeleteFileForEviction(oldest.Path, oldest.SizeBytes, \"disk_budget\")");
+        AssertContains(flashbackBufferSource, "private static bool DeleteEvictedFile");
+        AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_EVICT_DELETE_WARN");
+        AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_SEGMENT_EVICT_DELETED");
+        AssertContains(flashbackBufferSource, "public void MarkActiveSegmentStart(string path, TimeSpan startPts)");
+        AssertContains(flashbackSource, "_bufferManager.MarkActiveSegmentStart(tsPath, _segmentStartPts);");
+        AssertContains(flashbackSource, "_bufferManager.MarkActiveSegmentStart(newPath, _segmentStartPts);");
+
+        var flashbackVideoEnqueue = ExtractSourceBlock(
+            flashbackSource,
+            "private VideoEnqueueResult TryEnqueueVideoPacket",
+            "private VideoEnqueueResult TryEnqueueGpuPacket");
+        var flashbackGpuEnqueue = ExtractSourceBlock(
+            flashbackSource,
+            "private VideoEnqueueResult TryEnqueueGpuPacket",
+            "private void FailEncoding");
+        var flashbackAudioEnqueue = ExtractSourceBlock(
+            flashbackSource,
+            "private bool TryEnqueueAudioPacket",
+            "private static bool TryWriteAudioPacket");
+        AssertOccursBefore(flashbackVideoEnqueue, "GetVideoEnqueueRejectReason(isGpu: false)", "TryWriteVideoPacket(queue, packet)");
+        AssertOccursBefore(flashbackGpuEnqueue, "GetVideoEnqueueRejectReason(isGpu: true)", "TryWriteGpuPacket(queue, packet)");
+        AssertOccursBefore(flashbackAudioEnqueue, "Volatile.Read(ref _forceRotateDraining)", "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio\")");
+        AssertContains(flashbackVideoEnqueue, "var rejectReason = GetVideoEnqueueRejectReason(isGpu: false);");
+        AssertContains(flashbackVideoEnqueue, "TrackVideoQueueRejected(rejectReason);");
+        AssertContains(flashbackGpuEnqueue, "var rejectReason = GetVideoEnqueueRejectReason(isGpu: true);");
+        AssertContains(flashbackGpuEnqueue, "TrackGpuQueueRejected(rejectReason);");
+        AssertContains(flashbackAudioEnqueue, "if (_disposed ||");
+        AssertContains(flashbackAudioEnqueue, "!_started ||");
+        AssertContains(flashbackGpuEnqueue, "lock (_videoQueueSync)");
+        AssertContains(flashbackAudioEnqueue, "lock (_videoQueueSync)");
+    }
+
+    private static void AssertRecordingQueueHealthSnapshotTelemetry(
+        string captureServiceSource,
+        string captureHealthSnapshotRootSource,
+        string captureSnapshotsSource,
+        string unifiedVideoCaptureSource)
+    {
+        AssertContains(unifiedVideoCaptureSource, "encoder is IRawVideoFrameTryEncoder");
+        AssertContains(unifiedVideoCaptureSource, "leaseEncoder is IRawVideoFrameLeaseTryEncoder");
+        AssertContains(unifiedVideoCaptureSource, "encoder is IGpuVideoFrameTryEncoder");
+        AssertContains(unifiedVideoCaptureSource, "BeginFlashbackRecordingAccounting");
+        AssertContains(unifiedVideoCaptureSource, "RecordFlashbackRecordingAccounting");
+        AssertContains(unifiedVideoCaptureSource, "sink.IsRecordingActive");
+        AssertContains(unifiedVideoCaptureSource, "if (accepted)");
+        AssertContains(unifiedVideoCaptureSource, "public MjpegPipelineTimingSnapshot GetMjpegPipelineTimingSnapshot()");
+        AssertContains(unifiedVideoCaptureSource, "private static MjpegPipelineTimingMetrics CreateMjpegPipelineTimingSummary");
+        AssertContains(captureServiceSource, "var timingSnapshot = capture?.GetMjpegPipelineTimingSnapshot();");
+        AssertContains(captureServiceSource, "RecordLastRecordingFailure");
+        AssertContains(captureServiceSource, "RecordLastFlashbackFailure");
+        AssertContains(captureServiceSource, "ClearLastRecordingFailure");
+        AssertContains(captureServiceSource, "ClearLastFlashbackFailure");
+        AssertContains(captureSnapshotsSource, "GetLastFailureTelemetry");
+        AssertContains(captureSnapshotsSource, "IsFlashbackRecordingBackendOwnedByRecording()");
+        AssertContains(captureHealthSnapshotRootSource, "var mjpegHealth = CaptureMjpegHealthSnapshotFields(unifiedVideoCapture);");
+        AssertContains(captureSnapshotsSource, "var timingSnapshot = _videoPipeline.GetMjpegTimingSnapshot(unifiedVideoCapture);");
+        AssertContains(captureSnapshotsSource, "private MjpegHealthSnapshotFields CaptureMjpegHealthSnapshotFields(");
+        AssertDoesNotContain(captureSnapshotsSource, "unifiedVideoCapture?.GetMjpegPipelineTimingMetrics()");
+        AssertDoesNotContain(captureSnapshotsSource, "unifiedVideoCapture?.GetFullMjpegPipelineTimingMetrics()");
+        AssertContains(captureSnapshotsSource, "var flashbackVideoQueueLatencyMetrics = fbSink?.VideoQueueLatencyMetrics");
+        AssertContains(captureSnapshotsSource, "sink?.VideoQueueLatencyMetrics ??");
+        AssertDoesNotContain(captureSnapshotsSource, "var flashbackIsRecordingBackend = _isRecording && IsFlashbackRecordingBackendActive()");
+        AssertContains(captureSnapshotsSource, "RecordingEncodingFailureMessage");
+        AssertContains(captureSnapshotsSource, "RecordingVideoFramesSubmittedToEncoder = recordingHealth.VideoFramesSubmitted");
+        AssertContains(captureSnapshotsSource, "RecordingVideoQueueLatencyP95Ms = recordingHealth.VideoQueueLatencyMetrics.P95Ms");
+        AssertContains(captureSnapshotsSource, "RecordingVideoQueueLatencyP99Ms = recordingHealth.VideoQueueLatencyMetrics.P99Ms");
+        AssertContains(captureSnapshotsSource, "RecordingVideoQueueOldestFrameAgeMs = recordingHealth.VideoQueueOldestFrameAgeMs");
+        AssertContains(captureSnapshotsSource, "RecordingVideoBackpressureWaitMs = recordingHealth.VideoBackpressureWaitMs");
+        AssertContains(captureSnapshotsSource, "RecordingCudaQueueDepth = recordingHealth.CudaQueueDepth");
+        AssertContains(captureSnapshotsSource, "RecordingCudaFramesDropped = recordingHealth.CudaFramesDropped");
+        AssertContains(captureSnapshotsSource, "sink?.CudaQueueCount ?? 0");
+        AssertContains(captureSnapshotsSource, "sink?.CudaFramesDropped ?? 0");
+        AssertContains(captureSnapshotsSource, "fbSink?.VideoEncoderPacketsWritten ?? 0");
+        AssertContains(captureSnapshotsSource, "fbSink?.VideoSequenceGaps ?? 0");
+        AssertContains(captureSnapshotsSource, "fbSink?.VideoQueueOldestFrameAgeMs ?? 0");
+        AssertContains(captureSnapshotsSource, "FlashbackVideoQueueLatencyP99Ms = flashbackQueues.VideoQueueLatencyMetrics.P99Ms");
+        AssertContains(captureSnapshotsSource, "fbSink?.VideoBackpressureWaitMs ?? 0");
+        AssertContains(captureSnapshotsSource, "FatalCleanupInProgress = fatalCleanupInProgress");
+        AssertContains(captureSnapshotsSource, "FlashbackCleanupInProgress = flashbackCleanupInProgress");
+        AssertContains(captureSnapshotsSource, "fbSink?.IsForceRotateActive ?? false");
+        AssertContains(captureSnapshotsSource, "fbSink?.IsForceRotateRequested ?? false");
+        AssertContains(captureSnapshotsSource, "fbSink?.IsForceRotateDraining ?? false");
+        AssertContains(captureSnapshotsSource, "FlashbackEncodingFailureMessage");
+        AssertContains(captureSnapshotsSource, "FlashbackStartupCacheBytes = flashbackBuffer.StartupCacheBytes");
+        AssertContains(captureSnapshotsSource, "bufMgr?.StartupCacheBytes ?? 0");
+        AssertContains(captureSnapshotsSource, "FlashbackTempDriveFreeBytes = flashbackBuffer.TempDriveFreeBytes");
+        AssertContains(captureSnapshotsSource, "bufMgr?.TempDriveAvailableFreeBytes ?? 0");
+
+        var sharedFormatterSource = global::Sussudio.Tests.RuntimeContractSource.ReadAutomationSnapshotFormatterSource();
+        var ssctlFormatterSource = global::Sussudio.Tests.RuntimeContractSource.ReadSsctlSnapshotFormatterSource();
+        var mcpAppStateSource = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
+        AssertContains(sharedFormatterSource, "FlashbackEncodingFailed");
+        AssertContains(sharedFormatterSource, "FlashbackStartupCacheBytes");
+        AssertContains(sharedFormatterSource, "FlashbackCleanupInProgress");
+        AssertContains(sharedFormatterSource, "FlashbackForceRotateActive");
+        AssertContains(sharedFormatterSource, "FlashbackForceRotateRequested");
+        AssertContains(sharedFormatterSource, "FlashbackForceRotateDraining");
+        AssertContains(ssctlFormatterSource, "FlashbackEncodingFailed");
+        AssertContains(ssctlFormatterSource, "FlashbackStartupCacheBytes");
+        AssertContains(ssctlFormatterSource, "FlashbackCleanupInProgress");
+        AssertContains(ssctlFormatterSource, "FlashbackForceRotateActive");
+        AssertContains(ssctlFormatterSource, "FlashbackForceRotateRequested");
+        AssertContains(ssctlFormatterSource, "FlashbackForceRotateDraining");
+        AssertContains(mcpAppStateSource, "FormatSnapshot(response, includeFlashback: true)");
+        AssertOccursBefore(
+            sharedFormatterSource,
+            "var flashbackFailed = Get(snapshot, \"FlashbackEncodingFailed\", \"false\");",
+            "builder.AppendLine(\"== Flashback ==\");");
+        AssertOccursBefore(
+            ssctlFormatterSource,
+            "var flashbackFailed = AutomationSnapshotFormatter.Get(snapshot, \"FlashbackEncodingFailed\", \"false\");",
+            "builder.AppendLine(\"== Flashback ==\");");
+    }
+
+    private static void AssertFlashbackBufferCyclePolicies(string captureServiceSource, string flashbackBackendSource)
+    {
+        var cycleFlashbackBuffer = ExtractSourceBlock(
+            captureServiceSource,
+            "private async Task CycleFlashbackBufferAsync",
+            "private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync");
+        var backendCycleFlashbackBuffer = ExtractSourceBlock(
+            flashbackBackendSource,
+            "public async Task<FlashbackBufferCycleResult> CycleSinkOnlyAsync",
+            "private async Task RollBackPreviewBackendStartAsync");
+        AssertContains(cycleFlashbackBuffer, "var committedCycleToken = CancellationToken.None;");
+        AssertContains(backendCycleFlashbackBuffer, "FLASHBACK_CYCLE_STOP_CANCEL_DEFERRED");
+        AssertContains(backendCycleFlashbackBuffer, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
+        AssertDoesNotContain(cycleFlashbackBuffer, "cancellationToken: cancellationToken");
+        AssertOccursBefore(
+            backendCycleFlashbackBuffer,
+            "StopAndDisposeOldSinkForBufferCycleAsync(",
+            "ClearSinkAndSettings();");
+        AssertContains(backendCycleFlashbackBuffer, "await oldSink.DisposeAsync().ConfigureAwait(false);");
+        AssertContains(backendCycleFlashbackBuffer, "var oldPlaybackController = TakePlaybackController();");
+        AssertContains(backendCycleFlashbackBuffer, "oldPlaybackController.GoLive();");
+        AssertContains(backendCycleFlashbackBuffer, "oldPlaybackController.Dispose();");
+        AssertOccursBefore(
+            backendCycleFlashbackBuffer,
+            "DisposePlaybackForBufferCycle(",
+            "bufferManager.PurgeCompletedSegments();");
+        AssertOccursBefore(
+            backendCycleFlashbackBuffer,
+            "DisposePlaybackForBufferCycle(",
+            "DetachOldSinkProducersForBufferCycle(");
+        AssertContains(backendCycleFlashbackBuffer, "DetachProducers(");
+        AssertContains(backendCycleFlashbackBuffer, "\"FLASHBACK_CYCLE_DETACH_WARN\"");
+        var cycleNewSinkStart = backendCycleFlashbackBuffer;
+        AssertContains(cycleNewSinkStart, "committedCycleToken,");
+        AssertContains(cycleNewSinkStart, "AttachProducers(");
+        AssertContains(cycleNewSinkStart, "new FlashbackProducerAttachRequest(");
+        AssertContains(cycleNewSinkStart, "\"buffer_cycle\"");
+        AssertContains(cycleNewSinkStart, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
+        AssertContains(cycleNewSinkStart, "newSink.FrameEncoded -= request.FrameEncodedHandler;");
+        AssertContains(cycleNewSinkStart, "request.VideoCapture.SetFlashbackSink(null);");
+        AssertContains(cycleNewSinkStart, "request.AudioCapture?.DetachFlashbackSink();");
+        AssertContains(cycleNewSinkStart, "request.MicrophoneCapture?.SetAudioWriter(null);");
+        AssertContains(cycleNewSinkStart, "new FlashbackPlaybackController(bufferManager)");
+        AssertContains(cycleNewSinkStart, "GpuDecodeEnabled = request.Settings.FlashbackGpuDecode");
+        AssertContains(cycleNewSinkStart, "request.PreviewFrameSink");
+        AssertContains(cycleNewSinkStart, "PlaybackController = playbackController;");
+        AssertContains(cycleNewSinkStart, "FLASHBACK_CYCLE_NEW_SINK_FAIL type={ex.GetType().Name} error='{ex.Message}'");
+        AssertContains(cycleNewSinkStart, "FLASHBACK_CYCLE_NEW_SINK_DETACH_WARN");
+        AssertContains(flashbackBackendSource, "request.PurgeSegments");
+        AssertContains(captureServiceSource, "new FlashbackPreviewBackendDisposalRequest(");
+        AssertContains(flashbackBackendSource, "new FlashbackBackendArtifactCleanupRequest(");
+        AssertContains(captureServiceSource, "effectivePurgeSegments,");
+        AssertContains(captureServiceSource, "!activeFlashbackSink.CanBeginRecording");
+        AssertContains(captureServiceSource, "_flashbackRecordingStartInProgress");
+        AssertContains(captureServiceSource, "_flashbackRecordingFinalizeInProgress");
+        AssertContains(captureServiceSource, "IsFlashbackRecordingBackendOwnedByRecording");
+        AssertContains(captureServiceSource, "Volatile.Write(ref _flashbackRecordingStartInProgress, 1)");
+        AssertContains(captureServiceSource, "Volatile.Write(ref _flashbackRecordingFinalizeInProgress, 1)");
+        AssertContains(captureServiceSource, "Volatile.Write(ref _flashbackRecordingFinalizeInProgress, 0)");
+        AssertContains(captureServiceSource, "await _flashbackBackendLeaseLock.WaitAsync(transitionToken)");
+        AssertContains(captureServiceSource, "BeginFlashbackRecordingAccounting");
+        AssertContains(captureServiceSource, "EndFlashbackRecordingAccounting");
+        AssertContains(captureServiceSource, "CancelRecordingStartRollback");
+        AssertContains(captureServiceSource, "FLASHBACK_RECORDING_START_ROLLBACK_WARN type={rollbackEx.GetType().Name} error='{rollbackEx.Message}'");
+        AssertContains(captureServiceSource, "var failureToken = ex is OperationCanceledException && cancellationToken.IsCancellationRequested");
+        AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_INIT_CANCELLED");
+        AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_INIT_FAIL");
+        AssertContains(captureServiceSource, "Logger.Log($\"{failureToken} type={ex.GetType().Name} error='{ex.Message}'\")");
+        AssertContains(flashbackBackendSource, "new FlashbackProducerDetachRequest(");
+        AssertContains(flashbackBackendSource, "\"FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN\"");
+        AssertContains(flashbackBackendSource, "Logger.Log($\"{request.WarningToken} target=video");
+        AssertContains(flashbackBackendSource, "Logger.Log($\"{request.WarningToken} target=audio");
+        AssertContains(flashbackBackendSource, "Logger.Log($\"{request.WarningToken} target=microphone");
+        AssertContains(captureServiceSource, "MIC_MONITOR_WRITER_DETACH_WARN");
+        AssertOccursBefore(captureServiceSource, "MIC_MONITOR_WRITER_DETACH_WARN", "await mic.DisposeAsync().ConfigureAwait(false);");
+        AssertContains(captureServiceSource, "VIDEO_DIAG flashback_recording_pipeline");
+        AssertContains(captureServiceSource, "BeginFlashbackBackendCleanup");
+        AssertContains(captureServiceSource, "detachMicrophoneWriter: !preserveDedicatedRecordingMic");
+        AssertContains(captureServiceSource, "recordingContext = fbRecordingContext");
+        AssertDoesNotContain(captureServiceSource, "SetFatalErrorCallback(OnRecordingBackendFatalError)");
+    }
 }
