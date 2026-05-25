@@ -125,9 +125,9 @@ initialization-time metric resets. `WasapiAudioCapture.Conversion.cs` owns
 WASAPI sample decode, f32le 48 kHz stereo conversion, resampling, and pooled
 converted packet buffers. Keep state, start/stop/dispose, and capture-thread
 lifecycle in `WasapiAudioCapture.cs`.
-`WasapiAudioCapture.Fanout.cs` owns recording/Flashback/playback attachment
-points, converted-packet dispatch from the capture thread, and hot writer
-task-completion enforcement.
+`WasapiAudioCapture.CaptureLoop.cs` owns the capture thread, packet drain,
+recording/Flashback/playback attachment points, converted-packet dispatch, and
+hot writer task-completion enforcement.
 `WasapiAudioCapture.Diagnostics.cs` owns audio-level event projection, callback
 interval, discontinuity, timestamp-error, glitch, and audio-level event counters.
 `WasapiAudioPlayback.cs` owns playback state, WASAPI render endpoint binding,

@@ -8,8 +8,6 @@ static partial class Program
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
             .Replace("\r\n", "\n");
-        var fanoutSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.Fanout.cs")
-            .Replace("\r\n", "\n");
         var captureLoopSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.CaptureLoop.cs")
             .Replace("\r\n", "\n");
         var contractsSource = ReadRepoFile("Sussudio/Services/Contracts/RecordingContracts.cs")
@@ -27,18 +25,22 @@ static partial class Program
         AssertDoesNotContain(drainBlock, ".GetAwaiter()");
         AssertDoesNotContain(drainBlock, "Volatile.Read(ref _recordingSink)");
         AssertContains(captureLoopSource, "private void CaptureThreadMain()");
-        AssertContains(fanoutSource, "private bool DispatchConvertedAudioPacket(ConvertedAudioPacket converted)");
-        AssertContains(fanoutSource, "var audioWriter = Volatile.Read(ref _audioWriter);");
-        AssertContains(fanoutSource, "var sink = Volatile.Read(ref _recordingSink);");
-        AssertContains(fanoutSource, "var flashbackSink = Volatile.Read(ref _flashbackSink);");
-        AssertContains(fanoutSource, "var playback = Volatile.Read(ref _playback);");
-        AssertContains(fanoutSource, "playback.EnqueuePooledSamples(convertedBuffer, converted.Length);");
-        AssertContains(fanoutSource, "private static void InvokeHotAudioWriter(");
-        AssertContains(fanoutSource, "private static void WriteAudioToSinkOnCaptureThread(");
-        AssertContains(fanoutSource, "private static void CompleteHotAudioWrite(Task task, string target)");
-        AssertContains(fanoutSource, "if (!task.IsCompleted)");
-        AssertContains(fanoutSource, "Audio writers must copy/enqueue synchronously and return Task.CompletedTask.");
+        AssertContains(captureLoopSource, "private bool DispatchConvertedAudioPacket(ConvertedAudioPacket converted)");
+        AssertContains(captureLoopSource, "var audioWriter = Volatile.Read(ref _audioWriter);");
+        AssertContains(captureLoopSource, "var sink = Volatile.Read(ref _recordingSink);");
+        AssertContains(captureLoopSource, "var flashbackSink = Volatile.Read(ref _flashbackSink);");
+        AssertContains(captureLoopSource, "var playback = Volatile.Read(ref _playback);");
+        AssertContains(captureLoopSource, "playback.EnqueuePooledSamples(convertedBuffer, converted.Length);");
+        AssertContains(captureLoopSource, "private static void InvokeHotAudioWriter(");
+        AssertContains(captureLoopSource, "private static void WriteAudioToSinkOnCaptureThread(");
+        AssertContains(captureLoopSource, "private static void CompleteHotAudioWrite(Task task, string target)");
+        AssertContains(captureLoopSource, "if (!task.IsCompleted)");
+        AssertContains(captureLoopSource, "Audio writers must copy/enqueue synchronously and return Task.CompletedTask.");
         AssertDoesNotContain(wasapiSource, "private static void CompleteHotAudioWrite(Task task, string target)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioCapture.Fanout.cs")),
+            "converted audio fan-out lives with the WASAPI capture loop");
         AssertContains(contractsSource, "Hot WASAPI callback write.");
         AssertContains(contractsSource, "must not do blocking/async work");
 
@@ -62,17 +64,17 @@ static partial class Program
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
             .Replace("\r\n", "\n");
-        var fanoutSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.Fanout.cs")
+        var captureLoopSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.CaptureLoop.cs")
             .Replace("\r\n", "\n");
         var conversionSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.Conversion.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(wasapiSource, "internal sealed partial class WasapiAudioCapture");
-        AssertContains(fanoutSource, "internal sealed partial class WasapiAudioCapture");
+        AssertContains(captureLoopSource, "internal sealed partial class WasapiAudioCapture");
         AssertContains(conversionSource, "internal sealed partial class WasapiAudioCapture");
-        AssertContains(fanoutSource, "public void AttachRecordingSink(IRecordingSink sink)");
-        AssertContains(fanoutSource, "public void SetAudioWriter(Func<ReadOnlyMemory<byte>, Task>? writer)");
-        AssertContains(fanoutSource, "internal void SetPlayback(WasapiAudioPlayback? playback)");
+        AssertContains(captureLoopSource, "public void AttachRecordingSink(IRecordingSink sink)");
+        AssertContains(captureLoopSource, "public void SetAudioWriter(Func<ReadOnlyMemory<byte>, Task>? writer)");
+        AssertContains(captureLoopSource, "internal void SetPlayback(WasapiAudioPlayback? playback)");
         AssertContains(conversionSource, "private ConvertedAudioPacket ConvertToOutputFormat(");
         AssertContains(conversionSource, "private int ComputeResampledFrameCount(");
         AssertContains(conversionSource, "private static void ResampleStereoLinear(");
