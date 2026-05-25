@@ -2220,19 +2220,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.Exporter.SegmentPaths.Tests.cs` owns
   Flashback exporter segment path, duplicate path, and missing segment tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Segments.Tests.cs` owns Flashback
-  exporter range validation, buffered-packet owner assertions, and
-  buffered-packet failure cleanup tests.
-- `tests/Sussudio.Tests/Flashback.Exporter.Segments.Progress.Tests.cs` owns
-  Flashback exporter progress and progress-adjacent cleanup/finalization source
-  assertions.
-- `tests/Sussudio.Tests/Flashback.Exporter.PacketTiming.Tests.cs` owns
-  Flashback exporter timestamp saturation and packet timestamp normalization
-  tests.
+  exporter range validation, buffered-packet owner assertions, buffered-packet
+  failure cleanup, progress/finalization source assertions, timestamp
+  saturation, packet timestamp normalization, segment template selection,
+  stream-layout validation, and requested-segment skip policy tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Streams.Tests.cs` owns Flashback
   exporter stream-count bounds and template stream-copy owner/call-site tests.
-- `tests/Sussudio.Tests/Flashback.Exporter.SegmentTemplate.Tests.cs` owns
-  Flashback exporter segment template selection, stream-layout validation, and
-  requested-segment skip policy tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.OutputPaths.Tests.cs` owns Flashback
   exporter output path validation, source-overwrite guards, and blocked
   temp-path tests.
