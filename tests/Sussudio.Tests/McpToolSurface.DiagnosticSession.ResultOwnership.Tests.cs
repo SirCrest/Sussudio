@@ -83,21 +83,21 @@ static partial class Program
     {
         var executionText = ReadDiagnosticSessionRunExecutionRootSource();
         var initialSnapshotText = ReadDiagnosticSessionRunContextSource();
-        var jsonArtifactsText = ReadRepoFile("tools/Common/DiagnosticSessionResultArtifacts.cs")
-            .Replace("\r\n", "\n");
+        var builderText = ReadDiagnosticSessionResultBuilderSource();
         var responseJsonText = initialSnapshotText;
 
-        AssertContains(jsonArtifactsText, "internal static class DiagnosticSessionJsonArtifacts");
-        AssertContains(jsonArtifactsText, "internal static JsonElement CreateEmptyJsonObject()");
-        AssertContains(jsonArtifactsText, "internal static async Task WriteJsonAsync<T>(");
+        AssertContains(builderText, "internal static class DiagnosticSessionJsonArtifacts");
+        AssertContains(builderText, "internal static JsonElement CreateEmptyJsonObject()");
+        AssertContains(builderText, "internal static async Task WriteJsonAsync<T>(");
         AssertContains(responseJsonText, "internal static class DiagnosticSessionAutomationResponseJson");
         AssertContains(responseJsonText, "internal static bool TryGetSnapshot(");
         AssertContains(responseJsonText, "internal static bool TryGetVerification(");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultArtifacts.cs")), "Result artifact helpers stay folded into DiagnosticSessionResultBuilder.cs");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionAutomationResponseJson.cs")), "Automation response JSON helpers stay folded into DiagnosticSessionRunContext.cs");
         AssertContains(initialSnapshotText, "using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;");
         AssertContains(initialSnapshotText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
-        AssertDoesNotContain(jsonArtifactsText, "TryGetSnapshot(");
-        AssertDoesNotContain(jsonArtifactsText, "TryGetVerification(");
+        AssertDoesNotContain(builderText, "TryGetSnapshot(");
+        AssertDoesNotContain(builderText, "TryGetVerification(");
         AssertDoesNotContain(executionText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
         AssertDoesNotContain(executionText, "using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;");
         AssertDoesNotContain(executionText, "private static async Task WriteJsonAsync<T>(");
@@ -129,23 +129,20 @@ static partial class Program
     internal static Task DiagnosticSessionResultArtifacts_OwnPreSummaryWrites()
     {
         var builderText = ReadDiagnosticSessionResultBuilderSource();
-        var artifactsText = ReadRepoFile("tools/Common/DiagnosticSessionResultArtifacts.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(artifactsText, "internal static class DiagnosticSessionResultArtifacts");
-        AssertContains(artifactsText, "internal static async Task<DiagnosticSessionResultArtifactPaths> WritePreSummaryAsync(");
-        AssertContains(artifactsText, "internal readonly record struct DiagnosticSessionResultArtifactPaths(");
-        AssertContains(artifactsText, "SummaryPath: Path.Combine(outputDirectory, \"summary.json\")");
-        AssertContains(artifactsText, "SamplesPath: Path.Combine(outputDirectory, \"samples.json\")");
-        AssertContains(artifactsText, "FrameLedgerPath: Path.Combine(outputDirectory, \"frame-ledger.json\")");
-        AssertContains(artifactsText, "TimelinePath: Path.Combine(outputDirectory, \"timeline.json\")");
-        AssertContains(artifactsText, "private static object BuildFrameLedgerTrace(");
-        AssertContains(artifactsText, "using static Sussudio.Tools.AutomationSnapshotFormatter;");
-        AssertContains(artifactsText, "runState.WriteArtifactBestEffortAsync(\"write-samples\", paths.SamplesPath, samples)");
-        AssertContains(artifactsText, "runState.WriteArtifactBestEffortAsync(\"write-frame-ledger\", paths.FrameLedgerPath, BuildFrameLedgerTrace(sessionId, samples))");
-        AssertContains(artifactsText, "runState.WriteArtifactBestEffortAsync(\"write-timeline\", paths.TimelinePath, timeline)");
+        AssertContains(builderText, "internal static class DiagnosticSessionResultArtifacts");
+        AssertContains(builderText, "internal static async Task<DiagnosticSessionResultArtifactPaths> WritePreSummaryAsync(");
+        AssertContains(builderText, "internal readonly record struct DiagnosticSessionResultArtifactPaths(");
+        AssertContains(builderText, "SummaryPath: Path.Combine(outputDirectory, \"summary.json\")");
+        AssertContains(builderText, "SamplesPath: Path.Combine(outputDirectory, \"samples.json\")");
+        AssertContains(builderText, "FrameLedgerPath: Path.Combine(outputDirectory, \"frame-ledger.json\")");
+        AssertContains(builderText, "TimelinePath: Path.Combine(outputDirectory, \"timeline.json\")");
+        AssertContains(builderText, "private static object BuildFrameLedgerTrace(");
+        AssertContains(builderText, "using static Sussudio.Tools.AutomationSnapshotFormatter;");
+        AssertContains(builderText, "runState.WriteArtifactBestEffortAsync(\"write-samples\", paths.SamplesPath, samples)");
+        AssertContains(builderText, "runState.WriteArtifactBestEffortAsync(\"write-frame-ledger\", paths.FrameLedgerPath, BuildFrameLedgerTrace(sessionId, samples))");
+        AssertContains(builderText, "runState.WriteArtifactBestEffortAsync(\"write-timeline\", paths.TimelinePath, timeline)");
         AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionResultArtifacts;");
-        AssertDoesNotContain(artifactsText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
         AssertContains(builderText, "WritePreSummaryAsync(");
         AssertDoesNotContain(builderText, "Path.Combine(request.OutputDirectory, \"samples.json\")");
         AssertDoesNotContain(builderText, "BuildFrameLedgerTrace(request.SessionId, samples)");

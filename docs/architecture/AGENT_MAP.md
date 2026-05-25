@@ -3514,10 +3514,13 @@ Primary owners:
   result phase orchestration, artifact-write handoff, summary-write handoff,
   final summary emission, summary-write failure repair, and final-result
   orchestration from analysis and artifact paths into the named projection set
-  and flattening owner. It also owns Flashback playback projection composition
-  from focused playback projection owners, plus the result-build request
-  handoff created by `DiagnosticSessionRunner.cs` and consumed by the result
-  builder. Keep `summary.json` field shape stable in the builder family.
+  and flattening owner. It also owns result artifact path construction,
+  pre-summary sample, frame-ledger, and timeline artifact writes, frame-ledger
+  trace shaping, shared JSON object creation / artifact serialization helpers,
+  Flashback playback projection composition from focused playback projection
+  owners, plus the result-build request handoff created by
+  `DiagnosticSessionRunner.cs` and consumed by the result builder. Keep
+  `summary.json` field shape stable in the builder family.
 - `tools/Common/DiagnosticSessionResultBuilder.Flattening.cs` owns final
   `DiagnosticSessionResult` DTO assignment from the projection set. Keep
   domain projection composition in the projection owners and projection-set
@@ -3553,10 +3556,6 @@ Primary owners:
   Flashback playback result projection composition plus the command, cadence,
   1% low, decode, audio-master, and stage DTO value maps consumed by the final
   result initializer.
-- `tools/Common/DiagnosticSessionResultArtifacts.cs` owns diagnostic-session
-  result artifact path construction, pre-summary sample, frame-ledger, and
-  timeline artifact writes, frame-ledger trace shaping, and shared JSON object
-  creation / artifact serialization helpers.
 - `tools/Common/DiagnosticSessionLiveStateWriter.cs` owns the best-effort
   `session-live.json` breadcrumb path, payload shape, health projection,
   warning projection, terminal override mapping, and sampling live-state write

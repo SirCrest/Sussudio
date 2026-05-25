@@ -3069,9 +3069,9 @@ and source-telemetry DTO projection values live in
 `DiagnosticSessionResultBuilder.Projections.cs`.
 
 Diagnostic-session result artifact setup now lives in
-`tools/Common/DiagnosticSessionResultArtifacts.cs`. It owns result artifact path
-construction and pre-summary sample, frame-ledger, and timeline writes while
-the result builder keeps summary field construction.
+`tools/Common/DiagnosticSessionResultBuilder.cs` beside summary writing. It owns
+result artifact path construction, pre-summary sample, frame-ledger, and
+timeline writes while the builder keeps summary field construction.
 
 Shared diagnostic-session optional text formatting now lives in
 `tools/Common/DiagnosticSessionResultFormatter.cs` alongside the human-readable
@@ -3139,10 +3139,10 @@ and cleanup pass the channel itself for lifecycle mutations so
 keeps phase orchestration and its public string delegate compatibility.
 
 Diagnostic-session JSON artifact helpers now live in
-`tools/Common/DiagnosticSessionResultArtifacts.cs` beside pre-summary artifact
+`tools/Common/DiagnosticSessionResultBuilder.cs` beside pre-summary artifact
 path construction and writes. The runner still owns the session lifecycle,
 while JSON object creation, best-effort file writes, and frame-ledger trace
-construction stay in the shared artifact helper. Snapshot / verification
+construction stay in the result-builder helper section. Snapshot / verification
 response-shape extraction now lives in
 `tools/Common/DiagnosticSessionRunContext.cs` beside the mutable run
 infrastructure that consumes initial snapshots and hands response helpers to
@@ -3455,7 +3455,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResult.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionCommandChannel.cs`
-- `DiagnosticSessionResultArtifacts.cs`
 - `DiagnosticSessionResultBuilder.cs`
 - `DiagnosticSessionResultBuilder.Flattening.cs`
 - `DiagnosticSessionResultBuilder.Projections.cs`

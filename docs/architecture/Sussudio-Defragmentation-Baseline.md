@@ -1679,3 +1679,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: diagnostic-session infrastructure ownership and artifact tests cover terminal state, live breadcrumb stage selection, summary last-stage projection, and runner context construction; no automation command names/IDs changed
 Behavior preserved: initial last-stage value, terminal exception capture, warning text, canceled/failed/completed classification, result last-stage selection, and best-effort artifact write failure handling remain unchanged
 Notes for future agents: keep mutable run lifecycle state with `DiagnosticSessionRunContext.cs`; keep `DiagnosticSessionLiveStateWriter.cs` focused on breadcrumb payload writing and throttling
+
+Date: 2026-05-25
+Area: diagnostic-session result artifact locality
+Problem: `DiagnosticSessionResultArtifacts.cs` was a 74-line helper called by `DiagnosticSessionResultBuilder.BuildAndWriteAsync`, splitting pre-summary artifact path construction/writes and JSON artifact helpers from the summary write path that completes the same result.
+Files consolidated: `tools/Common/DiagnosticSessionResultArtifacts.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; diagnostic-session shared helper file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: diagnostic-session result ownership and artifact tests cover pre-summary writes, frame-ledger trace shaping, JSON artifact helpers, and summary write failure handling; no automation command names/IDs changed
+Behavior preserved: summary/samples/frame-ledger/timeline artifact paths, pre-summary write stages, frame-ledger event de-duplication key, pretty JSON serialization, empty JSON object creation, and summary write failure handling remain unchanged
+Notes for future agents: keep pre-summary artifact writes and summary write handling together in `DiagnosticSessionResultBuilder.cs`; keep run-context response extraction in `DiagnosticSessionRunContext.cs`
