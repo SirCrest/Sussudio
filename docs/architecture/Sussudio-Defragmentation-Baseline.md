@@ -2284,3 +2284,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: ssctl formatter coverage and command-handler routing tests cover the public formatter methods; no automation command names/IDs changed
 Behavior preserved: generic command result output, pretty JSON, diagnostic-event output, memory/GC output, capture options summary, device-list output, selected-option markers, disabled suffixes, and capture option list ordering remain unchanged
 Notes for future agents: keep general ssctl projections in `Formatters.Common.cs`; keep app snapshot rendering in `Formatters.Snapshot.cs` and performance timeline table/trend rendering in `Formatters.Timeline.cs`.
+
+Date: 2026-05-25
+Area: NativeXuAudioProbe command workflow locality
+Problem: `Program.cs` owned NativeXuAudioProbe routing and probe-local runtime shims, while two small adjacent files held the direct AT read/write/input command bodies and captured audio-switch replay workflow. Reviewing the top-level probe command surface required opening three small files even though these command bodies are thin CLI workflows and not shared collaborators.
+Files consolidated: `tools/NativeXuAudioProbe/Program.AtCommands.cs`; `tools/NativeXuAudioProbe/Program.I2cSwitch.cs`
+Files added: none
+Net production .cs delta: -2
+Partial clusters reduced: n/a; NativeXuAudioProbe support file count -2
+Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj -c Debug --no-restore`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`
+CLI/MCP/pipe checks, if applicable: affected NativeXuAudioProbe build and source-ownership tests cover the moved direct AT and audio-switch workflows; no public command names changed
+Behavior preserved: `at-read`, `at-write`, `at-set-input`, and `i2c-switch` route names, argument handling, output strings, restore behavior, I2C-over-AT helper calls, and selected-device behavior remain unchanged
+Notes for future agents: keep small top-level NativeXuAudioProbe command workflows with `Program.cs`; keep `Program.I2cTransport.cs` separate while multiple I2C command families share it.

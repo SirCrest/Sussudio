@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-25T21:18:47Z
+Generated UTC: 2026-05-25T21:26:07Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 416 |
+| Production .cs files | 414 |
 | Test .cs files | 336 |
 | Production .cs files under 60 lines | 7 (1.7%) |
 | Production .cs files under 80 lines | 14 (3.4%) |
@@ -80,7 +80,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 646 | Sussudio/Services/Recording/Verification/RecordingVerifier.cs |
 | 639 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs |
 | 638 | Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs |
-| 631 | Sussudio/Services/Audio/NativeXuAudioControlService.cs |
+| 631 | Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs |
 
 ## Sample production files under 60 lines
 

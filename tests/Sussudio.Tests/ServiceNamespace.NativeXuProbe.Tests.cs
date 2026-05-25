@@ -58,12 +58,10 @@ static partial class Program
         AssertContains(probeProgramText, "string.Equals(arg, \"--device\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(probeProgramText, "NativeXuProbeDeviceLocator.Find(null)");
         AssertContains(probeProgramText, "RtkI2cProbe.Run(rtkArgs, dev)");
-        var probeAtCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.AtCommands.cs"));
         var probeDefaultExperimentText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.DefaultExperiment.cs"));
         var probeDefaultExperimentReportingText = probeDefaultExperimentText;
         var probeI2cCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.cs"));
         var probeI2cLegacyProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cLegacyProbe.cs"));
-        var probeI2cSwitchText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cSwitch.cs"));
         var probeI2cTransportText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cTransport.cs"));
         var probeServiceText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ServiceProbe.cs"));
         AssertDoesNotContain(probeProgramText, "sealed record GetterSpec");
@@ -71,10 +69,6 @@ static partial class Program
         AssertDoesNotContain(probeProgramText, "const int CmdAudioFormat");
         AssertDoesNotContain(probeProgramText, "PrintSnapshot(\"Baseline snapshot\"");
         AssertDoesNotContain(probeProgramText, "static async Task RunAnalogGainSequenceAsync");
-        AssertDoesNotContain(probeProgramText, "Usage: at-write <opcode_hex>");
-        AssertDoesNotContain(probeProgramText, "Before: InputSource=");
-        AssertDoesNotContain(probeProgramText, "Current I2C AT state");
-        AssertDoesNotContain(probeProgramText, "Sending audio switch sequence");
         AssertDoesNotContain(probeProgramText, "Usage: i2c-cmd get|set|scan");
         AssertDoesNotContain(probeProgramText, "Tests whether rtk_sendI2CATCommand uses the same XU path");
         AssertDoesNotContain(probeProgramText, "I2C SET/verify via AT envelope");
@@ -97,11 +91,16 @@ static partial class Program
             false,
             File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Models.cs")),
             "old NativeXu probe model bucket removed");
-        AssertContains(probeAtCommandsText, "static class NativeXuProbeAtCommands");
-        AssertContains(probeAtCommandsText, "public static async Task<int> RunAtReadAsync");
-        AssertContains(probeAtCommandsText, "public static async Task<int> RunAtWriteAsync");
-        AssertContains(probeAtCommandsText, "public static async Task<int> RunAtSetInputAsync");
-        AssertContains(probeAtCommandsText, "using static NativeXuProbeFormatting;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.AtCommands.cs")),
+            "NativeXu direct AT probe commands live with top-level probe command routing");
+        AssertContains(probeProgramText, "static class NativeXuProbeAtCommands");
+        AssertContains(probeProgramText, "public static async Task<int> RunAtReadAsync");
+        AssertContains(probeProgramText, "public static async Task<int> RunAtWriteAsync");
+        AssertContains(probeProgramText, "public static async Task<int> RunAtSetInputAsync");
+        AssertContains(probeProgramText, "Usage: at-write <opcode_hex>");
+        AssertContains(probeProgramText, "Before: InputSource=");
         AssertContains(probeDefaultExperimentText, "public const int CmdAudioFormat = 0x04;");
         AssertContains(probeDefaultExperimentText, "public const int CmdSetAuxOutVolume = 0x82;");
         AssertContains(probeDefaultExperimentText, "static class NativeXuProbeFormatting");
@@ -171,9 +170,14 @@ static partial class Program
         AssertContains(probeI2cLegacyProbeText, "ProbeRawI2cFrames");
         AssertContains(probeI2cLegacyProbeText, "ProbeAlternateSelectors");
         AssertContains(probeI2cLegacyProbeText, "ProbeAtWrappedI2cFrames");
-        AssertContains(probeI2cSwitchText, "static class NativeXuProbeI2cSwitch");
-        AssertContains(probeI2cSwitchText, "public static async Task<int> RunAsync");
-        AssertContains(probeI2cSwitchText, "Sending audio switch sequence");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cSwitch.cs")),
+            "NativeXu captured audio-switch replay workflow lives with top-level probe command routing");
+        AssertContains(probeProgramText, "static class NativeXuProbeI2cSwitch");
+        AssertContains(probeProgramText, "public static async Task<int> RunAsync");
+        AssertContains(probeProgramText, "Current I2C AT state");
+        AssertContains(probeProgramText, "Sending audio switch sequence");
         AssertContains(probeI2cTransportText, "static class NativeXuProbeI2cTransport");
         AssertContains(probeI2cTransportText, "public static async Task<byte[]?> SendI2cAtGetAsync");
         AssertContains(probeI2cTransportText, "public static byte[] BuildAtFrameWithPayload");
