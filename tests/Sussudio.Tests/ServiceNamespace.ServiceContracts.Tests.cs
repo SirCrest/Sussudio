@@ -5,8 +5,7 @@ static partial class Program
     {
         var serviceContractFiles = new[]
         {
-            "Sussudio/Services/Contracts/AutomationInterfaces.cs",
-            "Sussudio/Services/Contracts/IPreviewFrameSink.cs",
+            "Sussudio/Services/Contracts/ServiceInterfaces.cs",
             "Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs",
             "Sussudio/Services/Contracts/RecordingContracts.cs",
             "Sussudio/Services/Contracts/PooledVideoFrame.cs"
@@ -53,6 +52,20 @@ static partial class Program
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "PooledVideoFrameLease.cs")),
             "pooled-frame leases live with the pooled frame owner");
+
+        var serviceInterfacesText = ReadRepoFile("Sussudio/Services/Contracts/ServiceInterfaces.cs");
+        AssertContains(serviceInterfacesText, "public interface IAutomationWindowControl");
+        AssertContains(serviceInterfacesText, "internal interface IPreviewFrameSink");
+        var sourceTelemetryProviderText = ReadRepoFile("Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs");
+        AssertContains(sourceTelemetryProviderText, "public interface ISourceSignalTelemetryProvider");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "AutomationInterfaces.cs")),
+            "automation service interfaces live with ServiceInterfaces");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "IPreviewFrameSink.cs")),
+            "preview sink service interface lives with ServiceInterfaces");
 
         AssertContains(agentMapText, "separate from `Sussudio.Automation.Contracts` wire/protocol contracts");
     }
