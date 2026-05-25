@@ -270,3 +270,179 @@ public sealed class PresentationPreviewWindowLifecycleContractsTests
     public Task MainWindowShutdownCleanupOwnsPostCloseCleanupOrder()
         => global::Program.MainWindowShutdownCleanup_OwnsPostCloseCleanupOrder();
 }
+
+public sealed class PresentationPreviewMainWindowInitialContractsTests
+{
+    public PresentationPreviewMainWindowInitialContractsTests()
+    {
+        global::Program.EnsureTargetAssemblyLoadedForXUnit();
+    }
+
+    [Fact]
+    public Task WindowCloseCancelsUntilRecordingStopCompletes()
+        => global::Program.MainWindowClose_CancelsCloseUntilRecordingStopCompletes();
+
+    [Fact]
+    public Task WindowScreenshotCaptureCompletesOnDispatcherFailureAndCancellation()
+        => global::Program.MainWindowScreenshot_CompletesOnDispatcherFailureAndCancellation();
+
+    [Fact]
+    public Task WindowScreenshotNativeCaptureLivesWithController()
+        => global::Program.WindowScreenshotNativeCapture_LivesWithWindowScreenshotController();
+
+    [Fact]
+    public Task WindowScreenshotImageEncodingLivesInFocusedHelper()
+        => global::Program.WindowScreenshotImageEncoding_LivesInFocusedHelper();
+
+    [Fact]
+    public Task PropertyChangedRoutingDelegatesToFocusedControllers()
+        => global::Program.MainWindowPropertyChangedRouting_DelegatesToFocusedControllers();
+}
+
+public sealed class PresentationPreviewRuntimeShellContractsTests
+{
+    public PresentationPreviewRuntimeShellContractsTests()
+    {
+        global::Program.EnsureTargetAssemblyLoadedForXUnit();
+    }
+
+    [Fact]
+    public Task PreviewResizeTelemetryLivesInController()
+        => global::Program.PreviewResizeTelemetry_LivesInController();
+
+    [Fact]
+    public Task PreviewRendererHostControllerOwnsRuntimeState()
+        => global::Program.PreviewRendererHostController_OwnsRuntimeState();
+
+    [Fact]
+    public Task PreviewRuntimeSnapshotControllerOwnsSnapshotMapping()
+        => global::Program.PreviewRuntimeSnapshotController_OwnsSnapshotMapping();
+
+    [Fact]
+    public Task PreviewRuntimeD3DProjectionOwnsPolicyGroups()
+        => global::Program.PreviewRuntimeD3DProjection_OwnsPolicyGroups();
+
+    [Fact]
+    public Task PreviewSurfacePresentationAndShadowLiveInControllers()
+        => global::Program.PreviewSurfacePresentationAndShadow_LiveInControllers();
+
+    [Fact]
+    public Task PreviewRendererStartupPlanBuilderPreservesFallbackPolicy()
+        => global::Program.PreviewRendererStartupPlanBuilder_PreservesFallbackPolicy();
+}
+
+public sealed class PresentationPreviewRuntimePolicyContractsTests
+{
+    public PresentationPreviewRuntimePolicyContractsTests()
+    {
+        global::Program.EnsureTargetAssemblyLoadedForXUnit();
+    }
+
+    [Fact]
+    public Task PreviewRuntimeSnapshotControllerPreservesNullD3dProjectionPolicy()
+        => global::Program.PreviewRuntimeSnapshotController_PreservesNullD3dProjectionPolicy();
+
+    [Fact]
+    public Task PreviewRuntimeSnapshotHealthPolicyPreservesSuspicionRules()
+        => global::Program.PreviewRuntimeSnapshotHealthPolicy_PreservesSuspicionRules();
+
+    [Fact]
+    public Task PreviewRuntimeSnapshotHealthInputFactoryProjectsControllerInputs()
+        => global::Program.PreviewRuntimeSnapshotHealthInputFactory_ProjectsControllerInputs();
+
+    [Fact]
+    public Task PreviewRuntimeSnapshotSurfaceProjectionPolicyPreservesVisibilityAndHealthFields()
+        => global::Program.PreviewRuntimeSnapshotSurfaceProjectionPolicy_PreservesVisibilityAndHealthFields();
+
+    [Fact]
+    public Task PreviewRuntimeSnapshotStartupProjectionPolicyPreservesSampledStartupFields()
+        => global::Program.PreviewRuntimeSnapshotStartupProjectionPolicy_PreservesSampledStartupFields();
+
+    [Fact]
+    public Task PreviewRuntimeSnapshotGpuPlaybackProjectionPolicyPreservesRendererAndEventFields()
+        => global::Program.PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy_PreservesRendererAndEventFields();
+
+    [Fact]
+    public Task PreviewRuntimeD3DFrameCounterPolicyPreservesCpuFallbackCounters()
+        => global::Program.PreviewRuntimeD3DFrameCounterPolicy_PreservesCpuFallbackCounters();
+
+    [Fact]
+    public Task PreviewRuntimeD3DProjectionBuilderAppliesPolicyGroups()
+        => global::Program.PreviewRuntimeD3DProjectionBuilder_AppliesPolicyGroups();
+
+    [Fact]
+    public Task PreviewRuntimeD3DRendererStatePolicyPreservesNullRendererDefaults()
+        => global::Program.PreviewRuntimeD3DRendererStatePolicy_PreservesNullRendererDefaults();
+
+    [Fact]
+    public Task PreviewRuntimeD3DDisplayCadencePolicyPreservesNullRendererDefaults()
+        => global::Program.PreviewRuntimeD3DDisplayCadencePolicy_PreservesNullRendererDefaults();
+
+    [Fact]
+    public Task PreviewRuntimeD3DRenderCpuTimingPolicyPreservesNullRendererDefaults()
+        => global::Program.PreviewRuntimeD3DRenderCpuTimingPolicy_PreservesNullRendererDefaults();
+
+    [Fact]
+    public Task PreviewRuntimeD3DPipelineLatencyPolicyPreservesNullRendererDefaults()
+        => global::Program.PreviewRuntimeD3DPipelineLatencyPolicy_PreservesNullRendererDefaults();
+
+    [Fact]
+    public Task PreviewRuntimeD3DFrameStatisticsPolicyPreservesNullRendererDefaults()
+        => global::Program.PreviewRuntimeD3DFrameStatisticsPolicy_PreservesNullRendererDefaults();
+
+    [Fact]
+    public Task PreviewRuntimeD3DFrameLatencyWaitPolicyPreservesNullRendererDefaults()
+        => global::Program.PreviewRuntimeD3DFrameLatencyWaitPolicy_PreservesNullRendererDefaults();
+
+    [Fact]
+    public Task PreviewRuntimeD3DFrameOwnershipPolicyPreservesNullRendererDefaults()
+        => global::Program.PreviewRuntimeD3DFrameOwnershipPolicy_PreservesNullRendererDefaults();
+}
+
+public sealed class PresentationPreviewCaptureOptionContractsTests
+{
+    public PresentationPreviewCaptureOptionContractsTests()
+    {
+        global::Program.EnsureTargetAssemblyLoadedForXUnit();
+    }
+
+    [Fact]
+    public Task CaptureDeviceButtonActionsLiveInController()
+        => global::Program.CaptureDeviceButtonActions_LiveInController();
+
+    [Fact]
+    public Task CaptureOptionPresentationLivesInController()
+        => global::Program.CaptureOptionPresentation_LivesInController();
+
+    [Fact]
+    public Task CaptureOptionPresentationPolicyPreservesAffordanceRules()
+        => global::Program.CaptureOptionPresentationPolicy_PreservesAffordanceRules();
+
+    [Fact]
+    public Task CaptureOptionBindingsLiveInController()
+        => global::Program.CaptureOptionBindings_LiveInController();
+
+    [Fact]
+    public Task CaptureOptionTooltipFormatterPreservesTooltipTextPolicy()
+        => global::Program.CaptureOptionTooltipFormatter_PreservesTooltipTextPolicy();
+}
+
+public sealed class PresentationPreviewOutputPathContractsTests
+{
+    public PresentationPreviewOutputPathContractsTests()
+    {
+        global::Program.EnsureTargetAssemblyLoadedForXUnit();
+    }
+
+    [Fact]
+    public Task OutputPathDisplayLivesInController()
+        => global::Program.OutputPathDisplay_LivesInController();
+
+    [Fact]
+    public Task OutputPathDisplayTextFormatterPreservesTruncationPolicy()
+        => global::Program.OutputPathDisplayTextFormatter_PreservesTruncationPolicy();
+
+    [Fact]
+    public Task OutputPathButtonActionsLiveInController()
+        => global::Program.OutputPathButtonActions_LiveInController();
+}

@@ -178,3 +178,79 @@ public sealed class PresentationPreviewMainViewModelSourceTelemetryContractsTest
     public Task LiveSignalTextProjectionPreservesPixelFormatFallbackOrder()
         => global::Program.LiveSignalTextProjection_PreservesPixelFormatFallbackOrder();
 }
+
+public sealed class PresentationPreviewFrameRateSelectionContractsTests
+{
+    public PresentationPreviewFrameRateSelectionContractsTests()
+    {
+        global::Program.EnsureTargetAssemblyLoadedForXUnit();
+    }
+
+    [Fact]
+    public Task SourceFilteredFrameRatesAreAlwaysUnlocked()
+        => global::Program.SourceFilteredFrameRatesAreAlwaysUnlocked();
+
+    [Fact]
+    public Task FrameRateSourceFilterPolicyLivesInFocusedHelper()
+        => global::Program.FrameRateSourceFilterPolicy_LivesInFocusedHelper();
+
+    [Fact]
+    public Task FrameRateAutoSelectionPolicyLivesInFocusedHelper()
+        => global::Program.FrameRateAutoSelectionPolicy_LivesInFocusedHelper();
+
+    [Fact]
+    public Task FrameRateAutoSelectionPolicyPreservesSelectionBehavior()
+        => global::Program.FrameRateAutoSelectionPolicy_PreservesSelectionBehavior();
+
+    [Fact]
+    public Task FrameRateTimingPolicyLivesInFocusedPartial()
+        => global::Program.FrameRateTimingPolicy_LivesInFocusedPartial();
+
+    [Fact]
+    public Task FrameRateTimingPolicyPreservesPureTimingBehavior()
+        => global::Program.FrameRateTimingPolicy_PreservesPureTimingBehavior();
+}
+
+public sealed class PresentationPreviewDeviceFormatProbeRetargetContractsTests
+{
+    public PresentationPreviewDeviceFormatProbeRetargetContractsTests()
+    {
+        global::Program.EnsureTargetAssemblyLoadedForXUnit();
+    }
+
+    [Fact]
+    public Task DeviceFormatProbeRetargetPolicyLivesInFocusedHelper()
+        => global::Program.DeviceFormatProbeRetargetPolicy_LivesInFocusedHelper();
+
+    [Fact]
+    public Task DeviceFormatProbeRetargetPolicyPreservesRetargetDecisionBehavior()
+        => global::Program.DeviceFormatProbeRetargetPolicy_PreservesRetargetDecisionBehavior();
+
+    [Fact]
+    public Task DeviceFormatProbeRetargetApplicationLivesInFocusedPartial()
+        => global::Program.DeviceFormatProbeRetargetApplication_LivesInFocusedPartial();
+}
+
+public sealed class PresentationPreviewCaptureSelectionPolicyContractsTests
+{
+    public PresentationPreviewCaptureSelectionPolicyContractsTests()
+    {
+        global::Program.EnsureTargetAssemblyLoadedForXUnit();
+    }
+
+    [Fact]
+    public Task ModeSelectionStateLivesInFocusedPartial()
+        => global::Program.ModeSelectionState_LivesInFocusedPartial();
+
+    [Fact]
+    public Task CaptureFormatSelectionPolicyLivesInFocusedHelper()
+        => global::Program.CaptureFormatSelectionPolicy_LivesInFocusedHelper();
+
+    [Fact]
+    public Task CaptureFormatSelectionPolicyPreservesSelectionBehavior()
+        => global::Program.CaptureFormatSelectionPolicy_PreservesSelectionBehavior();
+
+    [Fact]
+    public Task RecordingSettingsSelectionPolicyLivesInFocusedHelper()
+        => global::Program.RecordingSettingsSelectionPolicy_LivesInFocusedHelper();
+}

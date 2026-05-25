@@ -179,54 +179,32 @@ add xUnit alongside, and port incrementally.
   audio ramp trace telemetry. The public wrapper classes remain separate inside
   this file so existing test identities stay stable while the execution surface
   is easier to scan.
-- `XUnit.PresentationPreviewMainWindowInitialContractsTests.cs` owns the former
-  legacy presentation-preview MainWindow initial registration group: close
-  cancellation, window screenshot helper ownership, and property changed
-  routing delegation checks.
 - `XUnit.PresentationPreviewMainWindowContractsTests.cs` owns the former legacy
   presentation-preview MainWindow xUnit execution groups: window lifecycle,
   launch/startup, preview screenshot, shell chrome, visual shell, recording
   controls, audio controls, responsive layout, capture selection, resolution
-  selection, and capture runtime guardrails. The public wrapper classes remain
-  separate inside this file so existing test identities stay stable while the
-  execution surface is easier to scan.
-- `XUnit.PresentationPreviewRuntimeShellContractsTests.cs` owns the former
-  legacy presentation-preview MainWindow preview runtime shell/host group:
-  resize telemetry, renderer host state, snapshot mapping, D3D projection
-  ownership, surface/shadow ownership, and startup-plan fallback checks.
-- `XUnit.PresentationPreviewRuntimePolicyContractsTests.cs` owns the former
-  legacy presentation-preview MainWindow preview runtime policy group: snapshot
-  health/projection policies and D3D projection policy defaults.
-- `XUnit.PresentationPreviewFrameRateSelectionContractsTests.cs` owns the
+  selection, capture runtime guardrails, MainWindow initial, preview runtime
+  shell/policy, capture option, and output path checks. The public wrapper
+  classes remain separate inside this file so existing test identities stay
+  stable while the execution surface is easier to scan.
+- `XUnit.PresentationPreviewMainViewModelContractsTests.cs` also owns the
   former legacy presentation-preview frame-rate selection group:
   `ShowAllCaptureOptions`, source-filter, auto-selection, and timing-policy
   behavior/ownership checks.
-- `XUnit.PresentationPreviewDeviceFormatProbeRetargetContractsTests.cs` owns
+- `XUnit.PresentationPreviewMainViewModelContractsTests.cs` also owns
   the former legacy presentation-preview late device-format probe retarget group:
   retarget policy ownership, decision behavior, and UI-side retarget application
   checks.
-- `XUnit.PresentationPreviewCaptureSelectionPolicyContractsTests.cs` owns the
+- `XUnit.PresentationPreviewMainViewModelContractsTests.cs` also owns the
   former legacy presentation-preview capture selection-policy group:
   mode-selection state, capture format selection, and recording settings
   selection ownership/behavior checks.
-- `XUnit.PresentationPreviewCaptureOptionContractsTests.cs` owns the former
-  legacy presentation-preview MainWindow capture device action, option
-  presentation, affordance policy, option binding, and tooltip formatter checks.
-- `XUnit.PresentationPreviewOutputPathContractsTests.cs` owns the former legacy
-  presentation-preview MainWindow output path display, truncation formatter, and
-  button-action checks.
 - `XUnit.PresentationPreviewStartupContractsTests.cs` owns the former legacy
   presentation-preview preview-startup groups: ownership, controller behavior,
-  signal/failure text, and startup ordering checks.
-- `XUnit.PresentationPreviewCapturePreviewLifecycleContractsTests.cs` owns the
-  former legacy presentation-preview capture preview-lifecycle group: video-only
-  preview fallback, missing audio endpoint behavior, focused CaptureService
-  preview lifecycle ownership, audio monitoring visuals, and backend log text.
+  signal/failure text, startup ordering, capture preview-lifecycle, and
+  Flashback buffer startup/recovery checks.
 - Preview-startup ordering checks also live in
   `XUnit.PresentationPreviewStartupContractsTests.cs`.
-- `XUnit.PresentationPreviewCaptureFlashbackBufferContractsTests.cs` owns the
-  former legacy presentation-preview capture Flashback buffer startup/recovery
-  group: stale session cleanup and recovery-preserve behavior.
 - `XUnit.ProjectBuildContractsTests.cs` owns the former legacy project-file
   build/publish policy execution check after its removal from the
   presentation-preview capture catalog.

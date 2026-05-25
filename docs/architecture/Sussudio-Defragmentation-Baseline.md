@@ -1908,3 +1908,16 @@ Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
 Behavior preserved: the same public test classes, constructors, `[Fact]` method names, target-assembly bootstrap calls, and delegated `Program` checks remain available under one MainWindow contracts file
 Notes for future agents: keep MainWindow presentation-preview xUnit wrapper classes together in `XUnit.PresentationPreviewMainWindowContractsTests.cs`; add new wrapper classes there unless a group needs independent fixtures or executable helper state
+
+Date: 2026-05-25
+Area: Remaining presentation-preview xUnit execution-surface locality
+Problem: Ten remaining tiny presentation-preview xUnit wrapper files each contained only a target-assembly bootstrap constructor plus delegated `Program` facts. They were meaningful test identities, but not meaningful file boundaries, so reviewing MainWindow runtime, MainViewModel selection policy, startup lifecycle, and Flashback buffer execution still required opening a separate shell per subtopic.
+Files consolidated: `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowInitialContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewRuntimeShellContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewRuntimePolicyContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureOptionContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewOutputPathContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewFrameRateSelectionContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewDeviceFormatProbeRetargetContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureSelectionPolicyContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewCapturePreviewLifecycleContractsTests.cs`; `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureFlashbackBufferContractsTests.cs`
+Files added: none
+Net production .cs delta: 0
+Net test .cs delta: -10
+Partial clusters reduced: n/a; remaining small presentation-preview xUnit wrapper file count -10
+Build/tests/runtime checks: pending in current checkpoint
+CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
+Behavior preserved: the same public test classes, constructors, `[Fact]` method names, target-assembly bootstrap calls, and delegated `Program` checks remain available inside the MainWindow, MainViewModel, and Startup presentation-preview contracts files
+Notes for future agents: keep these wrapper classes in their parent presentation-preview contracts files unless a group gains independent fixtures or executable helper state; public class identity matters more than one wrapper file per legacy catalog band

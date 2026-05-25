@@ -716,35 +716,13 @@ monitoring, output path and disk-space presentation, source telemetry,
 dependency composition, automation/runtime routing, capture settings, preview
 lifecycle, and audio ramp trace telemetry in xUnit after their removal from the
 legacy harness catalog.
-Presentation-preview MainWindow initial checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowInitialContractsTests.cs`,
-keeping close cancellation, window screenshot helper ownership, and property
-changed routing delegation checks in xUnit after their removal from the legacy
-harness catalog.
 Presentation-preview MainWindow checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowContractsTests.cs`,
 keeping window lifecycle, launch/startup, preview screenshot, shell chrome,
 visual shell, recording controls, audio controls, responsive layout, capture
-selection, resolution selection, and capture runtime guardrail contracts in
-xUnit after their removal from the legacy harness catalog.
-Presentation-preview preview runtime shell checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewRuntimeShellContractsTests.cs`,
-keeping resize telemetry, renderer host state, snapshot mapping, D3D projection
-ownership, surface/shadow ownership, and startup-plan fallback contracts in
-xUnit after their removal from the legacy harness catalog.
-Presentation-preview preview runtime policy checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewRuntimePolicyContractsTests.cs`,
-keeping snapshot health/projection policies and D3D projection policy defaults
-in xUnit after their removal from the legacy harness catalog.
-Presentation-preview capture option checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureOptionContractsTests.cs`,
-keeping capture device action, option presentation, affordance policy, option
-binding, and tooltip formatter contracts in xUnit after their removal from the
-legacy harness catalog.
-Presentation-preview output path checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewOutputPathContractsTests.cs`,
-keeping output path display, truncation formatter, and button-action contracts
-in xUnit after their removal from the legacy harness catalog.
+selection, resolution selection, capture runtime guardrail, MainWindow initial,
+preview runtime shell/policy, capture option, and output path contracts in xUnit
+after their removal from the legacy harness catalog.
 MainViewModel presentation-preview contract execution is now owned by that
 focused xUnit wrapper file, with no remaining legacy catalog hook.
 Presentation-preview capture runtime guardrail checks execute through the
@@ -753,7 +731,7 @@ preview stop overload/API compatibility, and emergency recording stop threading
 contracts in xUnit after
 their removal from the legacy harness catalog.
 Presentation-preview capture Flashback buffer checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureFlashbackBufferContractsTests.cs`,
+`tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs`,
 keeping stale session cleanup and recovery-preserve contracts in xUnit after
 their removal from the legacy harness catalog.
 Project build/publish policy checks now execute through
@@ -3428,9 +3406,9 @@ owner, fold it back into that owner and update the source-shape tests and
    owns xUnit execution for the preview-startup source-shape ownership,
    controller behavior, signal/failure-text, and ordering checks after their
    removal from the legacy presentation-preview capture catalog.
-   `tests/Sussudio.Tests/XUnit.PresentationPreviewCapturePreviewLifecycleContractsTests.cs`
-   owns xUnit execution for the capture preview-lifecycle/audio-fallback checks
-   after their removal from the legacy presentation-preview capture catalog.
+   It also owns xUnit execution for the capture preview-lifecycle/audio-fallback
+   checks after their removal from the legacy presentation-preview capture
+   catalog.
    Preview startup ordering coverage is split between lifecycle-event
    ownership, device-discovery ordering, reveal priming, and stop audio-ramp
    owners. Startup ordering xUnit execution also lives in
@@ -3651,7 +3629,7 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.Capture.SelectionPolicy.FrameRates.Ownership.Tests.cs`, while
    automatic-selection and pure timing-policy behavior checks live in
    `MainViewModel.Capture.SelectionPolicy.FrameRates.PolicyBehavior.Tests.cs`.
-   `tests/Sussudio.Tests/XUnit.PresentationPreviewFrameRateSelectionContractsTests.cs`
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
    owns xUnit execution for those frame-rate selection/timing checks after
    their removal from the legacy presentation-preview capture catalog.
    Shared frame-rate selection reset,
@@ -3719,7 +3697,7 @@ owner, fold it back into that owner and update the source-shape tests and
     its graph-port contract now lives with that applier, while
     pure late-probe retarget decisions live in
     `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`.
-    `tests/Sussudio.Tests/XUnit.PresentationPreviewDeviceFormatProbeRetargetContractsTests.cs`
+    `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
     owns xUnit execution for the late device-format probe retarget ownership,
     behavior, and application checks after their removal from the legacy
     presentation-preview capture catalog.
@@ -3728,7 +3706,7 @@ owner, fold it back into that owner and update the source-shape tests and
     `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.*.cs` family so
     frame-rate, resolution, mode-selection, late-probe, recording-format, and
     runtime-flag assertions stay near their matching policy owners.
-    `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureSelectionPolicyContractsTests.cs`
+    `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
     owns xUnit execution for the mode-selection, capture-format, and
     recording-settings selection checks after their removal from the legacy
     presentation-preview capture catalog.

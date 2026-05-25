@@ -1560,7 +1560,7 @@ Primary current owners:
   and timing-policy ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.PolicyBehavior.Tests.cs`
   owns automatic frame-rate choice and pure timing-policy behavior assertions.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewFrameRateSelectionContractsTests.cs`
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview frame-rate
   selection/timing catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.VideoFormat.Tests.cs`
@@ -1581,12 +1581,12 @@ Primary current owners:
   assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.DeviceFormatProbeRetarget.Tests.cs`
   owns late device-format probe retarget policy behavior assertions.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewDeviceFormatProbeRetargetContractsTests.cs`
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview late
   device-format probe retarget catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.RecordingFormat.Tests.cs`
   owns recording format selection policy ownership assertions.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureSelectionPolicyContractsTests.cs`
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview
   mode-selection, capture-format, and recording-settings selection catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.RuntimeFlags.Tests.cs`
@@ -1618,9 +1618,9 @@ Primary current owners:
   xUnit execution for the former legacy presentation-preview preview-startup
   source-shape ownership, controller behavior, signal/failure text, and
   startup ordering catalog groups.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewCapturePreviewLifecycleContractsTests.cs`
-  owns xUnit execution for the former legacy presentation-preview
-  capture preview-lifecycle/audio-fallback catalog group.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs` also
+  owns xUnit execution for the former legacy presentation-preview capture
+  preview-lifecycle/audio-fallback catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.DeviceDiscoveryOrdering.Tests.cs`
   owns startup ordering assertions that device discovery begins before
   recording-capability probe completion.
@@ -2122,26 +2122,14 @@ Primary current owners:
   `tests/Sussudio.Tests/XUnit.PresentationPreviewHarnessRegistrationTests.cs`
   owns the xUnit execution surface that audits those registration groups against
   the focused UI ownership test inventory.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowInitialContractsTests.cs`
-  owns the former presentation-preview MainWindow initial registration group for
-  close cancellation, window screenshot helper ownership, and property changed
-  routing delegation after its removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowContractsTests.cs`
   owns the former presentation-preview MainWindow xUnit execution groups:
   window lifecycle, launch/startup, preview screenshot workflow, shell chrome,
   visual shell, recording controls, audio controls, responsive layout, capture
-  selection, resolution selection, and capture runtime guardrails. Keep the
-  public wrapper classes in this file unless a group needs an independent
-  fixture or executable helper state.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewRuntimeShellContractsTests.cs`
-  owns the former presentation-preview MainWindow preview runtime shell/host
-  group for resize telemetry, renderer host state, snapshot mapping, D3D
-  projection ownership, surface/shadow ownership, and startup-plan fallback
-  checks after their removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewRuntimePolicyContractsTests.cs`
-  owns the former presentation-preview MainWindow preview runtime policy group
-  for snapshot health/projection policies and D3D projection policy defaults
-  after their removal from the legacy offline harness catalog.
+  selection, resolution selection, capture runtime guardrails, initial
+  MainWindow checks, preview runtime shell/policy checks, capture option checks,
+  and output path checks. Keep the public wrapper classes in this file unless a
+  group needs an independent fixture or executable helper state.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
   owns the former presentation-preview MainViewModel xUnit execution groups:
   initial recording-transition failure propagation, audio controls and
@@ -2150,15 +2138,7 @@ Primary current owners:
   preview lifecycle ownership, and audio ramp trace telemetry. Keep the public
   wrapper classes in this file unless a group needs an independent fixture or
   executable helper state.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureOptionContractsTests.cs`
-  owns the former presentation-preview MainWindow capture device action, option
-  presentation, affordance policy, option binding, and tooltip formatter checks
-  after their removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewOutputPathContractsTests.cs`
-  owns the former presentation-preview MainWindow output path display,
-  truncation formatter, and button-action checks after their removal from the
-  legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewCaptureFlashbackBufferContractsTests.cs`
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs`
   owns the former presentation-preview capture Flashback buffer startup/recovery
   group for stale session cleanup and recovery-preserve behavior after their
   removal from the legacy offline harness catalog.
