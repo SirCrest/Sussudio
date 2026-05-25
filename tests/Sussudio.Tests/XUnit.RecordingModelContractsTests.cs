@@ -75,8 +75,8 @@ public sealed class RecordingModelContractsTests
         => global::Program.FlashbackBufferManager_SegmentMutationLiveInFocusedPartial();
 
     [Fact]
-    public Task FlashbackBufferManagerLiveAccountingLivesInFocusedPartial()
-        => global::Program.FlashbackBufferManager_LiveAccountingLivesInFocusedPartial();
+    public Task FlashbackBufferManagerLiveAccountingLivesWithRootState()
+        => global::Program.FlashbackBufferManager_LiveAccountingLivesWithRootState();
 
     [Fact]
     public Task FlashbackBufferManagerLifecycleHelpersLiveInFocusedPartial()

@@ -24,24 +24,21 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackBufferManager_LiveAccountingLivesInFocusedPartial()
+    internal static Task FlashbackBufferManager_LiveAccountingLivesWithRootState()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
-        var liveAccountingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.LiveAccounting.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(liveAccountingText, "public void ResetLatestPts()");
-        AssertContains(liveAccountingText, "public void FinalizeActiveSegmentForCycle()");
-        AssertContains(liveAccountingText, "public double EncodeFrameRate { get; set; }");
-        AssertContains(liveAccountingText, "public void UpdateLatestPts(TimeSpan pts)");
-        AssertContains(liveAccountingText, "public void UpdateDiskBytes(long activeSegmentBytes)");
-        AssertContains(liveAccountingText, "FLASHBACK_BUFFER_DISK_EVICT");
-        AssertDoesNotContain(rootText, "public void ResetLatestPts()");
-        AssertDoesNotContain(rootText, "public void FinalizeActiveSegmentForCycle()");
-        AssertDoesNotContain(rootText, "public void UpdateLatestPts(TimeSpan pts)");
-        AssertDoesNotContain(rootText, "public void UpdateDiskBytes(long activeSegmentBytes)");
-        AssertDoesNotContain(rootText, "FLASHBACK_BUFFER_DISK_EVICT");
+        AssertContains(rootText, "public void ResetLatestPts()");
+        AssertContains(rootText, "public void FinalizeActiveSegmentForCycle()");
+        AssertContains(rootText, "public double EncodeFrameRate { get; set; }");
+        AssertContains(rootText, "public void UpdateLatestPts(TimeSpan pts)");
+        AssertContains(rootText, "public void UpdateDiskBytes(long activeSegmentBytes)");
+        AssertContains(rootText, "FLASHBACK_BUFFER_DISK_EVICT");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.LiveAccounting.cs")),
+            "FlashbackBufferManager.LiveAccounting.cs folded into FlashbackBufferManager.cs");
 
         return Task.CompletedTask;
     }

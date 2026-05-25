@@ -1750,10 +1750,9 @@ policy there. Explicit purge/delete-all lifecycle behavior now lives in
 guarded purge deletion there. Eviction pause state, recording PTS range capture,
 and pause-driven disk-warning state now live with retention in
 `FlashbackBufferManager.Retention.cs`. The root buffer manager keeps
-core state and read-only live counters. PTS reset/update, sink-cycle active
+core state, read-only live counters, PTS reset/update, sink-cycle active
 segment finalization, encoder frame-rate truth, and disk-byte accounting
-updates live in
-`Sussudio/Services/Flashback/FlashbackBufferManager.LiveAccounting.cs`.
+updates.
 Flashback buffer segment ownership now lives in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs`. Keep active
 segment path generation, active segment start/abandonment, completion
