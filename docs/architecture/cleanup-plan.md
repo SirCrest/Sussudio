@@ -905,7 +905,7 @@ capture and screenshot result shaping live in
 `Sussudio/Controllers/Screenshot/Window/WindowScreenshotNativeCapture.cs`, while pure PNG/BMP
 byte-stream encoding lives in
 `Sussudio/Controllers/Screenshot/Window/WindowScreenshotImageEncoder.cs`.
-Whole-window screenshot automation stays on `MainWindow.WindowShell.cs` with the
+Whole-window screenshot automation stays on `MainWindow.ShellChrome.Composition.cs` with the
 other `IAutomationWindowControl` methods.
 
 Preview-frame screenshot button behavior now lives in
@@ -932,7 +932,7 @@ Window geometry automation and the recordings-folder command now live in
 `Sussudio/Controllers/Window/WindowAutomationController.cs`. Display-area/AppWindow
 access, UI-thread dispatch, presenter restore, side effects, and pure
 snap-region rectangle math for window actions stay there.
-`MainWindow.WindowShell.cs` is the `IAutomationWindowControl` adapter.
+`MainWindow.ShellChrome.Composition.cs` is the `IAutomationWindowControl` adapter.
 Close lifecycle state remains separate from geometry automation; see the
 explicit window close lifecycle section below for the close-state and recording
 finalization owners.
@@ -940,7 +940,7 @@ finalization owners.
 UI-thread dispatching helpers, preview-snapshot-style result dispatch with
 three-attempt enqueue retry, and guarded async event-handler execution now live
 in `Sussudio/Controllers/Window/WindowUiDispatchController.cs`.
-`Sussudio/MainWindow.WindowShell.cs` keeps the stable private MainWindow adapter
+`Sussudio/MainWindow.ShellChrome.Composition.cs` keeps the stable private MainWindow adapter
 names for callers. Window close completion, close-request dispatch, and
 recording finalization are covered by the explicit window close lifecycle
 section below.
@@ -1033,7 +1033,7 @@ wait race, timeout/failure breadcrumbs, status text, shutdown-content
 dim/restore policy, timer stops, event detaches, preview shutdown,
 post-close recording finalization handoff, automation diagnostics disposal,
 NVML disposal, and ViewModel disposal.
-`Sussudio/MainWindow.WindowShell.cs` is the XAML/AppWindow close adapter and
+`Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML/AppWindow close adapter and
 keeps `RegisterCloseLifecycle`, `CloseAsync`, and `RequestWindowClose()` stable.
 `Sussudio/MainWindow.xaml.cs`
 wires MainWindow cleanup delegates and the stable `Closed` event adapter into

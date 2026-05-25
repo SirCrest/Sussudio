@@ -5,7 +5,7 @@ static partial class Program
         var fullScreenSource = ReadMainWindowFullScreenAdapterSource();
         var fullScreenControllerRootSource = ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.cs")
             .Replace("\r\n", "\n");
-        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.WindowShell.cs")
+        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs")
             .Replace("\r\n", "\n");
         var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowUiDispatchController.cs")
             .Replace("\r\n", "\n");
@@ -42,11 +42,11 @@ static partial class Program
     internal static Task MainWindowWindowAutomationCommands_LiveInController()
     {
         var mainWindowSource = ReadMainWindowCompositionSource();
-        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.WindowShell.cs")
+        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs")
             .Replace("\r\n", "\n");
         var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowUiDispatchController.cs")
             .Replace("\r\n", "\n");
-        var adapterSource = ReadRepoFile("Sussudio/MainWindow.WindowShell.cs")
+        var adapterSource = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs")
             .Replace("\r\n", "\n");
         var controllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationController.cs")
             .Replace("\r\n", "\n");

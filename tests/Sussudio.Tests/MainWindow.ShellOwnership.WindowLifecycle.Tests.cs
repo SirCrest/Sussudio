@@ -16,7 +16,7 @@ static partial class Program
         {
             "Sussudio/Controllers/Window/WindowCloseLifecycleController.cs",
             "Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs",
-            "Sussudio/MainWindow.WindowShell.cs",
+            "Sussudio/MainWindow.ShellChrome.Composition.cs",
             "Sussudio/MainWindow.xaml.cs",
         };
 

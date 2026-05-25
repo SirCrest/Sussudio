@@ -1046,7 +1046,7 @@ Primary current owners:
   PrintWindow capture, GDI/DIB lifetime, output directory creation, and
   screenshot result shaping. `Sussudio/Controllers/Screenshot/Window/WindowScreenshotImageEncoder.cs`
   owns the pure PNG/BMP byte-stream encoding helpers. Keep whole-window
-  screenshot automation on `MainWindow.WindowShell.cs` with the rest of the
+  screenshot automation on `MainWindow.ShellChrome.Composition.cs` with the rest of the
   `IAutomationWindowControl` adapter.
 - `Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs` owns
   the pure preview-frame screenshot output-directory fallback, file naming,
@@ -1058,7 +1058,7 @@ Primary current owners:
 - `Sussudio/Controllers/Window/WindowAutomationController.cs` owns window geometry
   automation plus the recordings-folder command: UI-thread dispatch, AppWindow
   and DisplayArea access, maximized presenter restore, side effects, and pure
-  snap-region rectangle math. `MainWindow.WindowShell.cs` is the
+  snap-region rectangle math. `MainWindow.ShellChrome.Composition.cs` is the
   `IAutomationWindowControl` adapter; recording-aware close handling stays with
   the close lifecycle/finalization owners.
 - `Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs` owns shell
@@ -1075,7 +1075,7 @@ Primary current owners:
   and splash phrase start/stop callbacks. Window close routing/finalization ownership is detailed in the
   window close section below:
   `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`,
-  `Sussudio/MainWindow.WindowShell.cs`, and `Sussudio/MainWindow.xaml.cs`.
+  `Sussudio/MainWindow.ShellChrome.Composition.cs`, and `Sussudio/MainWindow.xaml.cs`.
 - `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns top-level
   preview resize telemetry throttling and reset state for preview compositor
   transforms. `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires the
@@ -1117,7 +1117,7 @@ Primary current owners:
   Window close routing/finalization ownership is detailed in the window close
   section below:
   `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`,
-  `Sussudio/MainWindow.WindowShell.cs`, and `Sussudio/MainWindow.xaml.cs`.
+  `Sussudio/MainWindow.ShellChrome.Composition.cs`, and `Sussudio/MainWindow.xaml.cs`.
 - `Sussudio/MainWindow.ShellChrome.Composition.cs` keeps the XAML-facing title
   update hook; `Sussudio/Controllers/Shell/ShellChromeController.cs` owns window title
   base/build-stamp formatting and the recording-time suffix used by property
@@ -1141,7 +1141,7 @@ Primary current owners:
   status text, shutdown-content dim/restore policy, timer stops, event detaches,
   preview shutdown, post-close recording finalization handoff, automation
   disposal, NVML disposal, and ViewModel disposal.
-- `Sussudio/MainWindow.WindowShell.cs` owns the XAML/AppWindow close adapter:
+- `Sussudio/MainWindow.ShellChrome.Composition.cs` owns the XAML/AppWindow close adapter:
   `RegisterCloseLifecycle`, `CloseAsync`, and the stable
   `RequestWindowClose()` adapter.
 - `Sussudio/MainWindow.xaml.cs` wires MainWindow cleanup
@@ -1161,7 +1161,7 @@ Primary current owners:
   UI-thread direct execution, dispatcher enqueue/cancellation/error wrapping,
   preview-snapshot-style result dispatch with three-attempt enqueue retry, and
   guarded async event-handler status updates used by automation adapters and
-  XAML event handlers. `Sussudio/MainWindow.WindowShell.cs` keeps the stable
+  XAML event handlers. `Sussudio/MainWindow.ShellChrome.Composition.cs` keeps the stable
   private MainWindow adapter names for callers.
 - `Sussudio/MainWindow.xaml.cs` owns the root `SetupBindings()`
   startup binding sequence and leaves feature-specific binding clusters in

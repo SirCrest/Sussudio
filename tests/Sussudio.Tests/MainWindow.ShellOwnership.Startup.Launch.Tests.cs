@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -79,7 +79,7 @@ static partial class Program
         var startupText = ReadMainWindowShellChromeAdapterSource();
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs").Replace("\r\n", "\n");
         var launchStartupControllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchStartupController.cs").Replace("\r\n", "\n");
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.WindowShell.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
@@ -127,7 +127,7 @@ static partial class Program
         AssertContains(automationHostControllerText, "Automation control disabled on pipe");
         AssertContains(mainWindowText, "InitializeShellControllers();");
         AssertContains(controllerInitializationText, "private void InitializeShellControllers()");
-        AssertContains(controllerInitializationText, "private void InitializeWindowShellControllers()");
+        AssertContains(controllerInitializationText, "private void InitializeWindowAutomationControllers()");
         AssertContains(controllerInitializationText, "private void InitializeFlashbackControllers()");
         AssertContains(controllerInitializationText, "private void InitializeShellPresentationControllers()");
         AssertContains(controllerInitializationText, "private void InitializePreviewControllers()");
@@ -138,7 +138,7 @@ static partial class Program
         AssertContains(controllerInitializationText, "private void InitializeAudioControllers()");
         AssertContains(controllerInitializationText, "private void InitializeCaptureControllers()");
         AssertContains(controllerInitializationText, "private void InitializeOutputControllers()");
-        AssertOccursBefore(controllerInitializationText, "InitializeWindowShellControllers();", "InitializeFlashbackControllers();");
+        AssertOccursBefore(controllerInitializationText, "InitializeWindowAutomationControllers();", "InitializeFlashbackControllers();");
         AssertOccursBefore(controllerInitializationText, "InitializeFlashbackControllers();", "InitializeShellPresentationControllers();");
         AssertOccursBefore(controllerInitializationText, "InitializeShellPresentationControllers();", "InitializePreviewControllers();");
         AssertOccursBefore(controllerInitializationText, "InitializePreviewControllers();", "InitializeRecordingControllers();");
@@ -149,7 +149,7 @@ static partial class Program
         AssertOccursBefore(controllerInitializationText, "InitializeResponsiveShellLayoutController();", "InitializeCaptureControllers();");
         AssertOccursBefore(controllerInitializationText, "InitializeCaptureControllers();", "InitializeOutputControllers();");
         AssertOccursBefore(controllerInitializationText, "InitializeOutputControllers();", "InitializePreviewScreenshotController();");
-        AssertOccursBefore(controllerInitializationText, "private void InitializeWindowShellControllers()", "private void InitializeFlashbackControllers()");
+        AssertOccursBefore(controllerInitializationText, "private void InitializeWindowAutomationControllers()", "private void InitializeFlashbackControllers()");
         AssertOccursBefore(controllerInitializationText, "private void InitializeFlashbackControllers()", "private void InitializeShellPresentationControllers()");
         AssertOccursBefore(controllerInitializationText, "private void InitializeShellPresentationControllers()", "private void InitializePreviewControllers()");
         AssertOccursBefore(controllerInitializationText, "private void InitializePreviewControllers()", "private void InitializeRecordingControllers()");
@@ -167,7 +167,6 @@ static partial class Program
         AssertDoesNotContain(startupText, "_automationDiagnosticsHub.Start();");
         AssertDoesNotContain(startupText, "CompositionTarget.Rendering");
         AssertDoesNotContain(startupText, "UncloakNativeShellWindow();");
-        AssertDoesNotContain(closeLifecycleText, "private void MainWindow_Loaded(");
         AssertDoesNotContain(closeLifecycleText, "private void StartAutomationServices()");
         AssertDoesNotContain(closeLifecycleText, "_automationServicesStarted");
 

@@ -85,7 +85,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     // so startup wiring stays auditable.
     private void InitializeShellControllers()
     {
-        InitializeWindowShellControllers();
+        InitializeWindowAutomationControllers();
         InitializeFlashbackControllers();
         InitializeShellPresentationControllers();
         InitializePreviewControllers();
@@ -100,7 +100,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeMainWindowPropertyChangedRouter();
     }
 
-    private void InitializeWindowShellControllers()
+    private void InitializeWindowAutomationControllers()
     {
         InitializeWindowAutomationController();
         InitializeWindowScreenshotController();

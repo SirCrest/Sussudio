@@ -5,7 +5,7 @@ static partial class Program
 {
     internal static Task MainWindowCloseLifecycleControllers_OwnCloseRequestAndAppClosing()
     {
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.WindowShell.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
         var appClosingControllerText = closeLifecycleControllerText;
         var closeRequestControllerText = closeLifecycleControllerText;
@@ -24,7 +24,7 @@ static partial class Program
         AssertContains(closeLifecycleText, "GetStatusText = () => ViewModel.StatusText,");
         AssertContains(closeLifecycleText, "StopRecordingBeforeCloseAsync = TryStopRecordingBeforeCloseAsync,");
         AssertContains(closeLifecycleText, "RequestWindowClose = RequestWindowClose");
-        AssertContains(closeLifecycleText, "private void RegisterCloseLifecycle(Microsoft.UI.Windowing.AppWindow appWindow)");
+        AssertContains(closeLifecycleText, "private void RegisterCloseLifecycle(AppWindow appWindow)");
         AssertContains(closeLifecycleText, "=> appWindow.Closing += MainWindow_Closing;");
         AssertContains(closeLifecycleText, "private async void MainWindow_Closing(");
         AssertContains(closeLifecycleText, "=> await _windowAppClosingController.HandleClosingAsync(args);");

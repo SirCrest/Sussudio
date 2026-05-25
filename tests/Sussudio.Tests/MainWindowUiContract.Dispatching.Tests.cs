@@ -1,8 +1,8 @@
 static partial class Program
 {
-    internal static Task MainWindowUiDispatching_LivesInWindowShellPartial()
+    internal static Task MainWindowUiDispatching_LivesInShellChromeAdapter()
     {
-        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.WindowShell.cs")
+        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs")
             .Replace("\r\n", "\n");
         var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowUiDispatchController.cs")
             .Replace("\r\n", "\n");

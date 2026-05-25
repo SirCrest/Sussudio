@@ -7,7 +7,7 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var nativeWindowText = ReadMainWindowShellChromeAdapterSource();
         var nativeWindowControllerText = ReadRepoFile("Sussudio/Controllers/Window/NativeWindowBootstrapController.cs").Replace("\r\n", "\n");
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.WindowShell.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
         var nativeBootstrapOwner = "Sussudio/Controllers/Window/NativeWindowBootstrapController.cs";

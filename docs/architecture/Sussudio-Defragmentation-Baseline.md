@@ -118,7 +118,7 @@ Partial clusters reduced: `MainWindow` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by screenshot ownership tests, automation dispatcher visual-capture tests, and runtime snapshot regression checks
 Behavior preserved: XAML `ScreenshotButton_Click`, preview screenshot controller wiring, `CaptureWindowScreenshotAsync`, cancellation, dispatcher failure handling, and image encoding remain unchanged
-Notes for future agents: keep XAML button adapters with `MainWindow.ButtonActions.cs` and `IAutomationWindowControl` screenshot routing with `MainWindow.WindowShell.cs`
+Notes for future agents: keep XAML button adapters with `MainWindow.ButtonActions.cs` and `IAutomationWindowControl` screenshot routing with `MainWindow.ShellChrome.Composition.cs`
 
 Date: 2026-05-24
 Area: MainWindow preview runtime snapshot adapter
