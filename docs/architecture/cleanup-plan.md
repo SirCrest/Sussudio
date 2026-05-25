@@ -63,7 +63,6 @@ Changed ownership:
 - `AutomationCommandCatalog.cs`
 - `AutomationPipeClientModels.cs`
 - `AutomationPipeProtocol.cs`
-- `AutomationPipeSecurityPolicy.cs`
 
 Diagnostic session scenario names, CLI help text, MCP-compatible description
 text, normalization, setup requirements, export verification metadata, ordering,

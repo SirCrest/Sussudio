@@ -1705,6 +1705,18 @@ Behavior preserved: all app source files still receive the `Sussudio.Services.Co
 Notes for future agents: keep broad project-level imports in the project file when they are pure metadata and do not document a behavioral boundary.
 
 Date: 2026-05-25
+Area: automation pipe security policy locality
+Problem: `AutomationPipeSecurityPolicy.cs` was a 14-line contract file containing only the fallback-security predicate for the named-pipe protocol, leaving pipe security fallback policy separated from the adjacent protocol constants and request-envelope owner that consumes the same automation contract surface.
+Files consolidated: `Sussudio.Automation.Contracts/AutomationPipeSecurityPolicy.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: none
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: automation contract and named-pipe security tests preserve the public `AutomationPipeSecurityPolicy` type and predicate matrix
+Behavior preserved: `AutomationPipeSecurityPolicy.ShouldDisableDefaultSecurityFallback(...)` remains public in `Sussudio.Tools`; named-pipe fallback decisions and test coverage are unchanged.
+Notes for future agents: keep tiny automation pipe policy helpers beside `AutomationPipeProtocol.cs` unless they grow into a broader security collaborator.
+
+Date: 2026-05-25
 Area: diagnostic-session run context locality
 Problem: `DiagnosticSessionRunState.cs` was a 63-line state holder constructed only by `DiagnosticSessionRunContext`, splitting terminal exception state, last-stage tracking, and best-effort artifact failure recording from the mutable run context that owns the lifecycle using that state.
 Files consolidated: `tools/Common/DiagnosticSessionRunState.cs`

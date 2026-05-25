@@ -148,14 +148,13 @@ Entry points:
   policy, CLI help, MCP descriptions, and path-policy assignments beside the
   command family they describe.
 - `AutomationPipeProtocol.cs` owns pipe names, auth env var, manifest revision,
-  command resolution, and request envelope shape.
+  command resolution, request envelope shape, and the fallback-security
+  predicate shared by app and tests.
 - `AutomationPipeClientModels.cs` owns the pipe command result handoff, pipe
   client exception taxonomy, tolerant response-state parsing, synthetic
   error-envelope factory, exception-to-error-code mapping, and
   throw-vs-synthetic unknown-command policy shared by command transports and
   retry policy.
-- `AutomationPipeSecurityPolicy.cs` owns the fallback-security predicate shared
-  by app and tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns the golden
   numeric command-ID adapter. Routing tests should assert captured
   `request.command` values through `AssertAutomationCommandId`, not raw numbers

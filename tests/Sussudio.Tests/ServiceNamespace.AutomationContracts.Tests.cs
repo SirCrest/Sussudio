@@ -14,8 +14,7 @@ static partial class Program
             "AutomationCommandKind.cs",
             "AutomationCommandCatalog.cs",
             "AutomationPipeProtocol.cs",
-            "AutomationPipeClientModels.cs",
-            "AutomationPipeSecurityPolicy.cs"
+            "AutomationPipeClientModels.cs"
         })
         {
             var contractPath = Path.Combine(repoRoot, "Sussudio.Automation.Contracts", contractFile);
@@ -60,6 +59,8 @@ static partial class Program
             0,
             CountCompileInclude(appIncludes, @"..\tools\Common\AutomationPipeSecurityPolicy.cs"),
             "app project must not link AutomationPipeSecurityPolicy from tools/Common");
+        var protocolText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio.Automation.Contracts", "AutomationPipeProtocol.cs"));
+        AssertContains(protocolText, "public static class AutomationPipeSecurityPolicy");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "tools", "Common", "AutomationPipeClient", "AutomationPipeClient.Models.cs")),
