@@ -1637,11 +1637,11 @@ fallback/clamping, startup metric/counter reset, video diagnostics reset,
 start-failure rollback, PTS continuation, background task startup, and
 start-transaction orchestration there.
 
-Flashback encoder runtime state now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.cs`. Keep public
-runtime counters, queue telemetry, encoder status/format projections, saturated
-PTS conversion, non-negative byte/duration math, and best-effort eviction resume
-fallback there.
+Flashback encoder root state now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.cs`. Keep construction,
+field ownership, public runtime counters, queue telemetry, encoder
+status/format projections, saturated PTS conversion, non-negative byte/duration
+math, and best-effort eviction resume fallback there.
 
 Flashback encoder startup orchestration now owns generated session ID
 formatting, encoder option creation, segment extension policy, transport
@@ -1714,7 +1714,7 @@ rejection/failure/success results, end-PTS capture, eviction resume, PTS
 clamping, and ready logging there.
 
 Flashback encoder public runtime state now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.cs`. Keep public
+`Sussudio/Services/Flashback/FlashbackEncoderSink.cs`. Keep public
 frame/audio/disk counters, drop counters, rotation-failure counts, frame-encoded
 events, queue-depth/capacity/max-depth projections, queue rejection summaries,
 GPU queue projections, video queue latency/backpressure metrics, encoding

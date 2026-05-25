@@ -87,8 +87,8 @@ public sealed class FlashbackEncoderSinkContractsTests
         => global::Program.FlashbackEncoderSink_StartupLivesInFocusedPartial();
 
     [Fact]
-    public Task FlashbackEncoderSinkRootHelpersLiveInFocusedPartials()
-        => global::Program.FlashbackEncoderSink_RootHelpersLiveInFocusedPartials();
+    public Task FlashbackEncoderSinkRootOwnsConstructionAndRuntimeSurface()
+        => global::Program.FlashbackEncoderSink_RootOwnsConstructionAndRuntimeSurface();
 
     [Fact]
     public Task FlashbackEncoderSinkForceRotateLivesInFocusedPartial()
@@ -103,8 +103,8 @@ public sealed class FlashbackEncoderSinkContractsTests
         => global::Program.FlashbackEncoderSink_ProducerInputsLiveInCohesivePartial();
 
     [Fact]
-    public Task FlashbackEncoderSinkRuntimeStateLivesInCohesivePartial()
-        => global::Program.FlashbackEncoderSink_RuntimeStateLivesInCohesivePartial();
+    public Task FlashbackEncoderSinkRuntimeStateLivesWithRoot()
+        => global::Program.FlashbackEncoderSink_RuntimeStateLivesWithRoot();
 
     [Fact]
     public Task FlashbackEncoderSinkRecordingLifecycleLivesInCohesivePartial()

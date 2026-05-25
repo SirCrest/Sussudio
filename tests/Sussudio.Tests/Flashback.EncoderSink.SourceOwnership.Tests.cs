@@ -44,15 +44,14 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackEncoderSink_RootHelpersLiveInFocusedPartials()
+    internal static Task FlashbackEncoderSink_RootOwnsConstructionAndRuntimeSurface()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
         var startupPolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs")
             .Replace("\r\n", "\n");
         var diagnosticsResetText = startupPolicyText;
-        var runtimeStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.cs")
-            .Replace("\r\n", "\n");
+        var runtimeStateText = rootText;
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
             ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
@@ -61,7 +60,6 @@ static partial class Program
         AssertContains(rootText, "public FlashbackEncoderSink(FlashbackBufferManager bufferManager)");
         AssertDoesNotContain(rootText, "private static int ResolveVideoQueueCapacity");
         AssertDoesNotContain(rootText, "private void ResetEncodingCounters()");
-        AssertDoesNotContain(rootText, "private static long NonNegativeByteDelta");
 
         AssertContains(startupPolicyText, "private static int ResolveVideoQueueCapacity(FlashbackSessionContext context, bool useHardwareFrames)");
         AssertContains(startupPolicyText, "private static bool IsHighResolutionFrame(FlashbackSessionContext context)");
@@ -82,7 +80,8 @@ static partial class Program
         AssertContains(docsText, "FlashbackEncoderSink.Startup.cs");
         AssertContains(docsText, "session validation");
         AssertContains(docsText, "startup metric/counter reset");
-        AssertContains(docsText, "FlashbackEncoderSink.RuntimeState.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.cs");
+        AssertContains(docsText, "public runtime counters");
 
         return Task.CompletedTask;
     }
@@ -363,12 +362,11 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackEncoderSink_RuntimeStateLivesInCohesivePartial()
+    internal static Task FlashbackEncoderSink_RuntimeStateLivesWithRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
-        var runtimeStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.cs")
-            .Replace("\r\n", "\n");
+        var runtimeStateText = rootText;
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
             ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
@@ -391,10 +389,12 @@ static partial class Program
         AssertContains(runtimeStateText, "private static (TimeSpan StartPts, TimeSpan EndPts) ResumeEvictionBestEffort(");
         AssertContains(runtimeStateText, "internal Task EncodingCompletionTask =>");
 
-        AssertDoesNotContain(rootText, "public event EventHandler<long>? FrameEncoded;");
-        AssertContains(docsText, "FlashbackEncoderSink.RuntimeState.cs");
+        AssertContains(rootText, "public event EventHandler<long>? FrameEncoded;");
+        AssertContains(docsText, "FlashbackEncoderSink.cs");
+        AssertContains(docsText, "queue telemetry");
         foreach (var removedFile in new[]
         {
+            "FlashbackEncoderSink.RuntimeState.cs",
             "FlashbackEncoderSink.RuntimeState.Counters.cs",
             "FlashbackEncoderSink.RuntimeState.QueueMetrics.cs",
             "FlashbackEncoderSink.RuntimeState.Status.cs",
@@ -404,7 +404,7 @@ static partial class Program
             AssertEqual(
                 false,
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
-                $"{removedFile} folded into FlashbackEncoderSink.RuntimeState.cs");
+                $"{removedFile} folded into FlashbackEncoderSink.cs");
         }
 
         return Task.CompletedTask;
