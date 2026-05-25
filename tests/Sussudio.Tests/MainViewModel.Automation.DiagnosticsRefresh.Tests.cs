@@ -267,3 +267,160 @@ static partial class Program
         AssertDoesNotContain(mcpDiagnosticSessionText, "int sampleIntervalMs = 1000");
     }
 }
+static partial class Program
+{
+    private static void AssertDiagnosticSessionCoreOwnership(DiagnosticSessionSourceFamily diagnosticSessionSources)
+    {
+        var diagnosticSessionText = diagnosticSessionSources.SourceFamilyText;
+        var diagnosticSessionModelsText = diagnosticSessionSources.ModelsText;
+        var diagnosticScenariosText = diagnosticSessionSources.ScenariosText;
+        AssertContains(diagnosticSessionText, "var scenario = DiagnosticSessionScenarioCatalog.Normalize(options.Scenario);");
+        AssertContains(diagnosticSessionText, "var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);");
+        AssertContains(diagnosticSessionText, "var backgroundTasks = new DiagnosticSessionBackgroundTasks();");
+        AssertContains(diagnosticSessionText, "DiagnosticSessionScenarioCatalog.NeedsFlashback(scenario)");
+        AssertContains(diagnosticSessionText, "DiagnosticSessionScenarioCatalog.NeedsPreview(scenario)");
+        AssertContains(diagnosticSessionText, "DiagnosticSessionScenarioCatalog.NeedsRecording(scenario)");
+        AssertContains(diagnosticSessionText, "scenarioPlan.RequiresFlashbackRecordingReadiness");
+        AssertContains(diagnosticSessionText, "scenarioPlan.UsesFlashbackScenarioWarningPolicy");
+        AssertContains(diagnosticSessionText, "scenarioPlan.ToleratesSourceSignalHealthWarning");
+        AssertContains(diagnosticSessionText, "scenarioPlan.ToleratesFlashbackForceRotateDrainWarning");
+        AssertContains(diagnosticSessionText, "scenarioPlan.IsPreviewCycleScenario");
+        AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionBackgroundTasks");
+        AssertContains(diagnosticSessionText, "internal static class DiagnosticSessionScenarioSetup");
+        AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionRunState");
+        AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionLiveStateWriter");
+        AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionRunContext : IDisposable");
+        AssertContains(diagnosticSessionText, "RunState = new DiagnosticSessionRunState(");
+        AssertContains(diagnosticSessionText, "_liveStateWriter = new DiagnosticSessionLiveStateWriter(");
+        AssertContains(diagnosticSessionText, ".CompleteRegisteredScenarioWorkAsync(");
+        AssertContains(diagnosticSessionText, "backgroundTasks.ObserveAfterFaultAsync(");
+        AssertContains(diagnosticScenariosText, "internal static partial class DiagnosticSessionScenarioCatalog");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackPlayback = \"flashback-playback\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackStress = \"flashback-stress\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackScrubStress = \"flashback-scrub-stress\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackRestartCycle = \"flashback-restart-cycle\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackEncoderCycle = \"flashback-encoder-cycle\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackExportPlayback = \"flashback-export-playback\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackSegmentPlayback = \"flashback-segment-playback\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackRangeExport = \"flashback-range-export\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackRangeExportAudioSwitch = \"flashback-range-export-audio-switch\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackLifecycle = \"flashback-lifecycle\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackExportConcurrent = \"flashback-export-concurrent\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackDisableDuringExport = \"flashback-disable-during-export\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackRotatedExport = \"flashback-rotated-export\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackPreviewCycle = \"flashback-preview-cycle\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackPlaybackPreviewCycle = \"flashback-playback-preview-cycle\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackRecording = \"flashback-recording\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackRecordingPreviewCycle = \"flashback-recording-preview-cycle\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackRecordingSettingsDeferred = \"flashback-recording-settings-deferred\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackRecordingExportRejected = \"flashback-recording-export-rejected\";");
+        AssertContains(diagnosticScenariosText, "internal const string FlashbackExportRejected = \"flashback-export-rejected\";");
+        AssertContains(diagnosticSessionText, "internal readonly record struct DiagnosticSessionScenarioPlan(");
+        AssertContains(diagnosticSessionText, "catch (AutomationPipeException ex) when (ex is not AutomationPipeConnectException)");
+        AssertContains(diagnosticSessionText, "return BuildLocalFailureResponse(command, ex.Message);");
+        AssertContains(diagnosticSessionText, "catch (JsonException ex)");
+        AssertContains(diagnosticSessionModelsText, "public sealed partial class DiagnosticSessionResult");
+        AssertContains(diagnosticSessionModelsText, "public string TerminalState { get; set; }");
+        AssertContains(diagnosticSessionText, "LivePath = _liveStateWriter.LivePath;");
+        AssertContains(diagnosticSessionText, "CreateUnknownInitialSnapshot()");
+        AssertContains(diagnosticSessionText, "InitialSnapshotKnown = initialSnapshotResult.Known;");
+        AssertContains(diagnosticSessionText, "skipped state-mutating scenario");
+        AssertContains(diagnosticSessionText, "CreateCleanupCts(TimeSpan.FromMilliseconds(recordingCleanupTimeoutMs))");
+        AssertContains(diagnosticSessionText, "AutomationCommandKind.SetRecordingEnabled,");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"enabled\"] = false }");
+        AssertContains(diagnosticSessionText, "recordingCleanupTimeoutMs,");
+        AssertContains(diagnosticSessionText, "private static async Task<bool> StopRecordingForCleanupAsync(");
+        AssertContains(diagnosticSessionText, "var shouldStopRecordingForVerification = startedRecording && options.VerifyRecording;");
+        AssertContains(diagnosticSessionText, "if (!startedRecording || (!shouldStopRecordingForVerification && options.LeaveRunning))");
+        AssertContains(diagnosticSessionText, "recording stopped for verification");
+        AssertContains(diagnosticSessionText, "var stoppedRecordingForVerification = await StopRecordingForCleanupAsync(");
+        AssertContains(diagnosticSessionText, "var stoppedRecordingForVerification = shouldStopRecordingForVerification &&");
+        AssertContains(diagnosticSessionText, "var diagnosticHealthSnapshot = request.StoppedRecordingForVerification");
+        AssertContains(diagnosticSessionText, ".WaitAsync(cancellationToken)");
+        AssertContains(diagnosticSessionText, "context.ScenarioCancellationSource.Cancel();");
+        AssertContains(diagnosticSessionText, "WriteSamplingLiveStateBestEffortAsync");
+        AssertContains(diagnosticSessionText, "context.RecordTerminalException(ex, context.GetLastStage())");
+        AssertContains(diagnosticSessionText, "RecordTerminalException(ex, \"final-snapshot\");");
+        AssertContains(diagnosticSessionText, "WriteArtifactBestEffortAsync(\"write-samples\", paths.SamplesPath, samples)");
+        AssertContains(diagnosticSessionText, "await WriteJsonAsync(result.SummaryPath, result, CancellationToken.None)");
+    }
+}
+static partial class Program
+{
+    private static void AssertDiagnosticSessionExportRecordingOwnership(DiagnosticSessionSourceFamily diagnosticSessionSources)
+    {
+        var diagnosticSessionText = diagnosticSessionSources.SourceFamilyText;
+        var diagnosticScenariosText = diagnosticSessionSources.ScenariosText;
+
+        AssertContains(diagnosticSessionText, "FlashbackRecordingFileGrowthObserved");
+        AssertContains(diagnosticSessionText, "FlashbackRecordingVideoFramesSubmittedDelta");
+        AssertContains(diagnosticSessionText, "FlashbackRecordingVideoEncoderPacketsWrittenDelta");
+        AssertContains(diagnosticSessionText, "FlashbackRecordingIntegritySequenceGapsAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackRecordingIntegrityQueueDroppedFramesAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackRecordingIntegritySequenceGapsDelta");
+        AssertContains(diagnosticSessionText, "FlashbackRecordingIntegrityQueueDroppedFramesDelta");
+        AssertContains(diagnosticSessionText, "firstRecordingSample,\n                \"RecordingIntegritySequenceGaps\")");
+        AssertContains(diagnosticSessionText, "firstRecordingSample,\n                \"RecordingIntegrityQueueDroppedFrames\")");
+        AssertContains(diagnosticSessionText, "Flashback Recording:");
+        AssertContains(diagnosticSessionText, "FlashbackExportMaxElapsedMsObserved");
+        AssertContains(diagnosticSessionText, "FlashbackExportMessageAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackExportFailureKindAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackExportOutputPathAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackExportForceRotateFallbacksAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackExportForceRotateFallbacksDelta");
+        AssertContains(diagnosticSessionText, "FlashbackExportLastForceRotateFallbackSegmentsAtEnd");
+        AssertContains(diagnosticSessionText, "LastExportIdAtEnd");
+        AssertContains(diagnosticSessionText, "LastExportSuccessAtEnd");
+        AssertContains(diagnosticSessionText, "LastExportMessageAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackExportMaxLastProgressAgeMsObserved");
+        AssertContains(diagnosticSessionText, "FlashbackExportMaxOutputBytesObserved");
+        AssertContains(diagnosticSessionText, "FlashbackExportMaxThroughputBytesPerSecObserved");
+        AssertContains(diagnosticSessionText, "BuildFlashbackExportSessionMetrics(initialSnapshot, samples, lastSnapshot)");
+        AssertContains(diagnosticSessionText, "var healthSnapshot = lastSnapshot;");
+        AssertContains(diagnosticSessionText, "RecordTerminalException(ex, \"final-snapshot\");");
+        AssertContains(diagnosticSessionText, "exportId > baselineExportId");
+        AssertContains(diagnosticSessionText, "baselineExportActive && exportId == baselineExportId");
+        AssertContains(diagnosticSessionText, "lastExportId == exportId");
+        AssertContains(diagnosticSessionText, "DiagnosticSessionScenarioCatalog.TryGetFlashbackExportVerificationPath(");
+        AssertContains(diagnosticSessionText, "var shouldRunVerification =");
+        AssertContains(diagnosticSessionText, "recording verification skipped: scenario does not produce a recording or export artifact");
+        AssertContains(diagnosticSessionText, "verificationCommand = \"VerifyFile\"");
+        AssertContains(diagnosticSessionText, "[\"verificationProfile\"] = \"flashback-export\"");
+        AssertContains(diagnosticScenariosText, "FlashbackRangeExport,");
+        AssertContains(diagnosticScenariosText, "FlashbackExportVerificationFileName: \"flashback-range-export.mp4\"");
+        AssertContains(diagnosticScenariosText, "FlashbackRangeExportAudioSwitch,");
+        AssertContains(diagnosticScenariosText, "FlashbackExportVerificationFileName: \"flashback-range-export-audio-switch.mp4\"");
+        AssertContains(diagnosticScenariosText, "FlashbackExportConcurrent,");
+        AssertContains(diagnosticScenariosText, "FlashbackExportVerificationFileName: \"flashback-concurrent-a.mp4\"");
+        AssertContains(diagnosticScenariosText, "FlashbackRotatedExport,");
+        AssertContains(diagnosticScenariosText, "FlashbackExportVerificationFileName: \"flashback-rotated-export.mp4\"");
+        AssertContains(diagnosticScenariosText, "return exportPath.Length > 0;");
+        AssertDoesNotContain(diagnosticScenariosText, "return exportPath.Length > 0 && File.Exists(exportPath);");
+        AssertContains(diagnosticSessionText, "expected BufferInactive failure kind");
+        AssertContains(diagnosticSessionText, "expected UnavailableDuringRecording failure kind");
+        AssertContains(diagnosticSessionText, "flashback rejected export observed status={status} kind={failureKind}");
+        AssertContains(diagnosticSessionText, "flashback recording rejected export observed status={status} kind={failureKind}");
+        AssertContains(diagnosticSessionText, "Flashback Export:");
+        AssertContains(diagnosticSessionText, "failureKindEnd={FormatOptional(result.FlashbackExportFailureKindAtEnd)}");
+        AssertContains(diagnosticSessionText, "messageEnd={FormatOptional(result.FlashbackExportMessageAtEnd)}");
+        AssertContains(diagnosticSessionText, "forceRotateFallbacksDelta={result.FlashbackExportForceRotateFallbacksDelta}");
+        AssertContains(diagnosticSessionText, "lastResultIdEnd={result.LastExportIdAtEnd}");
+        AssertContains(diagnosticSessionText, "lastSuccessEnd={FormatOptional(result.LastExportSuccessAtEnd)}");
+        AssertContains(diagnosticSessionText, "lastMessageEnd={FormatOptional(result.LastExportMessageAtEnd)}");
+        AssertContains(diagnosticSessionText, "pathEnd={FormatOptional(result.FlashbackExportOutputPathAtEnd)}");
+        AssertContains(diagnosticSessionText, "maxThroughput={FormatBytes((long)result.FlashbackExportMaxThroughputBytesPerSecObserved)}/s");
+        AssertContains(diagnosticSessionText, "BuildFlashbackRecordingMetrics(initialSnapshot, samples)");
+        AssertContains(diagnosticSessionText, "seqGapsDelta={result.FlashbackRecordingIntegritySequenceGapsDelta}");
+        AssertContains(diagnosticSessionText, "queueDropsDelta={result.FlashbackRecordingIntegrityQueueDroppedFramesDelta}");
+        AssertContains(diagnosticSessionText, "Flashback video sequence gaps increased delta={metrics.IntegritySequenceGapsDelta}");
+        AssertContains(diagnosticSessionText, "Flashback dropped frames increased delta={metrics.IntegrityQueueDroppedFramesDelta}");
+        AssertContains(diagnosticSessionText, "private static void ValidateCleanupLifecycleRestored(");
+        AssertContains(diagnosticSessionText, "cleanup: preview remained active after restore");
+        AssertContains(diagnosticSessionText, "cleanup: Flashback remained active after restore");
+        AssertContains(diagnosticSessionText, "cleanup: playback did not return live state={state}");
+        AssertContains(diagnosticSessionText, "metrics.MaxPendingCommandsObserved = Math.Max(");
+        AssertContains(diagnosticSessionText, "if (maxCommandQueueLatencyMs > metrics.MaxCommandQueueLatencyMsObserved)");
+        AssertContains(diagnosticSessionText, "metrics.MaxCommandQueueLatencyMsObserved = maxCommandQueueLatencyMs;");
+        AssertContains(diagnosticSessionText, "metrics.MaxCommandQueueLatencyCommandObserved = GetString(snapshot, \"FlashbackPlaybackMaxCommandQueueLatencyCommand\") ?? string.Empty;");
+    }
+}

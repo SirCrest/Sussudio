@@ -1372,7 +1372,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
   owns the serialized diagnostics refresh ownership check, core ownership
   orchestration, runtime/HDR verification checks, refresh pipeline/gate,
-  snapshot/dispatcher assertions, and preview-runtime projection assertions.
+  snapshot/dispatcher assertions, preview-runtime projection assertions, and
+  diagnostic-session core/export/recording ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.AlertEvents.Tests.cs`
   owns diagnostics alert/event ownership assertions for UpdateAlerts,
   diagnostic events, signal alerts, and Flashback alert routing.
@@ -1393,17 +1394,11 @@ Primary current owners:
   flattening ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceReaderOwnership.Tests.cs`
   owns source-reader partial ownership assertions used by diagnostics refresh.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionCore.Tests.cs`
-  owns diagnostic-session orchestration, model, and startup/stop contract
-  assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionPlayback.Tests.cs`
   owns diagnostic-session Flashback playback metrics and result assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionPreview.Tests.cs`
   owns diagnostic-session preview, visual cadence, D3D, and process metric
   assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionExportRecording.Tests.cs`
-  owns diagnostic-session Flashback export, recording, artifact, cleanup, and
-  storage metric assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionScenarios.Tests.cs`
   owns diagnostic-session scenario, health-policy, Flashback stress, and
   warning-tolerance assertions.
