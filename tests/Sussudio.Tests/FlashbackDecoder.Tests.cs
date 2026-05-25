@@ -56,8 +56,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var videoOutputText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs")
             .Replace("\r\n", "\n");
-        var videoConversionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoConversion.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(validationText, "private static int CalculateFrameBufferSize(int width, int height, bool isHdr)");
         AssertContains(validationText, "private static void ValidateVideoDimensions(int width, int height)");
@@ -71,11 +69,14 @@ static partial class Program
         AssertDoesNotContain(videoOutputText, "private static bool TryValidateSoftwareVideoFrame(");
         AssertDoesNotContain(videoOutputText, "private static bool TryValidatePlane(AVFrame* frame, int planeIndex, int minLineSize, out string failure)");
         AssertDoesNotContain(videoOutputText, "private static bool TryValidateD3D11VideoFrame(AVFrame* frame, int width, int height, out string failure)");
-        AssertDoesNotContain(videoOutputText, "private static void InterleaveUvRow(");
-        AssertContains(videoConversionText, "private void CopyFramePlanesToBuffer(");
-        AssertContains(videoConversionText, "private void ConvertYuv420pToNv12(");
-        AssertContains(videoConversionText, "private void ConvertYuv420p10leToP010(");
-        AssertContains(videoConversionText, "private static void InterleaveUvRow(");
+        AssertContains(videoOutputText, "private void CopyFramePlanesToBuffer(");
+        AssertContains(videoOutputText, "private void ConvertYuv420pToNv12(");
+        AssertContains(videoOutputText, "private void ConvertYuv420p10leToP010(");
+        AssertContains(videoOutputText, "private static void InterleaveUvRow(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.VideoConversion.cs")),
+            "FlashbackDecoder.VideoConversion.cs folded into FlashbackDecoder.VideoOutput.cs");
         AssertDoesNotContain(rootText, "private static bool TryGetInputStreamCount(AVFormatContext* formatCtx, out int streamCount, out string failureMessage)");
         AssertDoesNotContain(rootText, "private static bool IsValidStreamIndex(int streamIndex, int streamCount)");
 

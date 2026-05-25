@@ -1717,9 +1717,8 @@ decoder context setup now live in
 selection and hardware-configuration diagnostics there beside hardware decoder
 context setup. Decoded video frame
 output, PTS-to-TimeSpan conversion, and best-effort frame timestamp selection now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs`. Software plane
-copies and YUV-to-NV12/P010 conversion kernels now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.VideoConversion.cs`. Keep file
+`Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs` with software
+plane copies and YUV-to-NV12/P010 conversion kernels. Keep file
 open/close and disposal lifecycle in the root decoder. Video
 frame receive, packet feeding, inline audio interleave during video reads, recoverable
 seek log suppression, and decode phase timing state now live in
