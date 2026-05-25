@@ -2488,3 +2488,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: source-ownership tests cover the updated tool/model declarations; no public command names, tool names, automation IDs, or wire payloads changed
 Behavior preserved: declaration keyword cleanup only; method bodies, route names, MCP attributes, diagnostic-session scenarios, formatter output, and command payload shaping remain unchanged
 Notes for future agents: do not reintroduce `partial` on one-file owners unless a generated/XAML/platform split or a genuine two-to-three-way type split exists.
+
+Date: 2026-05-25
+Area: WASAPI endpoint watcher locality
+Problem: `AudioDeviceWatcher.cs` was a 99-line Core Audio notification wrapper that only used the centralized WASAPI COM helpers and contracts from the adjacent interop family. Understanding audio endpoint enumeration, notification registration, COM callback handling, and endpoint-volume helpers required opening a small sidecar file plus `WasapiComInterop.cs`.
+Files consolidated: `Sussudio/Services/Audio/AudioDeviceWatcher.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; audio service support file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; no public automation command names, IDs, or wire payloads changed
+Behavior preserved: `AudioDeviceWatcher` type name, constructor, `DevicesChanged` event, COM endpoint registration/unregistration, 500 ms debounce, notification callback handling, disposal guard, and view-model dependency graph construction remain unchanged
+Notes for future agents: keep the debounced endpoint watcher with `WasapiComInterop.cs` while it is only a thin user of the centralized WASAPI/Core Audio COM declarations; split it again only if watcher behavior grows into an independently tested runtime policy.
