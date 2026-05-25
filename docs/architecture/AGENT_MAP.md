@@ -1437,9 +1437,6 @@ Primary current owners:
   `.Mjpeg.Tests.cs`,
   `.Recording.Tests.cs`, `.Preview.Tests.cs`, and
   `.Flashback.Tests.cs`.
-- `tests/Sussudio.Tests/MainViewModel.Automation.FlashbackCleanup.Tests.cs`
-  owns Flashback startup-cache and session-recovery cleanup ownership
-  assertions that used to live in the automation test catch-all.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SettingsProjection.Tests.cs`
   owns capture settings projection ownership assertions, including the focused
   frame-rate request projector used by `BuildCaptureSettings`.
@@ -2176,6 +2173,7 @@ Primary current owners:
   Flashback buffer purge retention and active-byte accounting tests.
 - `tests/Sussudio.Tests/Flashback.Buffer.Retention.StartupCleanup.Tests.cs`
   owns Flashback buffer startup-generated segment cleanup, legacy root cleanup,
+  stale session directory cleanup, session-recovery scanner ownership,
   unrelated temp-directory preservation, and startup-cache budget tests.
 - `tests/Sussudio.Tests/Flashback.Buffer.Validation.Tests.cs` owns Flashback
   buffer session-id and segment-extension validation tests.
