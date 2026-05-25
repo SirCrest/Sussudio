@@ -3027,7 +3027,12 @@ for validation/result projections and analysis warning emission live in
 analysis handoff record plus Flashback playback/export warning text, threshold
 guards, tolerated Flashback scenario warning classification, and the named
 validation handoff order for Flashback playback, cleanup lifecycle restore,
-preview scheduler analysis, and diagnostic health.
+preview scheduler analysis, and diagnostic health. Preview-scheduler analysis
+handoff values and validation orchestration live there too: MJPEG jitter-buffer
+counter/delta reads, last drop/underflow reason and age reads,
+max/schedule-late aggregation, target-FPS fallback, visual-cadence tolerance
+checks, sparse deadline/drop tolerance selection, and the call into shared
+Flashback preview validation.
 `DiagnosticSessionResultBuilder.cs` owns the result-build request handoff
 created by `DiagnosticSessionRunner.cs` beside the summary orchestration that
 consumes it. Diagnostic
@@ -3036,12 +3041,6 @@ composition, diagnostic-health warning tolerance, sparse source-cadence warning
 tolerance, sparse preview-scheduler warning tolerance, source-reader/ingest
 warning deltas, tolerated-warning reason selection, and emitted health warning
 text live in `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`.
-Preview-scheduler analysis handoff values and validation orchestration live in
-`DiagnosticSessionResultBuilder.PreviewScheduler.cs`: MJPEG jitter-buffer
-counter/delta reads, last drop/underflow reason and age reads,
-max/schedule-late aggregation, target-FPS fallback, visual-cadence tolerance
-checks, sparse deadline/drop tolerance selection, and the call into shared
-Flashback preview validation.
 `DiagnosticSessionResultAnalysis.PreviewScheduler` is the single record
 property that carries those values into the scheduler result projection without
 rereading MJPEG jitter-buffer snapshot keys. Preview cadence, visual cadence,
@@ -3460,7 +3459,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.Analysis.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
-- `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionLiveStateWriter.cs`
 - `DiagnosticSessionRunContext.cs`

@@ -29,8 +29,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticHealthText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs")
             .Replace("\r\n", "\n");
-        var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(builderText, "internal static partial class DiagnosticSessionResultBuilder");
         AssertContains(builderText, "internal static async Task<DiagnosticSessionResult> BuildAndWriteAsync(");
@@ -38,8 +36,8 @@ static partial class Program
         AssertContains(flatteningText, "private static DiagnosticSessionResult FlattenResultProjectionSet(");
         AssertContains(projectionSetText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
         AssertContains(projectionSetText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
-        AssertContains(previewSchedulerText, "private static DiagnosticSessionPreviewSchedulerAnalysis BuildPreviewSchedulerAnalysis(");
-        AssertContains(previewSchedulerText, "private readonly record struct DiagnosticSessionPreviewSchedulerAnalysis(");
+        AssertContains(analysisText, "private static DiagnosticSessionPreviewSchedulerAnalysis BuildPreviewSchedulerAnalysis(");
+        AssertContains(analysisText, "private readonly record struct DiagnosticSessionPreviewSchedulerAnalysis(");
         AssertContains(resultBuildRequestText, "internal sealed record DiagnosticSessionResultBuildRequest(");
         AssertContains(analysisText, "private sealed record DiagnosticSessionResultAnalysis(");
         AssertContains(projectionSetText, "DiagnosticSessionOverviewResultProjection Overview,");
@@ -87,32 +85,30 @@ static partial class Program
     {
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
-        var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs")
-            .Replace("\r\n", "\n");
         var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(analysisText, "previewScheduler,");
-        AssertContains(previewSchedulerText, "private readonly record struct DiagnosticSessionPreviewSchedulerAnalysis(");
-        AssertContains(previewSchedulerText, "string LastDropReasonAtEnd,");
-        AssertContains(previewSchedulerText, "string LastUnderflowReasonAtEnd,");
-        AssertContains(previewSchedulerText, "double LastUnderflowInputAgeMsAtEnd,");
-        AssertContains(previewSchedulerText, "double LastUnderflowOutputAgeMsAtEnd");
-        AssertContains(previewSchedulerText, "LastDropReasonAtEnd: GetString(lastSnapshot, \"MjpegPreviewJitterLastDropReason\") ?? string.Empty");
-        AssertContains(previewSchedulerText, "LastUnderflowReasonAtEnd: GetString(lastSnapshot, \"MjpegPreviewJitterLastUnderflowReason\") ?? string.Empty");
-        AssertContains(previewSchedulerText, "LastUnderflowInputAgeMsAtEnd: GetDouble(lastSnapshot, \"MjpegPreviewJitterLastUnderflowInputAgeMs\")");
-        AssertContains(previewSchedulerText, "LastUnderflowOutputAgeMsAtEnd: GetDouble(lastSnapshot, \"MjpegPreviewJitterLastUnderflowOutputAgeMs\")");
-        AssertContains(previewSchedulerText, "private static void ValidateFlashbackPreviewSchedulerAnalysis(");
-        AssertContains(previewSchedulerText, "var previewTargetFps = GetDouble(lastSnapshot, \"ExpectedCaptureFrameRate\");");
-        AssertContains(previewSchedulerText, "previewTargetFps = GetDouble(lastSnapshot, \"SelectedExactFrameRate\");");
-        AssertContains(previewSchedulerText, "var toleratesPreviewCycleSchedulerSettling =");
-        AssertContains(previewSchedulerText, "scenarioPlan.IsPreviewCycleScenario && visualCadenceHealthy");
-        AssertContains(previewSchedulerText, "var toleratesSparsePreviewSchedulerDeadlineDrops =");
-        AssertContains(previewSchedulerText, "IsSparsePreviewSchedulerDeadlineDropRun(");
-        AssertContains(previewSchedulerText, "var toleratesSparseScrubSchedulerTransitions =");
-        AssertContains(previewSchedulerText, "scenarioPlan.ToleratesSparsePreviewSchedulerStressTransitions &&");
-        AssertContains(previewSchedulerText, "IsSparsePreviewSchedulerStressRun(");
-        AssertContains(previewSchedulerText, "ValidateFlashbackPreviewScheduler(");
+        AssertContains(analysisText, "private readonly record struct DiagnosticSessionPreviewSchedulerAnalysis(");
+        AssertContains(analysisText, "string LastDropReasonAtEnd,");
+        AssertContains(analysisText, "string LastUnderflowReasonAtEnd,");
+        AssertContains(analysisText, "double LastUnderflowInputAgeMsAtEnd,");
+        AssertContains(analysisText, "double LastUnderflowOutputAgeMsAtEnd");
+        AssertContains(analysisText, "LastDropReasonAtEnd: GetString(lastSnapshot, \"MjpegPreviewJitterLastDropReason\") ?? string.Empty");
+        AssertContains(analysisText, "LastUnderflowReasonAtEnd: GetString(lastSnapshot, \"MjpegPreviewJitterLastUnderflowReason\") ?? string.Empty");
+        AssertContains(analysisText, "LastUnderflowInputAgeMsAtEnd: GetDouble(lastSnapshot, \"MjpegPreviewJitterLastUnderflowInputAgeMs\")");
+        AssertContains(analysisText, "LastUnderflowOutputAgeMsAtEnd: GetDouble(lastSnapshot, \"MjpegPreviewJitterLastUnderflowOutputAgeMs\")");
+        AssertContains(analysisText, "private static void ValidateFlashbackPreviewSchedulerAnalysis(");
+        AssertContains(analysisText, "var previewTargetFps = GetDouble(lastSnapshot, \"ExpectedCaptureFrameRate\");");
+        AssertContains(analysisText, "previewTargetFps = GetDouble(lastSnapshot, \"SelectedExactFrameRate\");");
+        AssertContains(analysisText, "var toleratesPreviewCycleSchedulerSettling =");
+        AssertContains(analysisText, "scenarioPlan.IsPreviewCycleScenario && visualCadenceHealthy");
+        AssertContains(analysisText, "var toleratesSparsePreviewSchedulerDeadlineDrops =");
+        AssertContains(analysisText, "IsSparsePreviewSchedulerDeadlineDropRun(");
+        AssertContains(analysisText, "var toleratesSparseScrubSchedulerTransitions =");
+        AssertContains(analysisText, "scenarioPlan.ToleratesSparsePreviewSchedulerStressTransitions &&");
+        AssertContains(analysisText, "IsSparsePreviewSchedulerStressRun(");
+        AssertContains(analysisText, "ValidateFlashbackPreviewScheduler(");
         AssertContains(analysisText, "DiagnosticSessionPreviewSchedulerAnalysis PreviewScheduler,");
         AssertContains(previewResultText, "private readonly record struct DiagnosticSessionPreviewSchedulerResultProjection(");
         AssertContains(previewResultText, "private static DiagnosticSessionPreviewSchedulerResultProjection BuildPreviewSchedulerResultProjection(");
@@ -125,12 +121,12 @@ static partial class Program
         AssertContains(previewResultText, "PreviewSchedulerLastUnderflowOutputAgeMsAtEnd: previewScheduler.LastUnderflowOutputAgeMsAtEnd");
         AssertDoesNotContain(analysisText, "long PreviewSchedulerDroppedAtEnd");
         AssertDoesNotContain(analysisText, "double PreviewSchedulerMaxScheduleLateMsObserved");
-        AssertDoesNotContain(previewSchedulerText, "private readonly record struct DiagnosticSessionPreviewSchedulerResultProjection(");
-        AssertDoesNotContain(previewSchedulerText, "private static DiagnosticSessionPreviewSchedulerResultProjection BuildPreviewSchedulerResultProjection(");
-        AssertDoesNotContain(previewSchedulerText, "analysis.PreviewSchedulerDroppedAtEnd");
-        AssertDoesNotContain(previewSchedulerText, "analysis.PreviewSchedulerMaxScheduleLateMsObserved");
         AssertDoesNotContain(analysisText, "var previewSchedulerDroppedAtEnd =");
         AssertDoesNotContain(analysisText, "var previewSchedulerMaxScheduleLateMsObserved = samples");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.PreviewScheduler.cs")),
+            "preview scheduler analysis folded into DiagnosticSessionResultBuilder.Analysis.cs");
     }
 
     private static void AssertDiagnosticSessionResultBuilderOverviewAndCaptureProjectionOwnership()

@@ -14,7 +14,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewD3DResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
             .Replace("\r\n", "\n");
-        var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs")
+        var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(builderText, "return FlattenResultProjectionSet(");
@@ -46,8 +46,8 @@ static partial class Program
         AssertContains(flatteningText, "PreviewSchedulerDroppedAtEnd = previewSchedulerResult.PreviewSchedulerDroppedAtEnd,");
         AssertContains(flatteningText, "VisualCadenceOutputFpsAtEnd = previewVisualCadenceResult.VisualCadenceOutputFpsAtEnd,");
         AssertDoesNotContain(flatteningText, "GetString(lastSnapshot, \"MjpegPreviewJitterLastDropReason\")");
-        AssertDoesNotContain(previewSchedulerText, "private static DiagnosticSessionPreviewSchedulerResultProjection BuildPreviewSchedulerResultProjection(");
-        AssertDoesNotContain(previewSchedulerText, "PreviewD3DInputUploadCpuP99MsAtEnd");
+        AssertDoesNotContain(analysisText, "private static DiagnosticSessionPreviewSchedulerResultProjection BuildPreviewSchedulerResultProjection(");
+        AssertDoesNotContain(analysisText, "PreviewD3DInputUploadCpuP99MsAtEnd");
         AssertDoesNotContain(flatteningText, "PreviewD3DInputUploadCpuP99MsAtEnd = previewResult");
         AssertDoesNotContain(flatteningText, "PreviewD3DInputUploadCpuP99MsAtEnd = previewD3DMetrics");
         AssertDoesNotContain(flatteningText, "VisualCadenceOutputFpsAtEnd = previewResult");
@@ -65,9 +65,9 @@ static partial class Program
         AssertContains(analysisText, "exportMetrics.ForceRotateFallbacksAtEnd,");
         AssertContains(analysisText, "exportMetrics.ForceRotateFallbacksDelta,");
         AssertContains(analysisText, "exportMetrics.LastForceRotateFallbackSegmentsAtEnd,");
-        AssertDoesNotContain(analysisText, "var toleratesPreviewCycleSchedulerSettling =");
-        AssertDoesNotContain(analysisText, "var toleratesSparsePreviewSchedulerDeadlineDrops =");
-        AssertDoesNotContain(analysisText, "var toleratesSparseScrubSchedulerTransitions =");
+        AssertContains(analysisText, "var toleratesPreviewCycleSchedulerSettling =");
+        AssertContains(analysisText, "var toleratesSparsePreviewSchedulerDeadlineDrops =");
+        AssertContains(analysisText, "var toleratesSparseScrubSchedulerTransitions =");
         AssertDoesNotContain(analysisText, "var flashbackExportForceRotateFallbacksAtEnd =");
         AssertDoesNotContain(analysisText, "FlashbackExportForceRotateFallbacksAtEnd =");
         AssertContains(analysisText, "private static void AddFlashbackPlaybackAnalysisWarnings(");

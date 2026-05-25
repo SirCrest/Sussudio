@@ -3538,19 +3538,16 @@ Primary owners:
   owns cleanup restore warnings after diagnostic sessions stop recording,
   preview, Flashback, or playback state, plus the private analysis handoff
   record, including the single `PreviewScheduler` record property used by
-  preview-scheduler result projection.
+  preview-scheduler result projection. Preview-scheduler analysis includes MJPEG
+  jitter-buffer counters, deltas, last drop/underflow reasons, underflow ages,
+  max schedule-late aggregation, target-FPS fallback, visual-cadence tolerance
+  checks, sparse deadline/drop tolerance selection, and the call into shared
+  Flashback preview validation.
 - `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs` owns
   diagnostic-session health summary snapshot selection, health verdict
   composition, source-reader/ingest warning deltas for sparse source-capture
   tolerance, sparse preview-scheduler warning tolerance, tolerated-warning
   reason selection, and health warning text emitted during result construction.
-- `tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs` owns
-  diagnostic-session preview-scheduler analysis handoff values: MJPEG
-  jitter-buffer counters, deltas, last drop/underflow reasons, underflow ages,
-  max schedule-late aggregation, and Flashback preview-scheduler validation
-  orchestration during result analysis: target-FPS fallback, visual-cadence
-  tolerance checks, sparse deadline/drop tolerance selection, and the call into
-  shared Flashback preview validation.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs` owns
   Flashback playback result projection composition plus the command, cadence,
   1% low, decode, audio-master, and stage DTO value maps consumed by the final
