@@ -1715,3 +1715,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: segment path metadata lookup, active-segment exclusion, path normalization warning, segment PTS clamping, request segment construction, live queue-pressure throttle thresholds, high-resolution baseline throttling, throttle log cadence, active-file fallback request shape, force-rotate fallback behavior, and export diagnostics handoff remain unchanged
 Notes for future agents: keep Flashback export request assembly, segment metadata mapping, live-export throttle policy, and force-rotate preparation together in `CaptureService.FlashbackExportCore.cs`; keep public range/last-N entry points and backend snapshot lock handoff in `FlashbackExportOperations.cs`
+
+Date: 2026-05-25
+Area: MainViewModel Flashback playback state locality
+Problem: `MainViewModel.FlashbackPlaybackCommands.cs` contained read-only Flashback segment/playback snapshots, rejection status projection, marker commands, scrub/playback command routing, and automation action dispatch, while `MainViewModel.FlashbackState.cs` owned the UI state those commands read and update. Reviewing Flashback playback UI behavior required opening two tiny adjacent partials.
+Files consolidated: `Sussudio/ViewModels/MainViewModel.FlashbackPlaybackCommands.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `MainViewModel` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
+CLI/MCP/pipe checks, if applicable: automation surface tests cover Flashback action dispatch and async view-model ports; no automation command names/IDs changed
+Behavior preserved: Flashback segment snapshot access, playback snapshot access, rejection status text/logging, scrub/seek/play/pause/go-live/nudge routing, in/out marker routing, clear-marker routing, automation Flashback action dispatch, UI-thread invocation, and buffer/status projection remain unchanged
+Notes for future agents: keep Flashback playback state projection and the thin ViewModel playback command facade together in `MainViewModel.FlashbackState.cs`; keep export/save-picker behavior in `MainViewModel.FlashbackExport.cs`

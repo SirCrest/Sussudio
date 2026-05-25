@@ -51,7 +51,7 @@ static partial class Program
         var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
         var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
         var flashbackBufferStatusText = viewModelFlashbackStateText;
-        var flashbackPlaybackCommandsText = viewModelFiles["MainViewModel.FlashbackPlaybackCommands.cs"];
+        var flashbackPlaybackCommandsText = viewModelFlashbackStateText;
         var flashbackPlaybackText = flashbackPlaybackCommandsText;
         var flashbackAutomationText = flashbackSettingsText
             + "\n" + flashbackExportText
@@ -88,7 +88,6 @@ static partial class Program
         AssertMemberContains(flashbackPlaybackText, "GetFlashbackPlaybackSnapshot", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
         AssertMemberContains(flashbackPlaybackText, "ReportFlashbackPlaybackRejection", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
         AssertMemberContains(flashbackPlaybackText, "ReportFlashbackPlaybackRejection", "StatusText = message;");
-        AssertDoesNotContain(flashbackPlaybackText, "UpdateFlashbackBufferStatus");
         AssertMemberContains(flashbackPlaybackCommandsText, "ExecuteFlashbackActionAsync", "InvokeOnUiThreadAsync(() => ExecuteFlashbackAction(action, position), cancellationToken)");
         AssertMemberContains(flashbackPlaybackCommandsText, "ExecuteFlashbackAction", "return FlashbackBeginScrub(position ?? TimeSpan.Zero)");
         AssertMemberContains(flashbackPlaybackCommandsText, "ExecuteFlashbackAction", "return FlashbackSetInPoint().HasValue");
@@ -110,15 +109,19 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackMarkers.cs")),
-            "MainViewModel.FlashbackMarkers.cs folded into MainViewModel.FlashbackPlaybackCommands.cs");
+            "MainViewModel.FlashbackMarkers.cs folded into MainViewModel.FlashbackState.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackPlaybackAutomation.cs")),
-            "MainViewModel.FlashbackPlaybackAutomation.cs folded into MainViewModel.FlashbackPlaybackCommands.cs");
+            "MainViewModel.FlashbackPlaybackAutomation.cs folded into MainViewModel.FlashbackState.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackPlayback.cs")),
-            "MainViewModel.FlashbackPlayback.cs folded into MainViewModel.FlashbackPlaybackCommands.cs");
+            "MainViewModel.FlashbackPlayback.cs folded into MainViewModel.FlashbackState.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackPlaybackCommands.cs")),
+            "MainViewModel.FlashbackPlaybackCommands.cs folded into MainViewModel.FlashbackState.cs");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "_sessionCoordinator.GetFlashbackBufferStatus()");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "FlashbackInPoint = playback.InPoint;");
