@@ -31,8 +31,8 @@ public sealed class CoreRuntimeRecordingContractsTests
         => global::Program.RecordingVerifier_CadenceAnalysisLivesInFocusedPartial();
 
     [Fact]
-    public Task RecordingVerifierProbeValidationAndResultShapingLiveInFocusedPartials()
-        => global::Program.RecordingVerifier_ProbeValidationAndResultsLiveInFocusedPartials();
+    public Task RecordingVerifierProbeValidationAndResultShapingOwnership()
+        => global::Program.RecordingVerifier_ProbeValidationAndResultShapingOwnership();
 
     [Fact]
     public Task RecordingVerificationResultExposesExpectedProperties()

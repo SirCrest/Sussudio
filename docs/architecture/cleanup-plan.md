@@ -1535,15 +1535,14 @@ owns the LibAv sink lifecycle, output-validation, drain-loop, and packet-drain
 assertions.
 
 Recording verifier ownership is split across focused partials. Keep strict
-verification orchestration in `Sussudio/Services/Recording/Verification/RecordingVerifier.cs`,
+verification orchestration, early failure results, primary mismatch parsing, HDR
+parity, and mismatch taxonomy in `Sussudio/Services/Recording/Verification/RecordingVerifier.cs`,
 ffprobe process/spec/side-data probing in
 `Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs`,
 including probe scalar parsing,
 dimensions, frame-rate, cadence, container/codec format, Flashback export
 verification format resolution, and HDR validation policy in
 `Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs`,
-result/taxonomy shaping in
-`Sussudio/Services/Recording/Verification/RecordingVerifier.Results.cs`, and
 ffprobe frame timestamp cadence analysis in
 `Sussudio/Services/Recording/Verification/RecordingVerifier.Cadence.cs`.
 `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` now keeps only

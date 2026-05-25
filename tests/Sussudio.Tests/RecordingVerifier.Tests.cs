@@ -131,15 +131,13 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task RecordingVerifier_ProbeValidationAndResultsLiveInFocusedPartials()
+    internal static Task RecordingVerifier_ProbeValidationAndResultShapingOwnership()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.cs")
             .Replace("\r\n", "\n");
         var ffprobeText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs")
             .Replace("\r\n", "\n");
         var validationText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs")
-            .Replace("\r\n", "\n");
-        var resultsText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Results.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "public async Task<RecordingVerificationResult> VerifyAsync(");
@@ -156,20 +154,19 @@ static partial class Program
         AssertContains(validationText, "private static HdrValidationResult ValidateHdrMetadata(");
         AssertContains(validationText, "private static string ResolveExpectedFormat(");
         AssertContains(validationText, "private static bool IsFlashbackRecording(");
-        AssertContains(resultsText, "private static (string? Code, string? Expected, string? Actual) ParsePrimaryMismatch(");
-        AssertContains(resultsText, "private static HdrParityResult BuildHdrParityResult(");
-        AssertContains(resultsText, "private static IReadOnlyList<MismatchTaxonomyEntry> BuildMismatchTaxonomy(");
-        AssertContains(resultsText, "private static string? TryGetMismatchPart(");
-        AssertContains(resultsText, "private static RecordingVerificationResult CreateEarlyFailure(");
+        AssertContains(rootText, "private static (string? Code, string? Expected, string? Actual) ParsePrimaryMismatch(");
+        AssertContains(rootText, "private static HdrParityResult BuildHdrParityResult(");
+        AssertContains(rootText, "private static IReadOnlyList<MismatchTaxonomyEntry> BuildMismatchTaxonomy(");
+        AssertContains(rootText, "private static string? TryGetMismatchPart(");
+        AssertContains(rootText, "private static RecordingVerificationResult CreateEarlyFailure(");
         AssertDoesNotContain(rootText, "private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(");
         AssertDoesNotContain(rootText, "private static void ValidateContainer(");
-        AssertDoesNotContain(rootText, "private static (string? Code, string? Expected, string? Actual) ParsePrimaryMismatch(");
-        AssertDoesNotContain(rootText, "private static HdrParityResult BuildHdrParityResult(");
-        AssertDoesNotContain(rootText, "private static IReadOnlyList<MismatchTaxonomyEntry> BuildMismatchTaxonomy(");
-        AssertDoesNotContain(rootText, "private static string? TryGetMismatchPart(");
-        AssertDoesNotContain(rootText, "private static RecordingVerificationResult CreateEarlyFailure(");
         AssertDoesNotContain(validationText, "private static (string? Code, string? Expected, string? Actual) ParsePrimaryMismatch(");
         AssertDoesNotContain(validationText, "private static IReadOnlyList<MismatchTaxonomyEntry> BuildMismatchTaxonomy(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "Verification", "RecordingVerifier.Results.cs")),
+            "RecordingVerifier.Results.cs folded into RecordingVerifier.cs");
 
         return Task.CompletedTask;
     }
