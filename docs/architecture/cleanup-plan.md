@@ -3501,11 +3501,9 @@ assignment, private parsed CSV row shapes, row projection from header-indexed
 fields, app-present correlation, warnings, counted text fields, and percentile
 metric aggregation. `tools/Common/PresentMon/PresentMonProbe.cs` keeps
 the public option construction, preview snapshot correlation extraction, run
-orchestration, command-line construction, argument quoting, and probe-result message shaping.
-`tools/Common/PresentMon/PresentMonProbe.Paths.cs` owns target process,
-PresentMon executable, and output-path resolution. `tools/Common/PresentMon/PresentMonProbe.Process.cs`
-owns process supervision, stdout/stderr drain, timeout kill, and temp CSV
-cleanup.
+orchestration, target process/PresentMon executable/output-path resolution,
+command-line construction, argument quoting, process supervision, stdout/stderr
+drain, timeout kill, temp CSV cleanup, and probe-result message shaping.
 
 EGAVDS audio probing keeps the CLI command flow, SetupAPI device lookup, and
 audio input/gain actions in `tools/EgavdsAudioProbe/Program.cs`; SWIG callback
@@ -3566,8 +3564,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioPhaseModels.cs`
 - `ToolJsonOptions.cs`
 - `tools/Common/PresentMon/PresentMonProbe.cs`
-- `tools/Common/PresentMon/PresentMonProbe.Paths.cs`
-- `tools/Common/PresentMon/PresentMonProbe.Process.cs`
 
 ## Next Slices
 

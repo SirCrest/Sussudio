@@ -11,8 +11,6 @@ static partial class Program
         var modelsText = ReadPresentMonProbeFile("PresentMonProbe.Models.cs");
         var formatText = ReadPresentMonProbeFile("PresentMonProbe.Format.cs");
         var csvText = ReadPresentMonProbeFile("PresentMonProbe.Csv.cs");
-        var pathsText = ReadPresentMonProbeFile("PresentMonProbe.Paths.cs");
-        var processText = ReadPresentMonProbeFile("PresentMonProbe.Process.cs");
 
         AssertContains(rootText, "public static async Task<PresentMonProbeResult> RunAsync(");
         AssertContains(rootText, "var targetProcess = ResolveTargetProcess(options);");
@@ -80,17 +78,23 @@ static partial class Program
         AssertContains(csvText, "private static PresentMonMetricSummary Summarize(");
         AssertContains(csvText, "private static double Percentile(");
 
-        AssertContains(pathsText, "private static Process? ResolveTargetProcess(");
-        AssertContains(pathsText, "private static string? ResolvePresentMonPath(");
-        AssertContains(pathsText, "private static string ResolveOutputPath(");
-        AssertContains(processText, "private static async Task<ProcessRun> RunProcessAsync(");
-        AssertContains(processText, "private static async Task<string> TryReadAsync(");
-        AssertContains(processText, "private static void TryKill(");
-        AssertContains(processText, "private static void TryDelete(");
-        AssertContains(processText, "private sealed class ProcessRun");
+        AssertContains(rootText, "private static Process? ResolveTargetProcess(");
+        AssertContains(rootText, "private static string? ResolvePresentMonPath(");
+        AssertContains(rootText, "private static string ResolveOutputPath(");
+        AssertContains(rootText, "private static async Task<ProcessRun> RunProcessAsync(");
+        AssertContains(rootText, "private static async Task<string> TryReadAsync(");
+        AssertContains(rootText, "private static void TryKill(");
+        AssertContains(rootText, "private static void TryDelete(");
+        AssertContains(rootText, "private sealed class ProcessRun");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Paths.cs")),
+            "PresentMon path resolution lives with PresentMonProbe.RunAsync");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Process.cs")),
+            "PresentMon process supervision lives with PresentMonProbe.RunAsync");
 
-        AssertDoesNotContain(rootText, "private static Process? ResolveTargetProcess(");
-        AssertDoesNotContain(rootText, "private static async Task<ProcessRun> RunProcessAsync(");
         AssertDoesNotContain(rootText, "private static PresentMonCaptureSummary ParseCsv(");
         AssertDoesNotContain(rootText, "private static IReadOnlyList<PresentMonSwapChainSummary> BuildSwapChainSummaries(");
         AssertDoesNotContain(rootText, "private static PresentMonMetricSummary Summarize(");

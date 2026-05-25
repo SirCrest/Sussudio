@@ -3815,11 +3815,9 @@ Primary owners:
   aggregation.
 - `tools/Common/PresentMon/PresentMonProbe.cs` owns PresentMon public option
   construction, preview snapshot correlation extraction, run orchestration,
-  command-line construction, argument quoting, and probe-result message shaping.
-- `tools/Common/PresentMon/PresentMonProbe.Paths.cs` owns target process, PresentMon
-  executable, and output-path resolution.
-- `tools/Common/PresentMon/PresentMonProbe.Process.cs` owns process supervision,
-  stdout/stderr drain, timeout kill, and temp CSV cleanup.
+  target process/PresentMon executable/output-path resolution, command-line
+  construction, argument quoting, process supervision, stdout/stderr drain,
+  timeout kill, temp CSV cleanup, and probe-result message shaping.
 
 Invariants:
 
