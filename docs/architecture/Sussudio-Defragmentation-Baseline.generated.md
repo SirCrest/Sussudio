@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-25T02:14:09Z
+Generated UTC: 2026-05-25T02:16:40Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 559 |
+| Production .cs files | 558 |
 | Test .cs files | 552 |
 | Production .cs files under 60 lines | 14 (2.5%) |
-| Production .cs files under 80 lines | 25 (4.5%) |
+| Production .cs files under 80 lines | 23 (4.1%) |
 
 ## Largest partial-type clusters
 
