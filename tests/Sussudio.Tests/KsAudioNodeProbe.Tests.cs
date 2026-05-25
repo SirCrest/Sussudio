@@ -2,20 +2,21 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    internal static Task KsAudioNodeProbe_SourceOwnership_IsSplit()
+    internal static Task KsAudioNodeProbe_SourceOwnership_IsConsolidated()
     {
         var programText = ReadRepoFile("tools/KsAudioNodeProbe/Program.cs");
         var scanWorkflowsText = ReadRepoFile("tools/KsAudioNodeProbe/Program.ScanWorkflows.cs");
-        var nativeInteropText = ReadRepoFile("tools/KsAudioNodeProbe/Program.NativeInterop.cs");
 
         AssertContains(programText, "using static KsAudioNodeProbeNative;");
         AssertContains(programText, "KsAudioNodeProbeScanWorkflows.RunSetAndHold(handle)");
         AssertContains(programText, "KsAudioNodeProbeScanWorkflows.RunFullProbe(handle)");
-        AssertDoesNotContain(programText, "const uint IoctlKsProperty");
-        AssertDoesNotContain(programText, "struct KsProperty");
-        AssertDoesNotContain(programText, "DllImport(");
-        AssertDoesNotContain(programText, "static List<string> EnumerateKsInterfaces");
-        AssertDoesNotContain(programText, "static bool TryAudioGetLong");
+        AssertContains(programText, "static class KsAudioNodeProbeNative");
+        AssertContains(programText, "private const uint IoctlKsProperty = 0x002F0003;");
+        AssertContains(programText, "private const int ErrorMoreData = 234;");
+        AssertContains(programText, "public static List<string> EnumerateKsInterfaces");
+        AssertContains(programText, "private static extern bool DeviceIoControl");
+        AssertContains(programText, "private struct KsProperty");
+        AssertContains(programText, "private struct SP_DEVICE_INTERFACE_DETAIL_DATA");
         AssertDoesNotContain(programText, "var anyHit = false");
         AssertDoesNotContain(programText, "== Extended node tests ==");
         AssertDoesNotContain(programText, "== ADC volume probe ==");
@@ -33,13 +34,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "KsAudioNodeProbe", "Program.ScanWorkflows.Extended.cs")),
             "KS audio node scan workflow probes live with the main scan workflow owner");
-        AssertContains(nativeInteropText, "static class KsAudioNodeProbeNative");
-        AssertContains(nativeInteropText, "private const uint IoctlKsProperty = 0x002F0003;");
-        AssertContains(nativeInteropText, "private const int ErrorMoreData = 234;");
-        AssertContains(nativeInteropText, "public static List<string> EnumerateKsInterfaces");
-        AssertContains(nativeInteropText, "private static extern bool DeviceIoControl");
-        AssertContains(nativeInteropText, "private struct KsProperty");
-        AssertContains(nativeInteropText, "private struct SP_DEVICE_INTERFACE_DETAIL_DATA");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "KsAudioNodeProbe", "Program.NativeInterop.cs")),
+            "KS audio node probe private interop declarations live with the command entry point");
 
         return Task.CompletedTask;
     }

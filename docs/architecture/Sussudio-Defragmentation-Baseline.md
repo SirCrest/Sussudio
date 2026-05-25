@@ -2344,3 +2344,15 @@ Build/tests/runtime checks: `dotnet build tools\EgavdsAudioProbe\EgavdsAudioProb
 CLI/MCP/pipe checks, if applicable: EGAVDS source-ownership tests and solution build cover the consolidated probe; no app automation command names or public tool commands changed
 Behavior preserved: EGAVDS CLI arguments, SetupAPI device path selection, SWIG callback registration, EGAVDeviceSupport initialization/open/close calls, audio input switching, line-in gain query/set, HDR and connection info reads, and result text remain unchanged
 Notes for future agents: keep EGAVDS probe-private native declarations with `tools/EgavdsAudioProbe/Program.cs` unless they become shared by another tool or need independent generated bindings.
+
+Date: 2026-05-25
+Area: KS audio node probe locality
+Problem: `tools/KsAudioNodeProbe/Program.cs` owned the only KS audio node probe command entry, interface selection, open failure handling, and workflow dispatch while `Program.NativeInterop.cs` held private SetupAPI, file-handle, KS property transfer, topology, and Win32 helper declarations consumed only by that same probe. Understanding or changing this single exploratory CLI required opening both files before reaching the real scan workflow owner.
+Files consolidated: `tools/KsAudioNodeProbe/Program.NativeInterop.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; KS audio node probe support file count -1
+Build/tests/runtime checks: `dotnet build tools\KsAudioNodeProbe\KsAudioNodeProbe.csproj -c Debug --no-restore`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: affected source-ownership tests updated; no app automation command names or public tool commands changed
+Behavior preserved: KS audio node probe CLI arguments, VID/PID parsing, MI_02 interface selection, handle open failure text, set-and-hold routing, full-probe routing, SetupAPI enumeration, KS property GET/SET transfer, topology enumeration, Win32 error formatting, and scan workflow behavior remain unchanged
+Notes for future agents: keep KS audio node probe-private native declarations with `tools/KsAudioNodeProbe/Program.cs`; keep scan and mutation probe workflows in `Program.ScanWorkflows.cs` while they remain the real behavior owner.

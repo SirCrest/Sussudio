@@ -103,8 +103,8 @@ public sealed class ToolProbeContractsTests
         => global::Program.SsctlPipeTransport_ExposesAdvancedAutomationCommandIds();
 
     [Fact]
-    public Task KsAudioNodeProbeSourceOwnershipIsSplit()
-        => global::Program.KsAudioNodeProbe_SourceOwnership_IsSplit();
+    public Task KsAudioNodeProbeSourceOwnershipIsConsolidated()
+        => global::Program.KsAudioNodeProbe_SourceOwnership_IsConsolidated();
 
     [Fact]
     public Task EgavdsAudioProbeSourceOwnershipIsConsolidated()

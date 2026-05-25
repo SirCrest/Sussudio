@@ -2979,13 +2979,12 @@ Primary owners:
   `Program.I2cTransport.cs` owns I2C-over-AT transport helpers; and
   `Program.ServiceProbe.cs` owns service-control smoke/payload workflows.
 - `tools/KsAudioNodeProbe/Program.cs` owns KS audio node probe argument parsing,
-  interface selection, open failure handling, and workflow dispatch;
+  interface selection, open failure handling, workflow dispatch, SetupAPI,
+  file-handle, KS property transfer, native interop constants/DTOs, topology
+  enumeration, and Win32 formatting helpers;
   `Program.ScanWorkflows.cs` owns set-and-hold, topology, brute-force,
   full-probe orchestration, extended-node mutation tests, ADC volume, mux, and
-  mute probe workflows; and
-  `Program.NativeInterop.cs` owns SetupAPI, file-handle, KS property transfer,
-  native interop constants/DTOs, topology enumeration, and Win32 formatting
-  helpers.
+  mute probe workflows.
 - `tools/EgavdsAudioProbe/Program.cs` owns EGAVDS audio probe command flow,
   device lookup, audio input/gain actions, result text, SWIG callback
   registration, EGAVDeviceSupport entry points, SetupAPI entry points, and
