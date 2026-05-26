@@ -2656,3 +2656,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: App unhandled-exception/recoverability assertions, single-instance/startup source assertions, bool/inverse/visibility converter behavior checks, and `DisplayFormatters.FormatSourceHdr` mapping checks remain unchanged.
 Notes for future agents: keep legacy app-surface checks in `AppSurface.Tests.cs` while `XUnit.AutomationContractsTests.cs` remains their xUnit execution surface; move only checks that guard a different runtime seam into a separate owner.
+
+Date: 2026-05-26
+Area: MainWindow shell title test locality
+Problem: `WindowTitleController.Tests.cs` only carried the formatting behavior check for the same `WindowTitleController` already covered by `MainWindow.ShellOwnership.Chrome.Tests.cs` source-shape assertions. Reviewing MainWindow title behavior required opening a separate one-method legacy `Program` partial.
+Files consolidated: `tests/Sussudio.Tests/WindowTitleController.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MainWindow shell/title partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: invariant build-stamp title formatting, missing build-time fallback, idle title, recording suffix, and culture-restoration checks remain unchanged.
+Notes for future agents: keep WindowTitleController source-shape and formatting behavior checks with `MainWindow.ShellOwnership.Chrome.Tests.cs` while the controller remains a shell chrome concern.

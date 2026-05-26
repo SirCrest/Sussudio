@@ -1253,7 +1253,8 @@ Primary current owners:
   xUnit stats snapshot builder contract checks.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.Chrome.Tests.cs` owns
   MainWindow shell chrome ownership assertions for the settings shelf, window
-  title, live signal info, and status-strip presentation.
+  title, live signal info, and status-strip presentation, plus window-title
+  formatting behavior checks.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.Startup.SplashPhrase.Tests.cs`
   owns MainWindow startup/launch ownership assertions for splash loading
   phrases and splash pacing policy.
