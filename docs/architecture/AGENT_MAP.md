@@ -1586,8 +1586,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/RecordingQueue.Wasapi.Tests.cs` owns WASAPI capture-loop, hot-write,
   conversion, root diagnostics, COM contract, and bounded stop assertions.
 - `tests/Sussudio.Tests/RecordingQueue.CaptureFanout.Tests.cs` owns
-  UnifiedVideoCapture frame-ingress, sink fan-out, and CaptureService Flashback
-  backend aggregate ownership assertions.
+  UnifiedVideoCapture frame-ingress, CPU-MJPEG format reporting, stop-failure
+  MJPEG pipeline retention, sink fan-out, and CaptureService Flashback backend
+  aggregate ownership assertions.
 - `tests/Sussudio.Tests/CaptureService.FlashbackOrchestrationSource.Tests.cs`
   owns the source family helper for Flashback backend orchestration partials
   and recording finalization partials plus the focused-partial ownership
@@ -1603,9 +1604,6 @@ Primary current owners:
   removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/CaptureCadence.Tests.cs` owns packet-hash duplicate
   cadence and visual-cadence crop sampling assertions.
-- `tests/Sussudio.Tests/UnifiedVideoCapture.Runtime.Tests.cs` owns
-  UnifiedVideoCapture CPU-MJPEG format reporting and stop-failure retention
-  behavior scenarios.
 - `tests/Sussudio.Tests/MjpegPipeline.Timing.Tests.cs` owns CPU MJPEG timing
   metric math, stopwatch timeout helpers, and timing/decoder shape checks.
 - `tests/Sussudio.Tests/MjpegPipeline.Tests.cs` owns CPU MJPEG pipeline

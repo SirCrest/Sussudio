@@ -2944,3 +2944,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: Flashback scrub release/cancel/capture-lost, geometry math, fullscreen Flashback bridge, timeline toggle rollback, lockout, and settings/property-change assertions remain registered through `XUnit.AutomationContractsTests`.
 Notes for future agents: keep MainWindow Flashback scrub, fullscreen bridge, toggle rollback, and timeline lockout checks in `MainViewModel.Capture.FlashbackRouting.Interactions.Tests.cs`; keep capture-service Flashback cadence/backend lifecycle tests in their focused owner files.
+
+Date: 2026-05-26
+Area: dispatcher and UnifiedVideoCapture test locality
+Problem: two smallest-file candidates were legacy `Program` partial shards rather than meaningful standalone owners. `AutomationCommandDispatcher.FlashbackFailures.Tests.cs` split Flashback command routing/failure diagnostics away from the dispatcher command ownership surface, while `UnifiedVideoCapture.Runtime.Tests.cs` split CPU-MJPEG format reporting and stop-failure retention away from the existing UnifiedVideoCapture frame-ingress/fanout ownership checks. Reviewing those behaviors required opening extra tiny files beside the real parent test owners.
+Files consolidated: `tests/Sussudio.Tests/AutomationCommandDispatcher.FlashbackFailures.Tests.cs`; `tests/Sussudio.Tests/UnifiedVideoCapture.Runtime.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -2
+Partial clusters reduced: legacy `Program` automation dispatcher and UnifiedVideoCapture test partial file count -2
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: Flashback automation action failure diagnostics and Flashback command routing checks remain registered through `XUnit.AutomationContractsTests`; UnifiedVideoCapture CPU-MJPEG format reporting and stop-failure retention checks remain registered through `XUnit.MjpegPipelineContractsTests`.
+Notes for future agents: keep Flashback dispatcher routing/failure assertions in `AutomationCommandDispatcher.CommandOwnership.Tests.cs`; keep UnifiedVideoCapture CPU-MJPEG runtime behavior checks in `RecordingQueue.CaptureFanout.Tests.cs` with frame-ingress, fanout, and backend aggregate ownership coverage.
