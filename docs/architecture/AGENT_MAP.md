@@ -1748,11 +1748,10 @@ Primary current owners:
   AGENT_MAP consumer coverage, ownership-file discovery, exact code-span policy,
   and xUnit inventory helpers.
 - `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter*.Tests.cs`
-  owns the shared/ssctl snapshot formatter contract family: typed accessors,
-  core section formatting, section-order, and Flashback opt-in smoke checks
-  stay in `.Tests.cs`; Flashback output rendering lives in `.Flashback.Tests.cs`,
-  Preview D3D output rendering lives in `.PreviewD3D.Tests.cs`, and shared
-  formatter source ownership lives in `.Ownership.Tests.cs`.
+    owns the shared/ssctl snapshot formatter contract family: typed accessors,
+    core section formatting, section-order, Flashback opt-in smoke checks,
+    Flashback output rendering, and Preview D3D output rendering stay in
+    `.Tests.cs`; shared formatter source ownership lives in `.Ownership.Tests.cs`.
   `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for those shared snapshot formatter checks after their removal from
   the legacy offline harness catalog.
