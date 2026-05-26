@@ -1973,12 +1973,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.ResultOwnership.Tests.cs`
   owns diagnostic-session model ownership assertions, formatter ownership,
   builder summary-write failure, artifact, and JSON/shared-text checks.
-  Builder result assertions are split by ownership band:
   `ResultOwnership.Builder.Tests.cs` covers core, preview scheduler,
-  overview/capture checks, and Flashback playback, recording, and export result
-  projections; and
-  `ResultOwnership.Builder.PreviewAndCompletion.Tests.cs` covers preview,
-  analysis-warning, diagnostic-health, and artifact-handoff ownership.
+  overview/capture checks, Flashback playback, recording, and export result
+  projections, preview result projections, analysis-warning,
+  diagnostic-health, and artifact-handoff ownership.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`
   owns diagnostic-session Flashback warmup health-policy, warning-policy,
   snapshot polling wait, cycle, preview-cycle, rejected-export,

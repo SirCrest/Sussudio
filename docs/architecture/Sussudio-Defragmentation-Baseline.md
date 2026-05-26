@@ -3232,3 +3232,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer` and `tools/ssctl`; test/docs-only consolidation, no public automation command names, IDs, wire payloads, or MCP tool implementations changed
 Behavior preserved: Flashback warmup health-policy, warning-policy, and snapshot polling wait ownership assertions remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
 Notes for future agents: keep MCP diagnostic-session Flashback scenario-support ownership checks with `McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`; keep metric projection checks in `McpToolSurface.DiagnosticSession.Flashback.Metrics.Tests.cs` while that projection surface remains independently reviewable.
+
+Date: 2026-05-26
+Area: MCP diagnostic-session result-builder test locality
+Problem: `McpToolSurface.DiagnosticSession.ResultOwnership.Builder.PreviewAndCompletion.Tests.cs` split preview projection, analysis-warning, diagnostic-health, and artifact-handoff assertions away from `McpToolSurface.DiagnosticSession.ResultOwnership.Builder.Tests.cs`, even though the central result-builder ownership test already invokes those private helpers as part of summary-construction ownership.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.ResultOwnership.Builder.PreviewAndCompletion.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MCP diagnostic-session result-builder partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer` and `tools/ssctl`; test/docs-only consolidation, no public automation command names, IDs, wire payloads, or MCP tool implementations changed
+Behavior preserved: result-builder preview projection, analysis-warning, diagnostic-health, artifact-handoff, and summary-construction ownership assertions remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
+Notes for future agents: keep diagnostic-session result-builder ownership checks together in `McpToolSurface.DiagnosticSession.ResultOwnership.Builder.Tests.cs`; split again only if a production result-builder collaborator gets an independent executable behavior fixture.
