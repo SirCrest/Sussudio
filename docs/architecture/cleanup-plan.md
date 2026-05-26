@@ -1450,13 +1450,6 @@ rejection guards, texture AddRef ownership, audio/microphone enqueue entry
 points, force-rotate input rejection guards, and hot WASAPI writer adapters
 there.
 
-Flashback encoder stop/dispose ownership now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.DisposeLifecycle.cs`. Keep
-`StopAsync`, stop-drain timeout classification, final stop result reporting,
-`Dispose`/`DisposeAsync`, deferred cleanup, final dispose reset,
-cancellation/disposal helpers, and best-effort encoder/buffer manager disposal
-there.
-
 Flashback encoder public runtime state now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.cs`. Keep public
 frame/audio/disk counters, drop counters, rotation-failure counts, frame-encoded
@@ -1466,8 +1459,11 @@ failure status, audio/microphone enablement, fatal-error callback registration,
 encoder format summaries, HDR P010 projection, recording PTS boundary state,
 active-recording projection, begin-recording availability checks, the
 `IRecordingSink.StartAsync` adapter, recording begin/end validation,
-eviction-pause handoff/resume, start rollback, PTS clamping, ready logging, and
-encoding completion task exposure there.
+eviction-pause handoff/resume, start rollback, PTS clamping, ready logging,
+encoding completion task exposure, `StopAsync`, stop-drain timeout
+classification, final stop result reporting, `Dispose`/`DisposeAsync`,
+deferred cleanup, final dispose reset, cancellation/disposal helpers, and
+best-effort encoder/buffer manager disposal there.
 
 Flashback decoder audio output now lives in
 `Sussudio/Services/Flashback/FlashbackDecoder.AudioOutput.cs`. Keep audio packet

@@ -296,26 +296,26 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
-        var disposeLifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.DisposeLifecycle.cs")
-            .Replace("\r\n", "\n");
-        var lifetimeText = disposeLifecycleText;
+        var lifetimeText = rootText;
 
         AssertContains(lifetimeText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
         AssertContains(lifetimeText, "private async Task<FinalizeResult> StopCoreAsync(CancellationToken cancellationToken)");
         AssertContains(lifetimeText, "FLASHBACK_SINK_STOP_DRAIN_TIMEOUT");
         AssertContains(lifetimeText, "FLASHBACK_SINK_STOP_FAIL");
-        AssertContains(disposeLifecycleText, "public void Dispose()");
-        AssertContains(disposeLifecycleText, "public async ValueTask DisposeAsync()");
-        AssertContains(disposeLifecycleText, "private void ScheduleDeferredDisposeCleanup(Task encodingTask)");
-        AssertContains(disposeLifecycleText, "private void FinalizeDisposeCore()");
-        AssertContains(disposeLifecycleText, "private void CancelEncodingCts(string operation)");
-        AssertContains(disposeLifecycleText, "private void DisposeEncoderBestEffort(string operation)");
-        AssertDoesNotContain(rootText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
-        AssertDoesNotContain(rootText, "public async ValueTask DisposeAsync()");
+        AssertContains(lifetimeText, "public void Dispose()");
+        AssertContains(lifetimeText, "public async ValueTask DisposeAsync()");
+        AssertContains(lifetimeText, "private void ScheduleDeferredDisposeCleanup(Task encodingTask)");
+        AssertContains(lifetimeText, "private void FinalizeDisposeCore()");
+        AssertContains(lifetimeText, "private void CancelEncodingCts(string operation)");
+        AssertContains(lifetimeText, "private void DisposeEncoderBestEffort(string operation)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.DisposeLifecycle.cs")),
+            "FlashbackEncoderSink stop/dispose lifecycle folded into FlashbackEncoderSink.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Lifetime.cs")),
-            "FlashbackEncoderSink.Lifetime.cs folded into FlashbackEncoderSink.DisposeLifecycle.cs");
+            "FlashbackEncoderSink.Lifetime.cs folded into FlashbackEncoderSink.cs");
 
         return Task.CompletedTask;
     }
