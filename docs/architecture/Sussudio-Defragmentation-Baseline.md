@@ -3762,3 +3762,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, automation contracts, MCP, `ssctl`, and console harnesses; no public automation command names, IDs, XAML bindings, constructor behavior, preview event names, or runtime lifecycle behavior changed
 Behavior preserved: default service graph construction, dependency validation, controller graph assignment order, runtime lifecycle start/initial presentation timing, stable private UI-dispatch adapter names, preview reinit/renderer event fan-out, UI invocation adapters, and timeout helper now live in `MainViewModel.cs`.
 Notes for future agents: keep MainViewModel root compatibility surface, default service graph construction, stable dispatch adapter names, and preview event fan-out in `Sussudio/ViewModels/MainViewModel.cs`; keep feature behavior in focused feature partials/controllers and actual dispatcher policy in `MainViewModelUiDispatchController.cs`.
+
+Date: 2026-05-26
+Area: Flashback startup recovery scanner locality
+Problem: `FlashbackSessionRecoveryScanner.cs` was a 91-line helper file for session-directory naming, path-safety checks, segment-extension normalization, reparse-point checks, and plausible recovery-directory detection. The helper is only used by Flashback buffer initialization/path safety and startup cache cleanup, while the cleanup owner already documents session-recovery scanner ownership.
+Files consolidated: `Sussudio/Services/Flashback/FlashbackSessionRecoveryScanner.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; Flashback startup/cache helper count -1 while preserving the `FlashbackSessionRecoveryScanner` type and all call sites
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, Flashback tests, automation contracts, MCP, `ssctl`, and console harnesses; no public automation command names, IDs, wire payloads, Flashback buffer behavior, segment path format, cleanup budget policy, or recovery-preserve semantics changed
+Behavior preserved: session-id validation, temp-root containment checks, `.ts`/`.mp4` normalization, stale session directory recognition, path containment helpers, and reparse-point exclusion now live in `FlashbackStartupCacheCleanup.cs` with startup cache cleanup and budget enforcement.
+Notes for future agents: keep Flashback startup cache cleanup, cache-budget enforcement, and session recovery/path-safety scanner helpers in `Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs`; keep buffer lifecycle state and purge/delete mechanics in `FlashbackBufferManager.Lifecycle.cs`.

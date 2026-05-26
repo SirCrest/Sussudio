@@ -812,7 +812,7 @@ Entry points:
   PTS range capture, pause-driven disk warning state, eviction selection,
   eviction file deletion, and disk-budget/window retention policy.
 - `FlashbackBufferManager.Lifecycle.cs` also owns explicit segment purge, full session purge, and guarded purge file deletion behavior because dispose uses the same purge core.
-- `FlashbackStartupCacheCleanup.cs` owns startup stale-root/stale-session cleanup, temp-drive free-space probing, startup session-cache budget calculation, session-directory stats, oldest-session eviction, and cache-budget cleanup telemetry.
+- `FlashbackStartupCacheCleanup.cs` owns startup stale-root/stale-session cleanup, temp-drive free-space probing, session-directory naming/path-safety scanner helpers, startup session-cache budget calculation, session-directory stats, oldest-session eviction, and cache-budget cleanup telemetry.
 - `FlashbackDecoder.cs` owns decoder lifecycle, file open/close, dispose shell,
   stream-count/index bounds, decoded frame-size/dimension validation,
   D3D11/software decoded-frame validation, and decoded video/audio output DTOs.

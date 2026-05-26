@@ -10,7 +10,7 @@ static partial class Program
         var cleanupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs")
             .Replace("\r\n", "\n");
         var budgetText = cleanupText;
-        var scannerText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackSessionRecoveryScanner.cs")
+        var scannerText = cleanupText
             .Replace("\r\n", "\n");
         var playbackSegmentEdgesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
             .Replace("\r\n", "\n");
@@ -191,8 +191,7 @@ static partial class Program
 
             var cleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs")
                 .Replace("\r\n", "\n");
-            var scannerSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackSessionRecoveryScanner.cs")
-                .Replace("\r\n", "\n");
+            var scannerSource = cleanupSource;
             AssertContains(cleanupSource, "FLASHBACK_STALE_SESSION_SKIP reason=unrecognized_empty_dir");
             AssertContains(scannerSource, "internal static bool IsPlausibleFlashbackSessionDirectoryName(string name)");
             AssertContains(scannerSource, "internal static bool IsLowerHexString(ReadOnlySpan<char> value)");
