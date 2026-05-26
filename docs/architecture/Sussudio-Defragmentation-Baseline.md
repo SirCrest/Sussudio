@@ -3220,3 +3220,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer` and `tools/ssctl`; test/docs-only consolidation, no public automation command names, IDs, wire payloads, or MCP tool implementations changed
 Behavior preserved: Flashback export scenario flow, export-helper, and segment wait/parsing ownership assertions remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
 Notes for future agents: keep MCP diagnostic-session Flashback scenario, stress, export, and segment-flow ownership checks together in `McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`; keep metric projection and health-policy checks in focused sibling files while they remain independently reviewable.
+
+Date: 2026-05-26
+Area: MCP diagnostic-session Flashback health-policy test locality
+Problem: `McpToolSurface.DiagnosticSession.Flashback.HealthPolicy.Tests.cs` split Flashback warmup health-policy, warning-policy, and snapshot polling wait ownership checks away from the MCP Flashback scenario test owner, even though those checks are scenario-support invariants used by the same diagnostic-session Flashback review surface.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.HealthPolicy.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MCP diagnostic-session Flashback scenario/support partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer` and `tools/ssctl`; test/docs-only consolidation, no public automation command names, IDs, wire payloads, or MCP tool implementations changed
+Behavior preserved: Flashback warmup health-policy, warning-policy, and snapshot polling wait ownership assertions remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
+Notes for future agents: keep MCP diagnostic-session Flashback scenario-support ownership checks with `McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`; keep metric projection checks in `McpToolSurface.DiagnosticSession.Flashback.Metrics.Tests.cs` while that projection surface remains independently reviewable.
