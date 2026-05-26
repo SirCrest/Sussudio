@@ -1554,12 +1554,11 @@ Primary current owners:
   reader transport, observed formats, HDR pipeline/parity, source telemetry/
   alignment, inactive thread probes, frame-ledger recent-event contracts, and
   recording integrity.
-- `tests/Sussudio.Tests/RecordingIntegrity.Contracts.Tests.cs` owns recording
-  integrity summary defaults, automation snapshot field contracts, and
-  automation projection ownership checks.
 - `tests/Sussudio.Tests/RecordingIntegrity.Tests.cs` owns recording integrity
-  summary policy, Flashback recording scoped sequence gaps, CaptureService
-  focused-partial ownership, and shared formatter rendering checks.
+  summary defaults, automation snapshot field contracts, automation projection
+  ownership checks, summary policy, Flashback recording scoped sequence gaps,
+  CaptureService focused-partial ownership, and shared formatter rendering
+  checks.
 - `tests/Sussudio.Tests/CaptureService.Snapshots.Tests.cs` owns CaptureService
   diagnostics-snapshot compatibility, recording format/profile helper, HDR
   warmup-state, recording-stats ownership, observed pixel telemetry, source

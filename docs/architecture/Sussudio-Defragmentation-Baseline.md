@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: recording integrity test locality
+Problem: `RecordingIntegrity.Contracts.Tests.cs` held summary defaults, automation field contracts, and projection ownership checks for the same recording integrity surface whose summary policy, scoped sequence-gap, focused-partial, and formatter checks lived in `RecordingIntegrity.Tests.cs`. Reviewing recording integrity required opening two small legacy `Program` partial files for one contract/behavior surface.
+Files consolidated: `tests/Sussudio.Tests/RecordingIntegrity.Contracts.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` recording integrity test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: recording integrity summary defaults, automation snapshot field contract checks, projection ownership checks, summary policy, Flashback scoped sequence-gap checks, CaptureService focused-partial checks, and formatter rendering checks remain unchanged.
+Notes for future agents: keep recording integrity contract/default/projection tests with the recording integrity behavior and formatter checks in `RecordingIntegrity.Tests.cs` unless the production recording integrity surface splits into independent owners.
+
+Date: 2026-05-26
 Area: pooled video frame lease test locality
 Problem: `PooledVideoFrame.Tests.cs` only owned shared pooled-frame reflection and factory helpers, while `PooledVideoFrame.Leases.Tests.cs` held the direct lease lifecycle and fan-out contract tests that consumed that helper surface. Reviewing the pooled-frame ownership contract still required opening two tiny legacy `Program` partial files.
 Files consolidated: `tests/Sussudio.Tests/PooledVideoFrame.Leases.Tests.cs`
