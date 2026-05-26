@@ -1740,11 +1740,9 @@ Primary current owners:
   CaptureService ownership, Flashback preview startup wording, shared tool
   automation exact-path, duplicate tools/Common owner, empty test marker-shell
   checks, literal `ReadRepoFile` source-shape path drift, cleanup-plan
-  file/folder reference drift, and xUnit migration inventory checks.
-  `tests/Sussudio.Tests/XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns
-  the xUnit execution surface for those AGENT_MAP ownership checks and pure
-  architecture-doc reference checks after their removal from the legacy offline
-  harness catalog.
+  file/folder reference drift, xUnit migration inventory checks, and the xUnit
+  execution surface for those architecture-doc checks after their removal from
+  the legacy offline harness catalog.
   `tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs` owns
   shared Markdown code-span path-token extraction and resolution helpers,
   AGENT_MAP consumer coverage, ownership-file discovery, exact code-span policy,

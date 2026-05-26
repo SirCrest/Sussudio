@@ -164,7 +164,7 @@ add xUnit alongside, and port incrementally.
   present cadence, device-lost, diagnostics, contracts/metrics ownership,
   runtime capture, render setup/resource, and render pipeline checks. The legacy
   D3D catalog hook was removed after the final group moved to xUnit.
-- `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the former legacy
+- `ArchitectureDocs.ReferenceIntegrity.Tests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, test-project shape guard,
   architecture-doc reference drift, and migration-inventory guard checks.
 - Additional focused `[Fact]`/`[Theory]` files such as

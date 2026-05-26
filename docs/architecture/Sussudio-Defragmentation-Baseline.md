@@ -2204,7 +2204,7 @@ Partial clusters reduced: xUnit wrapper execution-surface file count -3
 Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
 Behavior preserved: the same public test class names, `[Fact]` method names, delegated `Program` checks, and target-assembly bootstrap behavior remain available in neighboring xUnit owner files
-Notes for future agents: keep presentation-preview harness registration wrappers with `XUnit.PresentationPreviewStartupContractsTests.cs`, ssctl command-handler wrappers with `XUnit.ToolContractsTests.cs`, and architecture-doc reference wrappers with `XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` unless a group needs independent fixtures or executable helper state
+Notes for future agents: keep presentation-preview harness registration wrappers with `XUnit.PresentationPreviewStartupContractsTests.cs` and ssctl command-handler wrappers with `XUnit.ToolContractsTests.cs`; architecture-doc reference wrappers now live with `ArchitectureDocs.ReferenceIntegrity.Tests.cs` unless a group needs independent fixtures or executable helper state
 
 Date: 2026-05-25
 Area: Small test dispatcher locality
@@ -3266,7 +3266,7 @@ Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: legacy `Program` architecture-doc helper partial file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
-Behavior preserved: AGENT_MAP file/path coverage, cleanup-plan coverage, xUnit inventory discovery, markdown token resolution, and UI/capture/tool ownership enumerators remain registered through `XUnit.ArchitectureDocsAgentMapOwnershipTests`.
+Behavior preserved: AGENT_MAP file/path coverage, cleanup-plan coverage, xUnit inventory discovery, markdown token resolution, and UI/capture/tool ownership enumerators remain registered through `ArchitectureDocs.ReferenceIntegrity.Tests`.
 Notes for future agents: keep architecture-doc markdown/path helper methods and ownership-file enumerators together in `ArchitectureDocs.MarkdownReferenceHelpers.cs`; create a separate helper file only for an independently named docs-validation support boundary.
 
 Date: 2026-05-26
