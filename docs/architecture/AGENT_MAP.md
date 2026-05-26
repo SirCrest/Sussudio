@@ -1951,9 +1951,8 @@ Primary current owners:
   process/JSON-RPC, reflection/tool-result, pipe-capture, and JSON assertion
   helpers.
 - `tests/Sussudio.Tests/Flashback.Tests.cs` owns shared Flashback test helper
-  source readers and helper methods only.
-- `tests/Sussudio.Tests/Flashback.Buffer.Helpers.cs` owns shared Flashback
-  buffer test factories, completed-segment insertion, and sized-file helpers.
+  source readers, helper methods, buffer test factories, completed-segment
+  insertion, and sized-file helpers.
 - `tests/Sussudio.Tests/Flashback.Buffer.SourceOwnership.Tests.cs` owns
   Flashback buffer-manager partial ownership assertions, including
   eviction-pause ownership.

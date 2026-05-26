@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: Flashback shared test helper locality
+Problem: `Flashback.Buffer.Helpers.cs` only carried private Flashback buffer factory helpers, completed-segment insertion, and sized-file helpers for the same legacy `Program` helper surface already owned by `Flashback.Tests.cs`. Reviewing Flashback test helpers required opening a separate tiny helper shard before returning to the shared Flashback source-reader/helper owner.
+Files consolidated: `tests/Sussudio.Tests/Flashback.Buffer.Helpers.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` Flashback shared-helper test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: Flashback buffer test factories, completed-segment insertion, sized-file helper behavior, shared Flashback source readers, tuple helpers, command-failure seeding, and final-output validation helpers remain in the same private `Program` test helper surface.
+Notes for future agents: keep shared Flashback source readers and buffer test factories in `Flashback.Tests.cs`; create a separate Flashback helper file only for a distinct fixture family with independent setup state.
+
+Date: 2026-05-26
 Area: Flashback playback frame test locality
 Problem: `Flashback.Playback.Cadence.Tests.cs` and `Flashback.Playback.Submission.Tests.cs` split one playback-frame review surface between frame-duration/decoded-PTS cadence and submit/held-frame/live-recovery ownership checks. Both files asserted `FlashbackPlaybackController.PlaybackFrames.cs` behavior and adjacent metrics reset semantics, so reviewing playback frame ownership required opening two small legacy `Program` partial files.
 Files consolidated: `tests/Sussudio.Tests/Flashback.Playback.Cadence.Tests.cs`, `tests/Sussudio.Tests/Flashback.Playback.Submission.Tests.cs`
