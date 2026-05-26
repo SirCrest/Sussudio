@@ -2023,12 +2023,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Tests.cs` owns
   Flashback playback command queue capacity/drop-oldest, scrub-coalescing
   source ownership, and seek-slot barrier/failure behavior coverage.
-- `tests/Sussudio.Tests/Flashback.Playback.Cadence.Tests.cs` owns Flashback
-  playback frame-duration, decoded-PTS cadence projection/telemetry, and
-  decode metrics reset/projection tests.
-- `tests/Sussudio.Tests/Flashback.Playback.Submission.Tests.cs` owns Flashback
-  playback decoded-frame submit-failure, preview frame submission, held-frame
-  ownership, and live-recovery ownership tests.
+- `tests/Sussudio.Tests/Flashback.Playback.Frames.Tests.cs` owns Flashback
+  playback frame-duration, decoded-PTS cadence projection/telemetry, decode
+  metrics reset/projection, decoded-frame submit-failure, preview frame
+  submission, held-frame ownership, and live-recovery ownership tests.
 - `tests/Sussudio.Tests/Flashback.Playback.Reopen.Tests.cs` owns Flashback
   playback fMP4 reopen, seek-display, and seek recovery tests.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit

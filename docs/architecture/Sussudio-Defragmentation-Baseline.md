@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: Flashback playback frame test locality
+Problem: `Flashback.Playback.Cadence.Tests.cs` and `Flashback.Playback.Submission.Tests.cs` split one playback-frame review surface between frame-duration/decoded-PTS cadence and submit/held-frame/live-recovery ownership checks. Both files asserted `FlashbackPlaybackController.PlaybackFrames.cs` behavior and adjacent metrics reset semantics, so reviewing playback frame ownership required opening two small legacy `Program` partial files.
+Files consolidated: `tests/Sussudio.Tests/Flashback.Playback.Cadence.Tests.cs`, `tests/Sussudio.Tests/Flashback.Playback.Submission.Tests.cs`
+Files added: `tests/Sussudio.Tests/Flashback.Playback.Frames.Tests.cs`
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` Flashback playback-frame test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: frame-duration guards, decoded-PTS cadence telemetry, decode metric reset, decoded-frame submit failure handling, preview frame submission, held-frame ownership, and live-recovery source-shape checks are moved unchanged into the consolidated playback-frame owner.
+Notes for future agents: keep Flashback playback cadence and decoded-frame submission/held-frame checks together in `Flashback.Playback.Frames.Tests.cs`; keep fMP4 reopen recovery, command queue, markers, thread recovery, and audio-preview transition guards in their focused owners.
+
+Date: 2026-05-26
 Area: D3D11 preview render-pipeline test locality
 Problem: `D3D11PreviewRenderer.SourceOwnership.RenderSetup.Tests.cs` and `D3D11PreviewRenderer.SourceOwnership.RenderPasses.Tests.cs` split one D3D11 renderer source-ownership review surface between setup/input resources and render-pass/shader resources. Reviewing the renderer pipeline layout required opening two adjacent legacy `Program` partial files before returning to the same xUnit D3D contract wrapper.
 Files consolidated: `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.RenderSetup.Tests.cs`, `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.RenderPasses.Tests.cs`
