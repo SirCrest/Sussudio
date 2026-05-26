@@ -3028,3 +3028,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: capture/audio device live-instance matching, resolution exact/fallback behavior, frame-rate auto/exact/fallback behavior, and string ComboBox fallback behavior remain registered through `XUnit.PresentationPreviewMainWindowContractsTests`.
 Notes for future agents: keep capture selection binding controller ownership and pure `CaptureComboBoxSelectionNormalizer` fallback-policy checks in `MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs`; do not recreate a standalone selection normalizer test shard unless the production helper becomes a separate named collaborator.
+
+Date: 2026-05-26
+Area: MainViewModel audio control test locality
+Problem: `MainViewModel.NativeXuAudioControlService.AudioMeters.Tests.cs` mixed two different ownership surfaces in one small legacy `Program` partial shard: native XU audio-control service cohesion and MainViewModel audio meter callback state. The service cohesion checks belong with device-audio control ownership, while meter callback assertions belong with preview audio monitoring and audio-state ownership.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.NativeXuAudioControlService.AudioMeters.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MainViewModel audio-control test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: native XU audio-control service cohesion/profile/payload/raw transport assertions remain registered through `XUnit.PresentationPreviewMainViewModelContractsTests`; audio meter callback-state assertions remain registered through the same xUnit surface.
+Notes for future agents: keep native XU audio-control service cohesion checks in `MainViewModel.AudioControls.DeviceAudio.Tests.cs`; keep audio meter callback-state checks in `MainViewModel.AudioControls.GainAndMonitoring.Tests.cs`.
