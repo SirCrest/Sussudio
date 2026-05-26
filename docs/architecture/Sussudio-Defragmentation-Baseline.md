@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: Flashback encoder sink test locality
+Problem: `Flashback.EncoderSink.Tests.cs` held core sink frame-rate, options, startup rollback, counter, and PTS guard checks, while `Flashback.EncoderSink.QueuesAndDrain.Tests.cs` held queue rejection, lifecycle cleanup, packet-validation, and drain-loop ordering checks for the same `FlashbackEncoderSink` behavioral owner. Reviewing core sink guards and queue/drain behavior required opening two small legacy `Program` partial files before moving to the separate force-rotate and source-ownership surfaces.
+Files consolidated: `tests/Sussudio.Tests/Flashback.EncoderSink.QueuesAndDrain.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` Flashback encoder sink test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: Flashback encoder sink frame-rate parsing, codec mapping, counters, queue capacity, startup rollback, PTS guards, queue rejection, lifecycle cleanup, packet validation, and drain-loop ordering checks remain unchanged.
+Notes for future agents: keep core Flashback encoder sink guard, queue, cleanup, packet-validation, and drain-loop checks in `Flashback.EncoderSink.Tests.cs`; keep force-rotate recovery in `Flashback.EncoderSink.ForceRotate.Tests.cs` and broad source-shape assertions in `Flashback.EncoderSink.SourceOwnership.Tests.cs`.
+
+Date: 2026-05-26
 Area: ssctl command-handler source contract test locality
 Problem: `CommandHandlers.Help.Tests.cs` held ssctl help/catalog force-flag coverage for the same command-handler surface whose consolidated source-family ownership checks lived in `CommandHandlers.SourceOwnership.Tests.cs`. Reviewing ssctl command-surface source contracts required opening two small legacy `Program` partial files before reaching the broader routing tests.
 Files consolidated: `tests/Sussudio.Tests/CommandHandlers.Help.Tests.cs`

@@ -1981,11 +1981,9 @@ Primary current owners:
   unrelated temp-directory preservation, startup-cache budget, session-id, and
   segment-extension validation tests.
 - `tests/Sussudio.Tests/Flashback.EncoderSink.Tests.cs` owns Flashback encoder
-  sink frame-rate, option, startup rollback, runtime counter, and PTS guard
+  sink frame-rate, option, startup rollback, runtime counter, PTS guard, queue
+  rejection, lifecycle cleanup, packet-validation, and drain-loop ordering
   tests.
-- `tests/Sussudio.Tests/Flashback.EncoderSink.QueuesAndDrain.Tests.cs` owns
-  Flashback encoder sink queue rejection, lifecycle cleanup, packet-validation,
-  and drain-loop ordering tests.
 - `tests/Sussudio.Tests/Flashback.EncoderSink.ForceRotate.Tests.cs` owns
   Flashback encoder sink force-rotate and segment-registration recovery tests.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
