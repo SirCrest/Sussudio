@@ -82,15 +82,14 @@ add xUnit alongside, and port incrementally.
   source telemetry panel checks.
 - `MainWindowUiContract.StatsSnapshot.Tests.cs` owns the former legacy stats
   snapshot construction and health/renderer metric projection checks.
-- `XUnit.ToolFormatterContractsTests.cs` owns focused tool formatter contract
-  checks.
 - `XUnit.AutomationContractsTests.cs` owns the former legacy automation xUnit
   execution groups: catalog, manifest, path-policy, reliability-gates,
   app-surface, ViewModel/Flashback UI, dispatcher, capture/Flashback routing,
   diagnostics snapshot projection, and diagnostics-loop polling checks. The
   public wrapper classes remain separate inside this file so existing test
   identities stay stable while the execution surface is easier to scan.
-- `XUnit.ToolContractsTests.cs` owns the former legacy PresentMon parser, ssctl
+- `XUnit.ToolContractsTests.cs` owns the former legacy tool xUnit execution
+  surface: focused tool formatter contract checks, PresentMon parser, ssctl
   pipe transport, KS audio-node, EGAVDS probe, shared automation snapshot
   formatter core, Flashback, Preview D3D, source ownership, ssctl formatter,
   NVML snapshot, CaptureSessionSnapshot default-state, and RTK I2C

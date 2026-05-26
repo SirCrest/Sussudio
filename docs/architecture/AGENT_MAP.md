@@ -1707,8 +1707,8 @@ Primary current owners:
     Flashback output rendering, and Preview D3D output rendering stay in
     `.Tests.cs`; shared formatter source ownership lives in `.Ownership.Tests.cs`.
   `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
-  surface for those shared snapshot formatter checks after their removal from
-  the legacy offline harness catalog.
+  surface for those shared snapshot formatter checks plus the focused formatter
+  JSON parsing and shared snapshot-field alignment checks.
 - `tests/Sussudio.Tests/Formatters.Tests.cs` owns ssctl formatted snapshot and
   timeline output smoke checks plus ssctl formatter source ownership assertions.
   `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
