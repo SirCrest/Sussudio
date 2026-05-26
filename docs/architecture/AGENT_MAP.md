@@ -1309,9 +1309,8 @@ Primary current owners:
   assertions, and bounded bitrate sample-window behavior assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.AsyncSurface.Tests.cs` owns
   the `IAutomationViewModel` async surface contract plus Flashback/probe
-  dispatcher routing and UI-dispatch cancellation disposal assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.Audio.Tests.cs` owns
-  automation audio/microphone command entry-point, microphone monitor
+  dispatcher routing, UI-dispatch cancellation disposal assertions,
+  automation audio/microphone command entry points, microphone monitor
   suppression, preview-volume persistence, automation options surface, and
   capture audio-monitoring coordinator surface and runtime-guard assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.UiSettings.Tests.cs` owns
