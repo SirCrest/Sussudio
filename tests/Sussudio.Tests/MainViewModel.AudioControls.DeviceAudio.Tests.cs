@@ -216,7 +216,7 @@ static partial class Program
         AssertContains(rootText, "public async Task<bool> SetAudioModeAsync(");
         AssertContains(rootText, "public async Task<bool> SetAnalogGainPercentAsync(");
         AssertContains(rootText, "internal sealed record DeviceAudioControlState(");
-        var deviceSupportText = ReadRepoFile("Sussudio/Services/Capture/NativeXu/NativeXuDeviceSupport.cs")
+        var deviceSupportText = ReadRepoFile("Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "private static readonly int[] InputByteIndexes");
@@ -250,7 +250,7 @@ static partial class Program
         AssertDoesNotContain(probeProjectText, "NativeXuAudioControlService.Profiles.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAudioControlService.Transport.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAudioControlService.RawTransport.cs");
-        AssertContains(probeProjectText, "NativeXuDeviceSupport.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuDeviceSupport.cs");
         foreach (var removedFile in new[]
         {
             "NativeXuAudioControlService.Profiles.cs",

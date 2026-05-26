@@ -29,14 +29,17 @@ static partial class Program
             "tools",
             "NativeXuAudioProbe",
             "NativeXuAudioProbe.csproj"));
-        foreach (var include in new[]
-        {
-            @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.cs",
-            @"..\..\Sussudio\Services\Capture\NativeXu\NativeXuDeviceSupport.cs"
-        })
-        {
-            AssertEqual(1, CountCompileInclude(probeIncludes, include), $"NativeXuAudioProbe links {include}");
-        }
+        AssertEqual(
+            1,
+            CountCompileInclude(probeIncludes, @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.cs"),
+            "NativeXuAudioProbe links the consolidated Native XU bridge");
+        AssertEqual(
+            0,
+            CountCompileInclude(probeIncludes, @"..\..\Sussudio\Services\Capture\NativeXu\NativeXuDeviceSupport.cs"),
+            "NativeXuDeviceSupport folded into the Native XU bridge linked source");
+        AssertContains(rootText, "internal static class NativeXuDeviceSupport");
+        AssertContains(rootText, "public static bool TryGetSupported4kXIds(");
+        AssertContains(rootText, "public static bool IsSupported4kXDevice(");
 
         foreach (var removedFile in new[]
         {
@@ -176,7 +179,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var atProtocolText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs")
             .Replace("\r\n", "\n");
-        var deviceSupportText = ReadRepoFile("Sussudio/Services/Capture/NativeXu/NativeXuDeviceSupport.cs")
+        var deviceSupportText = ReadRepoFile("Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs")
             .Replace("\r\n", "\n");
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
 
@@ -225,7 +228,7 @@ static partial class Program
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AudioSwitch.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.DeviceCommandReads.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.Selector4.cs");
-        AssertContains(probeProjectText, "NativeXuDeviceSupport.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuDeviceSupport.cs");
 
         return Task.CompletedTask;
     }

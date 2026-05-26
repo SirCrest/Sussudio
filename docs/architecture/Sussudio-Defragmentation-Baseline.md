@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: Native XU KS bridge support locality
+Problem: `NativeXuDeviceSupport.cs` was a small sidecar for the same Native XU bridge review path already owned by `KsExtensionUnitNative.cs`: shared 4K X VID/PID recognition, selected-interface projection, and the transport gate were split from the KS interface/handle/topology/XU transfer bridge, and `NativeXuAudioProbe` had to link an extra shared source file for one bridge surface.
+Files consolidated: `Sussudio/Services/Capture/NativeXu/NativeXuDeviceSupport.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; Native XU bridge support file count -1
+Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj -c Debug --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~NativeXu|FullyQualifiedName~DeviceAudio"` (8 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: affected `NativeXuAudioProbe` linked-source build passed; probe project now links `KsExtensionUnitNative.cs` for the consolidated bridge support; no CLI command names or arguments changed
+Behavior preserved: `NativeXuDeviceSupport` type name, extension-unit GUID, transport-gate timeout and serialization, supported 4K X VID/PID list, selected-interface projection, missing-interface logging, vendor/product parsing, telemetry/audio-control/discovery/probe call sites, and linked-probe source ownership checks remain intact.
+Notes for future agents: keep shared Native XU identity, selected-interface projection, and transport-gate support with `Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs` unless another consumer needs a smaller source-link surface independent from the KS bridge.
+
+Date: 2026-05-26
 Area: Flashback shared test helper locality
 Problem: `Flashback.Buffer.Helpers.cs` only carried private Flashback buffer factory helpers, completed-segment insertion, and sized-file helpers for the same legacy `Program` helper surface already owned by `Flashback.Tests.cs`. Reviewing Flashback test helpers required opening a separate tiny helper shard before returning to the shared Flashback source-reader/helper owner.
 Files consolidated: `tests/Sussudio.Tests/Flashback.Buffer.Helpers.cs`

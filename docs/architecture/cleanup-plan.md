@@ -149,7 +149,7 @@ placeholders, hex parsing, payload decode/confidence helpers, selector-3
 payload read/update workflow, verification against mutated control bytes,
 dev-specific candidate enumeration, raw XU GET/SET, raw payload
 normalization/rehydration, and retrying the shared native transport gate from
-`NativeXuDeviceSupport.cs`.
+`KsExtensionUnitNative.cs`.
 `AutomationDiagnosticsHub.SnapshotProjection.cs` owns snapshot construction
 routing, AV-sync projection/flattening, capture session command queue counters,
 latency, last-command, last-error projection inputs, selected device/capture/
@@ -929,9 +929,9 @@ Native XU Kernel Streaming calls are grouped under
 SetupAPI interface enumeration, handle opening, topology node parsing, XU
 GET/SET transfer shapes, and P/Invoke struct declarations in
 `KsExtensionUnitNative.cs`. Keep shared 4K X identity, selected-interface
-projection, and native transport gate ownership in `NativeXuDeviceSupport.cs`.
-`tools/NativeXuAudioProbe` links both files explicitly, so update its project
-file when this bridge changes. `tests/Sussudio.Tests/NativeXuAtCommandProvider.Tests.cs`
+projection, and native transport gate ownership in `KsExtensionUnitNative.cs`.
+`tools/NativeXuAudioProbe` links the bridge file explicitly, so update its
+project file when this bridge changes. `tests/Sussudio.Tests/NativeXuAtCommandProvider.Tests.cs`
 owns the cohesive KS bridge and probe-link ownership checks.
 
 Native device enumeration ownership is grouped under
@@ -1347,7 +1347,7 @@ Keep generic AT SET wrappers, named SET wrappers, and probe-facing raw AT reads
 there so public device command routing stays in one owner while shared device
 support continues to enforce identity, selected-interface, and transport gates.
 Shared device identity, selected-interface projection, and native transport
-gating live in `Sussudio/Services/Capture/NativeXu/NativeXuDeviceSupport.cs`;
+gating live in `Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs`;
 the root provider dispatches through that support into telemetry polling.
 
 Native XU audio command sequences now live in
