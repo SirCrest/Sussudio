@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: Flashback export output finalization locality
+Problem: `FlashbackExporter.OutputFiles.cs` held temp-output preparation, orphaned `.mp4.tmp` cleanup, active output trailer/IO finalization, atomic destination replacement, overwrite refusal, and invalid final-output cleanup in a separate partial even though those helpers are only used by the exporter request execution shells. Reviewing single-file or multi-segment export completion required opening an extra file after `FlashbackExporter.Execution.cs` and `FlashbackExporter.Segments.cs` reached `TryPrepareTempOutputFile`, `TryFinalizeActiveOutputFile`, and `DeleteTempFileIfPresent`.
+Files consolidated: `Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `FlashbackExporter` partial cluster reduced from 9 files to 8 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (885 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: no public automation command names, IDs, wire payloads, XAML bindings, export request DTOs, or Flashback command surfaces changed
+Behavior preserved: stale temp cleanup, orphan `.mp4.tmp` cleanup, active output trailer write, IO close, temp-output validation, overwrite refusal, atomic final move, invalid final-output deletion, `_activeTempPath` clearing, and single-file/segment export failure shaping remain unchanged.
+Notes for future agents: keep Flashback export request scheduling, progress/pacing, temp output preparation, and final output replacement in `FlashbackExporter.Execution.cs`; keep native input/output context cleanup and dispose-time locking in `FlashbackExporter.Lifecycle.cs`, stream setup in `FlashbackExporter.Streams.cs`, packet timing/buffer helpers in `FlashbackExporter.PacketTiming.cs`, and packet read/rebase loops in their packet owners.
+
+Date: 2026-05-26
 Area: MainViewModel automation test locality
 Problem: `MainViewModel.AutomationSnapshots.Ownership.Tests.cs` was an 86-line residual source-shape guard for automation snapshot/options behavior, while the adjacent automation async surface tests already own the public automation ports, async probe surface, and compatibility routing that these guards describe. Reviewing MainViewModel automation ownership required opening one extra tiny test file for assertions about the same automation facade.
 Files consolidated: `tests/Sussudio.Tests/MainViewModel.AutomationSnapshots.Ownership.Tests.cs`
@@ -1870,7 +1882,7 @@ Partial clusters reduced: `FlashbackExporter` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: single-file input/range/output validation, source overwrite refusal, temp-path overwrite refusal, export lock acquisition/release, FFmpeg initialization, stream-info lookup, bounded stream-count validation, seek warning behavior, output context/header setup, packet writing handoff, final output replacement, success/failure result shaping, native cleanup, temp cleanup, and cancellation handling remain unchanged
-Notes for future agents: keep single-file request scheduling and the synchronous single-file export shell together in `FlashbackExporter.Execution.cs`; keep packet pump/rebasing state in `FlashbackExporter.SingleFilePacketReadLoop.cs`, shared stream setup in `Streams.cs`, temp/final output replacement in `OutputFiles.cs`, and validation helpers in `Validation.cs`
+Notes for future agents: keep single-file request scheduling and the synchronous single-file export shell together in `FlashbackExporter.Execution.cs`; keep packet pump/rebasing state in `FlashbackExporter.SingleFilePacketReadLoop.cs`, shared stream setup in `Streams.cs`, temp/final output replacement in `Execution.cs`, and validation helpers in `Validation.cs`
 
 Date: 2026-05-25
 Area: CaptureService Flashback export request locality

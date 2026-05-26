@@ -28,8 +28,7 @@ static partial class Program
         var executionPolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Execution.cs")
             .Replace("\r\n", "\n");
         var singleFileText = executionPolicyText;
-        var outputFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs")
-            .Replace("\r\n", "\n");
+        var outputFilesText = executionPolicyText;
         var validationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Validation.cs")
             .Replace("\r\n", "\n");
         var segmentValidationText = validationText;
@@ -150,8 +149,8 @@ static partial class Program
         AssertContains(outputFilesText, "TryFinalizeTempOutputFile(tmpPath, outputPath, allowOverwrite, out outputBytes, out failureMessage)");
         AssertContains(outputFilesText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'\");");
         AssertContains(outputFilesText, "_activeTempPath = null;");
-        AssertDoesNotContain(singleFileText, "av_write_trailer(_activeOutputContext)");
-        AssertDoesNotContain(singleFileText, "CloseOutputIo();\n\n            if (!TryFinalizeTempOutputFile");
+        AssertContains(singleFileText, "av_write_trailer(_activeOutputContext)");
+        AssertContains(singleFileText, "CloseOutputIo();\n\n        if (!TryFinalizeTempOutputFile");
         AssertContains(singleFileText, "if (!TryFinalizeActiveOutputFile(tmpPath, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))");
         AssertDoesNotContain(segmentsText, "av_write_trailer(_activeOutputContext)");
         AssertDoesNotContain(segmentsText, "CloseOutputIo();\n\n            if (!TryFinalizeTempOutputFile");
@@ -240,7 +239,8 @@ static partial class Program
             "FlashbackExporter.Progress.cs",
             "FlashbackExporter.WriterPacing.cs",
             "FlashbackExporter.RuntimePolicy.cs",
-            "FlashbackExporter.SingleFile.cs"
+            "FlashbackExporter.SingleFile.cs",
+            "FlashbackExporter.OutputFiles.cs"
         })
         {
             AssertEqual(

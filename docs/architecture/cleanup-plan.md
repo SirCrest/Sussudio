@@ -1616,9 +1616,9 @@ and segment stream-layout compatibility checks live in
 `Sussudio/Services/Flashback/FlashbackExporter.Streams.cs`. Temp output
 validation, active output trailer/IO close finalization, atomic replacement,
 overwrite policy, and invalid final-output cleanup live in
-`Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs`.
+`Sussudio/Services/Flashback/FlashbackExporter.Execution.cs`.
 Temp output cleanup, stale temp preparation, and orphan `.mp4.tmp` cleanup live
-in `Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs`.
+in `Sussudio/Services/Flashback/FlashbackExporter.Execution.cs`.
 
 D3D preview renderer metrics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep present
