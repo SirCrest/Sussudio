@@ -3045,15 +3045,14 @@ Primary owners:
   recording-readiness wait, plus setup result records. Keep fixed setup
   mutations on `DiagnosticSessionCommandChannel` typed `AutomationCommandKind`
   sends.
-- `tools/Common/DiagnosticSessionCleanupActions.cs` owns diagnostic-session
-  cleanup flow, ordering, stage/action naming, cleanup result handoff, recording
-  stop for verification, Flashback playback go-live restore, preview stop, and
-  Flashback enable-state restore through typed automation commands.
-- `tools/Common/DiagnosticSessionRecordingChecks.cs` owns post-cleanup
-  diagnostic-session recording checks: deferred Flashback recording-settings
-  restore, last-recording or Flashback export verification command selection,
-  payload shape, 60-second timeout, cloned verification result, skipped-
-  verification action text, and Flashback recording validation. Keep the
+- `tools/Common/DiagnosticSessionPostRunActions.cs` owns diagnostic-session
+  cleanup and recording-check flow: cleanup ordering, stage/action naming,
+  cleanup result handoff, recording stop for verification, Flashback playback
+  go-live restore, preview stop, Flashback enable-state restore through typed
+  automation commands, deferred Flashback recording-settings restore, last-
+  recording or Flashback export verification command selection, payload shape,
+  60-second timeout, cloned verification result, skipped-verification action
+  text, and Flashback recording validation. Keep the `cleanup-*`,
   `settings-deferred-restore`, `recording-verification`, and
   `recording-validation` stage names stable there.
 - `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs` owns Flashback

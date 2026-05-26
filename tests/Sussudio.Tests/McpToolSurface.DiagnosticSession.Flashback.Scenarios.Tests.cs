@@ -601,7 +601,7 @@ static partial class Program
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
-        var recordingChecksText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
+        var recordingChecksText = ReadDiagnosticSessionCleanupActionsSource()
             .Replace("\r\n", "\n");
         var recordingSettingsText = ReadDiagnosticSessionFlashbackRecordingSettingsScenariosSource();
 

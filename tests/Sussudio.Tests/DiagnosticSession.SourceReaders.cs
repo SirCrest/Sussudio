@@ -6,7 +6,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionCleanupActionsSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionCleanupActions.cs");
+            "tools/Common/DiagnosticSessionPostRunActions.cs");
 
     private static string ReadDiagnosticSessionScenarioSetupSource()
         => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioSetup.cs");

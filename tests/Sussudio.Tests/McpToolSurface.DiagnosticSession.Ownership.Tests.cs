@@ -336,7 +336,7 @@ static partial class Program
     internal static Task DiagnosticSessionRecordingChecks_OwnPostRunRecordingVerification()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
-        var recordingChecksText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
+        var recordingChecksText = ReadDiagnosticSessionCleanupActionsSource()
             .Replace("\r\n", "\n");
         var recordingVerificationText = recordingChecksText;
 

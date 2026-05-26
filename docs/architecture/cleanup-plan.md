@@ -2961,19 +2961,16 @@ recording-readiness wait, and setup result records. Fixed setup mutations
 should use `DiagnosticSessionCommandChannel` typed `AutomationCommandKind`
 sends.
 
-Diagnostic-session cleanup mutations now live in
-`tools/Common/DiagnosticSessionCleanupActions.cs`. It owns the public cleanup
+Diagnostic-session post-run actions now live in
+`tools/Common/DiagnosticSessionPostRunActions.cs`. It owns the public cleanup
 flow and ordering, recording stop for verification, Flashback playback go-live
 restore, preview stop, Flashback enable-state restore, typed automation command
-sends, and the cleanup result record, while result analysis validation owns the
+sends, cleanup result record, deferred Flashback recording-settings restore,
+last-recording or Flashback export verification command selection, payload
+shape, 60-second timeout, cloned verification result, skipped-verification
+action text, and Flashback recording validation while the runner keeps the
+high-level post-cleanup phase order. Result analysis validation owns the
 post-cleanup warning validator.
-
-Diagnostic-session recording checks now live in
-`tools/Common/DiagnosticSessionRecordingChecks.cs`. It owns deferred Flashback
-recording-settings restore, last-recording or Flashback export verification
-command selection, payload shape, 60-second timeout, cloned verification
-result, skipped-verification action text, and Flashback recording validation
-while the runner keeps the high-level post-cleanup phase order.
 
 Diagnostic-session post-run snapshot fetches now live in
 `tools/Common/DiagnosticSessionRunner.cs` beside the completion phase that
@@ -3167,8 +3164,7 @@ Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient/AutomationPipeClient.cs`
 - `DiagnosticSessionBackgroundTasks.cs`
-- `DiagnosticSessionCleanupActions.cs`
-- `DiagnosticSessionRecordingChecks.cs`
+- `DiagnosticSessionPostRunActions.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackExportScenarios.cs`

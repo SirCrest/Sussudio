@@ -230,7 +230,6 @@ static partial class Program
                 + "\n" + ReadDiagnosticSessionScenarioSetupSource()
                 + "\n" + ReadDiagnosticSessionScenarioStartupSource()
                 + "\n" + ReadDiagnosticSessionCleanupActionsSource()
-                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
                 + "\n" + ReadDiagnosticSessionResultBuilderSource()
                 + "\n" + ReadDiagnosticSessionBackgroundTasksSource()
                 + "\n" + ReadDiagnosticSessionFlashbackCycleScenariosSource()
