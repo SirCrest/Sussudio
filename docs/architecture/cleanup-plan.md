@@ -2010,7 +2010,10 @@ which owns optional diagnostic polling, snapshot publication, timer/lifetime
 behavior, graceful unavailable handling, raw NVML constants, structs, library
 loading, device-name lookup, and P/Invoke declarations. Keep the monitor
 diagnostic-only and do not let missing NVML support affect capture, preview, or
-recording startup.
+recording startup. NVML snapshot/unit conversion and monitor interop ownership
+checks now live with the tool-model contract group in
+`tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` and
+`tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`.
 
 Automation snapshot contracts now live in named model files under
 `Sussudio/Models/Automation/`. The broad automation evidence DTO is split as an

@@ -1660,9 +1660,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.FrameFlow.Tests.cs` owns pending
   frame draining, frame-capture cancellation, and shared D3D device reference
   lifecycle assertions.
-- `tests/Sussudio.Tests/GpuTelemetry.Nvml.Tests.cs` owns NVML snapshot
+- `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` and
+  `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` own NVML snapshot
   computed-property/unit-conversion checks and `NvmlMonitor` native interop
-  ownership assertions.
+  ownership assertions alongside the tool-model contract group.
 - `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` owns RuntimePaths,
   RuntimePaths resolution-policy source ownership, FFmpeg runtime location,
   bounded external process supervision, MMCSS registration, ProcessSpec, and

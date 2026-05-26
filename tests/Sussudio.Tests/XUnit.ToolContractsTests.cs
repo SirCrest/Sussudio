@@ -121,6 +121,13 @@ public sealed class ToolModelContractsTests
     }
 
     [Fact]
+    public async Task NvmlMonitorNativeInteropLivesWithMonitorOwner()
+    {
+        global::Program.EnsureTargetAssemblyLoadedForXUnit();
+        await global::Program.NvmlMonitor_NativeInteropLivesWithMonitorOwner();
+    }
+
+    [Fact]
     public async Task CaptureSessionSnapshotDefaultState()
     {
         global::Program.EnsureTargetAssemblyLoadedForXUnit();

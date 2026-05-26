@@ -3810,3 +3810,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; test locality only. Full solution build still rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, build targets, publish locale policy, or latest-build staging behavior changed.
 Behavior preserved: the project-file English-only publish locale and latest-build staging assertions now execute through `AutomationAppSurfaceContractsTests` in `XUnit.AutomationContractsTests.cs`, with implementation checks kept in `AppSurface.Tests.cs`.
 Notes for future agents: keep app project/build surface checks with the app-surface contract cluster unless they gain an independent fixture, MSBuild execution harness, or reusable build-policy helper.
+
+Date: 2026-05-26
+Area: NVML tool-model contract test locality
+Problem: `GpuTelemetry.Nvml.Tests.cs` was a tiny legacy `Program` shard even though the public xUnit execution surface for NVML snapshot behavior already lived in the tool-model contract group. It also held a private native-interop ownership check that was not registered as an xUnit fact.
+Files consolidated: `tests/Sussudio.Tests/GpuTelemetry.Nvml.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: n/a; GPU telemetry test shard count -1 while adding explicit xUnit coverage for NVML native interop ownership
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (885 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: not applicable; test locality only. Full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, NVML polling behavior, optional telemetry fallback, or GPU stat formatting changed.
+Behavior preserved: NVML snapshot computed-property/unit conversion checks now live in `AutomationToolContracts.Tests.cs` and continue through `XUnit.ToolContractsTests.cs`; `NvmlMonitor` native interop ownership is now an explicit xUnit fact in the same tool-model contract group.
+Notes for future agents: keep NVML snapshot model and diagnostic monitor ownership assertions with the tool-model contract group unless GPU telemetry grows a dedicated executable fixture or hardware-backed test harness.
