@@ -531,10 +531,10 @@ static partial class Program
     internal static Task DiagnosticSessionFlashbackRejectedExports_OwnRejectionFlows()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
-        var rejectedExportsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.cs")
+        var rejectedExportsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(rejectedExportsText, "internal static class DiagnosticSessionFlashbackRejectedExports");
+        AssertContains(rejectedExportsText, "internal static class DiagnosticSessionFlashbackExportScenarios");
         AssertContains(rejectedExportsText, "internal static async Task RunSelectedRejectedExportScenariosAsync(");
         AssertContains(rejectedExportsText, "private static async Task RunFlashbackExportRejectedAsync(");
         AssertContains(rejectedExportsText, "\"flashback-rejected-export.mp4\"");
@@ -548,8 +548,12 @@ static partial class Program
         AssertContains(dispatchText, "scenarioPlan.RunFlashbackExportRejected");
         AssertContains(dispatchText, "scenarioPlan.RunFlashbackRecordingExportRejected");
         AssertOccursBefore(dispatchText, "RunFlashbackExportRejectedAsync(", "RunFlashbackRecordingExportRejectedAsync(");
-        AssertContains(runnerText, "DiagnosticSessionFlashbackRejectedExports.RunSelectedRejectedExportScenariosAsync(");
-        AssertDoesNotContain(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackRejectedExports;");
+        AssertContains(runnerText, "DiagnosticSessionFlashbackExportScenarios.RunSelectedRejectedExportScenariosAsync(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackRejectedExports.cs")),
+            "Flashback rejected-export scenarios stay folded into the export scenario owner");
+        AssertDoesNotContain(runnerText, "DiagnosticSessionFlashbackRejectedExports.");
         AssertDoesNotContain(runnerText, "RunFlashbackExportRejectedAsync(");
         AssertDoesNotContain(runnerText, "RunFlashbackRecordingExportRejectedAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackExportRejectedAsync(");

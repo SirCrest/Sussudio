@@ -96,7 +96,7 @@ internal static class DiagnosticSessionScenarioPhaseRunner
             .CompleteRegisteredScenarioWorkAsync(scenarioPhase.FlashbackRecordingSettingsDeferredPresetState)
             .ConfigureAwait(false);
 
-        await DiagnosticSessionFlashbackRejectedExports.RunSelectedRejectedExportScenariosAsync(
+        await DiagnosticSessionFlashbackExportScenarios.RunSelectedRejectedExportScenariosAsync(
                 context.ScenarioPlan,
                 context.OutputDirectory,
                 context.Actions,

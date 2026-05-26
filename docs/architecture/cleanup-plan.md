@@ -3015,11 +3015,12 @@ recording-backed diagnostics. Preview-cycle scenario selection stays in the
 `DiagnosticSessionScenarioCatalog` family, including grouped preview-cycle
 policy.
 
-Diagnostic-session Flashback rejected-export scenarios now live in the
-`tools/Common/DiagnosticSessionFlashbackRejectedExports*.cs` partial family.
-The root owns selected-scenario dispatch, `.Inactive.cs` owns inactive-buffer
-failure-kind and last-result assertions, and `.Recording.cs` owns
-active-Flashback-recording failure-kind and backend-stability assertions.
+Diagnostic-session Flashback rejected-export scenarios now live with the
+Flashback export scenario owner in
+`tools/Common/DiagnosticSessionFlashbackExportScenarios.cs`. The export scenario
+owner covers selected rejected-export dispatch, inactive-buffer failure-kind and
+last-result assertions, and active-Flashback-recording failure-kind and
+backend-stability assertions.
 
 Diagnostic-session Flashback recording-settings deferral now lives in
 `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`, which owns deferred
@@ -3129,7 +3130,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExportScenarios.cs`
 - `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
-- `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
 - `DiagnosticSessionFlashbackSegments.cs`

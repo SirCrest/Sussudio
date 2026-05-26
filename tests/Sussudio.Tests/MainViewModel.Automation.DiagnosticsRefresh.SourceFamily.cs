@@ -231,7 +231,6 @@ static partial class Program
                 + "\n" + ReadDiagnosticSessionFlashbackLifecycleScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackMetricsSource()
                 + "\n" + ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource()
-                + "\n" + ReadDiagnosticSessionFlashbackRejectedExportsSource()
                 + "\n" + ReadDiagnosticSessionFlashbackRecordingSettingsScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackSegmentsSource()
@@ -270,11 +269,6 @@ static partial class Program
     private static string ReadDiagnosticSessionFlashbackExportsSource()
     {
         return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs");
-    }
-
-    private static string ReadDiagnosticSessionFlashbackRejectedExportsSource()
-    {
-        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.cs");
     }
 
     private static string ReadNormalizedRepoFile(string path)

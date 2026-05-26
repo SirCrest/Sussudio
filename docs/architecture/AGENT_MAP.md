@@ -2984,9 +2984,11 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackExportScenarios.cs` owns Flashback
   export diagnostic scenario task registration plus concurrent export, rotated
   export, disable-during-export command coordination, export-during-playback
-  choreography, and selection-range export orchestration. Keep the scenario
-  registration, command flows, verification, cleanup, and playback
-  command-health checks together in this scenario-family owner.
+  choreography, selection-range export orchestration, rejected-export dispatch,
+  inactive-buffer failure-kind assertions, and active-Flashback-recording
+  backend-stability assertions. Keep the scenario registration, command flows,
+  verification, cleanup, and playback command-health checks together in this
+  scenario-family owner.
 - `tools/Common/DiagnosticSessionFlashbackMetrics.cs` owns Flashback diagnostic
   recording/export, playback-session, and playback-result metric projection. It
   includes the `FlashbackRecordingSessionMetrics`,
@@ -3006,9 +3008,6 @@ Primary owners:
   validation, export-while-preview-off verification, playback-under-preview-stop
   validation, recording-backed readiness/counter validation, and restart
   frame-flow validation.
-- `tools/Common/DiagnosticSessionFlashbackRejectedExports.cs` owns Flashback
-  rejected-export diagnostic scenario dispatch, inactive-buffer failure-kind
-  assertions, and active-Flashback-recording backend-stability assertions.
 - `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
   owns deferred recording-settings preset state, during-recording preset
   mutation, restart/disable rejection-message policy, active-recording
