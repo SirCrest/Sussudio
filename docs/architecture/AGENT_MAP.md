@@ -1399,9 +1399,11 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview frame-rate
   selection/timing catalog group.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.VideoFormat.Tests.cs`
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs`
   owns selected capture-format and mode-tuple video-format filtering policy
-  assertions.
+  assertions plus compact selection-policy ownership assertions for
+  mode-selection reset, resolved automatic frame-rate application, and
+  recording format selection policy ownership.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Behavior.Tests.cs`
   owns resolution-selection source-shape assertions for option rebuild,
   auto-selection state, pure policy placement, and policy behavior assertions
@@ -1410,10 +1412,6 @@ Primary current owners:
   owns xUnit execution for the former legacy presentation-preview MainWindow
   and adjacent selection/runtime guard catalog groups after their removal from
   the legacy offline harness catalog.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Ownership.Tests.cs`
-  owns compact selection-policy ownership assertions for mode-selection reset,
-  resolved automatic frame-rate application, and recording format selection
-  policy ownership.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.DeviceFormatProbeRetarget.Tests.cs`
   owns late device-format probe retarget policy behavior and application
   ownership assertions.

@@ -49,6 +49,19 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: Capture selection policy core test locality
+Problem: `MainViewModel.Capture.SelectionPolicy.Ownership.Tests.cs` held mode-selection and recording-settings ownership checks for the same `PresentationPreviewCaptureSelectionPolicyContractsTests` wrapper class whose video-format policy source-shape and behavior checks lived in `MainViewModel.Capture.SelectionPolicy.VideoFormat.Tests.cs`. Reviewing the core capture selection policy group required opening two sibling files, and the video-format filename no longer described the full owner.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Ownership.Tests.cs`
+Files renamed: `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.VideoFormat.Tests.cs` -> `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` capture selection policy shard count reduced by one
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter 'FullyQualifiedName~PresentationPreviewCaptureSelectionPolicyContractsTests'` (4 passed); full validation recorded in checkpoint commit notes
+CLI/MCP/pipe checks, if applicable: not applicable
+Behavior preserved: test-only relocation/rename; xUnit method names and invoked `Program` contract names unchanged
+Notes for future agents: keep mode-selection, recording-settings, capture-format source-shape, and capture-format behavior checks together in `MainViewModel.Capture.SelectionPolicy.Tests.cs`; use separate files only for independent policy families such as resolution, frame-rate timing, or late device-format probe retarget behavior.
+
+Date: 2026-05-26
 Area: CaptureService health snapshot test locality
 Problem: CaptureService health snapshot ownership checks were split across three files that all declared the same `CaptureServiceHealthSnapshotOwnershipTests` partial xUnit class. Reviewing health snapshot assembly, sampler, Flashback, recording, and source-telemetry ownership required opening multiple partial test shards for one health snapshot boundary.
 Files consolidated: `tests/Sussudio.Tests/CaptureService.HealthSnapshots.FlashbackOwnership.Tests.cs`; `tests/Sussudio.Tests/CaptureService.HealthSnapshots.RecordingAndSourceTelemetryOwnership.Tests.cs`
