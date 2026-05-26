@@ -773,14 +773,14 @@ recording-aware close finalization lives there too.
 
 Top-level shell resize telemetry throttling for preview compositor transforms
 now lives in `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs`.
-`Sussudio/MainWindow.PreviewRenderer.Composition.cs`
+`Sussudio/MainWindow.PreviewLifecycle.Composition.cs`
 wires renderer-host context callbacks, the `SizeChanged` adapter, renderer-host
 reset handoff, and stable start/stop/shutdown/reinit-unsafe-window automation
 adapters. Preview surface sizing, GPU panel visibility, video/control-bar
 composition shadow visuals, bounds alignment, clear behavior, and compositor
 opacity fade routing now live together in
 `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs`.
-`Sussudio/MainWindow.PreviewRenderer.Composition.cs` is the XAML-facing adapter
+`Sussudio/MainWindow.PreviewLifecycle.Composition.cs` is the XAML-facing adapter
 for preview renderer and surface wiring.
 `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns renderer
 startup dimension/fps/HDR/min-present-interval planning.
@@ -790,7 +790,7 @@ renderer startup planning, CPU fallback attachment, D3D renderer startup and
 event/failure handling, cleanup, D3D reinit renderer-stop/timeout policy,
 disposal, unsafe-window telemetry, stop tick accounting, fresh SwapChainPanel
 replacement, and retired-renderer handoff during D3D renderer mode switches.
-`Sussudio/MainWindow.PreviewRenderer.Composition.cs` owns the stable automation
+`Sussudio/MainWindow.PreviewLifecycle.Composition.cs` owns the stable automation
 preview snapshot adapter and context wiring alongside preview renderer host
 composition.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`,
@@ -2484,7 +2484,7 @@ opacity fades route through the preview surface shadow controller kept in
 
 Preview button glyph/tooltip presentation for Start Preview and Stop Preview
 now lives in `Sussudio/Controllers/Preview/PreviewButtonActionController.cs`.
-`Sussudio/MainWindow.PreviewRenderer.Composition.cs`
+`Sussudio/MainWindow.PreviewLifecycle.Composition.cs`
 wires preview button presentation callbacks and preview
 lifecycle property/event routing. Preview
 button command choreography now lives in
@@ -2580,7 +2580,7 @@ Preview startup loading overlay presentation now lives in
 timeout recovery stay in `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`.
 Top-level preview resize telemetry throttling now lives in
 `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs`.
-`Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires renderer-host context
+`Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires renderer-host context
 callbacks, the `SizeChanged` adapter, renderer-host reset handoff, renderer
 start/stop/shutdown, and reinit-unsafe-window adapters; reinit renderer-stop/timeout policy lives with
 `PreviewRendererHostController.cs`; preview surface presentation and shadow
@@ -2588,7 +2588,7 @@ visuals live together with `PreviewSurfacePresentationController`.
 
 Preview-specific ViewModel event lifecycle and preview property-change routing
 now live in `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`.
-`Sussudio/MainWindow.PreviewRenderer.Composition.cs`
+`Sussudio/MainWindow.PreviewLifecycle.Composition.cs`
 wires button presentation callbacks and preserves event
 handler signatures and delegates into the controller. The broad
 `MainWindow.xaml.cs` dispatcher now owns only the `PropertyChanged`

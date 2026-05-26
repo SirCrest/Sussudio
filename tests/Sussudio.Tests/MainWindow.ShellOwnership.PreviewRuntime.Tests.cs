@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -420,6 +420,7 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
         var previewRuntimeSnapshotText = previewRendererText;
+        var previewRuntimeSnapshotInitialization = ExtractMemberCode(previewRuntimeSnapshotText, "InitializePreviewRuntimeSnapshotSamplingController");
         var previewRuntimeSnapshotControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotSamplingControllerText = previewRuntimeSnapshotControllerText;
         var previewRuntimeSnapshotMapperText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotMapper.cs").Replace("\r\n", "\n");
@@ -526,12 +527,12 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotModelText, "public PreviewSlowFrameDiagnostic[] D3DRecentSlowFrames { get; init; } = Array.Empty<PreviewSlowFrameDiagnostic>();");
         AssertContains(previewRuntimeSnapshotModelText, "public string GpuPlaybackState { get; init; } = \"None\";");
         AssertDoesNotContain(previewRuntimeSnapshotModelText, "partial class PreviewRuntimeSnapshot");
-        AssertContains(agentMapText, "MainWindow.PreviewRenderer.Composition.cs");
+        AssertContains(agentMapText, "MainWindow.PreviewLifecycle.Composition.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotController.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
         AssertContains(agentMapText, "surface/startup/GPU playback projection policies");
         AssertContains(agentMapText, "health input factory");
-        AssertContains(cleanupPlanText, "MainWindow.PreviewRenderer.Composition.cs");
+        AssertContains(cleanupPlanText, "MainWindow.PreviewLifecycle.Composition.cs");
         AssertContains(cleanupPlanText, "surface/frame");
         AssertContains(cleanupPlanText, "display cadence");
         AssertContains(cleanupPlanText, "D3D renderer diagnostics");
@@ -553,7 +554,7 @@ static partial class Program
         AssertDoesNotContain(previewRuntimeSnapshotText, "TaskCompletionSource<PreviewRuntimeSnapshot>");
         AssertDoesNotContain(previewRuntimeSnapshotText, "return new PreviewRuntimeSnapshot");
         AssertDoesNotContain(previewRuntimeSnapshotText, "new PreviewRuntimeSnapshotInput");
-        AssertDoesNotContain(previewRuntimeSnapshotText, "BuildPreviewStartupMissingSignals()");
+        AssertDoesNotContain(previewRuntimeSnapshotInitialization, "BuildPreviewStartupMissingSignals()");
         AssertDoesNotContain(previewRuntimeSnapshotText, "FramesArrived = _previewRendererHostController.FramesArrived,");
         AssertDoesNotContain(previewRuntimeSnapshotSamplingControllerText, "TaskCompletionSource<PreviewRuntimeSnapshot>");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetRenderCpuTimingMetrics()");

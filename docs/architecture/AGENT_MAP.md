@@ -1021,7 +1021,7 @@ Primary current owners:
   `Sussudio/MainWindow.ShellChrome.Composition.cs`, and `Sussudio/MainWindow.xaml.cs`.
 - `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns top-level
   preview resize telemetry throttling and reset state for preview compositor
-  transforms. `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires the
+  transforms. `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires the
   renderer host context, `SizeChanged` adapter, renderer-host reset handoff,
   stable start/stop, shutdown, and reinit-unsafe-window automation adapters.
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns hosted preview
@@ -1033,9 +1033,9 @@ Primary current owners:
   `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs` owns preview
   surface content-fit sizing, GPU panel visibility, video/control-bar
   composition shadow visuals, bounds alignment, clear behavior, and compositor
-  opacity fade routing. `MainWindow.PreviewRenderer.Composition.cs`
+  opacity fade routing. `MainWindow.PreviewLifecycle.Composition.cs`
   is the XAML-facing adapter for preview renderer and surface wiring.
-- `Sussudio/MainWindow.PreviewRenderer.Composition.cs` owns the stable
+- `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` owns the stable
   automation preview snapshot adapter and context wiring alongside preview
   renderer host composition.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`
@@ -1479,7 +1479,7 @@ Primary current owners:
   MainWindow root helper for `MainWindow.xaml.cs`.
 - `tests/Sussudio.Tests/MainWindow.CompositionSource.cs` also owns the source
   reader for property-changed preview assertions over
-  `MainWindow.PreviewRenderer.Composition.cs`.
+  `MainWindow.PreviewLifecycle.Composition.cs`.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
   Flashback export backend-lease, export-operation lock, ViewModel export
   routing, and export CTS lifecycle assertions.
@@ -2208,7 +2208,7 @@ Primary current owners:
   reset, unavailable-placeholder reveal, and delayed preview reveal after first
   visual while preserving the `PreviewButtonActionController`,
   `PreviewButtonPresentationController`, and `PreviewFadeInController` types.
-  `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires preview button presentation callbacks and preview
+  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires preview button presentation callbacks and preview
   lifecycle property/event routing.
 - `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`
   keeps the XAML event name stable as part of the preview transition/presentation
@@ -2272,7 +2272,7 @@ Primary current owners:
   `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview-
   specific ViewModel event lifecycle and the preview property-change router for
   preview start/stop/reinit state.
-  `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires preview button
+  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires preview button
   presentation callbacks and
   preserves preview event-handler signatures and delegates into the controller.
   `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
@@ -2294,7 +2294,7 @@ Primary current owners:
   is the XAML-facing adapter.
 - `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns top-level
   preview resize log throttling and reset state.
-  `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires renderer-host
+  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires renderer-host
   context callbacks, the XAML-facing `SizeChanged` adapter, renderer-host reset
   handoff, renderer start/stop/shutdown, and reinit-unsafe-window adapters;
   reinit renderer-stop/timeout policy lives with `PreviewRendererHostController.cs`;

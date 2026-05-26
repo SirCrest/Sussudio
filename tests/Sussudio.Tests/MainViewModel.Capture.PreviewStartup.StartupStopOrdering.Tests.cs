@@ -12,6 +12,7 @@ static partial class Program
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadMainWindowPropertyChangedPreviewAdapterSource();
+        var previewPropertyChangedHandler = ExtractMemberCode(previewPropertyChangedText, "TryHandlePreviewPropertyChangedAsync");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs")
             .Replace("\r\n", "\n");
         var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
@@ -38,9 +39,9 @@ static partial class Program
         AssertContains(previewLifecycleControllerText, "_context.ShowStopPreviewButtonPresentation();");
         AssertContains(previewLifecycleControllerText, "_context.ShowStartPreviewButtonPresentation();");
         AssertContains(previewLifecycleControllerText, "_context.ApplyHdrToggleEnabledState();");
-        AssertDoesNotContain(previewPropertyChangedText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
-        AssertDoesNotContain(previewPropertyChangedText, "private Task ViewModel_PreviewRendererStopRequested()");
-        AssertDoesNotContain(previewPropertyChangedText, "private void HandlePreviewReinitializingChanged()");
+        AssertDoesNotContain(previewPropertyChangedHandler, "ViewModel_PreviewReinitRequested(");
+        AssertDoesNotContain(previewPropertyChangedHandler, "ViewModel_PreviewRendererStopRequested(");
+        AssertDoesNotContain(previewPropertyChangedHandler, "HandlePreviewReinitializingChanged(");
         AssertDoesNotContain(previewReinitText, "renderer.StopRenderThread();");
 
         return Task.CompletedTask;
@@ -52,6 +53,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewPropertyChangedText = ReadMainWindowPropertyChangedPreviewAdapterSource();
+        var previewPropertyChangedHandler = ExtractMemberCode(previewPropertyChangedText, "TryHandlePreviewPropertyChangedAsync");
         var previewVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
             .Replace("\r\n", "\n");
         var audioVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs")
@@ -89,7 +91,7 @@ static partial class Program
         AssertOccursBefore(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken);", "_context.RaisePreviewStopRequested();");
         AssertOccursBefore(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken);", "await _context.SessionCoordinator.StopAudioPreviewAsync(cancellationToken);");
 
-        AssertDoesNotContain(previewPropertyChangedText, "private Task ViewModel_PreviewRendererStopRequested()");
+        AssertDoesNotContain(previewPropertyChangedHandler, "ViewModel_PreviewRendererStopRequested(");
         var previewReinitStop = ExtractMemberCode(previewReinitText, "ViewModel_PreviewRendererStopRequested");
         AssertContains(previewReinitStop, "=> _previewRendererHostController.StopRendererForReinitTeardownAsync();");
         AssertDoesNotContain(previewReinitStop, "renderer.StopRenderThread();");

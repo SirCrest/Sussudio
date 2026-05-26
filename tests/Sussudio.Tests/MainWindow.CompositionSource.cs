@@ -12,7 +12,7 @@ static partial class Program
         => ReadMainWindowAdapterSource("Sussudio/MainWindow.Flashback.Interactions.cs");
 
     private static string ReadMainWindowPreviewRendererAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewRenderer.Composition.cs");
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewLifecycle.Composition.cs");
 
     private static string ReadMainWindowPreviewStartupAdapterSource()
         => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewLifecycle.Composition.cs");
@@ -21,7 +21,7 @@ static partial class Program
         => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewLifecycle.Composition.cs");
 
     private static string ReadMainWindowPropertyChangedPreviewAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewRenderer.Composition.cs");
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewLifecycle.Composition.cs");
 
     private static string ReadMainWindowShellChromeAdapterSource()
         => ReadMainWindowAdapterSource("Sussudio/MainWindow.ShellChrome.Composition.cs");
