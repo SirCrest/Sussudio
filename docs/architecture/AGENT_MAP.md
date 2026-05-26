@@ -1477,10 +1477,8 @@ Primary current owners:
   Flashback backend disposal, and preview reinit disposal.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.LifecycleLogs.Tests.cs`
   owns Flashback lifecycle outcome log-token, codec no-downgrade, export
-  force-rotate, and buffer-cycle assertions.
-- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackFrameRate.Tests.cs`
-  owns Flashback delivered-cadence rational and enable/disable preview-state
-  assertions.
+  force-rotate, buffer-cycle, delivered-cadence rational, and enable/disable
+  preview-state assertions.
 - `tests/Sussudio.Tests/MainViewModel.AudioRuntime.Tests.cs` owns audio
   monitoring visual state and audio-ramp trace telemetry ownership assertions.
 - `tests/Sussudio.Tests/XUnit.SmallContractsTests.cs` owns ported audio input,
