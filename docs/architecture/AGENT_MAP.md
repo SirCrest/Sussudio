@@ -1498,8 +1498,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.SmallContractsTests.cs` owns ported audio input,
   audio level event, capture device metadata/default collection, and automation
   window action enum contract checks.
-- `tests/Sussudio.Tests/XUnit.MediaFormatTests.cs` owns MediaFormat
-  equality and hash-code contract checks.
+- `tests/Sussudio.Tests/XUnit.CaptureConfigurationModelsTests.cs` owns
+  MediaFormat equality/hash-code checks alongside the broader capture
+  configuration model contract surface.
 - `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` and its
   `SnapshotModels.*` partials own the xUnit snapshot-model contract suite.
   `SnapshotModels.Tests.cs` owns shared snapshot-model spec DTOs and

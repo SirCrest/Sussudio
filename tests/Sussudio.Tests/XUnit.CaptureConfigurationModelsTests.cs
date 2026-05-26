@@ -741,6 +741,76 @@ public partial class CaptureConfigurationModelsTests
         Assert.Equal(15, (int)resolve.Invoke(options, new object[] { 0.0 })!);
     }
 
+    [Fact]
+    public void MediaFormat_Equality_WithMatchingRationalFrameRates()
+    {
+        var mediaFormatType = RequireType(SussudioAssembly.Load(), "Sussudio.Models.MediaFormat");
+        var a = CreateMediaFormat(
+            mediaFormatType,
+            width: 1920u,
+            height: 1080u,
+            frameRateNumerator: 60000u,
+            frameRateDenominator: 1001u,
+            pixelFormat: "NV12",
+            isHdr: false);
+        var b = CreateMediaFormat(
+            mediaFormatType,
+            width: 1920u,
+            height: 1080u,
+            frameRateNumerator: 60000u,
+            frameRateDenominator: 1001u,
+            pixelFormat: "NV12",
+            isHdr: false);
+
+        Assert.True(a.Equals(b));
+    }
+
+    [Fact]
+    public void MediaFormat_Inequality_WhenDimensionsDiffer()
+    {
+        var mediaFormatType = RequireType(SussudioAssembly.Load(), "Sussudio.Models.MediaFormat");
+        var a = CreateMediaFormat(
+            mediaFormatType,
+            width: 1920u,
+            height: 1080u,
+            frameRate: 60.0,
+            pixelFormat: "NV12",
+            isHdr: false);
+        var b = CreateMediaFormat(
+            mediaFormatType,
+            width: 3840u,
+            height: 2160u,
+            frameRate: 60.0,
+            pixelFormat: "NV12",
+            isHdr: false);
+
+        Assert.False(a.Equals(b));
+    }
+
+    [Fact]
+    public void MediaFormat_GetHashCode_ConsistencyForEqualObjects()
+    {
+        var mediaFormatType = RequireType(SussudioAssembly.Load(), "Sussudio.Models.MediaFormat");
+        var a = CreateMediaFormat(
+            mediaFormatType,
+            width: 3840u,
+            height: 2160u,
+            frameRateNumerator: 120000u,
+            frameRateDenominator: 1001u,
+            pixelFormat: "P010",
+            isHdr: true);
+        var b = CreateMediaFormat(
+            mediaFormatType,
+            width: 3840u,
+            height: 2160u,
+            frameRateNumerator: 120000u,
+            frameRateDenominator: 1001u,
+            pixelFormat: "P010",
+            isHdr: true);
+
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+    }
+
     private static object CreateResolutionFormatDictionary(Type mediaFormatType)
         => Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(
                typeof(string),
@@ -766,6 +836,39 @@ public partial class CaptureConfigurationModelsTests
         Set(format, "Width", width);
         Set(format, "Height", height);
         Set(format, "FrameRate", frameRate);
+        Set(format, "PixelFormat", pixelFormat);
+        Set(format, "IsHdr", isHdr);
+        return format;
+    }
+
+    private static object CreateMediaFormat(
+        Type mediaFormatType,
+        uint width,
+        uint height,
+        string pixelFormat,
+        bool isHdr,
+        double? frameRate = null,
+        uint? frameRateNumerator = null,
+        uint? frameRateDenominator = null)
+    {
+        var format = CreateInstance(mediaFormatType);
+        Set(format, "Width", width);
+        Set(format, "Height", height);
+        if (frameRate.HasValue)
+        {
+            Set(format, "FrameRate", frameRate.Value);
+        }
+
+        if (frameRateNumerator.HasValue)
+        {
+            Set(format, "FrameRateNumerator", frameRateNumerator.Value);
+        }
+
+        if (frameRateDenominator.HasValue)
+        {
+            Set(format, "FrameRateDenominator", frameRateDenominator.Value);
+        }
+
         Set(format, "PixelFormat", pixelFormat);
         Set(format, "IsHdr", isHdr);
         return format;

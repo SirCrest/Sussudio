@@ -21,8 +21,6 @@ add xUnit alongside, and port incrementally.
   ported RecordingStats value-contract check.
 - `XUnit.AutomationContractsTests.cs` owns the former legacy app-surface
   checks, including the bool/visibility converter wrapper class.
-- `XUnit.MediaFormatTests.cs` owns the former legacy MediaFormat equality and
-  hash-code checks.
 - `StatsOverlay.Lifecycle.Tests.cs` now owns xUnit source-contract checks for
   stats overlay lifecycle and section chrome wiring. The remaining stats
   presentation checks still migrate incrementally from the legacy catalog.
@@ -50,8 +48,8 @@ add xUnit alongside, and port incrementally.
 - `XUnit.CaptureConfigurationModelsTests.cs` owns shared reflection helpers,
   capture mode option display metadata, option-builder behavior, capture
   settings defaults, output path/file naming, bitrate policy, MJPEG HFR policy,
-  recording selection policy, encoder support, and recording pipeline option
-  xUnit contract checks.
+  MediaFormat equality/hash-code behavior, recording selection policy, encoder
+  support, and recording pipeline option xUnit contract checks.
 - `XUnit.RecordingPipelineContractsTests.cs` owns the former legacy recording
   queue overload-policy, LibAv sink, WASAPI, capture fan-out, and CaptureService
   recording ownership checks.

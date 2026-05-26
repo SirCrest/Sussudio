@@ -3774,3 +3774,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, Flashback tests, automation contracts, MCP, `ssctl`, and console harnesses; no public automation command names, IDs, wire payloads, Flashback buffer behavior, segment path format, cleanup budget policy, or recovery-preserve semantics changed
 Behavior preserved: session-id validation, temp-root containment checks, `.ts`/`.mp4` normalization, stale session directory recognition, path containment helpers, and reparse-point exclusion now live in `FlashbackStartupCacheCleanup.cs` with startup cache cleanup and budget enforcement.
 Notes for future agents: keep Flashback startup cache cleanup, cache-budget enforcement, and session recovery/path-safety scanner helpers in `Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs`; keep buffer lifecycle state and purge/delete mechanics in `FlashbackBufferManager.Lifecycle.cs`.
+
+Date: 2026-05-26
+Area: capture configuration xUnit model contract locality
+Problem: `XUnit.MediaFormatTests.cs` was a tiny standalone xUnit wrapper for three MediaFormat equality/hash-code checks, while `XUnit.CaptureConfigurationModelsTests.cs` already owns MediaFormat helpers and the broader capture configuration model contract surface. Reviewing capture model behavior required opening an extra wrapper file for one leaf of the same model family.
+Files consolidated: `tests/Sussudio.Tests/XUnit.MediaFormatTests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: n/a; capture model xUnit wrapper count -1 while preserving the three MediaFormat equality/hash-code facts
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, automation contracts, MCP, `ssctl`, and console harnesses; no production code, public automation command names, IDs, wire payloads, XAML bindings, or MediaFormat behavior changed
+Behavior preserved: MediaFormat rational-frame-rate equality, dimension inequality, and equal-object hash-code consistency now live in `XUnit.CaptureConfigurationModelsTests.cs` with the capture model reflection helpers and related capture settings/model facts.
+Notes for future agents: keep MediaFormat leaf behavior and capture configuration model reflection checks in `tests/Sussudio.Tests/XUnit.CaptureConfigurationModelsTests.cs`; create a separate xUnit wrapper only when a model surface gains an independent runtime fixture or direct non-reflection test seam.
