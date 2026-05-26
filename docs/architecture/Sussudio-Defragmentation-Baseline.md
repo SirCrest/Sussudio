@@ -3184,3 +3184,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: diagnostics refresh evaluation-policy, diagnostic evaluation, realtime lane, and Flashback lane source-shape assertions remain invoked by `DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses`.
 Notes for future agents: keep diagnostics-refresh evaluation ownership assertions with `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs` while they remain private helper assertions for the central refresh ownership entry point.
+
+Date: 2026-05-26
+Area: diagnostic-session Flashback test locality
+Problem: `MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionPlayback.Tests.cs` contained one private Flashback playback metrics/result assertion invoked only by the central diagnostics-refresh ownership test, while `MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionScenarios.Tests.cs` owned adjacent diagnostic-session Flashback scenario, stress, health-policy, and warning-tolerance source-shape assertions.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionPlayback.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` diagnostics refresh diagnostic-session helper partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: diagnostic-session Flashback playback metrics/result, scenario, stress, health-policy, and warning-tolerance source-shape assertions remain invoked by `DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses`.
+Notes for future agents: keep diagnostic-session Flashback playback metrics and scenario ownership assertions together in `MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionScenarios.Tests.cs` while they remain private source-shape checks for the central diagnostics-refresh entry point.

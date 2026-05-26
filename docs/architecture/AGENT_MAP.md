@@ -1355,11 +1355,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotConstructionOwnership.Tests.cs`
   owns initial snapshot, BuildAutomationSnapshot composition, and snapshot
   flattening ownership assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionPlayback.Tests.cs`
-  owns diagnostic-session Flashback playback metrics and result assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionScenarios.Tests.cs`
-  owns diagnostic-session scenario, health-policy, Flashback stress, and
-  warning-tolerance assertions.
+  owns diagnostic-session Flashback playback metrics/result assertions,
+  scenario, health-policy, Flashback stress, and warning-tolerance assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`
   owns diagnostics refresh source/fixture readers for the diagnostics hub,
   capture service, source reader, and tool-surface source text used by refresh
