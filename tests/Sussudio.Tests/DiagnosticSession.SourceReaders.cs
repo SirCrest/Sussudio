@@ -20,7 +20,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackExportScenarios.cs");
 
     private static string ReadDiagnosticSessionFlashbackLifecycleScenariosSource()
-        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs");
+        => ReadDiagnosticSessionFlashbackCycleScenariosSource();
 
     private static string ReadDiagnosticSessionFlashbackMetricsSource()
         => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.cs");

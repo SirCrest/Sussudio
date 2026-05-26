@@ -2998,11 +2998,13 @@ for preview, Flashback, and playback state that remain active after the runner
 attempts cleanup.
 
 Diagnostic-session Flashback cycle scenarios now live in
-`DiagnosticSessionFlashbackCycleScenarios.cs`, which owns restart/encoder cycle
-task registration, restart-cycle playback priming/restart/refill/export
-verification, and encoder-cycle preset cycling, snapshot validation, export
-verification, and original-preset restore. Startup only delegates selected cycle
-scenario registration.
+`DiagnosticSessionFlashbackCycleScenarios.cs`, which owns restart/encoder/
+lifecycle cycle task registration, restart-cycle playback priming/restart/
+refill/export verification, encoder-cycle preset cycling, snapshot validation,
+export verification, original-preset restore, playback disable/re-enable
+lifecycle command flow, post-disable playback-thread/queue health, and
+post-re-enable active-state validation. Startup only delegates selected cycle
+and lifecycle scenario registration.
 
 Diagnostic-session sampling now lives in
 `tools/Common/DiagnosticSessionScenarioPhaseRunner.cs` beside the scenario
@@ -3030,13 +3032,6 @@ range orchestration, verification, cleanup, and playback command-health
 validation for the export scenario family.
 Diagnostic-session startup makes a single qualified call into the export
 scenario owner. Do not reintroduce one-method registration partials.
-
-Diagnostic-session Flashback lifecycle checks now live in
-`tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs`. It owns
-pause/seek/play disable-and-re-enable command flow, task registration, priority,
-label, started action, post-disable playback-thread/queue health, and
-post-re-enable active-state validation while startup only delegates to the
-lifecycle owner.
 
 Diagnostic-session Flashback metric projection now lives in
 `tools/Common/DiagnosticSessionFlashbackMetrics.cs`. Recording/export metrics,
@@ -3177,7 +3172,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackExportScenarios.cs`
-- `DiagnosticSessionFlashbackLifecycleScenarios.cs`
 - `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`

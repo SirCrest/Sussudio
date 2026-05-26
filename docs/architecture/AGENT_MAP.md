@@ -3057,9 +3057,11 @@ Primary owners:
   `settings-deferred-restore`, `recording-verification`, and
   `recording-validation` stage names stable there.
 - `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs` owns Flashback
-  restart/encoder cycle diagnostic task registration, restart-cycle playback
-  priming/restart/refill/export verification, and encoder-cycle preset cycling,
-  snapshot validation, export verification, and original-preset restore.
+  restart/encoder/lifecycle cycle diagnostic task registration, restart-cycle
+  playback priming/restart/refill/export verification, encoder-cycle preset
+  cycling, snapshot validation, export verification, original-preset restore,
+  playback disable/re-enable command flow, post-disable playback-thread/queue
+  health checks, and post-re-enable active-state validation.
 - `tools/Common/DiagnosticSessionMetrics.cs` owns read-only diagnostic-session
   metric DTOs and projections: source/preview/visual cadence aggregation,
   visual-cadence health classification, D3D metric aggregation, playback
@@ -3074,11 +3076,6 @@ Primary owners:
   choreography, and selection-range export orchestration. Keep the scenario
   registration, command flows, verification, cleanup, and playback
   command-health checks together in this scenario-family owner.
-- `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs` owns
-  Flashback playback disable/re-enable lifecycle diagnostic command flow,
-  scenario registration, priority, task label, started action, post-disable
-  playback-thread/queue health checks, and post-re-enable active-state
-  validation.
 - `tools/Common/DiagnosticSessionFlashbackMetrics.cs` owns Flashback diagnostic
   recording/export, playback-session, and playback-result metric projection. It
   includes the `FlashbackRecordingSessionMetrics`,

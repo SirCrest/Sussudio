@@ -3594,3 +3594,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds MCP, `ssctl`, automation contracts, app, and console harnesses; no public MCP tool names, public tool type names, automation command names, IDs, wire payloads, PresentMon probe option precedence, timeline text, or structured-result shape changed
 Behavior preserved: `get_performance_timeline`, `capture_presentmon`, and `capture_presentmon_raw` still route through the same pipe commands/probe helpers and now live in `PerformanceTools.cs`; PresentMon option precedence and preview-present field extraction remain in `tools/Common/PresentMon/PresentMonProbe.cs`.
 Notes for future agents: keep shallow MCP performance entry points in `tools/McpServer/Tools/PerformanceTools.cs`; split only if PresentMon capture gains independent policy beyond probe invocation/snapshot fallback or timeline rendering grows a separate reusable parser.
+
+Date: 2026-05-26
+Area: diagnostic-session Flashback cycle/lifecycle locality
+Problem: `DiagnosticSessionFlashbackLifecycleScenarios.cs` was a small playback disable/re-enable scenario file split from the adjacent Flashback cycle scenario owner. Reviewing Flashback diagnostic cycle behavior required opening two files for related restart/encoder/lifecycle command flows that all validate playback thread, queue, active-state, and export/readiness behavior through the same wait helpers.
+Files consolidated: `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; diagnostic-session Flashback scenario helper count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds diagnostic-session shared tooling, MCP, `ssctl`, automation contracts, app, and console harnesses; no public scenario names, task labels, priorities, automation command names, IDs, wire payloads, warning text, or lifecycle validation semantics changed
+Behavior preserved: Flashback lifecycle registration, pause/seek/play choreography, disable/re-enable commands, post-disable playback-thread and pending-command checks, and post-re-enable active-state validation now live in `DiagnosticSessionFlashbackCycleScenarios.cs` with restart and encoder cycle scenario flows.
+Notes for future agents: keep Flashback restart, encoder, and lifecycle scenario command flows in `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs`; keep preview stop/restart scenarios in `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`, export flows in `DiagnosticSessionFlashbackExportScenarios.cs`, and read-only segment helpers in `DiagnosticSessionFlashbackSegments.cs`.
