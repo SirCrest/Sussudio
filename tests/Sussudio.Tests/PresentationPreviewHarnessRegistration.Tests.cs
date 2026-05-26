@@ -50,7 +50,6 @@ static partial class Program
         "tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Ownership.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.VideoFormat.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.SettingsProjection.Tests.cs",
-        "tests/Sussudio.Tests/MainViewModel.DiskSpacePresentation.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.DependencyComposition.CaptureDevice.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.DependencyComposition.Presentation.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.DependencyComposition.Tests.cs",

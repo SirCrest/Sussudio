@@ -1241,9 +1241,7 @@ Primary current owners:
   builder/controller/DTO source-shape assertions and HDMI source telemetry
   panel projection checks,
   `tests/Sussudio.Tests/XUnit.StatsHardwareRowsTests.cs` owns hardware row
-  presentation and input-provider behavior checks, and
-  `tests/Sussudio.Tests/MainViewModel.DiskSpacePresentation.Tests.cs` owns disk
-  space presentation bridge checks.
+  presentation and input-provider behavior checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.Tests.cs` owns MainWindow
   automation ID inventory, full-screen/window automation, and UI-dispatching
   source contract checks.
@@ -1312,7 +1310,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionBindings.Tests.cs`
   owns capture/recording option binding controller-adapter ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Output.Tests.cs` owns
-  MainWindow output path display/action ownership assertions.
+  MainWindow output path display/action ownership assertions plus output picker
+  ownership and output drive free-space presentation bridge checks.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Screenshot.Tests.cs`
   owns MainWindow preview screenshot workflow, preview screenshot text-policy,
   and whole-window screenshot ownership assertions.
@@ -1424,9 +1423,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Runtime.Tests.cs`
   owns the MainViewModel source-telemetry, runtime lifecycle, runtime event
   ingress, subscription, and disposal controller dependency-context assertions.
-- `tests/Sussudio.Tests/MainViewModel.DiskSpacePresentation.Tests.cs` owns
-  assertions that output folder picker ownership stays out of `MainViewModel`
-  plus output drive free-space presentation behavior and ownership.
 - `tests/Sussudio.Tests/MainViewModel.Capture.TestHelpers.cs` owns shared
   MainViewModel source-inspection helpers for capture-facing tests.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.Ownership.Tests.cs`

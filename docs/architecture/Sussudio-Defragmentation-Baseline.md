@@ -2896,3 +2896,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: Flashback playback command queue capacity/drop-oldest, scrub coalescing source ownership, seek-slot barrier, and rejected-barrier failure-mode checks remain registered through `XUnit.FlashbackContractsTests`.
 Notes for future agents: keep Flashback playback command queue contract coverage in `Flashback.Playback.CommandQueue.Tests.cs`; do not recreate separate capacity, scrub-coalescing, seek-slot, or seek-slot failure-mode shards.
+
+Date: 2026-05-26
+Area: output path and disk-space presentation test locality
+Problem: `MainViewModel.DiskSpacePresentation.Tests.cs` carried output picker ownership and output drive free-space presentation checks even though those assertions point at the same recording-output workflow covered by `MainWindow.ControllerOwnership.Output.Tests.cs`: `OutputPathController`, MainWindow output display/actions, `MainViewModel.RecordingState`, and `OutputDriveSpacePresentationBuilder`. Reviewing output path behavior required opening separate tiny MainViewModel and MainWindow shards.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.DiskSpacePresentation.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` output path/disk-space presentation test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: output path display/action, output picker ownership, invalid output-drive probing, and output drive free-space presentation ownership checks remain registered through the presentation-preview xUnit/harness surfaces.
+Notes for future agents: keep output path display/action and disk-space presentation bridge checks in `MainWindow.ControllerOwnership.Output.Tests.cs`; do not recreate a separate `MainViewModel.DiskSpacePresentation.Tests.cs` shard.
