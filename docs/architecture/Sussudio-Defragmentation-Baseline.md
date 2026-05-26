@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: ssctl CLI front-door locality
+Problem: `tools/ssctl/SsctlHelpWriter.cs` only carried internal root help text invoked by `Program.cs`, so reviewing process-level CLI behavior required opening a second small sidecar before returning to the entry point. The command-handler surface is already isolated in `CommandHandlers.cs`, so keeping help with option parsing and usage/exit-code shaping makes the CLI front door easier to inspect without mixing in command execution.
+Files consolidated: `tools/ssctl/SsctlHelpWriter.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; ssctl support file count -1
+Build/tests/runtime checks: `dotnet build tools\ssctl\ssctl.csproj -c Debug --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~SsctlHelp|FullyQualifiedName~DiagnosticSessionToolSurface|FullyQualifiedName~CommandHandlers"` (1 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: affected `ssctl` build passed; no CLI command names, automation command IDs, pipe names, wire payloads, or MCP tools changed
+Behavior preserved: `SsctlHelpWriter` internal type name, help output, catalog-backed command help lines, `DiagnosticSessionOptions.CliUsage`, help display paths, usage-error help display, Ctrl-C cancellation, option parsing, and command-handler delegation remain unchanged.
+Notes for future agents: keep the root `ssctl` help facade with `tools/ssctl/Program.cs` while it is only process-level usage text; keep command execution and response formatting in `CommandHandlers.cs` and `Formatters.*.cs`.
+
+Date: 2026-05-26
 Area: Native XU KS bridge support locality
 Problem: `NativeXuDeviceSupport.cs` was a small sidecar for the same Native XU bridge review path already owned by `KsExtensionUnitNative.cs`: shared 4K X VID/PID recognition, selected-interface projection, and the transport gate were split from the KS interface/handle/topology/XU transfer bridge, and `NativeXuAudioProbe` had to link an extra shared source file for one bridge surface.
 Files consolidated: `Sussudio/Services/Capture/NativeXu/NativeXuDeviceSupport.cs`

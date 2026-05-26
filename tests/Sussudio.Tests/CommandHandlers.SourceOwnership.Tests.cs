@@ -231,8 +231,7 @@ static partial class Program
     {
         var ssctlProgramText = ReadRepoFile("tools/ssctl/Program.cs")
             .Replace("\r\n", "\n");
-        var helpWriterText = ReadRepoFile("tools/ssctl/SsctlHelpWriter.cs")
-            .Replace("\r\n", "\n");
+        var helpWriterText = ssctlProgramText;
         var catalogEntriesText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
             .Replace("\r\n", "\n");
         var flashbackHandlersText = ReadRepoFile("tools/ssctl/CommandHandlers.cs")
@@ -254,8 +253,8 @@ static partial class Program
         AssertContains(catalogEntriesText, "\"flashback export [seconds] [path] [--range] [--force]\"");
         AssertContains(flashbackHandlersText, "ConsumeFlag(context.Rest, \"--force\")");
         AssertContains(ssctlProgramText, "SsctlHelpWriter.Write(Console.Out);");
-        AssertDoesNotContain(ssctlProgramText, "AutomationCommandCatalog.Get(kind).CliHelp");
-        AssertDoesNotContain(ssctlProgramText, "WriteCatalogHelpLine");
+        AssertContains(ssctlProgramText, "AutomationCommandCatalog.Get(kind).CliHelp");
+        AssertContains(ssctlProgramText, "WriteCatalogHelpLine");
         AssertContains(helpWriterText, "internal static class SsctlHelpWriter");
         AssertContains(helpWriterText, "WriteHeader(writer);");
         AssertContains(helpWriterText, "WriteFlashbackSection(writer);");
@@ -269,6 +268,10 @@ static partial class Program
         AssertContains(helpWriterText, "WriteCatalogHelpLine(writer, AutomationCommandKind.SetFrameTimeOverlayVisible);");
         AssertContains(helpWriterText, "WriteCatalogHelpLine(writer, AutomationCommandKind.SetFlashbackTimelineVisible);");
         AssertContains(helpWriterText, "DiagnosticSessionOptions.CliUsage");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "SsctlHelpWriter.cs")),
+            "ssctl help facade folded into the CLI front-door file");
         AssertContains(helpOutput, "ssctl");
         AssertContains(helpOutput, "Usage:");
         AssertContains(helpOutput, "Flashback:");

@@ -717,6 +717,7 @@ static partial class Program
         var ssctlCommandHandlersText = diagnosticSessionToolSources.SsctlCommandHandlersText;
         var mcpDiagnosticSessionText = diagnosticSessionToolSources.McpDiagnosticSessionText;
         AssertContains(ssctlProgramText, "SsctlHelpWriter.Write(Console.Out);");
+        AssertContains(ssctlProgramText, "internal static class SsctlHelpWriter");
         AssertDoesNotContain(ssctlProgramText, "DiagnosticSessionScenarioCatalog.HelpList");
         AssertContains(ssctlHelpText, "DiagnosticSessionOptions.CliUsage");
         AssertContains(ssctlCommandHandlersText, "DiagnosticSessionOptions.CliUsage");

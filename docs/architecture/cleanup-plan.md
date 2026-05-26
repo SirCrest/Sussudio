@@ -378,10 +378,9 @@ recordings-folder commands, and Flashback timeline/playback/scrub/marker/range
 and export payload shapes. Keep command-family section comments inside this
 single owner; do not reintroduce `CommandHandlers.*.cs` partial files unless a
 family becomes a real independently tested collaborator.
-`tools/ssctl/Program.cs` owns only process entry, Ctrl-C cancellation, CLI
-option parsing, and exit-code shaping; `tools/ssctl/SsctlHelpWriter.cs` owns
-the help facade, operator-facing help section text, and catalog-backed help
-lines.
+`tools/ssctl/Program.cs` owns process entry, Ctrl-C cancellation, CLI option
+parsing, exit-code shaping, the help facade, operator-facing help section text,
+and catalog-backed help lines.
 
 The `tools/ssctl/Formatters.*.cs` partial family is only the projection facade
 for console output. Keep app snapshot orchestration, section ordering, and

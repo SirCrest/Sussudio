@@ -255,7 +255,7 @@ static partial class Program
     {
         return new DiagnosticSessionToolSurfaceSourceFamily(
             ReadNormalizedRepoFile("tools/ssctl/Program.cs"),
-            ReadNormalizedRepoFile("tools/ssctl/SsctlHelpWriter.cs"),
+            ReadNormalizedRepoFile("tools/ssctl/Program.cs"),
             ReadNormalizedRepoFile("tools/ssctl/CommandHandlers.cs"),
             ReadNormalizedRepoFile("tools/McpServer/Tools/AppStateTools.cs"));
     }
