@@ -171,9 +171,7 @@ add xUnit alongside, and port incrementally.
   `AutomationToolContracts.ProtocolXunit.Tests.cs` (automation client timeout
   policy, advanced command-map alignment, and pipe/tool protocol contracts),
   `RuntimeContracts.Tests.cs`, `MainWindow.ControllerOwnership.Layout.Tests.cs`,
-  `CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`,
-  `CaptureService.HealthSnapshots.FlashbackOwnership.Tests.cs`, and
-  `CaptureService.HealthSnapshots.RecordingAndSourceTelemetryOwnership.Tests.cs`
+  and `CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`
   already run through `dotnet test`.
 
 ## Targeting reality

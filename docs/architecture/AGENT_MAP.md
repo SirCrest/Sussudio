@@ -1597,14 +1597,10 @@ Primary current owners:
   backend failure cleanup source placement, and keeps the
   no-direct-session-state-write/faulted-session guards for failure cleanup.
 - `tests/Sussudio.Tests/CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`
-  owns CaptureService health snapshot assembly, capture-cadence, MJPEG, and
-  AV-sync ownership assertions plus shared health snapshot assertion helpers.
-- `tests/Sussudio.Tests/CaptureService.HealthSnapshots.FlashbackOwnership.Tests.cs`
-  owns CaptureService health snapshot Flashback export, buffer/backend, queue,
-  and playback ownership assertions.
-- `tests/Sussudio.Tests/CaptureService.HealthSnapshots.RecordingAndSourceTelemetryOwnership.Tests.cs`
-  owns CaptureService health snapshot recording and source-telemetry ownership
-  assertions plus the structured source telemetry behavior scenario.
+  owns CaptureService health snapshot assembly, capture-cadence, MJPEG,
+  AV-sync, Flashback export/buffer/queue/playback, recording, and
+  source-telemetry ownership assertions plus the structured source telemetry
+  behavior scenario and shared health snapshot assertion helpers.
 - `tests/Sussudio.Tests/CaptureService.HealthSnapshots.MjpegCachedMetrics.Tests.cs`
   owns cached MJPEG timing propagation for health and diagnostics snapshots
   plus the synthetic MJPEG timing metric factories used by those scenarios.

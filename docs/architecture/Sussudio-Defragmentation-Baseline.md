@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: CaptureService health snapshot test locality
+Problem: CaptureService health snapshot ownership checks were split across three files that all declared the same `CaptureServiceHealthSnapshotOwnershipTests` partial xUnit class. Reviewing health snapshot assembly, sampler, Flashback, recording, and source-telemetry ownership required opening multiple partial test shards for one health snapshot boundary.
+Files consolidated: `tests/Sussudio.Tests/CaptureService.HealthSnapshots.FlashbackOwnership.Tests.cs`; `tests/Sussudio.Tests/CaptureService.HealthSnapshots.RecordingAndSourceTelemetryOwnership.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -2
+Partial clusters reduced: `CaptureServiceHealthSnapshotOwnershipTests` test partial count reduced from three files to one
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter 'FullyQualifiedName~CaptureServiceHealthSnapshotOwnershipTests|FullyQualifiedName~CaptureHealthSnapshotPropagatesStructuredSourceTelemetryDetails'` (10 passed); full validation recorded in checkpoint commit notes
+CLI/MCP/pipe checks, if applicable: not applicable
+Behavior preserved: test-only relocation; xUnit `[Fact]` names and `Program.CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails` contract unchanged
+Notes for future agents: keep CaptureService health snapshot assembly, sampler, Flashback, recording, source-telemetry, and structured source telemetry behavior checks together in `CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs` unless the production health snapshot owner splits into named collaborators.
+
+Date: 2026-05-26
 Area: Capture selection policy test locality
 Problem: resolution and frame-rate selection policies each split source-shape ownership checks from behavior checks across sibling test shards. Reviewing either policy required opening an ownership file and a behavior file for one policy boundary.
 Files consolidated: `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Ownership.Tests.cs`; `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.Ownership.Tests.cs`
