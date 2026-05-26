@@ -2752,3 +2752,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: source-reader cadence coherence guards, vtable/DXGI/frame-layout/read-loop/initialization/frame-delivery source ownership checks, and deleted legacy source-reader partial guards remain unchanged.
 Notes for future agents: keep diagnostics refresh source-reader ownership assertions in `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs` with the orchestration entry point; keep reusable source-family readers in `MainViewModel.Automation.DiagnosticsRefresh.SourceReaders.cs`.
+
+Date: 2026-05-26
+Area: diagnostics refresh snapshot-projection helper locality
+Problem: `MainViewModel.Automation.DiagnosticsRefresh.SnapshotProjection.Tests.cs` only carried private compact integration-smoke assertions invoked by `DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses` in the diagnostics refresh entry-point file. Reviewing diagnostics refresh orchestration and the projection-set/flattening handoff required opening a separate helper-only partial.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotProjection.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` diagnostics-refresh snapshot-projection helper partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: snapshot status/evaluation projection guards, projection-set composition routing, flattened projection handoff guards, and detailed leaf projection ownership checks remain covered by the focused diagnostics projection owner files.
+Notes for future agents: keep the compact diagnostics refresh snapshot-projection smoke in `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`; keep detailed projection source-shape contracts in `MainViewModel.Automation.DiagnosticsProjection.*.Tests.cs`.

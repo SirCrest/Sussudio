@@ -1347,8 +1347,9 @@ Primary current owners:
   orchestration, runtime/HDR verification checks, refresh pipeline/gate,
   snapshot/dispatcher assertions, preview-runtime projection assertions,
   diagnostics alert/event ownership assertions, source-reader partial
-  ownership assertions used by diagnostics refresh, and diagnostic-session
-  core/export/recording ownership assertions.
+  ownership assertions used by diagnostics refresh, diagnostics-refresh
+  snapshot projection integration wiring, and diagnostic-session core/export/
+  recording ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.FlashbackAlerts.RecordingAndStorage.Tests.cs`
   owns Flashback export, storage, recording, and force-rotate alert coverage
   for the diagnostics refresh family.
@@ -1372,10 +1373,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionScenarios.Tests.cs`
   owns diagnostic-session scenario, health-policy, Flashback stress, and
   warning-tolerance assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotProjection.Tests.cs`
-  owns diagnostics-refresh snapshot projection integration wiring: the refresh
-  path must route through the named projection-set composition and flattened
-  projection handoff instead of reasserting every leaf projection contract.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`
   owns the diagnostics hub source-family reader and core/runtime source-text
   fields used by refresh ownership assertions, including diagnostic-evaluation,
