@@ -2848,3 +2848,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: dispatcher ready-device classification, ready-independent no-hardware command execution, UI readiness bypass guards, preview-renderer-health wait condition, and window-close completion checks remain registered through the same xUnit automation contract surface.
 Notes for future agents: keep readiness gating and no-hardware ready-independent command coverage in `AutomationCommandDispatcher.ReadyIndependent.Tests.cs`; keep payload parsing/catalog and command ownership checks in their existing focused dispatcher owner files.
+
+Date: 2026-05-26
+Area: D3D11 preview renderer cadence diagnostics test locality
+Problem: `D3D11PreviewRenderer.Cadence.Tests.cs` only carried present-cadence metric shape and suppression baseline tests, while `D3D11PreviewRenderer.DiagnosticsContract.Tests.cs` owned the adjacent renderer diagnostics API/source-shape contract. Reviewing renderer timing diagnostics required opening a separate tiny cadence shard before returning to the diagnostics contract owner.
+Files consolidated: `tests/Sussudio.Tests/D3D11PreviewRenderer.Cadence.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` D3D11 preview diagnostics test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: present cadence metric reflection and suppression-baseline tests remain registered through the same xUnit presentation-preview D3D contract surface.
+Notes for future agents: keep present cadence metric shape and suppression-baseline checks in `D3D11PreviewRenderer.DiagnosticsContract.Tests.cs` with the rest of the renderer diagnostics API contract; keep snapshot-model and performance-timeline DTO reflection in their focused sibling files.

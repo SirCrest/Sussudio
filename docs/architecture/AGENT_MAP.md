@@ -1672,11 +1672,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.Geometry.Tests.cs` owns letterbox,
   screenshot black-edge counting, and preview PNG encoder CRC/capture contract
   tests.
-- `tests/Sussudio.Tests/D3D11PreviewRenderer.Cadence.Tests.cs` owns present
-  cadence metric shape and suppression baseline tests.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.Tests.cs`
-  owns renderer diagnostics source-shape, frame queue, frame ownership, and
-  public renderer diagnostics API contract assertions.
+  owns renderer diagnostics source-shape, frame queue, frame ownership, present
+  cadence metric shape/suppression baseline, and public renderer diagnostics
+  API contract assertions.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.SnapshotModels.Tests.cs`
   owns preview runtime, automation snapshot, nested renderer metrics, preview
   tracking, and slow-frame diagnostic reflection contracts.
