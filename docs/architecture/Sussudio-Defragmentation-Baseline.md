@@ -2573,7 +2573,7 @@ Partial clusters reduced: `FlashbackBufferManager` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: completed-segment purge, full purge, dispose purge, recovery-preserve purge skip, session-directory path guard, active-segment delete/reset, freed-byte accounting, and eviction pause reset remain unchanged
-Notes for future agents: keep explicit purge/delete-all cleanup with `FlashbackBufferManager.Lifecycle.cs`; keep retention eviction selection and pause/resume recording range policy in `FlashbackBufferManager.Retention.cs`.
+Notes for future agents: keep explicit purge/delete-all cleanup with `FlashbackBufferManager.Lifecycle.cs`; retention eviction selection and pause/resume recording range policy were later folded into `FlashbackBufferManager.Segments.cs` beside the segment index they mutate.
 
 Date: 2026-05-25
 Area: Diagnostic-session Flashback metrics locality
@@ -4388,3 +4388,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, preview suppression/resume behavior, MJPEG jitter handoff, visual-cadence sampling, frame-ledger stage names, or fatal-error signaling changed.
 Behavior preserved: source-reader frame arrival routing, MJPEG decoded-frame fan-out, D3D texture preview submission, raw preview submission, preview suppression/resume pending-frame drains, MJPEG preview jitter enqueue, visual-cadence sampling/reset, pixel-format observer dispatch, capture-arrival ledger records, and fatal-error dedupe/signaling now live in `UnifiedVideoCapture.FrameIngress.cs`.
 Notes for future agents: keep UnifiedVideoCapture frame arrival, preview routing, visual-cadence sampling, pixel-format observer dispatch, and fatal-error signaling together in `Sussudio/Services/Capture/UnifiedVideoCapture.FrameIngress.cs`; keep recording/Flashback sink fan-out in `UnifiedVideoCapture.SinkFanout.cs` and source-session lifecycle in `UnifiedVideoCapture.Lifecycle.cs`.
+
+Date: 2026-05-26
+Area: Flashback buffer segment retention locality
+Problem: `FlashbackBufferManager.Retention.cs` owned eviction pause/resume state, recording PTS range capture, disk warning projection, segment eviction, and eviction-file deletion while `FlashbackBufferManager.Segments.cs` owned the segment index, segment completion/extension, path lookup, and path safety those retention paths mutate. Reviewing segment retention required opening a fourth partial even though eviction is a segment-index operation.
+Files consolidated: `Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `FlashbackBufferManager` production partial file count 4 -> 3
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~FlashbackBufferManager|FullyQualifiedName~FlashbackBuffer"` (44 passed); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, Flashback segment naming, segment lookup, eviction pause/resume behavior, disk-warning projection, recovery-preserve eviction skip, or purge semantics changed.
+Behavior preserved: active segment path generation, segment completion/extension, segment lookup/status projection, path safety checks, eviction pause/resume, recording range capture, disk warning state, valid-window/disk-budget eviction, and eviction file deletion now live in `FlashbackBufferManager.Segments.cs`.
+Notes for future agents: keep Flashback buffer segment mutation, lookup/status projection, path safety, and retention/eviction together in `Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs`; keep initialize/dispose/recovery markers and purge/delete-all lifecycle cleanup in `FlashbackBufferManager.Lifecycle.cs`.

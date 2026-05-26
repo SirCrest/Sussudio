@@ -1496,17 +1496,16 @@ output-buffer allocation now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs`.
 
 Flashback buffer retention now lives in
-`Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs`. Keep segment
-eviction selection, eviction file deletion, and disk-budget/window retention
-policy there. Explicit purge/delete-all lifecycle behavior now lives in
+`Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs` beside the
+segment index it mutates. Keep segment eviction selection, eviction file
+deletion, disk-budget/window retention policy, eviction pause state, recording
+PTS range capture, and pause-driven disk-warning state there. Explicit
+purge/delete-all lifecycle behavior now lives in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs`; keep
 `PurgeCompletedSegments`, `PurgeAllSegments`, `PurgeAllSegmentsCore`, and
-guarded purge deletion there. Eviction pause state, recording PTS range capture,
-and pause-driven disk-warning state now live with retention in
-`FlashbackBufferManager.Retention.cs`. The root buffer manager keeps
-core state, read-only live counters, PTS reset/update, sink-cycle active
-segment finalization, encoder frame-rate truth, and disk-byte accounting
-updates.
+guarded purge deletion there. The root buffer manager keeps core state,
+read-only live counters, PTS reset/update, sink-cycle active segment
+finalization, encoder frame-rate truth, and disk-byte accounting updates.
 Flashback buffer segment ownership now lives in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs`. Keep active
 segment path generation, active segment start/abandonment, completion

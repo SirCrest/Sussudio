@@ -136,7 +136,7 @@ static partial class Program
 
     internal static Task FlashbackBufferManager_PurgeLivesWithLifecycleCleanup()
     {
-        var retentionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs")
+        var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs")
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs")
             .Replace("\r\n", "\n");
@@ -149,22 +149,26 @@ static partial class Program
         AssertContains(lifecycleText, "FLASHBACK_BUFFER_PURGE_SKIP reason=recovery_preserved");
         AssertContains(lifecycleText, "FLASHBACK_BUFFER_DELETE_SKIP reason=outside_session");
         AssertContains(lifecycleText, "var (purgedSegments, purgedBytes) = PurgeAllSegmentsCore();");
-        AssertContains(retentionText, "public void PauseEviction()");
-        AssertContains(retentionText, "public (TimeSpan StartPts, TimeSpan EndPts) ResumeEviction()");
-        AssertContains(retentionText, "public bool IsDiskWarningActive");
-        AssertContains(retentionText, "public TimeSpan RecordingStartPts");
-        AssertContains(retentionText, "public TimeSpan RecordingEndPts");
-        AssertContains(retentionText, "FLASHBACK_BUFFER_EVICTION_RESUME_UNBALANCED");
-        AssertContains(retentionText, "private void EvictOldestSegments()");
-        AssertContains(retentionText, "private bool DeleteFileForEviction(string filePath, long sizeBytes, string reason)");
-        AssertContains(retentionText, "private static bool DeleteEvictedFile(string fullPath, string sessionRoot, long sizeBytes, string reason)");
-        AssertDoesNotContain(retentionText, "public void PurgeCompletedSegments()");
-        AssertDoesNotContain(retentionText, "public void PurgeAllSegments()");
-        AssertDoesNotContain(retentionText, "private (int Segments, long FreedBytes) PurgeAllSegmentsCore()");
+        AssertContains(segmentsText, "public void PauseEviction()");
+        AssertContains(segmentsText, "public (TimeSpan StartPts, TimeSpan EndPts) ResumeEviction()");
+        AssertContains(segmentsText, "public bool IsDiskWarningActive");
+        AssertContains(segmentsText, "public TimeSpan RecordingStartPts");
+        AssertContains(segmentsText, "public TimeSpan RecordingEndPts");
+        AssertContains(segmentsText, "FLASHBACK_BUFFER_EVICTION_RESUME_UNBALANCED");
+        AssertContains(segmentsText, "private void EvictOldestSegments()");
+        AssertContains(segmentsText, "private bool DeleteFileForEviction(string filePath, long sizeBytes, string reason)");
+        AssertContains(segmentsText, "private static bool DeleteEvictedFile(string fullPath, string sessionRoot, long sizeBytes, string reason)");
+        AssertDoesNotContain(segmentsText, "public void PurgeCompletedSegments()");
+        AssertDoesNotContain(segmentsText, "public void PurgeAllSegments()");
+        AssertDoesNotContain(segmentsText, "private (int Segments, long FreedBytes) PurgeAllSegmentsCore()");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Purge.cs")),
             "FlashbackBufferManager.Purge.cs folded into FlashbackBufferManager.Lifecycle.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Retention.cs")),
+            "FlashbackBufferManager.Retention.cs folded into FlashbackBufferManager.Segments.cs");
 
         return Task.CompletedTask;
     }

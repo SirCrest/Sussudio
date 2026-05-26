@@ -78,8 +78,7 @@ static partial class Program
         {
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs").Replace("\r\n", "\n")
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs").Replace("\r\n", "\n")
         };
 
         return string.Join("\n", parts);
