@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: Capture selection policy test locality
+Problem: resolution and frame-rate selection policies each split source-shape ownership checks from behavior checks across sibling test shards. Reviewing either policy required opening an ownership file and a behavior file for one policy boundary.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Ownership.Tests.cs`; `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.Ownership.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -2
+Partial clusters reduced: none; legacy `Program` test shard count reduced by two
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter 'FullyQualifiedName~PresentationPreviewFrameRateSelectionContractsTests|FullyQualifiedName~PresentationPreviewResolutionSelectionContractsTests'` (10 passed); full validation recorded in checkpoint commit notes
+CLI/MCP/pipe checks, if applicable: not applicable
+Behavior preserved: test-only relocation; xUnit method names and invoked `Program` contract names unchanged
+Notes for future agents: keep resolution selection source-shape and policy behavior checks together in `MainViewModel.Capture.SelectionPolicy.Resolution.Behavior.Tests.cs`; keep frame-rate source-shape and policy behavior checks together in `MainViewModel.Capture.SelectionPolicy.FrameRates.PolicyBehavior.Tests.cs`.
+
+Date: 2026-05-26
 Area: Preview startup session/reinit test locality
 Problem: `MainViewModel.Capture.PreviewStartup.SessionController.Tests.cs` and `MainViewModel.Capture.PreviewStartup.ReinitTransition.Tests.cs` held executable state-contract tests for the same preview startup session and reinit transition controllers whose source-shape ownership lived in `MainViewModel.Capture.PreviewStartup.SessionReinit.Tests.cs`. Reviewing preview startup/reinit controller ownership required opening three sibling shards for one behavior boundary.
 Files consolidated: `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.SessionController.Tests.cs`; `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.ReinitTransition.Tests.cs`

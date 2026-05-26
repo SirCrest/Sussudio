@@ -3513,9 +3513,8 @@ owner, fold it back into that owner and update the source-shape tests and
    and previous/manual selection fallback, now lives in
    `Sussudio/ViewModels/FrameRateTimingPolicy.cs`. The ownership checks for
    frame-rate source filtering, automatic selection, always-on capture options,
-   and timing-policy placement live in
-   `MainViewModel.Capture.SelectionPolicy.FrameRates.Ownership.Tests.cs`, while
-   automatic-selection and pure timing-policy behavior checks live in
+   timing-policy placement, automatic-selection behavior, and pure timing-policy
+   behavior checks live together in
    `MainViewModel.Capture.SelectionPolicy.FrameRates.PolicyBehavior.Tests.cs`.
    `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
    owns xUnit execution for those frame-rate selection/timing checks after
@@ -3619,11 +3618,10 @@ owner, fold it back into that owner and update the source-shape tests and
    parsing, frame-rate support checks, nearest-resolution ranking, and the
    request/result records stay together because callers need that cohesive
    policy to understand resolution retargeting behavior.
-   Resolution-selection harness coverage is split along the same boundary:
-   `MainViewModel.Capture.SelectionPolicy.Resolution.Ownership.Tests.cs`
-   owns source-shape placement assertions, while
-   `MainViewModel.Capture.SelectionPolicy.Resolution.Behavior.Tests.cs` owns
-   HDR, SDR, and auto-capture policy behavior contracts.
+   Resolution-selection harness coverage lives in
+   `MainViewModel.Capture.SelectionPolicy.Resolution.Behavior.Tests.cs`, which
+   owns source-shape placement assertions plus HDR, SDR, and auto-capture
+   policy behavior contracts.
    State-backed delegates for callers that still live across the partial family
    stay in `MainViewModel.CaptureSelection.cs`, while dropdown rebuild,
    collection mutation, and property notifications route through the top-level

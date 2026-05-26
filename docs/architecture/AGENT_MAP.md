@@ -1392,23 +1392,20 @@ Primary current owners:
   ingress, subscription, and disposal controller dependency-context assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.TestHelpers.cs` owns shared
   MainViewModel source-inspection helpers for capture-facing tests.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.Ownership.Tests.cs`
-  owns frame-rate source-filter, automatic-selection, always-on capture-option,
-  and timing-policy ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.PolicyBehavior.Tests.cs`
-  owns automatic frame-rate choice and pure timing-policy behavior assertions.
+  owns frame-rate source-filter, automatic-selection, always-on capture-option,
+  timing-policy ownership assertions, automatic frame-rate choice, and pure
+  timing-policy behavior assertions.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview frame-rate
   selection/timing catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.VideoFormat.Tests.cs`
   owns selected capture-format and mode-tuple video-format filtering policy
   assertions.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Ownership.Tests.cs`
-  owns resolution-selection source-shape assertions for option rebuild,
-  auto-selection state, and pure policy placement.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Behavior.Tests.cs`
-  owns resolution-selection policy behavior assertions, including HDR and SDR
-  source retarget behavior.
+  owns resolution-selection source-shape assertions for option rebuild,
+  auto-selection state, pure policy placement, and policy behavior assertions
+  including HDR and SDR source retarget behavior.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview MainWindow
   and adjacent selection/runtime guard catalog groups after their removal from
