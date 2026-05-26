@@ -30,8 +30,9 @@ add xUnit alongside, and port incrementally.
   checks.
 - `XUnit.StatsHardwareRowsTests.cs` owns the former legacy hardware decode/GPU
   row formatting behavior checks and hardware-row input sampling policy checks.
-- `XUnit.CapturePoliciesTests.cs` owns the former legacy HdrOutputPolicy
-  behavior and HDR output environment-switch checks.
+- `XUnit.CoreRuntimeContractsTests.cs` owns the former legacy HdrOutputPolicy
+  behavior, HDR output environment-switch, and disabled telemetry-provider
+  checks.
 - `XUnit.RuntimeHelpersTests.cs` owns focused runtime helper behavior checks.
 - `XUnit.SnapshotModelsTests.cs` and its `SnapshotModels.*` partials own the
   former legacy CaptureDiagnosticsSnapshot, CaptureHealthSnapshot,
