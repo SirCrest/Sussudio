@@ -19,8 +19,8 @@ add xUnit alongside, and port incrementally.
   runner already does the same), and asserts via xUnit primitives instead
   of the hand-rolled `AssertContains/AssertEqual` helpers. It also owns the
   ported RecordingStats value-contract check.
-- `XUnit.BoolConvertersTests.cs` owns the former legacy bool/visibility
-  converter checks.
+- `XUnit.AutomationContractsTests.cs` owns the former legacy app-surface
+  checks, including the bool/visibility converter wrapper class.
 - `XUnit.MediaFormatTests.cs` owns the former legacy MediaFormat equality and
   hash-code checks.
 - `StatsOverlay.Lifecycle.Tests.cs` now owns xUnit source-contract checks for
@@ -108,8 +108,9 @@ add xUnit alongside, and port incrementally.
 - `XUnit.ToolContractsTests.cs` owns the former legacy ssctl
   command-handler routing, source ownership, and catalog-backed help contract
   checks.
-- `XUnit.TargetAssemblyBootstrap.cs` lets xUnit wrapper facts initialize the
-  staged app assembly before calling legacy reflection helpers.
+- `Program.cs` owns the legacy runner entry point and the xUnit bootstrap helper
+  that initializes the staged app assembly before wrappers call legacy reflection
+  helpers.
 - `XUnit.McpToolContractsTests.cs` owns the former legacy MCP tool execution
   groups: window/preview wait, screenshot, frame-capture, window action,
   preview-toggle/probe, PresentMon correlation, performance timeline,

@@ -7,6 +7,15 @@ static partial class Program
     private sealed record CheckResult(string Name, bool Passed, string? Detail = null);
 
     private static Assembly? _assembly;
+    private static readonly object XUnitTargetAssemblyLoadLock = new();
+
+    internal static void EnsureTargetAssemblyLoadedForXUnit()
+    {
+        lock (XUnitTargetAssemblyLoadLock)
+        {
+            _assembly ??= Sussudio.Tests.SussudioAssembly.Load();
+        }
+    }
 
     private static async Task<int> Main(string[] args)
     {

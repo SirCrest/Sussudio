@@ -2608,3 +2608,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; xUnit helper consolidation only, no automation command names, IDs, or wire payloads changed
 Behavior preserved: snapshot DTO property-list assertions, nullability checks, registered property specs, generic-list/single-item helpers, non-null string helper, and reflection JSON registered-property coverage remain unchanged.
 Notes for future agents: keep snapshot model reflection/nullability helper methods with `SnapshotModels.Tests.cs` while they are used only by that contract suite.
+
+Date: 2026-05-26
+Area: xUnit app-surface and bootstrap helper locality
+Problem: `XUnit.BoolConvertersTests.cs` only carried a tiny bool-converter xUnit wrapper that belongs with the existing app-surface contract wrappers, while `XUnit.TargetAssemblyBootstrap.cs` only carried an 11-line helper for the legacy runner's staged app assembly state. Both files added test-file count without an independent behavioral seam.
+Files consolidated: `tests/Sussudio.Tests/XUnit.BoolConvertersTests.cs`; `tests/Sussudio.Tests/XUnit.TargetAssemblyBootstrap.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -2
+Partial clusters reduced: `Program` helper partial file count -1; xUnit wrapper file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; xUnit wrapper/helper consolidation only, no automation command names, IDs, or wire payloads changed
+Behavior preserved: bool converter xUnit fact names and reflection assertions, app-surface wrapper behavior, staged target assembly loading lock, and legacy runtime snapshot runner assembly resolution remain unchanged.
+Notes for future agents: keep small app-surface xUnit wrappers in `XUnit.AutomationContractsTests.cs`; keep the xUnit target assembly bootstrap with `Program.cs` while it only initializes the legacy runner assembly cache.
