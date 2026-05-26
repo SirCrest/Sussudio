@@ -2676,12 +2676,11 @@ Primary current owners:
   `Sussudio/ViewModels/ViewModelBuilders.cs`
   owns source telemetry summary, telemetry age, and target-summary display text formatting.
   `MainViewModel.SettingsPersistence.cs` owns settings initialization, simple
-  persistence reactions, the impure settings load/save adapter, validated
-  load-plan application order, feature-specific state assignment, and deferred
-  device/audio/microphone selection staging.
-  `MainViewModelSettingsPersistenceProjection.cs` owns persisted-settings
-  validation, clamping, deferred-selection handoff, save DTO projection, and
-  load/save projection contracts.
+  persistence reactions, the impure settings load/save adapter, persisted-settings
+  validation, clamping, deferred-selection handoff, save DTO projection,
+  load/save projection contracts, validated load-plan application order,
+  feature-specific state assignment, and deferred device/audio/microphone
+  selection staging.
   `MainViewModel.FlashbackState.cs` owns active Flashback reactions to
   recording-format, encoder quality/preset/split, bitrate, buffer-duration,
   and GPU-decode setting changes.

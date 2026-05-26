@@ -8,7 +8,7 @@ static partial class Program
     {
         var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCommands.cs").Replace("\r\n", "\n");
-        var settingsProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.cs").Replace("\r\n", "\n");
+        var settingsProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs").Replace("\r\n", "\n");
 
         AssertContains(automationAudioText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SavePreviewVolume();");
         AssertContains(settingsProjectionText, "PreviewVolume = input.PreviewVolume,");
@@ -33,7 +33,7 @@ static partial class Program
     {
         var settingsPersistenceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs").Replace("\r\n", "\n");
         var settingsLoadApplicationText = settingsPersistenceText;
-        var settingsProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.cs").Replace("\r\n", "\n");
+        var settingsProjectionText = settingsPersistenceText[..settingsPersistenceText.IndexOf("public partial class MainViewModel", StringComparison.Ordinal)];
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/SettingsService.cs").Replace("\r\n", "\n");
 
@@ -92,6 +92,7 @@ static partial class Program
         AssertContains(settingsProjectionText, "internal readonly record struct MainViewModelSettingsSaveInput(");
         foreach (var removedProjectionFile in new[]
         {
+            "MainViewModelSettingsPersistenceProjection.cs",
             "MainViewModelSettingsPersistenceProjection.Load.cs",
             "MainViewModelSettingsPersistenceProjection.Save.cs",
             "MainViewModelSettingsPersistenceProjection.Models.cs"
@@ -100,7 +101,7 @@ static partial class Program
             AssertEqual(
                 false,
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", removedProjectionFile)),
-                $"{removedProjectionFile} folded into MainViewModelSettingsPersistenceProjection.cs");
+                $"{removedProjectionFile} folded into MainViewModel.SettingsPersistence.cs");
         }
         AssertDoesNotContain(settingsProjectionText, "SettingsService");
         AssertDoesNotContain(settingsProjectionText, "Logger");

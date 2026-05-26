@@ -3653,12 +3653,11 @@ owner, fold it back into that owner and update the source-shape tests and
    graph-port contract in
    `Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs`.
    Settings initialization, simple persistence reactions, the impure settings
-   load/save adapter, validated load-plan application order, feature-specific
-   state assignment, and deferred device/audio/microphone selection staging stay
-   in `MainViewModel.SettingsPersistence.cs`.
-   `MainViewModelSettingsPersistenceProjection.cs` owns persisted-settings
-   validation, clamping, deferred-selection projection, save DTO projection,
-   and load/save projection contracts;
+   load/save adapter, persisted-settings validation, clamping, deferred-selection
+   projection, save DTO projection, load/save projection contracts, validated
+   load-plan application order, feature-specific state assignment, and deferred
+   device/audio/microphone selection staging stay in
+   `MainViewModel.SettingsPersistence.cs`;
    active Flashback reactions to recording format,
    encoder quality/preset/split/bitrate, buffer duration, and GPU decode now
    live in `MainViewModel.FlashbackState.cs`.

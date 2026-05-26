@@ -1,9 +1,171 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.ViewModels;
+
+internal readonly record struct MainViewModelSettingsLoadInput(
+    IReadOnlyCollection<string> AvailableRecordingFormats,
+    IReadOnlyCollection<string> AvailableQualities,
+    IReadOnlyCollection<string> AvailablePresets,
+    IReadOnlyCollection<string> AvailableSplitEncodeModes,
+    IReadOnlyCollection<string> AvailableDeviceAudioModes,
+    Func<string, bool> OutputDirectoryExists);
+
+internal readonly record struct MainViewModelSettingsLoadPlan(
+    string? OutputPath,
+    string? SelectedRecordingFormat,
+    string? UnavailableRecordingFormat,
+    string? SelectedQuality,
+    string? SelectedPreset,
+    string? SelectedSplitEncodeMode,
+    double? CustomBitrateMbps,
+    bool? IsHdrEnabled,
+    bool? IsAudioEnabled,
+    bool? IsAudioPreviewEnabled,
+    bool? IsCustomAudioInputEnabled,
+    bool? IsMicrophoneEnabled,
+    double? MicrophoneVolume,
+    string? PendingMicrophoneVolumeDeviceId,
+    double? PreviewVolume,
+    bool? IsStatsVisible,
+    string? SelectedDeviceAudioMode,
+    double? AnalogAudioGainPercent,
+    bool? FlashbackGpuDecode,
+    int? FlashbackBufferMinutes,
+    string? PendingDeviceId,
+    string? PendingAudioDeviceId,
+    string? PendingMicrophoneDeviceId,
+    string? PendingDeviceAudioMode,
+    double? PendingAnalogAudioGainPercent);
+
+internal readonly record struct MainViewModelSettingsSaveInput(
+    string? SelectedDeviceId,
+    string OutputPath,
+    string SelectedRecordingFormat,
+    string SelectedQuality,
+    string SelectedPreset,
+    string SelectedSplitEncodeMode,
+    double CustomBitrateMbps,
+    bool IsHdrEnabled,
+    bool IsAudioEnabled,
+    bool IsAudioPreviewEnabled,
+    bool IsCustomAudioInputEnabled,
+    string? SelectedAudioInputDeviceId,
+    bool IsMicrophoneEnabled,
+    string? SelectedMicrophoneDeviceId,
+    double MicrophoneVolume,
+    double PreviewVolume,
+    bool IsStatsVisible,
+    string SelectedDeviceAudioMode,
+    double AnalogAudioGainPercent,
+    bool FlashbackGpuDecode,
+    int FlashbackBufferMinutes);
+
+/// <summary>
+/// Pure settings projection between persisted settings and MainViewModel load state.
+/// </summary>
+internal static class MainViewModelSettingsPersistenceProjection
+{
+    internal static MainViewModelSettingsLoadPlan BuildLoadPlan(
+        UserSettings settings,
+        MainViewModelSettingsLoadInput input)
+    {
+        var outputPath = !string.IsNullOrWhiteSpace(settings.OutputPath) &&
+            input.OutputDirectoryExists(settings.OutputPath)
+                ? settings.OutputPath
+                : null;
+
+        var selectedRecordingFormat = ResolveAvailableValue(
+            settings.SelectedRecordingFormat,
+            input.AvailableRecordingFormats,
+            StringComparer.Ordinal);
+        var unavailableRecordingFormat = selectedRecordingFormat is null &&
+            !string.IsNullOrWhiteSpace(settings.SelectedRecordingFormat)
+                ? settings.SelectedRecordingFormat
+                : null;
+
+        var microphoneVolume = settings.MicrophoneVolume.HasValue
+            ? Math.Clamp(settings.MicrophoneVolume.Value, 0.0, 100.0)
+            : (double?)null;
+
+        return new MainViewModelSettingsLoadPlan(
+            OutputPath: outputPath,
+            SelectedRecordingFormat: selectedRecordingFormat,
+            UnavailableRecordingFormat: unavailableRecordingFormat,
+            SelectedQuality: ResolveAvailableValue(settings.SelectedQuality, input.AvailableQualities, StringComparer.Ordinal),
+            SelectedPreset: ResolveAvailableValue(settings.SelectedPreset, input.AvailablePresets, StringComparer.Ordinal),
+            SelectedSplitEncodeMode: ResolveAvailableValue(settings.SelectedSplitEncodeMode, input.AvailableSplitEncodeModes, StringComparer.Ordinal),
+            CustomBitrateMbps: settings.CustomBitrateMbps,
+            IsHdrEnabled: settings.IsHdrEnabled,
+            IsAudioEnabled: settings.IsAudioEnabled,
+            IsAudioPreviewEnabled: settings.IsAudioPreviewEnabled,
+            IsCustomAudioInputEnabled: settings.IsCustomAudioInputEnabled,
+            IsMicrophoneEnabled: settings.IsMicrophoneEnabled,
+            MicrophoneVolume: microphoneVolume,
+            PendingMicrophoneVolumeDeviceId: microphoneVolume.HasValue ? settings.SelectedMicrophoneDeviceId : null,
+            PreviewVolume: settings.PreviewVolume.HasValue ? Math.Clamp(settings.PreviewVolume.Value, 0.0, 1.0) : null,
+            IsStatsVisible: settings.IsStatsVisible,
+            SelectedDeviceAudioMode: ResolveAvailableValue(
+                settings.SelectedDeviceAudioMode,
+                input.AvailableDeviceAudioModes,
+                StringComparer.OrdinalIgnoreCase),
+            AnalogAudioGainPercent: settings.AnalogAudioGainPercent.HasValue
+                ? Math.Clamp(settings.AnalogAudioGainPercent.Value, 0.0, 100.0)
+                : null,
+            FlashbackGpuDecode: settings.FlashbackGpuDecode,
+            FlashbackBufferMinutes: settings.FlashbackBufferMinutes.HasValue
+                ? Math.Clamp(settings.FlashbackBufferMinutes.Value, 1, 30)
+                : null,
+            PendingDeviceId: settings.SelectedDeviceId,
+            PendingAudioDeviceId: settings.SelectedAudioInputDeviceId,
+            PendingMicrophoneDeviceId: settings.SelectedMicrophoneDeviceId,
+            PendingDeviceAudioMode: settings.SelectedDeviceAudioMode,
+            PendingAnalogAudioGainPercent: settings.AnalogAudioGainPercent);
+    }
+
+    internal static UserSettings BuildSaveSettings(MainViewModelSettingsSaveInput input)
+    {
+        return new UserSettings
+        {
+            SelectedDeviceId = input.SelectedDeviceId,
+            OutputPath = input.OutputPath,
+            SelectedRecordingFormat = input.SelectedRecordingFormat,
+            SelectedQuality = input.SelectedQuality,
+            SelectedPreset = input.SelectedPreset,
+            SelectedSplitEncodeMode = input.SelectedSplitEncodeMode,
+            CustomBitrateMbps = input.CustomBitrateMbps,
+            IsHdrEnabled = input.IsHdrEnabled,
+            IsAudioEnabled = input.IsAudioEnabled,
+            IsAudioPreviewEnabled = input.IsAudioPreviewEnabled,
+            IsCustomAudioInputEnabled = input.IsCustomAudioInputEnabled,
+            SelectedAudioInputDeviceId = input.SelectedAudioInputDeviceId,
+            IsMicrophoneEnabled = input.IsMicrophoneEnabled,
+            SelectedMicrophoneDeviceId = input.SelectedMicrophoneDeviceId,
+            MicrophoneVolume = input.MicrophoneVolume,
+            PreviewVolume = input.PreviewVolume,
+            IsStatsVisible = input.IsStatsVisible,
+            SelectedDeviceAudioMode = input.SelectedDeviceAudioMode,
+            AnalogAudioGainPercent = input.AnalogAudioGainPercent,
+            FlashbackGpuDecode = input.FlashbackGpuDecode,
+            FlashbackBufferMinutes = input.FlashbackBufferMinutes,
+        };
+    }
+
+    private static string? ResolveAvailableValue(
+        string? savedValue,
+        IEnumerable<string> availableValues,
+        StringComparer comparer)
+    {
+        return !string.IsNullOrWhiteSpace(savedValue) &&
+            availableValues.Contains(savedValue, comparer)
+                ? savedValue
+                : null;
+    }
+}
 
 /// <summary>
 /// Settings initialization and load/save projection between persisted user settings and ViewModel state.
