@@ -700,7 +700,7 @@ auto-hide adapters. Flashback command execution remains in
 `Sussudio/Controllers/Flashback/FlashbackCommandController.cs`.
 
 Automation whole-window screenshot capture now lives in
-`Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs`, which owns
+`Sussudio/Controllers/Screenshot/ScreenshotControllers.cs`, which owns
 UI-thread dispatch, cancellation, failure wrapping, native PrintWindow/GDI
 capture, output directory creation, screenshot result shaping, and pure PNG/BMP
 byte-stream encoding.
@@ -708,8 +708,8 @@ Whole-window screenshot automation stays on `MainWindow.ShellChrome.Composition.
 other `IAutomationWindowControl` methods.
 
 Preview-frame screenshot button behavior now lives in
-`Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs`.
-`Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs` owns the pure output
+`Sussudio/Controllers/Screenshot/ScreenshotControllers.cs`.
+`Sussudio/Controllers/Screenshot/ScreenshotControllers.cs` owns the pure output
 directory fallback, file naming, status text, and log text policy.
 `MainWindow.ButtonActions.cs` is the XAML-facing adapter; the controller keeps
 directory creation, preview-frame capture, logging side effects, and button

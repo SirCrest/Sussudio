@@ -10,15 +10,21 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ButtonActions.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/ScreenshotControllers.cs").Replace("\r\n", "\n");
         const string policyMarker = "internal static class PreviewScreenshotPlanPolicy";
         var policyStart = controllerText.IndexOf(policyMarker, StringComparison.Ordinal);
         if (policyStart < 0)
         {
-            throw new InvalidOperationException("PreviewScreenshotPlanPolicy was not found in PreviewScreenshotController.cs.");
+            throw new InvalidOperationException("PreviewScreenshotPlanPolicy was not found in ScreenshotControllers.cs.");
         }
 
-        var policyText = controllerText[policyStart..];
+        var policyEnd = controllerText.IndexOf("internal sealed class WindowScreenshotController", policyStart, StringComparison.Ordinal);
+        if (policyEnd < 0)
+        {
+            throw new InvalidOperationException("WindowScreenshotController was not found after PreviewScreenshotPlanPolicy.");
+        }
+
+        var policyText = controllerText[policyStart..policyEnd];
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
@@ -54,9 +60,9 @@ static partial class Program
         AssertContains(policyText, "internal readonly record struct PreviewScreenshotPlan(string OutputDirectory, string FilePath);");
         AssertContains(controllerText, "_context.ScreenshotButton.IsEnabled = false;");
         AssertContains(controllerText, "_context.ScreenshotButton.IsEnabled = true;");
-        AssertContains(agentMapText, "`Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs` owns");
+        AssertContains(agentMapText, "`Sussudio/Controllers/Screenshot/ScreenshotControllers.cs` owns");
         AssertContains(agentMapText, "pure preview-frame screenshot output-directory fallback");
-        AssertContains(cleanupPlanText, "`Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs` owns");
+        AssertContains(cleanupPlanText, "`Sussudio/Controllers/Screenshot/ScreenshotControllers.cs` owns");
         AssertContains(cleanupPlanText, "owns the pure output\ndirectory fallback");
         AssertDoesNotContain(adapterText, "Directory.CreateDirectory(outputDir);");
         AssertDoesNotContain(adapterText, "CapturePreviewFrameAsync(");
@@ -70,6 +76,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Screenshot.cs")),
             "preview screenshot button adapter lives with MainWindow button actions");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Screenshot", "Preview", "PreviewScreenshotController.cs")),
+            "preview screenshot workflow lives with the screenshot controller owner");
 
         return Task.CompletedTask;
     }
@@ -142,7 +152,7 @@ static partial class Program
     {
         var windowText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs")
             .Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs")
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/ScreenshotControllers.cs")
             .Replace("\r\n", "\n");
         var method = ExtractTextBetween(
             controllerText,
@@ -166,7 +176,7 @@ static partial class Program
 
     internal static Task WindowScreenshotNativeCapture_LivesWithWindowScreenshotController()
     {
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs")
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/ScreenshotControllers.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(controllerText, "=> CaptureNative(_windowHandleProvider(), outputPath);");
@@ -183,13 +193,17 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Screenshot", "Window", "WindowScreenshotNativeCapture.cs")),
             "native whole-window capture stays with WindowScreenshotController");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Screenshot", "Window", "WindowScreenshotController.cs")),
+            "whole-window screenshot capture lives with the screenshot controller owner");
 
         return Task.CompletedTask;
     }
 
     internal static Task WindowScreenshotImageEncoding_LivesInFocusedHelper()
     {
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs")
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/ScreenshotControllers.cs")
             .Replace("\r\n", "\n");
         var encoderText = controllerText;
 

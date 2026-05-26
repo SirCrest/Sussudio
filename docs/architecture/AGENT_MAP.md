@@ -992,20 +992,16 @@ Primary current owners:
   button/menu/double-tap and automation command adapters, key routing, pointer,
   and auto-hide adapters. Flashback command execution remains in
   `Sussudio/Controllers/Flashback/FlashbackCommandController.cs`.
-- `Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs` owns automation whole-
-  window screenshot dispatch, UI-thread enqueue/cancellation, and failure
-  wrapping, native PrintWindow capture, GDI/DIB lifetime, output directory
-  creation, screenshot result shaping, and pure PNG/BMP byte-stream encoding
-  helpers. Keep whole-window
-  screenshot automation on `MainWindow.ShellChrome.Composition.cs` with the rest of the
-  `IAutomationWindowControl` adapter.
-- `Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs` owns
-  the pure preview-frame screenshot output-directory fallback, file naming,
-  status/log text policy, and XAML preview-frame screenshot button workflow:
-  directory creation, preview-frame capture, logging side effects, and button
-  enable/disable state.
-  `MainWindow.ButtonActions.cs` is the XAML-facing adapter for preview-frame
-  screenshots.
+- `Sussudio/Controllers/Screenshot/ScreenshotControllers.cs` owns automation
+  whole-window screenshot dispatch plus preview-frame screenshot button workflow:
+  UI-thread enqueue/cancellation, failure wrapping, native PrintWindow capture,
+  GDI/DIB lifetime, output directory creation, screenshot result shaping, pure
+  PNG/BMP byte-stream encoding helpers, pure preview-frame screenshot output-directory fallback,
+  file naming, status/log text policy, preview-frame capture, logging side
+  effects, and button enable/disable state. Keep whole-window screenshot
+  automation on `MainWindow.ShellChrome.Composition.cs` with the rest of the
+  `IAutomationWindowControl` adapter; `MainWindow.ButtonActions.cs` is the
+  XAML-facing adapter for preview-frame screenshots.
 - `Sussudio/Controllers/Window/WindowAutomationController.cs` owns window geometry
   automation plus the recordings-folder command and shell automation host
   lifecycle: UI-thread dispatch, AppWindow and DisplayArea access, maximized
