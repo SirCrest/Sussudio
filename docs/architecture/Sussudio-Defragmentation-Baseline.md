@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: MJPEG cadence test locality
+Problem: `CaptureCadence.Tests.cs` was a two-method legacy `Program` shard for packet-hash duplicate cadence and visual-cadence crop sampling, while both methods execute through `XUnit.MjpegPipelineContractsTests` and support the same MJPEG pipeline contract surface that already verifies packet-hash ownership and preview cadence behavior. Reviewing MJPEG cadence assertions required opening an extra small file before returning to the MJPEG pipeline source-shape owner.
+Files consolidated: `tests/Sussudio.Tests/CaptureCadence.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: none; legacy `Program` test shard count reduced by one
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter 'FullyQualifiedName~MjpegPipelineContractsTests'` (31 passed); full validation recorded in checkpoint commit notes
+CLI/MCP/pipe checks, if applicable: not applicable
+Behavior preserved: test-only relocation; xUnit method names and invoked `Program` contract names unchanged
+Notes for future agents: keep packet-hash duplicate cadence, visual-cadence crop sampling, and MJPEG pipeline source-shape checks together in `tests/Sussudio.Tests/MjpegPipeline.Tests.cs`; create a separate cadence file only if cadence gains an independent executable fixture or reusable test harness.
+
+Date: 2026-05-26
 Area: Flashback export output finalization locality
 Problem: `FlashbackExporter.OutputFiles.cs` held temp-output preparation, orphaned `.mp4.tmp` cleanup, active output trailer/IO finalization, atomic destination replacement, overwrite refusal, and invalid final-output cleanup in a separate partial even though those helpers are only used by the exporter request execution shells. Reviewing single-file or multi-segment export completion required opening an extra file after `FlashbackExporter.Execution.cs` and `FlashbackExporter.Segments.cs` reached `TryPrepareTempOutputFile`, `TryFinalizeActiveOutputFile`, and `DeleteTempFileIfPresent`.
 Files consolidated: `Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs`
