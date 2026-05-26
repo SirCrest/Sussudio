@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 
 static partial class Program
 {
@@ -6,7 +6,7 @@ static partial class Program
         => ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
 
     private static string ReadMainWindowCaptureSelectionBindingsAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.CaptureBindings.cs");
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.ControlBindings.cs");
 
     private static string ReadMainWindowFlashbackAdapterSource()
         => ReadMainWindowAdapterSource("Sussudio/MainWindow.Flashback.Interactions.cs");

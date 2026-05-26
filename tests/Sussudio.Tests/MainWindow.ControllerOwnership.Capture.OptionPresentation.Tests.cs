@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -8,7 +8,8 @@ static partial class Program
     internal static Task CaptureDeviceButtonActions_LiveInController()
     {
         var mainWindowText = ReadMainWindowCompositionSource();
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.ButtonActions.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var captureDeviceActionInit = ExtractMemberCode(adapterText, "InitializeCaptureDeviceActionController");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private CaptureDeviceActionController _captureDeviceActionController = null!;");
@@ -36,11 +37,11 @@ static partial class Program
         AssertContains(controllerText, "_context.UpdateDeviceApplyButtonState();");
         AssertDoesNotContain(adapterText, "ViewModel.RefreshDevicesAsync();");
         AssertDoesNotContain(adapterText, "ViewModel.ApplySelectedDeviceAsync(selectedDevice);");
-        AssertDoesNotContain(adapterText, "UpdateDeviceApplyButtonState();");
+        AssertDoesNotContain(captureDeviceActionInit, "UpdateDeviceApplyButtonState();");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.CaptureDeviceActions.cs")),
-            "capture-device button adapter folded into MainWindow.ButtonActions.cs");
+            "capture-device button adapter folded into MainWindow.ControlBindings.cs");
 
         return Task.CompletedTask;
     }
@@ -49,7 +50,7 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var captureOptionText = ReadRepoFile("Sussudio/MainWindow.CaptureBindings.cs").Replace("\r\n", "\n");
+        var captureOptionText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs").Replace("\r\n", "\n");
         var policyText = controllerText;
         const string tooltipFormatterMarker = "internal static class CaptureOptionTooltipFormatter";
@@ -61,9 +62,9 @@ static partial class Program
 
         var tooltipFormatterText = controllerText[tooltipFormatterStart..];
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.CaptureBindings.cs").Replace("\r\n", "\n");
+        var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
         var captureOptionPropertyChangedMethod = ExtractMemberCode(captureOptionBindingsText, "TryHandleCaptureOptionPropertyChanged");
-        var outputPathDisplayText = ReadRepoFile("Sussudio/MainWindow.ButtonActions.cs").Replace("\r\n", "\n");
+        var outputPathDisplayText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
 
         AssertContains(captureOptionText, "private CaptureOptionPresentationController _captureOptionPresentationController = null!;");
         AssertContains(captureOptionText, "private void InitializeCaptureOptionPresentationController()");

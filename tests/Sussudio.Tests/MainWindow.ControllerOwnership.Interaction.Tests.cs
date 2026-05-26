@@ -6,7 +6,7 @@ static partial class Program
     internal static Task RecordingButtonAction_LivesInController()
     {
         var mainWindowText = ReadMainWindowCompositionSource();
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.ButtonActions.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private RecordingButtonActionController _recordingButtonActionController = null!;");
@@ -34,7 +34,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.RecordingActions.cs")),
-            "recording button adapter folded into MainWindow.ButtonActions.cs");
+            "recording button adapter folded into MainWindow.ControlBindings.cs");
 
         return Task.CompletedTask;
     }

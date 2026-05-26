@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -9,7 +9,7 @@ static partial class Program
     internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
     {
         var mainWindowText = ReadMainWindowCompositionSource();
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.ButtonActions.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/ScreenshotControllers.cs").Replace("\r\n", "\n");
         const string policyMarker = "internal static class PreviewScreenshotPlanPolicy";
         var policyStart = controllerText.IndexOf(policyMarker, StringComparison.Ordinal);
