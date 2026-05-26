@@ -2692,3 +2692,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: MCP frame-pacing verdict behavior and source-shape checks remained covered by `XUnit.McpToolContractsTests`; no public automation command names, IDs, or wire payloads changed
 Behavior preserved: frame-pacing verdict tool registration, snapshot/timeline command routing, timeline/channel/policy/rendering locality assertions, half-rate verdict behavior, insufficient-sample verdict behavior, and command payload assertions remain unchanged.
 Notes for future agents: keep MCP frame-pacing verdict source-shape and behavior checks together in `McpToolSurface.Performance.FramePacingVerdict.Tests.cs` while they guard one tool surface.
+
+Date: 2026-05-26
+Area: capture session coordinator contract test locality
+Problem: `CaptureSessionCoordinator.Contracts.Tests.cs` only carried coordinator model/facade source-shape checks adjacent to the public API and snapshot contract checks in `CaptureSessionCoordinator.Api.Tests.cs`. Reviewing the coordinator's API/model/facade contract required opening a separate small legacy `Program` partial.
+Files consolidated: `tests/Sussudio.Tests/CaptureSessionCoordinator.Contracts.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` capture session coordinator contract partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: coordinator public method coverage, command-kind enum coverage, snapshot contract/default-state checks, model-surface locality checks, and Flashback facade locality checks remain unchanged.
+Notes for future agents: keep CaptureSessionCoordinator API, model, snapshot, and facade contract assertions in `CaptureSessionCoordinator.Api.Tests.cs`; keep queue/Flashback behavior and broader source-ownership checks in their focused owner files.

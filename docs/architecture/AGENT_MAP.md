@@ -1978,10 +1978,9 @@ Primary current owners:
   assertion helpers.
 - Focused capture session coordinator coverage lives in
   `tests/Sussudio.Tests/CaptureSessionCoordinator.Api.Tests.cs`,
-  `CaptureSessionCoordinator.Contracts`,
   `CaptureSessionCoordinator.Queue`, `CaptureSessionCoordinator.Flashback`,
   `CaptureSessionCoordinator.Ownership`, and `CaptureModels`
-  files; command/source ownership checks include the consolidated coordinator
+  files; API/model/source ownership checks include the consolidated coordinator
   root and focused Flashback coordinator partials. Shared reflective harness helpers live in
   `CaptureSessionCoordinator.Helpers.cs`.
 - `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` owns shared pooled-frame
