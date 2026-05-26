@@ -2968,3 +2968,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: named-pipe request timeout, explicit-security fallback, app automation-host auth fallback wiring, Stream Deck auth-envelope documentation, and shared throwing-proxy helper coverage remain registered through `XUnit.AutomationContractsTests`.
 Notes for future agents: keep named-pipe automation server framing, timeout, security fallback, and app auth wiring checks together in `NamedPipeAutomationServer.Tests.cs`; do not recreate a separate security shard unless the production server grows a genuinely separate named collaborator.
+
+Date: 2026-05-26
+Area: MainWindow shell native bootstrap test locality
+Problem: `MainWindow.ShellOwnership.NativeBootstrap.Tests.cs` was a one-method legacy `Program` partial shard, while xUnit already grouped the native bootstrap assertion with the MainWindow window-lifecycle contract surface. The test reads the same `MainWindow.ShellChrome.Composition.cs` adapter, `NativeWindowBootstrapController`, first-frame reveal hooks, close lifecycle registration order, and window lifecycle docs as the existing shell window-lifecycle owner.
+Files consolidated: `tests/Sussudio.Tests/MainWindow.ShellOwnership.NativeBootstrap.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MainWindow shell/window lifecycle test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: MainWindow native bootstrap, DWM cloak/dark-mode setup, first-composed-frame reveal, shell adapter ordering, close lifecycle registration, and window lifecycle assertions remain registered through `XUnit.PresentationPreviewMainWindowContractsTests`.
+Notes for future agents: keep MainWindow native bootstrap and close/shutdown lifecycle ownership checks together in `MainWindow.ShellOwnership.WindowLifecycle.Tests.cs`; keep launch entrance and loaded-time startup checks in `MainWindow.ShellOwnership.Startup.Launch.Tests.cs`.

@@ -1268,14 +1268,12 @@ Primary current owners:
   runtime snapshot controller Build integration, D3D policy null-renderer
   defaults, health policy/input factory, and surface/startup/GPU playback
   projection policy regression checks.
-- `tests/Sussudio.Tests/MainWindow.ShellOwnership.NativeBootstrap.Tests.cs`
-  owns MainWindow native bootstrap, adapter, and first-frame reveal ownership
-  assertions.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.WindowLifecycle.Tests.cs`
-  owns MainWindow window-lifecycle composition, close lifecycle state, close
-  request/app-closing controllers, recording-stop close protection,
-  recording-finalization stop-wait policy, post-close shutdown cleanup,
-  automation-host disposal, and ownership documentation assertions.
+  owns MainWindow native bootstrap, adapter, first-frame reveal, window-lifecycle
+  composition, close lifecycle state, close request/app-closing controllers,
+  recording-stop close protection, recording-finalization stop-wait policy,
+  post-close shutdown cleanup, automation-host disposal, and ownership
+  documentation assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.ShellPreview.Tests.cs`
   owns MainWindow controller-adapter ownership assertions for control bar,
   shell elevation, preview-transition, preview startup overlay, and preview
