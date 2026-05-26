@@ -3335,7 +3335,7 @@ owner, fold it back into that owner and update the source-shape tests and
 
    Preserve the root `MainViewModel` public surface while introducing feature
    view models or adapters for capture selection, recording, audio, Flashback,
-   diagnostics, and automation. `MainViewModel.Composition.cs` owns the default
+   diagnostics, and automation. `MainViewModel.cs` owns the default
    service graph for the root compatibility view model, which gives the next
    facade slices a small construction seam without changing XAML bindings or
    automation contracts. The live audio/microphone meter callback state now
@@ -3375,15 +3375,14 @@ owner, fold it back into that owner and update the source-shape tests and
    state, and `MainViewModel.FlashbackState.cs` owns Flashback timeline/export
    state plus buffer, bitrate, playback-state, in/out marker, and gap-from-live
    UI projection. Keep `MainViewModel.cs` focused on the public compatibility-facade
-   shell and small bridge methods; `MainViewModel.Composition.cs` owns
-   construction, dependency assignment, collaborator fields, controller graph
-   handoff, and startup lifecycle kick-off.
+   shell, construction seam, dependency assignment, collaborator fields,
+   controller graph handoff, startup lifecycle kick-off, and small bridge methods.
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs`
    owns controller graph construction order plus UI-dispatch, device-audio,
    device-refresh, capture-settings automation, source telemetry, runtime
    event-ingress, recording, preview lifecycle/reinitialize, capture option
    rebuild, device-format probe, runtime lifecycle, and disposal graph ports.
-   `MainViewModel.Composition.cs` continues to own service construction. Audio
+   `MainViewModel.cs` continues to own service construction. Audio
    capture property handlers now live in
    `MainViewModel.AudioState.cs`, audio-preview property
    handlers live in `MainViewModel.AudioState.cs`, microphone monitor/device
@@ -3394,7 +3393,7 @@ owner, fold it back into that owner and update the source-shape tests and
    The UI dispatch graph-port contract for dispatcher access, disposal state,
    logging, exception logging, and status text projection lives with
    `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs`, while
-   `MainViewModel.Composition.cs` keeps the stable private adapter names and
+   `MainViewModel.cs` keeps the stable private adapter names and
    preview event fan-out beside the controller graph handoff;
    periodic timer refresh orchestration and initial
    source-telemetry/HDR/live-info/timer/disk-space bootstrap through

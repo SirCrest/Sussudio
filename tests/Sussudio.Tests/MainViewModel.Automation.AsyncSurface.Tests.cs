@@ -72,8 +72,6 @@ static partial class Program
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
         var viewModelDispatchText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.Composition.cs")
-                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs")
                 .Replace("\r\n", "\n");
         var flashbackSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")

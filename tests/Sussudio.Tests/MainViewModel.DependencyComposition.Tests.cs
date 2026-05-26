@@ -5,7 +5,7 @@ static partial class Program
     internal static Task MainViewModel_UsesDependencyCompositionSeam()
     {
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var compositionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Composition.cs").Replace("\r\n", "\n");
+        var compositionText = rootText;
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs").Replace("\r\n", "\n");
@@ -16,8 +16,12 @@ static partial class Program
 
         AssertContains(rootText, "public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDisposable, IAutomationViewModel");
         AssertContains(rootText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
-        AssertDoesNotContain(rootText, "internal MainViewModel(MainViewModelDependencies dependencies)");
-        AssertDoesNotContain(rootText, "private readonly DeviceService _deviceService;");
+        AssertContains(rootText, "internal MainViewModel(MainViewModelDependencies dependencies)");
+        AssertContains(rootText, "private readonly DeviceService _deviceService;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Composition.cs")),
+            "MainViewModel.Composition.cs folded into MainViewModel.cs");
         AssertContains(compositionText, "public MainViewModel()\n        : this(MainViewModelDependencies.CreateDefault())");
         AssertContains(compositionText, "internal MainViewModel(MainViewModelDependencies dependencies)");
         AssertContains(compositionText, "private readonly DeviceService _deviceService;");
@@ -150,7 +154,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModelDependencies.cs")),
-            "MainViewModelDependencies.cs folded into MainViewModel.Composition.cs");
+            "MainViewModelDependencies.cs folded into MainViewModel.cs");
 
         return Task.CompletedTask;
     }

@@ -2394,10 +2394,9 @@ Primary current owners:
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.cs` owns the public
   compatibility-facade shell, shared shell/status/live-info state, native
-  window handle state, UI collection replacement, non-preview coordination
-  gates, and small bridge methods, while
-  `MainViewModel.Composition.cs` owns construction, dependency assignment,
-  collaborator fields, controller graph handoff, and startup lifecycle kick-off.
+  window handle state, UI collection replacement, construction, dependency
+  assignment, collaborator fields, controller graph handoff, startup lifecycle
+  kick-off, non-preview coordination gates, and small bridge methods.
   `MainViewModel.cs` owns preview lifecycle compatibility entry
   points, preview-sink handoff, preview lifecycle flags,
   preview reinitialize coordination, and preview request events; `MainViewModel.CaptureState.cs` owns capture-selection
@@ -2455,7 +2454,7 @@ Primary current owners:
   cancellation handoff, enqueue-failure logging, status projection, and the UI
   dispatch graph-port contract for dispatcher access, disposal state, logging,
   exception logging, and status text projection.
-  `MainViewModel.Composition.cs` owns the stable private UI-dispatch adapter
+  `MainViewModel.cs` owns the stable private UI-dispatch adapter
   names plus preview event fan-out for the partial family, beside the
   controller graph construction that consumes those ports.
   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`
@@ -2763,7 +2762,7 @@ Refactor direction:
   screenshots remain on `IAutomationWindowControl`. `AutomationDiagnosticsHub`
   consumes the snapshot-query port for read-only diagnostic and verification
   snapshots.
-- `MainViewModel.Composition.cs` owns the default service graph for the root
+- `MainViewModel.cs` owns the default service graph for the root
   compatibility view model until a fuller app composition root injects feature
   view models and narrower ports.
 - `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs` owns
@@ -2772,7 +2771,7 @@ Refactor direction:
   runtime event-ingress, recording, preview lifecycle/reinitialize, capture
   option rebuild, device-format probe, runtime lifecycle, and disposal graph
   ports. Keep
-  service construction in `MainViewModel.Composition.cs`, and keep
+  service construction in `MainViewModel.cs`, and keep
   `_runtimeLifecycleController.Start()` plus initial presentation timing in the
   root constructor after all graph fields have been assigned.
 

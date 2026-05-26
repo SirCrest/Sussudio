@@ -77,7 +77,7 @@ static partial class Program
         var mainViewModelAudioStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioState.cs"));
         var mainViewModelDeviceAudioRequestControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceAudioRequestController.cs"));
         var mainViewModelCaptureModePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureModeTransactions.cs"));
-        var mainViewModelCompositionText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Composition.cs"));
+        var mainViewModelCompositionText = mainViewModelText;
         var mainViewModelUiDispatchControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelUiDispatchController.cs"));
         var mainViewModelRuntimeLifecycleControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelLifecycleController.cs"));
         var mainViewModelRuntimeEventIngressControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeEventIngressController.cs"));
@@ -90,7 +90,11 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Dispatching.cs")),
-            "MainViewModel dispatch adapter partial folded into composition");
+            "MainViewModel dispatch adapter partial folded into MainViewModel.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Composition.cs")),
+            "MainViewModel composition partial folded into MainViewModel.cs");
         AssertContains(mainViewModelCompositionText, "private bool EnqueueUiOperation");
         AssertContains(mainViewModelCompositionText, "_uiDispatchController.Enqueue(operation, operationName, allowDuringDispose);");
         AssertContains(mainViewModelCompositionText, "_uiDispatchController.InvokeAsync(operation, cancellationToken);");
@@ -109,7 +113,7 @@ static partial class Program
         AssertContains(mainViewModelUiDispatchControllerText, "_context.SetStatusText($\"{operationName} failed: {ex.Message}\");");
         AssertDoesNotContain(mainViewModelCompositionText, "TaskCompletionSource");
         AssertDoesNotContain(mainViewModelCompositionText, "_dispatcherQueue.TryEnqueue");
-        AssertDoesNotContain(mainViewModelText, "private bool EnqueueUiOperation");
+        AssertContains(mainViewModelText, "private bool EnqueueUiOperation");
         AssertContains(mainViewModelAudioCapturePropertyChangesText, "OnIsAudioEnabledChanged");
         AssertContains(mainViewModelAudioStateText, "OnIsAudioPreviewEnabledChanged");
         AssertEqual(

@@ -13,8 +13,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.Composition.cs")
-                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs")

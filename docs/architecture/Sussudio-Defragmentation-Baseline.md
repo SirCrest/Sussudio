@@ -1690,7 +1690,7 @@ Partial clusters reduced: `MainViewModel` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: UI operation enqueue/execute/invoke adapter names, disposal-aware enqueue policy delegation, preview reinitialize event fan-out, renderer-stop event fan-out, timeout helper semantics, and controller graph port wiring remain unchanged
-Notes for future agents: keep stable MainViewModel UI-dispatch adapter names and preview event fan-out in `MainViewModel.Composition.cs`; keep actual dispatcher queue policy in `MainViewModelUiDispatchController.cs`
+Notes for future agents: superseded on 2026-05-26 by the MainViewModel root/composition locality slice; keep stable MainViewModel UI-dispatch adapter names, preview event fan-out, and default service graph construction in `MainViewModel.cs`; keep actual dispatcher queue policy in `MainViewModelUiDispatchController.cs`
 
 Date: 2026-05-24
 Area: NativeXuAudioProbe default experiment payload locality
@@ -3750,3 +3750,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, presentation-preview ownership tests, automation contracts, MCP, `ssctl`, and console harnesses; no public automation command names, IDs, XAML bindings, record-button event names, or recording behavior changed
 Behavior preserved: recording property-change routing, lockout policy, audio/HDR/title/audio-meter side effects, recording glow, Rec pulse, starting spinner, normal/recording content visibility, record-button enablement, and circle/pill width morph now live together in `RecordingButtonChromeController.cs`.
 Notes for future agents: keep recording visual state presentation, pure lockout policy, and record-button chrome in `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs`; keep recording command execution and preview-state logging there too, and keep output path workflow in `OutputPathController.cs`.
+
+Date: 2026-05-26
+Area: MainViewModel root composition locality
+Problem: `MainViewModel.Composition.cs` was a small root-facade partial that only owned construction, dependency assignment, controller graph handoff, startup lifecycle kick-off, stable UI-dispatch adapter names, and preview event fan-out. Reviewing the root compatibility facade required opening both `MainViewModel.cs` and the composition partial before reaching the feature partials/controllers.
+Files consolidated: `Sussudio/ViewModels/MainViewModel.Composition.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `MainViewModel` partial count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, automation contracts, MCP, `ssctl`, and console harnesses; no public automation command names, IDs, XAML bindings, constructor behavior, preview event names, or runtime lifecycle behavior changed
+Behavior preserved: default service graph construction, dependency validation, controller graph assignment order, runtime lifecycle start/initial presentation timing, stable private UI-dispatch adapter names, preview reinit/renderer event fan-out, UI invocation adapters, and timeout helper now live in `MainViewModel.cs`.
+Notes for future agents: keep MainViewModel root compatibility surface, default service graph construction, stable dispatch adapter names, and preview event fan-out in `Sussudio/ViewModels/MainViewModel.cs`; keep feature behavior in focused feature partials/controllers and actual dispatcher policy in `MainViewModelUiDispatchController.cs`.
