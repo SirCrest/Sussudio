@@ -756,7 +756,7 @@ string-based.
 
 First-load startup, initial ViewModel/device refresh, automation startup timing,
 and the launch entrance trigger now live in
-`Sussudio/Controllers/Launch/LaunchStartupController.cs`.
+`Sussudio/Controllers/Launch/LaunchFlowController.cs`.
 `Sussudio/MainWindow.ShellChrome.Composition.cs` owns the XAML-facing shell
 launch/chrome adapter surface, including the Loaded adapter and native shell
 bootstrap wiring.
@@ -764,7 +764,7 @@ Automation host composition, once-only
 startup, ready/disabled logging, and pipe-before-hub shutdown disposal now live
 with the window automation command owner in
 `Sussudio/Controllers/Window/WindowAutomationController.cs`.
-`Sussudio/Controllers/Launch/LaunchStartupController.cs` starts that
+`Sussudio/Controllers/Launch/LaunchFlowController.cs` starts that
 controller after initial device refresh, and
 `Sussudio/MainWindow.xaml.cs` passes its async dispose
 delegate into the shutdown controller. Window close
@@ -2456,15 +2456,15 @@ because launch entrance owns the only phrase start/stop choreography and shares
 the shell launch adapter family.
 
 Loaded-time startup ordering now lives in
-`Sussudio/Controllers/Launch/LaunchStartupController.cs`: native shell reveal
+`Sussudio/Controllers/Launch/LaunchFlowController.cs`: native shell reveal
 scheduling, initial ViewModel settings load, preview audio fade priming before
 device refresh, no-preview placeholder fallback, automation host start in the
 finally path, and splash/entrance trigger.
 `Sussudio/MainWindow.ShellChrome.Composition.cs` preserves the XAML event
 handler and shell launch context wiring.
 
-Launch entrance ownership is split by phase:
-`Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs` owns context,
+Launch entrance ownership lives with loaded-time startup in the same launch-flow owner:
+`Sussudio/Controllers/Launch/LaunchFlowController.cs` owns context,
 initial hidden/scaled shell state, splash fade, loading-phrase start/stop
 ordering, one-shot splash playback state, handoff into shell entrance, shell
 chrome/button/stats entrance choreography, deferred preview reveal logging,

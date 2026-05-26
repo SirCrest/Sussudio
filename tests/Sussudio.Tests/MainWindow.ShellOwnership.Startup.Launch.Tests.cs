@@ -9,7 +9,7 @@ static partial class Program
         var controllerInitializationText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var startupText = ReadMainWindowShellChromeAdapterSource();
         var adapterText = ReadMainWindowShellChromeAdapterSource();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchFlowController.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
@@ -50,8 +50,8 @@ static partial class Program
         AssertContains(controllerText, "LAUNCH_PREVIEW_REVEAL_DEFERRED");
         AssertContains(controllerText, "_context.AddPreviewShellEntranceAnimations(storyboard, easing, 900, 400);");
         AssertContains(controllerText, "_context.FadeInControlBarShadow();");
-        AssertContains(agentMapText, "Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs");
-        AssertContains(cleanupPlanText, "Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs");
+        AssertContains(agentMapText, "Sussudio/Controllers/Launch/LaunchFlowController.cs");
+        AssertContains(cleanupPlanText, "Sussudio/Controllers/Launch/LaunchFlowController.cs");
         AssertDoesNotContain(agentMapText, "LaunchEntranceAnimationController.Splash.cs");
         AssertDoesNotContain(agentMapText, "LaunchEntranceAnimationController.Shell.cs");
         AssertDoesNotContain(cleanupPlanText, "LaunchEntranceAnimationController.Splash.cs");
@@ -78,7 +78,7 @@ static partial class Program
         var controllerInitializationText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var startupText = ReadMainWindowShellChromeAdapterSource();
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationController.cs").Replace("\r\n", "\n");
-        var launchStartupControllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchStartupController.cs").Replace("\r\n", "\n");
+        var launchStartupControllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchFlowController.cs").Replace("\r\n", "\n");
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
@@ -109,8 +109,16 @@ static partial class Program
         AssertContains(launchStartupControllerText, "_context.RevealPreviewUnavailablePlaceholder();");
         AssertContains(launchStartupControllerText, "_context.StartAutomationHost();");
         AssertContains(launchStartupControllerText, "_context.PlaySplashAndEntrance();");
-        AssertContains(agentMapText, "Sussudio/Controllers/Launch/LaunchStartupController.cs");
-        AssertContains(cleanupPlanText, "Sussudio/Controllers/Launch/LaunchStartupController.cs");
+        AssertContains(agentMapText, "Sussudio/Controllers/Launch/LaunchFlowController.cs");
+        AssertContains(cleanupPlanText, "Sussudio/Controllers/Launch/LaunchFlowController.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "LaunchStartupController.cs")),
+            "launch startup choreography lives with the launch flow owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "Entrance", "LaunchEntranceAnimationController.cs")),
+            "launch entrance choreography lives with the launch flow owner");
         AssertEqual(
             true,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShellChrome.Composition.cs")),

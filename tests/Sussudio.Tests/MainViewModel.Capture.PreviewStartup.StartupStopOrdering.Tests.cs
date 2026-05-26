@@ -181,7 +181,7 @@ static partial class Program
         var previewTransitionText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs")
             .Replace("\r\n", "\n");
-        var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs")
+        var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchFlowController.cs")
             .Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
@@ -189,7 +189,7 @@ static partial class Program
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs")
             .Replace("\r\n", "\n");
         var startupText = ReadMainWindowShellChromeAdapterSource();
-        var launchStartupText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchStartupController.cs")
+        var launchStartupText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchFlowController.cs")
             .Replace("\r\n", "\n");
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml")
             .Replace("\r\n", "\n");

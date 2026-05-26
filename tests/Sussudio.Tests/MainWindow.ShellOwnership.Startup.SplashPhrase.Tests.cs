@@ -7,7 +7,7 @@ static partial class Program
 {
     internal static Task SplashLoadingPhrases_LiveInController()
     {
-        var launchEntranceText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
+        var launchEntranceText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchFlowController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadMainWindowCompositionSource();
         var launchAdapterText = ReadMainWindowShellChromeAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs").Replace("\r\n", "\n");

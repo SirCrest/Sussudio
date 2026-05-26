@@ -2180,20 +2180,17 @@ Primary current owners:
   two-line text animation.
   `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing phrase
   start/stop adapter.
-- `Sussudio/Controllers/Launch/LaunchStartupController.cs` owns loaded-time
-  startup ordering: native shell reveal scheduling, initial ViewModel settings
-  load, preview audio fade priming before device refresh, no-preview fallback
-  presentation, automation host start, and splash/entrance trigger.
-  `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing Loaded
-  adapter and shell launch context wiring owner.
-- `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs` owns launch
-  entrance context, initial hidden/scaled shell state, splash fade, one-shot
-  splash playback state, loading-phrase start/stop ordering, handoff into shell
-  entrance, shell chrome/button/stats entrance choreography, deferred preview
-  reveal logging, active-storyboard cleanup, and the delayed control-bar shadow
-  fade routed through the shadow controller in `PreviewSurfacePresentationController`.
-  `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing launch
-  entrance adapter.
+- `Sussudio/Controllers/Launch/LaunchFlowController.cs` owns loaded-time
+  startup ordering and launch entrance choreography: native shell reveal
+  scheduling, initial ViewModel settings load, preview audio fade priming before
+  device refresh, no-preview fallback presentation, automation host start,
+  splash/entrance trigger, initial hidden/scaled shell state, splash fade,
+  one-shot splash playback state, loading-phrase start/stop ordering, handoff
+  into shell entrance, shell chrome/button/stats entrance choreography, deferred
+  preview reveal logging, active-storyboard cleanup, and the delayed control-bar
+  shadow fade routed through the shadow controller in
+  `PreviewSurfacePresentationController`. `Sussudio/MainWindow.ShellChrome.Composition.cs`
+  is the XAML-facing Loaded and launch entrance adapter.
 - `Sussudio/Controllers/Shell/ShellChromeController.cs` owns control-bar
   button entrance/hover/press/release animation, static shell ThemeShadow and
   translation setup for the control bar and record button, plus shell

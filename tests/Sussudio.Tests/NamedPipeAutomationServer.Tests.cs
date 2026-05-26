@@ -163,7 +163,7 @@ static partial class Program
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationController.cs")
             .Replace("\r\n", "\n");
         var startupText = ReadMainWindowShellChromeAdapterSource();
-        var launchStartupControllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchStartupController.cs")
+        var launchStartupControllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchFlowController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "_automationHostLifecycleController = new WindowAutomationHostLifecycleController(");
