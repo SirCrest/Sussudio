@@ -4,10 +4,9 @@ static partial class Program
 {
     internal static Task MainViewModelAutomation_ViewModelRuntimeSnapshotLivesInFocusedPartial()
     {
-        var automationSnapshotsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSnapshots.cs")
+        var automationFacadeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCommands.cs")
             .Replace("\r\n", "\n");
-        var viewModelRuntimeSnapshotText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSnapshots.cs")
-            .Replace("\r\n", "\n");
+        var viewModelRuntimeSnapshotText = automationFacadeText;
         var viewModelRuntimeSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs")
             .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
@@ -27,22 +26,22 @@ static partial class Program
         AssertContains(viewModelRuntimeSnapshotBuilderText, "CaptureCommandLastCommand = sessionSnapshot.LastCommand?.ToString() ?? \"None\",");
         AssertContains(viewModelRuntimeSnapshotBuilderText, "CaptureCommandLastCorrelationId = sessionSnapshot.LastCorrelationId ?? string.Empty,");
         AssertContains(viewModelRuntimeSnapshotBuilderText, "PreviewVolumePercent = input.PreviewVolume * 100.0,");
-        AssertContains(automationSnapshotsText, "public Task<ViewModelRuntimeSnapshot> GetViewModelRuntimeSnapshotAsync");
-        AssertDoesNotContain(automationSnapshotsText, "=> new ViewModelRuntimeSnapshot");
-        AssertContains(automationSnapshotsText, "public VideoSourceProbeResult ProbeVideoSource() => _captureService.ProbeVideoSource();");
-        AssertContains(automationSnapshotsText, "public PreviewColorProbeResult ProbePreviewColor() => _captureService.ProbePreviewColor();");
-        AssertContains(automationSnapshotsText, "public Task<VideoSourceProbeResult> ProbeVideoSourceAsync(CancellationToken cancellationToken = default)");
-        AssertContains(automationSnapshotsText, "public Task<PreviewColorProbeResult> ProbePreviewColorAsync(CancellationToken cancellationToken = default)");
-        AssertContains(automationSnapshotsText, "public Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath, CancellationToken cancellationToken = default)");
-        AssertContains(automationSnapshotsText, "=> FromSynchronousSnapshot(ProbeVideoSource, cancellationToken);");
-        AssertContains(automationSnapshotsText, "=> FromSynchronousSnapshot(ProbePreviewColor, cancellationToken);");
-        AssertContains(automationSnapshotsText, "public Task<CaptureRuntimeSnapshot> GetCaptureRuntimeSnapshotAsync(CancellationToken cancellationToken = default)\n        => FromSynchronousSnapshot(_captureService.GetRuntimeSnapshot, cancellationToken);");
-        AssertContains(agentMapText, "`MainViewModel.AutomationSnapshots.cs` owns automation-facing view-model runtime snapshot UI-thread capture.");
+        AssertContains(automationFacadeText, "public Task<ViewModelRuntimeSnapshot> GetViewModelRuntimeSnapshotAsync");
+        AssertDoesNotContain(automationFacadeText, "=> new ViewModelRuntimeSnapshot");
+        AssertContains(automationFacadeText, "public VideoSourceProbeResult ProbeVideoSource() => _captureService.ProbeVideoSource();");
+        AssertContains(automationFacadeText, "public PreviewColorProbeResult ProbePreviewColor() => _captureService.ProbePreviewColor();");
+        AssertContains(automationFacadeText, "public Task<VideoSourceProbeResult> ProbeVideoSourceAsync(CancellationToken cancellationToken = default)");
+        AssertContains(automationFacadeText, "public Task<PreviewColorProbeResult> ProbePreviewColorAsync(CancellationToken cancellationToken = default)");
+        AssertContains(automationFacadeText, "public Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath, CancellationToken cancellationToken = default)");
+        AssertContains(automationFacadeText, "=> FromSynchronousSnapshot(ProbeVideoSource, cancellationToken);");
+        AssertContains(automationFacadeText, "=> FromSynchronousSnapshot(ProbePreviewColor, cancellationToken);");
+        AssertContains(automationFacadeText, "public Task<CaptureRuntimeSnapshot> GetCaptureRuntimeSnapshotAsync(CancellationToken cancellationToken = default)\n        => FromSynchronousSnapshot(_captureService.GetRuntimeSnapshot, cancellationToken);");
+        AssertContains(agentMapText, "`MainViewModel.AutomationCommands.cs` owns automation-facing view-model runtime snapshot UI-thread capture.");
         AssertContains(agentMapText, "`ViewModelBuilders.cs` owns pure view-model runtime snapshot DTO construction.");
         AssertContains(agentMapText, "also owns automation-facing source/preview probes and preview frame capture.");
-        AssertContains(cleanupPlanText, "`MainViewModel.AutomationSnapshots.cs`; pure view-model runtime snapshot DTO");
+        AssertContains(cleanupPlanText, "`MainViewModel.AutomationCommands.cs`; pure view-model runtime snapshot DTO");
         AssertContains(cleanupPlanText, "construction lives in `ViewModelBuilders.cs`");
-        AssertContains(cleanupPlanText, "source/preview probes, and preview\n   frame capture also live in `MainViewModel.AutomationSnapshots.cs`");
+        AssertContains(cleanupPlanText, "probes, and preview frame capture now live in\n   `MainViewModel.AutomationCommands.cs`");
 
         return Task.CompletedTask;
     }
@@ -51,7 +50,7 @@ static partial class Program
     {
         var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
-        var automationSnapshotText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSnapshots.cs");
+        var automationSnapshotText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCommands.cs");
         var automationOptionsText = automationSnapshotText;
         var automationOptionsBuilderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs");
 
@@ -76,7 +75,11 @@ static partial class Program
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationOptionsSnapshot.cs")),
-            "MainViewModel.AutomationOptionsSnapshot.cs folded into MainViewModel.AutomationSnapshots.cs");
+            "MainViewModel.AutomationOptionsSnapshot.cs folded into MainViewModel.AutomationCommands.cs");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationSnapshots.cs")),
+            "MainViewModel.AutomationSnapshots.cs folded into MainViewModel.AutomationCommands.cs");
 
         return Task.CompletedTask;
     }

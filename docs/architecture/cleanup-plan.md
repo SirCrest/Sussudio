@@ -3476,14 +3476,14 @@ owner, fold it back into that owner and update the source-shape tests and
    cancellations, runtime stop, coordinator cleanup/dispose, and capture-service
    async/sync disposal fallback lives with that controller.
    `MainViewModel.cs` remains the public refresh/dispose adapter and active
-   Flashback export cancellation owner. Automation-facing capture runtime, health,
-   recording snapshot projection, source/preview probes, and preview
-   frame capture also live in `MainViewModel.AutomationSnapshots.cs`; automation-facing
-   view-model runtime snapshot UI-thread capture now lives in
-   `MainViewModel.AutomationSnapshots.cs`; pure view-model runtime snapshot DTO
+   Flashback export cancellation owner. Automation-facing command entry points,
+   capture runtime, health, recording snapshot projection, source/preview
+   probes, and preview frame capture now live in
+   `MainViewModel.AutomationCommands.cs`; automation-facing view-model runtime snapshot UI-thread capture now lives in
+   `MainViewModel.AutomationCommands.cs`; pure view-model runtime snapshot DTO
    construction lives in `ViewModelBuilders.cs`;
    automation options UI-thread snapshot capture now lives in
-   `MainViewModel.AutomationSnapshots.cs`; pure selected-control-state DTO
+   `MainViewModel.AutomationCommands.cs`; pure selected-control-state DTO
    construction lives in `ViewModelBuilders.cs`.
    `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
    owns xUnit execution for the diagnostics-loop polling check after its removal

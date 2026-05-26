@@ -3786,3 +3786,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, automation contracts, MCP, `ssctl`, and console harnesses; no production code, public automation command names, IDs, wire payloads, XAML bindings, or MediaFormat behavior changed
 Behavior preserved: MediaFormat rational-frame-rate equality, dimension inequality, and equal-object hash-code consistency now live in `XUnit.CaptureConfigurationModelsTests.cs` with the capture model reflection helpers and related capture settings/model facts.
 Notes for future agents: keep MediaFormat leaf behavior and capture configuration model reflection checks in `tests/Sussudio.Tests/XUnit.CaptureConfigurationModelsTests.cs`; create a separate xUnit wrapper only when a model surface gains an independent runtime fixture or direct non-reflection test seam.
+
+Date: 2026-05-26
+Area: MainViewModel automation facade locality
+Problem: `MainViewModel.AutomationSnapshots.cs` split the read/probe/options half of the public automation surface from the adjacent command facade. Reviewing CLI/MCP-facing MainViewModel automation behavior still required opening two partials even though the methods all preserve public automation compatibility and delegate pure DTO construction to `ViewModelBuilders.cs`.
+Files consolidated: `Sussudio/ViewModels/MainViewModel.AutomationSnapshots.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `MainViewModel` partial count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, automation contracts, MCP, `ssctl`, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, snapshot/probe method names, or DTO construction semantics changed
+Behavior preserved: capture runtime/health/diagnostics/recording snapshots, MJPEG timing details, source and preview probes, preview-frame capture, view-model runtime snapshots, and automation options snapshots now live in `MainViewModel.AutomationCommands.cs` with the rest of the stable MainViewModel automation facade.
+Notes for future agents: keep public automation command, snapshot, probe, preview-frame capture, and options compatibility methods in `Sussudio/ViewModels/MainViewModel.AutomationCommands.cs`; keep pure DTO builders in `Sussudio/ViewModels/ViewModelBuilders.cs` and feature behavior in dedicated feature partials/controllers.

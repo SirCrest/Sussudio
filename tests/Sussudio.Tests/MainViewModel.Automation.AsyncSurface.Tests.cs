@@ -86,7 +86,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackPlaybackCommandsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
             .Replace("\r\n", "\n");
-        var automationSnapshotsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSnapshots.cs")
+        var automationFacadeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCommands.cs")
             .Replace("\r\n", "\n");
         var automationText = string.Join(
             "\n",
@@ -96,7 +96,7 @@ static partial class Program
             flashbackExportAutomationText,
             flashbackBufferStatusText,
             flashbackPlaybackCommandsText,
-            automationSnapshotsText);
+            automationFacadeText);
 
         AssertEqual(
             false,

@@ -2540,12 +2540,12 @@ Primary current owners:
   async/sync disposal fallback, plus the bounded wait helper port that keeps
   timeout behavior explicit. `MainViewModel.cs` is the public refresh/dispose
   adapter and owns active Flashback export cancellation during teardown.
-  `MainViewModel.AutomationSnapshots.cs` owns automation-facing capture runtime,
-  health, and recording snapshot projection. `MainViewModel.AutomationSnapshots.cs`
-  also owns automation-facing source/preview probes and preview frame capture.
-  `MainViewModel.AutomationSnapshots.cs` owns automation-facing view-model runtime snapshot UI-thread capture.
+  `MainViewModel.AutomationCommands.cs` owns automation-facing command,
+  capture runtime, health, and recording snapshot projection.
+  `MainViewModel.AutomationCommands.cs` also owns automation-facing source/preview probes and preview frame capture.
+  `MainViewModel.AutomationCommands.cs` owns automation-facing view-model runtime snapshot UI-thread capture.
   `ViewModelBuilders.cs` owns pure view-model runtime snapshot DTO construction.
-  `MainViewModel.AutomationSnapshots.cs` owns automation-facing options
+  `MainViewModel.AutomationCommands.cs` owns automation-facing options
   UI-thread snapshot capture for CLI/MCP clients, while
   `ViewModelBuilders.cs` owns the pure selected-control-state DTO
   construction.
