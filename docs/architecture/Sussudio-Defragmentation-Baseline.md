@@ -2908,3 +2908,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: output path display/action, output picker ownership, invalid output-drive probing, and output drive free-space presentation ownership checks remain registered through the presentation-preview xUnit/harness surfaces.
 Notes for future agents: keep output path display/action and disk-space presentation bridge checks in `MainWindow.ControllerOwnership.Output.Tests.cs`; do not recreate a separate `MainViewModel.DiskSpacePresentation.Tests.cs` shard.
+
+Date: 2026-05-26
+Area: automation dispatcher payload test locality
+Problem: dispatcher JSON payload helper coverage and dispatcher/catalog payload metadata parity lived in two small `AutomationCommandDispatcher.Payload.*.Tests.cs` shards even though both protect the same automation dispatcher payload contract: extraction helpers, default payload parsing, one-field handler metadata, and the `GetAudioRampTrace.maxEntries` guardrail.
+Files consolidated: `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Extraction.Tests.cs`; `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Catalog.Tests.cs`
+Files added: `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Tests.cs`
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` automation dispatcher payload test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: dispatcher payload extraction helpers, missing/default window and wait payload behavior, one-field handler/catalog parity, and `GetAudioRampTrace.maxEntries` metadata checks remain registered through `XUnit.AutomationContractsTests`.
+Notes for future agents: keep dispatcher payload extraction and catalog metadata parity checks in `AutomationCommandDispatcher.Payload.Tests.cs`; do not recreate separate payload extraction/catalog shards.
