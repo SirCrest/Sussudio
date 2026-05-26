@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -10,12 +10,16 @@ static partial class Program
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/Output/OutputPathController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Recording", "Output", "OutputPathController.cs")),
+            "output path controller folded into RecordingControlsControllers.cs");
         const string formatterMarker = "internal static class OutputPathDisplayTextFormatter";
         var formatterStart = controllerText.IndexOf(formatterMarker, System.StringComparison.Ordinal);
         if (formatterStart < 0)
         {
-            throw new System.InvalidOperationException("OutputPathDisplayTextFormatter was not found in OutputPathController.cs.");
+            throw new System.InvalidOperationException("OutputPathDisplayTextFormatter was not found in RecordingControlsControllers.cs.");
         }
 
         var formatterText = controllerText[formatterStart..];
@@ -101,7 +105,11 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/Output/OutputPathController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Recording", "Output", "OutputPathController.cs")),
+            "output path button actions folded into RecordingControlsControllers.cs");
 
         AssertContains(adapterText, "private OutputPathController _outputPathController = null!;");
         AssertContains(adapterText, "private void InitializeOutputPathController()");
@@ -156,7 +164,7 @@ static partial class Program
         AssertDoesNotContain(mainViewModelText, "BrowseOutputPathAsync");
         AssertDoesNotContain(mainViewModelText, "FolderPicker");
         AssertDoesNotContain(mainViewModelText, "FileTypeFilter");
-        AssertContains(agentMapText, "`Sussudio/Controllers/Recording/Output/OutputPathController.cs` owns recording output-");
+        AssertContains(agentMapText, "`Sussudio/Controllers/Recording/RecordingControlsControllers.cs` owns recording output-");
         AssertContains(agentMapText, "`MainViewModel.RecordingState.cs` owns the stable recording facade:");
         AssertContains(agentMapText, "bridge, recording option selections, output path, counters, and observable");
         AssertContains(cleanupPlanText, "Recording output-path textbox, tooltip, resize-event updates, browse, and");

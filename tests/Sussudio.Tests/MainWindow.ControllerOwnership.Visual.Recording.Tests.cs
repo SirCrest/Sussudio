@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -9,11 +9,15 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var recordingPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Recording", "Button", "RecordingButtonChromeController.cs")),
+            "recording button chrome controller folded into RecordingControlsControllers.cs");
         var presentationStart = controllerText.IndexOf("internal sealed class RecordingStatePresentationControllerContext", System.StringComparison.Ordinal);
         if (presentationStart < 0)
         {
-            throw new System.InvalidOperationException("RecordingStatePresentationControllerContext was not found in RecordingButtonChromeController.cs.");
+            throw new System.InvalidOperationException("RecordingStatePresentationControllerContext was not found in RecordingControlsControllers.cs.");
         }
         var recordingPresentationText = controllerText[presentationStart..];
 
@@ -103,19 +107,19 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Recording", "RecordingStatePresentationController.cs")),
             "recording state presentation lives with recording button chrome instead of returning as a tiny adjacent file");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
         const string presentationMarker = "internal sealed class RecordingStatePresentationControllerContext";
         var presentationStart = controllerText.IndexOf(presentationMarker, System.StringComparison.Ordinal);
         if (presentationStart < 0)
         {
-            throw new System.InvalidOperationException("RecordingStatePresentationControllerContext was not found in RecordingButtonChromeController.cs.");
+            throw new System.InvalidOperationException("RecordingStatePresentationControllerContext was not found in RecordingControlsControllers.cs.");
         }
 
         const string policyMarker = "internal static class RecordingStatePresentationPolicy";
         var policyStart = controllerText.IndexOf(policyMarker, System.StringComparison.Ordinal);
         if (policyStart < 0)
         {
-            throw new System.InvalidOperationException("RecordingStatePresentationPolicy was not found in RecordingButtonChromeController.cs.");
+            throw new System.InvalidOperationException("RecordingStatePresentationPolicy was not found in RecordingControlsControllers.cs.");
         }
 
         var presentationText = controllerText[presentationStart..policyStart];

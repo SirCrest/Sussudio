@@ -1,4 +1,4 @@
-﻿# Architecture Cleanup Plan
+# Architecture Cleanup Plan
 
 Last reviewed: 2026-05-16.
 
@@ -2482,7 +2482,7 @@ button command choreography now lives in
 name stable as part of the preview transition/presentation adapter.
 
 Demo-visible record-button chrome now lives in
-`Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs`: recording glow,
+`Sussudio/Controllers/Recording/RecordingControlsControllers.cs`: recording glow,
 Rec pulse, starting spinner, normal/recording content, padding, enabled-state
 application, the circle/pill width morph, recording-state lockout decisions,
 recording property-change routing, ViewModel-derived HDR/title/audio-meter
@@ -2491,7 +2491,7 @@ policy application, and the `RecordingStatePresentationController` facade.
 recording action and recording-state presentation adapters.
 
 Recording button command execution and preview-state logging after a recording
-start now live in `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs`.
+start now live in `Sussudio/Controllers/Recording/RecordingControlsControllers.cs`.
 `MainWindow.ControlBindings.cs` is the XAML-facing adapter for recording,
 capture-device, and output-path button workflows.
 
@@ -2599,7 +2599,7 @@ also routes through this controller so the recording bitrate text keeps one UI
 owner.
 
 Pure recording-state lockout decisions and recording-state UI projection now live in
-`Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs`: recording-time
+`Sussudio/Controllers/Recording/RecordingControlsControllers.cs`: recording-time
 capture/audio control enablement, analog gain enablement, transition button
 enablement, FFmpeg button enablement, settled record-button content visibility,
 ViewModel-derived property-name routing, lockout/HDR/title/audio-meter policy application, and record-button
@@ -2608,7 +2608,7 @@ chrome.
 
 Capture-option property-name routing still lives in the focused
 `Sussudio/MainWindow.ControlBindings.cs` adapter. Output-path routing
-lives in `OutputPathController`, shell visibility route order lives in
+lives in `OutputPathController` inside `RecordingControlsControllers.cs`, shell visibility route order lives in
 `ShellChromeController` over `StatsOverlayCompositionController` and
 `SettingsShelfController` through
 `Sussudio/MainWindow.ShellChrome.Composition.cs`, and live
@@ -2706,7 +2706,7 @@ presentation-preview harness coverage check.
 
 Recording output-path textbox, tooltip, resize-event updates, browse, and
 open-recordings button workflows now live in
-`Sussudio/Controllers/Recording/Output/OutputPathController.cs`, along with
+`Sussudio/Controllers/Recording/RecordingControlsControllers.cs`, along with
 pure truncation text policy.
 `OutputPathController` also owns the output-path property-change route;
 `MainWindow.ControlBindings.cs` is the XAML-facing adapter used by binding setup,
@@ -3447,7 +3447,7 @@ owner, fold it back into that owner and update the source-shape tests and
    debounce/timeout policy, renderer notifications, restart cancellation, and
    reinit gate access.
    Output folder display plus browse/open-recordings button workflows now live in
-   `Sussudio/Controllers/Recording/Output/OutputPathController.cs`.
+   `Sussudio/Controllers/Recording/RecordingControlsControllers.cs`.
    Recording facade entry points, including the direct emergency-stop
    coordinator bridge, now live in `MainViewModel.RecordingState.cs`, while
    recording toggle serialization,
