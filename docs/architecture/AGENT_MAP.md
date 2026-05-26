@@ -2585,7 +2585,7 @@ Primary current owners:
   family and variant models, rational parsing, friendly/exact frame-rate
   matching, timing-family ranking, and preferred-format ranking helpers used by
   frame-rate, resolution, capture-settings, and automation projections.
-  `Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
   owns the stateful resolver that resolves timing variants and source/preferred
   timing from resolution capabilities, runtime snapshots, selected formats,
   source telemetry, UI selection state, and its graph-built context ports.

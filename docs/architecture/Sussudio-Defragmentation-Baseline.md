@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: MainViewModel capture-mode timing locality
+Problem: `MainViewModelFrameRateTimingResolver.cs` was a small stateful helper used only by the capture-mode option rebuild workflow, while `MainViewModelCaptureModeOptionRebuildController.cs` already owns resolution, frame-rate, video-format, and selected-format rebuild transactions.
+Files consolidated: `Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; MainViewModel controller support file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `& scripts\architecture\Capture-SussudioDefragBaseline.ps1`
+CLI/MCP/pipe checks, if applicable: n/a; source-ownership and dependency-composition tests cover the moved resolver type and graph-built context
+Behavior preserved: `MainViewModelFrameRateTimingResolver` type name, context ports, preferred timing family resolution, detected source frame-rate resolution, timing variant projection, controller graph wiring, and capture-mode rebuild behavior remain unchanged
+Notes for future agents: keep the stateful frame-rate timing resolver beside `MainViewModelCaptureModeOptionRebuildController` while it is only used to support capture-mode option rebuild transactions; pure timing policy remains in `FrameRateTimingPolicy.cs`.
+
+Date: 2026-05-26
 Area: NativeXuAudioProbe I2C transport locality
 Problem: `Program.I2cTransport.cs` was a small helper file that only served NativeXuAudioProbe I2C-over-AT workflows, while `Program.I2cCommands.cs` already owns the exploratory I2C command family and legacy I2C probe behavior.
 Files consolidated: `tools/NativeXuAudioProbe/Program.I2cTransport.cs`

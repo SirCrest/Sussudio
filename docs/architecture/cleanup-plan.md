@@ -3530,7 +3530,7 @@ owner, fold it back into that owner and update the source-shape tests and
    timing-variant projection, rational parsing, friendly/exact frame-rate
    matching, and preferred-format ranking now live in
    `Sussudio/ViewModels/FrameRateTimingPolicy.cs`, while
-   `Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.cs`
+   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
    owns the stateful resolver over resolution capabilities, runtime snapshots,
    source telemetry, selected formats, UI selection state, and its graph-built
    context ports;
