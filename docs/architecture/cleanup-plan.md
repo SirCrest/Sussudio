@@ -544,8 +544,11 @@ execution surface for the PresentMon parser, ssctl pipe transport, KS
 audio-node, EGAVDS probe, RTK I2C unsafe-native-path guard, and former legacy
 NVML snapshot/CaptureSessionSnapshot tool-model checks; the public wrapper
 classes remain separate inside that file so test identities stay stable. The
-legacy `HarnessCheckCatalog.ToolContracts.cs` registration file has been
-retired.
+matching `tests/Sussudio.Tests/ToolProbeContracts.Tests.cs` implementation owner
+keeps the PresentMon parser, ssctl pipe transport, KS audio-node, and EGAVDS
+probe checks together unless one gains an independent fixture or executable
+helper state. The legacy `HarnessCheckCatalog.ToolContracts.cs` registration
+file has been retired.
 Shared formatter tests now mirror the formatter partials: the root
 snapshot-formatter test owns accessors, invalid-response handling, section
 ordering, core section formatting, and the Flashback opt-in gate; Flashback

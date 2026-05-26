@@ -1782,10 +1782,11 @@ Primary current owners:
   `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for those command-handler routing, source ownership, and help checks
   after their removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/PresentMonProbe.Tests.cs` owns PresentMon parser
-  behavior contracts for swap-chain selection, artifact filtering, CSV field
-  versions, app-present correlation, and PresentMonProbe split-family source
-  ownership assertions.
+- `tests/Sussudio.Tests/ToolProbeContracts.Tests.cs` owns tool-probe behavior
+  and source-ownership contracts for PresentMon parser swap-chain selection,
+  artifact filtering, CSV field versions, app-present correlation, ssctl pipe
+  transport command/retry/error shaping, KS audio-node probe ownership, and
+  EGAVDS probe ownership.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for PresentMon parser/source-ownership, ssctl pipe transport, KS
   audio-node, EGAVDS probe, RTK I2C unsafe-native-path, NVML snapshot, and

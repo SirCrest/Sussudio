@@ -3195,7 +3195,19 @@ Partial clusters reduced: legacy `Program` PresentMon probe test partial file co
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: PresentMon parser behavior and source-family ownership checks remain registered through `XUnit.ToolContractsTests`.
-Notes for future agents: keep PresentMon parser behavior and source ownership checks together in `PresentMonProbe.Tests.cs`; do not recreate a standalone PresentMon source-ownership shard unless the production probe gains a separately named collaborator with its own test seam.
+Notes for future agents: PresentMon parser behavior/source ownership now lives with adjacent tool-probe contract checks in `ToolProbeContracts.Tests.cs`; do not recreate standalone PresentMon, pipe-transport, KS audio-node, or EGAVDS test shards unless one gains an independent fixture or executable helper state.
+
+Date: 2026-05-26
+Area: tool-probe contract test locality
+Problem: `XUnit.ToolContractsTests.cs` already exposed one `ToolProbeContractsTests` execution surface for PresentMon parser/source ownership, ssctl pipe transport, KS audio-node probe ownership, and EGAVDS probe ownership, but the backing `Program` methods were still split across `PresentMonProbe.Tests.cs`, `PipeTransport.Tests.cs`, and `KsAudioNodeProbe.Tests.cs`. Reviewing or extending this small tool-probe contract group required opening three implementation files before reaching the same wrapper class.
+Files consolidated: `tests/Sussudio.Tests/PresentMonProbe.Tests.cs`; `tests/Sussudio.Tests/PipeTransport.Tests.cs`; `tests/Sussudio.Tests/KsAudioNodeProbe.Tests.cs`
+Files added: `tests/Sussudio.Tests/ToolProbeContracts.Tests.cs`
+Net production .cs delta: 0; net test .cs delta: -2
+Partial clusters reduced: legacy `Program` tool-probe contract implementation file count -2
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (885 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: ssctl pipe transport command ID, retry, parsed-response, invalid-JSON, and unknown-command checks remain registered through `XUnit.ToolContractsTests`; no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed.
+Behavior preserved: PresentMon parser/source-family assertions, ssctl pipe transport behavior checks, KS audio-node ownership assertions, and EGAVDS ownership assertions keep the same method names and public xUnit wrappers.
+Notes for future agents: keep these small tool-probe contract implementations together in `ToolProbeContracts.Tests.cs`; keep `XUnit.ToolContractsTests.cs` as the public wrapper surface unless a group needs independent fixture state.
 
 Date: 2026-05-26
 Area: MJPEG preview jitter test locality
