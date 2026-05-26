@@ -2021,9 +2021,8 @@ Primary current owners:
   failure, formatter, artifact, JSON/shared-text, and infrastructure assertions
   split into the adjacent `ResultOwnership.*.Tests.cs` files. Builder result
   assertions are split by ownership band: `ResultOwnership.Builder.Tests.cs`
-  covers core, preview scheduler, and overview/capture checks;
-  `ResultOwnership.Builder.Flashback.Tests.cs` covers Flashback playback,
-  recording, and export result projections; and
+  covers core, preview scheduler, overview/capture checks, and Flashback
+  playback, recording, and export result projections; and
   `ResultOwnership.Builder.PreviewAndCompletion.Tests.cs` covers preview,
   analysis-warning, diagnostic-health, and artifact-handoff ownership.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.HealthPolicy.Tests.cs`

@@ -2776,3 +2776,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: diagnostic-session preview scheduler metrics, capture-mode metrics, D3D CPU/frame-stat metrics, visual cadence metrics, process metrics, and timeline preview/Flashback/export projection guards remain unchanged.
 Notes for future agents: keep diagnostic-session preview metric assertions in `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs` while they are only invoked by the diagnostics refresh orchestration entry point; keep larger playback and scenario helpers separate unless folding still keeps the owner cohesive.
+
+Date: 2026-05-26
+Area: MCP diagnostic-session result-builder Flashback helper locality
+Problem: `McpToolSurface.DiagnosticSession.ResultOwnership.Builder.Flashback.Tests.cs` only carried private Flashback playback/recording/export result projection assertions invoked by `DiagnosticSessionResultBuilder_OwnsSummaryConstruction` in the result-builder ownership file. Reviewing result-builder ownership required opening a separate helper-only partial for one call in the same summary-construction contract.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.ResultOwnership.Builder.Flashback.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MCP diagnostic-session result-builder helper partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: diagnostic-session result-builder source-shape checks remain covered through `XUnit.McpDiagnosticSessionContractsTests`; no public automation command names, IDs, or wire payloads changed
+Behavior preserved: Flashback playback, recording, and export result projection routing, flattening handoff, and deleted legacy result-builder partial guards remain unchanged.
+Notes for future agents: keep Flashback result-builder projection assertions in `McpToolSurface.DiagnosticSession.ResultOwnership.Builder.Tests.cs` with the summary-construction orchestration; keep preview/completion and health-analysis checks in their focused sibling owner while they retain independent xUnit coverage.
