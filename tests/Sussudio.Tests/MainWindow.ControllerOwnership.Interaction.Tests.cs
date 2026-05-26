@@ -52,7 +52,7 @@ static partial class Program
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewAudioFadeController.cs").Replace("\r\n", "\n");
         var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
         var audioControlBindingFamilyText = audioControlBindingControllerText;
-        var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlPresentationController.cs").Replace("\r\n", "\n");
+        var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
 
         AssertContains(audioBindingsText, "private AudioControlBindingController _audioControlBindingController = null!;");
         AssertContains(audioBindingsText, "private void InitializeAudioControlBindingController()");

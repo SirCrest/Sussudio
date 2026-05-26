@@ -1136,7 +1136,10 @@ Primary current owners:
   binding context, initial audio/microphone projection, preview-volume binding and priming,
   audio/microphone/device-audio selection handlers,
   record/preview/custom-audio/microphone toggle handlers, audio-meter activation,
-  initial meter presentation, and device-audio gain/meter resize hooks.
+  initial meter presentation, device-audio gain/meter resize hooks, and
+  audio/microphone property-change projections for audio toggles, monitoring
+  meter state, preview-volume slider sync, microphone enablement, and
+  microphone volume sync.
   `Sussudio/MainWindow.AudioBindings.cs` is its XAML-facing adapter.
 - `Sussudio/Controllers/Stats/StatsOverlayController.cs` owns stats dock visibility
   orchestration, stats/frame-time toggle event hookup and checked/unchecked
@@ -2323,11 +2326,12 @@ Primary current owners:
   `Sussudio/MainWindow.xaml.cs` is the XAML/MainWindow property-change
   adapter that composes the Flashback route table callbacks alongside the root
   ViewModel router.
-- `Sussudio/Controllers/Audio/AudioControlPresentationController.cs` owns audio and
+- `Sussudio/Controllers/Audio/AudioControlBindingController.cs` owns audio and
   microphone property-change routing/projections: audio toggles, monitoring
   meter state, preview volume slider sync, microphone enablement, and microphone
-  volume sync. `Sussudio/MainWindow.AudioBindings.cs` is the
-  XAML-facing audio/microphone presentation adapter.
+  volume sync, alongside initial audio/microphone projection and event hookup.
+  `Sussudio/MainWindow.AudioBindings.cs` is the XAML-facing audio/microphone
+  presentation adapter.
 - `Sussudio/Controllers/Audio/MicrophoneControlsController.cs` owns microphone volume
   slider synchronization, save triggers, shelf enablement, and mic-meter row
   animation state. `MainWindow.AudioBindings.cs` is the XAML-facing
@@ -2360,7 +2364,10 @@ Primary current owners:
   binding context, initial audio/microphone projection, preview-volume binding and priming,
   audio/microphone/device-audio selection handlers,
   record/preview/custom-audio/microphone toggle handlers, audio-meter activation,
-  initial meter presentation, and device-audio gain/meter resize hooks.
+  initial meter presentation, device-audio gain/meter resize hooks, and
+  audio/microphone property-change projections for audio toggles, monitoring
+  meter state, preview-volume slider sync, microphone enablement, and
+  microphone volume sync.
   Device-audio mode/gain control projection stays in
   `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs`.
   `Sussudio/MainWindow.AudioBindings.cs` is its XAML-facing adapter.

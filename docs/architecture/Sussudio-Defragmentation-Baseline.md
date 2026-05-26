@@ -3316,3 +3316,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools\McpServer`, `tools\ssctl`, and automation tooling; no public automation command names, IDs, wire payloads, XAML bindings, or recording status strings changed
 Behavior preserved: start failure logging, last-failure update, Flashback rollback accounting, artifact rollback, sink/WASAPI/unified-video cleanup, deferred LibAv drain cleanup, and recording state reset now live in `CaptureService.RecordingLifecycle.cs` beside the recording start transition and rollback state.
 Notes for future agents: keep recording-start rollback cleanup with `CaptureService.RecordingLifecycle.cs` while it remains tightly coupled to `RecordingStartRollbackState`; keep Flashback startup and LibAv startup in their focused backend start owners.
+
+Date: 2026-05-26
+Area: audio control binding/presentation locality
+Problem: `AudioControlPresentationController.cs` was a 117-line audio/microphone property-change projection owner split from `AudioControlBindingController.cs`, even though both are composed only by `MainWindow.AudioBindings.cs` and together own audio-control XAML binding, initial projection, event hookup, and ViewModel-to-control projection. Reviewing audio toggle, preview volume, meter monitoring, microphone enablement, and selection behavior required opening two adjacent audio control files.
+Files consolidated: `Sussudio/Controllers/Audio/AudioControlPresentationController.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: audio controller production owner count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds app and automation tooling; no public automation command names, IDs, wire payloads, XAML bindings, control names, or status text changed
+Behavior preserved: audio record/preview toggles, custom audio and microphone enablement, preview volume slider sync, preview fade guard, audio-meter monitoring state, disabled animation trigger, and microphone volume sync now live in `AudioControlBindingController.cs` beside the initial binding/event hookup they mirror.
+Notes for future agents: keep audio-control setup and property-change projection together in `Sussudio/Controllers/Audio/AudioControlBindingController.cs`; keep microphone row animation and volume slider mechanics in `MicrophoneControlsController.cs`.

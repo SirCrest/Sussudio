@@ -6,7 +6,7 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.AudioBindings.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlPresentationController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
 
         AssertContains(audioPropertyChangedText, "private AudioControlPresentationController _audioControlPresentationController = null!;");
         AssertContains(audioPropertyChangedText, "private void InitializeAudioControlPresentationController()");
@@ -27,6 +27,10 @@ static partial class Program
 
         AssertContains(controllerText, "internal sealed class AudioControlPresentationControllerContext");
         AssertContains(controllerText, "internal sealed class AudioControlPresentationController");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Audio", "AudioControlPresentationController.cs")),
+            "audio control presentation lives with audio control binding ownership");
         AssertContains(controllerText, "public bool TryHandlePropertyChanged(string propertyName)");
         AssertContains(controllerText, "case nameof(MainViewModel.IsCustomAudioInputEnabled):");
         AssertContains(controllerText, "case nameof(MainViewModel.IsMicrophoneEnabled):");
@@ -72,7 +76,7 @@ static partial class Program
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Audio/MicrophoneControlsController.cs").Replace("\r\n", "\n");
         var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
-        var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlPresentationController.cs").Replace("\r\n", "\n");
+        var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private MicrophoneControlsController _microphoneControlsController = null!;");
         AssertContains(adapterText, "private void InitializeMicrophoneControlsController()");
