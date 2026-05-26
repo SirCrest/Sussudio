@@ -25,6 +25,10 @@ public sealed class AutomationAppSurfaceContractsTests
         => global::Program.DisplayFormatters_FormatSourceHdr_MapsKnownAndUnknownStates();
 
     [Fact]
+    public Task ProjectFilePreservesEnglishOnlyPublishLocalePolicy()
+        => global::Program.ProjectFile_PreservesEnglishOnlyPublishLocalePolicy();
+
+    [Fact]
     public Task LoggingJsonContextSerializesStructuredSnapshotPayloads()
         => global::Program.LoggingJsonContext_SerializesStructuredSnapshotPayloads();
 

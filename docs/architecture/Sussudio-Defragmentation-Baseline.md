@@ -2181,7 +2181,7 @@ Partial clusters reduced: small test dispatcher/wrapper file count -3
 Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; test wrapper/dispatcher consolidation only
 Behavior preserved: the same public xUnit class/fact names and `Program` helper names remain available from neighboring owner files, and the presentation-preview harness inventory now points at the consolidated selection-binding owner file
-Notes for future agents: keep project-build xUnit execution with `ProjectBuildContracts.Tests.cs`, diagnostics-refresh root orchestration with `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`, and capture selection-binding device-audio projection checks with `MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs`
+Notes for future agents: project-build xUnit execution later folded into `XUnit.AutomationContractsTests.cs` with implementation checks in `AppSurface.Tests.cs`; keep diagnostics-refresh root orchestration with `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`, and capture selection-binding device-audio projection checks with `MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs`
 
 Date: 2026-05-25
 Area: RecordingVerifier integration test locality
@@ -3798,3 +3798,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, automation contracts, MCP, `ssctl`, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, snapshot/probe method names, or DTO construction semantics changed
 Behavior preserved: capture runtime/health/diagnostics/recording snapshots, MJPEG timing details, source and preview probes, preview-frame capture, view-model runtime snapshots, and automation options snapshots now live in `MainViewModel.AutomationCommands.cs` with the rest of the stable MainViewModel automation facade.
 Notes for future agents: keep public automation command, snapshot, probe, preview-frame capture, and options compatibility methods in `Sussudio/ViewModels/MainViewModel.AutomationCommands.cs`; keep pure DTO builders in `Sussudio/ViewModels/ViewModelBuilders.cs` and feature behavior in dedicated feature partials/controllers.
+
+Date: 2026-05-26
+Area: app project-build contract test locality
+Problem: `ProjectBuildContracts.Tests.cs` was a 33-line one-check xUnit/Program shard for app project and publish policy. The check belongs with app-surface contracts because it guards `Sussudio.csproj`/`Sussudio.Build.targets` behavior, not an independent fixture or reusable helper.
+Files consolidated: `tests/Sussudio.Tests/ProjectBuildContracts.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: n/a; app-surface test shard count -1 while preserving the project-build `[Fact]`
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: not applicable; test locality only. Full solution build still rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, build targets, publish locale policy, or latest-build staging behavior changed.
+Behavior preserved: the project-file English-only publish locale and latest-build staging assertions now execute through `AutomationAppSurfaceContractsTests` in `XUnit.AutomationContractsTests.cs`, with implementation checks kept in `AppSurface.Tests.cs`.
+Notes for future agents: keep app project/build surface checks with the app-surface contract cluster unless they gain an independent fixture, MSBuild execution harness, or reusable build-policy helper.

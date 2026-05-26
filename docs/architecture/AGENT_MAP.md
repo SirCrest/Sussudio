@@ -1672,9 +1672,11 @@ Primary current owners:
   `ProcessSupervisor` calls.
   `FfmpegRuntimeInit.cs` owns one-time native initialization, FFmpeg log callback
   routing, and recoverable seek-log suppression.
-- `tests/Sussudio.Tests/ProjectBuildContracts.Tests.cs` owns project-file build
-  and publish policy contract helpers plus xUnit execution for those checks
-  after their removal from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/AppSurface.Tests.cs` and
+  `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` own project-file
+  build and publish policy contract helpers plus xUnit execution for those
+  checks alongside app-surface contracts after their removal from the legacy
+  offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns recording
   service contract DTO checks such as GpuPipelineHandles,
   RecordingContextRequest, FinalizeResult, and RecordingStats.
