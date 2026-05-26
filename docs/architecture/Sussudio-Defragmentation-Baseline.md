@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: Media Foundation source-reader cadence locality
+Problem: `MfSourceReaderVideoCapture.Cadence.cs` held timestamp interval tracking, expected-rate window sizing, stop-time cadence reset, and public source-cadence diagnostics while the only state transitions that mutate it happen in source-reader initialization, `StopAsync`, and the active read loop. Auditing source-reader lifetime and source-cadence diagnostics required opening a small extra partial before following the timestamp path.
+Files consolidated: `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Cadence.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `MfSourceReaderVideoCapture` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed after updating the source-reader source-shape assertion for the folded cadence owner); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: source-reader diagnostics refresh ownership tests cover the moved cadence metrics; no public automation command names, IDs, wire payloads, XAML bindings, capture negotiation options, or runtime snapshot fields changed
+Behavior preserved: source cadence metrics record shape, expected frame-rate window sizing, stop-time reset, Media Foundation timestamp interval tracking, percentile/jitter/1% low/5% low calculations, severe-gap counts, and estimated dropped-frame/drop-percent calculations remain unchanged
+Notes for future agents: keep source cadence state with `MfSourceReaderVideoCapture.Lifecycle.cs` because the read loop observes Media Foundation timestamps and stop/reset owns lifecycle cleanup; keep sample-to-buffer delivery in `MfSourceReaderVideoCapture.FrameDelivery.cs` and raw/compressed CPU conversion in `MfSourceReaderVideoCapture.RawFrameDelivery.cs`.
+
+Date: 2026-05-26
 Area: Media Foundation source-reader initialization locality
 Problem: `MfSourceReaderVideoCapture.InitializedSession.cs` held the second half of source-reader initialization: applying the selected media type, reconciling actual output, validating strict negotiated modes, and committing initialized runtime state. Reviewing source-reader startup required opening both initialization files before reaching the success/failure path and state handoff.
 Files consolidated: `Sussudio/Services/Capture/MfSourceReaderVideoCapture.InitializedSession.cs`

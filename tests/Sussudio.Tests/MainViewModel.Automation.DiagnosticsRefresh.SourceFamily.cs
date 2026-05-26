@@ -197,7 +197,6 @@ static partial class Program
         var readLoopText = lifecycleText;
         var frameDeliveryText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs");
         var rawFrameDeliveryText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.RawFrameDelivery.cs");
-        var cadenceText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Cadence.cs");
 
         return new MfSourceReaderVideoCaptureSourceFamily(
             rootText,
@@ -218,7 +217,6 @@ static partial class Program
                     initializationText,
                     frameDeliveryText,
                     rawFrameDeliveryText,
-                    cadenceText,
                 }));
     }
 

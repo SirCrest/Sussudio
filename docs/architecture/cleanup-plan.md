@@ -1845,12 +1845,12 @@ sample/buffer contracts file. Preserve interface method order and placeholder
 slots exactly; keep behavioral source-reader logic in the root and negotiation
 partials.
 
-Media Foundation source cadence metrics now live in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.Cadence.cs`. Keep the
-public cadence snapshot record, expected-rate/window sizing, stop-time cadence
-reset, timestamp interval tracking, and percentile/drop estimate calculations
-there; keep sample reading and frame delivery in their named source-reader
-partials.
+Media Foundation source cadence metrics now live with active source-reader
+lifetime in `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Lifecycle.cs`.
+Keep the public cadence snapshot record, expected-rate/window sizing, stop-time
+cadence reset, timestamp interval tracking, and percentile/drop estimate
+calculations near the read loop that observes Media Foundation timestamps; keep
+sample-to-buffer delivery in the named frame/raw delivery partials.
 
 Media Foundation source-reader diagnostics now live with frame delivery in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs`. Keep

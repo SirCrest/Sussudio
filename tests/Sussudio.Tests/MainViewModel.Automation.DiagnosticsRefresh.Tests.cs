@@ -236,6 +236,12 @@ static partial class Program
         var sourceReaderText = sourceReaderSources.SourceFamilyText;
         AssertContains(sourceReaderText, "Keep source cadence state coherent with diagnostics snapshots");
         AssertContains(sourceReaderText, "lock (_cadenceLock)");
+        AssertContains(sourceReaderLifecycleText, "public SourceCadenceMetrics GetSourceCadenceMetrics()");
+        AssertContains(sourceReaderLifecycleText, "private void TrackSourceCadence(long mfTimestamp100ns)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.Cadence.cs")),
+            "source-reader cadence metrics folded into active lifecycle owner");
         AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DiagnoseVtable(IMFSample sample)");
         AssertContains(sourceReaderFrameDeliveryText, "VTABLE_DIAG RAW slot35_GetSampleTime");
         AssertEqual(
