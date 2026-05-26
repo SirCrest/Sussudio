@@ -1364,12 +1364,10 @@ Primary current owners:
   owns diagnostic-session scenario, health-policy, Flashback stress, and
   warning-tolerance assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`
-  owns the diagnostics hub source-family reader and core/runtime source-text
-  fields used by refresh ownership assertions, including diagnostic-evaluation,
-  alerts, snapshot-projection, and aggregate `SourceFamilyText` composition.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceReaders.cs`
-  owns diagnostics refresh source/fixture readers for capture service, source
-  reader, and tool-surface source text used by refresh ownership assertions.
+  owns diagnostics refresh source/fixture readers for the diagnostics hub,
+  capture service, source reader, and tool-surface source text used by refresh
+  ownership assertions, including diagnostic-evaluation, alerts,
+  snapshot-projection, and aggregate `SourceFamilyText` composition.
   `tests/Sussudio.Tests/DiagnosticSession.SourceReaders.cs` owns shared
   diagnostic-session source-family readers used by refresh, MCP, and tool
   ownership assertions.
