@@ -1376,20 +1376,10 @@ Primary current owners:
   contracts after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Tests.cs` owns the
   MainViewModel dependency-composition seam assertions for root construction,
-  controller graph creation, UI-dispatch and recording-transition dependency
-  contexts, state partial ownership, and default dependency factory wiring.
-- `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Presentation.Tests.cs`
-  owns the MainViewModel preview lifecycle, preview reinitialize, preview-state,
-  preview automation enablement, and presentation controller graph
-  dependency-context assertions.
-- `tests/Sussudio.Tests/MainViewModel.DependencyComposition.CaptureDevice.Tests.cs`
-  owns the MainViewModel capture/device composition assertions for device
-  refresh, device-native audio, capture mode rebuild, capture settings
-  automation, recording settings/capability, and late format-probe retarget
-  controller contexts.
-- `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Runtime.Tests.cs`
-  owns the MainViewModel source-telemetry, runtime lifecycle, runtime event
-  ingress, subscription, and disposal controller dependency-context assertions.
+  controller graph creation, UI-dispatch, recording-transition, preview
+  lifecycle/reinitialize/state/automation, capture/device, source-telemetry,
+  runtime lifecycle/event ingress/subscription/disposal dependency contexts,
+  state partial ownership, and default dependency factory wiring.
 - `tests/Sussudio.Tests/MainViewModel.Capture.TestHelpers.cs` owns shared
   MainViewModel source-inspection helpers for capture-facing tests.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.PolicyBehavior.Tests.cs`
