@@ -3124,3 +3124,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: generic harness assertions, source text readers, reflection/private-field helpers, synthetic capture/settings/recording fixtures, capture-service initialization, async disposal, polling waits, and field-value fixtures remain in the same private `Program` harness surface.
 Notes for future agents: keep shared harness primitives in `HarnessCore.cs`; create a separate harness support file only for an independently named fixture family with enough behavior to justify its own owner.
+
+Date: 2026-05-26
+Area: MCP tool-surface helper locality
+Problem: `McpToolSurface.Helpers.Process.cs`, `McpToolSurface.Helpers.Reflection.cs`, `McpToolSurface.Helpers.PipeCapture.cs`, and `McpToolSurface.Helpers.Assertions.cs` split one private MCP test-support boundary across process/JSON-RPC, reflection/tool-result, pipe-capture, and JSON assertion helper shards. Updating MCP tool-surface tests required opening multiple small helper files even though the helpers are only meaningful together as the MCP harness support surface.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.Helpers.Assertions.cs`; `tests/Sussudio.Tests/McpToolSurface.Helpers.Process.cs`; `tests/Sussudio.Tests/McpToolSurface.Helpers.Reflection.cs`; `tests/Sussudio.Tests/McpToolSurface.Helpers.PipeCapture.cs`
+Files added: `tests/Sussudio.Tests/McpToolSurface.Helpers.cs` (renamed from `McpToolSurface.Helpers.PipeCapture.cs`)
+Net production .cs delta: 0; net test .cs delta: -3
+Partial clusters reduced: legacy `Program` MCP helper partial file count -3
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilt `tools/McpServer`; this is a test-helper/docs-only consolidation and does not change public automation command names, IDs, wire payloads, or MCP tool implementations.
+Behavior preserved: MCP process startup/teardown, JSON-RPC line exchange, MCP tool reflection invocation, tool-result text/error extraction, formatter batch invocation, pipe request capture, and JSON command assertion helpers remain in the same private `Program` harness surface.
+Notes for future agents: keep shared MCP tool-surface support helpers in `McpToolSurface.Helpers.cs`; create a separate MCP helper file only when a fixture family becomes independently named and reviewable apart from the MCP test harness.

@@ -2036,11 +2036,9 @@ Primary current owners:
   owns the xUnit execution surface for the wait/window/screenshot/
   preview-frame/preview-toggle/probe checks after their removal from the
   legacy harness catalog.
-- `tests/Sussudio.Tests/McpToolSurface.Helpers.Process.cs`,
-  `McpToolSurface.Helpers.Reflection.cs`,
-  `McpToolSurface.Helpers.PipeCapture.cs`, and
-  `McpToolSurface.Helpers.Assertions.cs` own shared MCP process/JSON-RPC,
-  reflection/tool-result, pipe-capture, and JSON assertion helpers respectively.
+- `tests/Sussudio.Tests/McpToolSurface.Helpers.cs` owns shared MCP
+  process/JSON-RPC, reflection/tool-result, pipe-capture, and JSON assertion
+  helpers.
 - `tests/Sussudio.Tests/Flashback.Tests.cs` owns shared Flashback test helper
   source readers and helper methods only.
 - `tests/Sussudio.Tests/Flashback.Buffer.Helpers.cs` owns shared Flashback
