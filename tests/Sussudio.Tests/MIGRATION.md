@@ -168,7 +168,7 @@ add xUnit alongside, and port incrementally.
   AGENT_MAP ownership, path-reference, test-project shape guard,
   architecture-doc reference drift, and migration-inventory guard checks.
 - Additional focused `[Fact]`/`[Theory]` files such as
-  `AutomationContracts.ProtocolXunit.Tests.cs`,
+  `XUnit.AutomationContractsTests.cs`,
   `AutomationToolContracts.ProtocolXunit.Tests.cs` (automation client timeout
   policy, advanced command-map alignment, and pipe/tool protocol contracts),
   `RuntimeContracts.Tests.cs`, `MainWindow.ControllerOwnership.Layout.Tests.cs`,

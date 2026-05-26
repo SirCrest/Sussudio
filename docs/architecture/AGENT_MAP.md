@@ -1715,10 +1715,10 @@ Primary current owners:
   path-policy, and reliability-gates contract checks for automation tool tests.
 - `tests/Sussudio.Tests/AutomationCommandGoldenTable.cs` owns the shared golden
   automation command table used by protocol, manifest, and MCP tests.
-- `tests/Sussudio.Tests/AutomationContracts.ProtocolXunit.Tests.cs` owns fast
-  xUnit coverage for pure `Sussudio.Automation.Contracts` command IDs,
-  manifest IDs, pipe protocol command resolution, timeout, auth-token, envelope,
-  and `CommandMap` contracts.
+- `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns fast xUnit
+  coverage for pure `Sussudio.Automation.Contracts` command IDs, manifest IDs,
+  pipe protocol command resolution, timeout, auth-token, envelope, and
+  `CommandMap` contracts.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns legacy harness
   coverage for window action enum membership and keeps the
   `ExpectedAutomationCommands()` adapter used by protocol/MCP helpers.

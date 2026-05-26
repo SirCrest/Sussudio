@@ -526,8 +526,8 @@ helpers plus automation command kind, catalog metadata, manifest/path-policy,
 and reliability-gates contract checks. Pure `Sussudio.Automation.Contracts`
 command ID, manifest ID, protocol resolution, timeout/auth/envelope, and
 `CommandMap` checks now have fast xUnit coverage in
-`tests/Sussudio.Tests/AutomationContracts.ProtocolXunit.Tests.cs`, backed by
-the single golden command table in
+`tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`, backed by the single
+golden command table in
 `tests/Sussudio.Tests/AutomationCommandGoldenTable.cs`. The legacy protocol
 harness file has been retired; `tests/Sussudio.Tests/AutomationToolContracts.ProtocolXunit.Tests.cs`
 owns automation client timeout policy, advanced command-map alignment,
