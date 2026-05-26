@@ -32,10 +32,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
-        var hdrPipelineText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs")
-            .Replace("\r\n", "\n");
-        var sourceTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs")
-            .Replace("\r\n", "\n");
+        var hdrPipelineText = runtimeText;
+        var sourceTelemetryText = runtimeText;
         var captureRuntimeModelText = ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.cs")
             .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
@@ -95,11 +93,10 @@ static partial class Program
         AssertContains(agentMapText, "handoff contract consumed by that map.");
         AssertContains(agentMapText, "CaptureRuntimeSnapshot.cs");
         AssertContains(agentMapText, "owns video ingest/source-reader/WASAPI playback");
-        AssertContains(agentMapText, "and reader/transport projections, recording-integrity summary projection, and");
-        AssertContains(agentMapText, "and its private HDR pipeline/warmup handoff models.");
-        AssertContains(agentMapText, "and its private source-telemetry handoff model.");
-        AssertContains(agentMapText, "recording-integrity summary projection, and");
-        AssertContains(agentMapText, "their private handoff models, then delegates final DTO construction.");
+        AssertContains(agentMapText, "and reader/transport projections, recording-integrity summary projection,");
+        AssertContains(agentMapText, "HDR pipeline/warmup projection, source-telemetry detail/frame-rate-origin/age/");
+        AssertContains(agentMapText, "and their private handoff models,");
+        AssertContains(agentMapText, "then delegates final DTO construction.");
         AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples");
         AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs` owns final");
         AssertContains(cleanupPlanText, "The private runtime snapshot assembly handoff contract lives with the assembler");
@@ -110,10 +107,9 @@ static partial class Program
             "old runtime snapshot assembly-fields partial removed");
         AssertContains(cleanupPlanText, "Video ingest, source-reader health, WASAPI capture, playback output counter,");
         AssertContains(cleanupPlanText, "requested/negotiated reader transport, memory preference, frame-ledger, preview");
-        AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`,");
-        AssertContains(cleanupPlanText, "HDR pipeline parity/downgrade, warmup state/count projection, and their private handoff models now live in");
-        AssertContains(cleanupPlanText, "source telemetry detail/frame-rate-origin/age/alignment projection and its private handoff model now lives in");
-        AssertContains(cleanupPlanText, "recording-integrity summary projection, and their");
+        AssertContains(cleanupPlanText, "HDR pipeline");
+        AssertContains(cleanupPlanText, "source telemetry");
+        AssertContains(cleanupPlanText, "detail/frame-rate-origin/age/alignment projection");
         AssertContains(cleanupPlanText, "private handoff models now live with the runtime snapshot sampler");
         AssertEqual(
             false,
@@ -152,14 +148,13 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureService_RuntimeHdrPipelineProjection_LivesInFocusedPartial()
+    internal static Task CaptureService_RuntimeHdrPipelineProjection_LivesWithRuntimeSnapshotSampler()
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
         var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
-        var hdrPipelineText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs")
-            .Replace("\r\n", "\n");
+        var hdrPipelineText = runtimeText;
 
         AssertContains(runtimeText, "var hdrPipeline = CaptureRuntimeHdrPipelineSnapshotFields(");
         AssertContains(runtimeText, "var hdrWarmup = CaptureRuntimeHdrWarmupSnapshotFields(");
@@ -181,21 +176,22 @@ static partial class Program
         AssertContains(hdrPipelineText, "ResolveHdrWarmupState(");
         AssertContains(hdrPipelineText, "ObservedNonP010Frames = (int)Math.Min(int.MaxValue, Math.Max(0L, observedNonP010FrameCount))");
 
-        AssertDoesNotContain(runtimeText, "Requested pipeline '{requestedPipelineMode}'");
-        AssertDoesNotContain(runtimeText, "hdrAutoDowngraded ? \"encoder-input-not-p010\"");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RuntimeSnapshotHdrPipeline.cs")),
+            "HDR runtime snapshot projection folded into runtime snapshot sampler");
         AssertDoesNotContain(assemblerText, "HdrWarmupObservedP010Frames = (int)Math.Min(int.MaxValue, observedP010FrameCount),");
 
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureService_RuntimeSourceTelemetryProjection_LivesInFocusedPartial()
+    internal static Task CaptureService_RuntimeSourceTelemetryProjection_LivesWithRuntimeSnapshotSampler()
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
         var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
-        var sourceTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs")
-            .Replace("\r\n", "\n");
+        var sourceTelemetryText = runtimeText;
 
         AssertContains(runtimeText, "var sourceTelemetry = CaptureRuntimeSourceTelemetrySnapshotFields(");
         AssertContains(runtimeText, "SourceTelemetry = sourceTelemetry,");
@@ -210,7 +206,10 @@ static partial class Program
         AssertContains(sourceTelemetryText, "CircuitState = ResolveSourceTelemetryCircuitState(telemetry.Availability, suppressed)");
         AssertContains(sourceTelemetryText, "SourceRawTimingHex = telemetry.RawTimingHex,");
 
-        AssertDoesNotContain(runtimeText, "TelemetryAgeHelper.ComputeAgeSeconds(");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RuntimeSnapshotSourceTelemetry.cs")),
+            "source telemetry runtime snapshot projection folded into runtime snapshot sampler");
         AssertDoesNotContain(runtimeText, "SourceTelemetryDetails = _latestSourceTelemetry.DetailEntries,");
         AssertDoesNotContain(runtimeText, "ResolveSourceTelemetryCircuitState(_latestSourceTelemetry.Availability");
 

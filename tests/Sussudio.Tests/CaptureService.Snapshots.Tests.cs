@@ -144,7 +144,7 @@ static partial class Program
             ?? throw new InvalidOperationException("ResolveHdrWarmupState not found.");
         var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
             .Replace("\r\n", "\n");
-        var hdrPipelineText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs")
+        var hdrPipelineText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
         AssertDoesNotContain(snapshotsText, "private static string ResolveHdrWarmupState(");
         AssertContains(hdrPipelineText, "private static string ResolveHdrWarmupState(");

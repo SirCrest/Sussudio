@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Contracts;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture;
 
@@ -69,6 +71,77 @@ public partial class CaptureService
         public string? RequestedReaderSubtype { get; init; }
         public string? ReaderSourceStreamType { get; init; }
         public string? ReaderSourceSubtype { get; init; }
+    }
+
+    private sealed class RuntimeHdrPipelineSnapshotFields
+    {
+        public bool HdrRequested { get; init; }
+        public string? EncoderInputPixelFormat { get; init; }
+        public string? EncoderOutputPixelFormat { get; init; }
+        public string? EncoderVideoCodec { get; init; }
+        public string? EncoderVideoProfile { get; init; }
+        public bool? EncoderTenBitPipelineConfirmed { get; init; }
+        public bool MfConvertersDisabled { get; init; }
+        public string NegotiatedMediaSubtypeToken { get; init; } = "NV12";
+        public bool HdrOutputActive { get; init; }
+        public string HdrActivationReason { get; init; } = "Unknown";
+        public string HdrRuntimeState { get; init; } = "Inactive";
+        public string HdrReadinessReason { get; init; } = string.Empty;
+        public bool HdrAutoDowngraded { get; init; }
+        public string HdrAutoDowngradeReason { get; init; } = string.Empty;
+        public string HdrDowngradeCode { get; init; } = string.Empty;
+        public bool HdrRequestedButSourceNot10Bit { get; init; }
+        public string RequestedPipelineMode { get; init; } = "SDR";
+        public string ActivePipelineMode { get; init; } = "SDR";
+        public bool PipelineModeMatched { get; init; } = true;
+        public string PipelineModeStatus { get; init; } = "Ready";
+        public string PipelineModeReason { get; init; } = string.Empty;
+    }
+
+    private sealed class RuntimeHdrWarmupSnapshotFields
+    {
+        public string State { get; init; } = "NotRequested";
+        public int RequiredP010Frames { get; init; }
+        public int AllowedNonP010Frames { get; init; }
+        public int ObservedP010Frames { get; init; }
+        public int ObservedNonP010Frames { get; init; }
+    }
+
+    private sealed class RuntimeSourceTelemetrySnapshotFields
+    {
+        public double? DetectedSourceFrameRate { get; init; }
+        public string? DetectedSourceFrameRateArg { get; init; }
+        public string SourceFrameRateOrigin { get; init; } = "Unknown";
+        public int? SourceWidth { get; init; }
+        public int? SourceHeight { get; init; }
+        public bool? SourceIsHdr { get; init; }
+        public string? SourceVideoFormat { get; init; }
+        public string? SourceColorimetry { get; init; }
+        public string? SourceQuantization { get; init; }
+        public string? SourceHdrTransferFunction { get; init; }
+        public int? SourceHdrTransferCode { get; init; }
+        public string? SourceFirmware { get; init; }
+        public string? SourceAudioFormat { get; init; }
+        public string? SourceAudioSampleRate { get; init; }
+        public string? SourceInputSource { get; init; }
+        public string? SourceUsbHostProtocol { get; init; }
+        public string? SourceHdcpMode { get; init; }
+        public string? SourceHdcpVersion { get; init; }
+        public string? SourceRxTxHdcpVersion { get; init; }
+        public string? SourceRawTimingHex { get; init; }
+        public string Availability { get; init; } = "Unknown";
+        public string OriginDetail { get; init; } = "Unknown";
+        public string Confidence { get; init; } = "Unknown";
+        public string? DiagnosticSummary { get; init; }
+        public IReadOnlyList<SourceTelemetryDetailEntry> Details { get; init; } = Array.Empty<SourceTelemetryDetailEntry>();
+        public DateTimeOffset? TimestampUtc { get; init; }
+        public int? AgeSeconds { get; init; }
+        public string Backend { get; init; } = "Unknown";
+        public bool Suppressed { get; init; }
+        public string? SuppressedReason { get; init; }
+        public string CircuitState { get; init; } = "Closed";
+        public string AlignmentStatus { get; init; } = "Unknown";
+        public string AlignmentReason { get; init; } = string.Empty;
     }
 
     private sealed class RuntimeRecordingIntegritySnapshotFields
@@ -304,6 +377,274 @@ public partial class CaptureService
         };
     }
 
+    private static RuntimeHdrPipelineSnapshotFields CaptureRuntimeHdrPipelineSnapshotFields(
+        CaptureSettings? requestedSettings,
+        string? encoderInputPixelFormat,
+        RecordingContext? recordingContext,
+        bool recordingActive,
+        SourceSignalTelemetrySnapshot sourceTelemetry,
+        bool mfConvertersDisabled)
+    {
+        var hdrRequested = requestedSettings?.HdrEnabled == true &&
+                           requestedSettings.HdrOutputMode == HdrOutputMode.Hdr10Pq;
+        var requestedPipelineMode = hdrRequested ? "HDR10-PQ" : "SDR";
+        var encoderOutputPixelFormat = ResolveEncoderOutputPixelFormat(recordingContext, requestedSettings);
+        var encoderVideoCodec = ResolveEncoderCodecName(requestedSettings);
+        var encoderVideoProfile = ResolveEncoderVideoProfile(recordingContext, requestedSettings);
+        bool? encoderTenBitPipelineConfirmed = recordingActive
+            ? recordingContext?.HdrPipelineActive == true
+            : null;
+        var negotiatedMediaSubtypeToken = string.Equals(encoderInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase)
+            ? "P010|MFVideoFormat_P010"
+            : "NV12";
+        var activePipelineMode = recordingActive
+            ? (string.Equals(
+                encoderInputPixelFormat,
+                "p010le",
+                StringComparison.OrdinalIgnoreCase)
+                ? "HDR10-PQ"
+                : "SDR")
+            : requestedPipelineMode;
+        var pipelineModeMatched = string.Equals(
+            requestedPipelineMode,
+            activePipelineMode,
+            StringComparison.OrdinalIgnoreCase);
+        var pipelineModeStatus = recordingActive
+            ? (pipelineModeMatched ? "Active" : "Violation")
+            : "Ready";
+        var pipelineModeReason = pipelineModeMatched
+            ? string.Empty
+            : $"Requested pipeline '{requestedPipelineMode}', but active encoder ingress is '{activePipelineMode}' " +
+              $"(pixel-format={encoderInputPixelFormat ?? "unknown"}).";
+        var hdrOutputActive = recordingActive &&
+                              string.Equals(
+                                  activePipelineMode,
+                                  "HDR10-PQ",
+                                  StringComparison.OrdinalIgnoreCase);
+        var hdrAutoDowngraded = hdrRequested && recordingActive && !pipelineModeMatched;
+
+        return new RuntimeHdrPipelineSnapshotFields
+        {
+            HdrRequested = hdrRequested,
+            EncoderInputPixelFormat = encoderInputPixelFormat,
+            EncoderOutputPixelFormat = encoderOutputPixelFormat,
+            EncoderVideoCodec = encoderVideoCodec,
+            EncoderVideoProfile = encoderVideoProfile,
+            EncoderTenBitPipelineConfirmed = encoderTenBitPipelineConfirmed,
+            MfConvertersDisabled = mfConvertersDisabled,
+            NegotiatedMediaSubtypeToken = negotiatedMediaSubtypeToken,
+            HdrOutputActive = hdrOutputActive,
+            HdrActivationReason = hdrOutputActive
+                ? "P010 pipeline is active."
+                : hdrRequested
+                    ? (recordingActive
+                        ? "HDR requested but the active recording pipeline is not in HDR mode."
+                        : "HDR requested and waiting for recording start.")
+                    : "HDR not requested.",
+            HdrRuntimeState = hdrOutputActive
+                ? "Active"
+                : hdrRequested
+                    ? (recordingActive ? "Violation" : "Ready")
+                    : "Inactive",
+            HdrReadinessReason = hdrOutputActive
+                ? string.Empty
+                : hdrRequested
+                    ? (recordingActive
+                        ? pipelineModeReason
+                        : "HDR requested and will activate when recording starts.")
+                    : string.Empty,
+            HdrAutoDowngraded = hdrAutoDowngraded,
+            HdrAutoDowngradeReason = hdrAutoDowngraded
+                ? pipelineModeReason
+                : string.Empty,
+            HdrDowngradeCode = hdrAutoDowngraded ? "encoder-input-not-p010" : string.Empty,
+            HdrRequestedButSourceNot10Bit = hdrRequested && sourceTelemetry.IsHdr == false,
+            RequestedPipelineMode = requestedPipelineMode,
+            ActivePipelineMode = activePipelineMode,
+            PipelineModeMatched = pipelineModeMatched,
+            PipelineModeStatus = pipelineModeStatus,
+            PipelineModeReason = pipelineModeReason
+        };
+    }
+
+    private static RuntimeHdrWarmupSnapshotFields CaptureRuntimeHdrWarmupSnapshotFields(
+        RuntimeHdrPipelineSnapshotFields hdrPipeline,
+        bool recordingActive,
+        ObservedFrameSnapshotFields observedTelemetry)
+    {
+        var observedP010FrameCount = observedTelemetry.ObservedP010FrameCount;
+        var observedNonP010FrameCount =
+            observedTelemetry.ObservedNv12FrameCount +
+            observedTelemetry.ObservedOtherFrameCount;
+
+        return new RuntimeHdrWarmupSnapshotFields
+        {
+            State = ResolveHdrWarmupState(
+                hdrPipeline.HdrRequested,
+                hdrPipeline.HdrOutputActive,
+                recordingActive,
+                observedP010FrameCount),
+            RequiredP010Frames = hdrPipeline.HdrRequested ? 1 : 0,
+            AllowedNonP010Frames = hdrPipeline.HdrRequested ? 2 : 0,
+            ObservedP010Frames = (int)Math.Min(int.MaxValue, observedP010FrameCount),
+            ObservedNonP010Frames = (int)Math.Min(int.MaxValue, Math.Max(0L, observedNonP010FrameCount))
+        };
+    }
+
+    private static string ResolveHdrWarmupState(
+        bool hdrRequested,
+        bool hdrOutputActive,
+        bool isRecording,
+        long observedP010Frames)
+    {
+        if (!hdrRequested)
+        {
+            return "NotRequested";
+        }
+
+        if (hdrOutputActive)
+        {
+            return "Satisfied";
+        }
+
+        if (observedP010Frames > 0)
+        {
+            return isRecording ? "Partial" : "Pending";
+        }
+
+        return isRecording ? "Degraded" : "Pending";
+    }
+
+    private static string ResolveSourceFrameRateOrigin(SourceSignalTelemetrySnapshot telemetry)
+    {
+        if (!telemetry.FrameRateExact.HasValue || telemetry.FrameRateExact.Value <= 0)
+        {
+            return "Unknown";
+        }
+
+        return telemetry.Origin switch
+        {
+            SourceTelemetryOrigin.DeviceFormatFallback => "SourceTelemetry(DeviceFormatFallback)",
+            SourceTelemetryOrigin.NativeXu => "SourceTelemetry(NativeXu)",
+            _ => "SourceTelemetry"
+        };
+    }
+
+    private static (string Status, string Reason) ResolveTelemetryAlignment(
+        CaptureSettings? requestedSettings,
+        SourceSignalTelemetrySnapshot telemetry,
+        uint? actualWidth,
+        uint? actualHeight,
+        double? actualFrameRate,
+        bool hdrRequested)
+    {
+        if (telemetry.Availability is SourceTelemetryAvailability.Unknown or SourceTelemetryAvailability.Unavailable)
+        {
+            return ("Unavailable", telemetry.DiagnosticSummary ?? "Source telemetry unavailable.");
+        }
+
+        var expectedWidth = (int?)(requestedSettings?.Width ?? actualWidth);
+        var expectedHeight = (int?)(requestedSettings?.Height ?? actualHeight);
+        var expectedFrameRate = requestedSettings?.FrameRate ?? actualFrameRate;
+        var mismatches = new List<string>();
+
+        if (!telemetry.Width.HasValue || !telemetry.Height.HasValue || !telemetry.FrameRateExact.HasValue)
+        {
+            return ("Inconclusive", "Telemetry did not include full mode dimensions and frame rate.");
+        }
+
+        if (expectedWidth.HasValue && telemetry.Width.Value != expectedWidth.Value)
+        {
+            mismatches.Add($"width expected {expectedWidth.Value}, observed {telemetry.Width.Value}");
+        }
+
+        if (expectedHeight.HasValue && telemetry.Height.Value != expectedHeight.Value)
+        {
+            mismatches.Add($"height expected {expectedHeight.Value}, observed {telemetry.Height.Value}");
+        }
+
+        if (expectedFrameRate.HasValue && Math.Abs(telemetry.FrameRateExact.Value - expectedFrameRate.Value) > 0.75)
+        {
+            mismatches.Add($"fps expected {expectedFrameRate.Value:0.###}, observed {telemetry.FrameRateExact.Value:0.###}");
+        }
+
+        var sourceHdrExpectedSdrCapture = telemetry.IsHdr == true && !hdrRequested;
+        if (telemetry.IsHdr.HasValue && telemetry.IsHdr.Value != hdrRequested && !sourceHdrExpectedSdrCapture)
+        {
+            mismatches.Add($"hdr expected {hdrRequested}, observed {telemetry.IsHdr.Value}");
+        }
+
+        if (mismatches.Count == 0)
+        {
+            if (sourceHdrExpectedSdrCapture)
+            {
+                return ("Aligned", "Source is HDR, but SDR capture was requested.");
+            }
+
+            return ("Aligned", "Source telemetry matches requested capture settings.");
+        }
+
+        return ("Mismatch", string.Join("; ", mismatches));
+    }
+
+    private static RuntimeSourceTelemetrySnapshotFields CaptureRuntimeSourceTelemetrySnapshotFields(
+        CaptureSettings? requestedSettings,
+        SourceSignalTelemetrySnapshot telemetry,
+        uint? actualWidth,
+        uint? actualHeight,
+        double? actualFrameRate,
+        bool hdrRequested)
+    {
+        var telemetryTimestampUtc = telemetry.TimestampUtc;
+        var telemetryAgeSeconds = TelemetryAgeHelper.ComputeAgeSeconds(telemetryTimestampUtc, DateTimeOffset.UtcNow);
+        var suppressedReason = ResolveSourceTelemetrySuppressedReason(telemetry);
+        var suppressed = !string.IsNullOrWhiteSpace(suppressedReason);
+        var (alignmentStatus, alignmentReason) = ResolveTelemetryAlignment(
+            requestedSettings,
+            telemetry,
+            actualWidth,
+            actualHeight,
+            actualFrameRate,
+            hdrRequested);
+
+        return new RuntimeSourceTelemetrySnapshotFields
+        {
+            DetectedSourceFrameRate = telemetry.FrameRateExact,
+            DetectedSourceFrameRateArg = telemetry.FrameRateArg,
+            SourceFrameRateOrigin = ResolveSourceFrameRateOrigin(telemetry),
+            SourceWidth = telemetry.Width,
+            SourceHeight = telemetry.Height,
+            SourceIsHdr = telemetry.IsHdr,
+            SourceVideoFormat = telemetry.VideoFormat,
+            SourceColorimetry = telemetry.Colorimetry,
+            SourceQuantization = telemetry.Quantization,
+            SourceHdrTransferFunction = telemetry.HdrTransferFunction,
+            SourceHdrTransferCode = telemetry.HdrTransferCode,
+            SourceFirmware = telemetry.Firmware,
+            SourceAudioFormat = telemetry.AudioFormat,
+            SourceAudioSampleRate = telemetry.AudioSampleRate,
+            SourceInputSource = telemetry.InputSource,
+            SourceUsbHostProtocol = telemetry.UsbHostProtocol,
+            SourceHdcpMode = telemetry.HdcpMode,
+            SourceHdcpVersion = telemetry.HdcpVersion,
+            SourceRxTxHdcpVersion = telemetry.RxTxHdcpVersion,
+            SourceRawTimingHex = telemetry.RawTimingHex,
+            Availability = telemetry.Availability.ToString(),
+            OriginDetail = telemetry.OriginDetail,
+            Confidence = telemetry.Confidence.ToString(),
+            DiagnosticSummary = telemetry.DiagnosticSummary,
+            Details = telemetry.DetailEntries,
+            TimestampUtc = telemetryTimestampUtc,
+            AgeSeconds = telemetryAgeSeconds,
+            Backend = ResolveSourceTelemetryBackend(telemetry),
+            Suppressed = suppressed,
+            SuppressedReason = suppressedReason,
+            CircuitState = ResolveSourceTelemetryCircuitState(telemetry.Availability, suppressed),
+            AlignmentStatus = alignmentStatus,
+            AlignmentReason = alignmentReason
+        };
+    }
+
     private static RuntimeRecordingIntegritySnapshotFields CaptureRuntimeRecordingIntegritySnapshotFields(
         RecordingIntegritySummary recordingIntegrity)
     {
@@ -343,5 +684,29 @@ public partial class CaptureService
             EncoderAvSyncCorrectionSamples = recordingIntegrity.EncoderAvSyncCorrectionSamples,
             Reason = recordingIntegrity.Reason
         };
+    }
+}
+
+// Single policy gate for enabling HDR output. Environment overrides live beside
+// the HDR runtime projection so capture setup and UI readiness stay consistent.
+internal static class HdrOutputPolicy
+{
+    public static bool IsEnabled(CaptureSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        var hdrRequested = settings.HdrEnabled && settings.HdrOutputMode == HdrOutputMode.Hdr10Pq;
+        if (!hdrRequested)
+        {
+            return false;
+        }
+
+        if (EnvironmentHelpers.TryGetBoolFromEnv("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", out var forceOff) && forceOff)
+        {
+            Logger.Log("HDR output requested but SUSSUDIO_HDR_OUTPUT_FORCE_OFF disables the HDR pipeline.");
+            return false;
+        }
+
+        return true;
     }
 }

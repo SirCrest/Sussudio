@@ -2056,15 +2056,12 @@ The automation model surface lives in `CaptureRuntimeSnapshot.cs`, with sectione
 runtime fields grouped by the same domain as the sampled field groups.
 Video ingest, source-reader health, WASAPI capture, playback output counter,
 requested/negotiated reader transport, memory preference, frame-ledger, preview
-renderer-mode projection, recording-integrity summary projection, and their
+renderer-mode projection, recording-integrity summary projection, HDR pipeline
+parity/downgrade, warmup state/count projection, source telemetry
+detail/frame-rate-origin/age/alignment projection, the `HdrOutputPolicy`
+environment gate used by capture setup and preview readiness checks, and their
 private handoff models now live with the runtime snapshot sampler in
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`,
-HDR pipeline parity/downgrade, warmup state/count projection, and their private handoff models now live in
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs`,
-along with the `HdrOutputPolicy` environment gate used by capture setup and
-preview readiness checks,
-and source telemetry detail/frame-rate-origin/age/alignment projection and its private handoff model now lives in
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs`.
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`.
 Recording-format and observed-frame helper policy live in focused snapshot
 partials.
 
@@ -2118,11 +2115,10 @@ failure flagging, encoder codec/output/profile labels, requested frame-rate
 argument projection, explicit observed-frame `Interlocked.Read` counters,
 source telemetry backend/suppression/circuit-state mapping, A/V sync drift
 baseline state, and encoder drift/correction projection stay together as the
-diagnostics/runtime snapshot helper surface. Runtime frame-rate origin labels
-and request/telemetry alignment live with
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs`;
-HDR warmup state classification lives with
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs`.
+diagnostics/runtime snapshot helper surface. Runtime frame-rate origin labels,
+request/telemetry alignment, HDR warmup state classification, and HDR pipeline
+parity projection live with
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`.
 
 Stats dock, stats toggle, and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/Stats/StatsOverlayController.cs`. Stats overlay controller

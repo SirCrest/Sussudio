@@ -87,12 +87,12 @@ public sealed class CoreRuntimeContractsTests
         => global::Program.CaptureService_RuntimeReaderTransportProjection_LivesWithRuntimeSnapshotSampler();
 
     [Fact]
-    public Task CaptureServiceRuntimeHdrPipelineProjectionLivesInFocusedPartial()
-        => global::Program.CaptureService_RuntimeHdrPipelineProjection_LivesInFocusedPartial();
+    public Task CaptureServiceRuntimeHdrPipelineProjectionLivesWithRuntimeSnapshotSampler()
+        => global::Program.CaptureService_RuntimeHdrPipelineProjection_LivesWithRuntimeSnapshotSampler();
 
     [Fact]
-    public Task CaptureServiceRuntimeSourceTelemetryProjectionLivesInFocusedPartial()
-        => global::Program.CaptureService_RuntimeSourceTelemetryProjection_LivesInFocusedPartial();
+    public Task CaptureServiceRuntimeSourceTelemetryProjectionLivesWithRuntimeSnapshotSampler()
+        => global::Program.CaptureService_RuntimeSourceTelemetryProjection_LivesWithRuntimeSnapshotSampler();
 
     [Fact]
     public Task CaptureServiceRuntimeRecordingIntegrityProjectionLivesWithRuntimeSnapshotSampler()
