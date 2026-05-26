@@ -154,7 +154,7 @@ public sealed class AutomationContractsProtocolXunitTests
     [Fact]
     public void AutomationCommandKind_PreservesNumericValuesThroughGetAutomationManifest()
     {
-        var expectedCommands = global::AutomationCommandGoldenTable.ExpectedCommands();
+        var expectedCommands = global::Program.ExpectedAutomationCommands();
         var enumValues = Enum.GetValues<AutomationCommandKind>();
         var manifest = AutomationCommandCatalog.CreateManifest();
 
@@ -247,7 +247,7 @@ public sealed class AutomationContractsProtocolXunitTests
     public void SharedProtocol_CommandMap_CoversEveryAutomationCommandKind()
     {
         var enumNames = Enum.GetNames<AutomationCommandKind>();
-        var expectedCommands = global::AutomationCommandGoldenTable.ExpectedCommands();
+        var expectedCommands = global::Program.ExpectedAutomationCommands();
         var commandMap = AutomationPipeProtocol.CommandMap;
 
         Assert.NotEmpty(enumNames);

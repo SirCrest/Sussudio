@@ -3966,3 +3966,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, runtime behavior, project references, or automation contract source ownership changed.
 Behavior preserved: service folder namespace rules, service contract boundary assertions, AutomationCommandKind/catalog/protocol source ownership, and app/tool project-reference alignment now live in `tests/Sussudio.Tests/ServiceNamespace.FolderRules.Tests.cs`; shared XML/source parsing helpers remain in `tests/Sussudio.Tests/ServiceNamespace.Helpers.Tests.cs`.
 Notes for future agents: keep service namespace and app/tool automation-contract boundary assertions together in `ServiceNamespace.FolderRules.Tests.cs`; create a separate service namespace file only for a distinct assertion owner, reusable helper boundary, or independent fixture.
+
+Date: 2026-05-26
+Area: automation command golden-table test locality
+Problem: `AutomationCommandGoldenTable.cs` was a helper-only global table file whose remaining callers were the automation contract helper owner and the xUnit protocol contract surface. Reviewing command-ID/protocol stability required opening a separate tiny file even though the table is only meaningful beside those contract assertions.
+Files consolidated: `tests/Sussudio.Tests/AutomationCommandGoldenTable.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: n/a; automation command golden-table helper shard count -1 while preserving the shared expected command-ID adapter
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, manifest revision, command map, wire payloads, XAML bindings, or runtime behavior changed.
+Behavior preserved: the expected automation command table now lives in `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` as the shared `Program.ExpectedAutomationCommands()` adapter; `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` continues to assert enum, manifest, protocol resolution, timeout/auth/envelope, and `CommandMap` stability through that adapter.
+Notes for future agents: keep the expected command-ID table with `AutomationToolContracts.Tests.cs` unless another non-test consumer appears; do not recreate a separate global table file for protocol tests alone.

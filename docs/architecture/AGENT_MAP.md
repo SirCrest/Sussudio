@@ -1711,9 +1711,8 @@ Primary current owners:
   support.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
   reflection helpers plus automation command kind, catalog metadata, manifest,
-  path-policy, and reliability-gates contract checks for automation tool tests.
-- `tests/Sussudio.Tests/AutomationCommandGoldenTable.cs` owns the shared golden
-  automation command table used by protocol, manifest, and MCP tests.
+  path-policy, reliability-gates contract checks, and the expected command-ID
+  table used by automation protocol/tool tests.
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns fast xUnit
   coverage for pure `Sussudio.Automation.Contracts` command IDs, manifest IDs,
   pipe protocol command resolution, timeout, auth-token, envelope, and

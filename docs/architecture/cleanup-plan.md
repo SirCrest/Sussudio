@@ -526,9 +526,9 @@ helpers plus automation command kind, catalog metadata, manifest/path-policy,
 and reliability-gates contract checks. Pure `Sussudio.Automation.Contracts`
 command ID, manifest ID, protocol resolution, timeout/auth/envelope, and
 `CommandMap` checks now have fast xUnit coverage in
-`tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`, backed by the single
-golden command table in
-`tests/Sussudio.Tests/AutomationCommandGoldenTable.cs`. The legacy protocol
+`tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`, backed by the
+expected command-ID table now owned by `AutomationToolContracts.Tests.cs`
+beside the legacy automation contract helpers. The legacy protocol
 harness file has been retired; `tests/Sussudio.Tests/AutomationToolContracts.ProtocolXunit.Tests.cs`
 owns automation client timeout policy, advanced command-map alignment,
 pipe-failure contracts, tool delegation, script freshness, and response-state
@@ -570,8 +570,8 @@ verification commands, with source ownership kept separate in
 `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` after removal from the legacy
 offline harness catalog. Captured ssctl
 `request.command` ID assertions now flow through `AssertSsctlCommandRequest`,
-which delegates to the shared golden-table-backed `AssertAutomationCommandId`
-helper instead of duplicating numeric IDs in routing tests. Fixed ssctl source
+which delegates to `AssertAutomationCommandId` instead of duplicating numeric
+IDs in routing tests. Fixed ssctl source
 guards also live in `CommandHandlers.SourceOwnership.Tests.cs`; they require
 `AutomationCommandKind` enum overloads at routing call sites while leaving
 labels and wire IDs catalog-backed, with the dynamic diagnostic-session runner
@@ -748,8 +748,8 @@ section below.
 MCP command-routing coverage is split into capture, host/pipe, recording,
 formatter batching, device, pipeline,
 UI, and verification owner files. Captured `request.command` ID assertions now
-flow through `AssertAutomationCommandId`, which reads the golden command table
-instead of duplicating numeric IDs in routing tests. Cross-tool source guards
+flow through `AssertAutomationCommandId` instead of duplicating numeric IDs in
+routing tests. Cross-tool source guards
 in `McpToolSurface.Tests.cs` require fixed-command MCP automation routes to use
 `AutomationCommandKind` enum overloads at the pipe seam while preserving existing
 labels and wire IDs. Catalog/manifest-backed dynamic batches and
