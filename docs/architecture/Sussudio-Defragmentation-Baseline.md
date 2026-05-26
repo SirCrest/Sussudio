@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: D3D11 preview render-pipeline test locality
+Problem: `D3D11PreviewRenderer.SourceOwnership.RenderSetup.Tests.cs` and `D3D11PreviewRenderer.SourceOwnership.RenderPasses.Tests.cs` split one D3D11 renderer source-ownership review surface between setup/input resources and render-pass/shader resources. Reviewing the renderer pipeline layout required opening two adjacent legacy `Program` partial files before returning to the same xUnit D3D contract wrapper.
+Files consolidated: `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.RenderSetup.Tests.cs`, `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.RenderPasses.Tests.cs`
+Files added: `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.RenderPipeline.Tests.cs`
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` D3D11 preview render-pipeline source-ownership test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: panel binding, shared-device, device initialization, input resources, frame upload, frame-latency, viewport, letterbox, render-pass, shader-rendering, and shader-source checks are moved unchanged into the consolidated render-pipeline owner.
+Notes for future agents: keep D3D11 renderer setup/input-resource and render-pass/shader source-shape checks together in `D3D11PreviewRenderer.SourceOwnership.RenderPipeline.Tests.cs`; keep runtime-capture and diagnostics-contract coverage in their separate owner files.
+
+Date: 2026-05-26
 Area: diagnostics refresh snapshot construction test locality
 Problem: `MainViewModel.Automation.DiagnosticsRefresh.SnapshotConstructionOwnership.Tests.cs` only carried a private snapshot-construction assertion helper invoked once by the parent diagnostics-refresh ownership test. Reviewing core diagnostics refresh ownership required opening a small helper-only legacy `Program` partial beside `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`.
 Files consolidated: `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotConstructionOwnership.Tests.cs`
@@ -83,7 +95,7 @@ Partial clusters reduced: legacy `Program` D3D11 preview runtime-capture test pa
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: D3D11 pending-frame drain metrics, frame-capture cancellation cleanup, shared D3D device reference lifecycle, submission, screenshot, render-thread, and present-accounting checks remain unchanged.
-Notes for future agents: keep D3D11 runtime-capture, pending-frame, frame-capture, shared-device reference, render-thread, and present-accounting source-shape checks in `D3D11PreviewRenderer.SourceOwnership.RuntimeCapture.Tests.cs`; keep render-pass/shader source-shape checks in `D3D11PreviewRenderer.SourceOwnership.RenderPasses.Tests.cs`.
+Notes for future agents: keep D3D11 runtime-capture, pending-frame, frame-capture, shared-device reference, render-thread, and present-accounting source-shape checks in `D3D11PreviewRenderer.SourceOwnership.RuntimeCapture.Tests.cs`; keep renderer setup, render-pass, and shader source-shape checks in `D3D11PreviewRenderer.SourceOwnership.RenderPipeline.Tests.cs`.
 
 Date: 2026-05-26
 Area: Flashback buffer retention test locality

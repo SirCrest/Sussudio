@@ -1602,12 +1602,10 @@ Primary current owners:
   configuration, native interop, frame type/ownership state, DXGI frame-stat
   state, slow-frame state, metric-window lifecycle, and metric-tracking
   method/state assertions.
-  `D3D11PreviewRenderer.SourceOwnership.RenderSetup.Tests.cs` owns panel
+  `D3D11PreviewRenderer.SourceOwnership.RenderPipeline.Tests.cs` owns panel
   binding, shared-device, device initialization, input-resource, input-view,
-  and raw-upload state assertions.
-  `D3D11PreviewRenderer.SourceOwnership.RenderPasses.Tests.cs` owns
-  frame-latency, viewport, letterbox, render-pass, shader-rendering, and
-  shader-source assertions.
+  raw-upload, frame-latency, viewport, letterbox, render-pass,
+  shader-rendering, and shader-source assertions.
   `D3D11PreviewRenderer.SourceOwnership.RuntimeCapture.Tests.cs` owns public
   submission state, lifecycle/stop-lifecycle state, pending-frame state and
   draining, render-thread loop, device-lost classification/recovery,
