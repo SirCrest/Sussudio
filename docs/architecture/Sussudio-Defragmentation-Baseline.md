@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: Preview startup session/reinit test locality
+Problem: `MainViewModel.Capture.PreviewStartup.SessionController.Tests.cs` and `MainViewModel.Capture.PreviewStartup.ReinitTransition.Tests.cs` held executable state-contract tests for the same preview startup session and reinit transition controllers whose source-shape ownership lived in `MainViewModel.Capture.PreviewStartup.SessionReinit.Tests.cs`. Reviewing preview startup/reinit controller ownership required opening three sibling shards for one behavior boundary.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.SessionController.Tests.cs`; `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.ReinitTransition.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -2
+Partial clusters reduced: none; legacy `Program` test shard count reduced by two
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter 'FullyQualifiedName~PresentationPreviewStartupBehaviorContractsTests|FullyQualifiedName~PresentationPreviewStartupOwnershipContractsTests'` (9 passed); full validation recorded in checkpoint commit notes
+CLI/MCP/pipe checks, if applicable: not applicable
+Behavior preserved: test-only relocation; xUnit method names and invoked `Program` contract names unchanged
+Notes for future agents: keep preview startup session/reinit source-shape checks and the executable controller state-contract checks together in `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.SessionReinit.Tests.cs` unless those runtime controllers grow separate public test fixtures.
+
+Date: 2026-05-26
 Area: CaptureService preview audio test locality
 Problem: `CaptureService.AudioOwnershipSource.Tests.cs` held source-family helpers plus audio preview lifecycle, `PreviewAudioGraphResources`, and post-recording microphone restart ownership checks. `CaptureService.PreviewLifecycle.Tests.cs` already depended on those helpers and owned preview start/stop, missing-audio fallback, and backend log contracts, so reviewing preview/audio lifecycle assertions required opening two coupled test shards.
 Files consolidated: `tests/Sussudio.Tests/CaptureService.AudioOwnershipSource.Tests.cs`
