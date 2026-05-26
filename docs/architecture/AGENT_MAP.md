@@ -1971,10 +1971,8 @@ Primary current owners:
   normalization, segment-start PTS, segment range query, active path,
   segment-count, and segment-list behavior tests.
 - `tests/Sussudio.Tests/Flashback.Buffer.Retention.Eviction.Tests.cs` owns
-  Flashback buffer eviction accounting, eviction-pause behavior, and
-  initialization recording-PTS reset tests.
-- `tests/Sussudio.Tests/Flashback.Buffer.Retention.Purge.Tests.cs` owns
-  Flashback buffer purge retention and active-byte accounting tests.
+  Flashback buffer eviction accounting, purge retention, active-byte accounting,
+  eviction-pause behavior, and initialization recording-PTS reset tests.
 - `tests/Sussudio.Tests/Flashback.Buffer.Retention.StartupCleanup.Tests.cs`
   owns Flashback buffer startup-generated segment cleanup, legacy root cleanup,
   stale session directory cleanup, session-recovery scanner ownership,

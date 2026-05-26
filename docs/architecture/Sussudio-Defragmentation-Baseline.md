@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: Flashback buffer retention test locality
+Problem: `Flashback.Buffer.Retention.Purge.Tests.cs` held purge retention and active-byte accounting checks for the same Flashback buffer retention/accounting surface whose eviction accounting, eviction-pause, and initialization PTS reset checks lived in `Flashback.Buffer.Retention.Eviction.Tests.cs`. Reviewing retention byte accounting required opening two small legacy `Program` partial files.
+Files consolidated: `tests/Sussudio.Tests/Flashback.Buffer.Retention.Purge.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` Flashback buffer retention test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: Flashback buffer purge retention, active-byte accounting, eviction accounting, eviction-pause behavior, and initialization recording-PTS reset checks remain unchanged.
+Notes for future agents: keep Flashback buffer retention purge/eviction byte-accounting tests in `Flashback.Buffer.Retention.Eviction.Tests.cs`; keep startup cache cleanup, segment lookup, and segment validation behavior in their focused files.
+
+Date: 2026-05-26
 Area: Flashback encoder sink test locality
 Problem: `Flashback.EncoderSink.Tests.cs` held core sink frame-rate, options, startup rollback, counter, and PTS guard checks, while `Flashback.EncoderSink.QueuesAndDrain.Tests.cs` held queue rejection, lifecycle cleanup, packet-validation, and drain-loop ordering checks for the same `FlashbackEncoderSink` behavioral owner. Reviewing core sink guards and queue/drain behavior required opening two small legacy `Program` partial files before moving to the separate force-rotate and source-ownership surfaces.
 Files consolidated: `tests/Sussudio.Tests/Flashback.EncoderSink.QueuesAndDrain.Tests.cs`
