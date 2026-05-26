@@ -166,7 +166,7 @@ static partial class Program
     {
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.AudioBindings.cs")
+        var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs")
             .Replace("\r\n", "\n");
         var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs")
             .Replace("\r\n", "\n");

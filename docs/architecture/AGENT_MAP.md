@@ -1128,7 +1128,7 @@ Primary current owners:
   setup, the XAML/view-model dependency bag, runtime fields, smoothing,
   peak/range markers, microphone meter clipping, reset behavior, timer lifetime,
   `TranslateMarker`, monitoring/disabled animations, and rounded content clips.
-  `Sussudio/MainWindow.AudioBindings.cs` is its XAML-facing adapter.
+  `Sussudio/MainWindow.ControlBindings.cs` is its XAML-facing adapter.
   `Sussudio/Controllers/Audio/AudioControlBindingController.cs` owns the audio-control
   binding context, initial audio/microphone projection, preview-volume binding and priming,
   audio/microphone/device-audio selection handlers,
@@ -1137,7 +1137,7 @@ Primary current owners:
   audio/microphone property-change projections for audio toggles, monitoring
   meter state, preview-volume slider sync, microphone enablement, and
   microphone volume sync.
-  `Sussudio/MainWindow.AudioBindings.cs` is its XAML-facing adapter.
+  `Sussudio/MainWindow.ControlBindings.cs` is its XAML-facing adapter.
 - `Sussudio/Controllers/Stats/StatsOverlayController.cs` owns stats dock visibility
   orchestration, stats/frame-time toggle event hookup and checked/unchecked
   handling, stats toggle-to-view model sync, frame-time overlay visibility,
@@ -2332,11 +2332,11 @@ Primary current owners:
   microphone property-change routing/projections: audio toggles, monitoring
   meter state, preview volume slider sync, microphone enablement, and microphone
   volume sync, alongside initial audio/microphone projection and event hookup.
-  `Sussudio/MainWindow.AudioBindings.cs` is the XAML-facing audio/microphone
+  `Sussudio/MainWindow.ControlBindings.cs` is the XAML-facing audio/microphone
   presentation adapter.
 - `Sussudio/Controllers/Audio/MicrophoneControlsController.cs` owns microphone volume
   slider synchronization, save triggers, shelf enablement, and mic-meter row
-  animation state. `MainWindow.AudioBindings.cs` is the XAML-facing
+  animation state. `MainWindow.ControlBindings.cs` is the XAML-facing
   audio/microphone presentation adapter.
 - `Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs` owns the
   control-bar label breakpoint, narrow/wide placement policy, responsive
@@ -2372,7 +2372,7 @@ Primary current owners:
   microphone volume sync.
   Device-audio mode/gain control projection stays in
   `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs`.
-  `Sussudio/MainWindow.AudioBindings.cs` is its XAML-facing adapter.
+  `Sussudio/MainWindow.ControlBindings.cs` is its XAML-facing adapter.
 - `Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs` owns the capture-
   device refresh/apply button workflows and preserves the explicit apply/reinit
   path. `MainWindow.ControlBindings.cs` is the XAML-facing adapter for
