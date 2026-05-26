@@ -1984,13 +1984,11 @@ Primary current owners:
   snapshot polling wait ownership assertions.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`
   owns diagnostic-session Flashback cycle, preview-cycle, rejected-export,
-  segment-playback, recording-settings, lifecycle, stress, and audio-master
-  fallback classification ownership assertions.
+  segment-playback, export, recording-settings, lifecycle, stress,
+  audio-master fallback classification, export-helper, and segment wait/parsing
+  ownership assertions.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Metrics.Tests.cs`
   owns diagnostic-session Flashback metric projection ownership assertions.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Export.Tests.cs`
-  owns diagnostic-session Flashback export ownership assertions for export
-  scenario flows, export helpers, and shared segment wait/parsing collaborators.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Tests.cs` owns
   focused diagnostic-session runner behavior coverage: reflective runner
   setup, artifacts, health policy, Flashback playback, initial snapshot,

@@ -3207,4 +3207,16 @@ Partial clusters reduced: legacy `Program` MCP diagnostic-session Flashback scen
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer` and `tools/ssctl`; test/docs-only consolidation, no public automation command names, IDs, wire payloads, or MCP tool implementations changed
 Behavior preserved: Flashback stress/scrub-stress ownership assertions and audio-master fallback classifier checks remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
-Notes for future agents: keep Flashback stress scenario ownership checks with `McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`; keep metric projection and export helper checks in their focused sibling files unless those surfaces become helper-only.
+Notes for future agents: keep Flashback stress scenario ownership checks with `McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`; keep metric projection checks in their focused sibling file unless that surface becomes helper-only.
+
+Date: 2026-05-26
+Area: MCP diagnostic-session Flashback export test locality
+Problem: `McpToolSurface.DiagnosticSession.Flashback.Export.Tests.cs` split Flashback export scenario flow, export-helper, and segment wait/parsing ownership checks away from the primary MCP Flashback scenario test owner, even though those checks protect the same diagnostic-session Flashback scenario review surface and are registered through the same xUnit diagnostic-session contract group.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Export.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MCP diagnostic-session Flashback scenario/export partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer` and `tools/ssctl`; test/docs-only consolidation, no public automation command names, IDs, wire payloads, or MCP tool implementations changed
+Behavior preserved: Flashback export scenario flow, export-helper, and segment wait/parsing ownership assertions remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
+Notes for future agents: keep MCP diagnostic-session Flashback scenario, stress, export, and segment-flow ownership checks together in `McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`; keep metric projection and health-policy checks in focused sibling files while they remain independently reviewable.
