@@ -1351,10 +1351,10 @@ Primary current owners:
   `tests/Sussudio.Tests/DiagnosticSession.SourceReaders.cs` owns shared
   diagnostic-session source-family readers used by refresh, MCP, and tool
   ownership assertions.
-- `tests/Sussudio.Tests/MainViewModel.AutomationSnapshots.Ownership.Tests.cs`
-  owns automation snapshot/options source-shape assertions, including the
-  diagnostics-loop contract that keeps options snapshots out of hot diagnostics
-  refresh paths.
+- `tests/Sussudio.Tests/MainViewModel.Automation.AsyncSurface.Tests.cs`
+  owns automation async surface and automation snapshot/options source-shape
+  assertions, including the diagnostics-loop contract that keeps options
+  snapshots out of hot diagnostics refresh paths.
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
   owns xUnit execution for the former legacy diagnostics-loop polling catalog
   check.

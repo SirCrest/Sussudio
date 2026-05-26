@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: MainViewModel automation test locality
+Problem: `MainViewModel.AutomationSnapshots.Ownership.Tests.cs` was an 86-line residual source-shape guard for automation snapshot/options behavior, while the adjacent automation async surface tests already own the public automation ports, async probe surface, and compatibility routing that these guards describe. Reviewing MainViewModel automation ownership required opening one extra tiny test file for assertions about the same automation facade.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.AutomationSnapshots.Ownership.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: none
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (885 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: no production code, public automation command names, IDs, wire payloads, or XAML bindings changed
+Behavior preserved: automation runtime snapshot guard coverage, automation options DTO construction guard coverage, and the diagnostics-loop hot-path guard that prevents rebuilding automation options on each poll remain unchanged under the existing automation async surface test owner.
+Notes for future agents: keep MainViewModel automation source-shape guards in `tests/Sussudio.Tests/MainViewModel.Automation.AsyncSurface.Tests.cs` while they describe the same public automation facade; reserve separate test files for distinct behavior clusters rather than tiny residual guards.
+
+Date: 2026-05-26
 Area: MainViewModel capture selection transaction locality
 Problem: `MainViewModel.CaptureModeTransactions.cs` was a 192-line partial that only held capture-mode property-change reactions, HDR/true-HDR guards, and tiny adapter methods for the capture option rebuild controller. Those fields and handlers directly coordinate the capture-device, resolution, frame-rate, video-format, and HDR selection state already owned by `MainViewModel.CaptureSelection.cs`, so reviewing a single capture selection change required opening an extra tiny partial.
 Files consolidated: `Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs`
