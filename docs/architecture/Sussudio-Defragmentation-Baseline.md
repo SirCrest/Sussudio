@@ -3424,3 +3424,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, stats dock composition, stats presentation tests, automation tooling, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, metric labels, brush colors, visibility policy, or refresh ordering changed
 Behavior preserved: stats dock snapshot gate, dock presentation model build, text-change guards, metric status brushes, A/V sync encoder row visibility, encoder section visibility, diagnostics row refresh, and decode/GPU row refresh now live in `StatsDockRefreshController.cs`.
 Notes for future agents: keep stats dock value/brush/visibility application with `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` while it remains a direct part of dock refresh; keep dynamic diagnostic/decode/GPU row pooling in `StatsDockRowsController.cs`.
+
+Date: 2026-05-26
+Area: detached stats-window presentation locality
+Problem: `StatsWindowPresentationController.cs` was a 146-line one-use detached stats-window metric/telemetry presentation owner created only by `StatsWindow.xaml.cs`. Reviewing detached stats-window polling and UI mutation required opening both files even though the pure presentation model still lives in `StatsPresentationBuilder`.
+Files consolidated: `Sussudio/Controllers/Stats/StatsWindowPresentationController.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: detached stats-window presentation owner count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds the detached stats window, stats presentation tests, automation tooling, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, stat labels, telemetry-detail row layout, polling cadence, window sizing, or always-on-top behavior changed
+Behavior preserved: detached stats-window polling/lifecycle, minimum size, always-on-top toggle, metric text application, telemetry detail clearing, empty-state rendering, group headers, and label/value row rendering now live in `StatsWindow.xaml.cs`; pure `StatsWindowPresentation` construction stays in `StatsPresentationBuilder.cs`.
+Notes for future agents: keep detached stats-window lifecycle and UI mutation together in `Sussudio/StatsWindow.xaml.cs`; keep pure stats text/model construction in `Sussudio/ViewModels/StatsPresentationBuilder.cs`.

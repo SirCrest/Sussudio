@@ -16,7 +16,7 @@ public partial class StatsPresentationTests
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
-        var statsWindowPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsWindowPresentationController.cs").Replace("\r\n", "\n");
+        var statsWindowPresentationControllerText = statsWindowText;
         var statsWindowTelemetryDetailsControllerText = statsWindowPresentationControllerText;
 
         AssertContains(statsPresentationText, "internal static class StatsPresentationBuilder");
@@ -91,6 +91,14 @@ public partial class StatsPresentationTests
         AssertContains(statsWindowPresentationControllerText, "private readonly StatsWindowTelemetryDetailsController _telemetryDetailsController;");
         AssertContains(statsWindowPresentationControllerText, "_telemetryDetailsController.Apply(presentation.TelemetryDetails);");
         AssertDoesNotContain(statsWindowPresentationControllerText, "private void UpdateTelemetryDetails(StatsWindowTelemetryDetailsPresentation presentation)");
+        Assert.False(
+            System.IO.File.Exists(System.IO.Path.Combine(
+                FindRepoRoot(),
+                "Sussudio",
+                "Controllers",
+                "Stats",
+                "StatsWindowPresentationController.cs")),
+            "detached stats-window presentation lives with StatsWindow.xaml.cs");
         AssertContains(statsWindowTelemetryDetailsControllerText, "internal sealed class StatsWindowTelemetryDetailsController");
         AssertContains(statsWindowTelemetryDetailsControllerText, "public void Apply(StatsWindowTelemetryDetailsPresentation presentation)");
         AssertContains(statsWindowTelemetryDetailsControllerText, "_context.TelemetryDetailsContent.Children.Clear();");
@@ -105,7 +113,6 @@ public partial class StatsPresentationTests
         AssertDoesNotContain(statsWindowText, "private static string FormatMs(");
         AssertDoesNotContain(statsWindowText, "private static string FormatPercent(");
         AssertDoesNotContain(statsWindowText, "private static string FormatSourceHdr(");
-        AssertDoesNotContain(statsWindowText, "private Grid CreateTelemetryDetailRow(");
         AssertDoesNotContain(statsOverlayText, "BuildFrameTimePresentation(snapshot)");
         AssertDoesNotContain(statsOverlayText, "private enum MetricStatus");
         AssertDoesNotContain(statsOverlayText, "private static string ResolveCaptureSummaryText");

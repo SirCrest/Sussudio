@@ -2155,10 +2155,9 @@ now live in the local section chrome controller inside
 adapter for the stats shell wiring and delegates controller/provider composition to
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
 Detached stats-window metric text now lives in
-`Sussudio/Controllers/Stats/StatsWindowPresentationController.cs`, along with
-dynamic telemetry-detail clearing, empty state, group headers, and row rendering, with
-`Sussudio/StatsWindow.xaml.cs` kept to lifecycle, sizing, polling, controller
-composition, and always-on-top behavior.
+`Sussudio/StatsWindow.xaml.cs`, along with dynamic telemetry-detail clearing,
+empty state, group headers, row rendering, lifecycle, sizing, polling,
+controller composition, and always-on-top behavior.
 Stats overlay lifecycle, stats dock refresh, stats section chrome, and
 diagnostic row pooling contract checks now live in two focused owners:
 `tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs` covers overlay

@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-26T08:12:42Z
+Generated UTC: 2026-05-26T08:21:13Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 378 |
+| Production .cs files | 377 |
 | Test .cs files | 251 |
 | Production .cs files under 60 lines | 2 (0.5%) |
 | Production .cs files under 80 lines | 7 (1.9%) |
@@ -45,7 +45,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | App | 1 | 260 | Sussudio/App.xaml.cs |
 | DeviceFormatCacheJsonContext | 1 | 697 | Sussudio/Services/Capture/DeviceService.cs |
 | SettingsJsonContext | 1 | 104 | Sussudio/Services/Runtime/SettingsService.cs |
-| StatsWindow | 1 | 151 | Sussudio/StatsWindow.xaml.cs |
+| StatsWindow | 1 | 308 | Sussudio/StatsWindow.xaml.cs |
 
 ## Largest production files
 

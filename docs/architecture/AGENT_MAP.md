@@ -1167,8 +1167,8 @@ Primary current owners:
   expand/collapse chrome and automation-visible section visibility application;
   `Sussudio/MainWindow.ShellChrome.Composition.cs`
   owns the XAML/automation adapter for that stats shell wiring.
-  `Sussudio/Controllers/Stats/StatsWindowPresentationController.cs`
-  owns detached stats-window metric text and dynamic telemetry detail rendering.
+  `Sussudio/StatsWindow.xaml.cs` also owns detached stats-window metric text and
+  dynamic telemetry detail rendering.
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns shell stats snapshot
   orchestration from capture-health, renderer metrics, and view state, including
   renderer cadence/recent-sample acquisition and null fallback policy.
