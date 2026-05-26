@@ -2178,17 +2178,15 @@ Primary current owners:
   watchdog/telemetry timers, timeout configuration, timeout recovery, and
   failure-stop scheduling. The MainWindow/XAML-facing adapter stays in
   `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`.
-  `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs` owns readiness-
-  signal coordination: readiness-signal state handoff, missing-signal updates,
-  playback-progress diagnostics, startup signal log strings, GPU position
-  counter state, and first-visual confirmation decisions.
+  `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalsController.cs` owns readiness-
+  signal coordination: readiness-signal state handoff, required/received state,
+  missing-signal calculation and updates, playback-progress diagnostics, startup
+  signal log strings, GPU position counter state, first-visual confirmation
+  decisions, signal-list formatting, timeout diagnostic payload formatting,
+  playback-advance threshold checks, and readiness result snapshots.
   `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires the
   coordinator context, stable signal snapshot properties used by automation,
   GPU signal, missing-signal, playback-snapshot, and first-visual adapter callbacks.
-  `Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs` owns
-  readiness-signal required/received state, missing-signal calculation,
-  signal-list formatting, timeout diagnostic payload formatting,
-  playback-advance threshold checks, and readiness result snapshots.
   `PreviewStartupWatchdogController.cs`
   owns preview startup timeout reason, timeout status, and failure-stop status text.
   `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview-

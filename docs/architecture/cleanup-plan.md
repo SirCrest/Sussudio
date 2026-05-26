@@ -2548,15 +2548,12 @@ Watchdog/telemetry timers, timeout configuration, timeout recovery, and failure-
 `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`;
 the MainWindow/XAML-facing adapter stays in
 `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`. Readiness-signal coordination now lives
-in `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs`: missing-signal
-updates, playback-progress diagnostics, startup signal log strings, GPU
-position counter state, and first-visual confirmation decisions.
-Readiness-signal required/received state,
-missing-signal calculation, playback-advance threshold checks, and readiness
-result snapshots live in
-`Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs`.
-Missing-signal, signal-list, and timeout diagnostic payload formatting live with
-that readiness signal owner. Timeout reason,
+in `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalsController.cs`: missing-signal
+updates, readiness-signal required/received state, missing-signal calculation,
+playback-progress diagnostics, startup signal log strings, GPU position counter
+state, first-visual confirmation decisions, playback-advance threshold checks,
+readiness result snapshots, signal-list formatting, and timeout diagnostic
+payload formatting. Timeout reason,
 timeout status, and failure-stop status text live inside
 `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`, where the timeout
 and failure-stop decisions are made. This keeps the root shell focused on wiring
