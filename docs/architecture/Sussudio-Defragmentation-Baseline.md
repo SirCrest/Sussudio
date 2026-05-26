@@ -48,6 +48,18 @@ Notes for future agents:
 
 ## Slice Evidence
 
+Date: 2026-05-26
+Area: NativeXuAudioProbe I2C transport locality
+Problem: `Program.I2cTransport.cs` was a small helper file that only served NativeXuAudioProbe I2C-over-AT workflows, while `Program.I2cCommands.cs` already owns the exploratory I2C command family and legacy I2C probe behavior.
+Files consolidated: `tools/NativeXuAudioProbe/Program.I2cTransport.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; NativeXuAudioProbe support file count -1
+Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj -c Debug --no-restore`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `& scripts\architecture\Capture-SussudioDefragBaseline.ps1`
+CLI/MCP/pipe checks, if applicable: affected NativeXuAudioProbe build and source-ownership tests cover the moved I2C-over-AT helper type; no CLI command names or arguments changed
+Behavior preserved: `NativeXuProbeI2cTransport` type name, `SendI2cAtGetAsync`, `SendI2cAtSetAsync`, `SendI2cViaAtAsync`, `GetSelectedKsInterfaces`, `BuildAtFrameWithPayload`, I2C AT opcode mapping, selected-interface behavior, and response parsing remain unchanged
+Notes for future agents: keep I2C-over-AT helpers with `Program.I2cCommands.cs` while their callers are the NativeXuAudioProbe I2C command family and top-level captured I2C switch workflow.
+
 Date: 2026-05-24
 Area: ssctl diagnostic command locality
 Problem: Diagnostic tooling commands were split across observability, PresentMon, and diagnostic-session handler files even though they form one CLI investigation surface over shared tool helpers.
@@ -2355,7 +2367,7 @@ Partial clusters reduced: n/a; NativeXuAudioProbe support file count -2
 Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj -c Debug --no-restore`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`
 CLI/MCP/pipe checks, if applicable: affected NativeXuAudioProbe build and source-ownership tests cover the moved direct AT and audio-switch workflows; no public command names changed
 Behavior preserved: `at-read`, `at-write`, `at-set-input`, and `i2c-switch` route names, argument handling, output strings, restore behavior, I2C-over-AT helper calls, and selected-device behavior remain unchanged
-Notes for future agents: keep small top-level NativeXuAudioProbe command workflows with `Program.cs`; keep `Program.I2cTransport.cs` separate while multiple I2C command families share it.
+Notes for future agents: keep small top-level NativeXuAudioProbe command workflows with `Program.cs`; I2C-over-AT transport helpers now live with `Program.I2cCommands.cs` because the remaining direct callers are NativeXuAudioProbe I2C workflows.
 
 Date: 2026-05-25
 Area: diagnostic-session health policy locality
@@ -2415,7 +2427,7 @@ Partial clusters reduced: n/a; NativeXuAudioProbe support file count -1
 Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj -c Debug --no-restore`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: affected NativeXuAudioProbe build and source-ownership tests cover the moved service workflows; no public command names changed
 Behavior preserved: `service`, `--service-smoke`, `--device`, `--mode`, `--gain`, and `--dump-payload` handling, NativeXuAudioControlService state reads, service payload printing, set-mode/set-gain calls, service smoke output, and status/error text remain unchanged
-Notes for future agents: keep small top-level NativeXuAudioProbe service-control workflows with `Program.cs`; keep `Program.I2cTransport.cs` separate while multiple I2C command families share it.
+Notes for future agents: keep small top-level NativeXuAudioProbe service-control workflows with `Program.cs`; I2C-over-AT transport helpers now live with `Program.I2cCommands.cs` because the remaining direct callers are NativeXuAudioProbe I2C workflows.
 
 Date: 2026-05-25
 Area: diagnostic-session scenario planning locality
@@ -2475,7 +2487,7 @@ Partial clusters reduced: stale `NativeXuProbeI2cCommands` partial marker remove
 Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj -c Debug --no-restore`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: affected NativeXuAudioProbe build and source-ownership tests cover the moved legacy `i2c-probe` workflow; no public command names changed
 Behavior preserved: `i2c-probe` routing, selector scan range, raw I2C frame probes, alternate selector probes, AT-wrapped I2C frame probes, error/status text, and KS/XU helper calls remain unchanged
-Notes for future agents: keep the legacy NativeXu `i2c-probe` workflow with `Program.I2cCommands.cs` while it is only another exploratory I2C probe path; keep `Program.I2cTransport.cs` separate while multiple I2C command families share it.
+Notes for future agents: keep the legacy NativeXu `i2c-probe` workflow with `Program.I2cCommands.cs` while it is only another exploratory I2C probe path; I2C-over-AT transport helpers now live in the same I2C command-family file.
 
 Date: 2026-05-25
 Area: stale one-file partial marker cleanup

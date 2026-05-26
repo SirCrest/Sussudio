@@ -106,7 +106,6 @@ static partial class Program
         var probeDefaultExperimentReportingText = probeDefaultExperimentText;
         var probeI2cCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.cs"));
         var probeI2cLegacyProbeText = probeI2cCommandsText;
-        var probeI2cTransportText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cTransport.cs"));
         AssertDoesNotContain(probeProgramText, "sealed record GetterSpec");
         AssertDoesNotContain(probeProgramText, "sealed class ExperimentResult");
         AssertDoesNotContain(probeProgramText, "const int CmdAudioFormat");
@@ -180,6 +179,7 @@ static partial class Program
             File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Commands.cs")),
             "NativeXu probe command IDs and shared raw formatting live with default experiment support");
         AssertContains(probeI2cCommandsText, "static class NativeXuProbeI2cCommands");
+        AssertContains(probeI2cCommandsText, "static class NativeXuProbeI2cTransport");
         AssertDoesNotContain(probeI2cCommandsText, "static partial class NativeXuProbeI2cCommands");
         AssertContains(probeI2cCommandsText, "public static async Task<int> RunAsync");
         AssertContains(probeI2cCommandsText, "Usage: i2c-cmd get|set|scan");
@@ -217,6 +217,8 @@ static partial class Program
         AssertContains(probeI2cLegacyProbeText, "ProbeRawI2cFrames");
         AssertContains(probeI2cLegacyProbeText, "ProbeAlternateSelectors");
         AssertContains(probeI2cLegacyProbeText, "ProbeAtWrappedI2cFrames");
+        AssertContains(probeI2cCommandsText, "public static async Task<byte[]?> SendI2cAtGetAsync");
+        AssertContains(probeI2cCommandsText, "public static byte[] BuildAtFrameWithPayload");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cLegacyProbe.cs")),
@@ -229,9 +231,10 @@ static partial class Program
         AssertContains(probeProgramText, "public static async Task<int> RunAsync");
         AssertContains(probeProgramText, "Current I2C AT state");
         AssertContains(probeProgramText, "Sending audio switch sequence");
-        AssertContains(probeI2cTransportText, "static class NativeXuProbeI2cTransport");
-        AssertContains(probeI2cTransportText, "public static async Task<byte[]?> SendI2cAtGetAsync");
-        AssertContains(probeI2cTransportText, "public static byte[] BuildAtFrameWithPayload");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cTransport.cs")),
+            "NativeXu I2C-over-AT transport helpers live with the I2C command family");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ServiceProbe.cs")),

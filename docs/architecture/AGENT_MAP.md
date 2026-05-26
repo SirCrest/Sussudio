@@ -2849,7 +2849,7 @@ Primary owners:
   high-selector probing, topology/property-set probing, and I2C
   SET/readback/restore verification, plus the legacy `i2c-probe` selector
   scan and raw/AT-wrapped I2C frame experiment; and
-  `Program.I2cTransport.cs` owns I2C-over-AT transport helpers.
+  `Program.I2cCommands.cs` also owns I2C-over-AT transport helpers.
 - `tools/KsAudioNodeProbe/Program.cs` owns KS audio node probe argument parsing,
   interface selection, open failure handling, workflow dispatch, SetupAPI,
   file-handle, KS property transfer, native interop constants/DTOs, topology
