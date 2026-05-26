@@ -77,9 +77,8 @@ add xUnit alongside, and port incrementally.
   source-ownership checks.
 - `Flashback.Playback.Markers.Tests.cs` owns the former legacy Flashback
   playback in/out marker API, normalization, disposal, and marker clamp checks.
-- `StatsDockPresentation.Tests.cs` and `StatsPresentation.Ownership.Tests.cs`
-  own the former legacy stats dock, row chrome, builder ownership, and HDMI
-  source telemetry panel checks.
+- `StatsDockPresentation.Tests.cs` owns the former legacy stats dock, row
+  chrome, builder ownership, and HDMI source telemetry panel checks.
 - `MainWindowUiContract.StatsSnapshot.Tests.cs` owns the former legacy stats
   snapshot construction and health/renderer metric projection checks.
 - `XUnit.AutomationContractsTests.cs` owns the former legacy automation xUnit

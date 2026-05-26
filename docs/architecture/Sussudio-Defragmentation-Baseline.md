@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: Stats presentation test ownership locality
+Problem: `StatsPresentation.Ownership.Tests.cs` and `StatsDockPresentation.Tests.cs` were two small partial shards of the same `StatsPresentationTests` class protecting one stats presentation/dock review path: pure builder ownership, dock presentation application, row chrome, frame-time overlay, detached stats window projection, and HDMI source telemetry panel checks. Reviewing stats presentation ownership still required opening both files.
+Files consolidated: `tests/Sussudio.Tests/StatsPresentation.Ownership.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `StatsPresentationTests` xUnit partial file count -1
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~StatsPresentation|FullyQualifiedName~StatsDock|FullyQualifiedName~StatsOverlay"` (12 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~ArchitectureDocsReferenceIntegrityTests|FullyQualifiedName~ArchitectureDocsAgentMapOwnershipTests"` (16 passed); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: stats presentation builder ownership checks, stats DTO ownership checks, stats dock presentation application checks, row chrome pooling checks, frame-time overlay ownership checks, detached stats-window projection checks, and HDMI source telemetry panel checks remain under the same xUnit `StatsPresentationTests` surface.
+Notes for future agents: keep stats presentation/dock source-shape checks in `tests/Sussudio.Tests/StatsDockPresentation.Tests.cs`; keep executable formatting behavior in `XUnit.StatsPresentation.Formatting.Tests.cs` and hardware-row behavior in `XUnit.StatsHardwareRowsTests.cs`.
+
+Date: 2026-05-26
 Area: ssctl CLI front-door locality
 Problem: `tools/ssctl/SsctlHelpWriter.cs` only carried internal root help text invoked by `Program.cs`, so reviewing process-level CLI behavior required opening a second small sidecar before returning to the entry point. The command-handler surface is already isolated in `CommandHandlers.cs`, so keeping help with option parsing and usage/exit-code shaping makes the CLI front door easier to inspect without mixing in command execution.
 Files consolidated: `tools/ssctl/SsctlHelpWriter.cs`
