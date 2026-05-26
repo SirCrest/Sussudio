@@ -11,8 +11,7 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Startup.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.StopLifecycle.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.VideoQueueSubmission.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs").Replace("\r\n", "\n")
+            ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs").Replace("\r\n", "\n")
         };
 
         return string.Join("\n", parts);

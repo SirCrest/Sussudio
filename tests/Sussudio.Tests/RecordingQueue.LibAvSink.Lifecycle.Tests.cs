@@ -52,12 +52,12 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task LibAvRecordingSink_AudioQueuesLiveWithQueueSurface()
+    internal static Task LibAvRecordingSink_QueueingOwnsProducerAdmissionAndCleanup()
     {
-        var queueText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs")
+        var queueingText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs")
             .Replace("\r\n", "\n");
-        var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.VideoQueueSubmission.cs")
-            .Replace("\r\n", "\n");
+        var queueText = queueingText;
+        var videoSubmissionText = queueingText;
 
         AssertContains(queueText, "public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
         AssertContains(queueText, "public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
@@ -77,19 +77,6 @@ static partial class Program
         AssertContains(videoSubmissionText, "private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)");
         AssertContains(videoSubmissionText, "private static unsafe void ReturnRemainingCudaFrames(Channel<CudaFramePacket>? queue, ref int queueDepth)");
         AssertContains(videoSubmissionText, "private static void ReturnVideoPacket(VideoFramePacket packet)");
-        AssertDoesNotContain(queueText, "private void ReturnRemainingVideoBuffers(Channel<VideoFramePacket>? queue)");
-        AssertDoesNotContain(queueText, "private static void ReturnVideoPacket(VideoFramePacket packet)");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task LibAvRecordingSink_VideoQueueSubmissionLivesInFocusedPartial()
-    {
-        var queueText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs")
-            .Replace("\r\n", "\n");
-        var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.VideoQueueSubmission.cs")
-            .Replace("\r\n", "\n");
-
         AssertContains(queueText, "public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)");
         AssertContains(queueText, "public unsafe void EnqueueCudaVideoFrame(AVFrame* cudaFrame)");
         AssertContains(queueText, "public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)");
@@ -104,11 +91,14 @@ static partial class Program
         AssertContains(videoSubmissionText, "private enum VideoEnqueueResult");
         AssertContains(videoSubmissionText, "private readonly record struct GpuFramePacket");
         AssertContains(videoSubmissionText, "private readonly record struct CudaFramePacket");
-        AssertDoesNotContain(queueText, "private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
-        AssertDoesNotContain(queueText, "private VideoEnqueueResult TryEnqueueGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
-        AssertDoesNotContain(queueText, "private unsafe VideoEnqueueResult TryEnqueueCudaPacket(Channel<CudaFramePacket> queue, CudaFramePacket packet)");
-        AssertDoesNotContain(queueText, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
-        AssertDoesNotContain(queueText, "private readonly record struct VideoFramePacket");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Queues.cs")),
+            "LibAvRecordingSink.Queues.cs folded into LibAvRecordingSink.Queueing.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.VideoQueueSubmission.cs")),
+            "LibAvRecordingSink.VideoQueueSubmission.cs folded into LibAvRecordingSink.Queueing.cs");
 
         return Task.CompletedTask;
     }
@@ -197,7 +187,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
             .Replace("\r\n", "\n");
-        var queueText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs")
+        var queueText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs")
             .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Startup.cs")
             .Replace("\r\n", "\n");

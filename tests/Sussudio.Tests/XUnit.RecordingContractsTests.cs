@@ -310,12 +310,8 @@ public sealed class RecordingModelContractsTests
         => global::Program.LibAvRecordingSink_EncodingLoopAndPacketDrainsLiveWithSinkRoot();
 
     [Fact]
-    public Task LibAvRecordingAudioQueuesLiveWithQueueSurface()
-        => global::Program.LibAvRecordingSink_AudioQueuesLiveWithQueueSurface();
-
-    [Fact]
-    public Task LibAvRecordingVideoQueueSubmissionLivesInFocusedPartial()
-        => global::Program.LibAvRecordingSink_VideoQueueSubmissionLivesInFocusedPartial();
+    public Task LibAvRecordingQueueingOwnsProducerAdmissionAndCleanup()
+        => global::Program.LibAvRecordingSink_QueueingOwnsProducerAdmissionAndCleanup();
 
     [Fact]
     public Task LibAvRecordingLifecycleHelpersLiveWithTheirOwners()

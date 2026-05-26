@@ -636,7 +636,7 @@ Partial clusters reduced: `LibAvRecordingSink` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by recording queue source-ownership and runtime recording contract tests
 Behavior preserved: Queue overload handling, depth accounting, remaining video/GPU/CUDA buffer return, pooled byte-buffer return, and lease disposal logic are unchanged
-Notes for future agents: keep video queue cleanup with `LibAvRecordingSink.VideoQueueSubmission.cs` unless queue cleanup grows an independent lifecycle policy shared beyond video/GPU/CUDA queues
+Notes for future agents: keep video queue cleanup with the recording sink queue owner unless queue cleanup grows an independent lifecycle policy shared beyond video/GPU/CUDA queues
 
 Date: 2026-05-23
 Area: Recording encoder core diagnostics
@@ -1872,7 +1872,7 @@ Partial clusters reduced: `LibAvRecordingSink` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation/tool contract changes
 Behavior preserved: CUDA/GPU queue selection, bounded video/GPU/CUDA channel creation, width/height state reset, video/GPU/CUDA metric reset, enqueue/write tick reset, diagnostics reset, and startup ordering remain unchanged
-Notes for future agents: keep per-recording video session queue setup and startup metric reset with `LibAvRecordingSink.Startup.cs`; keep public queue admission and packet cleanup in `LibAvRecordingSink.VideoQueueSubmission.cs`
+Notes for future agents: keep per-recording video session queue setup and startup metric reset with `LibAvRecordingSink.Startup.cs`; keep public queue admission and packet cleanup with the recording sink queue owner
 
 Date: 2026-05-24
 Area: NVDEC MJPEG decoder lifecycle locality
@@ -4292,3 +4292,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, Flashback producer entry points, queue helper names, queue-depth semantics, packet cleanup behavior, or recording queue overload policy changed.
 Behavior preserved: raw/lease/GPU video input validation, texture AddRef ownership, audio/microphone enqueue entry points, hot WASAPI writer adapters, video/GPU/audio/microphone queue admission transactions, queue-full classification, force-rotate audio queue guard policy, channel writes, depth accounting, rejection counters, backlog eviction accounting, packet DTOs, ArrayPool buffer ownership, leased packet disposal, GPU texture release, queue completion/signaling, cancellation waits, failure notification, and queued-buffer cleanup now live in `FlashbackEncoderSink.Queueing.cs`.
 Notes for future agents: keep Flashback encoder producer inputs, queue admission/write/rejection helpers, packet DTOs, packet buffer ownership, failure signaling, and queued-buffer cleanup together in `Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs`; split only if queueing becomes a named collaborator instead of another sink partial.
+
+Date: 2026-05-26
+Area: LibAv recording sink queueing locality
+Problem: `LibAvRecordingSink.Queues.cs` owned public GPU/CUDA/raw-video producer entry points plus hot audio/microphone writer adapters and audio queue admission, while `LibAvRecordingSink.VideoQueueSubmission.cs` owned video/GPU/CUDA admission, TryWrite depth accounting, packet DTOs, pooled packet return, queued-buffer cleanup, and overload failure signaling. Reviewing recording producer enqueue, queue overload behavior, and cleanup required opening two partials for one queueing behavior surface.
+Files consolidated: `Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs`; `Sussudio/Services/Recording/LibAvRecordingSink.VideoQueueSubmission.cs`
+Files added: `Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs`
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `LibAvRecordingSink` production partial file count -1 while preserving producer entry points and private queue helper names
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~RecordingQueue|FullyQualifiedName~RecordingPipelineContractsTests|FullyQualifiedName~PooledVideoFrame"` (27 passed); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, LibAv producer entry points, queue helper names, queue-depth semantics, packet cleanup behavior, or recording queue overload policy changed.
+Behavior preserved: public raw/lease/GPU/CUDA video input adapters, hot audio/microphone WASAPI writer adapters, audio/video/GPU/CUDA queue admission, TryWrite depth accounting, queue-full failure policy, work signaling, channel completion, remaining queued-buffer cleanup, pooled packet return, packet DTOs, and queue-depth underflow guards now live in `LibAvRecordingSink.Queueing.cs`.
+Notes for future agents: keep LibAv recording sink producer inputs, queue admission/write helpers, packet DTOs, packet buffer ownership, failure signaling, and queued-buffer cleanup together in `Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs`; split only if queueing becomes a named collaborator instead of another sink partial.
