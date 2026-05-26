@@ -3364,3 +3364,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app and automation tooling; no public automation command names, IDs, wire payloads, XAML bindings, preview button labels, reinit log text, or animation timing changed
 Behavior preserved: preview reinit animation active flag, completion presentation selection, unavailable placeholder reveal, confirmed visual reset, first-visual transition clear, startup-reset preservation, operation-scoped clear logging, and `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` log strings now live in `PreviewTransitionAnimationController.cs` with preview shell/content transition and startup overlay presentation.
 Notes for future agents: keep preview transition animation, startup overlay presentation, and reinit transition state in `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`; keep preview startup attempt/session bookkeeping in `PreviewStartupSessionController.cs`.
+
+Date: 2026-05-26
+Area: D3D11 preview renderer shader source locality
+Problem: `PreviewShaderSources.cs` was a 120-line renderer-internal HLSL source and renderer-mode label bucket split away from `D3D11PreviewRenderer.ShaderRendering.cs`, even though shader rendering owns shader bytecode compilation, shader resource/cache state, D3DCompiler interop, and compile fallback logging. Reviewing NV12/HDR shader behavior required opening a second preview service file.
+Files consolidated: `Sussudio/Services/Preview/PreviewShaderSources.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: D3D11 preview renderer shader support owner count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds preview renderer consumers and automation tooling; no public automation command names, IDs, wire payloads, renderer mode labels, HLSL source text, shader compile profiles, or render-pass behavior changed
+Behavior preserved: NV12 renderer mode label, HDR shader mode label, fullscreen vertex shader, HDR tonemap shader, HDR passthrough shader, NV12 pixel shader, D3DCompile handoff, shader resource cleanup, and compile-fallback logging now live together in `D3D11PreviewRenderer.ShaderRendering.cs`.
+Notes for future agents: keep `PreviewShaderSources` with `D3D11PreviewRenderer.ShaderRendering.cs` unless shader sources become shared by another renderer or external shader packaging pipeline.

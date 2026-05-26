@@ -143,10 +143,13 @@ static partial class Program
             .Replace("\r\n", "\n");
         var shaderRenderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs")
             .Replace("\r\n", "\n");
-        var previewShaderSourcesText = ReadRepoFile("Sussudio/Services/Preview/PreviewShaderSources.cs")
-            .Replace("\r\n", "\n");
+        var previewShaderSourcesText = shaderRenderingText;
 
         AssertContains(previewShaderSourcesText, "internal static class PreviewShaderSources");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "PreviewShaderSources.cs")),
+            "preview shader sources live with shader rendering ownership");
         AssertContains(previewShaderSourcesText, "internal const string FullscreenVertex");
         AssertContains(previewShaderSourcesText, "internal const string HdrTonemapPixel");
         AssertContains(previewShaderSourcesText, "internal const string HdrPassthroughPixel");
@@ -178,8 +181,6 @@ static partial class Program
         AssertDoesNotContain(rootText, "static const float PQ_m1");
         AssertDoesNotContain(renderPassesText, "internal const string HdrTonemapPixel");
         AssertDoesNotContain(renderPassesText, "BT2020_to_BT709");
-        AssertDoesNotContain(shaderRenderingText, "static const float PQ_m1");
-        AssertDoesNotContain(shaderRenderingText, "Texture2D<float> yPlane : register(t0);");
 
         return Task.CompletedTask;
     }

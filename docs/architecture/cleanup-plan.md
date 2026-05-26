@@ -1669,8 +1669,7 @@ D3D preview renderer shader compilation now lives in
 shader bytecode creation, sampler creation, viewport constant-buffer creation,
 and compile-fallback logging with shader resource/cache state; keep
 `D3DCompileNative` invocation, `ID3DBlob` byte extraction, and compile-error
-string extraction with shader rendering. HLSL text and renderer mode
-labels stay in `Sussudio/Services/Preview/PreviewShaderSources.cs`.
+string extraction, HLSL text, and renderer mode labels with shader rendering.
 
 D3D preview renderer frame submission now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs`. Keep public raw
