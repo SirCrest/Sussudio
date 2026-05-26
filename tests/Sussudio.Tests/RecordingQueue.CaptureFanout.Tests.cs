@@ -37,8 +37,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var frameIngressSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.FrameIngress.cs")
             .Replace("\r\n", "\n");
-        var previewSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Preview.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(frameIngressSource, "private void OnFrameArrived(ReadOnlySpan<byte> frameData, int width, int height, long arrivalTick)");
         AssertContains(frameIngressSource, "private void OnMjpegPipelineFrameEmitted(PooledVideoFrame frame)");
@@ -46,8 +44,14 @@ static partial class Program
         AssertContains(frameIngressSource, "private void RecordCaptureArrived(long sourceSequence, long arrivalTick, int width, int height, int compressedByteLength)");
         AssertContains(frameIngressSource, "private void FirePixelFormatObserverOnce(string format)");
         AssertContains(frameIngressSource, "private void SignalFatalError(Exception ex, string logMessage)");
-        AssertDoesNotContain(frameIngressSource, "private void OnMjpegPipelinePreviewFrameDecoded(PooledVideoFrameLease frame)");
-        AssertContains(previewSource, "private void OnMjpegPipelinePreviewFrameDecoded(PooledVideoFrameLease frame)");
+        AssertContains(frameIngressSource, "private void OnMjpegPipelinePreviewFrameDecoded(PooledVideoFrameLease frame)");
+        AssertContains(frameIngressSource, "private unsafe void SubmitPreviewRawFrame(");
+        AssertContains(frameIngressSource, "private void TrackPreviewVisualFrame(");
+        AssertContains(frameIngressSource, "private void MarkPreviewVisualCadenceUnavailable(string reason)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.Preview.cs")),
+            "UnifiedVideoCapture preview submission folded into frame ingress owner");
 
         AssertDoesNotContain(rootSource, "private void OnFrameArrived(ReadOnlySpan<byte> frameData, int width, int height, long arrivalTick)");
         AssertDoesNotContain(rootSource, "private void OnMjpegPipelineFrameEmitted(PooledVideoFrame frame)");

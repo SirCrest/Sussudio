@@ -30,7 +30,7 @@ mentions the moved files.
 | Device discovery | `Sussudio/Services/Capture/DeviceService.cs`, `Sussudio/Services/Capture/MfInteropHelpers.cs`, `Sussudio/Services/Capture/DeviceDiscovery/MfDeviceEnumerator.cs` | device enumeration orchestration, priority/capability scoring, Native XU interface path resolution, audio endpoint association, persisted format cache, inline/background format probing, shared MF startup/attribute helpers and symbolic-link matching, shared MF constants/P/Invokes, MF video device enumeration, WASAPI capture endpoint enumeration, native MF format probing and subtype/FourCC naming, direct/fallback MF source activation |
 | Native XU KS bridge | `Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs`, `Sussudio/Services/Capture/NativeXu/NativeXuDeviceSupport.cs` | KS category constants and DTOs, SetupAPI interface enumeration, file-handle open policy, topology node parsing, XU GET/SET transfer helpers, P/Invoke declarations and structs; shared 4K X identity/selected-interface/transport-gate support |
 | Capture source reader | `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`, `MfSourceReaderVideoCapture.Initialization.cs`, `MfSourceReaderVideoCapture.FrameDelivery.cs`, `MfSourceReaderVideoCapture.RawFrameDelivery.cs`, `MfSourceReaderVideoCapture.Lifecycle.cs`, `MfSourceReaderVideoCapture.Negotiation.cs`, `MfSourceReaderVideoCapture.ComContracts.cs` | source-reader state, public counters, shared packed-frame sizing/stride/subtype helpers, initialization orchestration, reader construction, actual-output reconciliation, initialized runtime-state commit, active reader start/stop/dispose plus Media Foundation read loop and source cadence metrics, sample-to-frame dispatch, DXGI texture extraction, dual GPU/CPU delivery orchestration, and debug-only COM diagnostics, raw/compressed CPU frame delivery helpers, direct device opening, device-enumeration open fallback and candidate reporting, native media-type selection, and converted output media-type construction, general Media Foundation COM interface definitions plus MF P/Invoke/constants/GUIDs, and flattened sample/buffer COM interface definitions |
-| Capture fan-out | `Sussudio/Services/Capture/UnifiedVideoCapture.cs`, `UnifiedVideoCapture.FrameIngress.cs`, `UnifiedVideoCapture.Lifecycle.cs`, `UnifiedVideoCapture.SinkFanout.cs`, `UnifiedVideoCapture.Preview.cs` | public control/config surface, source-reader frame ingress and fatal-error signaling, source-reader/D3D/MJPEG initialization and state commit, shared source-reader start/stop/dispose lifecycle plus CPU MJPEG stop/dispose/fatal handling, recording and Flashback sink queue fan-out, diagnostic metric/snapshot projection, preview sink submission and visual-cadence handling |
+| Capture fan-out | `Sussudio/Services/Capture/UnifiedVideoCapture.cs`, `UnifiedVideoCapture.FrameIngress.cs`, `UnifiedVideoCapture.Lifecycle.cs`, `UnifiedVideoCapture.SinkFanout.cs` | public control/config surface, source-reader frame ingress, preview submission, visual-cadence handling, and fatal-error signaling, source-reader/D3D/MJPEG initialization and state commit, shared source-reader start/stop/dispose lifecycle plus CPU MJPEG stop/dispose/fatal handling, recording and Flashback sink queue fan-out, and diagnostic metric/snapshot projection |
 | Capture cadence trackers | `Sussudio/Services/Capture/FrameFingerprintCadenceTracker.cs`, `Sussudio/Services/Capture/VisualCadenceTracker.cs` | source-packet hash cadence ingestion and duplicate-pattern metrics/statistics; visual-cadence state, frame-ingest orchestration, decoded-frame luma sampling/crop comparison, and metrics DTO construction/statistics/motion-confidence projection |
 | Audio capture | `Sussudio/Services/Audio/WasapiAudioCapture.cs`, `WasapiAudioCapture.CaptureLoop.cs`, `WasapiAudioCapture.Conversion.cs` | WASAPI state, endpoint binding/format negotiation/AudioClient startup, start/stop/dispose lifecycle, initialization-time metric resets, callback/glitch metric projection, capture thread/packet drain plus converted-packet sink/playback/hot writer fan-out, and f32le 48 kHz stereo conversion/resampling helpers |
 | Audio playback | `Sussudio/Services/Audio/WasapiAudioPlayback.cs` | playback state, render endpoint binding/format validation/AudioClient startup, start/stop/pause/resume/flush/dispose lifecycle, chunk queue, pooled-sample ingress, buffered-duration accounting, render-thread callback/prebuffer/buffer-fill execution, render-side PTS advancement, volume ramps, and output-level telemetry |
@@ -669,7 +669,10 @@ Important entry points:
   fields, counters, and recording/Flashback attachment state.
 - `UnifiedVideoCapture.FrameIngress.cs` owns source-reader frame arrival
   routing, MJPEG decoded-frame emission fan-out, capture-arrival ledger
-  records, pixel-format observer dispatch, and fatal-error dedupe/signaling.
+  records, pixel-format observer dispatch, preview sink assignment, live-preview
+  suppression drains, MJPEG decoded preview-frame routing, raw preview
+  submission, visual-cadence reset/recording helpers, and fatal-error
+  dedupe/signaling.
 - `UnifiedVideoCapture.Lifecycle.cs` owns source-reader/D3D/MJPEG initialization,
   committed runtime state reset, read-loop start/stop, preview-reinit disposal,
   CPU MJPEG pipeline construction, stop/retention semantics, preview jitter
@@ -680,9 +683,6 @@ Important entry points:
 - `UnifiedVideoCapture.cs` also owns source-reader cadence forwarding, MJPEG
   pipeline/jitter/hash metrics, preview visual cadence metrics, and frame-ledger
   summary projection over the root capture fan-out state.
-- `UnifiedVideoCapture.Preview.cs` owns preview sink assignment, live-preview
-  suppression drains, MJPEG decoded preview-frame routing, raw preview
-  submission, and visual-cadence reset/recording helpers.
 - `FrameFingerprintCadenceTracker.cs` owns source-packet hash cadence ingestion,
   duplicate-run counters, fast packet hashing, duplicate-pattern metrics DTO
   construction, interval statistics, unique-interval projection, and pattern
