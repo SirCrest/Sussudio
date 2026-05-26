@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: diagnostic-session model/result surface locality
+Problem: `DiagnosticSessionModels.cs` carried diagnostic-session options, sampled snapshot DTOs, and scenario phase handoff models while `DiagnosticSessionResult.cs` carried the final summary DTO for the same tool contract. Auditing the diagnostic-session public model surface and phase/result handoffs required opening two adjacent model files before reaching runner or builder behavior.
+Files consolidated: `tools/Common/DiagnosticSessionModels.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; diagnostic-session model/result surface now lives in one production file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds diagnostic-session shared tooling, `ssctl`, MCP, automation contracts, app, and console harnesses; diagnostic-session result ownership and scenario phase ownership tests cover the moved model/result surface; no public command names, IDs, wire payloads, CLI usage string, or summary JSON field names changed
+Behavior preserved: diagnostic-session options, sample DTO, scenario phase context/state/result models, summary result DTO type names, property names, defaults, CLI usage string, and summary JSON field names remain unchanged.
+Notes for future agents: keep diagnostic-session public options/sample DTOs, scenario phase handoff models, and summary result DTO in `tools/Common/DiagnosticSessionResult.cs`; keep runner lifecycle, scenario execution, result building, and formatting in their existing owners.
+
+Date: 2026-05-26
 Area: MainViewModel preview lifecycle locality
 Problem: `MainViewModelPreviewReinitializeController.cs` was a small collaborator used only by `MainViewModelPreviewLifecycleController`, constructed through the lifecycle controller context, and directly dependent on lifecycle start/stop/initialize operations. Reviewing preview lifecycle and reinitialization required opening two controller files for one UI-facing preview lifecycle behavior.
 Files consolidated: `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`

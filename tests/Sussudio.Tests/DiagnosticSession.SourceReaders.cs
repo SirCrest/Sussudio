@@ -53,9 +53,7 @@ static partial class Program
         => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionMetrics.cs");
 
     private static string ReadDiagnosticSessionModelsSource()
-        => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionModels.cs",
-            "tools/Common/DiagnosticSessionResult.cs");
+        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionResult.cs");
 
     private static string ReadDiagnosticSessionResultBuilderSource()
         => ReadNormalizedSourceFiles(
@@ -86,7 +84,7 @@ static partial class Program
     private static string ReadDiagnosticSessionRunExecutionScenarioSource()
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionScenarioPhaseRunner.cs",
-            "tools/Common/DiagnosticSessionModels.cs");
+            "tools/Common/DiagnosticSessionResult.cs");
 
     private static string ReadDiagnosticSessionRunExecutionCompletionSource()
         => ReadNormalizedSourceFiles(

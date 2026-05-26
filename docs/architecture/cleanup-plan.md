@@ -2717,13 +2717,11 @@ pure truncation text policy.
 `MainWindow.ControlBindings.cs` is the XAML-facing adapter used by binding setup,
 property changes, and button events.
 
-Diagnostic session DTOs live in feature-oriented model files:
-`tools/Common/DiagnosticSessionModels.cs` and
-`tools/Common/DiagnosticSessionResult.cs`,
-with `DiagnosticSessionModels.cs` owning run options, sampled snapshot DTOs,
-shared tool invocation defaults, the ssctl diagnostic-session usage string,
-explicit scenario phase input handoff, immutable completion handoff, and mutable
-in-flight phase state,
+Diagnostic session DTOs live in `tools/Common/DiagnosticSessionResult.cs`,
+which owns run options, sampled snapshot DTOs, shared tool invocation defaults,
+the ssctl diagnostic-session usage string, explicit scenario phase input
+handoff, immutable completion handoff, mutable in-flight phase state, and the
+final summary result DTO,
 while `DiagnosticSessionScenarioCatalog.cs` owns scenario name constants, the
 MCP-compatible scenario description, the CLI help-list constant, normalization,
 entry lookup, requirement queries, export verification artifact lookup, and
@@ -3171,7 +3169,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackValidation.cs`
 - `DiagnosticSessionHealthPolicy.cs`
 - `DiagnosticSessionMetrics.cs`
-- `DiagnosticSessionModels.cs`
 - `DiagnosticSessionResult.cs`
 - `DiagnosticSessionCommandChannel.cs`
 - `DiagnosticSessionResultBuilder.cs`
@@ -3209,8 +3206,9 @@ owner, fold it back into that owner and update the source-shape tests and
    post-cleanup evidence/result sequence, completion context handoff, and
    result-build request mapping, while
    `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario execution
-   phase including scenario sampling. `DiagnosticSessionModels.cs`
-   owns the explicit scenario context/result/state handoffs, with
+   phase including scenario sampling. `DiagnosticSessionResult.cs`
+   owns the explicit scenario context/result/state handoffs and final summary
+   DTO surface, with
    `DiagnosticSessionScenarioPhaseRunner.cs` owning post-sampling
    completion ordering and fault-drain delegation while background task
    completion lives in `DiagnosticSessionBackgroundTasks.cs`. Scenario catalog,
