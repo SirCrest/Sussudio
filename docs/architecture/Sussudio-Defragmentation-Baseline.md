@@ -1840,7 +1840,7 @@ Notes for future agents: keep public lifecycle with `D3D11PreviewRenderer.cs`; k
 
 Date: 2026-05-24
 Area: CUDA D3D11 bridge lifecycle locality
-Problem: `CudaD3D11Interop.Lifetime.cs` was a 62-line disposal partial for resources acquired by `CudaD3D11Interop.Initialization.cs`, forcing bridge construction and teardown invariants to be read across two files.
+Problem: `CudaD3D11Interop.Lifetime.cs` was a 62-line disposal partial for resources acquired by `CudaD3D11InteropBridge.cs`, forcing bridge construction and teardown invariants to be read across two files.
 Files consolidated: `Sussudio/Services/Gpu/CudaD3D11Interop.Lifetime.cs`
 Files added: none
 Net production .cs delta: -1
@@ -1848,7 +1848,7 @@ Partial clusters reduced: `CudaD3D11InteropBridge` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation/tool contract changes
 Behavior preserved: CUDA resource unregistration, D3D texture disposal order, primary-context release, COM reference release, initialized flag reset, and disposal logging remain unchanged
-Notes for future agents: keep bridge resource acquisition, disposal, native declarations, and CUDA struct/constant definitions together in `CudaD3D11Interop.Initialization.cs`; keep zero-copy/staging copy hot paths in `CudaD3D11Interop.Copy.cs`
+Notes for future agents: keep bridge resource acquisition, disposal, native declarations, and CUDA struct/constant definitions together in `CudaD3D11InteropBridge.cs`; keep zero-copy/staging copy hot paths in `CudaD3D11InteropBridge.cs`
 
 Date: 2026-05-24
 Area: MainViewModel device audio analog gain locality
@@ -4328,3 +4328,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, preview startup log strings, signal names, timeout diagnostic payloads, or first-visual confirmation behavior changed.
 Behavior preserved: preview startup required/received signal state, missing-signal updates and formatting, playback-position readiness detection, GPU signal logging, first-visual confirmation, timeout diagnostic payload formatting, readiness snapshots/results, and playback-advance threshold checks now live in `PreviewStartupSignalsController.cs`.
 Notes for future agents: keep preview startup readiness signal state, signal coordination, startup signal logging, playback-position readiness, first-visual confirmation decisions, and signal/timeout diagnostic formatting together in `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalsController.cs`; keep session state and watchdog timers separate unless they become one named startup state machine.
+
+Date: 2026-05-26
+Area: CUDA/D3D11 interop bridge locality
+Problem: `CudaD3D11Interop.Initialization.cs` owned bridge state, native declarations, texture/resource setup, zero-copy registration, and disposal, while `CudaD3D11Interop.Copy.cs` owned the only runtime copy paths that depend on the same context, textures, registered resources, D3D11 multithread lock, diagnostics, and CUDA copy struct. Reviewing NVDEC-to-preview interop required opening two partials for one bridge invariant surface.
+Files consolidated: `Sussudio/Services/Gpu/CudaD3D11Interop.Initialization.cs`; `Sussudio/Services/Gpu/CudaD3D11Interop.Copy.cs`
+Files added: `Sussudio/Services/Gpu/CudaD3D11InteropBridge.cs`
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `CudaD3D11InteropBridge` production partial file count -1; bridge is no longer partial
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~ServiceNamespace` (1 passed); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, NVDEC decode behavior, CUDA/D3D copy behavior, D3D11 locking semantics, or staging fallback behavior changed.
+Behavior preserved: CUDA primary-context ownership, D3D11 multithread locking, default/helper/staging texture creation, CUDA resource registration/unregistration, zero-copy copy, staging fallback copy, CUDA diagnostics, native P/Invoke declarations, and `CUDA_MEMCPY2D` layout now live in `CudaD3D11InteropBridge.cs`.
+Notes for future agents: keep CUDA/D3D11 bridge resource acquisition, disposal, native declarations, copy struct/constants, zero-copy path, and staging fallback together in `Sussudio/Services/Gpu/CudaD3D11InteropBridge.cs`; split only if a separate bridge strategy object or independently testable native interop adapter appears.

@@ -1978,14 +1978,13 @@ remaining-timeout helpers there. Final resource cleanup also lives there; keep
 decoder disposal, queued work-item return, remaining reorder-frame disposal, and
 emit-signal disposal with the stop/dispose owner.
 
-CUDA/D3D11 preview interop ownership is split by runtime boundary:
-`Sussudio/Services/Gpu/CudaD3D11Interop.Initialization.cs` owns bridge state,
-public texture handles, constructor setup, zero-copy registration, disposal,
-CUDA resource unregistration, native CUDA constants, P/Invoke entry points, and
-the `CUDA_MEMCPY2D` native struct,
-`CudaD3D11Interop.Copy.cs` owns the zero-copy and staging
-frame-copy paths. Keep D3D11 locking, primary-context ownership, and
-fallback-to-staging behavior unchanged.
+CUDA/D3D11 preview interop ownership lives in
+`Sussudio/Services/Gpu/CudaD3D11InteropBridge.cs`: bridge state, public texture
+handles, constructor setup, zero-copy registration, disposal, CUDA resource
+unregistration, native CUDA constants, P/Invoke entry points, the
+`CUDA_MEMCPY2D` native struct, and the zero-copy/staging frame-copy paths.
+Keep D3D11 locking, primary-context ownership, and fallback-to-staging behavior
+unchanged.
 
 NVDEC MJPEG decoder ownership now lives in
 `Sussudio/Services/Gpu/NvdecMjpegDecoder.cs`: shared decoder state, standalone
