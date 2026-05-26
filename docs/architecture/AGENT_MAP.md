@@ -2103,9 +2103,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.Buffer.Retention.StartupCleanup.Tests.cs`
   owns Flashback buffer startup-generated segment cleanup, legacy root cleanup,
   stale session directory cleanup, session-recovery scanner ownership,
-  unrelated temp-directory preservation, and startup-cache budget tests.
-- `tests/Sussudio.Tests/Flashback.Buffer.Validation.Tests.cs` owns Flashback
-  buffer session-id and segment-extension validation tests.
+  unrelated temp-directory preservation, startup-cache budget, session-id, and
+  segment-extension validation tests.
 - `tests/Sussudio.Tests/Flashback.EncoderSink.Tests.cs` owns Flashback encoder
   sink frame-rate, option, startup rollback, runtime counter, and PTS guard
   tests.

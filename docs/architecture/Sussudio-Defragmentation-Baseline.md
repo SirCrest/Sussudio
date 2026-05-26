@@ -2824,3 +2824,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: Flashback buffer segment position lookup, next-segment path lookup, path normalization, segment-start PTS, range query, active path, segment-count, and segment-list behavior tests remain registered through the same xUnit recording model contract surface.
 Notes for future agents: keep read-only Flashback buffer segment access tests in `Flashback.Buffer.SegmentLookups.Tests.cs`; keep shared reflected buffer-manager factories in `Flashback.Buffer.Helpers.cs` while retention, segment mutation, and query/lookup tests all use them.
+
+Date: 2026-05-26
+Area: Flashback buffer startup validation test locality
+Problem: `Flashback.Buffer.Validation.Tests.cs` only carried session-id and segment-extension validation tests for the same Flashback startup/session scanner policy already asserted by `Flashback.Buffer.Retention.StartupCleanup.Tests.cs`. Reviewing startup session directory safety, segment extension normalization, stale cleanup, and cache-budget behavior required opening a separate tiny validation shard before returning to the startup-cleanup owner.
+Files consolidated: `tests/Sussudio.Tests/Flashback.Buffer.Validation.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` Flashback buffer startup validation test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: Flashback buffer unsafe session-id rejection and segment extension normalization/rejection tests remain registered through the same xUnit recording model contract surface.
+Notes for future agents: keep Flashback buffer session-id and segment-extension validation tests in `Flashback.Buffer.Retention.StartupCleanup.Tests.cs` while they guard the same startup/session scanner policy; keep segment completion metadata validation in `Flashback.Buffer.Segments.Validation.Tests.cs`.
