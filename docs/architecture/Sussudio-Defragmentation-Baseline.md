@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: pooled video frame lease test locality
+Problem: `PooledVideoFrame.Tests.cs` only owned shared pooled-frame reflection and factory helpers, while `PooledVideoFrame.Leases.Tests.cs` held the direct lease lifecycle and fan-out contract tests that consumed that helper surface. Reviewing the pooled-frame ownership contract still required opening two tiny legacy `Program` partial files.
+Files consolidated: `tests/Sussudio.Tests/PooledVideoFrame.Leases.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` pooled-frame test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: pooled-frame reflection helpers, lease lifecycle checks, MJPEG pooled-frame fan-out contracts, D3D pending-frame queued lease disposal, and recording/Flashback queued packet lease cleanup checks remain unchanged.
+Notes for future agents: keep direct pooled-frame lease lifecycle and fan-out contract tests in `PooledVideoFrame.Tests.cs`; keep MJPEG jitter queue policy and adaptive queue behavior in `PooledVideoFrame.MjpegJitterQueue.Tests.cs`.
+
+Date: 2026-05-26
 Area: Capture selection policy core test locality
 Problem: `MainViewModel.Capture.SelectionPolicy.Ownership.Tests.cs` held mode-selection and recording-settings ownership checks for the same `PresentationPreviewCaptureSelectionPolicyContractsTests` wrapper class whose video-format policy source-shape and behavior checks lived in `MainViewModel.Capture.SelectionPolicy.VideoFormat.Tests.cs`. Reviewing the core capture selection policy group required opening two sibling files, and the video-format filename no longer described the full owner.
 Files consolidated: `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Ownership.Tests.cs`
@@ -2936,7 +2948,7 @@ Notes for future agents: keep CaptureSessionCoordinator API, model, snapshot, an
 
 Date: 2026-05-26
 Area: pooled video frame lease test locality
-Problem: `PooledVideoFrame.QueuedLeaseRelease.Tests.cs` only carried queued-lease return checks for the same pooled-frame lease lifecycle/fan-out contract surface already owned by `PooledVideoFrame.Leases.Tests.cs`. Reviewing lease ownership across preview, recording, and Flashback paths required opening a separate small legacy `Program` partial.
+Problem: `PooledVideoFrame.QueuedLeaseRelease.Tests.cs` only carried queued-lease return checks for the same pooled-frame lease lifecycle/fan-out contract surface. Reviewing lease ownership across preview, recording, and Flashback paths required opening a separate small legacy `Program` partial.
 Files consolidated: `tests/Sussudio.Tests/PooledVideoFrame.QueuedLeaseRelease.Tests.cs`
 Files added: none
 Net production .cs delta: 0; net test .cs delta: -1
@@ -2944,7 +2956,7 @@ Partial clusters reduced: legacy `Program` pooled-frame lease partial file count
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: pooled-frame lease lifecycle, MJPEG pooled-frame fan-out, D3D pending-frame queued lease disposal, and recording/Flashback queued packet lease cleanup checks remain unchanged.
-Notes for future agents: keep queued lease return coverage in `PooledVideoFrame.Leases.Tests.cs` with the rest of the pooled-frame lease contract tests; keep jitter policy/queue behavior in their focused MJPEG jitter files.
+Notes for future agents: keep queued lease return coverage in `PooledVideoFrame.Tests.cs` with the rest of the pooled-frame lease contract tests; keep jitter policy/queue behavior in their focused MJPEG jitter files.
 
 Date: 2026-05-26
 Area: service namespace MainViewModel device-audio helper locality

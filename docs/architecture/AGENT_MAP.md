@@ -1867,10 +1867,10 @@ Primary current owners:
   contracts. Shared reflective harness helpers live in
   `CaptureSessionCoordinator.Helpers.cs`.
 - `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` owns shared pooled-frame
-  reflection, frame factory, jitter-buffer factory, and tracking pool helpers.
-- `tests/Sussudio.Tests/PooledVideoFrame.Leases.Tests.cs` owns pooled video
-  frame lease lifecycle, MJPEG pooled-frame fan-out contracts, and queued
-  lease return coverage for D3D pending-frame, recording, and Flashback paths.
+  reflection, frame factory, jitter-buffer factory, tracking pool helpers,
+  pooled video frame lease lifecycle, MJPEG pooled-frame fan-out contracts, and
+  queued lease return coverage for D3D pending-frame, recording, and Flashback
+  paths.
 - `tests/Sussudio.Tests/PooledVideoFrame.MjpegJitterQueue.Tests.cs` owns
   MJPEG preview jitter frame-ingress, emit-loop, adaptive deadline policy,
   queue, metrics source-ownership assertions, and queue/drop/reprime behavior
