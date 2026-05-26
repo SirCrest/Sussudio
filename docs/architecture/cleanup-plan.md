@@ -3599,11 +3599,9 @@ owner, fold it back into that owner and update the source-shape tests and
     selected-device capability refresh, enqueue/failure logging, and retarget
     handoff live in the top-level
     `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`;
-    its graph-port contract now lives with that controller;
-    UI-side late-probe retarget application, session mismatch checks, and
-    active-capture restore live in the top-level
-    `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs`;
-    its graph-port contract now lives with that applier, while
+    its graph-port contract now lives with that controller. UI-side late-probe
+    retarget application, session mismatch checks, active-capture restore, and
+    the retarget applier graph-port contract also live there, while
     pure late-probe retarget decisions live in
     `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`.
     `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`

@@ -5,7 +5,7 @@ static partial class Program
     internal static Task DeviceFormatProbeRetargetPolicy_LivesInFocusedHelper()
     {
         var probeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
-        var retargetApplierText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs").Replace("\r\n", "\n");
+        var retargetApplierText = probeControllerText;
         var retargetPolicyText = ReadRepoFile("Sussudio/ViewModels/ViewModelSelectionPolicies.cs").Replace("\r\n", "\n");
 
         AssertContains(probeControllerText, "namespace Sussudio.Controllers;");
@@ -20,10 +20,10 @@ static partial class Program
         AssertContains(probeControllerText, "FORMAT_PROBE_UI_ENQUEUE_FAILED deviceId='{e.DeviceId}' requestId={e.RequestId}");
         AssertDoesNotContain(probeControllerText, "var nv12Candidates = target.SupportedFormats");
         AssertDoesNotContain(probeControllerText, "ShouldPreserveMjpegHighFrameRateMode(_viewModel.SelectedFormat)");
-        AssertDoesNotContain(probeControllerText, "private bool TryApplyDeviceFormatProbeRetarget(");
-        AssertDoesNotContain(probeControllerText, "DeviceFormatProbeRetargetPolicy.Decide(new DeviceFormatProbeRetargetRequest(");
-        AssertDoesNotContain(probeControllerText, "RebuildFrameRateOptions();");
-        AssertDoesNotContain(probeControllerText, "EnqueueUiOperation(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceFormatProbeRetargetApplier.cs")),
+            "device format probe retarget applier lives with probe event owner");
         AssertContains(retargetApplierText, "namespace Sussudio.Controllers;");
         AssertContains(retargetApplierText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplier");
         AssertContains(retargetApplierText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext");
@@ -53,7 +53,7 @@ static partial class Program
     internal static Task DeviceFormatProbeRetargetApplication_LivesInFocusedPartial()
     {
         var probeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
-        var retargetApplierText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs").Replace("\r\n", "\n");
+        var retargetApplierText = probeControllerText;
         var retargetPolicyText = ReadRepoFile("Sussudio/ViewModels/ViewModelSelectionPolicies.cs").Replace("\r\n", "\n");
 
         AssertContains(probeControllerText, "namespace Sussudio.Controllers;");
@@ -66,8 +66,10 @@ static partial class Program
         AssertContains(probeControllerText, "target.SupportedFormats.Clear();");
         AssertContains(probeControllerText, "_context.RebuildSelectedDeviceCapabilities(selectedDevice, false);");
         AssertContains(probeControllerText, "_retargetApplier.TryApplyDeviceFormatProbeRetarget(");
-        AssertDoesNotContain(probeControllerText, "private bool TryApplyDeviceFormatProbeRetarget(");
-        AssertDoesNotContain(probeControllerText, "private DeviceFormatProbeRetargetDecision DecideDeviceFormatProbeRetarget(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceFormatProbeRetargetApplier.cs")),
+            "device format probe retarget applier lives with probe event owner");
         AssertContains(retargetApplierText, "namespace Sussudio.Controllers;");
         AssertContains(retargetApplierText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplier");
         AssertContains(retargetApplierText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext");

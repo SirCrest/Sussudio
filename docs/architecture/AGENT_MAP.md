@@ -2485,11 +2485,9 @@ Primary current owners:
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`
   is a top-level `Sussudio.Controllers` owner for late device-format probe event
   ingress, UI enqueue/generation checks, selected-device capability refresh,
-  and handoff to the retarget applier through graph-built context ports.
-  `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs`
-  is a top-level `Sussudio.Controllers` owner for UI-side late-probe retarget
-  application, HDR/SDR reinitialize dispatch, MJPG HFR preserve, session
-  mismatch checks, and active-capture restore through graph-built context ports.
+  UI-side late-probe retarget application, HDR/SDR reinitialize dispatch,
+  MJPG HFR preserve, session mismatch checks, and active-capture restore
+  through graph-built context ports.
   `MainViewModel.RecordingState.cs` owns recording-runtime counters and the DiskSpaceInfo assignment bridge,
   while `Sussudio/ViewModels/ViewModelBuilders.cs` owns output drive probing,
   fallback, formatting, and suppressed-warning logging.
@@ -2643,17 +2641,14 @@ Primary current owners:
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`
   is a top-level `Sussudio.Controllers` owner for late device-format probe
   reconciliation, format collection mutation, capability refresh after
-  background probes, enqueue/failure logging, and handoff to the retarget
-  applier.
+  background probes, enqueue/failure logging, and UI-side late-probe retarget
+  application.
   It also owns the late-probe reconciliation graph-port contract for UI
   enqueue, device-scan generation, selected-device lookup/state, active capture
   guards, suppress-format-change state, capability rebuild, and retarget
-  applier construction.
-  `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs`
-  is a top-level `Sussudio.Controllers` owner for UI-side late-probe retarget
-  application, HDR/SDR reinitialize dispatch, MJPG HFR preserve, session
-  mismatch check, and active-capture restore behavior.
-  It also owns the late-probe retarget graph-port contract for capture-mode
+  applier construction. It also owns HDR/SDR reinitialize dispatch, MJPG HFR
+  preserve, session mismatch check, active-capture restore behavior, and the
+  late-probe retarget graph-port contract for capture-mode
   state, resolution/frame-rate mutation, reinitialize dispatch, runtime
   snapshot checks, frame-rate rebuild, and target-summary refresh.
   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`
