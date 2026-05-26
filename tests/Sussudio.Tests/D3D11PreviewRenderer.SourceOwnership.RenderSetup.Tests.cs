@@ -39,8 +39,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var deviceInitializationText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs")
             .Replace("\r\n", "\n");
-        var videoProcessorPipelineText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.VideoProcessorPipeline.cs")
-            .Replace("\r\n", "\n");
+        var videoProcessorPipelineText = resourcesText;
 
         AssertContains(resourcesText, "private ID3D11Device? _device;");
         AssertContains(resourcesText, "private IDXGISwapChain1? _swapChain;");
@@ -78,10 +77,10 @@ static partial class Program
         AssertContains(resourcesText, "private void CleanupD3DResources()");
         AssertContains(resourcesText, "DisposeInputTextureResources();");
         AssertContains(resourcesText, "DisposeShaderPipelineResources();");
-        AssertDoesNotContain(resourcesText, "private void EnsurePipeline(int width, int height, bool isHdr, bool useExternalTexture)");
-        AssertDoesNotContain(resourcesText, "private void EnsureSwapChainRTV()");
-        AssertDoesNotContain(resourcesText, "private void RecreateOutputView()");
-        AssertDoesNotContain(resourcesText, "private void ApplyColorSpaces(bool isHdr)");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.VideoProcessorPipeline.cs")),
+            "VideoProcessor setup and output-view resources live with D3D resource ownership");
         AssertDoesNotContain(resourcesText, "private void InitializeD3D()");
         AssertContains(deviceInitializationText, "private bool TryInitializeWithSharedDevice(");
         AssertContains(deviceInitializationText, "private void HandleDeviceLost(Exception ex)");
@@ -134,8 +133,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
-        var videoProcessorPipelineText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.VideoProcessorPipeline.cs")
-            .Replace("\r\n", "\n");
+        var videoProcessorPipelineText = resourcesText;
         var inputResourcesText = resourcesText;
         var hdrInputResourcesText = resourcesText;
 

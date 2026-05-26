@@ -3292,3 +3292,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer`, `tools/ssctl`, and automation tooling; no public automation command names, IDs, wire payloads, XAML bindings, screenshot status/log text, output path policy, or PNG/BMP encoding behavior changed
 Behavior preserved: preview-frame screenshot preview-required guard, output directory fallback, timestamped filename, button disable/reenable, status/log text, whole-window dispatch cancellation/failure handling, native PrintWindow capture, result shaping, and PNG/BMP byte-stream encoding remain covered by the existing screenshot tests.
 Notes for future agents: keep preview-frame screenshot workflow and whole-window screenshot capture together in `Sussudio/Controllers/Screenshot/ScreenshotControllers.cs`; renderer-level preview-frame GPU readback still belongs with `D3D11PreviewRenderer.ScreenshotCapture.cs`.
+
+Date: 2026-05-26
+Area: D3D11 preview renderer resource locality
+Problem: `D3D11PreviewRenderer.VideoProcessorPipeline.cs` was a 135-line partial that directly owned resource creation/recreation, output-view/RTV reuse, processor teardown, and color-space state over fields declared and cleaned up in `D3D11PreviewRenderer.Resources.cs`. Reviewing VideoProcessor resource lifetime required opening both files even though the methods were coupled to the resource owner and did not form an independent collaborator.
+Files consolidated: `Sussudio/Services/Preview/D3D11PreviewRenderer.VideoProcessorPipeline.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `D3D11PreviewRenderer` production partial count 15 -> 14
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds preview renderer consumers and automation tooling; no public automation command names, IDs, wire payloads, XAML bindings, renderer mode labels, VideoProcessor color-space choices, or render-pass behavior changed
+Behavior preserved: VideoProcessor setup, input-resource creation handoff, output-view recreation, swap-chain RTV reuse, color-space updates, and processor-resource teardown now live in `D3D11PreviewRenderer.Resources.cs` with the fields and top-level cleanup they operate on.
+Notes for future agents: keep render-pass selection and present accounting in `D3D11PreviewRenderer.RenderPasses.cs`; keep shader/SRV lifecycle in `D3D11PreviewRenderer.ShaderRendering.cs`; keep VideoProcessor resource lifetime in `D3D11PreviewRenderer.Resources.cs`.

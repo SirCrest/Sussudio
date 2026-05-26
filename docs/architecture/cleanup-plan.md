@@ -1777,10 +1777,9 @@ D3D preview renderer resource management now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep
 top-level D3D resource cleanup orchestration, NV12/P010 VideoProcessor input
 textures, staging textures, input views, HDR P010 shader input/staging textures,
-plane SRV creation, Device3 fallback, and input texture cleanup there. Keep video-processor
-creation orchestration and processor-resource teardown in
-`D3D11PreviewRenderer.VideoProcessorPipeline.cs`, including swap-chain
-RTV/output view reuse and VideoProcessor input/output color-space updates.
+plane SRV creation, Device3 fallback, input texture cleanup, video-processor
+creation orchestration, processor-resource teardown, swap-chain RTV/output view
+reuse, and VideoProcessor input/output color-space updates there.
 Shader/SRV teardown stays with
 `D3D11PreviewRenderer.ShaderRendering.cs`, and preview-frame capture staging
 teardown stays with `D3D11PreviewRenderer.ScreenshotCapture.cs`; keep
