@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: ssctl command-handler source contract test locality
+Problem: `CommandHandlers.Help.Tests.cs` held ssctl help/catalog force-flag coverage for the same command-handler surface whose consolidated source-family ownership checks lived in `CommandHandlers.SourceOwnership.Tests.cs`. Reviewing ssctl command-surface source contracts required opening two small legacy `Program` partial files before reaching the broader routing tests.
+Files consolidated: `tests/Sussudio.Tests/CommandHandlers.Help.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` command-handler source contract test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: ssctl command-handler source ownership checks, help output contract, catalog-backed help lines, and Flashback export force-flag coverage remain unchanged.
+Notes for future agents: keep ssctl command-handler source ownership and help/catalog source-shape checks in `CommandHandlers.SourceOwnership.Tests.cs`; keep pipe-captured routing behavior in `CommandHandlers.Routing.Tests.cs` and shared harness helpers in `CommandHandlers.Helpers.cs`.
+
+Date: 2026-05-26
 Area: recording integrity test locality
 Problem: `RecordingIntegrity.Contracts.Tests.cs` held summary defaults, automation field contracts, and projection ownership checks for the same recording integrity surface whose summary policy, scoped sequence-gap, focused-partial, and formatter checks lived in `RecordingIntegrity.Tests.cs`. Reviewing recording integrity required opening two small legacy `Program` partial files for one contract/behavior surface.
 Files consolidated: `tests/Sussudio.Tests/RecordingIntegrity.Contracts.Tests.cs`

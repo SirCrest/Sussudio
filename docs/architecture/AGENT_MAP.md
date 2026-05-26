@@ -1728,8 +1728,7 @@ Primary current owners:
   Flashback, window, manifest, observability, automation-flow, UI visibility, and
   verification commands.
   `CommandHandlers.SourceOwnership.Tests.cs` owns ssctl handler partial-family
-  source ownership assertions, and `CommandHandlers.Help.Tests.cs` owns ssctl
-  help/catalog force-flag coverage.
+  source ownership assertions plus ssctl help/catalog force-flag coverage.
   `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for those command-handler routing, source ownership, and help checks
   after their removal from the legacy offline harness catalog.
