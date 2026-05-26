@@ -2632,3 +2632,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: MainWindow automation ID inventory checks, uniqueness checks, full-screen automation transition assertions, window automation controller routing checks, snap-region ownership assertion, and UI dispatching/run-handler source contract assertions remain unchanged.
 Notes for future agents: keep MainWindow's agent-facing UI contract checks in `MainWindowUiContract.Tests.cs`; add focused behavior tests elsewhere only when they exercise a different runtime seam rather than another source-contract shard for the same UI surface.
+
+Date: 2026-05-26
+Area: ssctl command-handler routing test locality
+Problem: ssctl command-handler routing checks were split across three small legacy `Program` partial files even though they all drive the same pipe-captured routing harness, share the same golden command ID assertion helper, and execute through the same `XUnit.ToolContractsTests` wrapper. Reviewing CLI command routing required bouncing across control, Flashback, and workflow shards.
+Files consolidated: `tests/Sussudio.Tests/CommandHandlers.Routing.Control.Tests.cs`; `tests/Sussudio.Tests/CommandHandlers.Routing.Flashback.Tests.cs`; `tests/Sussudio.Tests/CommandHandlers.Routing.Workflow.Tests.cs`
+Files added: `tests/Sussudio.Tests/CommandHandlers.Routing.Tests.cs`
+Net production .cs delta: 0; net test .cs delta: -2
+Partial clusters reduced: legacy `Program` ssctl routing partial file count -2
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: pipe-captured ssctl routing tests remained covered by `XUnit.ToolContractsTests`; no public automation command names, IDs, or wire payloads changed
+Behavior preserved: device, capture-control, recordings, Flashback, window, manifest, observability, automation-flow, UI visibility, and verification ssctl routing assertions remain unchanged.
+Notes for future agents: keep ssctl command-handler routing coverage in `CommandHandlers.Routing.Tests.cs`; keep routing helpers in `CommandHandlers.Helpers.cs` and source-ownership assertions in `CommandHandlers.SourceOwnership.Tests.cs`.

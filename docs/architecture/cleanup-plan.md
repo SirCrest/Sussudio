@@ -561,13 +561,13 @@ formatter source-family readers, `Formatters.Timeline.Tests.cs` owns timeline
 output contracts, and `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`
 owns their xUnit execution surface after removal from the legacy offline
 harness catalog.
-ssctl command-handler routing coverage now lives in focused
-`CommandHandlers.Routing.Control/Flashback/Workflow.Tests.cs` owners for device,
-capture controls, recordings, Flashback, window, manifest, observability,
-automation-flow, UI visibility, and verification commands, with source ownership
-kept separate in `CommandHandlers.SourceOwnership.Tests.cs` and xUnit execution
-owned by `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` after removal from
-the legacy offline harness catalog. Captured ssctl
+ssctl command-handler routing coverage now lives in
+`CommandHandlers.Routing.Tests.cs` for device, capture controls, recordings,
+Flashback, window, manifest, observability, automation-flow, UI visibility, and
+verification commands, with source ownership kept separate in
+`CommandHandlers.SourceOwnership.Tests.cs` and xUnit execution owned by
+`tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` after removal from the legacy
+offline harness catalog. Captured ssctl
 `request.command` ID assertions now flow through `AssertSsctlCommandRequest`,
 which delegates to the shared golden-table-backed `AssertAutomationCommandId`
 helper instead of duplicating numeric IDs in routing tests. Fixed ssctl source
