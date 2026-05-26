@@ -3446,7 +3446,7 @@ owner, fold it back into that owner and update the source-shape tests and
    Sibling ViewModel controllers receive that preview
    lifecycle owner directly from `MainViewModelControllerGraph` instead of
    routing controller-to-controller calls back through the root facade.
-   `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`
+   `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`
    is a top-level `Sussudio.Controllers` owner for debounced reinitialization, restart-cancellation state,
    Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
    and gate release.
@@ -3667,7 +3667,7 @@ owner, fold it back into that owner and update the source-shape tests and
    Automation preview enable/disable idempotence, pending-reinit cancellation,
    and preview start/stop routing now live in
    top-level `MainViewModelPreviewLifecycleController.cs` plus graph-built
-   `MainViewModelPreviewReinitializeController.cs` context ports, with the stable
+   `MainViewModelPreviewLifecycleController.cs` reinitialize context ports, with the stable
    `MainViewModel.cs` compatibility facade preserving the automation surface.
    Automation HDR and true-HDR preview recording-time guard enforcement and HDR
    availability checks now live in `MainViewModel.CaptureModeTransactions.cs`

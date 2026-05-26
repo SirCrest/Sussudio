@@ -130,8 +130,7 @@ static partial class Program
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
         var rawPreviewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
             .Replace("\r\n", "\n");
-        var rawPreviewReinitializeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs")
-            .Replace("\r\n", "\n");
+        var rawPreviewReinitializeControllerText = rawPreviewLifecycleControllerText;
 
         AssertContains(viewModelFlashbackStateText, "private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;");
         AssertContains(viewModelCaptureStateText, "private const int PreviewReinitializeDebounceMs = 250;");
@@ -160,8 +159,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
             .Replace("\r\n", "\n");
-        var previewReinitializeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs")
-            .Replace("\r\n", "\n");
+        var previewReinitializeControllerText = previewLifecycleControllerText;
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
             .Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md")
@@ -178,14 +176,14 @@ static partial class Program
             throw new InvalidOperationException("Preview reinitialization should not live in a tiny pass-through partial.");
         }
         AssertEqual(
-            true,
-            File.ReadAllLines(Path.Combine(
+            false,
+            File.Exists(Path.Combine(
                 GetRepoRoot(),
                 "Sussudio",
                 "Controllers",
                 "ViewModel",
-                "MainViewModelPreviewReinitializeController.cs")).Length >= 100,
-            "Preview reinitialize transaction controller is not a tiny pass-through file");
+                "MainViewModelPreviewReinitializeController.cs")),
+            "Preview reinitialize transaction controller lives with preview lifecycle owner");
         AssertContains(previewLifecycleControllerText, "private readonly MainViewModelPreviewReinitializeController _previewReinitializeController;");
         AssertContains(previewLifecycleControllerText, "public Task ReinitializeDeviceAsync(string reason)");
         AssertContains(previewLifecycleControllerText, "=> _previewReinitializeController.ReinitializeDeviceAsync(reason);");
@@ -216,10 +214,10 @@ static partial class Program
         AssertContains(previewStateText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
         AssertContains(previewStateText, "public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)");
         AssertContains(agentMapText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`");
-        AssertContains(agentMapText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`");
+        AssertDoesNotContain(agentMapText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`");
         AssertDoesNotContain(cleanupPlanText, "`MainViewModel.PreviewReinitialization.cs`");
         AssertContains(cleanupPlanText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`");
-        AssertContains(cleanupPlanText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`");
+        AssertDoesNotContain(cleanupPlanText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`");
 
         return Task.CompletedTask;
     }

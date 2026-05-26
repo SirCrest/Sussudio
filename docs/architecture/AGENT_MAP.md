@@ -2513,7 +2513,7 @@ Primary current owners:
   Sibling ViewModel controllers receive that preview lifecycle owner directly
   from `MainViewModelControllerGraph` instead of routing controller-to-controller
   calls back through the root facade.
-  `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`
   is a top-level `Sussudio.Controllers` owner for debounced reinitialization,
   restart-cancellation state, Flashback-cycle wait-before-reinit,
   renderer-stop handoff, teardown restart, and reinit gate release.

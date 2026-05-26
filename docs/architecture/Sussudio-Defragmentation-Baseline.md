@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: MainViewModel preview lifecycle locality
+Problem: `MainViewModelPreviewReinitializeController.cs` was a small collaborator used only by `MainViewModelPreviewLifecycleController`, constructed through the lifecycle controller context, and directly dependent on lifecycle start/stop/initialize operations. Reviewing preview lifecycle and reinitialization required opening two controller files for one UI-facing preview lifecycle behavior.
+Files consolidated: `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; MainViewModel controller support file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `& scripts\architecture\Capture-SussudioDefragBaseline.ps1`
+CLI/MCP/pipe checks, if applicable: n/a; preview lifecycle source-ownership and dependency-composition tests cover the moved reinitialize type and graph-built context
+Behavior preserved: `MainViewModelPreviewReinitializeController` type name, context ports, debounce/coalescing, Flashback-cycle wait-before-reinitialize, renderer-stop notification, preview teardown/restart sequencing, restart cancellation, gate release, and lifecycle controller graph wiring remain unchanged
+Notes for future agents: keep preview reinitialization beside `MainViewModelPreviewLifecycleController` while it is only a child transaction of preview lifecycle start/stop/initialize behavior; avoid reintroducing a one-collaborator file unless it becomes independently reused or test-driven.
+
+Date: 2026-05-26
 Area: MainViewModel capture-mode timing locality
 Problem: `MainViewModelFrameRateTimingResolver.cs` was a small stateful helper used only by the capture-mode option rebuild workflow, while `MainViewModelCaptureModeOptionRebuildController.cs` already owns resolution, frame-rate, video-format, and selected-format rebuild transactions.
 Files consolidated: `Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.cs`
