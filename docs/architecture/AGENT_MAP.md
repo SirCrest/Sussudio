@@ -1935,10 +1935,9 @@ Primary current owners:
   `CommandRouting.Verification` owner files. Captured command-ID assertions use
   the shared `AssertAutomationCommandId` helper so the golden command table is
   the only test-owned numeric ID list.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Artifacts.Tests.cs`
-  owns MCP `run_diagnostic_session` success artifact contract tests.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Failures.Tests.cs`
-  owns MCP `run_diagnostic_session` failure artifact contract tests.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Tests.cs`
+  owns MCP `run_diagnostic_session` success and failure artifact contract
+  tests.
   `tests/Sussudio.Tests/XUnit.McpContractsTests.cs` owns the xUnit
   execution surface for the general MCP tool-surface, command-routing,
   host/pipe, verification, Flashback tool, diagnostic-session tool entry,

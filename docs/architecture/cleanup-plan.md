@@ -422,10 +422,9 @@ frame-budget, and tick-age display helpers. Tests that reason about formatter
 source use the shared `RuntimeContractSource` snapshot formatter source reader
 from both the legacy harness and xUnit formatter contracts.
 
-Diagnostic-session MCP surface coverage is split into
-`McpToolSurface.DiagnosticSession.Tool.Artifacts.Tests.cs` and
-`McpToolSurface.DiagnosticSession.Tool.Failures.Tests.cs` for MCP tool
-artifact contracts, `McpToolSurface.DiagnosticSession.Ownership.*.Tests.cs` for
+Diagnostic-session MCP surface coverage keeps
+`McpToolSurface.DiagnosticSession.Tool.Tests.cs` as the MCP tool success/failure
+artifact contract owner, `McpToolSurface.DiagnosticSession.Ownership.*.Tests.cs` for
 planning, execution, teardown, and reporting helper ownership assertions,
 `McpToolSurface.DiagnosticSession.Flashback.*.Tests.cs` for Flashback
 scenario/metrics/wait/export ownership assertions,
