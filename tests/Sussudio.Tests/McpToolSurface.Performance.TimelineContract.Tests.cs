@@ -16,7 +16,7 @@ static partial class Program
 
     private static McpPerformanceTimelineSources ReadMcpPerformanceTimelineSources()
     {
-        var renderingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs");
+        var renderingSource = ReadRepoFile("tools/McpServer/Tools/PerformanceTools.cs");
 
         return new McpPerformanceTimelineSources
         {
@@ -66,6 +66,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PerformanceTimelineTools.Rows.cs")),
             "MCP performance timeline row projection lives with the timeline renderer owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PerformanceTimelineTools.Rendering.cs")),
+            "MCP timeline rendering lives with the broader performance MCP tool owner");
         AssertContains(sources.RenderingSource, "public static async Task<CallToolResult> get_performance_timeline(");
         AssertContains(sources.RenderingSource, "var entries = ReadTimelineRows(data);");
         AssertContains(sources.RenderingSource, "McpToolResultFactory.FromResponse(response, BuildPerformanceTimelineText(entries, targetOnePercentLowFps))");

@@ -2911,17 +2911,18 @@ Primary owners:
 - `tools/McpServer/Tools/PreviewColorProbeTools.cs` owns the public preview
   color and video-source probe MCP entry points while preserving the
   `PreviewColorProbeTools` and `VideoSourceProbeTools` tool types.
-- `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs` owns the public
-  MCP tool entry point, command response handling, timeline JSON row projection
-  orchestration, root cadence, preview/MJPEG/D3D, Flashback playback,
-  Flashback export, and system projection field groups, the private row model,
-  timeline table text rendering, first-vs-last trend text, preview cadence,
-  visual/MJPEG fingerprint, jitter, D3D, slow-stage, Flashback playback,
-  command, failure, cleanup, stage, export trend text, 1%-low target summaries,
-  preview, Flashback, and system pressure summaries, plus compact cell,
-  command-message, optional-value, preview jitter-depth, D3D bottleneck,
+- `tools/McpServer/Tools/PerformanceTools.cs` owns the public performance MCP
+  tool entry points, including timeline command response handling, timeline
+  JSON row projection orchestration, root cadence, preview/MJPEG/D3D, Flashback
+  playback, Flashback export, and system projection field groups, the private
+  row model, timeline table text rendering, first-vs-last trend text, preview
+  cadence, visual/MJPEG fingerprint, jitter, D3D, slow-stage, Flashback
+  playback, command, failure, cleanup, stage, export trend text, 1%-low target
+  summaries, preview, Flashback, and system pressure summaries, plus compact
+  cell, command-message, optional-value, preview jitter-depth, D3D bottleneck,
   Flashback stage, cleanup, export, byte-rate formatting, shared summary
-  predicates, and pressure counters.
+  predicates, pressure counters, PresentMon MCP entry points, structured-content
+  shape, probe invocation, and app-snapshot request/fallback behavior.
 - `tools/McpServer/Tools/FramePacingVerdictTools.cs` owns the public
   `get_frame_pacing_verdict` MCP tool entry point, pipe command orchestration,
   response shaping, performance-timeline projection, snapshot cadence channel
@@ -2943,10 +2944,8 @@ Primary owners:
   payload shaping, enum command routing, failure/missing-data response handling, operator-facing
   report layout, 16-bin histogram projection, and blank/dark/bright/framing
   diagnosis policy.
-- `tools/McpServer/Tools/PresentMonTools.cs` owns public PresentMon MCP entry
-  points, structured-content shape, probe invocation, and app-snapshot
-  request/fallback behavior. Shared option precedence and preview-present field
-  extraction live in `tools/Common/PresentMon/PresentMonProbe.cs`.
+- Shared PresentMon option precedence and preview-present field extraction live
+  in `tools/Common/PresentMon/PresentMonProbe.cs`.
 - `tools/Common/DiagnosticSessionModels.cs` owns diagnostic session run
   options, sampled snapshot DTOs, shared tool invocation defaults, the ssctl
   usage string, explicit scenario phase input handoff, mutable in-flight phase

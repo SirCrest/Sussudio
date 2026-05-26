@@ -2833,9 +2833,9 @@ result text owner. Keep cross-cutting `FormatOptional(...)` handling there
 instead of reintroducing private duplicates in scenario, result builder,
 formatter, or validation policy files.
 
-MCP performance timeline projection now lives in
-`tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs`. Keep the public
-tool entry point, command response handling, JSON-to-row projection
+MCP performance tooling now lives in
+`tools/McpServer/Tools/PerformanceTools.cs`. Keep the public timeline tool entry
+point, command response handling, JSON-to-row projection
 orchestration, root cadence, preview/MJPEG/D3D, Flashback playback, Flashback
 export, system row projection fields, private row model, timeline table text
 rendering, first-vs-last trend text, preview cadence, visual/MJPEG fingerprint,
@@ -2844,6 +2844,8 @@ export trend text, target-summary orchestration, target, preview, Flashback,
 and system pressure summaries there alongside compact value, command-message,
 preview jitter-depth, D3D bottleneck, Flashback stage, cleanup, export,
 byte-rate formatting helpers, shared summary predicates, and pressure counters.
+Keep the PresentMon MCP entry points, structured-content shape, probe
+invocation, and app-snapshot request/fallback behavior there too.
 The frame-pacing verdict MCP tool follows the same shape: keep MCP attributes,
 method signature, pipe command orchestration, response shaping, channel/timeline
 projection, readiness and verdict policy, operator-facing text, and private
@@ -2870,7 +2872,7 @@ histogram math/rendering, anomaly diagnosis policy, aspect checks, and the
 whole-window screenshot MCP response formatting in `PreviewFrameCaptureTools.cs`.
 PresentMon MCP stays intentionally shallow: keep `capture_presentmon`,
 `capture_presentmon_raw`, structured-content shape, and `PresentMonProbe.RunAsync`
-invocation in `PresentMonTools.cs`; keep the app-snapshot request and malformed
+invocation in `PerformanceTools.cs`; keep the app-snapshot request and malformed
 snapshot/pipe-failure fallback there too.
 Shared option precedence and preview-present field extraction belong to
 `tools/Common/PresentMon/PresentMonProbe.cs`.

@@ -1,15 +1,15 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-26T09:52:28Z
+Generated UTC: 2026-05-26T10:03:11Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 364 |
+| Production .cs files | 363 |
 | Test .cs files | 251 |
-| Production .cs files under 60 lines | 2 (0.5%) |
+| Production .cs files under 60 lines | 2 (0.6%) |
 | Production .cs files under 80 lines | 7 (1.9%) |
 
 ## Largest partial-type clusters
@@ -60,12 +60,12 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 885 | Sussudio/ViewModels/StatsPresentationBuilder.cs |
 | 885 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
 | 876 | tools/Common/DiagnosticSessionFlashbackExportScenarios.cs |
+| 859 | tools/McpServer/Tools/PerformanceTools.cs |
 | 840 | Sussudio/Services/Audio/WasapiAudioPlayback.cs |
 | 833 | Sussudio/Models/Automation/AutomationSnapshot.cs |
 | 814 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs |
 | 771 | Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs |
 | 764 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
-| 762 | tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs |
 | 759 | tools/NativeXuAudioProbe/Program.I2cCommands.cs |
 | 757 | tools/Common/AutomationSnapshotFormatter.cs |
 | 744 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs |

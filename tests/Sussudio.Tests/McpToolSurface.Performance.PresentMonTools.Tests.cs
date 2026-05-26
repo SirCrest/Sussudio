@@ -72,7 +72,7 @@ static partial class Program
 
         AssertPresentMonOptionsFallbackAndPrecedence();
 
-        var rootText = ReadRepoFile("tools/McpServer/Tools/PresentMonTools.cs")
+        var rootText = ReadRepoFile("tools/McpServer/Tools/PerformanceTools.cs")
             .Replace("\r\n", "\n");
         var probeText = ReadRepoFile("tools/Common/PresentMon/PresentMonProbe.cs")
             .Replace("\r\n", "\n");
@@ -101,6 +101,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PresentMonTools.Correlation.cs")),
             "PresentMon snapshot correlation lives with the PresentMon MCP tool");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PresentMonTools.cs")),
+            "PresentMon MCP entry points live with the broader performance MCP tool owner");
 
         AssertContains(probeText, "public readonly record struct PresentMonProbeCorrelation(");
         AssertContains(probeText, "public static PresentMonProbeOptions CreateOptions(");
