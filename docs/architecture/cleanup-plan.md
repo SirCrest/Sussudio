@@ -439,7 +439,7 @@ safety, synthetic pipe-connect retry, and concurrent-output-directory lockout.
 Infrastructure ownership files now split runner/initial-snapshot, pipe
 retry/command channel, run context, and scenario/completion phase assertions.
 MCP tool checks now execute through
-`tests/Sussudio.Tests/XUnit.McpToolContractsTests.cs`, keeping window/preview,
+`tests/Sussudio.Tests/XUnit.McpContractsTests.cs`, keeping window/preview,
 condition wait, screenshots, preview-frame capture, probes, PresentMon
 correlation, performance timeline, frame-pacing verdict, command routing,
 host/pipe behavior, verification formatting, Flashback tool routing, and

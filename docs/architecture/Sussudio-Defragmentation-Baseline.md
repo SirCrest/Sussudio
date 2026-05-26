@@ -2061,7 +2061,7 @@ Partial clusters reduced: n/a; MCP diagnostic-session xUnit wrapper file count -
 Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
 Behavior preserved: the same public test classes, `[Fact]` method names, and delegated diagnostic-session `Program` checks remain available under one diagnostic-session contracts file
-Notes for future agents: keep MCP diagnostic-session xUnit wrapper classes together in `XUnit.McpDiagnosticSessionContractsTests.cs`; add new wrapper classes there unless a band needs independent fixtures or executable helper state
+Notes for future agents: MCP diagnostic-session xUnit wrapper classes now live with the general MCP wrapper classes in `XUnit.McpContractsTests.cs`; add new MCP wrapper classes there unless a band needs independent fixtures or executable helper state
 
 Date: 2026-05-25
 Area: MainViewModel presentation-preview xUnit execution-surface locality
@@ -2139,7 +2139,7 @@ Partial clusters reduced: n/a; MCP tool xUnit wrapper file count -2
 Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; xUnit wrapper consolidation only
 Behavior preserved: the same public test classes, `[Fact]` method names, and delegated `Program` checks remain available under one MCP tool contracts file
-Notes for future agents: keep general MCP tool xUnit wrapper classes in `XUnit.McpToolContractsTests.cs`; add new wrapper classes there unless a group needs independent fixtures or executable helper state
+Notes for future agents: keep general MCP tool and diagnostic-session xUnit wrapper classes in `XUnit.McpContractsTests.cs`; add new wrapper classes there unless a group needs independent fixtures or executable helper state
 
 Date: 2026-05-25
 Area: Automation snapshot-model test locality
@@ -2821,7 +2821,7 @@ Files added: none
 Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: legacy `Program` MCP frame-pacing verdict partial file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
-CLI/MCP/pipe checks, if applicable: MCP frame-pacing verdict behavior and source-shape checks remained covered by `XUnit.McpToolContractsTests`; no public automation command names, IDs, or wire payloads changed
+CLI/MCP/pipe checks, if applicable: MCP frame-pacing verdict behavior and source-shape checks remained covered by `XUnit.McpContractsTests`; no public automation command names, IDs, or wire payloads changed
 Behavior preserved: frame-pacing verdict tool registration, snapshot/timeline command routing, timeline/channel/policy/rendering locality assertions, half-rate verdict behavior, insufficient-sample verdict behavior, and command payload assertions remain unchanged.
 Notes for future agents: keep MCP frame-pacing verdict source-shape and behavior checks together in `McpToolSurface.Performance.FramePacingVerdict.Tests.cs` while they guard one tool surface.
 
@@ -2917,7 +2917,7 @@ Files added: none
 Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: legacy `Program` MCP diagnostic-session result-builder helper partial file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
-CLI/MCP/pipe checks, if applicable: diagnostic-session result-builder source-shape checks remain covered through `XUnit.McpDiagnosticSessionContractsTests`; no public automation command names, IDs, or wire payloads changed
+CLI/MCP/pipe checks, if applicable: diagnostic-session result-builder source-shape checks remain covered through `XUnit.McpContractsTests`; no public automation command names, IDs, or wire payloads changed
 Behavior preserved: Flashback playback, recording, and export result projection routing, flattening handoff, and deleted legacy result-builder partial guards remain unchanged.
 Notes for future agents: keep Flashback result-builder projection assertions in `McpToolSurface.DiagnosticSession.ResultOwnership.Builder.Tests.cs` with the summary-construction orchestration; keep preview/completion and health-analysis checks in their focused sibling owner while they retain independent xUnit coverage.
 
@@ -3062,7 +3062,7 @@ Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: legacy `Program` diagnostic-session result ownership test partial file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
-Behavior preserved: diagnostic-session result formatter, model ownership, optional text formatting, artifact, JSON, and summary-write ownership checks remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
+Behavior preserved: diagnostic-session result formatter, model ownership, optional text formatting, artifact, JSON, and summary-write ownership checks remain registered through `XUnit.McpContractsTests`.
 Notes for future agents: keep diagnostic-session result formatter ownership in `McpToolSurface.DiagnosticSession.ResultOwnership.Tests.cs`; keep builder projection assertions in the focused builder owner files.
 
 Date: 2026-05-26
@@ -3222,6 +3222,18 @@ Behavior preserved: public xUnit wrapper class names and test method names remai
 Notes for future agents: keep recording xUnit wrappers together in `XUnit.RecordingContractsTests.cs` unless a group needs independent fixture state; keep behavior/source-ownership test implementations in their focused owner files.
 
 Date: 2026-05-26
+Area: MCP xUnit wrapper locality
+Problem: general MCP tool wrappers and diagnostic-session MCP wrappers lived in `XUnit.McpToolContractsTests.cs` and `XUnit.McpDiagnosticSessionContractsTests.cs`, even though both files only exposed no-fixture public xUnit wrapper classes over the same MCP contract harness. Reviewing MCP registration coverage required opening two shell files before reaching the actual tool-surface or diagnostic-session implementation owners.
+Files consolidated: `tests/Sussudio.Tests/XUnit.McpToolContractsTests.cs`; `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionContractsTests.cs`
+Files added: `tests/Sussudio.Tests/XUnit.McpContractsTests.cs`
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: n/a; MCP xUnit wrapper file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (885 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: xUnit wrapper-only consolidation; public MCP tool names, public tool type names, automation command names, IDs, wire payloads, and diagnostic-session behavior are unchanged.
+Behavior preserved: public MCP wrapper class names and test method names remain unchanged inside `XUnit.McpContractsTests.cs`.
+Notes for future agents: keep no-fixture MCP tool and diagnostic-session xUnit wrapper classes together in `XUnit.McpContractsTests.cs`; keep behavior/source-ownership test implementations in their focused owner files.
+
+Date: 2026-05-26
 Area: MJPEG preview jitter test locality
 Problem: `PooledVideoFrame.MjpegJitterPolicy.Tests.cs` split MJPEG preview jitter source-ownership and adaptive deadline policy assertions away from `PooledVideoFrame.MjpegJitterQueue.Tests.cs`, even though both protect the same `MjpegPreviewJitterBuffer` review surface: frame ingress, queue ordering, deadline drops, adaptive target depth, reprime behavior, emit-loop placement, frame pacing, and metrics.
 Files consolidated: `tests/Sussudio.Tests/PooledVideoFrame.MjpegJitterPolicy.Tests.cs`
@@ -3362,7 +3374,7 @@ Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: legacy `Program` MCP diagnostic-session Flashback scenario partial file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer` and `tools/ssctl`; test/docs-only consolidation, no public automation command names, IDs, wire payloads, or MCP tool implementations changed
-Behavior preserved: Flashback stress/scrub-stress ownership assertions and audio-master fallback classifier checks remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
+Behavior preserved: Flashback stress/scrub-stress ownership assertions and audio-master fallback classifier checks remain registered through `XUnit.McpContractsTests`.
 Notes for future agents: keep Flashback stress scenario ownership checks with `McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`; keep metric projection checks in their focused sibling file unless that surface becomes helper-only.
 
 Date: 2026-05-26
@@ -3374,7 +3386,7 @@ Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: legacy `Program` MCP diagnostic-session Flashback scenario/export partial file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer` and `tools/ssctl`; test/docs-only consolidation, no public automation command names, IDs, wire payloads, or MCP tool implementations changed
-Behavior preserved: Flashback export scenario flow, export-helper, and segment wait/parsing ownership assertions remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
+Behavior preserved: Flashback export scenario flow, export-helper, and segment wait/parsing ownership assertions remain registered through `XUnit.McpContractsTests`.
 Notes for future agents: keep MCP diagnostic-session Flashback scenario, stress, export, and segment-flow ownership checks together in `McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`; keep metric projection and health-policy checks in focused sibling files while they remain independently reviewable.
 
 Date: 2026-05-26
@@ -3386,7 +3398,7 @@ Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: legacy `Program` MCP diagnostic-session Flashback scenario/support partial file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer` and `tools/ssctl`; test/docs-only consolidation, no public automation command names, IDs, wire payloads, or MCP tool implementations changed
-Behavior preserved: Flashback warmup health-policy, warning-policy, and snapshot polling wait ownership assertions remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
+Behavior preserved: Flashback warmup health-policy, warning-policy, and snapshot polling wait ownership assertions remain registered through `XUnit.McpContractsTests`.
 Notes for future agents: keep MCP diagnostic-session Flashback scenario-support ownership checks with `McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`; keep metric projection checks in `McpToolSurface.DiagnosticSession.Flashback.Metrics.Tests.cs` while that projection surface remains independently reviewable.
 
 Date: 2026-05-26
@@ -3398,7 +3410,7 @@ Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: legacy `Program` MCP diagnostic-session result-builder partial file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer` and `tools/ssctl`; test/docs-only consolidation, no public automation command names, IDs, wire payloads, or MCP tool implementations changed
-Behavior preserved: result-builder preview projection, analysis-warning, diagnostic-health, artifact-handoff, and summary-construction ownership assertions remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
+Behavior preserved: result-builder preview projection, analysis-warning, diagnostic-health, artifact-handoff, and summary-construction ownership assertions remain registered through `XUnit.McpContractsTests`.
 Notes for future agents: keep diagnostic-session result-builder ownership checks together in `McpToolSurface.DiagnosticSession.ResultOwnership.Builder.Tests.cs`; split again only if a production result-builder collaborator gets an independent executable behavior fixture.
 
 Date: 2026-05-26
@@ -3410,7 +3422,7 @@ Net production .cs delta: 0; net test .cs delta: -2
 Partial clusters reduced: legacy `Program` MCP diagnostic-session lifecycle ownership partial file count -2
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer` and `tools/ssctl`; test/docs-only consolidation, no public automation command names, IDs, wire payloads, or MCP tool implementations changed
-Behavior preserved: diagnostic-session planning/setup, background task draining, PresentMon startup, sample-loop ordering, cleanup restore warning, recording verification, post-run snapshot, and shared metrics ownership assertions remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
+Behavior preserved: diagnostic-session planning/setup, background task draining, PresentMon startup, sample-loop ordering, cleanup restore warning, recording verification, post-run snapshot, and shared metrics ownership assertions remain registered through `XUnit.McpContractsTests`.
 Notes for future agents: keep diagnostic-session lifecycle helper ownership checks in `McpToolSurface.DiagnosticSession.Ownership.Tests.cs`; keep infrastructure, result ownership, Flashback scenario, and Flashback metric projection checks in their focused sibling files.
 
 Date: 2026-05-26

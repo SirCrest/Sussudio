@@ -1950,7 +1950,7 @@ Primary current owners:
   owns MCP `run_diagnostic_session` success artifact contract tests.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Failures.Tests.cs`
   owns MCP `run_diagnostic_session` failure artifact contract tests.
-  `tests/Sussudio.Tests/XUnit.McpToolContractsTests.cs` owns the xUnit
+  `tests/Sussudio.Tests/XUnit.McpContractsTests.cs` owns the xUnit
   execution surface for the general MCP tool-surface, command-routing,
   host/pipe, verification, Flashback tool, diagnostic-session tool entry,
   performance/probe, and window/preview tool contracts after their removal from
@@ -1983,7 +1983,7 @@ Primary current owners:
   focused diagnostic-session runner behavior coverage: reflective runner
   setup, artifacts, health policy, Flashback playback, initial snapshot,
   pipe retry, and concurrency checks against synthetic command delegates.
-- `tests/Sussudio.Tests/XUnit.McpDiagnosticSessionContractsTests.cs` owns the
+- `tests/Sussudio.Tests/XUnit.McpContractsTests.cs` owns the
   xUnit execution surface for the former legacy diagnostic-session catalog
   bands: infrastructure, result surface, command/run context, scenario
   execution, Flashback scenarios/helpers/metrics/waits/validation/stress,
@@ -2005,12 +2005,12 @@ Primary current owners:
   keeps shared timeline source loading, source-ownership assertions, rendering
   text contracts, Flashback command-counter formatting checks, and
   `PerformanceTimelineEntry` projection contracts together.
-  `tests/Sussudio.Tests/XUnit.McpToolContractsTests.cs` owns the xUnit
+  `tests/Sussudio.Tests/XUnit.McpContractsTests.cs` owns the xUnit
   execution surface for these performance/probe contracts after their removal
   from the legacy harness catalog.
 - `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Tests.cs` owns MCP wait,
   window action, preview toggle, Flashback toggle, screenshot,
-  preview-frame-capture, and probe tests. `tests/Sussudio.Tests/XUnit.McpToolContractsTests.cs`
+  preview-frame-capture, and probe tests. `tests/Sussudio.Tests/XUnit.McpContractsTests.cs`
   owns the xUnit execution surface for the wait/window/screenshot/
   preview-frame/preview-toggle/probe checks after their removal from the
   legacy harness catalog.

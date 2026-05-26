@@ -103,14 +103,14 @@ add xUnit alongside, and port incrementally.
 - `Program.cs` owns the legacy runner entry point and the xUnit bootstrap helper
   that initializes the staged app assembly before wrappers call legacy reflection
   helpers.
-- `XUnit.McpToolContractsTests.cs` owns the former legacy MCP tool execution
+- `XUnit.McpContractsTests.cs` owns the former legacy MCP tool execution
   groups: window/preview wait, screenshot, frame-capture, window action,
   preview-toggle/probe, PresentMon correlation, performance timeline,
   frame-pacing verdict, general tool surface, command-routing, host/pipe,
   verification, Flashback tool, and diagnostic-session tool entry checks. The
   public wrapper classes remain separate inside this file so existing test
   identities stay stable while the execution surface is easier to scan.
-- `XUnit.McpDiagnosticSessionContractsTests.cs` owns the former legacy
+- `XUnit.McpContractsTests.cs` also owns the former legacy
   diagnostic-session xUnit execution bands: infrastructure, result surface,
   command/run context, scenario execution, Flashback scenarios/helpers/metrics,
   core sampler/metric/health checks, and runner behavior checks. The public
