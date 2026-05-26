@@ -49,6 +49,19 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: MCP performance tools test locality
+Problem: `McpToolSurface.Performance.PresentMonTools.Tests.cs` held PresentMon correlation and option-precedence checks for the same `PerformanceTools.cs` MCP owner whose performance timeline source ownership and rendering/projection contracts lived in `McpToolSurface.Performance.TimelineContract.Tests.cs`. Reviewing the broader MCP performance tool surface required opening two small legacy `Program` partial files with one production owner.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.Performance.PresentMonTools.Tests.cs`
+Files renamed: `tests/Sussudio.Tests/McpToolSurface.Performance.TimelineContract.Tests.cs` -> `tests/Sussudio.Tests/McpToolSurface.Performance.Tools.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MCP performance tool test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: MCP performance timeline source ownership, rendering/projection contracts, Flashback command-counter formatting checks, PresentMon snapshot correlation routing, and PresentMon option fallback/precedence checks remain unchanged.
+Notes for future agents: keep MCP `PerformanceTools.cs` timeline and PresentMon coverage in `McpToolSurface.Performance.Tools.Tests.cs`; keep frame-pacing verdict coverage in `McpToolSurface.Performance.FramePacingVerdict.Tests.cs` because it owns a separate MCP tool class and verdict policy.
+
+Date: 2026-05-26
 Area: D3D11 preview runtime-capture test locality
 Problem: `D3D11PreviewRenderer.FrameFlow.Tests.cs` held pending-frame drain, frame-capture cancellation, and shared D3D device reference lifecycle checks for the same runtime-capture surface whose submission, screenshot capture, render-thread, device-lost, present-accounting, and PNG capture checks lived in `D3D11PreviewRenderer.SourceOwnership.RuntimeCapture.Tests.cs`. Reviewing D3D11 runtime capture and frame-flow ownership required opening two legacy `Program` partial files.
 Files consolidated: `tests/Sussudio.Tests/D3D11PreviewRenderer.FrameFlow.Tests.cs`
@@ -2437,8 +2450,8 @@ Net test .cs delta: -4
 Partial clusters reduced: `Program` MCP performance timeline partial-family file count -4
 Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: MCP performance timeline tests remain in the xUnit suite and exercise the same timeline tool pipe calls
-Behavior preserved: the same internal `Program` test method names, timeline source loader, source-ownership assertions, rendering/projection contracts, and Flashback command-counter formatting check remain in `McpToolSurface.Performance.TimelineContract.Tests.cs`
-Notes for future agents: keep MCP performance timeline source-loading, projection, rendering, and Flashback timeline formatting checks in `McpToolSurface.Performance.TimelineContract.Tests.cs` unless a subgroup grows a distinct fixture or helper seam
+Behavior preserved: the same internal `Program` test method names, timeline source loader, source-ownership assertions, rendering/projection contracts, and Flashback command-counter formatting check remain in `McpToolSurface.Performance.Tools.Tests.cs`
+Notes for future agents: keep MCP performance timeline source-loading, projection, rendering, Flashback timeline formatting checks, and PresentMon correlation coverage in `McpToolSurface.Performance.Tools.Tests.cs` unless a subgroup grows a distinct fixture or helper seam
 
 Date: 2026-05-25
 Area: MCP diagnostic-session runner test locality

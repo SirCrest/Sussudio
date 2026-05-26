@@ -1935,12 +1935,13 @@ Primary current owners:
   validating artifacts, health policy, Flashback playback, initial snapshot,
   pipe retry, and concurrency behavior.
 - `tests/Sussudio.Tests/McpToolSurface.Performance.*.Tests.cs` owns MCP
-  performance timeline contract, Flashback timeline formatting, and
-  frame-pacing verdict tests, plus PresentMon MCP correlation and option
-  precedence coverage. `McpToolSurface.Performance.TimelineContract.Tests.cs`
-  keeps shared timeline source loading, source-ownership assertions, rendering
-  text contracts, Flashback command-counter formatting checks, and
-  `PerformanceTimelineEntry` projection contracts together.
+  performance timeline contract, Flashback timeline formatting, PresentMon MCP
+  correlation and option precedence coverage, and frame-pacing verdict tests.
+  `McpToolSurface.Performance.Tools.Tests.cs` keeps shared performance-tool
+  source loading, timeline source-ownership assertions, rendering text
+  contracts, Flashback command-counter formatting checks,
+  `PerformanceTimelineEntry` projection contracts, and PresentMon correlation
+  coverage together.
   `tests/Sussudio.Tests/XUnit.McpContractsTests.cs` owns the xUnit
   execution surface for these performance/probe contracts after their removal
   from the legacy harness catalog.
