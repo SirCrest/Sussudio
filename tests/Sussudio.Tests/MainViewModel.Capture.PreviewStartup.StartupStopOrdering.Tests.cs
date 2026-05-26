@@ -41,7 +41,6 @@ static partial class Program
         AssertDoesNotContain(previewPropertyChangedText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
         AssertDoesNotContain(previewPropertyChangedText, "private Task ViewModel_PreviewRendererStopRequested()");
         AssertDoesNotContain(previewPropertyChangedText, "private void HandlePreviewReinitializingChanged()");
-        AssertDoesNotContain(previewStartupText, "private void SchedulePreviewFadeIn()");
         AssertDoesNotContain(previewReinitText, "renderer.StopRenderThread();");
 
         return Task.CompletedTask;

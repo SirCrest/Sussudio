@@ -70,7 +70,7 @@ static partial class Program
         AssertContains(mainWindowText, "InitializePreviewAudioFadeController();");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewTransitions.Composition.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewLifecycle.Composition.cs")),
             "preview audio fade adapter lives in the preview transitions composition partial");
         AssertContains(mainWindowText, "InitializeAudioControlBindingController();");
         AssertContains(bindingsText, "ApplyInitialAudioControlBindings();");
@@ -151,7 +151,7 @@ static partial class Program
         AssertContains(mainWindowText, "InitializePreviewButtonActionController();");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewTransitions.Composition.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewLifecycle.Composition.cs")),
             "preview button action adapter lives in the preview transitions composition partial");
         AssertContains(actionControllerText, "internal sealed class PreviewButtonActionController");
         AssertContains(actionControllerText, "public async Task TogglePreviewAsync(string operationName)");

@@ -15,10 +15,10 @@ static partial class Program
         => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewRenderer.Composition.cs");
 
     private static string ReadMainWindowPreviewStartupAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewStartup.Session.Composition.cs");
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewLifecycle.Composition.cs");
 
     private static string ReadMainWindowPreviewTransitionsAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewTransitions.Composition.cs");
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewLifecycle.Composition.cs");
 
     private static string ReadMainWindowPropertyChangedPreviewAdapterSource()
         => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewRenderer.Composition.cs");

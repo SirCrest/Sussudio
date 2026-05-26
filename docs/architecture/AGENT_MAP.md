@@ -1108,7 +1108,7 @@ Primary current owners:
   focused partials or controllers, including initial recording lockout,
   device-selection change hooks, stats visibility sync, and status-strip
   projection.
-- `Sussudio/MainWindow.PreviewTransitions.Composition.cs`
+- `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`
   owns the preview-transition XAML command and callback adapter surface.
   `PreviewButtonActionController` owns the preview
   fade/reinit/start/stop command behavior. One-line XAML command bridges for
@@ -1471,8 +1471,8 @@ Primary current owners:
 - Preview-startup ordering xUnit execution also lives in
   `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs`.
 - `tests/Sussudio.Tests/MainWindow.CompositionSource.cs` owns the shared
-  source readers for the split `MainWindow.PreviewStartup.*.cs` adapter family,
-  consolidated preview-transition, shell-chrome, stats-overlay, capture-binding,
+  source readers for the consolidated `MainWindow.PreviewLifecycle.Composition.cs`
+  adapter family, shell-chrome, stats-overlay, capture-binding,
   Flashback, and preview-renderer adapters.
 - Fullscreen tests use the shared shell-chrome helper for
   `MainWindow.ShellChrome.Composition.cs`; shutdown cleanup tests use the shared
@@ -2198,7 +2198,7 @@ Primary current owners:
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and the
   `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs.
-  `Sussudio/MainWindow.PreviewTransitions.Composition.cs` wires
+  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires
   preview-transition animation callbacks; video-shadow fade callbacks route
   through the shadow controller in `PreviewSurfacePresentationController`.
 - `Sussudio/Controllers/Preview/PreviewButtonActionController.cs` owns preview
@@ -2210,7 +2210,7 @@ Primary current owners:
   `PreviewButtonPresentationController`, and `PreviewFadeInController` types.
   `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires preview button presentation callbacks and preview
   lifecycle property/event routing.
-- `Sussudio/MainWindow.PreviewTransitions.Composition.cs`
+- `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`
   keeps the XAML event name stable as part of the preview transition/presentation
   adapter.
 - `Sussudio/Controllers/Recording/RecordingStatePresentationController.cs` owns
@@ -2233,13 +2233,13 @@ Primary current owners:
   view-model live-signal label formatting and pixel-format/codec suffix policy.
 - `Sussudio/Controllers/Preview/PreviewAudioFadeController.cs` owns preview-volume
   fade-in/fade-out state, saved target volume, storyboard lifetime, and volume
-  save suppression. `Sussudio/MainWindow.PreviewTransitions.Composition.cs` is the
+  save suppression. `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` is the
   XAML-facing adapter.
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and the
   `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs.
-  `Sussudio/MainWindow.PreviewTransitions.Composition.cs` is the XAML/MainWindow
+  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` is the XAML/MainWindow
   adapter that supplies renderer-stop-before-teardown and UI callback endpoints
   for reinit completion.
 - `Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs` owns preview
@@ -2247,7 +2247,7 @@ Primary current owners:
   details, state/log transitions, first-visual confirmation sequencing,
   signal-window predicates, snapshot missing-signal refresh gates, and reset
   orchestration.
-  `Sussudio/MainWindow.PreviewStartup.Session.Composition.cs` wires UI/runtime
+  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires UI/runtime
   callbacks into the session, watchdog, and signal controllers, stable state
   projections, startup state, renderer-attached, first-visual, begin-attempt,
   reset adapters, raw timeout diagnostic snapshots, live preview signal state,
@@ -2255,12 +2255,12 @@ Primary current owners:
   `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs` owns
   watchdog/telemetry timers, timeout configuration, timeout recovery, and
   failure-stop scheduling. The MainWindow/XAML-facing adapter stays in
-  `Sussudio/MainWindow.PreviewStartup.Session.Composition.cs`.
+  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs` owns readiness-
   signal coordination: readiness-signal state handoff, missing-signal updates,
   playback-progress diagnostics, startup signal log strings, GPU position
   counter state, and first-visual confirmation decisions.
-  `Sussudio/MainWindow.PreviewStartup.Session.Composition.cs` wires the
+  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires the
   coordinator context, stable signal snapshot properties used by automation,
   GPU signal, missing-signal, playback-snapshot, and first-visual adapter callbacks.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs` owns
@@ -2278,19 +2278,19 @@ Primary current owners:
   `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and reinit transition logs.
-  `Sussudio/MainWindow.PreviewTransitions.Composition.cs` keeps the renderer-stop-before-teardown
+  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` keeps the renderer-stop-before-teardown
   handoff and XAML callback endpoints for completion presentation.
   Keep preview startup fields out of the composition root.
 - `Sussudio/Controllers/Preview/PreviewButtonActionController.cs` owns delayed
   preview reveal after first visual: rendered-frame threshold, fade-in timer,
   renderer replacement fallback, and preview-audio fade start ordering.
-  `Sussudio/MainWindow.PreviewTransitions.Composition.cs` wires the XAML-facing adapter. Keep
+  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires the XAML-facing adapter. Keep
   timeout/watchdog recovery in `PreviewStartupWatchdogController`.
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview-
   startup loading overlay presentation while the app waits for visual
   confirmation: ProgressRing activation, fade-in/fade-out routing, and the
   reinit-collapse opacity reset. It also owns preview reinit animation state and
-  completion presentation decisions. `Sussudio/MainWindow.PreviewTransitions.Composition.cs`
+  completion presentation decisions. `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`
   is the XAML-facing adapter.
 - `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns top-level
   preview resize log throttling and reset state.
@@ -2756,10 +2756,9 @@ Refactor direction:
   Preview startup, preview runtime snapshot dispatch/sampling, MainWindow UI
   dispatching, stats projection, and Flashback playback/export presentation
   already have named owners. The Flashback adapter family is split across
-  focused `MainWindow.Flashback.*.cs` partials, and the preview-startup adapter
-  family is split across focused `MainWindow.PreviewStartup.*.cs` partials.
-  The preview-transition adapter family is consolidated in
-  `MainWindow.PreviewTransitions.Composition.cs`; start the next UI cleanup from
+  focused `MainWindow.Flashback.*.cs` partials. The preview-startup and
+  preview-transition adapter family is consolidated in
+  `MainWindow.PreviewLifecycle.Composition.cs`; start the next UI cleanup from
   remaining broad adapters not covered by controller ownership tests.
 - Keep `MainViewModel` as a compatibility facade while moving feature state to
   capture, recording, audio, Flashback, diagnostics, and automation adapters.
