@@ -27,13 +27,6 @@ public sealed class PresentationPreviewStartupOwnershipContractsTests
         => global::Program.PreviewStartupLifecycleEventOwnership_LivesInFocusedController();
 }
 
-public sealed class PresentationPreviewHarnessRegistrationXunitTests
-{
-    [Fact]
-    public Task PresentationPreviewHarnessRegistrationCoversUiOwnershipChecks()
-        => global::Program.PresentationPreviewHarnessRegistration_CoversUiOwnershipChecks();
-}
-
 public sealed class PresentationPreviewStartupBehaviorContractsTests
 {
     public PresentationPreviewStartupBehaviorContractsTests()

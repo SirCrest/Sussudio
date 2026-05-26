@@ -1626,6 +1626,9 @@ Primary current owners:
   ffprobe failure/priority scenarios, HEVC/H264 codec success and mismatch,
   Flashback verification format, resolution/frame-rate mismatch, HDR
   validation, and NTSC frame-rate tolerance scenarios.
+- `tests/Sussudio.Tests/RecordingVerifier.Tests.cs` owns RecordingVerifier
+  early failure paths, verifier contract/source-shape assertions, result DTO
+  property coverage, and the dedicated LibAv verification script contract.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.Geometry.Tests.cs` owns letterbox,
   screenshot black-edge counting, and preview PNG encoder CRC/capture contract
   tests.
