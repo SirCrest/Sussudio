@@ -1812,7 +1812,7 @@ Primary current owners:
   shared across multiple services: AtomicMax, TelemetryAgeHelper,
   EnvironmentHelpers, RingBufferHelpers, shared minimum-window-size Win32
   subclassing, and best-effort MMCSS worker registration.
-  `tests/Sussudio.Tests/XUnit.RuntimeHelpersTests.cs` and
+  `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` and
   `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` own their behavior and
   native-entry-point contracts.
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns the former

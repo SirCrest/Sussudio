@@ -33,7 +33,8 @@ add xUnit alongside, and port incrementally.
 - `XUnit.CoreRuntimeContractsTests.cs` owns the former legacy HdrOutputPolicy
   behavior, HDR output environment-switch, and disabled telemetry-provider
   checks.
-- `XUnit.RuntimeHelpersTests.cs` owns focused runtime helper behavior checks.
+- `XUnit.CoreRuntimeContractsTests.cs` owns focused runtime helper behavior
+  checks.
 - `XUnit.SnapshotModelsTests.cs` and its `SnapshotModels.*` partials own the
   former legacy CaptureDiagnosticsSnapshot, CaptureHealthSnapshot,
   SourceSignalTelemetrySnapshot, SourceTelemetryDetailEntry, and source
