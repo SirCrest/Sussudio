@@ -1698,13 +1698,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` owns
   `RuntimeContractSource`, including shared tool source-family readers used by
   legacy harness and xUnit contract tests.
-- `tests/Sussudio.Tests/CommandHandlers.Helpers.cs` owns source-family
-  reader, routing-capture helpers, and `AssertSsctlCommandRequest`, which routes
-  captured ssctl `request.command` checks through the shared golden command table
-  instead of per-test numeric IDs. `CommandHandlers.Routing.Tests.cs` owns
-  pipe-captured routing contract checks for device, capture controls, recordings,
-  Flashback, window, manifest, observability, automation-flow, UI visibility, and
-  verification commands.
+- `tests/Sussudio.Tests/CommandHandlers.Routing.Tests.cs` owns pipe-captured
+  routing contract checks for device, capture controls, recordings, Flashback,
+  window, manifest, observability, automation-flow, UI visibility, and
+  verification commands, plus the source-family reader, routing-capture helpers,
+  and `AssertSsctlCommandRequest`, which routes captured ssctl `request.command`
+  checks through the shared golden command table instead of per-test numeric IDs.
   `CommandHandlers.SourceOwnership.Tests.cs` owns ssctl handler partial-family
   source ownership assertions plus ssctl help/catalog force-flag coverage.
   `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution

@@ -191,7 +191,7 @@ Partial clusters reduced: legacy `Program` command-handler source contract test 
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: ssctl command-handler source ownership checks, help output contract, catalog-backed help lines, and Flashback export force-flag coverage remain unchanged.
-Notes for future agents: keep ssctl command-handler source ownership and help/catalog source-shape checks in `CommandHandlers.SourceOwnership.Tests.cs`; keep pipe-captured routing behavior in `CommandHandlers.Routing.Tests.cs` and shared harness helpers in `CommandHandlers.Helpers.cs`.
+Notes for future agents: keep ssctl command-handler source ownership and help/catalog source-shape checks in `CommandHandlers.SourceOwnership.Tests.cs`; pipe-captured routing behavior and shared harness helpers now live in `CommandHandlers.Routing.Tests.cs`.
 
 Date: 2026-05-26
 Area: recording integrity test locality
@@ -3041,7 +3041,7 @@ Partial clusters reduced: legacy `Program` ssctl routing partial file count -2
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: pipe-captured ssctl routing tests remained covered by `XUnit.ToolContractsTests`; no public automation command names, IDs, or wire payloads changed
 Behavior preserved: device, capture-control, recordings, Flashback, window, manifest, observability, automation-flow, UI visibility, and verification ssctl routing assertions remain unchanged.
-Notes for future agents: keep ssctl command-handler routing coverage in `CommandHandlers.Routing.Tests.cs`; keep routing helpers in `CommandHandlers.Helpers.cs` and source-ownership assertions in `CommandHandlers.SourceOwnership.Tests.cs`.
+Notes for future agents: keep ssctl command-handler routing coverage and routing helpers in `CommandHandlers.Routing.Tests.cs`; keep source-ownership assertions in `CommandHandlers.SourceOwnership.Tests.cs`.
 
 Date: 2026-05-26
 Area: app-surface legacy test locality
@@ -4484,3 +4484,15 @@ Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csp
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, or XAML bindings changed.
 Behavior preserved: coordinator source reading, transition-policy reflection helpers, steady-state resolver checks, private enqueue harness, queue-drain snapshot assertions, async disposal, and cancellation assertions now live with `CaptureSessionCoordinator.Api.Tests.cs`.
 Notes for future agents: keep capture session coordinator API/model/snapshot checks, queue/cancellation behavior harnesses, and shared coordinator test helpers in `tests/Sussudio.Tests/CaptureSessionCoordinator.Api.Tests.cs`; keep broader source-ownership assertions in `CaptureSessionCoordinator.Ownership.Tests.cs`.
+
+Date: 2026-05-26
+Area: ssctl command-handler routing test locality
+Problem: `CommandHandlers.Helpers.cs` only carried private ssctl command-routing harness helpers, source-family readers, and request assertions used by the adjacent routing and source-ownership tests. Reviewing ssctl command routing still required opening a helper-only `Program` partial before the actual pipe-captured route coverage.
+Files consolidated: `tests/Sussudio.Tests/CommandHandlers.Helpers.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `Program` ssctl command-handler test partial-family file count -1
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~SsctlCommandHandlers|FullyQualifiedName~ToolContractsTests"` failed because the broad filter pulled in unrelated MCP tests without target assembly preloading; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~SsctlCommandHandlerContractsTests"` passed after the self-scan guard fix (12 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: focused ssctl route tests passed through `SsctlCommandHandlerContractsTests`; no public automation command names, IDs, wire payloads, or XAML bindings changed.
+Behavior preserved: isolated ssctl tool assembly loading, PipeTransport construction, captured pipe request helpers, command request assertions, command-id golden-table enforcement, and ssctl command-handler source-family reading now live with `CommandHandlers.Routing.Tests.cs`.
+Notes for future agents: keep ssctl pipe-captured route coverage, command request assertions, and routing harness helpers in `tests/Sussudio.Tests/CommandHandlers.Routing.Tests.cs`; keep source-shape assertions in `CommandHandlers.SourceOwnership.Tests.cs`.
