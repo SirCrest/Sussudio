@@ -1366,9 +1366,10 @@ Primary current owners:
   monitoring volume-ramp, audio meter callback-state, and audio-ramp trace
   telemetry ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.AudioControls.DeviceAudio.Tests.cs` owns
-  device audio refresh, saved-state guard, device-audio request-controller
-  ownership assertions, and native XU audio-control service cohesion, profile,
-  payload workflow, and raw transport ownership assertions.
+  audio device selection policy, device audio refresh, saved-state guard,
+  device-audio request-controller ownership assertions, and native XU
+  audio-control service cohesion, profile, payload workflow, and raw transport
+  ownership assertions.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
   owns the xUnit execution surface for MainViewModel source and behavior
   contracts after their removal from the legacy offline harness catalog.
