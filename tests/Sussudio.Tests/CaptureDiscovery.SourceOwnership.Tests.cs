@@ -47,7 +47,6 @@ static partial class Program
         var sourceReaderNegotiationText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs").Replace("\r\n", "\n");
         var sourceReaderDeviceEnumerationText = sourceReaderNegotiationText;
         var sourceReaderComContractsText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.ComContracts.cs").Replace("\r\n", "\n");
-        var sourceReaderSampleBufferContractsText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.SampleBufferContracts.cs").Replace("\r\n", "\n");
         var mfInteropHelpersText = ReadRepoFile("Sussudio/Services/Capture/MfInteropHelpers.cs").Replace("\r\n", "\n");
 
         AssertContains(deviceRootText, "var likelyByCapability = LooksLikeHighBandwidthCapture(captureDevice);");
@@ -98,18 +97,17 @@ static partial class Program
         AssertContains(sourceReaderComContractsText, "private static class MfHResults");
         AssertContains(sourceReaderComContractsText, "private static class MfGuids");
         AssertContains(sourceReaderComContractsText, "internal interface IMFSourceReader");
-        AssertDoesNotContain(sourceReaderComContractsText, "internal interface IMFMediaBuffer");
-        AssertDoesNotContain(sourceReaderComContractsText, "internal interface IMFDXGIBuffer");
-        AssertDoesNotContain(sourceReaderComContractsText, "internal interface IMFSample");
-        AssertContains(sourceReaderSampleBufferContractsText, "internal interface IMFMediaBuffer");
-        AssertContains(sourceReaderSampleBufferContractsText, "internal interface IMFDXGIBuffer");
-        AssertContains(sourceReaderSampleBufferContractsText, "internal interface IMFSample");
-        AssertContains(sourceReaderSampleBufferContractsText, "Flattened IMFSample COM interface");
-        AssertContains(sourceReaderSampleBufferContractsText, "does NOT use C# interface inheritance");
-        AssertContains(sourceReaderSampleBufferContractsText, "[PreserveSig] int _Attr_GetItem(ref Guid guidKey, IntPtr pValue);");
-        AssertContains(sourceReaderSampleBufferContractsText, "int GetSampleTime(out long phnsSampleTime);");
-        AssertDoesNotContain(sourceReaderSampleBufferContractsText, "DllImport(");
-        AssertDoesNotContain(sourceReaderSampleBufferContractsText, "private static class MfInterop");
+        AssertContains(sourceReaderComContractsText, "internal interface IMFMediaBuffer");
+        AssertContains(sourceReaderComContractsText, "internal interface IMFDXGIBuffer");
+        AssertContains(sourceReaderComContractsText, "internal interface IMFSample");
+        AssertContains(sourceReaderComContractsText, "Flattened IMFSample COM interface");
+        AssertContains(sourceReaderComContractsText, "does NOT use C# interface inheritance");
+        AssertContains(sourceReaderComContractsText, "[PreserveSig] int _Attr_GetItem(ref Guid guidKey, IntPtr pValue);");
+        AssertContains(sourceReaderComContractsText, "int GetSampleTime(out long phnsSampleTime);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.SampleBufferContracts.cs")),
+            "source-reader sample/buffer COM declarations folded into COM contract owner");
         AssertDoesNotContain(sourceReaderRootText, "private IMFMediaSource CreateMediaSource(");
         AssertDoesNotContain(sourceReaderRootText, "private IMFMediaType SelectMediaType(");
         AssertDoesNotContain(sourceReaderRootText, "private static class MfInterop");

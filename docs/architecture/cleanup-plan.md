@@ -1837,15 +1837,12 @@ Keep compressed MJPG byte extraction, raw CPU frame delivery, 2D buffer
 handling, packed-stride CPU copies, and dual-frame CPU payload extraction there.
 
 Media Foundation interop declarations now live in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.ComContracts.cs`, with
-sample/buffer contracts in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.SampleBufferContracts.cs`.
-Keep general Media Foundation COM interfaces plus MF P/Invoke declarations,
-constants/HRESULTs/GUIDs in the COM contracts file. Keep the flattened
-`IMFSample` vtable layout and MF buffer interfaces in the
-sample/buffer contracts file. Preserve interface method order and placeholder
-slots exactly; keep behavioral source-reader logic in the root and negotiation
-partials.
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.ComContracts.cs`.
+Keep general Media Foundation COM interfaces, flattened `IMFSample` vtable
+layout, MF buffer interfaces, MF P/Invoke declarations, constants/HRESULTs,
+and GUIDs in the COM contracts file. Preserve interface method order and
+placeholder slots exactly; keep behavioral source-reader logic in the root and
+negotiation partials.
 
 Media Foundation source cadence metrics now live with active source-reader
 lifetime in `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Lifecycle.cs`.
