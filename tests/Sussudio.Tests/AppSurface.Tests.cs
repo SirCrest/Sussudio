@@ -2,9 +2,61 @@ using System;
 using System.Reflection;
 using System.Threading.Tasks;
 
-// Tests for XAML value converters used by hand-bound WinUI controls.
+// Legacy app-surface checks executed by AutomationAppSurfaceContractsTests.
 static partial class Program
 {
+    internal static Task App_Xaml_WiresUnhandledExceptionPolicy()
+    {
+        var appType = RequireType("Sussudio.App");
+        var appRootSource = ReadRepoFile("Sussudio/App.xaml.cs")
+            .Replace("\r\n", "\n");
+
+        var uiHandler = appType.GetMethod(
+            "App_UnhandledException",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        AssertNotNull(uiHandler, "App.App_UnhandledException handler");
+
+        var domainHandler = appType.GetMethod(
+            "CurrentDomain_UnhandledException",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        AssertNotNull(domainHandler, "App.CurrentDomain_UnhandledException handler");
+
+        var isRecoverable = appType.GetMethod(
+            "IsRecoverableUnhandled",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        AssertNotNull(isRecoverable, "App.IsRecoverableUnhandled triage");
+
+        var recoverable = (bool)isRecoverable!.Invoke(null, new object[] { new OperationCanceledException() })!;
+        AssertEqual(true, recoverable, "OperationCanceledException is recoverable");
+
+        var nonRecoverable = (bool)isRecoverable.Invoke(null, new object[] { new InvalidOperationException() })!;
+        AssertEqual(false, nonRecoverable, "InvalidOperationException is not recoverable");
+
+        AssertContains(appRootSource, "LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);");
+        AssertContains(appRootSource, "UnhandledException += App_UnhandledException;");
+        AssertContains(appRootSource, "AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;");
+        AssertContains(appRootSource, "private static bool IsRecoverableUnhandled(Exception ex)");
+        AssertContains(appRootSource, "private void App_UnhandledException(");
+        AssertContains(appRootSource, "private void CurrentDomain_UnhandledException(");
+        AssertContains(appRootSource, "private void TryEmergencyStopRecording(string source)");
+        AssertContains(appRootSource, "var task = viewModel.StopRecordingForEmergencyAsync();");
+        AssertContains(appRootSource, "private const string SingleInstanceMutexName");
+        AssertContains(appRootSource, "protected override void OnLaunched(");
+        AssertContains(appRootSource, "SINGLE_INSTANCE_GUARD second instance detected");
+        AssertContains(appRootSource, "\"APP_START \" +");
+        AssertContains(appRootSource, "public partial class App : Application");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "App.ExceptionPolicy.cs")),
+            "old App exception policy partial removed");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "App.LaunchLifecycle.cs")),
+            "old App launch lifecycle partial removed");
+
+        return Task.CompletedTask;
+    }
+
     internal static Task BoolConverters_PreserveInversionAndVisibilityMappings()
     {
         var inverseBoolType = RequireType("Sussudio.Converters.InverseBoolConverter");
@@ -132,6 +184,41 @@ static partial class Program
             true,
             (bool)inverseVisibilityConvertBack.Invoke(inverseVisibility, new object?[] { null, typeof(bool), null, "" })!,
             "BoolToInverseVisibilityConverter.ConvertBack(null)");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task DisplayFormatters_FormatSourceHdr_MapsKnownAndUnknownStates()
+    {
+        var formatterType = RequireType("Sussudio.DisplayFormatters");
+        var formatSourceHdr = formatterType.GetMethod(
+            "FormatSourceHdr",
+            BindingFlags.Public | BindingFlags.Static,
+            binder: null,
+            types: new[] { typeof(bool?), typeof(string) },
+            modifiers: null);
+        AssertNotNull(formatSourceHdr, "DisplayFormatters.FormatSourceHdr(bool?, string?)");
+
+        AssertEqual(
+            "On (BT.2020)",
+            formatSourceHdr!.Invoke(null, new object?[] { true, "BT.2020" }),
+            "FormatSourceHdr(true, colorimetry)");
+        AssertEqual(
+            "On",
+            formatSourceHdr.Invoke(null, new object?[] { true, "   " }),
+            "FormatSourceHdr(true, whitespace colorimetry)");
+        AssertEqual(
+            "On",
+            formatSourceHdr.Invoke(null, new object?[] { true, null }),
+            "FormatSourceHdr(true, null colorimetry)");
+        AssertEqual(
+            "Off",
+            formatSourceHdr.Invoke(null, new object?[] { false, "BT.709" }),
+            "FormatSourceHdr(false, colorimetry)");
+        AssertEqual(
+            "\u2014",
+            formatSourceHdr.Invoke(null, new object?[] { null, "BT.2020" }),
+            "FormatSourceHdr(null, colorimetry)");
 
         return Task.CompletedTask;
     }

@@ -2644,3 +2644,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: pipe-captured ssctl routing tests remained covered by `XUnit.ToolContractsTests`; no public automation command names, IDs, or wire payloads changed
 Behavior preserved: device, capture-control, recordings, Flashback, window, manifest, observability, automation-flow, UI visibility, and verification ssctl routing assertions remain unchanged.
 Notes for future agents: keep ssctl command-handler routing coverage in `CommandHandlers.Routing.Tests.cs`; keep routing helpers in `CommandHandlers.Helpers.cs` and source-ownership assertions in `CommandHandlers.SourceOwnership.Tests.cs`.
+
+Date: 2026-05-26
+Area: app-surface legacy test locality
+Problem: app startup exception-policy checks, XAML bool converter checks, and compact display formatter checks were split across three legacy `Program` partial files even though they are executed together by `AutomationAppSurfaceContractsTests` and all guard the same app-facing surface. Reviewing the app-surface contract still required several tiny files plus the xUnit wrapper.
+Files consolidated: `tests/Sussudio.Tests/App.xaml.Tests.cs`; `tests/Sussudio.Tests/BoolConverters.Tests.cs`; `tests/Sussudio.Tests/DisplayFormatters.Tests.cs`
+Files added: `tests/Sussudio.Tests/AppSurface.Tests.cs`
+Net production .cs delta: 0; net test .cs delta: -2
+Partial clusters reduced: legacy `Program` app-surface partial file count -2
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: App unhandled-exception/recoverability assertions, single-instance/startup source assertions, bool/inverse/visibility converter behavior checks, and `DisplayFormatters.FormatSourceHdr` mapping checks remain unchanged.
+Notes for future agents: keep legacy app-surface checks in `AppSurface.Tests.cs` while `XUnit.AutomationContractsTests.cs` remains their xUnit execution surface; move only checks that guard a different runtime seam into a separate owner.

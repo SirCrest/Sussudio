@@ -67,7 +67,7 @@ public sealed class AutomationAppSurfaceContractsTests
 
 // Minimal xUnit slice for Sussudio.Converters.BoolConverters. The full
 // behavior matrix is exercised by the legacy reflection runner in
-// BoolConverters.Tests.cs; this xUnit pair verifies the same Visible/Collapsed
+// AppSurface.Tests.cs; this xUnit pair verifies the same Visible/Collapsed
 // mapping so the converters are reachable from the xUnit discovery path too.
 public class BoolConvertersTests
 {
@@ -97,7 +97,7 @@ public class BoolConvertersTests
         AssertImplementsValueConverter(inverseVisibility);
 
         // Visibility mapping behavior is exercised by the legacy reflection runner
-        // (BoolConverters.Tests.cs), which loads Microsoft.UI.Xaml.dll via the staged
+        // (AppSurface.Tests.cs), which loads Microsoft.UI.Xaml.dll via the staged
         // win-x64 path; the xUnit host here intentionally stops at metadata checks
         // because WinUI dependencies are not side-loaded into the test AppDomain.
     }
