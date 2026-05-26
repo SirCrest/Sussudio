@@ -3822,3 +3822,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; test locality only. Full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, NVML polling behavior, optional telemetry fallback, or GPU stat formatting changed.
 Behavior preserved: NVML snapshot computed-property/unit conversion checks now live in `AutomationToolContracts.Tests.cs` and continue through `XUnit.ToolContractsTests.cs`; `NvmlMonitor` native interop ownership is now an explicit xUnit fact in the same tool-model contract group.
 Notes for future agents: keep NVML snapshot model and diagnostic monitor ownership assertions with the tool-model contract group unless GPU telemetry grows a dedicated executable fixture or hardware-backed test harness.
+
+Date: 2026-05-26
+Area: Native XU KS bridge ownership test locality
+Problem: `KsExtensionUnitNative.SourceOwnership.Tests.cs` was a one-check ownership shard for the Native XU KS bridge and linked probe project. The same review path already runs through the Native XU provider/source-ownership test cluster, so the standalone file added another place to open without providing an independent fixture.
+Files consolidated: `tests/Sussudio.Tests/KsExtensionUnitNative.SourceOwnership.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: n/a; Native XU ownership test shard count -1 while preserving the existing xUnit fact route
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (885 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilt `NativeXuAudioProbe`, app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, Native XU probe linked-source includes, KS bridge behavior, or telemetry command routing changed.
+Behavior preserved: the cohesive KS bridge source-shape and `NativeXuAudioProbe` linked-source assertions now live in `NativeXuAtCommandProvider.Tests.cs`, with `XUnit.CoreRuntimeContractsTests` still invoking `KsExtensionUnitNative_SourceOwnership_IsCohesiveNativeBridge`.
+Notes for future agents: keep Native XU provider, KS bridge, shared device-support, and probe linked-source ownership checks together in `tests/Sussudio.Tests/NativeXuAtCommandProvider.Tests.cs` unless the probe gains a separate executable source-link verification fixture.

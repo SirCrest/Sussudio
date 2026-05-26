@@ -1525,7 +1525,8 @@ Primary current owners:
   contract checks.
 - `tests/Sussudio.Tests/NativeXuAtCommandProvider.Tests.cs` owns Native XU
   telemetry provider ownership, rolling command-group split, shared snapshot
-  assembly ownership, and supported 4K X product-revision checks.
+  assembly ownership, cohesive KS bridge source/probe-link ownership, and
+  supported 4K X product-revision checks.
 - `tests/Sussudio.Tests/CaptureDiscovery.SourceOwnership.Tests.cs` owns
   DeviceService scoring, cohesive MF device enumerator ownership,
   source-reader negotiation/interop ownership, and MF symbolic-link matching
