@@ -2812,3 +2812,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: MainViewModel UI dispatch, audio/capture property-change, runtime lifecycle/event-ingress, recording runtime, disk-space presentation, disposal, and capture status/error source-ownership guards remain unchanged.
 Notes for future agents: keep MainViewModel runtime source-ownership assertions in `ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs` with the service-layer orchestration entry point; create a separate helper only for an independently invoked runtime ownership seam.
+
+Date: 2026-05-26
+Area: Flashback buffer segment lookup/query test locality
+Problem: `Flashback.Buffer.SegmentQueries.Tests.cs` and `Flashback.Buffer.SegmentLookups.Tests.cs` split the same read-only Flashback buffer segment access surface across two small legacy `Program` partial files. Reviewing position lookup, next-segment walking, path normalization, range queries, active path, segment count, and segment-list behavior required opening both files even though they share the same reflected buffer-manager fixture and completed-segment helpers.
+Files consolidated: `tests/Sussudio.Tests/Flashback.Buffer.SegmentQueries.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` Flashback buffer segment test helper partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: Flashback buffer segment position lookup, next-segment path lookup, path normalization, segment-start PTS, range query, active path, segment-count, and segment-list behavior tests remain registered through the same xUnit recording model contract surface.
+Notes for future agents: keep read-only Flashback buffer segment access tests in `Flashback.Buffer.SegmentLookups.Tests.cs`; keep shared reflected buffer-manager factories in `Flashback.Buffer.Helpers.cs` while retention, segment mutation, and query/lookup tests all use them.

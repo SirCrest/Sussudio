@@ -2093,10 +2093,8 @@ Primary current owners:
   owns Flashback buffer disposed-state no-op and recovery-preserve tests.
 - `tests/Sussudio.Tests/Flashback.Buffer.SegmentLookups.Tests.cs` owns
   Flashback buffer segment position lookup, next-segment path lookup, path
-  normalization, and segment-start PTS behavior tests.
-- `tests/Sussudio.Tests/Flashback.Buffer.SegmentQueries.Tests.cs` owns
-  Flashback buffer segment range query, active path, segment-count, and
-  segment-list behavior tests.
+  normalization, segment-start PTS, segment range query, active path,
+  segment-count, and segment-list behavior tests.
 - `tests/Sussudio.Tests/Flashback.Buffer.Retention.Eviction.Tests.cs` owns
   Flashback buffer eviction accounting, eviction-pause behavior, and
   initialization recording-PTS reset tests.
