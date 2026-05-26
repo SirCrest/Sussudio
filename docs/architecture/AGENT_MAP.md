@@ -2002,10 +2002,8 @@ Primary current owners:
   eviction-pause ownership.
 - `tests/Sussudio.Tests/Flashback.Buffer.Segments.Validation.Tests.cs` owns
   Flashback buffer segment completion metadata, outside-path rejection,
-  disposed-state no-op, and recovery-preserve tests.
-- `tests/Sussudio.Tests/Flashback.Buffer.Segments.Accounting.Tests.cs` owns
-  Flashback buffer segment diagnostics, PTS clamp, byte accounting, and
-  same-path extension tests.
+  disposed-state no-op, recovery-preserve, segment diagnostics, PTS clamp, byte
+  accounting, and same-path extension tests.
 - `tests/Sussudio.Tests/Flashback.Buffer.SegmentLookups.Tests.cs` owns
   Flashback buffer segment position lookup, next-segment path lookup, path
   normalization, segment-start PTS, segment range query, active path,

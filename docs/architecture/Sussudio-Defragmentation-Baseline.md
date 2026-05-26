@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: Flashback buffer segment test locality
+Problem: `Flashback.Buffer.Segments.Accounting.Tests.cs` split active-segment diagnostics, invalid-duration PTS clamp checks, total-bytes accounting, and same-path segment extension away from the segment validation owner that already covers `OnSegmentCompleted` metadata rejection, outside-path safety, disposed-state no-ops, and recovery preservation. Reviewing Flashback buffer segment safety required opening two sibling shards for one segment mutation/accounting contract surface.
+Files consolidated: `tests/Sussudio.Tests/Flashback.Buffer.Segments.Accounting.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: none; legacy `Program` test shard count reduced by one
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter 'FullyQualifiedName~RecordingContractsTests'` (54 passed); full validation recorded in checkpoint commit notes
+CLI/MCP/pipe checks, if applicable: not applicable
+Behavior preserved: test-only relocation; xUnit method names and invoked `Program` contract names unchanged
+Notes for future agents: keep Flashback buffer segment validation, byte accounting, active-segment diagnostics, PTS clamp, same-path extension, disposed-state no-op, and recovery-preserve checks together in `tests/Sussudio.Tests/Flashback.Buffer.Segments.Validation.Tests.cs`; split only for a distinct segment collaborator or independent fixture.
+
+Date: 2026-05-26
 Area: Flashback playback state test locality
 Problem: `Flashback.Playback.State.Tests.cs` was a small legacy `Program` shard for initial playback state, pre-initialize command no-ops, stale failure clearing, and coalesced command state. Those assertions execute through `FlashbackPlaybackContractsTests` beside the source-shape checks that already own the root playback state surface, command-position clamping, near-live recovery, and pause/nudge transitions. Reviewing Flashback playback command state required opening an extra file before returning to the source-shape owner.
 Files consolidated: `tests/Sussudio.Tests/Flashback.Playback.State.Tests.cs`
