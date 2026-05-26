@@ -3016,3 +3016,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: responsive shell layout ownership, breakpoint/placement policy, and snap-region rectangle policy checks remain discovered through xUnit and documented under the MainWindow layout owner.
 Notes for future agents: keep MainWindow responsive layout and snap-region policy checks in `MainWindow.ControllerOwnership.Layout.Tests.cs`; do not recreate a standalone snap-region policy test file unless the production policy becomes a separate named collaborator.
+
+Date: 2026-05-26
+Area: MainWindow capture selection normalizer test locality
+Problem: `MainWindow.ControllerOwnership.Capture.SelectionNormalizer.Tests.cs` was a small standalone legacy `Program` partial shard for the helper that already lives inside `CaptureSelectionBindingController.cs`, while `MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs` already owns the selection binding controller shell, selection helper placement, and selection owner assertions. Reviewing capture ComboBox fallback behavior required one extra tiny file beside the real parent test owner.
+Files consolidated: `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionNormalizer.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MainWindow capture selection binding test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: capture/audio device live-instance matching, resolution exact/fallback behavior, frame-rate auto/exact/fallback behavior, and string ComboBox fallback behavior remain registered through `XUnit.PresentationPreviewMainWindowContractsTests`.
+Notes for future agents: keep capture selection binding controller ownership and pure `CaptureComboBoxSelectionNormalizer` fallback-policy checks in `MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs`; do not recreate a standalone selection normalizer test shard unless the production helper becomes a separate named collaborator.

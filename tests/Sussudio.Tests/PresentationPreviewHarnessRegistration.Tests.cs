@@ -16,7 +16,6 @@ static partial class Program
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionBindings.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionPresentation.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs",
-        "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionNormalizer.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.AudioPresentation.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Interaction.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs",

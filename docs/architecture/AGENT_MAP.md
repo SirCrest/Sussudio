@@ -1295,10 +1295,8 @@ Primary current owners:
   owns capture selection binding XAML-adapter, controller shell,
   `PropertyChanged` routing, collection sync, queued sync, available-option
   rebinding, capture device/audio input/capture mode/recording selection,
-  selection-normalizer placement, and device-audio projection ownership
-  assertions.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionNormalizer.Tests.cs`
-  owns capture ComboBox selection normalizer fallback-policy assertions.
+  selection-normalizer placement and fallback-policy behavior, and device-audio
+  projection ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionPresentation.Tests.cs`
   owns capture option presentation controller-adapter, refresh/apply button
   controller-adapter, affordance-policy, and HDR/FPS tooltip text-policy
