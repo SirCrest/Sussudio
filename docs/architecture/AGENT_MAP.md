@@ -1739,12 +1739,11 @@ Primary current owners:
   owns dispatcher payload defaults, trivial-handler payload-field parity
   checks against `AutomationCommandCatalog`, and the custom
   `GetAudioRampTrace.maxEntries` metadata guardrail.
-- `tests/Sussudio.Tests/AutomationCommandDispatcher.Readiness.Tests.cs` owns
-  dispatcher readiness gating, window close, preview health, stale wait-refresh
-  cadence guards, and UI automation readiness-independent coverage.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.ReadyIndependent.Tests.cs`
-  owns ready-independent no-hardware command coverage and harness payload/fake
-  device support.
+  owns dispatcher readiness gating, ready-independent no-hardware command
+  coverage, window close, preview health, stale wait-refresh cadence guards,
+  UI automation readiness-independent coverage, and harness payload/fake device
+  support.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
   reflection helpers plus automation command kind, catalog metadata, manifest,
   path-policy, and reliability-gates contract checks for automation tool tests.

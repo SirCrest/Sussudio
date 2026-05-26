@@ -2836,3 +2836,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: Flashback buffer unsafe session-id rejection and segment extension normalization/rejection tests remain registered through the same xUnit recording model contract surface.
 Notes for future agents: keep Flashback buffer session-id and segment-extension validation tests in `Flashback.Buffer.Retention.StartupCleanup.Tests.cs` while they guard the same startup/session scanner policy; keep segment completion metadata validation in `Flashback.Buffer.Segments.Validation.Tests.cs`.
+
+Date: 2026-05-26
+Area: automation dispatcher readiness test locality
+Problem: `AutomationCommandDispatcher.Readiness.Tests.cs` carried dispatcher readiness gating, UI readiness bypass, preview-health wait-condition, and window-close completion guards while `AutomationCommandDispatcher.ReadyIndependent.Tests.cs` owned the no-hardware ready-independent command harness. Reviewing automation readiness behavior required opening both files even though they protect the same command-readiness surface and share dispatcher source/harness helpers.
+Files consolidated: `tests/Sussudio.Tests/AutomationCommandDispatcher.Readiness.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` automation dispatcher readiness test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: dispatcher ready-device classification, ready-independent no-hardware command execution, UI readiness bypass guards, preview-renderer-health wait condition, and window-close completion checks remain registered through the same xUnit automation contract surface.
+Notes for future agents: keep readiness gating and no-hardware ready-independent command coverage in `AutomationCommandDispatcher.ReadyIndependent.Tests.cs`; keep payload parsing/catalog and command ownership checks in their existing focused dispatcher owner files.
