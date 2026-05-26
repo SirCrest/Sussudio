@@ -1896,7 +1896,7 @@ Partial clusters reduced: `CaptureSessionCoordinator` -2 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: Public lifecycle/audio command methods, emergency stop routing, audio monitoring mute/start/stop order, preview volume guard, snapshot projection fields, pending-command age bookkeeping, queue latency tracking, and serialized worker handoff remain unchanged
-Notes for future agents: keep coordinator construction, shared state, public non-Flashback command facade, and snapshot projection together in `CaptureSessionCoordinator.cs`; keep queue worker mechanics in `Queue.cs`, disposal in `Disposal.cs`, and Flashback-specific facades in the Flashback partials
+Notes for future agents: keep coordinator construction, shared state, public command facade, snapshot projection, queue worker mechanics, disposal, and Flashback-specific facades together in `CaptureSessionCoordinator.cs` unless a named coordinator state machine or separate Flashback command router is extracted.
 
 Date: 2026-05-24
 Area: Capture session coordinator Flashback facade locality
@@ -1908,7 +1908,7 @@ Partial clusters reduced: `CaptureSessionCoordinator` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: Flashback scrub, seek, play, pause, go-live, nudge, in/out marker, clear-marker adapters, active-playback guard use, and rejection telemetry remain unchanged
-Notes for future agents: keep coordinator Flashback status, export/segment forwarding, playback/scrub/marker adapters, and active playback-controller guard together in `CaptureSessionCoordinator.Flashback.cs`; keep queue worker mechanics and disposal in their focused partials
+Notes for future agents: keep coordinator Flashback status, export/segment forwarding, playback/scrub/marker adapters, and active playback-controller guard together in `CaptureSessionCoordinator.cs` with the serialized queue worker unless a named Flashback command router is extracted.
 
 Date: 2026-05-24
 Area: MF source-reader frame delivery DXGI locality
@@ -4340,3 +4340,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, NVDEC decode behavior, CUDA/D3D copy behavior, D3D11 locking semantics, or staging fallback behavior changed.
 Behavior preserved: CUDA primary-context ownership, D3D11 multithread locking, default/helper/staging texture creation, CUDA resource registration/unregistration, zero-copy copy, staging fallback copy, CUDA diagnostics, native P/Invoke declarations, and `CUDA_MEMCPY2D` layout now live in `CudaD3D11InteropBridge.cs`.
 Notes for future agents: keep CUDA/D3D11 bridge resource acquisition, disposal, native declarations, copy struct/constants, zero-copy path, and staging fallback together in `Sussudio/Services/Gpu/CudaD3D11InteropBridge.cs`; split only if a separate bridge strategy object or independently testable native interop adapter appears.
+
+Date: 2026-05-26
+Area: capture session coordinator Flashback facade locality
+Problem: `CaptureSessionCoordinator.Flashback.cs` owned the Flashback command/query facade, playback guard, and rejection telemetry while `CaptureSessionCoordinator.cs` owned the serialized command queue, coalescing generation, command accounting, snapshot state, Flashback DTOs, and disposal/cancellation invariants that facade depends on. Reviewing capture transition serialization and Flashback command behavior still required opening two partials for one coordinator surface.
+Files consolidated: `Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `CaptureSessionCoordinator` production partial file count -1; coordinator is no longer partial
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (clean after one duplicate test-name fix); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~CaptureSessionCoordinator|FullyQualifiedName~FlashbackRouting"` (36 passed); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, Flashback command names, queue coalescing semantics, cancellation routing, or inactive-playback rejection telemetry changed.
+Behavior preserved: serialized capture command queueing, Flashback restart/settings/format mutation cancellation routing, latest-only encoder setting coalescing, Flashback buffer/playback snapshots, export/segment forwarding, playback/scrub/marker/go-live adapters, inactive-playback rejection telemetry, snapshot accounting, disposal drain/cancel behavior, and public command names now live in `CaptureSessionCoordinator.cs`.
+Notes for future agents: keep `CaptureSessionCoordinator` command facade, queue worker, snapshot/accounting, disposal, and Flashback command/query adapters together in `Sussudio/Services/Capture/CaptureSessionCoordinator.cs`; extract only if a named capture transition state machine or Flashback command router replaces partial-file organization.

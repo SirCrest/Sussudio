@@ -31,12 +31,11 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureSessionCoordinator_FlashbackFacadeLivesInFocusedPartials()
+    internal static Task CaptureSessionCoordinator_FlashbackOwnershipLivesInCoordinatorRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
-        var flashbackText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs")
-            .Replace("\r\n", "\n");
+        var flashbackText = rootText;
         var flashbackStatusText = flashbackText;
         var flashbackPlaybackText = flashbackText;
         var flashbackExportText = flashbackText;
@@ -62,18 +61,21 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionCoordinator.Flashback.Playback.cs")),
             "CaptureSessionCoordinator Flashback playback adapters folded into the Flashback coordinator facade");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionCoordinator.Flashback.cs")),
+            "CaptureSessionCoordinator Flashback facade folded into the coordinator root");
         AssertContains(flashbackExportText, "internal Task<FinalizeResult> ExportFlashbackRangeAsync(");
         AssertContains(flashbackExportText, "internal Task<FinalizeResult> ExportFlashbackLastNSecondsAsync(");
         AssertContains(flashbackExportText, "internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()");
         AssertContains(flashbackGuardsText, "private bool TryGetActiveFlashback(");
         AssertContains(flashbackGuardsText, "Logger.Log($\"FLASHBACK_COORD_COMMAND_REJECTED command={command} reason={reason}\");");
 
-        AssertDoesNotContain(rootText, "RestartFlashbackAsync");
-        AssertDoesNotContain(rootText, "FlashbackBeginScrub");
-        AssertContains(agentMapText, "`CaptureSessionCoordinator.Flashback.cs`");
+        AssertContains(rootText, "public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable");
+        AssertContains(agentMapText, "`CaptureSessionCoordinator.cs`");
         AssertContains(agentMapText, "read-only Flashback status");
         AssertContains(agentMapText, "active playback-controller guard");
-        AssertContains(cleanupPlanText, "`CaptureSessionCoordinator.Flashback.cs`");
+        AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureSessionCoordinator.cs`");
         AssertContains(cleanupPlanText, "read-only Flashback status");
         AssertContains(cleanupPlanText, "active playback-controller guard");
 

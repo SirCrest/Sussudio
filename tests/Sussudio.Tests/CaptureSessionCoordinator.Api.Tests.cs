@@ -152,12 +152,11 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureSessionCoordinator_FlashbackFacadeLivesInFocusedPartial()
+    internal static Task CaptureSessionCoordinator_FlashbackFacadeLivesInCoordinatorRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
-        var flashbackText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs")
-            .Replace("\r\n", "\n");
+        var flashbackText = rootText;
         var flashbackStatusText = flashbackText;
         var flashbackExportText = flashbackText;
         var flashbackGuardsText = flashbackText;
@@ -171,10 +170,10 @@ static partial class Program
         AssertContains(flashbackExportText, "internal Task<FinalizeResult> ExportFlashbackRangeAsync(");
         AssertContains(flashbackExportText, "internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()");
         AssertContains(flashbackGuardsText, "private bool TryGetActiveFlashback(");
-        AssertDoesNotContain(rootText, "public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)");
-        AssertDoesNotContain(rootText, "public Task CycleFlashbackEncoderSettingsAsync(");
-        AssertDoesNotContain(rootText, "internal FlashbackPlaybackSnapshot GetFlashbackPlaybackSnapshot()");
-        AssertDoesNotContain(rootText, "private bool TryGetActiveFlashback(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionCoordinator.Flashback.cs")),
+            "CaptureSessionCoordinator Flashback facade folded into the coordinator root");
 
         return Task.CompletedTask;
     }

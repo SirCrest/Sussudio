@@ -430,19 +430,18 @@ Primary current owner: `Sussudio/Services/Capture/`
 Important entry points:
 
 - `CaptureSessionCoordinator.cs` owns construction, shared state fields, the
-  public non-Flashback lifecycle/audio command facade into the serialized
-  worker, queue/session snapshot projection, work-item creation, command
-  enqueueing, enqueue-failure handling, disposed-state ingress guards,
-  worker-loop execution, command coalescing, operation cancellation/failure
-  accounting, pending-command failure drain, and pending-command counter
-  decrement policy, plus dispose/drain/cancel lifecycle for the worker queue
-  and cancellation token source.
+  public lifecycle/audio/Flashback command facade into the serialized worker,
+  queue/session snapshot projection, work-item creation, command enqueueing,
+  enqueue-failure handling, disposed-state ingress guards, worker-loop
+  execution, command coalescing, operation cancellation/failure accounting,
+  pending-command failure drain, and pending-command counter decrement policy,
+  plus dispose/drain/cancel lifecycle for the worker queue and cancellation
+  token source.
 - `CaptureSessionCoordinator.cs` also owns command enums, queue receipts,
-  session snapshots, and Flashback playback/buffer status projections.
-- `CaptureSessionCoordinator.Flashback.cs` owns queued Flashback mutations,
-  read-only Flashback status, playback snapshot projection, Flashback export
-  and segment query forwarding, playback/scrub/marker/go-live command adapters,
-  and active playback-controller readiness checks and rejection logging.
+  session snapshots, queued Flashback mutations, read-only Flashback status,
+  Flashback playback/buffer status projections, Flashback export and segment
+  query forwarding, playback/scrub/marker/go-live command adapters, and active
+  playback-controller readiness checks and rejection logging.
 - `CaptureModels.cs` owns pure transition legality,
   steady-state resolution, mutable session state, transition generation, and
   state mutation methods used by normal transitions, cleanup, disposal, and

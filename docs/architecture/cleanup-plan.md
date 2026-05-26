@@ -901,10 +901,13 @@ lifecycle-changing operations should pass an explicit target
 `CaptureSessionState`. Active recording backend resource ownership now lives in
 `Sussudio/Services/Capture/CapturePipelineResources.cs`.
 Capture session coordinator command enums, queue receipt records, session
-snapshots, and Flashback playback/buffer status projections now live in
+snapshots, queued Flashback mutations, read-only Flashback status, Flashback
+playback/buffer status projections, export and segment query forwarding,
+playback/scrub/marker command adapters, and active playback-controller
+readiness/rejection logging now live in
 `Sussudio/Services/Capture/CaptureSessionCoordinator.cs` with construction,
 shared state fields, the public
-non-Flashback lifecycle/audio command facade into the serialized worker, and
+lifecycle/audio/Flashback command facade into the serialized worker, and
 queue/session snapshot projection, queue work item creation, command enqueueing,
 enqueue-failure handling, disposed-state ingress guards, worker-loop execution,
 command coalescing, operation cancellation/failure accounting, pending-command
@@ -914,10 +917,6 @@ Capture session coordinator API/command/snapshot contracts, focused
 source-ownership contracts, queue behavior, Flashback/cancellation behavior,
 transition policy, and shared reflection harness helpers now live in separate
 named files.
-Queued Flashback mutations, read-only Flashback status, playback snapshot
-projection, export and segment query forwarding, playback/scrub/marker command
-adapters, and active playback-controller readiness/rejection logging now live in
-`Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs`.
 
 Device discovery ownership lives in `DeviceService.cs`. Keep capture/audio
 enumeration orchestration, the combined discovery result, device

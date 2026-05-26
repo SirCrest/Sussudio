@@ -712,8 +712,8 @@ public sealed class AutomationCaptureFlashbackRoutingContractsTests
         => global::Program.CaptureSessionCoordinator_CommandFacadeLivesInFocusedPartial();
 
     [Fact]
-    public Task CaptureSessionCoordinatorFlashbackFacadeLivesInFocusedPartial()
-        => global::Program.CaptureSessionCoordinator_FlashbackFacadeLivesInFocusedPartial();
+    public Task CaptureSessionCoordinatorFlashbackFacadeLivesInCoordinatorRoot()
+        => global::Program.CaptureSessionCoordinator_FlashbackFacadeLivesInCoordinatorRoot();
 
     [Fact]
     public Task CaptureSessionCoordinatorQueueWorkerLivesInFocusedPartial()
