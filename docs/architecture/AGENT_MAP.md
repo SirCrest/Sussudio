@@ -1234,17 +1234,14 @@ Primary current owners:
   video-format option construction, HDR mode enablement, and source aspect-ratio
   filtering. Shell files bind and display those options.
 - `tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs` owns
-  detached-window, dock encoder, display-repeat visual-cadence, and compact
-  preview summary behavior checks.
-- `tests/Sussudio.Tests/XUnit.StatsPresentation.FrameTime.Tests.cs` owns
-  frame-time range and frame-time graph geometry behavior checks, plus shared
-  StatsPresentation xUnit reflection/file helpers.
+  detached-window, dock encoder, display-repeat visual-cadence, compact preview
+  summary, frame-time range, and frame-time graph geometry behavior checks,
+  plus shared StatsPresentation xUnit reflection/file helpers.
   `tests/Sussudio.Tests/StatsPresentation.Ownership.Tests.cs` owns
   builder/controller/DTO source-shape assertions and HDMI source telemetry
   panel projection checks,
   `tests/Sussudio.Tests/XUnit.StatsHardwareRowsTests.cs` owns hardware row
-  presentation behavior checks, `tests/Sussudio.Tests/XUnit.StatsHardwareRows.InputProvider.Tests.cs`
-  owns hardware row input-provider behavior checks, and
+  presentation and input-provider behavior checks, and
   `tests/Sussudio.Tests/MainViewModel.DiskSpacePresentation.Tests.cs` owns disk
   space presentation bridge checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.AutomationIds.Tests.cs` owns

@@ -2572,3 +2572,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; xUnit wrapper consolidation only, no automation command names, IDs, or wire payloads changed
 Behavior preserved: capture configuration helper methods, fact names, reflection assertions, capture mode option behavior checks, capture settings/MJPEG HFR/bitrate checks, recording selection policy checks, encoder support checks, and recording pipeline option capacity checks remain unchanged.
 Notes for future agents: keep capture configuration xUnit reflection helpers and their related facts together in `XUnit.CaptureConfigurationModelsTests.cs`; add focused production behavior tests elsewhere only when they exercise a different runtime seam rather than another wrapper around the same contract surface.
+
+Date: 2026-05-26
+Area: stats xUnit wrapper locality
+Problem: Stats presentation and hardware-row xUnit coverage still used two small partial pairs: frame-time facts lived beside formatting facts, and hardware-row input-provider facts lived beside hardware-row presentation facts. The pairs exercised the same StatsPresentation/StatsHardwareRows helper surfaces and shared reflection/file helper methods, so the split added wrapper-file count without improving behavioral locality.
+Files consolidated: `tests/Sussudio.Tests/XUnit.StatsPresentation.FrameTime.Tests.cs`; `tests/Sussudio.Tests/XUnit.StatsHardwareRows.InputProvider.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -2
+Partial clusters reduced: `StatsPresentationTests` xUnit partial file count -1; `StatsHardwareRowsTests` xUnit partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; xUnit wrapper consolidation only, no automation command names, IDs, or wire payloads changed
+Behavior preserved: stats presentation formatting, detached-window text, encoder text, expected visual-repeat behavior, compact preview summary source-shape checks, frame-time range and graph geometry checks, hardware decode/GPU row formatting, hardware-row input sampling policy, and presentation-preview harness registration coverage remain unchanged.
+Notes for future agents: keep stats presentation xUnit formatting and frame-time behavior in `XUnit.StatsPresentation.Formatting.Tests.cs`; keep hardware row presentation and input-provider behavior in `XUnit.StatsHardwareRowsTests.cs` unless a new independently executable stats test seam emerges.
