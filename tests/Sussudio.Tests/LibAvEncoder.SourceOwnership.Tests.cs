@@ -214,45 +214,45 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task LibAvEncoder_OutputLifecycleLivesInFocusedPartials()
+    internal static Task LibAvEncoder_OutputLifecycleLivesInFocusedOwner()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
-        var rotationText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.OutputRotation.cs")
-            .Replace("\r\n", "\n");
-        var resourceCleanupText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.ResourceCleanup.cs")
+        var outputLifecycleText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.OutputLifecycle.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(outputLifecycleText, "public RotateOutputResult RotateOutput(string newPath)");
+        AssertContains(outputLifecycleText, "private void CloseCurrentOutputIo()");
+        AssertContains(outputLifecycleText, "private void ReinitializeOutputContext(string outputPath)");
+        AssertContains(outputLifecycleText, "private void ReinitializeVideoStream()");
+        AssertContains(outputLifecycleText, "private void ResetSegmentRuntimeState()");
+        AssertContains(outputLifecycleText, "private static unsafe void ApplyMp4MuxerOptions(");
+        AssertContains(outputLifecycleText, "frag_keyframe+empty_moov");
+        AssertContains(outputLifecycleText, "public void FlushAndClose()");
+        AssertContains(outputLifecycleText, "public void Dispose()");
+        AssertContains(outputLifecycleText, "private void CleanupResources(bool writeTrailer)");
+        AssertContains(outputLifecycleText, "var finalMicSamplesReceived = ReleaseNativeResources(useCudaHardwareFrames);");
+        AssertContains(outputLifecycleText, "ffmpeg.av_write_trailer(_formatCtx)");
+        AssertContains(outputLifecycleText, "private long ReleaseNativeResources(bool useCudaHardwareFrames)");
+        AssertContains(outputLifecycleText, "ffmpeg.avio_closep(&_formatCtx->pb)");
+        AssertContains(outputLifecycleText, "Marshal.Release(_hwPoolTextures[i]);");
+        AssertContains(outputLifecycleText, "ffmpeg.avcodec_free_context(&videoCodecCtx)");
+        AssertContains(outputLifecycleText, "_isOpen = false;");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.OutputLifecycle.cs")),
-            "LibAvEncoder.OutputLifecycle.cs has been replaced by focused output partials");
-        AssertContains(rotationText, "public RotateOutputResult RotateOutput(string newPath)");
-        AssertContains(rotationText, "private void CloseCurrentOutputIo()");
-        AssertContains(rotationText, "private void ReinitializeOutputContext(string outputPath)");
-        AssertContains(rotationText, "private void ReinitializeVideoStream()");
-        AssertContains(rotationText, "private void ResetSegmentRuntimeState()");
-        AssertContains(rotationText, "private static unsafe void ApplyMp4MuxerOptions(");
-        AssertContains(rotationText, "frag_keyframe+empty_moov");
-        AssertContains(resourceCleanupText, "public void FlushAndClose()");
-        AssertContains(resourceCleanupText, "public void Dispose()");
-        AssertContains(resourceCleanupText, "private void CleanupResources(bool writeTrailer)");
-        AssertContains(resourceCleanupText, "var finalMicSamplesReceived = ReleaseNativeResources(useCudaHardwareFrames);");
-        AssertContains(resourceCleanupText, "ffmpeg.av_write_trailer(_formatCtx)");
-        AssertContains(resourceCleanupText, "private long ReleaseNativeResources(bool useCudaHardwareFrames)");
-        AssertContains(resourceCleanupText, "ffmpeg.avio_closep(&_formatCtx->pb)");
-        AssertContains(resourceCleanupText, "Marshal.Release(_hwPoolTextures[i]);");
-        AssertContains(resourceCleanupText, "ffmpeg.avcodec_free_context(&videoCodecCtx)");
-        AssertContains(resourceCleanupText, "_isOpen = false;");
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.OutputRotation.cs")),
+            "output rotation folded into LibAvEncoder.OutputLifecycle.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.ResourceCleanup.cs")),
+            "resource cleanup folded into LibAvEncoder.OutputLifecycle.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.NativeResourceRelease.cs")),
-            "Native resource release folded into LibAvEncoder.ResourceCleanup.cs");
+            "Native resource release folded into LibAvEncoder.OutputLifecycle.cs");
         AssertDoesNotContain(rootText, "public RotateOutputResult RotateOutput(string newPath)");
         AssertDoesNotContain(rootText, "public void FlushAndClose()");
         AssertDoesNotContain(rootText, "public void Dispose()");
-        AssertDoesNotContain(rotationText, "private void CleanupResources(bool writeTrailer)");
-        AssertDoesNotContain(resourceCleanupText, "private static unsafe void ApplyMp4MuxerOptions(");
 
         return Task.CompletedTask;
     }

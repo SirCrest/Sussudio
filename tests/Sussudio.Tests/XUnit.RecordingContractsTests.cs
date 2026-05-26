@@ -278,8 +278,8 @@ public sealed class CoreRuntimeRecordingContractsTests
         => global::Program.LibAvEncoder_SetupAndModelsLiveInFocusedPartials();
 
     [Fact]
-    public Task LibAvEncoderOutputLifecycleLivesInFocusedPartials()
-        => global::Program.LibAvEncoder_OutputLifecycleLivesInFocusedPartials();
+    public Task LibAvEncoderOutputLifecycleLivesInFocusedOwner()
+        => global::Program.LibAvEncoder_OutputLifecycleLivesInFocusedOwner();
 
     [Fact]
     public Task FlashbackIntegrityUsesRecordingScopedSequenceGaps()

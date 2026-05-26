@@ -1250,9 +1250,9 @@ submission, texture-pool copy/reference setup, GPU device-removed checks,
 hardware-frame PTS/keyframe assignment, HDR side-data attachment, EAGAIN
 packet drains, and hardware-frame unref cleanup now live in
 `Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs`.
-Output rotation now lives in `LibAvEncoder.OutputRotation.cs`; final close,
-trailer/logging, native frame/context/buffer release, and encoder state reset
-now live in `LibAvEncoder.ResourceCleanup.cs`.
+Output rotation, final close, trailer/logging, native frame/context/buffer
+release, and encoder state reset now live together in
+`LibAvEncoder.OutputLifecycle.cs`.
 
 LibAv encoder video submission now lives in
 `Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs`. Keep CPU packed
@@ -1260,15 +1260,14 @@ frame submission, packed NV12/P010 plane sizing, source-buffer validation,
 stride-aware plane copies, forced keyframe handling, per-frame HDR side-data
 attachment/removal, and video packet drains there.
 
-LibAv encoder output lifecycle is split across focused partials.
-`Sussudio/Services/Recording/LibAvEncoder.OutputRotation.cs` owns rotation IO
+LibAv encoder output lifecycle lives in
+`Sussudio/Services/Recording/LibAvEncoder.OutputLifecycle.cs`. Keep rotation IO
 close/reopen, stream reinitialization, bitstream-filter reset, segment runtime
-resets, and MP4 muxer option policy for open and rotated outputs.
-`LibAvEncoder.ResourceCleanup.cs` owns
-flush/final close, dispose, trailer writing, close-result logging, final output
-telemetry, native frame/context/buffer release, hardware texture pool release,
-and encoder state reset; keep generic open/error helpers with the core encoder state in
-`LibAvEncoder.cs`.
+resets, MP4 muxer option policy for open and rotated outputs, flush/final close,
+dispose, trailer writing, close-result logging, final output telemetry, native
+frame/context/buffer release, hardware texture pool release, and encoder state
+reset together there; keep generic open/error helpers with the core encoder
+state in `LibAvEncoder.cs`.
 
 Recording artifact context creation stays in
 `Sussudio/Services/Recording/RecordingArtifactManager.cs`, including temp/final
