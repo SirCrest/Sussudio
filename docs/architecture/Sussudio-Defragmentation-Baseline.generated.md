@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-26T19:30:18Z
+Generated UTC: 2026-05-26T19:45:17Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 342 |
+| Production .cs files | 341 |
 | Test .cs files | 175 |
-| Production .cs files under 60 lines | 2 (0.6%) |
-| Production .cs files under 80 lines | 6 (1.8%) |
+| Production .cs files under 60 lines | 1 (0.3%) |
+| Production .cs files under 80 lines | 4 (1.2%) |
 
 ## Largest partial-type clusters
 
@@ -57,8 +57,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 965 | Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
 | 912 | Sussudio/Services/Flashback/FlashbackBackendResources.cs |
 | 904 | Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs |
-| 885 | Sussudio/ViewModels/StatsPresentationBuilder.cs |
 | 885 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
+| 885 | Sussudio/ViewModels/StatsPresentationBuilder.cs |
 | 884 | tools/NativeXuAudioProbe/Program.I2cCommands.cs |
 | 876 | tools/Common/DiagnosticSessionFlashbackExportScenarios.cs |
 | 868 | Sussudio/Services/Audio/WasapiComInterop.cs |
@@ -87,7 +87,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | Lines | Path |
 | ---: | --- |
 | 14 | Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs |
-| 56 | Sussudio/DisplayFormatters.cs |
 
 ## Notes
 

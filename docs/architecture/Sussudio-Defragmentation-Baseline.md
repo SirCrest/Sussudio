@@ -4232,3 +4232,15 @@ Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csp
 CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, launch animation behavior, splash phrase pacing, or startup hosting behavior changed.
 Behavior preserved: launch entrance animation, first-load hosting, splash phrase controller/catalog ownership, and splash phrase pacing-policy interval-band checks now live in `tests/Sussudio.Tests/MainWindow.ShellOwnership.Startup.Launch.Tests.cs` and still execute through `PresentationPreviewLaunchStartupContractsTests`.
 Notes for future agents: keep MainWindow launch entrance, first-load startup hosting, splash phrase ownership, and splash pacing checks together in `MainWindow.ShellOwnership.Startup.Launch.Tests.cs`; create a separate launch startup test file only for an independent fixture or non-shell startup owner.
+
+Date: 2026-05-26
+Area: app-surface production helper locality
+Problem: `Sussudio/DisplayFormatters.cs` and `Sussudio/Converters/BoolConverters.cs` were two sub-80-line production helper files for one app-facing UI surface. Their tests had already been consolidated into `AppSurface.Tests.cs`, but changing compact display labels or hand-bound XAML bool converters still required opening two tiny production files with no independent runtime owner.
+Files consolidated: `Sussudio/DisplayFormatters.cs`; `Sussudio/Converters/BoolConverters.cs`
+Files added: `Sussudio/AppSurface.cs`
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; app-surface helper file count -1 while preserving `Sussudio.DisplayFormatters` and `Sussudio.Converters.*` public converter type names
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~AutomationAppSurfaceContractsTests` (14 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (clean serial rerun after an initial parallel build/test file-lock race); full validation recorded in checkpoint commit notes
+CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML resource keys, converter type names, display formatter type name, or formatting semantics changed.
+Behavior preserved: `DisplayFormatters.FormatSourceHdr`, `FormatBytes`, and `FormatBitrate` now live beside `InverseBoolConverter`, `BoolToVisibilityConverter`, and `BoolToInverseVisibilityConverter` in `Sussudio/AppSurface.cs`; App.xaml resource keys still resolve the same converter classes through the unchanged `Sussudio.Converters` namespace.
+Notes for future agents: keep compact app-surface display helpers and the small XAML converter set together in `Sussudio/AppSurface.cs` unless either surface grows a separate fixture, public package boundary, or independent runtime collaborator.
