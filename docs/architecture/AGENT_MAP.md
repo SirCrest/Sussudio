@@ -2102,8 +2102,8 @@ Primary current owners:
   codec, counter, queue, force-rotate, packet-drain, startup, and
   source-ownership checks after their removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/Flashback.Exporter.Basic.Tests.cs` owns Flashback
-  exporter request-surface smoke tests, path/request validation, and export
-  throttle tests.
+  exporter request-surface smoke tests, path/request validation, cancellation
+  precedence, cancelled lock-wait behavior, and export throttle tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.FailureClassifier.Tests.cs` owns
   Flashback export failure classifier source ownership and status-message
   mapping tests.
@@ -2111,8 +2111,6 @@ Primary current owners:
   Flashback exporter source-ownership tests, task-wrapper infrastructure,
   disposal timeout/native-state lifetime guards, and stream-count/template
   stream-copy owner/call-site tests.
-- `tests/Sussudio.Tests/Flashback.Exporter.Cancellation.Tests.cs` owns
-  Flashback exporter cancellation precedence and cancelled lock-wait behavior.
 - `tests/Sussudio.Tests/Flashback.Exporter.SegmentPaths.Tests.cs` owns
   Flashback exporter segment path, duplicate path, and missing segment tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Segments.Tests.cs` owns Flashback

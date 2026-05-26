@@ -2992,3 +2992,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: CaptureService recording lifecycle, backend resource aggregate, stop-finalization failure propagation, recording start rollback, and recording outcome-state ownership checks remain registered through `XUnit.RecordingPipelineContractsTests`.
 Notes for future agents: keep recording lifecycle, rollback, and outcome-state ownership checks in `CaptureService.RecordingLifecycleOwnership.Tests.cs`; keep Flashback-specific recording orchestration checks in the Flashback orchestration/source owner files.
+
+Date: 2026-05-26
+Area: Flashback exporter request failure test locality
+Problem: `Flashback.Exporter.Cancellation.Tests.cs` split cancellation precedence and cancelled lock-wait assertions away from `Flashback.Exporter.Basic.Tests.cs`, even though both protect the same Flashback exporter top-level request/failure surface before native export work: request validation, missing/invalid inputs, empty segment lists, cancellation precedence, and export throttle policy.
+Files consolidated: `tests/Sussudio.Tests/Flashback.Exporter.Cancellation.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` Flashback exporter request/failure test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: Flashback exporter request validation, missing input/output failure results, null request failure, empty segment failure, cancellation precedence, cancelled lock-wait behavior, and export throttle assertions remain registered through `XUnit.FlashbackContractsTests`.
+Notes for future agents: keep top-level Flashback exporter request validation and cancellation-precedence checks in `Flashback.Exporter.Basic.Tests.cs`; keep temp-output replacement and orphan cleanup checks in `Flashback.Exporter.OutputFinalization.Tests.cs`.
