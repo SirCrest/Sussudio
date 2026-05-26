@@ -10,7 +10,7 @@ static partial class Program
         var previewStartupSessionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs")
             .Replace("\r\n", "\n");
         var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
-        var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs")
+        var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs")
             .Replace("\r\n", "\n");
         var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
         var previewRuntimeSnapshotText = previewRendererText;
@@ -84,6 +84,10 @@ static partial class Program
         AssertContains(previewReinitText, "ResetPreviewContentTransform = ResetPreviewContentTransform,");
         AssertContains(previewReinitText, "ShowStartPreviewButtonPresentation = ShowStartPreviewButtonPresentation,");
         AssertContains(previewReinitTransitionControllerText, "internal sealed class PreviewReinitTransitionController");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "PreviewReinitTransitionController.cs")),
+            "preview reinit transition state lives with preview transition animation ownership");
         AssertContains(previewReinitTransitionControllerText, "internal sealed class PreviewReinitCompletionPresentationContext");
         AssertContains(previewReinitTransitionControllerText, "public bool IsAnimating { get; private set; }");
         AssertContains(previewReinitTransitionControllerText, "public void BeginAnimateOut(string reason, string callerName)");

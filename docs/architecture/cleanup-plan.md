@@ -2477,8 +2477,8 @@ property-change routing across stats overlay and settings shelf controllers,
 settings shelf animation, status-strip projection, and window title formatting.
 `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
 
-Preview shell/content fade and scale transitions, video-shadow fade timing, and
-unavailable-placeholder presentation now live in
+Preview shell/content fade and scale transitions, video-shadow fade timing,
+unavailable-placeholder presentation, and preview reinit transition state now live in
 `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`.
 `Sussudio/MainWindow.PreviewTransitions.Composition.cs` wires preview-transition
 animation callbacks; video-shadow fade callbacks and shared compositor shadow
@@ -2540,7 +2540,7 @@ audio-preview monitoring toggles live in
 Preview reinit animation active state, first-visual transition clears,
 startup-reset preservation, completion presentation decisions, and
 `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs now live in
-`Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs`.
+`Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`.
 `Sussudio/MainWindow.PreviewTransitions.Composition.cs` is the XAML/MainWindow
 adapter that supplies renderer-stop-before-teardown and UI callback endpoints
 for reinit completion.
@@ -2597,7 +2597,7 @@ handler signatures and delegates into the controller. The broad
 `MainWindow.xaml.cs` dispatcher now owns only the `PropertyChanged`
 event envelope, property-name normalization, and visible route order. Preview
 reinit transition state and log ownership now live in
-`Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs`, while
+`Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`, while
 `Sussudio/MainWindow.PreviewTransitions.Composition.cs` keeps the renderer-stop-before-teardown
 handoff and XAML callback endpoints for completion presentation.
 

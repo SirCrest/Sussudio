@@ -2196,7 +2196,10 @@ Primary current owners:
   `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
   shell/content fade and scale transitions, video-shadow fade timing,
-  unavailable-placeholder fades, and startup/unavailable presentation prep.
+  unavailable-placeholder fades, startup/unavailable presentation prep, preview
+  reinit animation active state, first-visual transition clears, startup-reset
+  preservation, completion presentation decisions, and the
+  `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs.
   `Sussudio/MainWindow.PreviewTransitions.Composition.cs` wires
   preview-transition animation callbacks; video-shadow fade callbacks route
   through the shadow controller in `PreviewSurfacePresentationController`.
@@ -2234,7 +2237,7 @@ Primary current owners:
   fade-in/fade-out state, saved target volume, storyboard lifetime, and volume
   save suppression. `Sussudio/MainWindow.PreviewTransitions.Composition.cs` is the
   XAML-facing adapter.
-- `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs` owns preview
+- `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and the
   `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs.
@@ -2274,7 +2277,7 @@ Primary current owners:
   `Sussudio/MainWindow.PreviewRenderer.Composition.cs` wires preview button
   presentation callbacks and
   preserves preview event-handler signatures and delegates into the controller.
-  `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs` owns preview
+  `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and reinit transition logs.
   `Sussudio/MainWindow.PreviewTransitions.Composition.cs` keeps the renderer-stop-before-teardown
@@ -2288,7 +2291,8 @@ Primary current owners:
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview-
   startup loading overlay presentation while the app waits for visual
   confirmation: ProgressRing activation, fade-in/fade-out routing, and the
-  reinit-collapse opacity reset. `Sussudio/MainWindow.PreviewTransitions.Composition.cs`
+  reinit-collapse opacity reset. It also owns preview reinit animation state and
+  completion presentation decisions. `Sussudio/MainWindow.PreviewTransitions.Composition.cs`
   is the XAML-facing adapter.
 - `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns top-level
   preview resize log throttling and reset state.

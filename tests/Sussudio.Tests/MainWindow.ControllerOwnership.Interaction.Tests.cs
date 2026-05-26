@@ -121,7 +121,7 @@ static partial class Program
         var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
         var actionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewButtonActionController.cs").Replace("\r\n", "\n");
         var controllerText = actionControllerText;
-        var reinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs").Replace("\r\n", "\n");
+        var reinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
 
         AssertContains(propertyChangedPreviewText, "private PreviewButtonPresentationController _previewButtonPresentationController = null!;");
         AssertContains(propertyChangedPreviewText, "private void InitializePreviewButtonPresentationController()");

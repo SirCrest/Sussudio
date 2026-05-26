@@ -3352,3 +3352,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app and automation tooling; no public automation command names, IDs, wire payloads, XAML bindings, stat labels, graph geometry constants, or polling behavior changed
 Behavior preserved: frame-time overlay text application, text-change guard, visual/preview polyline mutation, canvas fallback sizing, sample projection, expected-line projection, and stats snapshot handoff now live in `StatsOverlayCompositionController.cs` with the frame-time target context and polling route.
 Notes for future agents: keep compact frame-time overlay target wiring and presentation mutation in `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`; keep pure frame-time range/text policy in `StatsPresentationBuilder.cs`.
+
+Date: 2026-05-26
+Area: preview reinit transition locality
+Problem: `PreviewReinitTransitionController.cs` was a small preview reinitialization state/logging owner split from `PreviewTransitionAnimationController.cs`, even though it coordinates the same preview transition animation lifecycle and completion presentation callbacks wired by `MainWindow.PreviewTransitions.Composition.cs`. Reviewing preview reinit animate-out/animate-in/reset behavior required opening two adjacent preview transition controller files.
+Files consolidated: `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: preview transition production owner count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds app and automation tooling; no public automation command names, IDs, wire payloads, XAML bindings, preview button labels, reinit log text, or animation timing changed
+Behavior preserved: preview reinit animation active flag, completion presentation selection, unavailable placeholder reveal, confirmed visual reset, first-visual transition clear, startup-reset preservation, operation-scoped clear logging, and `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` log strings now live in `PreviewTransitionAnimationController.cs` with preview shell/content transition and startup overlay presentation.
+Notes for future agents: keep preview transition animation, startup overlay presentation, and reinit transition state in `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`; keep preview startup attempt/session bookkeeping in `PreviewStartupSessionController.cs`.
