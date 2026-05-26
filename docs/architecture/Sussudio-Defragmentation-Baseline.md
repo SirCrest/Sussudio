@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: Flashback playback state test locality
+Problem: `Flashback.Playback.State.Tests.cs` was a small legacy `Program` shard for initial playback state, pre-initialize command no-ops, stale failure clearing, and coalesced command state. Those assertions execute through `FlashbackPlaybackContractsTests` beside the source-shape checks that already own the root playback state surface, command-position clamping, near-live recovery, and pause/nudge transitions. Reviewing Flashback playback command state required opening an extra file before returning to the source-shape owner.
+Files consolidated: `tests/Sussudio.Tests/Flashback.Playback.State.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: none; legacy `Program` test shard count reduced by one
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter 'FullyQualifiedName~FlashbackPlaybackContractsTests'` (22 passed); full validation recorded in checkpoint commit notes
+CLI/MCP/pipe checks, if applicable: not applicable
+Behavior preserved: test-only relocation; xUnit method names and invoked `Program` contract names unchanged
+Notes for future agents: keep Flashback playback root state, command no-op/coalescing state, and command-transition source-shape checks together in `tests/Sussudio.Tests/Flashback.Playback.SourceShape.Tests.cs`; split only for an independent runtime fixture or a distinct playback collaborator boundary.
+
+Date: 2026-05-26
 Area: MJPEG cadence test locality
 Problem: `CaptureCadence.Tests.cs` was a two-method legacy `Program` shard for packet-hash duplicate cadence and visual-cadence crop sampling, while both methods execute through `XUnit.MjpegPipelineContractsTests` and support the same MJPEG pipeline contract surface that already verifies packet-hash ownership and preview cadence behavior. Reviewing MJPEG cadence assertions required opening an extra small file before returning to the MJPEG pipeline source-shape owner.
 Files consolidated: `tests/Sussudio.Tests/CaptureCadence.Tests.cs`

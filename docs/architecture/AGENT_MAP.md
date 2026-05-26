@@ -2059,11 +2059,9 @@ Primary current owners:
   validation, failure classification, segment, cancellation, output
   path/finalization, and source-ownership checks after their removal from the
   legacy harness catalog.
-- `tests/Sussudio.Tests/Flashback.Playback.State.Tests.cs` owns Flashback
-  playback initial state, pre-initialize command no-ops, successful no-op
-  failure clearing, and coalesced command state tests.
 - `tests/Sussudio.Tests/Flashback.Playback.SourceShape.Tests.cs` owns
-  Flashback playback command-position clamping, saturating timestamp arithmetic,
+  Flashback playback root state, pre-initialize command no-ops, no-op/coalesced
+  command state, command-position clamping, saturating timestamp arithmetic,
   segment-open recovery, near-live snap, snap-live identity cleanup,
   pause-from-live display, and paused nudge source-shape tests.
 - `tests/Sussudio.Tests/Flashback.Playback.Markers.Tests.cs` owns Flashback
