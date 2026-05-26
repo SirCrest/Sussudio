@@ -1291,8 +1291,9 @@ video/GPU/CUDA enqueue entry points, hot audio/microphone WASAPI write adapters,
 caller-side validation, audio queue eviction, audio remaining-buffer cleanup,
 the audio packet DTO, and shared work-signal/fatal-failure/queue-depth-underflow
 helpers there.
-`tests/Sussudio.Tests/RecordingQueue.LibAvSink.Queue.Tests.cs` owns the queue,
-submission, and cleanup assertions for this family.
+`tests/Sussudio.Tests/RecordingQueue.LibAvSink.Lifecycle.Tests.cs` owns the
+queue, submission, and cleanup assertions for this family alongside LibAv sink
+lifecycle checks.
 Video/GPU/CUDA queue admission policy, TryWrite depth accounting, overload
 fatal signaling, queue cleanup, pooled video buffer leasing, pooled packet
 return helpers, and video packet records now live in
@@ -1319,8 +1320,8 @@ cleanup, fatal encoder failure handling, bounded video/GPU/CUDA drain batches,
 unbounded LibAv audio/microphone drains, frame-encoded event dispatch, GPU
 texture release, CUDA frame free, and pooled buffer returns there.
 `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Lifecycle.Tests.cs`
-owns the LibAv sink lifecycle, output-validation, drain-loop, and packet-drain
-assertions.
+owns the LibAv sink queue, lifecycle, output-validation, drain-loop, and
+packet-drain assertions.
 
 Recording verifier ownership is split across focused partials. Keep strict
 verification orchestration, early failure results, primary mismatch parsing, HDR

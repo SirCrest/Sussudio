@@ -3040,3 +3040,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: native XU audio-control service cohesion/profile/payload/raw transport assertions remain registered through `XUnit.PresentationPreviewMainViewModelContractsTests`; audio meter callback-state assertions remain registered through the same xUnit surface.
 Notes for future agents: keep native XU audio-control service cohesion checks in `MainViewModel.AudioControls.DeviceAudio.Tests.cs`; keep audio meter callback-state checks in `MainViewModel.AudioControls.GainAndMonitoring.Tests.cs`.
+
+Date: 2026-05-26
+Area: LibAv recording sink test locality
+Problem: `RecordingQueue.LibAvSink.Queue.Tests.cs` and `RecordingQueue.LibAvSink.Lifecycle.Tests.cs` split the LibAv sink review surface across two legacy `Program` partial shards. Queue admission, audio/video queue cleanup, nonblocking enqueue behavior, drain ordering, output validation, startup, stop, and lifetime helpers are all part of the same LibAv recording sink ownership cluster.
+Files consolidated: `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Queue.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` LibAv recording sink test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: LibAv sink nonblocking video/GPU/CUDA enqueue checks, audio queue ownership, video queue submission ownership, output validation, bounded drain loop, encoding-loop, startup, stop-lifecycle, and lifetime-helper assertions remain registered through `XUnit.RecordingPipelineContractsTests` and `XUnit.RecordingModelContractsTests`.
+Notes for future agents: keep LibAv recording sink queue and lifecycle ownership checks together in `RecordingQueue.LibAvSink.Lifecycle.Tests.cs`; do not recreate a separate queue test shard unless production queue behavior becomes a separately named collaborator with its own test seam.
