@@ -1270,11 +1270,10 @@ Primary current owners:
   selection-normalizer placement and fallback-policy behavior, and device-audio
   projection ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionPresentation.Tests.cs`
-  owns capture option presentation controller-adapter, refresh/apply button
+  owns capture/recording option binding controller-adapter ownership,
+  capture option presentation controller-adapter, refresh/apply button
   controller-adapter, affordance-policy, and HDR/FPS tooltip text-policy
   assertions.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionBindings.Tests.cs`
-  owns capture/recording option binding controller-adapter ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Output.Tests.cs` owns
   MainWindow output path display/action ownership assertions plus output picker
   ownership and output drive free-space presentation bridge checks.
