@@ -2046,10 +2046,8 @@ Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples the
 read-only runtime inputs consumed by UI, automation, and verification, then
 delegates final DTO construction.
-Behavior coverage for runtime snapshot states lives in
-`tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.Behavior.Tests.cs`; source
-projection ownership coverage lives in
-`tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.ProjectionOwnership.Tests.cs`.
+Runtime snapshot behavior and source projection ownership coverage live together
+in `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.ProjectionOwnership.Tests.cs`.
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs` owns final
 `CaptureRuntimeSnapshot` DTO construction from already-sampled field groups.
 The private runtime snapshot assembly handoff contract lives with the assembler

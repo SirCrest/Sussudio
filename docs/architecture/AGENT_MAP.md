@@ -1562,13 +1562,11 @@ Primary current owners:
   timeout helper, software decoder shape, cadence, pooled-frame, preview-jitter,
   and queued lease-release contracts after their removal from the legacy harness
   catalog.
-- `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.Behavior.Tests.cs` owns
-  CaptureService runtime snapshot behavior scenarios for observed formats,
-  source-telemetry alignment, HDR pipeline parity, and inactive thread probes.
 - `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.ProjectionOwnership.Tests.cs`
-  owns runtime projection ownership for ingest/audio, reader transport, HDR
-  pipeline, source telemetry, frame-ledger recent-event contracts, and recording
-  integrity.
+  owns runtime projection ownership and behavior scenarios for ingest/audio,
+  reader transport, observed formats, HDR pipeline/parity, source telemetry/
+  alignment, inactive thread probes, frame-ledger recent-event contracts, and
+  recording integrity.
 - `tests/Sussudio.Tests/RecordingIntegrity.Contracts.Tests.cs` owns recording
   integrity summary defaults, automation snapshot field contracts, and
   automation projection ownership checks.
