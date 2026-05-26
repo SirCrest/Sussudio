@@ -1542,13 +1542,11 @@ Primary current owners:
   removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/MjpegPipeline.Tests.cs` owns CPU MJPEG pipeline
   source-shape, focused-partial ownership, startup-drop, known-loss,
-  packet-hash duplicate cadence, visual-cadence crop sampling, and
-  shared-reorder behavior checks.
-  `tests/Sussudio.Tests/XUnit.MjpegPipelineContractsTests.cs` owns the xUnit
-  execution surface for these CPU MJPEG runtime, timing metric math, stopwatch
-  timeout helper, software decoder shape, cadence, pooled-frame, preview-jitter,
-  and queued lease-release contracts after their removal from the legacy harness
-  catalog.
+  packet-hash duplicate cadence, visual-cadence crop sampling, shared-reorder
+  behavior checks, and the xUnit execution surface for CPU MJPEG runtime,
+  timing metric math, stopwatch timeout helper, software decoder shape,
+  cadence, pooled-frame, preview-jitter, and queued lease-release contracts
+  after their removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.ProjectionOwnership.Tests.cs`
   owns runtime projection ownership and behavior scenarios for ingest/audio,
   reader transport, observed formats, HDR pipeline/parity, source telemetry/

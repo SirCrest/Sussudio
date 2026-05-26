@@ -624,7 +624,7 @@ pooled-frame and jitter-buffer helpers. Pooled-frame coverage is split into
 lease lifecycle/fan-out/queued-release contracts, MJPEG jitter
 frame-ingress/adaptive policy, and MJPEG jitter queue/drop/reprime behavior.
 CPU MJPEG pipeline runtime checks now execute through
-`tests/Sussudio.Tests/XUnit.MjpegPipelineContractsTests.cs`, keeping pipeline,
+`tests/Sussudio.Tests/MjpegPipeline.Tests.cs`, keeping pipeline,
 cadence, pooled-frame, preview-jitter, and queued lease-release contracts in
 xUnit after their removal from the legacy harness catalog.
 Flashback xUnit wrapper checks now execute through

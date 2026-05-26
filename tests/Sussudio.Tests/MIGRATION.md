@@ -61,10 +61,10 @@ add xUnit alongside, and port incrementally.
   recording-integrity, and basic app contract checks.
 - `RecordingArtifactManager.Tests.cs` owns the former legacy temp artifact
   finalization and rollback behavior checks for recording output cleanup.
-- `XUnit.MjpegPipelineContractsTests.cs` owns the former legacy CPU MJPEG
-  pipeline, timing metric, stopwatch timeout, software decoder shape,
-  pooled-frame lease/fan-out, preview jitter, cadence, and queued lease-release
-  checks.
+- `MjpegPipeline.Tests.cs` owns the former legacy CPU MJPEG pipeline,
+  timing metric, stopwatch timeout, software decoder shape, pooled-frame
+  lease/fan-out, preview jitter, cadence, queued lease-release, and xUnit
+  execution-surface checks.
 - `XUnit.FlashbackModelsTests.cs` owns the former legacy Flashback buffer option
   sizing, session, playback-state, export progress, export segment, and export
   request model contract checks plus the shared reflection/nullability assertion

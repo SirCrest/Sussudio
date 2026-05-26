@@ -4175,15 +4175,15 @@ Notes for future agents: keep the expected command-ID table with `AutomationTool
 
 Date: 2026-05-26
 Area: CPU MJPEG timing xUnit locality
-Problem: `MjpegPipeline.Timing.Tests.cs` was a standalone direct xUnit file for CPU MJPEG timing metric math, stopwatch timeout helpers, and software decoder shape checks while the rest of the MJPEG pipeline contracts already executed through `XUnit.MjpegPipelineContractsTests.cs`. Reviewing CPU MJPEG behavior required opening a second xUnit owner for the same pipeline/decoder contract surface.
+Problem: `MjpegPipeline.Timing.Tests.cs` was a standalone direct xUnit file for CPU MJPEG timing metric math, stopwatch timeout helpers, and software decoder shape checks while the rest of the MJPEG pipeline contracts already executed through `MjpegPipeline.Tests.cs`. Reviewing CPU MJPEG behavior required opening a second xUnit owner for the same pipeline/decoder contract surface.
 Files consolidated: `tests/Sussudio.Tests/MjpegPipeline.Timing.Tests.cs`
 Files added: none
 Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: n/a; CPU MJPEG xUnit owner count -1 while keeping the same direct xUnit facts
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~MjpegPipelineContractsTests` (31 passed); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed after serial rerun; an initial parallel run raced the solution build and failed to find the freshly rebuilt `ssctl.dll`); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, MJPEG decode behavior, timing metric semantics, or decoder shape changed.
-Behavior preserved: `XUnit.MjpegPipelineContractsTests.cs` now owns the timing metric, timeout helper, software decoder shape, CPU MJPEG pipeline, pooled-frame, preview jitter, visual cadence, and queued lease-release xUnit surface together.
-Notes for future agents: keep CPU MJPEG direct xUnit checks with `XUnit.MjpegPipelineContractsTests.cs` unless a separate executable MJPEG fixture appears; use the legacy `MjpegPipeline.Tests.cs` file only for the remaining `Program`-based implementation/source-shape checks.
+Behavior preserved: `MjpegPipeline.Tests.cs` now owns the timing metric, timeout helper, software decoder shape, CPU MJPEG pipeline, pooled-frame, preview jitter, visual cadence, queued lease-release xUnit surface, and `Program`-based implementation/source-shape checks together.
+Notes for future agents: keep CPU MJPEG direct xUnit checks with `MjpegPipeline.Tests.cs` unless a separate executable MJPEG fixture appears.
 
 Date: 2026-05-26
 Area: MainWindow launch startup test locality
