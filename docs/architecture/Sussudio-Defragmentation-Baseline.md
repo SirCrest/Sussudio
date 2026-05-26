@@ -3148,3 +3148,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: diagnostics hub, capture service, MF source reader, diagnostic-session, and diagnostic-session tool-surface source readers still feed the same refresh ownership assertions.
 Notes for future agents: keep diagnostics refresh source-family and source-reader helpers together in `MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`; only extract a new helper file for executable assertions or a source family reused outside diagnostics-refresh ownership tests.
+
+Date: 2026-05-26
+Area: Flashback decoder test locality
+Problem: `Flashback.Support.Tests.cs` contained a single Flashback decoder support/logging and D3D11VA discovery source-shape contract, separate from the Flashback decoder test owner that already covers decoder lifecycle, validation, audio/video output, D3D11VA setup, and source-shape assertions. Reviewing decoder setup/logging behavior required opening an extra tiny test shard.
+Files consolidated: `tests/Sussudio.Tests/Flashback.Support.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` Flashback decoder/support test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: Flashback decoder open/close warning logs, D3D11VA discovery/setup fallback logs, and removed legacy D3D11 shard guards remain registered through `XUnit.FlashbackContractsTests`.
+Notes for future agents: keep Flashback decoder support/logging and D3D11VA source-shape contracts with `Flashback.Decoder.Tests.cs`; keep `Flashback.Tests.cs` as shared source-reader/helper support only.

@@ -2133,13 +2133,12 @@ Primary current owners:
   command-queue, source-shape, cadence, submission, reopen, transition-guard,
   and metric-reset checks after their removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/Flashback.Decoder.Tests.cs` owns Flashback decoder
-  audio, timestamp, stream-bound, validation, lifetime, and callback tests.
+  audio, timestamp, stream-bound, validation, lifetime, callback,
+  source-shape, D3D11VA setup, and support/logging contract tests.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
   execution surface for the former legacy Flashback decoder frame-buffer,
   source-ownership, state/lifetime, timestamp, audio, frame-validation, and
   cancellation checks after their removal from the legacy harness catalog.
-- `tests/Sussudio.Tests/Flashback.Support.Tests.cs` owns cross-cutting Flashback
-  support/logging contract tests.
 - `Sussudio/Controllers/Flashback/FlashbackTimelineController.cs` owns Flashback
   timeline visibility, lockout, toggle synchronization, timeline track layout
   sizing, show/hide storyboard state, immediate collapse, and fullscreen
