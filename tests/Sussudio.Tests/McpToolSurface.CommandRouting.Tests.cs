@@ -7,6 +7,179 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
+    internal static Task McpToolSurface_KeepsCaptureOptionsSeparateFromRawState()
+    {
+        var captureSettingsToolsText = ReadRepoFile("tools/McpServer/Tools/CaptureSettingsTools.cs");
+        var appStateToolText = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
+        var captureOptionsToolText = captureSettingsToolsText;
+        var uiSettingsToolText = ReadRepoFile("tools/McpServer/Tools/WindowTools.cs");
+        var automationSnapshotText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs");
+
+        AssertContains(captureSettingsToolsText, "string? preset = null");
+        AssertContains(captureSettingsToolsText, "string? splitEncodeMode = null");
+        AssertContains(captureSettingsToolsText, "int? mjpegDecoderCount = null");
+        AssertContains(captureSettingsToolsText, "AutomationCommandKind.SetPreset");
+        AssertContains(captureSettingsToolsText, "AutomationCommandKind.SetSplitEncodeMode");
+        AssertContains(captureSettingsToolsText, "AutomationCommandKind.SetMjpegDecoderCount");
+
+        AssertContains(appStateToolText, "get_app_state_raw");
+        AssertContains(appStateToolText, "UseStructuredContent = true");
+        AssertDoesNotContain(appStateToolText, "SendCommandAsync(\"GetCaptureOptions\")");
+        AssertContains(captureOptionsToolText, "get_capture_options");
+        AssertContains(captureOptionsToolText, "AutomationCommandKind.GetCaptureOptions");
+        AssertContains(captureOptionsToolText, "UseStructuredContent = true");
+        AssertContains(uiSettingsToolText, "configure_ui");
+        AssertContains(uiSettingsToolText, "\"SetPreviewVolume\"");
+        AssertContains(uiSettingsToolText, "\"SetStatsVisible\"");
+        AssertDoesNotContain(automationSnapshotText, " Options { get; init;");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task McpToolSurface_FixedAutomationRoutesUseAutomationCommandKinds()
+    {
+        var formatterText = ReadRepoFile("tools/McpServer/Tools/ToolCommandFormatter.cs");
+        var appStateToolText = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
+        var captureSettingsToolsText = ReadRepoFile("tools/McpServer/Tools/CaptureSettingsTools.cs");
+        var captureOptionsToolText = captureSettingsToolsText;
+        var deviceToolsText = captureSettingsToolsText;
+        var diagnosticsToolsText = appStateToolText;
+        var flashbackToolsText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.cs");
+        var flashbackActionsText = flashbackToolsText;
+        var flashbackExportText = flashbackToolsText;
+        var framePacingVerdictToolsText = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.cs");
+        var memoryDiagnosticsToolsText = appStateToolText;
+        var pipelineSettingsToolsText = captureSettingsToolsText;
+        var performanceToolsText = ReadRepoFile("tools/McpServer/Tools/PerformanceTools.cs");
+        var performanceTimelineToolsText = performanceToolsText;
+        var previewToolsText = ReadRepoFile("tools/McpServer/Tools/WindowTools.cs");
+        var previewColorProbeToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewColorProbeTools.cs");
+        var recordingToolsText = previewToolsText;
+        var presentMonToolsText = performanceToolsText;
+        var previewFrameCaptureToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewFrameCaptureTools.cs");
+        var verificationToolsText = ReadRepoFile("tools/McpServer/Tools/VerificationTools.cs");
+        var videoSourceProbeToolsText = previewColorProbeToolsText;
+        var windowToolsText = ReadRepoFile("tools/McpServer/Tools/WindowTools.cs");
+        var windowScreenshotToolsText = previewFrameCaptureToolsText;
+        var waitToolsText = previewToolsText;
+
+        AssertContains(formatterText, "AutomationCommandKind Kind,");
+        AssertContains(formatterText, "pipeClient.SendCommandAsync(command.Kind, command.Payload)");
+        AssertDoesNotContain(formatterText, "string CommandName");
+        AssertDoesNotContain(formatterText, "SendCommandAsync(command.CommandName");
+        AssertDoesNotContain(formatterText, "pipeClient.SendCommandAsync(commandName");
+
+        AssertContains(appStateToolText, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
+        AssertDoesNotContain(appStateToolText, "SendCommandAsync(\"GetSnapshot\"");
+        AssertContains(captureOptionsToolText, "SendCommandAsync(AutomationCommandKind.GetCaptureOptions)");
+        AssertDoesNotContain(captureOptionsToolText, "SendCommandAsync(\"GetCaptureOptions\"");
+        AssertContains(diagnosticsToolsText, "SendCommandAsync(AutomationCommandKind.GetDiagnostics, payload)");
+        AssertDoesNotContain(diagnosticsToolsText, "SendCommandAsync(\"GetDiagnostics\"");
+
+        foreach (var commandName in new[]
+        {
+            "SetResolution",
+            "SetFrameRate",
+            "SetVideoFormat",
+            "SetRecordingFormat",
+            "SetQuality",
+            "SetCustomBitrate",
+            "SetPreset",
+            "SetSplitEncodeMode",
+            "SetMjpegDecoderCount"
+        })
+        {
+            AssertContains(captureSettingsToolsText, $"ToolCommandFormatter.Optional(AutomationCommandKind.{commandName}, \"{commandName}\"");
+            AssertDoesNotContain(captureSettingsToolsText, $"ToolCommandFormatter.Optional(\"{commandName}\"");
+        }
+
+        foreach (var commandName in new[]
+        {
+            "RefreshDevices",
+            "SelectDevice",
+            "SelectAudioInputDevice",
+            "SetCustomAudioInput"
+        })
+        {
+            AssertContains(deviceToolsText, $"AutomationCommandKind.{commandName}");
+            AssertDoesNotContain(deviceToolsText, $"ToolCommandFormatter.Optional(\"{commandName}\"");
+        }
+
+        foreach (var commandName in new[]
+        {
+            "SetHdrEnabled",
+            "SetTrueHdrPreviewEnabled",
+            "SetAudioEnabled",
+            "SetAudioPreviewEnabled",
+            "SetOutputPath"
+        })
+        {
+            AssertContains(pipelineSettingsToolsText, $"ToolCommandFormatter.Optional(AutomationCommandKind.{commandName}, \"{commandName}\"");
+            AssertDoesNotContain(pipelineSettingsToolsText, $"ToolCommandFormatter.Optional(\"{commandName}\"");
+        }
+
+        foreach (var commandName in new[] { "SetDeviceAudioMode", "SetAnalogAudioGain" })
+        {
+            AssertContains(pipelineSettingsToolsText, $"ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.{commandName}, \"{commandName}\"");
+            AssertDoesNotContain(pipelineSettingsToolsText, $"ExecuteAndFormatResultAsync(pipeClient, \"{commandName}\"");
+        }
+
+        AssertContains(previewToolsText, "ExecuteAndFormatResultAsync(\n                pipeClient,\n                AutomationCommandKind.SetPreviewEnabled,\n                \"SetPreviewEnabled\",");
+        AssertDoesNotContain(previewToolsText, "ExecuteAndFormatResultAsync(\n                pipeClient,\n                \"SetPreviewEnabled\",");
+
+        AssertContains(recordingToolsText, "ExecuteAndFormatResultAsync(\n                pipeClient,\n                AutomationCommandKind.SetRecordingEnabled,\n                \"SetRecordingEnabled\",");
+        AssertDoesNotContain(recordingToolsText, "ExecuteAndFormatResultAsync(\n                pipeClient,\n                \"SetRecordingEnabled\",");
+
+        AssertContains(flashbackToolsText, "AutomationCommandKind.SetFlashbackEnabled");
+        AssertContains(flashbackToolsText, "AutomationCommandKind.RestartFlashback");
+        AssertDoesNotContain(flashbackToolsText, "commandName: \"SetFlashbackEnabled\"");
+        AssertDoesNotContain(flashbackToolsText, "commandName: \"RestartFlashback\"");
+        AssertContains(flashbackActionsText, "AutomationCommandKind.FlashbackAction");
+        AssertDoesNotContain(flashbackActionsText, "commandName: \"FlashbackAction\"");
+        AssertContains(flashbackExportText, "SendCommandAsync(AutomationCommandKind.FlashbackExport, payload)");
+        AssertDoesNotContain(flashbackExportText, "SendCommandAsync(\"FlashbackExport\"");
+        AssertContains(flashbackToolsText, "SendCommandAsync(AutomationCommandKind.FlashbackGetSegments)");
+        AssertDoesNotContain(flashbackToolsText, "SendCommandAsync(\"FlashbackGetSegments\"");
+        AssertContains(framePacingVerdictToolsText, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
+        AssertContains(framePacingVerdictToolsText, "SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, timelinePayload)");
+        AssertDoesNotContain(framePacingVerdictToolsText, "SendCommandAsync(\"GetSnapshot\"");
+        AssertDoesNotContain(framePacingVerdictToolsText, "SendCommandAsync(\"GetPerformanceTimeline\"");
+        AssertContains(memoryDiagnosticsToolsText, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
+        AssertDoesNotContain(memoryDiagnosticsToolsText, "SendCommandAsync(\"GetSnapshot\"");
+        AssertContains(performanceTimelineToolsText, "SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, payload)");
+        AssertDoesNotContain(performanceTimelineToolsText, "SendCommandAsync(\"GetPerformanceTimeline\"");
+        AssertContains(previewColorProbeToolsText, "SendCommandAsync(AutomationCommandKind.ProbePreviewColor)");
+        AssertDoesNotContain(previewColorProbeToolsText, "SendCommandAsync(\"ProbePreviewColor\"");
+        AssertContains(previewFrameCaptureToolsText, "SendCommandAsync(AutomationCommandKind.CapturePreviewFrame, payload)");
+        AssertDoesNotContain(previewFrameCaptureToolsText, "SendCommandAsync(\"CapturePreviewFrame\", payload)");
+        AssertContains(presentMonToolsText, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
+        AssertDoesNotContain(presentMonToolsText, "SendCommandAsync(\"GetSnapshot\"");
+        AssertContains(verificationToolsText, "SendCommandAsync(AutomationCommandKind.VerifyLastRecording)");
+        AssertContains(verificationToolsText, "SendCommandAsync(AutomationCommandKind.AssertSnapshot, payload)");
+        AssertContains(verificationToolsText, "SendCommandAsync(AutomationCommandKind.VerifyFile, payload)");
+        AssertDoesNotContain(verificationToolsText, "SendCommandAsync(\"VerifyLastRecording\"");
+        AssertDoesNotContain(verificationToolsText, "SendCommandAsync(\"AssertSnapshot\"");
+        AssertDoesNotContain(verificationToolsText, "SendCommandAsync(\"VerifyFile\"");
+        AssertContains(videoSourceProbeToolsText, "SendCommandAsync(AutomationCommandKind.ProbeVideoSource)");
+        AssertDoesNotContain(videoSourceProbeToolsText, "SendCommandAsync(\"ProbeVideoSource\"");
+        AssertContains(windowToolsText, "SendCommandAsync(AutomationCommandKind.ArmClose, armPayload)");
+        AssertContains(windowToolsText, "SendCommandAsync(AutomationCommandKind.WindowAction, actionPayload)");
+        AssertContains(windowToolsText, "AutomationCommandKind.SetFullScreenEnabled");
+        AssertContains(windowToolsText, "AutomationCommandKind.OpenRecordingsFolder");
+        AssertDoesNotContain(windowToolsText, "SendCommandAsync(\"ArmClose\"");
+        AssertDoesNotContain(windowToolsText, "SendCommandAsync(\"WindowAction\"");
+        AssertDoesNotContain(windowToolsText, "ExecuteAndFormatResultAsync(\n                pipeClient,\n                \"SetFullScreenEnabled\"");
+        AssertDoesNotContain(windowToolsText, "ExecuteAndFormatResultAsync(\n                pipeClient,\n                \"OpenRecordingsFolder\"");
+        AssertContains(windowScreenshotToolsText, "SendCommandAsync(AutomationCommandKind.CaptureWindowScreenshot, payload)");
+        AssertDoesNotContain(windowScreenshotToolsText, "SendCommandAsync(\"CaptureWindowScreenshot\", payload)");
+        AssertContains(waitToolsText, "SendCommandAsync(AutomationCommandKind.WaitForCondition, payload, responseTimeoutMs)");
+        AssertContains(waitToolsText, "AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.WaitForCondition)");
+        AssertDoesNotContain(waitToolsText, "WaitForConditionCommandName");
+        AssertDoesNotContain(waitToolsText, "SendCommandAsync(\"WaitForCondition\"");
+
+        return Task.CompletedTask;
+    }
+
     internal static async Task McpDeviceTools_RouteRefreshSelectionsAndCustomAudio()
     {
         var pipeName = NewMcpToolPipeName("device");

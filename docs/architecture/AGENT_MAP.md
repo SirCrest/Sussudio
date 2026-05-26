@@ -1860,12 +1860,14 @@ Primary current owners:
   MJPEG preview jitter frame-ingress, emit-loop, adaptive deadline policy,
   queue, metrics source-ownership assertions, and queue/drop/reprime behavior
   tests.
-- `tests/Sussudio.Tests/McpToolSurface.Tests.cs` owns MCP surface compatibility
-  checks that span raw app state, capture options, capture settings, and UI
-  settings tools. It also owns source guards that fixed-command MCP automation
-  routes call `AutomationCommandKind` enum overloads at the pipe seam while
-  preserving existing command labels and wire IDs.
-- Keep MCP command-routing route/formatter assertions in the focused
+- `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` owns MCP
+  command-routing route/formatter assertions plus surface compatibility checks
+  that span raw app state, capture options, capture settings, and UI settings
+  tools. It also owns source guards that fixed-command MCP automation routes
+  call `AutomationCommandKind` enum overloads at the pipe seam while preserving
+  existing command labels and wire IDs.
+- Keep MCP command-routing route/formatter assertions in the focused sections
+  of this file for the
   `CommandRouting.Capture`, `CommandRouting.Host`,
   `CommandRouting.Recording`, `CommandRouting.Formatting`,
   `CommandRouting.Device`, `CommandRouting.Pipeline`, `CommandRouting.Ui`, and

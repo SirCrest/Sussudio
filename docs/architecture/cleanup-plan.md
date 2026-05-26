@@ -746,10 +746,11 @@ MCP command-routing coverage is split into capture, host/pipe, recording,
 formatter batching, device, pipeline,
 UI, and verification owner files. Captured `request.command` ID assertions now
 flow through `AssertAutomationCommandId` instead of duplicating numeric IDs in
-routing tests. Cross-tool source guards
-in `McpToolSurface.Tests.cs` require fixed-command MCP automation routes to use
-`AutomationCommandKind` enum overloads at the pipe seam while preserving existing
-labels and wire IDs. Catalog/manifest-backed dynamic batches and
+routing tests. Cross-tool source guards now live with the route owner in
+`McpToolSurface.CommandRouting.Tests.cs` and require fixed-command MCP
+automation routes to use `AutomationCommandKind` enum overloads at the pipe
+seam while preserving existing labels and wire IDs. Catalog/manifest-backed
+dynamic batches and
 diagnostic-session runner command-channel delegates intentionally remain
 string-based.
 
