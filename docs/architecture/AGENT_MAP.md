@@ -1064,9 +1064,7 @@ Primary current owners:
 - `Sussudio/MainWindow.ShellChrome.Composition.cs` keeps the XAML-facing title
   update hook; `Sussudio/Controllers/Shell/ShellChromeController.cs` owns window title
   base/build-stamp formatting and the recording-time suffix used by property
-  changes.
-- `Sussudio/Controllers/Shell/StatusStripPresentationController.cs` owns bottom
-  status-strip projection: status text, recording time, disk warning,
+  changes, plus bottom status-strip projection: status text, recording time, disk warning,
   disk-space text, recording size, recording bitrate, the status-strip
   `PropertyChanged` router, the recording-only title-refresh callback, and the
   Flashback bitrate fallback used while Flashback is enabled and recording is
@@ -2169,7 +2167,7 @@ Primary current owners:
   and playback-position polling timers. `Sussudio/MainWindow.Flashback.Interactions.cs`
   is the XAML-facing adapter; CTI anchor timing lives in
   `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs`.
-- `Sussudio/Controllers/Shell/SettingsShelfController.cs` owns settings shelf
+- `Sussudio/Controllers/Shell/ShellChromeController.cs` owns settings shelf
   visibility, the animation gate, and show/hide storyboard construction.
   `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs` owns
@@ -2192,7 +2190,8 @@ Primary current owners:
 - `Sussudio/Controllers/Shell/ShellChromeController.cs` owns control-bar
   button entrance/hover/press/release animation, static shell ThemeShadow and
   translation setup for the control bar and record button, plus shell
-  property-change routing across stats overlay and settings shelf controllers.
+  property-change routing across stats overlay and settings shelf controllers,
+  settings shelf animation, status-strip projection, and window title formatting.
   `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
   shell/content fade and scale transitions, video-shadow fade timing,
@@ -2315,8 +2314,8 @@ Primary current owners:
   `Sussudio/Controllers/Shell/ShellChromeController.cs` owns the shell
   property-change route order across `StatsOverlayCompositionController` and
   `SettingsShelfController`; stats visibility behavior still lives in the stats
-  composition controller, while settings visibility behavior still lives in the
-  settings shelf controller.
+  composition controller, while settings visibility behavior lives with shell
+  chrome in `ShellChromeController`.
 - `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing live signal
   adapter. `LiveSignalInfoController` owns live source-signal property-change
   routing and pill presentation.

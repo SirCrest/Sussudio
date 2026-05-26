@@ -10,7 +10,7 @@ static partial class Program
         var fullScreenText = ReadMainWindowShellChromeAdapterSource();
         var mainWindowText = ReadMainWindowCompositionSource();
         var settingsShelfText = ReadMainWindowShellChromeAdapterSource();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/SettingsShelfController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
 
         AssertContains(settingsShelfText, "private SettingsShelfController _settingsShelfController = null!;");
         AssertContains(settingsShelfText, "private void InitializeSettingsShelfController()");
@@ -28,6 +28,10 @@ static partial class Program
         AssertContains(fullScreenText, "ResetSettingsShelfAnimation = _settingsShelfController.ResetAnimationState,");
         AssertDoesNotContain(settingsShelfText, "ResetSettingsShelfAnimationForFullScreen");
         AssertContains(controllerText, "internal sealed class SettingsShelfController");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "SettingsShelfController.cs")),
+            "settings shelf lives with shell chrome ownership");
         AssertContains(controllerText, "private bool _isAnimating;");
         AssertContains(controllerText, "public bool IsAnimating => _isAnimating;");
         AssertContains(controllerText, "public void Toggle()");
@@ -174,7 +178,7 @@ static partial class Program
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var flashbackPropertyChangedControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/StatusStripPresentationController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private StatusStripPresentationController _statusStripPresentationController = null!;");
         AssertEqual(
@@ -209,6 +213,10 @@ static partial class Program
         AssertDoesNotContain(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackBitrateInfo):");
         AssertContains(controllerText, "internal readonly record struct StatusStripPresentationSnapshot");
         AssertContains(controllerText, "internal sealed class StatusStripPresentationController");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "StatusStripPresentationController.cs")),
+            "status strip presentation lives with shell chrome ownership");
         AssertContains(controllerText, "public void ApplyInitial(StatusStripPresentationSnapshot snapshot)");
         AssertContains(controllerText, "public bool TryHandlePropertyChanged(");
         AssertContains(controllerText, "case nameof(MainViewModel.StatusText):");

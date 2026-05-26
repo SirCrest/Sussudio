@@ -3328,3 +3328,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app and automation tooling; no public automation command names, IDs, wire payloads, XAML bindings, control names, or status text changed
 Behavior preserved: audio record/preview toggles, custom audio and microphone enablement, preview volume slider sync, preview fade guard, audio-meter monitoring state, disabled animation trigger, and microphone volume sync now live in `AudioControlBindingController.cs` beside the initial binding/event hookup they mirror.
 Notes for future agents: keep audio-control setup and property-change projection together in `Sussudio/Controllers/Audio/AudioControlBindingController.cs`; keep microphone row animation and volume slider mechanics in `MicrophoneControlsController.cs`.
+
+Date: 2026-05-26
+Area: shell chrome production locality
+Problem: `SettingsShelfController.cs` and `StatusStripPresentationController.cs` were small shell chrome controllers split away from `ShellChromeController.cs`, even though all three are composed only by `MainWindow.ShellChrome.Composition.cs` and together own shell chrome animation, shell property-change routing, settings shelf visibility, status strip projection, and window title formatting. Reviewing shell chrome property changes and bottom/status/settings presentation required opening three adjacent shell controller files plus the same MainWindow adapter.
+Files consolidated: `Sussudio/Controllers/Shell/SettingsShelfController.cs`; `Sussudio/Controllers/Shell/StatusStripPresentationController.cs`
+Files added: none
+Net production .cs delta: -2; net test .cs delta: 0
+Partial clusters reduced: shell chrome production owner count -2
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds app and automation tooling; no public automation command names, IDs, wire payloads, XAML bindings, control names, status text, or title text changed
+Behavior preserved: settings shelf toggle/visibility animation gate, show/hide storyboard, shell property-change handling, status text, recording time title refresh, disk warning/text fields, recording bitrate, and Flashback bitrate idle fallback now live in `ShellChromeController.cs` with the existing shell chrome animation/elevation/property/title owners.
+Notes for future agents: keep shell chrome animation, settings shelf, status strip, property routing, and title formatting in `Sussudio/Controllers/Shell/ShellChromeController.cs`; keep live signal pill behavior in `LiveSignalInfoController.cs` and responsive layout policy in `ResponsiveShellLayoutController.cs`.

@@ -2440,8 +2440,8 @@ adapter; CTI anchor timing lives in
 `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs`.
 
 Settings shelf visibility, the animation gate, and show/hide storyboard
-construction now live in
-`Sussudio/Controllers/Shell/SettingsShelfController.cs`.
+construction now live with shell chrome in
+`Sussudio/Controllers/Shell/ShellChromeController.cs`.
 `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing settings
 shelf adapter.
 
@@ -2473,7 +2473,8 @@ is the XAML-facing adapter for launch entrance wiring.
 Control-bar button ownership, hover/press/release scale behavior, static shell
 ThemeShadow and translation setup for the control bar and record button now live
 in `Sussudio/Controllers/Shell/ShellChromeController.cs`, alongside shell
-property-change routing across stats overlay and settings shelf controllers.
+property-change routing across stats overlay and settings shelf controllers,
+settings shelf animation, status-strip projection, and window title formatting.
 `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
 
 Preview shell/content fade and scale transitions, video-shadow fade timing, and
@@ -2600,8 +2601,8 @@ reinit transition state and log ownership now live in
 `Sussudio/MainWindow.PreviewTransitions.Composition.cs` keeps the renderer-stop-before-teardown
 handoff and XAML callback endpoints for completion presentation.
 
-Bottom status-strip projection now lives in
-`Sussudio/Controllers/Shell/StatusStripPresentationController.cs`, while
+Bottom status-strip projection now lives with shell chrome in
+`Sussudio/Controllers/Shell/ShellChromeController.cs`, while
 `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter and
 builds the ViewModel snapshot passed into the controller. The controller owns
 the status-strip `PropertyChanged` router and preserves the recording-only
