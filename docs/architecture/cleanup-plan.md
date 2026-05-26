@@ -1816,8 +1816,7 @@ public initialization validation, startup-reference acquisition/release, reader
 attribute construction, source media-type selection, and initialization
 success/failure logging there. Actual-output reconciliation, strict
 negotiated-output validation, runtime field reset, and COM/startup ownership
-handoff after successful initialization live in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.InitializedSession.cs`.
+handoff after successful initialization also live in this initialization owner.
 
 Media Foundation source-reader active lifetime now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Lifecycle.cs`. Keep

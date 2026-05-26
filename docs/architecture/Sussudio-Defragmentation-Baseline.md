@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: Media Foundation source-reader initialization locality
+Problem: `MfSourceReaderVideoCapture.InitializedSession.cs` held the second half of source-reader initialization: applying the selected media type, reconciling actual output, validating strict negotiated modes, and committing initialized runtime state. Reviewing source-reader startup required opening both initialization files before reaching the success/failure path and state handoff.
+Files consolidated: `Sussudio/Services/Capture/MfSourceReaderVideoCapture.InitializedSession.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `MfSourceReaderVideoCapture` -1 file
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed after updating the source-shape assertion for the folded initialization owner); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, automation tooling, MCP, `ssctl`, and console harnesses; source-reader diagnostics refresh ownership tests cover the moved initialization/session handoff logic; no public automation command names, IDs, wire payloads, XAML bindings, capture negotiation options, or runtime snapshot fields changed
+Behavior preserved: source-reader selected media-type application, actual output reconciliation, strict MJPEG/NV12/P010 validation, native input format override heuristic, runtime counter resets, COM object ownership transfer, startup-reference release handoff, and initialization log semantics remain unchanged.
+Notes for future agents: keep source-reader initialization orchestration and initialized runtime-state commit together in `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Initialization.cs`; keep active read loop lifetime in `MfSourceReaderVideoCapture.Lifecycle.cs`, media-type selection in `MfSourceReaderVideoCapture.Negotiation.cs`, and frame delivery in the existing delivery owners.
+
+Date: 2026-05-26
 Area: diagnostic-session model/result surface locality
 Problem: `DiagnosticSessionModels.cs` carried diagnostic-session options, sampled snapshot DTOs, and scenario phase handoff models while `DiagnosticSessionResult.cs` carried the final summary DTO for the same tool contract. Auditing the diagnostic-session public model surface and phase/result handoffs required opening two adjacent model files before reaching runner or builder behavior.
 Files consolidated: `tools/Common/DiagnosticSessionModels.cs`

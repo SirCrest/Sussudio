@@ -285,8 +285,10 @@ static partial class Program
         AssertContains(sourceReaderInitializedSessionText, "MF_NATIVE_FORMAT_OVERRIDE");
         AssertContains(sourceReaderInitializedSessionText, "Volatile.Write(ref _nativeInputFormat");
         AssertContains(sourceReaderInitializedSessionText, "Interlocked.Exchange(ref _framesDelivered");
-        AssertDoesNotContain(sourceReaderInitializationText, "sourceReader.GetCurrentMediaType(");
-        AssertDoesNotContain(sourceReaderInitializationText, "MF_NATIVE_FORMAT_OVERRIDE");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.InitializedSession.cs")),
+            "source-reader initialized-session handoff folded into initialization owner");
         AssertDoesNotContain(sourceReaderRootText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
         AssertContains(sourceReaderReadLoopText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
         AssertContains(sourceReaderReadLoopText, "reader.ReadSample(");
