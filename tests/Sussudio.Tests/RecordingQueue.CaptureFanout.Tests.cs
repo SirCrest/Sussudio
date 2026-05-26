@@ -99,9 +99,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Lifecycle.cs")
             .Replace("\r\n", "\n");
-        var initializationSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Initialization.cs")
-            .Replace("\r\n", "\n");
-        var mjpegStartupSource = initializationSource;
+        var initializationSource = lifecycleSource;
+        var mjpegStartupSource = lifecycleSource;
         var mjpegLifecycleSource = lifecycleSource;
 
         AssertContains(initializationSource, "public async Task InitializeAsync(");
@@ -109,7 +108,10 @@ static partial class Program
         AssertContains(initializationSource, "CreateExternalMjpegPipelineIfNeeded(");
         AssertContains(initializationSource, "InstallMjpegPreviewJitterBuffer(capture.Fps > 0 ? capture.Fps : fps);");
         AssertContains(initializationSource, "capture.FatalErrorOccurred += OnCaptureFatalError;");
-        AssertDoesNotContain(lifecycleSource, "public async Task InitializeAsync(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.Initialization.cs")),
+            "UnifiedVideoCapture initialization folded into lifecycle owner");
         AssertContains(lifecycleSource, "public void Start()");
         AssertContains(lifecycleSource, "public async Task StopAsync()");
         AssertContains(lifecycleSource, "public async ValueTask DisposeAsync()");
