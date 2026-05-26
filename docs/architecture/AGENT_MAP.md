@@ -2159,14 +2159,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.Playback.Transitions.AudioPreviewGuards.Tests.cs`
   owns Flashback playback live-preview transition, audio guard, and
   audio-master projection/source ownership tests.
-- Flashback playback command queue capacity/drop-oldest,
-  scrub-coalescing source ownership, and seek-slot barrier/failure behavior
-  coverage live in focused
-  `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Capacity.Tests.cs`,
-  `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.ScrubCoalescing.Tests.cs`,
-  `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.SeekSlots.Tests.cs`, and
-  `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.SeekSlots.FailureModes.Tests.cs`
-  owner files.
+- `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Tests.cs` owns
+  Flashback playback command queue capacity/drop-oldest, scrub-coalescing
+  source ownership, and seek-slot barrier/failure behavior coverage.
 - `tests/Sussudio.Tests/Flashback.Playback.Cadence.Tests.cs` owns Flashback
   playback frame-duration, decoded-PTS cadence projection/telemetry, and
   decode metrics reset/projection tests.

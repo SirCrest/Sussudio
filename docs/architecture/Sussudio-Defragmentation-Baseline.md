@@ -2884,3 +2884,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: all 23 automation diagnostics projection ownership tests remain registered through `XUnit.AutomationContractsTests`, covering snapshot root, audio/ingest, capture command/settings, capture format/transport/HDR, source/cadence, MJPEG, recording, preview, and Flashback projection assertions.
 Notes for future agents: keep focused automation diagnostics projection ownership assertions in `MainViewModel.Automation.DiagnosticsProjection.Tests.cs`; do not recreate the tiny projection-family test shards or move this surface back into the diagnostics refresh mega owner.
+
+Date: 2026-05-26
+Area: Flashback playback command queue test locality
+Problem: Flashback playback command queue capacity/drop-oldest, scrub coalescing, seek-slot barrier, and rejected-barrier failure-mode coverage lived in four tiny legacy `Program` partial files even though they all protect the same private command queue contract in `FlashbackPlaybackController.CommandQueue.cs`. Reviewing command queue behavior required opening separate shard files for queue capacity, scrub coalescing, seek slots, and failure modes.
+Files consolidated: `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Capacity.Tests.cs`; `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.ScrubCoalescing.Tests.cs`; `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.SeekSlots.Tests.cs`; `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.SeekSlots.FailureModes.Tests.cs`
+Files added: `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Tests.cs`
+Net production .cs delta: 0; net test .cs delta: -3
+Partial clusters reduced: legacy `Program` Flashback playback command queue test partial file count -3
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: Flashback playback command queue capacity/drop-oldest, scrub coalescing source ownership, seek-slot barrier, and rejected-barrier failure-mode checks remain registered through `XUnit.FlashbackContractsTests`.
+Notes for future agents: keep Flashback playback command queue contract coverage in `Flashback.Playback.CommandQueue.Tests.cs`; do not recreate separate capacity, scrub-coalescing, seek-slot, or seek-slot failure-mode shards.
