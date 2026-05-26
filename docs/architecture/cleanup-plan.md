@@ -3533,7 +3533,7 @@ owner, fold it back into that owner and update the source-shape tests and
    context ports;
    the root `MainViewModel.cs` keeps the public capture-device refresh
    compatibility facade, while the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs`
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceDiscoveryControllers.cs`
    owns startup refresh orchestration: requesting the combined discovery result,
    applying audio-device startup selection, replacing the capture-device collection,
    starting background format probes, restoring saved capture-device selection,
@@ -3572,7 +3572,7 @@ owner, fold it back into that owner and update the source-shape tests and
     Late-arriving device format probe reconciliation, collection mutation,
     selected-device capability refresh, enqueue/failure logging, and retarget
     handoff live in the top-level
-    `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`;
+    `Sussudio/Controllers/ViewModel/MainViewModelDeviceDiscoveryControllers.cs`;
     its graph-port contract now lives with that controller. UI-side late-probe
     retarget application, session mismatch checks, active-capture restore, and
     the retarget applier graph-port contract also live there, while

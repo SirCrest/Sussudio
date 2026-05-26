@@ -2404,7 +2404,7 @@ Primary current owners:
   runtime event ingress graph-port contract, and event
   subscription/unsubscription ordering including the desktop power-resume
   signal.
-  `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelDeviceDiscoveryControllers.cs`
   is a top-level `Sussudio.Controllers` owner for late device-format probe event
   ingress, UI enqueue/generation checks, selected-device capability refresh,
   UI-side late-probe retarget application, HDR/SDR reinitialize dispatch,
@@ -2543,7 +2543,7 @@ Primary current owners:
   codec filtering, selected-codec fallback policy, string-to-model format/quality
   parsing, and custom bitrate clamp policy shared by UI and automation.
   the root `MainViewModel.cs` keeps the public capture-device refresh facade,
-  while `Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs`
+  while `Sussudio/Controllers/ViewModel/MainViewModelDeviceDiscoveryControllers.cs`
   is a top-level `Sussudio.Controllers` owner for startup refresh
   orchestration: requesting the combined discovery result, applying
   audio-device startup selection, replacing the capture-device collection,
@@ -2560,7 +2560,7 @@ Primary current owners:
   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` owns pure capture-card
   endpoint filtering plus previous/saved/default audio and microphone selection
   fallback policy.
-  `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelDeviceDiscoveryControllers.cs`
   is a top-level `Sussudio.Controllers` owner for late device-format probe
   reconciliation, format collection mutation, capability refresh after
   background probes, enqueue/failure logging, and UI-side late-probe retarget
