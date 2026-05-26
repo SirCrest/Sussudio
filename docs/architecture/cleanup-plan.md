@@ -1068,8 +1068,8 @@ Recording start lifecycle now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`. That file owns
 the public recording start transition surface, startup-path routing, the private
 rollback-state holder, recording output-folder resolution, LibAv and Flashback
-`RecordingContextRequest` assembly, and delegation to the recording-start
-rollback owner. `CaptureService.FlashbackRecording.cs`
+`RecordingContextRequest` assembly, and recording-start rollback cleanup.
+`CaptureService.FlashbackRecording.cs`
 owns Flashback recording fast-path reuse and backend startup, and
 `CaptureService.RecordingStartLibAv.cs` owns standard LibAv recording startup
 sequencing, video-capture reuse/creation, source-reader compatibility checks,
@@ -1113,14 +1113,10 @@ backend finalization path that consumes them.
 helper boundary that publishes recording-start and recording-finalize outcome
 fields (`_lastOutputPath`, `_lastFinalizeStatus`, `_lastFinalizeUtc`, and
 `_lastPreservedArtifacts`) without leaving direct write blocks in start or
-finalization call-site partials.
-
-Transient recording-start rollback cleanup now lives in
-`Sussudio/Services/Capture/CaptureService.RecordingRollback.cs`. That file owns
-failed-start logging, last-failure publication, Flashback recording rollback
-accounting, artifact rollback, and best-effort teardown for partially started
-sinks, WASAPI capture, unified-video capture, and deferred LibAv drain cleanup
-after a failed recording start.
+finalization call-site partials. It also owns failed-start logging, last-failure
+publication, Flashback recording rollback accounting, artifact rollback, and
+best-effort teardown for partially started sinks, WASAPI capture, unified-video
+capture, and deferred LibAv drain cleanup after a failed recording start.
 
 Flashback export failure classification now lives with export diagnostics in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs`.

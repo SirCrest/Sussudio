@@ -91,8 +91,6 @@ static partial class Program
         AssertContains(lifecycleText, "await StartLibAvRecordingAsync(settings, transitionToken, rollback)");
         AssertContains(lifecycleText, "await RollbackRecordingStartAsync(rollback, ex).ConfigureAwait(false);");
         AssertContains(lifecycleText, "await RollbackRecordingStartAsync(rollback, ex).ConfigureAwait(false);\n                throw;");
-        AssertDoesNotContain(lifecycleText, "CAPTURE_RECORDING_START_FAIL");
-        AssertDoesNotContain(lifecycleText, "FLASHBACK_RECORDING_START_ROLLBACK_WARN");
         AssertDoesNotContain(lifecycleText, "FLASHBACK_UNIFIED_RECORDING_START");
         AssertDoesNotContain(lifecycleText, "HDR_NEGOTIATION");
         AssertContains(lifecycleText, "private sealed class RecordingStartRollbackState");
@@ -233,10 +231,8 @@ static partial class Program
             }).Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
-        var rollbackText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingRollback.cs")
-            .Replace("\r\n", "\n");
+        var rollbackText = lifecycleText;
 
-        AssertDoesNotContain(lifecycleText, "Recording start rollback cleanup failed");
         AssertContains(rollbackText, "private async Task RollbackRecordingStartAsync(");
         AssertContains(rollbackText, "CAPTURE_RECORDING_START_FAIL");
         AssertContains(rollbackText, "RecordLastRecordingFailure(ex);");
@@ -256,6 +252,10 @@ static partial class Program
         AssertOccursBefore(rollbackText, "RecordLastRecordingFailure(ex);", "await _artifactManager.RollbackAsync(rollback.RecordingContext)");
         AssertOccursBefore(rollbackText, "rollback.FlashbackRecordingBackendLeaseHeld = false;", "ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, \"flashback_recording_start_fail\")");
         AssertOccursBefore(rollbackText, "await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);", "await DisposeTransientRecordingBackendAsync(");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingRollback.cs")),
+            "recording start rollback lives with recording lifecycle ownership");
 
         return Task.CompletedTask;
     }

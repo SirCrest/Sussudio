@@ -3304,3 +3304,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds preview renderer consumers and automation tooling; no public automation command names, IDs, wire payloads, XAML bindings, renderer mode labels, VideoProcessor color-space choices, or render-pass behavior changed
 Behavior preserved: VideoProcessor setup, input-resource creation handoff, output-view recreation, swap-chain RTV reuse, color-space updates, and processor-resource teardown now live in `D3D11PreviewRenderer.Resources.cs` with the fields and top-level cleanup they operate on.
 Notes for future agents: keep render-pass selection and present accounting in `D3D11PreviewRenderer.RenderPasses.cs`; keep shader/SRV lifecycle in `D3D11PreviewRenderer.ShaderRendering.cs`; keep VideoProcessor resource lifetime in `D3D11PreviewRenderer.Resources.cs`.
+
+Date: 2026-05-26
+Area: CaptureService recording lifecycle rollback locality
+Problem: `CaptureService.RecordingRollback.cs` separated failed-start rollback and transient backend teardown from public recording start/stop lifecycle and `RecordingStartRollbackState`; reviewing rollback, outcome, and start-failure behavior required opening a separate partial despite tests/docs grouping the behavior with recording lifecycle.
+Files consolidated: `Sussudio/Services/Capture/CaptureService.RecordingRollback.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `CaptureService` production partial count 25 -> 24
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools\McpServer`, `tools\ssctl`, and automation tooling; no public automation command names, IDs, wire payloads, XAML bindings, or recording status strings changed
+Behavior preserved: start failure logging, last-failure update, Flashback rollback accounting, artifact rollback, sink/WASAPI/unified-video cleanup, deferred LibAv drain cleanup, and recording state reset now live in `CaptureService.RecordingLifecycle.cs` beside the recording start transition and rollback state.
+Notes for future agents: keep recording-start rollback cleanup with `CaptureService.RecordingLifecycle.cs` while it remains tightly coupled to `RecordingStartRollbackState`; keep Flashback startup and LibAv startup in their focused backend start owners.

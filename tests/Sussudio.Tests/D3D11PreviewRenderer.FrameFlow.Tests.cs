@@ -152,7 +152,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
             + "\n" + ReadCaptureServiceRecordingFinalizationSource()
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingRollback.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
                 .Replace("\r\n", "\n");
         var duplicateMethod = ExtractTextBetween(
             managerText,

@@ -197,7 +197,7 @@ static partial class Program
             + "\n" + ReadCaptureServicePreviewLifecycleSource()
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
             + "\n" + ReadCaptureServiceRecordingFinalizationSource()
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingRollback.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs");

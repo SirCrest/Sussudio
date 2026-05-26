@@ -101,7 +101,7 @@ static partial class Program
         var libAvFinalizeText = (
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"))
             .Replace("\r\n", "\n");
-        var recordingRollbackText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingRollback.cs").Replace("\r\n", "\n");
+        var recordingRollbackText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs").Replace("\r\n", "\n");
 
         AssertEqual(
             false,

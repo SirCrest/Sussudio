@@ -66,7 +66,7 @@ static partial class Program
     {
         var captureServiceText = ReadCaptureServiceRecordingFinalizationSource()
             .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingRollback.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
                 .Replace("\r\n", "\n")

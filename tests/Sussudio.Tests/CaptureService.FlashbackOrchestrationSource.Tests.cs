@@ -257,7 +257,7 @@ static partial class Program
             "old recording outcome-state partial removed");
         AssertDoesNotContain(stopLifecycleText, "private sealed class FlashbackRecordingBoundarySnapshot");
         AssertDoesNotContain(stopLifecycleText, "private void CaptureFlashbackRecordingBoundarySnapshot(");
-        AssertDoesNotContain(stopLifecycleText, "Unified video recording stop failed");
+        AssertDoesNotContain(stopLifecycleText, "Unified video recording stop failed:");
         AssertDoesNotContain(stopLifecycleText, "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL");
 
         return Task.CompletedTask;
