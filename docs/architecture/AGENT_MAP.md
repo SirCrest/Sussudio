@@ -1245,8 +1245,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindowUiContract.Tests.cs` owns MainWindow
   automation ID inventory, full-screen/window automation, and UI-dispatching
   source contract checks.
-  `tests/Sussudio.Tests/WindowSnapRegionLayoutPolicy.Tests.cs` owns snap-region
-  rectangle policy behavior checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.StatsSnapshot.Tests.cs` owns
   xUnit stats snapshot builder contract checks.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.Chrome.Tests.cs` owns
@@ -1292,7 +1290,7 @@ Primary current owners:
   presentation and microphone controls.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs` owns
   MainWindow responsive shell layout controller-adapter and breakpoint/placement
-  policy assertions.
+  policy assertions plus snap-region rectangle policy behavior checks.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs`
   owns capture selection binding XAML-adapter, controller shell,
   `PropertyChanged` routing, collection sync, queued sync, available-option

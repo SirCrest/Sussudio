@@ -177,7 +177,7 @@ add xUnit alongside, and port incrementally.
   `AutomationContracts.ProtocolXunit.Tests.cs`,
   `AutomationToolContracts.ProtocolXunit.Tests.cs` (automation client timeout
   policy, advanced command-map alignment, and pipe/tool protocol contracts),
-  `RuntimeContracts.Tests.cs`, `WindowSnapRegionLayoutPolicy.Tests.cs`,
+  `RuntimeContracts.Tests.cs`, `MainWindow.ControllerOwnership.Layout.Tests.cs`,
   `CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`,
   `CaptureService.HealthSnapshots.FlashbackOwnership.Tests.cs`, and
   `CaptureService.HealthSnapshots.RecordingAndSourceTelemetryOwnership.Tests.cs`
