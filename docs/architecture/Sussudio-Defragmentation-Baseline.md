@@ -2728,3 +2728,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: MainViewModel device-native audio state, device audio mode/gain ownership, request-controller port shape, and deleted legacy audio-control partial guards remain unchanged.
 Notes for future agents: keep MainViewModel device-audio source-ownership assertions in `ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs` with the service-layer orchestration entry point; keep runtime and broader device/capture assertions in their focused sibling owner files.
+
+Date: 2026-05-26
+Area: diagnostics refresh alert-event helper locality
+Problem: `MainViewModel.Automation.DiagnosticsRefresh.AlertEvents.Tests.cs` only carried private alert/event ownership assertions invoked by `DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses` in the diagnostics refresh entry-point file. Reviewing diagnostics refresh orchestration and the alert/event ownership checks required opening a separate helper-only partial.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.AlertEvents.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` diagnostics-refresh helper partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: diagnostics UpdateAlerts ownership, diagnostic event state guards, signal alert guards, Flashback alert routing guards, and deleted legacy alert partial guards remain unchanged.
+Notes for future agents: keep diagnostics alert/event ownership assertions in `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs` with the orchestration entry point; keep detailed Flashback alert coverage in the focused RecordingAndStorage and PlaybackAndPreview owner files.
