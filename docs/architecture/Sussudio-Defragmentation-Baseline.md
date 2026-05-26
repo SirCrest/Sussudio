@@ -3870,3 +3870,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilt `NativeXuAudioProbe`, app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, Native XU probe linked-source includes, KS bridge behavior, or telemetry command routing changed.
 Behavior preserved: the cohesive KS bridge source-shape and `NativeXuAudioProbe` linked-source assertions now live in `NativeXuAtCommandProvider.Tests.cs`, with `XUnit.CoreRuntimeContractsTests` still invoking `KsExtensionUnitNative_SourceOwnership_IsCohesiveNativeBridge`.
 Notes for future agents: keep Native XU provider, KS bridge, shared device-support, and probe linked-source ownership checks together in `tests/Sussudio.Tests/NativeXuAtCommandProvider.Tests.cs` unless the probe gains a separate executable source-link verification fixture.
+
+Date: 2026-05-26
+Area: WASAPI interop contract locality
+Problem: `WasapiComInterop.CoreAudio.Contracts.cs` and `WasapiComInterop.AudioClient.Contracts.cs` were declaration-only shards split away from the root interop owner. Reviewing ABI-sensitive WASAPI behavior required opening three files even though the declarations, constants, P/Invokes, activation helpers, format parsing, endpoint volume helpers, and endpoint-change watcher are one Core Audio interop surface.
+Files consolidated: `Sussudio/Services/Audio/WasapiComInterop.CoreAudio.Contracts.cs`, `Sussudio/Services/Audio/WasapiComInterop.AudioClient.Contracts.cs`
+Files added: none
+Net production .cs delta: -2; net test .cs delta: 0
+Partial clusters reduced: n/a; WASAPI interop source count -2 while preserving all COM interface/type names and call sites
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (885 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, audio capture/playback behavior, or WASAPI GUID/signature declarations changed.
+Behavior preserved: Core Audio enums/structs, PropVariant lifetime handling, device/property/notification COM contracts, AudioClient/capture/render/endpoint-volume COM contracts, WASAPI format helpers, endpoint volume helpers, AudioClient activation, AudioClient3 shared-stream initialization, and the endpoint watcher now live in `Sussudio/Services/Audio/WasapiComInterop.cs`.
+Notes for future agents: keep ABI-sensitive WASAPI/Core Audio declarations and helper logic together in `Sussudio/Services/Audio/WasapiComInterop.cs`; only split again if a generated/platform-specific contract source or independently packaged interop assembly appears.

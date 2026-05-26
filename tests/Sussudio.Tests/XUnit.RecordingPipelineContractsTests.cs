@@ -83,8 +83,8 @@ public sealed class RecordingPipelineContractsTests
         => global::Program.WasapiAudioCapture_DiagnosticsLivesWithLifecycleRoot();
 
     [Fact]
-    public Task WasapiComInteropContractsLiveInFocusedFiles()
-        => global::Program.WasapiComInterop_ContractsLiveInFocusedFiles();
+    public Task WasapiComInteropContractsLiveWithInteropOwner()
+        => global::Program.WasapiComInterop_ContractsLiveWithInteropOwner();
 
     [Fact]
     public Task WasapiAudioCaptureStopUsesBoundedThreadJoin()

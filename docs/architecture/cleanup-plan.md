@@ -135,13 +135,11 @@ ingress, queue depth/frame accounting, buffered-duration projection, pooled
 chunk returns, the WASAPI render-thread loop, pause/resume execution, resume
 prebuffer wait, endpoint buffer writes, render buffer filling, render-side PTS
 advancement, volume ramps, and output-level telemetry used by audio ramp traces.
-`WasapiComInterop.CoreAudio.Contracts.cs` owns WASAPI/Core Audio enums,
-audio-format records, WAVEFORMAT structs, PROPERTYKEY, PropVariant lifetime
-handling, and Core Audio device, collection, property-store, and notification
-COM interfaces.
-`WasapiComInterop.AudioClient.Contracts.cs` owns AudioClient, capture/render
-client, and endpoint-volume COM interfaces. `WasapiComInterop.cs` owns native
-constants/P/Invokes, shared COM release/failure helpers, float-stereo format
+`WasapiComInterop.cs` owns native constants/P/Invokes, shared COM
+release/failure helpers, WASAPI/Core Audio enums, audio-format records,
+WAVEFORMAT structs, PROPERTYKEY, PropVariant lifetime handling, Core Audio
+device, collection, property-store, and notification COM interfaces,
+AudioClient/capture/render/endpoint-volume COM interfaces, float-stereo format
 allocation, WASAPI format parsing, sample-type classification, device
 enumerator activation, endpoint volume helpers, AudioClient activation, and
 AudioClient3 shared-stream initialization.

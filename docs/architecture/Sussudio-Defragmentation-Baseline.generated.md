@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-26T13:09:42Z
+Generated UTC: 2026-05-26T13:19:08Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 345 |
+| Production .cs files | 343 |
 | Test .cs files | 246 |
 | Production .cs files under 60 lines | 2 (0.6%) |
 | Production .cs files under 80 lines | 6 (1.7%) |
@@ -57,10 +57,11 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 965 | Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
 | 912 | Sussudio/Services/Flashback/FlashbackBackendResources.cs |
 | 904 | Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs |
-| 885 | Sussudio/ViewModels/StatsPresentationBuilder.cs |
 | 885 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
+| 885 | Sussudio/ViewModels/StatsPresentationBuilder.cs |
 | 884 | tools/NativeXuAudioProbe/Program.I2cCommands.cs |
 | 876 | tools/Common/DiagnosticSessionFlashbackExportScenarios.cs |
+| 868 | Sussudio/Services/Audio/WasapiComInterop.cs |
 | 859 | tools/McpServer/Tools/PerformanceTools.cs |
 | 840 | Sussudio/Services/Audio/WasapiAudioPlayback.cs |
 | 833 | Sussudio/Models/Automation/AutomationSnapshot.cs |
@@ -80,7 +81,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 684 | Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs |
 | 683 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs |
 | 675 | Sussudio/Controllers/Window/WindowCloseLifecycleController.cs |
-| 663 | Sussudio/MainWindow.ShellChrome.Composition.cs |
 
 ## Sample production files under 60 lines
 
