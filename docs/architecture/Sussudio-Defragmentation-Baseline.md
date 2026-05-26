@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: D3D11 preview runtime-capture test locality
+Problem: `D3D11PreviewRenderer.FrameFlow.Tests.cs` held pending-frame drain, frame-capture cancellation, and shared D3D device reference lifecycle checks for the same runtime-capture surface whose submission, screenshot capture, render-thread, device-lost, present-accounting, and PNG capture checks lived in `D3D11PreviewRenderer.SourceOwnership.RuntimeCapture.Tests.cs`. Reviewing D3D11 runtime capture and frame-flow ownership required opening two legacy `Program` partial files.
+Files consolidated: `tests/Sussudio.Tests/D3D11PreviewRenderer.FrameFlow.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` D3D11 preview runtime-capture test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: D3D11 pending-frame drain metrics, frame-capture cancellation cleanup, shared D3D device reference lifecycle, submission, screenshot, render-thread, and present-accounting checks remain unchanged.
+Notes for future agents: keep D3D11 runtime-capture, pending-frame, frame-capture, shared-device reference, render-thread, and present-accounting source-shape checks in `D3D11PreviewRenderer.SourceOwnership.RuntimeCapture.Tests.cs`; keep render-pass/shader source-shape checks in `D3D11PreviewRenderer.SourceOwnership.RenderPasses.Tests.cs`.
+
+Date: 2026-05-26
 Area: Flashback buffer retention test locality
 Problem: `Flashback.Buffer.Retention.Purge.Tests.cs` held purge retention and active-byte accounting checks for the same Flashback buffer retention/accounting surface whose eviction accounting, eviction-pause, and initialization PTS reset checks lived in `Flashback.Buffer.Retention.Eviction.Tests.cs`. Reviewing retention byte accounting required opening two small legacy `Program` partial files.
 Files consolidated: `tests/Sussudio.Tests/Flashback.Buffer.Retention.Purge.Tests.cs`
