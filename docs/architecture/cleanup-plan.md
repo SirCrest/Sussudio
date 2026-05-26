@@ -577,21 +577,19 @@ guards also live in `CommandHandlers.SourceOwnership.Tests.cs`; they require
 `AutomationCommandKind` enum overloads at routing call sites while leaving
 labels and wire IDs catalog-backed, with the dynamic diagnostic-session runner
 channel intentionally remaining string-based.
-`tests/Sussudio.Tests/ArchitectureDocs.AgentMapOwnershipPaths.Tests.cs` owns
+`tests/Sussudio.Tests/ArchitectureDocs.ReferenceIntegrity.Tests.cs` owns
 shared implementations for consolidated AGENT_MAP reference resolution,
 test-owner code-span coverage, automation consumer checklist coverage,
 UI/presentation ownership coverage, CaptureService ownership coverage,
 Flashback preview startup AGENT_MAP wording, shared tool automation path
-coverage, duplicate tools/Common owner checks, and empty test marker-shell
-checks.
+coverage, duplicate tools/Common owner checks, empty test marker-shell checks,
+literal `ReadRepoFile` source-shape path resolution, cleanup-plan file/folder
+reference drift checks, architecture-doc test-family coverage, and the shared
+implementations for the xUnit migration inventory guard.
 `tests/Sussudio.Tests/XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns the
 xUnit execution surface for those AGENT_MAP ownership checks and pure
 architecture-doc reference checks after their removal from the legacy offline
 harness catalog.
-`tests/Sussudio.Tests/ArchitectureDocs.ReferenceIntegrity.Tests.cs` owns
-literal `ReadRepoFile` source-shape path resolution, cleanup-plan file/folder
-reference drift checks, architecture-doc test-family coverage, and the shared
-implementations for the xUnit migration inventory guard.
 `tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs` owns shared
 Markdown code-span path-token extraction and resolution helpers, AGENT_MAP
 consumer coverage, ownership-file discovery, exact code-span policy, and xUnit

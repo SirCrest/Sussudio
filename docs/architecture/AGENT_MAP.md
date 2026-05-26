@@ -1734,22 +1734,17 @@ Primary current owners:
   xUnit execution surface for catalog, manifest, path-policy, and
   reliability-gates checks after their removal from the legacy offline harness
   catalog.
-- `tests/Sussudio.Tests/ArchitectureDocs.AgentMapOwnershipPaths.Tests.cs` owns
+- `tests/Sussudio.Tests/ArchitectureDocs.ReferenceIntegrity.Tests.cs` owns
   shared implementations for consolidated AGENT_MAP reference drift,
   test-owner code-span, README automation consumer, UI/presentation ownership,
   CaptureService ownership, Flashback preview startup wording, shared tool
-  automation exact-path, duplicate tools/Common owner, and empty test
-  marker-shell checks.
+  automation exact-path, duplicate tools/Common owner, empty test marker-shell
+  checks, literal `ReadRepoFile` source-shape path drift, cleanup-plan
+  file/folder reference drift, and xUnit migration inventory checks.
   `tests/Sussudio.Tests/XUnit.ArchitectureDocsAgentMapOwnershipTests.cs` owns
   the xUnit execution surface for those AGENT_MAP ownership checks and pure
   architecture-doc reference checks after their removal from the legacy offline
   harness catalog.
-  `tests/Sussudio.Tests/ArchitectureDocs.ReferenceIntegrity.Tests.cs` owns
-  literal `ReadRepoFile` source-shape path drift, cleanup-plan file/folder
-  reference drift, and the shared implementation for xUnit migration inventory
-  checks.
-  The xUnit execution surface for these pure architecture-doc reference checks
-  lives with `tests/Sussudio.Tests/XUnit.ArchitectureDocsAgentMapOwnershipTests.cs`.
   `tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs` owns
   shared Markdown code-span path-token extraction and resolution helpers,
   AGENT_MAP consumer coverage, ownership-file discovery, exact code-span policy,
