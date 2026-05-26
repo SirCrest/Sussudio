@@ -1824,9 +1824,9 @@ Primary current owners:
   surface for the former legacy NVML snapshot, CaptureSessionSnapshot
   default-state, and RTK I2C unsafe-native-path tool-contract checks.
 - `tests/Sussudio.FfmpegEncodeLab/Program.cs` owns standalone HDR encode-lab
-  orchestration; `Program.Encoding.cs` owns FFmpeg argument and AV1 encoder
-  selection policy; `Program.Support.cs` owns CLI parsing, tool-path resolution,
-  and child-process log capture.
+  orchestration, FFmpeg argument construction, and AV1 encoder selection
+  policy; `Program.Support.cs` owns CLI parsing, tool-path resolution, and
+  child-process log capture.
 - `tests/Sussudio.Tests/HarnessCore.cs` owns shared harness primitives:
   generic assertions, repo-root/file reads, automation snapshot source family
   readers, source-text extraction, reflection/private-field access,
