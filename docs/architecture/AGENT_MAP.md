@@ -1986,14 +1986,13 @@ Primary current owners:
 - `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` owns shared pooled-frame
   reflection, frame factory, jitter-buffer factory, and tracking pool helpers.
 - `tests/Sussudio.Tests/PooledVideoFrame.Leases.Tests.cs` owns pooled video
-  frame lease lifecycle and MJPEG pooled-frame fan-out contract tests.
+  frame lease lifecycle, MJPEG pooled-frame fan-out contracts, and queued
+  lease return coverage for D3D pending-frame, recording, and Flashback paths.
 - `tests/Sussudio.Tests/PooledVideoFrame.MjpegJitterPolicy.Tests.cs` owns the
   MJPEG preview jitter frame-ingress, emit-loop, adaptive deadline policy,
   queue, and metrics source-ownership assertions.
 - `tests/Sussudio.Tests/PooledVideoFrame.MjpegJitterQueue.Tests.cs` owns
   MJPEG preview jitter queue/drop/reprime behavior tests.
-- `tests/Sussudio.Tests/PooledVideoFrame.QueuedLeaseRelease.Tests.cs` owns
-  D3D pending-frame and recording/Flashback queued lease return tests.
 - `tests/Sussudio.Tests/McpToolSurface.Tests.cs` owns MCP surface compatibility
   checks that span raw app state, capture options, capture settings, and UI
   settings tools. It also owns source guards that fixed-command MCP automation

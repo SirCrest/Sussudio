@@ -627,9 +627,8 @@ offline harness catalog.
 
 `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` now keeps only shared
 pooled-frame and jitter-buffer helpers. Pooled-frame coverage is split into
-lease lifecycle/fan-out contracts, MJPEG jitter frame-ingress/adaptive policy,
-MJPEG jitter queue/drop/reprime behavior, and queued lease release contracts
-for D3D, recording, and Flashback paths.
+lease lifecycle/fan-out/queued-release contracts, MJPEG jitter
+frame-ingress/adaptive policy, and MJPEG jitter queue/drop/reprime behavior.
 CPU MJPEG pipeline runtime checks now execute through
 `tests/Sussudio.Tests/XUnit.MjpegPipelineContractsTests.cs`, keeping pipeline,
 cadence, pooled-frame, preview-jitter, and queued lease-release contracts in
