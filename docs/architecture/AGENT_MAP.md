@@ -1880,11 +1880,9 @@ Primary current owners:
   telemetry, MainViewModel source ownership orchestration assertions, and
   MainViewModel device-native audio state, mode/gain, request-controller,
   device refresh, capture device selection, format probe, source telemetry,
-  recording capability, and preview renderer enqueue source ownership
-  assertions.
-- `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.MainViewModelRuntime.Tests.cs`
-  owns MainViewModel UI dispatch, property-change, runtime lifecycle/event-ingress,
-  recording runtime, and disposal source ownership assertions.
+  recording capability, preview renderer enqueue, UI dispatch, property-change,
+  runtime lifecycle/event-ingress, recording runtime, and disposal source
+  ownership assertions.
 - `tests/Sussudio.Tests/ServiceNamespace.AutomationContracts.Tests.cs` owns
   AutomationCommandKind project/source ownership alignment across the app and
   automation tools.

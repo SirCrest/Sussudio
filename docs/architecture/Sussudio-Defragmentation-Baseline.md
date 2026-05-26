@@ -2799,4 +2799,16 @@ Partial clusters reduced: legacy `Program` service namespace source-ownership he
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: MainViewModel device refresh, capture device selection, audio device scan handoff, format probe retargeting, source telemetry, recording capability, and preview renderer enqueue source-ownership guards remain unchanged.
-Notes for future agents: keep MainViewModel device/capture/source-telemetry service-namespace assertions in `ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs` with the service-layer orchestration entry point; keep runtime assertions in `ServiceNamespace.SourceOwnership.MainViewModelRuntime.Tests.cs`.
+Notes for future agents: keep MainViewModel device/capture/source-telemetry service-namespace assertions in `ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs` with the service-layer orchestration entry point; keep MainViewModel runtime ownership assertions there too while they remain private helper checks invoked by that same parent.
+
+Date: 2026-05-26
+Area: service namespace MainViewModel runtime helper locality
+Problem: `ServiceNamespace.SourceOwnership.MainViewModelRuntime.Tests.cs` only carried private runtime source-ownership assertions invoked by the service-layer ownership parent. Reviewing MainViewModel service-namespace drift for UI dispatch, property-change, runtime lifecycle/event-ingress, recording runtime, and disposal concerns required opening a separate helper-only partial with no independent execution surface.
+Files consolidated: `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.MainViewModelRuntime.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` service namespace source-ownership helper partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: MainViewModel UI dispatch, audio/capture property-change, runtime lifecycle/event-ingress, recording runtime, disk-space presentation, disposal, and capture status/error source-ownership guards remain unchanged.
+Notes for future agents: keep MainViewModel runtime source-ownership assertions in `ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs` with the service-layer orchestration entry point; create a separate helper only for an independently invoked runtime ownership seam.
