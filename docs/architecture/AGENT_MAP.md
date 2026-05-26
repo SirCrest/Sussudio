@@ -2057,13 +2057,11 @@ Primary current owners:
   Flashback buffer-manager partial ownership assertions, including
   eviction-pause ownership.
 - `tests/Sussudio.Tests/Flashback.Buffer.Segments.Validation.Tests.cs` owns
-  Flashback buffer segment completion metadata and outside-path rejection
-  tests.
+  Flashback buffer segment completion metadata, outside-path rejection,
+  disposed-state no-op, and recovery-preserve tests.
 - `tests/Sussudio.Tests/Flashback.Buffer.Segments.Accounting.Tests.cs` owns
   Flashback buffer segment diagnostics, PTS clamp, byte accounting, and
   same-path extension tests.
-- `tests/Sussudio.Tests/Flashback.Buffer.Segments.DisposalRecovery.Tests.cs`
-  owns Flashback buffer disposed-state no-op and recovery-preserve tests.
 - `tests/Sussudio.Tests/Flashback.Buffer.SegmentLookups.Tests.cs` owns
   Flashback buffer segment position lookup, next-segment path lookup, path
   normalization, segment-start PTS, segment range query, active path,
@@ -2092,10 +2090,8 @@ Primary current owners:
   source-ownership checks after their removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/Flashback.Exporter.Basic.Tests.cs` owns Flashback
   exporter request-surface smoke tests, path/request validation, cancellation
-  precedence, cancelled lock-wait behavior, and export throttle tests.
-- `tests/Sussudio.Tests/Flashback.Exporter.FailureClassifier.Tests.cs` owns
-  Flashback export failure classifier source ownership and status-message
-  mapping tests.
+  precedence, cancelled lock-wait behavior, export throttle tests, and
+  failure-classifier status-message mapping tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Ownership.Tests.cs` owns
   Flashback exporter source-ownership tests, task-wrapper infrastructure,
   disposal timeout/native-state lifetime guards, and stream-count/template

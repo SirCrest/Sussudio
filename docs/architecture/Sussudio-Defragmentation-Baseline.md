@@ -3100,3 +3100,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: AGENT_MAP file/path coverage, cleanup-plan coverage, xUnit inventory discovery, markdown token resolution, and UI/capture/tool ownership enumerators remain registered through `XUnit.ArchitectureDocsAgentMapOwnershipTests`.
 Notes for future agents: keep architecture-doc markdown/path helper methods and ownership-file enumerators together in `ArchitectureDocs.MarkdownReferenceHelpers.cs`; create a separate helper file only for an independently named docs-validation support boundary.
+
+Date: 2026-05-26
+Area: Flashback test locality
+Problem: `Flashback.Buffer.Segments.DisposalRecovery.Tests.cs` split disposed-state and recovery-preserve segment safety checks away from the same Flashback buffer segment validation owner. `Flashback.Exporter.FailureClassifier.Tests.cs` also split top-level Flashback export failure mapping away from the request/failure surface already covered by `Flashback.Exporter.Basic.Tests.cs`.
+Files consolidated: `tests/Sussudio.Tests/Flashback.Buffer.Segments.DisposalRecovery.Tests.cs`; `tests/Sussudio.Tests/Flashback.Exporter.FailureClassifier.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -2
+Partial clusters reduced: legacy `Program` Flashback buffer/exporter test partial file count -2
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: Flashback buffer segment metadata, outside-path, disposed no-op, and recovery-preserve tests remain registered through `XUnit.RecordingModelContractsTests` and `XUnit.PresentationPreviewStartupContractsTests`; Flashback export failure-classifier mapping remains registered through `XUnit.RecordingPipelineContractsTests`.
+Notes for future agents: keep Flashback buffer segment safety checks in `Flashback.Buffer.Segments.Validation.Tests.cs`; keep top-level Flashback exporter request/failure classification checks in `Flashback.Exporter.Basic.Tests.cs` unless either surface gains a separate named collaborator with its own test seam.
