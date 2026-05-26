@@ -1682,10 +1682,10 @@ Primary current owners:
   shared Markdown code-span path-token extraction and resolution helpers,
   AGENT_MAP consumer coverage, ownership-file discovery, exact code-span policy,
   and xUnit inventory helpers.
-- `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter*.Tests.cs`
+- `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter.Tests.cs`
     owns the shared/ssctl snapshot formatter contract family: typed accessors,
     core section formatting, section-order, Flashback opt-in smoke checks,
-    Flashback output rendering, and Preview D3D output rendering stay in
+    source ownership, Flashback output rendering, and Preview D3D output rendering stay in
     `.Tests.cs`; shared formatter source ownership lives in `.Ownership.Tests.cs`.
   `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for those shared snapshot formatter checks plus the focused formatter

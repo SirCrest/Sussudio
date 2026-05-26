@@ -4508,3 +4508,15 @@ Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csp
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, runtime code, or `Program` test helper methods changed.
 Behavior preserved: presentation-preview startup, D3D, MainViewModel, MainWindow, runtime policy, selection-policy, Flashback buffer, capture-option, output-path, shell, screenshot, recording, and audio-control xUnit facts keep the same public test class and method names, now co-located in `XUnit.PresentationPreviewContractsTests.cs`.
 Notes for future agents: keep fixture-free presentation-preview xUnit adapter classes together in `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`; split only if a group needs a distinct fixture, collection behavior, or executable helper state.
+
+Date: 2026-05-26
+Area: Automation snapshot formatter test locality
+Problem: `AutomationToolContracts.SnapshotFormatter.Ownership.Tests.cs` was a source-ownership shard for the same shared automation snapshot formatter surface covered by `AutomationToolContracts.SnapshotFormatter.Tests.cs`. Both files used the same `Program` partial and xUnit wrapper, so reviewing formatter behavior and formatter source-shape ownership required opening two adjacent files for one tool contract.
+Files consolidated: `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter.Ownership.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `Program` automation snapshot formatter test partial-family file count -1
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~AutomationSnapshotFormatterContractsTests"` (4 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: focused formatter xUnit wrapper coverage passed; no public automation command names, IDs, wire payloads, tool formatter output, or formatter source code changed.
+Behavior preserved: shared snapshot formatter typed accessors, core formatting, Flashback formatting, Preview D3D formatting, section ordering, and source-ownership assertions now live together in `AutomationToolContracts.SnapshotFormatter.Tests.cs`.
+Notes for future agents: keep automation snapshot formatter behavior and source-ownership assertions in `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter.Tests.cs`; split only if formatter source ownership gets a distinct executable fixture or tool assembly seam.
