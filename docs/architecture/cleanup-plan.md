@@ -555,11 +555,9 @@ output, Preview D3D output, and source ownership live in focused
 `AutomationToolContracts.SnapshotFormatter.*.Tests.cs` implementation owners,
 with `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owning their xUnit
 execution surface after removal from the legacy offline harness catalog. ssctl
-formatter output smoke checks stay in
-`Formatters.Tests.cs`, while `Formatters.SnapshotOwnership.Tests.cs` owns ssctl
-formatter source ownership assertions through the shared `RuntimeContractSource`
-formatter source-family readers; timeline output contracts also live in
-`Formatters.Tests.cs`, and `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`
+formatter output smoke checks, timeline output contracts, and ssctl formatter
+source ownership assertions stay in `Formatters.Tests.cs` through the shared
+`RuntimeContractSource` formatter source-family readers; `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`
 owns their xUnit execution surface after removal from the legacy offline
 harness catalog.
 ssctl command-handler routing coverage now lives in
