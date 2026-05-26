@@ -1802,9 +1802,8 @@ Primary current owners:
   after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/PresentMonProbe.Tests.cs` owns PresentMon parser
   behavior contracts for swap-chain selection, artifact filtering, CSV field
-  versions, and app-present correlation.
-- `tests/Sussudio.Tests/PresentMonProbe.SourceOwnership.Tests.cs` owns
-  PresentMonProbe split-family source ownership assertions.
+  versions, app-present correlation, and PresentMonProbe split-family source
+  ownership assertions.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for PresentMon parser/source-ownership, ssctl pipe transport, KS
   audio-node, EGAVDS probe, RTK I2C unsafe-native-path, NVML snapshot, and

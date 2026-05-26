@@ -3052,3 +3052,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: LibAv sink nonblocking video/GPU/CUDA enqueue checks, audio queue ownership, video queue submission ownership, output validation, bounded drain loop, encoding-loop, startup, stop-lifecycle, and lifetime-helper assertions remain registered through `XUnit.RecordingPipelineContractsTests` and `XUnit.RecordingModelContractsTests`.
 Notes for future agents: keep LibAv recording sink queue and lifecycle ownership checks together in `RecordingQueue.LibAvSink.Lifecycle.Tests.cs`; do not recreate a separate queue test shard unless production queue behavior becomes a separately named collaborator with its own test seam.
+
+Date: 2026-05-26
+Area: PresentMon probe test locality
+Problem: `PresentMonProbe.SourceOwnership.Tests.cs` split PresentMonProbe source-family ownership assertions away from `PresentMonProbe.Tests.cs`, even though both protect the same `tools/Common/PresentMon/PresentMonProbe*.cs` review surface: run/process setup, result formatting, DTO ownership, CSV parsing, swap-chain selection, artifact filtering, and app-present correlation.
+Files consolidated: `tests/Sussudio.Tests/PresentMonProbe.SourceOwnership.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` PresentMon probe test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: PresentMon parser behavior and source-family ownership checks remain registered through `XUnit.ToolContractsTests`.
+Notes for future agents: keep PresentMon parser behavior and source ownership checks together in `PresentMonProbe.Tests.cs`; do not recreate a standalone PresentMon source-ownership shard unless the production probe gains a separately named collaborator with its own test seam.
