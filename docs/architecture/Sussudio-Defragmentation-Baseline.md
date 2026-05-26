@@ -2716,3 +2716,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: pooled-frame lease lifecycle, MJPEG pooled-frame fan-out, D3D pending-frame queued lease disposal, and recording/Flashback queued packet lease cleanup checks remain unchanged.
 Notes for future agents: keep queued lease return coverage in `PooledVideoFrame.Leases.Tests.cs` with the rest of the pooled-frame lease contract tests; keep jitter policy/queue behavior in their focused MJPEG jitter files.
+
+Date: 2026-05-26
+Area: service namespace MainViewModel device-audio helper locality
+Problem: `ServiceNamespace.SourceOwnership.MainViewModelDeviceAudio.Tests.cs` only carried private source-ownership assertions invoked by the service-layer ownership parent. Reviewing service namespace drift for MainViewModel device-audio required opening a separate helper-only partial with no independent execution surface.
+Files consolidated: `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.MainViewModelDeviceAudio.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` service namespace source-ownership helper partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: MainViewModel device-native audio state, device audio mode/gain ownership, request-controller port shape, and deleted legacy audio-control partial guards remain unchanged.
+Notes for future agents: keep MainViewModel device-audio source-ownership assertions in `ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs` with the service-layer orchestration entry point; keep runtime and broader device/capture assertions in their focused sibling owner files.

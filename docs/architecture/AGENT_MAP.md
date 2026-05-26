@@ -1886,9 +1886,8 @@ Primary current owners:
   source ownership assertions.
 - `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs`
   owns DeviceService, NativeXu support, GPU interop, decoder, capture
-  telemetry, and MainViewModel source ownership orchestration assertions.
-- `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.MainViewModelDeviceAudio.Tests.cs`
-  owns MainViewModel device-native audio state, mode/gain, and request-controller
+  telemetry, MainViewModel source ownership orchestration assertions, and
+  MainViewModel device-native audio state, mode/gain, and request-controller
   source ownership assertions.
 - `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.MainViewModelRuntime.Tests.cs`
   owns MainViewModel UI dispatch, property-change, runtime lifecycle/event-ingress,
