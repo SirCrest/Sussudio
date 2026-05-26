@@ -2596,3 +2596,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; xUnit helper consolidation only, no automation command names, IDs, or wire payloads changed
 Behavior preserved: Flashback buffer option sizing, session/playback/export DTO reflection checks, required/init-only/nullability assertions, property setters/backing-field helpers, enum-value assertions, and collection count helpers remain unchanged.
 Notes for future agents: keep Flashback model reflection helpers with `XUnit.FlashbackModelsTests.cs` while they are used only by that contract suite.
+
+Date: 2026-05-26
+Area: snapshot model helper locality
+Problem: `SnapshotModels.PropertyAssertions.cs` only carried helper/property/nullability assertion methods for the same `SnapshotModelsTests` partial family. Reviewing snapshot DTO reflection, JSON, and property contracts still required a side helper file without an independent test seam.
+Files consolidated: `tests/Sussudio.Tests/SnapshotModels.PropertyAssertions.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `SnapshotModelsTests` helper partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; xUnit helper consolidation only, no automation command names, IDs, or wire payloads changed
+Behavior preserved: snapshot DTO property-list assertions, nullability checks, registered property specs, generic-list/single-item helpers, non-null string helper, and reflection JSON registered-property coverage remain unchanged.
+Notes for future agents: keep snapshot model reflection/nullability helper methods with `SnapshotModels.Tests.cs` while they are used only by that contract suite.
