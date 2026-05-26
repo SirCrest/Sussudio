@@ -1,4 +1,5 @@
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -43,6 +44,39 @@ static partial class Program
         AssertContains(renderPassesText, "private void UpdateViewportConstantBuffer(Viewport viewport)");
         AssertContains(renderPassesText, "private static Vortice.RawRect ComputeLetterboxRect(");
         AssertContains(renderPassesText, "MapMode.WriteDiscard");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task D3D11PreviewRenderer_ComputeLetterboxRect_CalculatesCorrectly()
+    {
+        var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
+        var method = rendererType.GetMethod("ComputeLetterboxRect",
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("ComputeLetterboxRect not found.");
+
+        var result1 = method.Invoke(null, new object[] { 1920, 1080, 1920, 1080 })!;
+        var resultType = result1.GetType();
+        var left1 = (int)resultType.GetField("Left")!.GetValue(result1)!;
+        var top1 = (int)resultType.GetField("Top")!.GetValue(result1)!;
+        var right1 = (int)resultType.GetField("Right")!.GetValue(result1)!;
+        var bottom1 = (int)resultType.GetField("Bottom")!.GetValue(result1)!;
+        AssertEqual(0, left1, "Same aspect: left=0");
+        AssertEqual(0, top1, "Same aspect: top=0");
+        AssertEqual(1920, right1, "Same aspect: right=1920");
+        AssertEqual(1080, bottom1, "Same aspect: bottom=1080");
+
+        var result2 = method.Invoke(null, new object[] { 1920, 1080, 1024, 768 })!;
+        var top2 = (int)resultType.GetField("Top")!.GetValue(result2)!;
+        var left2 = (int)resultType.GetField("Left")!.GetValue(result2)!;
+        AssertEqual(true, top2 > 0, "16:9 into 4:3 should letterbox (top > 0)");
+        AssertEqual(0, left2, "16:9 into 4:3 should not pillarbox");
+
+        var result3 = method.Invoke(null, new object[] { 1024, 768, 1920, 1080 })!;
+        var left3 = (int)resultType.GetField("Left")!.GetValue(result3)!;
+        var top3 = (int)resultType.GetField("Top")!.GetValue(result3)!;
+        AssertEqual(true, left3 > 0, "4:3 into 16:9 should pillarbox (left > 0)");
+        AssertEqual(0, top3, "4:3 into 16:9 should not letterbox");
 
         return Task.CompletedTask;
     }

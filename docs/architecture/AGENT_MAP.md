@@ -1627,9 +1627,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/RecordingVerifier.Tests.cs` owns RecordingVerifier
   early failure paths, verifier contract/source-shape assertions, result DTO
   property coverage, and the dedicated LibAv verification script contract.
-- `tests/Sussudio.Tests/D3D11PreviewRenderer.Geometry.Tests.cs` owns letterbox,
-  screenshot black-edge counting, and preview PNG encoder CRC/capture contract
-  tests.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.Tests.cs`
   owns renderer diagnostics source-shape, frame queue, frame ownership, present
   cadence metric shape/suppression baseline, public renderer diagnostics API
@@ -1646,15 +1643,16 @@ Primary current owners:
   binding, shared-device, device initialization, input-resource, input-view,
   and raw-upload state assertions.
   `D3D11PreviewRenderer.SourceOwnership.RenderPasses.Tests.cs` owns
-  frame-latency, viewport, render-pass, shader-rendering, and shader-source
-  assertions.
+  frame-latency, viewport, letterbox, render-pass, shader-rendering, and
+  shader-source assertions.
   `D3D11PreviewRenderer.SourceOwnership.RenderThread.Tests.cs` owns
   render-thread loop, device-lost classification/recovery, first-frame
   notification, failure telemetry method/state, and Present shared
   present-accounting source-ownership assertions.
   `D3D11PreviewRenderer.SourceOwnership.RuntimeCapture.Tests.cs` owns public
   submission state, lifecycle/stop-lifecycle state, pending-frame state, and
-  screenshot assertions.
+  screenshot, black-edge counting, preview PNG encoder CRC, and preview PNG
+  capture assertions.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.FrameFlow.Tests.cs` owns pending
   frame draining, frame-capture cancellation, and shared D3D device reference
   lifecycle assertions.

@@ -1,4 +1,5 @@
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -155,6 +156,110 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.ScreenshotStaging.cs")),
             "renderer screenshot staging is consolidated into D3D11PreviewRenderer.ScreenshotCapture.cs");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task D3D11PreviewRenderer_BlackEdgeCounting_WorksCorrectly()
+    {
+        var captureType = RequireType("Sussudio.Services.Preview.PreviewScreenshotCapture");
+
+        var leadingMethod = captureType.GetMethod("CountLeadingBlackEdges",
+            BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+            ?? throw new InvalidOperationException("CountLeadingBlackEdges not found.");
+        var trailingMethod = captureType.GetMethod("CountTrailingBlackEdges",
+            BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+            ?? throw new InvalidOperationException("CountTrailingBlackEdges not found.");
+
+        var values1 = new[] { true, true, false, true, false };
+        AssertEqual(2, (int)leadingMethod.Invoke(null, new object[] { values1 })!, "Leading: 2 black edges");
+        AssertEqual(0, (int)trailingMethod.Invoke(null, new object[] { values1 })!, "Trailing: 0 black edges");
+
+        var values2 = new[] { false, false, true, true, true };
+        AssertEqual(0, (int)leadingMethod.Invoke(null, new object[] { values2 })!, "Leading: 0");
+        AssertEqual(3, (int)trailingMethod.Invoke(null, new object[] { values2 })!, "Trailing: 3");
+
+        var allTrue = new[] { true, true, true, true, true };
+        AssertEqual(5, (int)leadingMethod.Invoke(null, new object[] { allTrue })!, "All true leading");
+        AssertEqual(5, (int)trailingMethod.Invoke(null, new object[] { allTrue })!, "All true trailing");
+
+        var allFalse = new[] { false, false, false };
+        AssertEqual(0, (int)leadingMethod.Invoke(null, new object[] { allFalse })!, "All false leading");
+        AssertEqual(0, (int)trailingMethod.Invoke(null, new object[] { allFalse })!, "All false trailing");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task D3D11PreviewRenderer_InitPngCrc32Table_Generates256Entries()
+    {
+        var encoderType = RequireType("Sussudio.Services.Preview.PreviewPng16Encoder");
+        var method = encoderType.GetMethod("InitPngCrc32Table",
+            BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+            ?? throw new InvalidOperationException("InitPngCrc32Table not found.");
+
+        var table = (uint[])method.Invoke(null, null)!;
+        AssertEqual(256, table.Length, "CRC32 table has 256 entries");
+        AssertEqual(0u, table[0], "CRC32 table[0] = 0");
+
+        var unique = new HashSet<uint>(table);
+        AssertEqual(256, unique.Count, "All 256 entries are unique");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task D3D11PreviewRenderer_PreviewPngCapture_Writes16BitRgbPng()
+    {
+        var captureType = RequireType("Sussudio.Services.Preview.PreviewScreenshotCapture");
+        var method = captureType.GetMethod(
+            "CaptureFrameBufferTo16BitPng",
+            BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+            ?? throw new InvalidOperationException("CaptureFrameBufferTo16BitPng not found.");
+
+        var outputRoot = Path.Combine(Path.GetTempPath(), "sussudio-preview-png-test-" + Guid.NewGuid().ToString("N"));
+        var outputPath = Path.Combine(outputRoot, "preview", "frame.png");
+        try
+        {
+            var format = ParseEnum("Vortice.DXGI.Format", "B8G8R8A8_UNorm");
+            var result = method.Invoke(
+                null,
+                new object[]
+                {
+                    new byte[] { 0x30, 0x20, 0x10, 0xFF },
+                    4,
+                    1,
+                    1,
+                    outputPath,
+                    "UnitTest",
+                    format
+                })
+                ?? throw new InvalidOperationException("CaptureFrameBufferTo16BitPng returned null.");
+
+            AssertEqual(true, GetBoolProperty(result, "Succeeded"), "PNG capture succeeded");
+            AssertEqual(1, GetIntProperty(result, "CapturedWidth"), "PNG captured width");
+            AssertEqual(1, GetIntProperty(result, "CapturedHeight"), "PNG captured height");
+            AssertEqual(outputPath, GetStringProperty(result, "FilePath"), "PNG output path");
+
+            var bytes = File.ReadAllBytes(outputPath);
+            AssertEqual(137, (int)bytes[0], "PNG signature byte 0");
+            AssertEqual(80, (int)bytes[1], "PNG signature byte 1");
+            AssertEqual(78, (int)bytes[2], "PNG signature byte 2");
+            AssertEqual(71, (int)bytes[3], "PNG signature byte 3");
+            AssertEqual((byte)'I', bytes[12], "PNG IHDR I");
+            AssertEqual((byte)'H', bytes[13], "PNG IHDR H");
+            AssertEqual((byte)'D', bytes[14], "PNG IHDR D");
+            AssertEqual((byte)'R', bytes[15], "PNG IHDR R");
+            AssertEqual(1, (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19], "PNG IHDR width");
+            AssertEqual(1, (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23], "PNG IHDR height");
+            AssertEqual(16, (int)bytes[24], "PNG bit depth");
+            AssertEqual(2, (int)bytes[25], "PNG color type");
+        }
+        finally
+        {
+            if (Directory.Exists(outputRoot))
+            {
+                Directory.Delete(outputRoot, recursive: true);
+            }
+        }
 
         return Task.CompletedTask;
     }
