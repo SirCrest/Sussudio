@@ -651,14 +651,14 @@ dispatcher, capture/Flashback routing, snapshot projection, catalog/manifest,
 and diagnostics-loop checks in xUnit after their removal from the legacy
 harness catalog.
 Presentation-preview MainViewModel checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`,
+`tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`,
 keeping initial recording transition failure propagation, audio controls and
 monitoring, output path and disk-space presentation, source telemetry,
 dependency composition, automation/runtime routing, capture settings, preview
 lifecycle, and audio ramp trace telemetry in xUnit after their removal from the
 legacy harness catalog.
 Presentation-preview MainWindow checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowContractsTests.cs`,
+`tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`,
 keeping window lifecycle, launch/startup, preview screenshot, shell chrome,
 visual shell, recording controls, audio controls, responsive layout, capture
 selection, resolution selection, capture runtime guardrail, MainWindow initial,
@@ -672,7 +672,7 @@ preview stop overload/API compatibility, and emergency recording stop threading
 contracts in xUnit after
 their removal from the legacy harness catalog.
 Presentation-preview capture Flashback buffer checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs`,
+`tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`,
 keeping stale session cleanup and recovery-preserve contracts in xUnit after
 their removal from the legacy harness catalog.
 Project build/publish policy checks now execute through the app-surface test
@@ -681,7 +681,7 @@ cluster in `tests/Sussudio.Tests/AppSurface.Tests.cs` and
 English-only publish locale and latest-build staging contracts in xUnit after
 their removal from the presentation-preview capture catalog.
 Presentation-preview D3D checks now execute through
-`tests/Sussudio.Tests/XUnit.PresentationPreviewD3DContractsTests.cs`, keeping
+`tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`, keeping
 the former D3D pacing, geometry/screenshot, present-cadence, device-lost,
 diagnostics, contracts/metrics, runtime-capture, render setup/resource, and
 render-pipeline contracts in xUnit after their removal from the legacy D3D
@@ -3254,7 +3254,7 @@ owner, fold it back into that owner and update the source-shape tests and
    segment lookup/list projection coverage. Preview startup session/reinit
    harness coverage is split between source ownership, session controller,
    reinit transition controller, and pending Flashback-cycle wait owners.
-   `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs`
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
    owns xUnit execution for the preview-startup source-shape ownership,
    controller behavior, signal/failure-text, and ordering checks after their
    removal from the legacy presentation-preview capture catalog.
@@ -3264,7 +3264,7 @@ owner, fold it back into that owner and update the source-shape tests and
    Preview startup ordering coverage is split between lifecycle-event
    ownership, device-discovery ordering, reveal priming, and stop audio-ramp
    owners. Startup ordering xUnit execution also lives in
-   `XUnit.PresentationPreviewStartupContractsTests.cs`, and the legacy catalog
+   `XUnit.PresentationPreviewContractsTests.cs`, and the legacy catalog
    hook is removed.
    MainViewModel automation recording-transition coverage is split
    between shared transition-gate routing, failure propagation, emergency stop,
@@ -3480,7 +3480,7 @@ owner, fold it back into that owner and update the source-shape tests and
    timing-policy placement, automatic-selection behavior, and pure timing-policy
    behavior checks live together in
    `MainViewModel.Capture.SelectionPolicy.FrameRates.PolicyBehavior.Tests.cs`.
-   `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
    owns xUnit execution for those frame-rate selection/timing checks after
    their removal from the legacy presentation-preview capture catalog.
    Shared frame-rate selection reset,
@@ -3546,7 +3546,7 @@ owner, fold it back into that owner and update the source-shape tests and
     the retarget applier graph-port contract also live there, while
     pure late-probe retarget decisions live in
     `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`.
-    `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
+    `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
     owns xUnit execution for the late device-format probe retarget ownership,
     behavior, and application checks after their removal from the legacy
     presentation-preview capture catalog.
@@ -3555,7 +3555,7 @@ owner, fold it back into that owner and update the source-shape tests and
     `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.*.cs` family so
     frame-rate, resolution, mode-selection, late-probe, recording-format, and
     runtime-flag assertions stay near their matching policy owners.
-    `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
+    `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
     owns xUnit execution for the mode-selection, capture-format, and
     recording-settings selection checks after their removal from the legacy
     presentation-preview capture catalog.
@@ -3573,7 +3573,7 @@ owner, fold it back into that owner and update the source-shape tests and
     live in `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs`; auto-resolution
     display text used by status and telemetry presentation lives in
     `MainViewModel.CaptureState.cs`.
-   `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowContractsTests.cs`
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
    owns xUnit execution for the resolution-selection ownership and behavior
    checks after their removal from the legacy presentation-preview capture catalog.
    Pure resolution selection policy now lives in

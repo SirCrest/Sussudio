@@ -118,9 +118,9 @@ add xUnit alongside, and port incrementally.
   stay stable while the execution surface is easier to scan.
 - `Program.cs` keeps the legacy runner entry point, but the
   diagnostic-session catalog has no remaining legacy registrations.
-- `XUnit.PresentationPreviewStartupContractsTests.cs` owns the former legacy
+- `XUnit.PresentationPreviewContractsTests.cs` owns the former legacy
   presentation-preview harness registration guard.
-- `XUnit.PresentationPreviewMainViewModelContractsTests.cs` owns the former
+- `XUnit.PresentationPreviewContractsTests.cs` owns the former
   legacy presentation-preview MainViewModel xUnit execution groups: initial
   recording transition failure propagation, audio controls and monitoring,
   output path and disk-space presentation, source telemetry, dependency
@@ -128,7 +128,7 @@ add xUnit alongside, and port incrementally.
   audio ramp trace telemetry. The public wrapper classes remain separate inside
   this file so existing test identities stay stable while the execution surface
   is easier to scan.
-- `XUnit.PresentationPreviewMainWindowContractsTests.cs` owns the former legacy
+- `XUnit.PresentationPreviewContractsTests.cs` owns the former legacy
   presentation-preview MainWindow xUnit execution groups: window lifecycle,
   launch/startup, preview screenshot, shell chrome, visual shell, recording
   controls, audio controls, responsive layout, capture selection, resolution
@@ -136,28 +136,28 @@ add xUnit alongside, and port incrementally.
   shell/policy, capture option, and output path checks. The public wrapper
   classes remain separate inside this file so existing test identities stay
   stable while the execution surface is easier to scan.
-- `XUnit.PresentationPreviewMainViewModelContractsTests.cs` also owns the
+- `XUnit.PresentationPreviewContractsTests.cs` also owns the
   former legacy presentation-preview frame-rate selection group:
   `ShowAllCaptureOptions`, source-filter, auto-selection, and timing-policy
   behavior/ownership checks.
-- `XUnit.PresentationPreviewMainViewModelContractsTests.cs` also owns
+- `XUnit.PresentationPreviewContractsTests.cs` also owns
   the former legacy presentation-preview late device-format probe retarget group:
   retarget policy ownership, decision behavior, and UI-side retarget application
   checks.
-- `XUnit.PresentationPreviewMainViewModelContractsTests.cs` also owns the
+- `XUnit.PresentationPreviewContractsTests.cs` also owns the
   former legacy presentation-preview capture selection-policy group:
   mode-selection state, capture format selection, and recording settings
   selection ownership/behavior checks.
-- `XUnit.PresentationPreviewStartupContractsTests.cs` owns the former legacy
+- `XUnit.PresentationPreviewContractsTests.cs` owns the former legacy
   presentation-preview preview-startup groups: ownership, controller behavior,
   signal/failure text, startup ordering, capture preview-lifecycle, and
   Flashback buffer startup/recovery checks.
 - Preview-startup ordering checks also live in
-  `XUnit.PresentationPreviewStartupContractsTests.cs`.
+  `XUnit.PresentationPreviewContractsTests.cs`.
 - `AppSurface.Tests.cs` and `XUnit.AutomationContractsTests.cs` own the former
   legacy project-file build/publish policy implementation and xUnit execution
   check after its removal from the presentation-preview capture catalog.
-- `XUnit.PresentationPreviewD3DContractsTests.cs` owns the former legacy
+- `XUnit.PresentationPreviewContractsTests.cs` owns the former legacy
   presentation-preview D3D registration groups: pacing, geometry/screenshot,
   present cadence, device-lost, diagnostics, contracts/metrics ownership,
   runtime capture, render setup/resource, and render pipeline checks. The legacy

@@ -1354,7 +1354,7 @@ Primary current owners:
   device-audio request-controller ownership assertions, and native XU
   audio-control service cohesion, profile, payload workflow, and raw transport
   ownership assertions.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns the xUnit execution surface for MainViewModel source and behavior
   contracts after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Tests.cs` owns the
@@ -1369,7 +1369,7 @@ Primary current owners:
   owns frame-rate source-filter, automatic-selection, always-on capture-option,
   timing-policy ownership assertions, automatic frame-rate choice, and pure
   timing-policy behavior assertions.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview frame-rate
   selection/timing catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs`
@@ -1381,17 +1381,17 @@ Primary current owners:
   owns resolution-selection source-shape assertions for option rebuild,
   auto-selection state, pure policy placement, and policy behavior assertions
   including HDR and SDR source retarget behavior.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowContractsTests.cs`
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview MainWindow
   and adjacent selection/runtime guard catalog groups after their removal from
   the legacy offline harness catalog.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.DeviceFormatProbeRetarget.Tests.cs`
   owns late device-format probe retarget policy behavior and application
   ownership assertions.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview late
   device-format probe retarget catalog group.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview
   mode-selection, capture-format, and recording-settings selection catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Helpers.cs` owns
@@ -1414,15 +1414,15 @@ Primary current owners:
   owns preview lifecycle-event, fade-in, preview-stop audio-ramp,
   device-discovery-before-recording-capability, and UI/audio preview reveal
   ordering source-shape ownership assertions.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs` owns
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` owns
   xUnit execution for the former legacy presentation-preview preview-startup
   source-shape ownership, controller behavior, signal/failure text, and
   startup ordering catalog groups.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs` also
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` also
   owns xUnit execution for the former legacy presentation-preview capture
   preview-lifecycle/audio-fallback catalog group.
 - Preview-startup ordering xUnit execution also lives in
-  `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs`.
+  `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`.
 - `tests/Sussudio.Tests/MainWindow.CompositionSource.cs` owns the shared
   source readers for the consolidated `MainWindow.PreviewLifecycle.Composition.cs`
   adapter family, shell-chrome, stats-overlay, capture-binding,
@@ -1773,7 +1773,7 @@ Primary current owners:
 - Focused `tests/Sussudio.Tests/XUnit.PresentationPreview*.cs` slices own
   presentation-preview capture/root policy, MainViewModel, MainWindow, stats,
   D3D renderer, preview pacing, and harness-registration execution surfaces.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainWindowContractsTests.cs`
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns the former presentation-preview MainWindow xUnit execution groups:
   window lifecycle, launch/startup, preview screenshot workflow, shell chrome,
   visual shell, recording controls, audio controls, responsive layout, capture
@@ -1781,7 +1781,7 @@ Primary current owners:
   MainWindow checks, preview runtime shell/policy checks, capture option checks,
   and output path checks. Keep the public wrapper classes in this file unless a
   group needs an independent fixture or executable helper state.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewMainViewModelContractsTests.cs`
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns the former presentation-preview MainViewModel xUnit execution groups:
   initial recording-transition failure propagation, audio controls and
   monitoring, output path and disk-space presentation, source telemetry text,
@@ -1789,11 +1789,11 @@ Primary current owners:
   preview lifecycle ownership, and audio ramp trace telemetry. Keep the public
   wrapper classes in this file unless a group needs an independent fixture or
   executable helper state.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewStartupContractsTests.cs`
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns the former presentation-preview capture Flashback buffer startup/recovery
   group for stale session cleanup and recovery-preserve behavior after their
   removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.PresentationPreviewD3DContractsTests.cs` owns the
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` owns the
   xUnit execution surface for the former presentation-preview D3D harness
   groups: pacing, geometry/screenshot, present cadence, device-lost,
   diagnostics, contracts/metrics ownership, runtime capture, render setup, and
