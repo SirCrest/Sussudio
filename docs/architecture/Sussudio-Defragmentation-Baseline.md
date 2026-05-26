@@ -2956,3 +2956,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: Flashback automation action failure diagnostics and Flashback command routing checks remain registered through `XUnit.AutomationContractsTests`; UnifiedVideoCapture CPU-MJPEG format reporting and stop-failure retention checks remain registered through `XUnit.MjpegPipelineContractsTests`.
 Notes for future agents: keep Flashback dispatcher routing/failure assertions in `AutomationCommandDispatcher.CommandOwnership.Tests.cs`; keep UnifiedVideoCapture CPU-MJPEG runtime behavior checks in `RecordingQueue.CaptureFanout.Tests.cs` with frame-ingress, fanout, and backend aggregate ownership coverage.
+
+Date: 2026-05-26
+Area: named-pipe automation test locality
+Problem: `NamedPipeAutomationServer.Tests.cs` and `NamedPipeAutomationServer.Security.Tests.cs` split one pipe-hosting contract across two legacy `Program` partial shards. Request timeout/framing checks, app-surface auth wiring, documentation coverage, Windows explicit-security fallback policy, and the shared throwing-proxy helper all protect the same `NamedPipeAutomationServer.cs` owner and xUnit automation app-surface contract.
+Files consolidated: `tests/Sussudio.Tests/NamedPipeAutomationServer.Security.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` named-pipe automation test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: named-pipe request timeout, explicit-security fallback, app automation-host auth fallback wiring, Stream Deck auth-envelope documentation, and shared throwing-proxy helper coverage remain registered through `XUnit.AutomationContractsTests`.
+Notes for future agents: keep named-pipe automation server framing, timeout, security fallback, and app auth wiring checks together in `NamedPipeAutomationServer.Tests.cs`; do not recreate a separate security shard unless the production server grows a genuinely separate named collaborator.
