@@ -1828,7 +1828,8 @@ Primary current owners:
   import bans, and the harness-visible service namespace/source ownership
   orchestrator, plus app-service contract boundary assertions that keep
   `Sussudio/Services/Contracts` separate from `Sussudio.Automation.Contracts`
-  wire/protocol ownership.
+  wire/protocol ownership, and AutomationCommandKind project/source ownership
+  alignment across the app and automation tools.
 - `tests/Sussudio.Tests/ServiceNamespace.Helpers.Tests.cs` owns the shared source
   enumeration, project XML, and C# comment/string stripping helpers used by
   service namespace architecture assertions.
@@ -1843,9 +1844,6 @@ Primary current owners:
   recording capability, preview renderer enqueue, UI dispatch, property-change,
   runtime lifecycle/event-ingress, recording runtime, and disposal source
   ownership assertions.
-- `tests/Sussudio.Tests/ServiceNamespace.AutomationContracts.Tests.cs` owns
-  AutomationCommandKind project/source ownership alignment across the app and
-  automation tools.
 - Focused `tests/Sussudio.Tests/XUnit.PresentationPreview*.cs` slices own
   presentation-preview capture/root policy, MainViewModel, MainWindow, stats,
   D3D renderer, preview pacing, and harness-registration execution surfaces.
