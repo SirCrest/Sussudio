@@ -1587,7 +1587,8 @@ Primary current owners:
   source-telemetry alignment, HDR pipeline parity, and inactive thread probes.
 - `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.ProjectionOwnership.Tests.cs`
   owns runtime projection ownership for ingest/audio, reader transport, HDR
-  pipeline, source telemetry, and recording integrity.
+  pipeline, source telemetry, frame-ledger recent-event contracts, and recording
+  integrity.
 - `tests/Sussudio.Tests/RecordingIntegrity.Contracts.Tests.cs` owns recording
   integrity summary defaults, automation snapshot field contracts, and
   automation projection ownership checks.
