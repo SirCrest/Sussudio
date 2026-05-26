@@ -1560,10 +1560,6 @@ Primary current owners:
   and recording finalization partials plus the focused-partial ownership
   contracts, including LibAv live-preview restoration and recording
   outcome-state ownership.
-- `tests/Sussudio.Tests/CaptureService.AudioOwnershipSource.Tests.cs` owns
-  CaptureService audio source-family helpers, audio focused-partial ownership,
-  PreviewAudioGraphResources ownership, and post-recording microphone monitor
-  restart assertions.
   `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns the
   xUnit execution surface for these recording queue, LibAv sink, WASAPI,
   capture fan-out, and CaptureService recording ownership contracts after their
@@ -1598,7 +1594,9 @@ Primary current owners:
   tick-age, and telemetry-alignment helper assertions.
 - `tests/Sussudio.Tests/CaptureService.PreviewLifecycle.Tests.cs` owns
   video-only preview fallback, missing audio endpoint, preview-stop API surface,
-  and preview backend log contracts.
+  preview backend log contracts, CaptureService audio source-family helpers,
+  audio focused-partial ownership, PreviewAudioGraphResources ownership, and
+  post-recording microphone monitor restart assertions.
 - `tests/Sussudio.Tests/CaptureService.SessionStateOwnership.Tests.cs` owns
   CaptureService initialization, session-state-machine and transition-policy
   ownership, asserts that lifecycle partials route state changes through

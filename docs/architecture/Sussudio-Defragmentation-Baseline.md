@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: CaptureService preview audio test locality
+Problem: `CaptureService.AudioOwnershipSource.Tests.cs` held source-family helpers plus audio preview lifecycle, `PreviewAudioGraphResources`, and post-recording microphone restart ownership checks. `CaptureService.PreviewLifecycle.Tests.cs` already depended on those helpers and owned preview start/stop, missing-audio fallback, and backend log contracts, so reviewing preview/audio lifecycle assertions required opening two coupled test shards.
+Files consolidated: `tests/Sussudio.Tests/CaptureService.AudioOwnershipSource.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: none; legacy `Program` test shard count reduced by one
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter 'FullyQualifiedName~RecordingContractsTests|FullyQualifiedName~PresentationPreviewStartupContractsTests'` (54 passed); full validation recorded in checkpoint commit notes
+CLI/MCP/pipe checks, if applicable: not applicable
+Behavior preserved: test-only relocation; xUnit method names and invoked `Program` contract names unchanged
+Notes for future agents: keep CaptureService preview start/stop, preview audio graph, missing-audio fallback, audio source-family helpers, and microphone restart ownership checks together in `tests/Sussudio.Tests/CaptureService.PreviewLifecycle.Tests.cs` unless preview audio becomes a separate runtime fixture or named collaborator test boundary.
+
+Date: 2026-05-26
 Area: Flashback buffer segment test locality
 Problem: `Flashback.Buffer.Segments.Accounting.Tests.cs` split active-segment diagnostics, invalid-duration PTS clamp checks, total-bytes accounting, and same-path segment extension away from the segment validation owner that already covers `OnSegmentCompleted` metadata rejection, outside-path safety, disposed-state no-ops, and recovery preservation. Reviewing Flashback buffer segment safety required opening two sibling shards for one segment mutation/accounting contract surface.
 Files consolidated: `tests/Sussudio.Tests/Flashback.Buffer.Segments.Accounting.Tests.cs`
