@@ -1236,12 +1236,10 @@ Primary current owners:
   MainWindow shell chrome ownership assertions for the settings shelf, window
   title, live signal info, and status-strip presentation, plus window-title
   formatting behavior checks.
-- `tests/Sussudio.Tests/MainWindow.ShellOwnership.Startup.SplashPhrase.Tests.cs`
-  owns MainWindow startup/launch ownership assertions for splash loading
-  phrases and splash pacing policy.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.Startup.Launch.Tests.cs`
   owns MainWindow startup/launch ownership assertions for launch entrance
-  animation and first-load hosting.
+  animation, first-load hosting, splash loading phrases, and splash pacing
+  policy.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Tests.cs`
   owns MainWindow preview resize telemetry, preview renderer startup-plan
   fallback policy, preview surface/shadow, renderer host lifecycle, D3D
