@@ -1324,7 +1324,9 @@ Primary current owners:
   source-reader partial ownership assertions used by diagnostics refresh,
   diagnostics-refresh snapshot projection integration wiring,
   diagnostic-session preview metric assertions, and diagnostic-session
-  core/export/recording ownership assertions.
+  core/export/recording ownership assertions, initial snapshot construction,
+  BuildAutomationSnapshot composition, and snapshot flattening ownership
+  assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.FlashbackAlerts.Tests.cs`
   owns Flashback export, storage, recording, force-rotate, playback, preview
   cadence, MJPEG, and renderer alert coverage for the diagnostics refresh
@@ -1332,9 +1334,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.FlashbackExport.Tests.cs`
   owns capture-service and dispatcher Flashback export operation ownership
   assertions used by diagnostics refresh.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotConstructionOwnership.Tests.cs`
-  owns initial snapshot, BuildAutomationSnapshot composition, and snapshot
-  flattening ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionScenarios.Tests.cs`
   owns diagnostic-session Flashback playback metrics/result assertions,
   scenario, health-policy, Flashback stress, and warning-tolerance assertions.

@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: diagnostics refresh snapshot construction test locality
+Problem: `MainViewModel.Automation.DiagnosticsRefresh.SnapshotConstructionOwnership.Tests.cs` only carried a private snapshot-construction assertion helper invoked once by the parent diagnostics-refresh ownership test. Reviewing core diagnostics refresh ownership required opening a small helper-only legacy `Program` partial beside `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotConstructionOwnership.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` diagnostics-refresh ownership helper partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: diagnostics refresh core ownership orchestration, initial snapshot construction, BuildAutomationSnapshot composition, and snapshot flattening assertions remain unchanged.
+Notes for future agents: keep diagnostics refresh core ownership orchestration and snapshot-construction assertions in `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`; keep Flashback alerts, Flashback export, scenarios, and source-family readers in their focused files.
+
+Date: 2026-05-26
 Area: MCP performance tools test locality
 Problem: `McpToolSurface.Performance.PresentMonTools.Tests.cs` held PresentMon correlation and option-precedence checks for the same `PerformanceTools.cs` MCP owner whose performance timeline source ownership and rendering/projection contracts lived in `McpToolSurface.Performance.TimelineContract.Tests.cs`. Reviewing the broader MCP performance tool surface required opening two small legacy `Program` partial files with one production owner.
 Files consolidated: `tests/Sussudio.Tests/McpToolSurface.Performance.PresentMonTools.Tests.cs`
