@@ -2860,3 +2860,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: present cadence metric reflection and suppression-baseline tests remain registered through the same xUnit presentation-preview D3D contract surface.
 Notes for future agents: keep present cadence metric shape and suppression-baseline checks in `D3D11PreviewRenderer.DiagnosticsContract.Tests.cs` with the rest of the renderer diagnostics API contract; keep snapshot-model and performance-timeline DTO reflection in their focused sibling files.
+
+Date: 2026-05-26
+Area: MainViewModel preview reinitialization test locality
+Problem: `MainViewModel.Capture.Reinitialization.Tests.cs` only carried MainViewModel preview lifecycle/reinitialize controller placement assertions, while `MainViewModel.Capture.PreviewStartup.SessionReinit.Tests.cs` already owned the adjacent preview startup session/reinit adapter wiring and pending Flashback cycle wait checks. Reviewing preview reinitialization ownership required opening a separate tiny source-shape shard before returning to the session/reinit owner.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Capture.Reinitialization.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MainViewModel preview reinitialization test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: MainViewModel preview lifecycle/reinitialize controller placement, preview startup session/reinit adapter wiring, and pending Flashback cycle wait source-shape checks remain registered through the same xUnit presentation-preview contract surfaces.
+Notes for future agents: keep MainViewModel preview lifecycle/reinitialize controller placement checks in `MainViewModel.Capture.PreviewStartup.SessionReinit.Tests.cs` with the preview startup session/reinit adapter ownership checks.

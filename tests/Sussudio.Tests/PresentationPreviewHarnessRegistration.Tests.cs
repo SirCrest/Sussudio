@@ -42,7 +42,6 @@ static partial class Program
         "tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Signals.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.StartupStopOrdering.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Watchdog.Tests.cs",
-        "tests/Sussudio.Tests/MainViewModel.Capture.Reinitialization.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.DeviceFormatProbeRetarget.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.Ownership.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.PolicyBehavior.Tests.cs",
