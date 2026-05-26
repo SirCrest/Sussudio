@@ -1726,7 +1726,7 @@ Partial clusters reduced: n/a; diagnostic-session shared helper file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: diagnostic-session infrastructure ownership and artifact tests cover terminal state, live breadcrumb stage selection, summary last-stage projection, and runner context construction; no automation command names/IDs changed
 Behavior preserved: initial last-stage value, terminal exception capture, warning text, canceled/failed/completed classification, result last-stage selection, and best-effort artifact write failure handling remain unchanged
-Notes for future agents: keep mutable run lifecycle state with `DiagnosticSessionRunContext.cs`; keep `DiagnosticSessionLiveStateWriter.cs` focused on breadcrumb payload writing and throttling
+Notes for future agents: keep mutable run lifecycle state and live breadcrumb payload writing/throttling with `DiagnosticSessionRunContext.cs`.
 
 Date: 2026-05-25
 Area: diagnostic-session result artifact locality
@@ -3534,3 +3534,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, automation tooling, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, persisted setting names, deferred selection field names, or load/save projection contract type names changed
 Behavior preserved: persisted-settings validation, clamping, deferred-selection handoff, save DTO projection, load/save projection contracts, impure load/save adapter, validated load-plan application order, feature-specific state assignment, and deferred device/audio/microphone selection staging now live in `MainViewModel.SettingsPersistence.cs`.
 Notes for future agents: keep MainViewModel settings persistence projection records, pure projection helpers, impure SettingsService adapter calls, and load-plan application together in `Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs`; use the existing reflection tests to preserve projection contract names when reducing files.
+
+Date: 2026-05-26
+Area: diagnostic-session live-state writer locality
+Problem: `DiagnosticSessionLiveStateWriter.cs` was a small breadcrumb writer constructed only by `DiagnosticSessionRunContext`, splitting `session-live.json` path ownership, payload projection, terminal-state mapping, warning projection, and sampling throttle from the mutable run context that owns the lifecycle and exposes live-state write callbacks.
+Files consolidated: `tools/Common/DiagnosticSessionLiveStateWriter.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; diagnostic-session shared helper file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed after scoping one run-state ownership assertion to the `DiagnosticSessionRunState` block); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds `ssctl`, MCP, app automation contracts, and console harnesses; no public automation command names, IDs, wire payloads, diagnostic-session JSON field names, live-state terminal states, warning text, throttle interval, or summary paths changed
+Behavior preserved: best-effort live breadcrumb writes, sample-time throttle, health/likely-stage projection, terminal override mapping, last-stage mapping, warning projection, command-failure count, and exception formatting now live in `DiagnosticSessionRunContext.cs` with the run lifecycle that invokes them.
+Notes for future agents: keep diagnostic-session run lifecycle state, live breadcrumb payload writing/throttling, initial snapshot state, scenario/completion context construction, and disposal in `tools/Common/DiagnosticSessionRunContext.cs`; keep scenario execution in `DiagnosticSessionScenarioPhaseRunner.cs`.

@@ -2914,9 +2914,10 @@ scenario/completion context construction with the explicit callback/token
 handoffs consumed by scenario and completion phases.
 
 Diagnostic-session live breadcrumbs now live in
-`tools/Common/DiagnosticSessionLiveStateWriter.cs`. It owns the
-`session-live.json` path, payload shape, health and warning projection,
-terminal override mapping, and sampling live-state write throttle.
+`tools/Common/DiagnosticSessionRunContext.cs` beside the mutable run context
+that owns their lifecycle. It owns the `session-live.json` path, payload shape,
+health and warning projection, terminal override mapping, and sampling
+live-state write throttle.
 
 Diagnostic-session run bootstrap now lives in
 `tools/Common/DiagnosticSessionRunContext.cs` beside the mutable per-run
@@ -3195,7 +3196,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.Projections.cs`
 - `DiagnosticSessionResultBuilder.Analysis.cs`
 - `DiagnosticSessionResultFormatter.cs`
-- `DiagnosticSessionLiveStateWriter.cs`
 - `DiagnosticSessionRunContext.cs`
 - `DiagnosticSessionScenarioCatalog.cs`
 - `DiagnosticSessionScenarioCatalog.cs`

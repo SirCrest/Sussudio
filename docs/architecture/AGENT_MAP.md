@@ -3005,15 +3005,14 @@ Primary owners:
   warning deltas for sparse source-capture tolerance, sparse preview-scheduler
   warning tolerance, tolerated-warning reason selection, and health warning text
   emitted during result construction.
-- `tools/Common/DiagnosticSessionLiveStateWriter.cs` owns the best-effort
-  `session-live.json` breadcrumb path, payload shape, health projection,
-  warning projection, terminal override mapping, and sampling live-state write
-  throttle.
 - `tools/Common/DiagnosticSessionRunContext.cs` owns diagnostic-session core mutable run infrastructure:
   bootstrap, scenario normalization, scenario-plan selection, duration/sample
   clamping, session identity, output-directory creation, runner process
   metadata, actions, warnings, samples, terminal exception state, last-stage
   tracking, best-effort artifact write failure recording, command channel,
+  best-effort `session-live.json` breadcrumb path, payload shape, health
+  projection, warning projection, terminal override mapping, and sampling
+  live-state write throttle,
   scenario cancellation source, initial snapshot state, baseline snapshot capture,
   automation response shape helpers for snapshot and verification envelopes,
   unknown-state warning, live-state handoff, run-context disposal, and

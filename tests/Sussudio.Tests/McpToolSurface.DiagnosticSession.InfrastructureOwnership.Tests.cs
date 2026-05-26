@@ -277,6 +277,9 @@ static partial class Program
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var contextText = ReadDiagnosticSessionRunContextSource();
+        var runStateStart = contextText.IndexOf("internal sealed class DiagnosticSessionRunState", StringComparison.Ordinal);
+        var runStateEnd = contextText.IndexOf("internal sealed class DiagnosticSessionInitialSnapshotResult", StringComparison.Ordinal);
+        var runStateText = contextText[runStateStart..runStateEnd];
 
         AssertContains(contextText, "internal sealed class DiagnosticSessionRunState");
         AssertContains(contextText, "internal void SetStage(string stage)");
@@ -292,7 +295,7 @@ static partial class Program
             "run state stays folded into DiagnosticSessionRunContext.cs");
         AssertDoesNotContain(runnerText, "var lastStage = \"initializing\";");
         AssertDoesNotContain(runnerText, "Exception? terminalException = null;");
-        AssertDoesNotContain(runnerText, "DateTimeOffset.MinValue");
+        AssertDoesNotContain(runStateText, "DateTimeOffset.MinValue");
 
         return Task.CompletedTask;
     }
@@ -301,8 +304,7 @@ static partial class Program
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var contextText = ReadDiagnosticSessionRunContextSource();
-        var liveStateWriterText = ReadRepoFile("tools/Common/DiagnosticSessionLiveStateWriter.cs")
-            .Replace("\r\n", "\n");
+        var liveStateWriterText = contextText;
 
         AssertContains(liveStateWriterText, "internal sealed class DiagnosticSessionLiveStateWriter");
         AssertContains(liveStateWriterText, "LivePath = Path.Combine(runBootstrap.OutputDirectory, \"session-live.json\");");
@@ -318,6 +320,10 @@ static partial class Program
         AssertContains(contextText, "LivePath = _liveStateWriter.LivePath;");
         AssertContains(contextText, "_liveStateWriter.WriteLiveStateBestEffortAsync(");
         AssertContains(contextText, "_liveStateWriter.WriteSamplingLiveStateBestEffortAsync(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionLiveStateWriter.cs")),
+            "live-state writer stays folded into DiagnosticSessionRunContext.cs");
         AssertDoesNotContain(runnerText, "var livePath = runState.LivePath;");
 
         return Task.CompletedTask;
