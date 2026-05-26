@@ -2932,3 +2932,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: diagnostic-session result formatter, model ownership, optional text formatting, artifact, JSON, and summary-write ownership checks remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
 Notes for future agents: keep diagnostic-session result formatter ownership in `McpToolSurface.DiagnosticSession.ResultOwnership.Tests.cs`; keep builder projection assertions in the focused builder owner files.
+
+Date: 2026-05-26
+Area: MainWindow Flashback interaction test locality
+Problem: Flashback scrub/fullscreen bridge ownership and Flashback timeline toggle rollback/lockout ownership lived in separate `MainViewModel.Capture.FlashbackRouting.*.Tests.cs` shards even though both assert the same MainWindow Flashback interaction adapter and controller surface: `MainWindow.Flashback.Interactions.cs`, `FlashbackCommandController`, `FlashbackTimelineController`, scrub interaction, playhead motion, fullscreen bridge hooks, and settings/property-change lockout behavior.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Scrub.Tests.cs`; `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Toggle.Tests.cs`
+Files added: `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Interactions.Tests.cs`
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MainWindow Flashback interaction test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: Flashback scrub release/cancel/capture-lost, geometry math, fullscreen Flashback bridge, timeline toggle rollback, lockout, and settings/property-change assertions remain registered through `XUnit.AutomationContractsTests`.
+Notes for future agents: keep MainWindow Flashback scrub, fullscreen bridge, toggle rollback, and timeline lockout checks in `MainViewModel.Capture.FlashbackRouting.Interactions.Tests.cs`; keep capture-service Flashback cadence/backend lifecycle tests in their focused owner files.

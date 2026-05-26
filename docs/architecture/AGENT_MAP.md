@@ -1509,12 +1509,10 @@ Primary current owners:
   owns MainViewModel Flashback coordinator-routing assertions, negative
   `_captureService` access guards, and the Flashback settings owner for
   automation enable/restart entry points.
-- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Scrub.Tests.cs`
-  owns Flashback scrub, release/cancel/capture-lost, and fullscreen Flashback
-  bridge assertions: shortcut gating, timeline visibility, and scrub-end
-  handoff.
-- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Toggle.Tests.cs`
-  owns Flashback timeline toggle rollback and lockout assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Interactions.Tests.cs`
+  owns Flashback scrub, release/cancel/capture-lost, fullscreen Flashback
+  bridge, timeline toggle rollback, and lockout assertions: shortcut gating,
+  timeline visibility, and scrub-end handoff.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.PreviewPipeline.Tests.cs`
   owns retained Flashback preview backend, audio restoration, preview stop
   rollback assertions, and device-switch teardown ordering between video stop,
