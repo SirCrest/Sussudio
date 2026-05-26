@@ -2680,3 +2680,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: app-service contract namespace assertions, automation-contract isolation checks, pooled-frame lease locality check, service-interface locality checks, and AGENT_MAP service-contract coverage checks remain unchanged.
 Notes for future agents: keep service namespace entry-point orchestration and service-contract boundary helper assertions in `ServiceNamespace.FolderRules.Tests.cs`; keep shared project/source parsing helpers in `ServiceNamespace.Helpers.Tests.cs`.
+
+Date: 2026-05-26
+Area: MCP frame-pacing verdict test locality
+Problem: `McpToolSurface.Performance.FramePacingVerdict.SourceOwnership.Tests.cs` only carried source-shape assertions for the same MCP frame-pacing verdict tool whose behavior contracts already lived in `McpToolSurface.Performance.FramePacingVerdict.Tests.cs`. Reviewing or changing the verdict tool required opening a separate one-method source-ownership shard plus the behavior tests.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.Performance.FramePacingVerdict.SourceOwnership.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MCP frame-pacing verdict partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: MCP frame-pacing verdict behavior and source-shape checks remained covered by `XUnit.McpToolContractsTests`; no public automation command names, IDs, or wire payloads changed
+Behavior preserved: frame-pacing verdict tool registration, snapshot/timeline command routing, timeline/channel/policy/rendering locality assertions, half-rate verdict behavior, insufficient-sample verdict behavior, and command payload assertions remain unchanged.
+Notes for future agents: keep MCP frame-pacing verdict source-shape and behavior checks together in `McpToolSurface.Performance.FramePacingVerdict.Tests.cs` while they guard one tool surface.
