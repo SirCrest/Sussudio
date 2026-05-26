@@ -1977,15 +1977,10 @@ Primary current owners:
   reflection helpers for remaining legacy capture configuration model
   contract tests.
 - `tests/Sussudio.Tests/XUnit.CaptureConfigurationModelsTests.cs` owns shared
-  reflection helpers for capture configuration xUnit contract checks.
-- `tests/Sussudio.Tests/XUnit.CaptureModeOptionsTests.cs` owns capture mode
-  option display metadata and option-builder behavior checks.
-- `tests/Sussudio.Tests/XUnit.CaptureSettingsContractsTests.cs` owns capture
-  settings defaults, output path/file naming, bitrate policy, and MJPEG HFR
-  policy checks.
-- `tests/Sussudio.Tests/XUnit.RecordingConfigurationPolicyTests.cs` owns
-  recording selection policy, encoder support, and recording pipeline option
-  contract checks.
+  reflection helpers plus capture mode option display metadata, option-builder
+  behavior, capture settings defaults, output path/file naming, bitrate policy,
+  MJPEG HFR policy, recording selection policy, encoder support, and recording
+  pipeline option xUnit contract checks.
 - `tests/Sussudio.Tests/XUnit.FlashbackModelsTests.cs` owns xUnit coverage for
   Flashback buffer option sizing, session, playback-state, export progress,
   segment, and request DTO contract tests.

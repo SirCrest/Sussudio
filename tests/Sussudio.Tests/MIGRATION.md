@@ -49,14 +49,11 @@ add xUnit alongside, and port incrementally.
   assertions.
 - `XUnit.SmallContractsTests.cs` owns the former legacy audio input, audio
   level event, capture device, and automation window action small contracts.
-- `XUnit.CaptureConfigurationModelsTests.cs` owns shared reflection helpers for
-  capture configuration xUnit contract checks.
-- `XUnit.CaptureModeOptionsTests.cs` owns capture mode option display metadata
-  and option-builder behavior checks.
-- `XUnit.CaptureSettingsContractsTests.cs` owns capture settings defaults,
-  output path/file naming, bitrate policy, and MJPEG HFR policy checks.
-- `XUnit.RecordingConfigurationPolicyTests.cs` owns recording selection policy,
-  encoder support, and recording pipeline option contract checks.
+- `XUnit.CaptureConfigurationModelsTests.cs` owns shared reflection helpers,
+  capture mode option display metadata, option-builder behavior, capture
+  settings defaults, output path/file naming, bitrate policy, MJPEG HFR policy,
+  recording selection policy, encoder support, and recording pipeline option
+  xUnit contract checks.
 - `XUnit.RecordingPipelineContractsTests.cs` owns the former legacy recording
   queue overload-policy, LibAv sink, WASAPI, capture fan-out, and CaptureService
   recording ownership checks.

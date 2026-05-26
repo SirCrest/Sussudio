@@ -2560,3 +2560,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; wrapper registration only, no automation command names, IDs, or wire payloads changed
 Behavior preserved: Flashback decoder, encoder sink, exporter, and playback xUnit classes, fact method names, harness calls, and target-assembly bootstrap calls remain unchanged.
 Notes for future agents: keep Flashback xUnit registration wrappers together in `XUnit.FlashbackContractsTests.cs`; add new detailed behavior coverage to the focused Flashback test files, not to additional one-purpose xUnit wrapper files.
+
+Date: 2026-05-26
+Area: capture configuration xUnit wrapper locality
+Problem: `CaptureConfigurationModelsTests` was split across four xUnit files even though the files all contributed to one reflection-heavy capture configuration contract surface. Capture mode options, capture settings, MJPEG HFR/bitrate policy, recording selection, encoder support, and recording pipeline option checks shared the same helper class, so the split added file-count noise without a stronger test seam.
+Files consolidated: `tests/Sussudio.Tests/XUnit.CaptureModeOptionsTests.cs`; `tests/Sussudio.Tests/XUnit.CaptureSettingsContractsTests.cs`; `tests/Sussudio.Tests/XUnit.RecordingConfigurationPolicyTests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -3
+Partial clusters reduced: `CaptureConfigurationModelsTests` xUnit partial file count -3
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; xUnit wrapper consolidation only, no automation command names, IDs, or wire payloads changed
+Behavior preserved: capture configuration helper methods, fact names, reflection assertions, capture mode option behavior checks, capture settings/MJPEG HFR/bitrate checks, recording selection policy checks, encoder support checks, and recording pipeline option capacity checks remain unchanged.
+Notes for future agents: keep capture configuration xUnit reflection helpers and their related facts together in `XUnit.CaptureConfigurationModelsTests.cs`; add focused production behavior tests elsewhere only when they exercise a different runtime seam rather than another wrapper around the same contract surface.

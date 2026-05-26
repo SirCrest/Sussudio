@@ -612,14 +612,10 @@ now live in `tests/Sussudio.Tests/MjpegTimingMetrics.Helpers.cs`.
 `tests/Sussudio.Tests/CaptureConfigurationModels.Tests.cs` now keeps only
 shared reflection helpers for remaining legacy capture model checks.
 `tests/Sussudio.Tests/XUnit.CaptureConfigurationModelsTests.cs` owns shared
-reflection helpers for capture configuration xUnit contract checks.
-Focused xUnit coverage is split across
-`tests/Sussudio.Tests/XUnit.CaptureModeOptionsTests.cs`,
-`tests/Sussudio.Tests/XUnit.CaptureSettingsContractsTests.cs`, and
-`tests/Sussudio.Tests/XUnit.RecordingConfigurationPolicyTests.cs` so capture
-mode options, capture settings/MJPEG HFR/bitrate policy, recording selection,
-encoder support, and recording pipeline option checks stay near their
-production owners without creating one-fact files.
+reflection helpers plus capture mode option, capture settings/MJPEG
+HFR/bitrate policy, recording selection, encoder support, and recording
+pipeline option xUnit contract checks without scattering one contract surface
+across several wrapper files.
 `tests/Sussudio.Tests/XUnit.FlashbackModelsTests.cs` owns Flashback buffer
 option sizing behavior and DTO contracts, with reflection/nullability assertion
 helpers in
