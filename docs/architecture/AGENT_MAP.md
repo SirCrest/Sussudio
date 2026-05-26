@@ -1603,11 +1603,11 @@ Primary current owners:
   video-only preview fallback, missing audio endpoint, preview-stop API surface,
   and preview backend log contracts.
 - `tests/Sussudio.Tests/CaptureService.SessionStateOwnership.Tests.cs` owns
-  CaptureService initialization, session-state-machine ownership, asserts that
-  lifecycle partials route state changes through transition/state-machine
-  helpers, owns last-failure telemetry and Flashback backend failure cleanup
-  source placement, and keeps the no-direct-session-state-write/faulted-session
-  guards for failure cleanup.
+  CaptureService initialization, session-state-machine and transition-policy
+  ownership, asserts that lifecycle partials route state changes through
+  transition/state-machine helpers, owns last-failure telemetry and Flashback
+  backend failure cleanup source placement, and keeps the
+  no-direct-session-state-write/faulted-session guards for failure cleanup.
 - `tests/Sussudio.Tests/CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`
   owns CaptureService health snapshot assembly, capture-cadence, MJPEG, and
   AV-sync ownership assertions plus shared health snapshot assertion helpers.
