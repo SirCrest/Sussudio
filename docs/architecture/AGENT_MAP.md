@@ -1839,9 +1839,8 @@ Primary current owners:
   `tests/Sussudio.Tests/CaptureSessionCoordinator.Api.Tests.cs`,
   `CaptureSessionCoordinator.Ownership`, and `CaptureModels` files; API/model/
   source ownership checks include the consolidated coordinator root, focused
-  Flashback coordinator partials, and coordinator queue/cancellation/rejection
-  contracts. Shared reflective harness helpers live in
-  `CaptureSessionCoordinator.Helpers.cs`.
+  Flashback coordinator partials, coordinator queue/cancellation/rejection
+  contracts, and shared reflective harness helpers.
 - `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` owns shared pooled-frame
   reflection, frame factory, jitter-buffer factory, tracking pool helpers,
   pooled video frame lease lifecycle, MJPEG pooled-frame fan-out contracts, and

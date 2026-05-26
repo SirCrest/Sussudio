@@ -4472,3 +4472,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, or XAML bindings changed.
 Behavior preserved: compressed MJPG byte extraction, raw CPU frame delivery, 2D buffer handling, packed-stride CPU copies, dual-frame CPU payload extraction, D3D texture fallback behavior, and GPU texture release now live together in `MfSourceReaderVideoCapture.FrameDelivery.cs`.
 Notes for future agents: keep source-reader sample-to-frame delivery, compressed/raw CPU extraction, 2D buffer handling, packed-stride copies, DXGI texture extraction, dual GPU/CPU delivery, and debug vtable diagnostics together in `Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs`; keep shared packed layout math/subtype labels in `MfSourceReaderVideoCapture.cs` and reader start/stop/dispose in `MfSourceReaderVideoCapture.Lifecycle.cs`.
+
+Date: 2026-05-26
+Area: Capture session coordinator test helper locality
+Problem: `CaptureSessionCoordinator.Helpers.cs` only carried private source readers, reflection helpers, and queue harness helpers used by the adjacent coordinator API/ownership test files. Reviewing coordinator API, snapshot, queue, cancellation, and ownership contracts still required opening a separate helper-only `Program` partial with no independent fixture boundary.
+Files consolidated: `tests/Sussudio.Tests/CaptureSessionCoordinator.Helpers.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `Program` capture-session-coordinator test partial-family file count -1
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~CaptureSessionCoordinator"` (17 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, or XAML bindings changed.
+Behavior preserved: coordinator source reading, transition-policy reflection helpers, steady-state resolver checks, private enqueue harness, queue-drain snapshot assertions, async disposal, and cancellation assertions now live with `CaptureSessionCoordinator.Api.Tests.cs`.
+Notes for future agents: keep capture session coordinator API/model/snapshot checks, queue/cancellation behavior harnesses, and shared coordinator test helpers in `tests/Sussudio.Tests/CaptureSessionCoordinator.Api.Tests.cs`; keep broader source-ownership assertions in `CaptureSessionCoordinator.Ownership.Tests.cs`.
