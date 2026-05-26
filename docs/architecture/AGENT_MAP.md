@@ -1763,8 +1763,7 @@ Primary current owners:
   The xUnit execution surface for these pure architecture-doc reference checks
   lives with `tests/Sussudio.Tests/XUnit.ArchitectureDocsAgentMapOwnershipTests.cs`.
   `tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs` owns
-  shared Markdown code-span path-token extraction and resolution helpers.
-  `tests/Sussudio.Tests/ArchitectureDocs.OwnershipFileEnumerators.cs` owns
+  shared Markdown code-span path-token extraction and resolution helpers,
   AGENT_MAP consumer coverage, ownership-file discovery, exact code-span policy,
   and xUnit inventory helpers.
 - `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter*.Tests.cs`
