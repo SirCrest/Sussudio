@@ -1634,14 +1634,12 @@ Primary current owners:
   tests.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.Tests.cs`
   owns renderer diagnostics source-shape, frame queue, frame ownership, present
-  cadence metric shape/suppression baseline, and public renderer diagnostics
-  API contract assertions.
+  cadence metric shape/suppression baseline, public renderer diagnostics API
+  contract assertions, and `PerformanceTimelineEntry.cs` preview, Flashback
+  playback, Flashback export, and process diagnostics reflection contracts.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.SnapshotModels.Tests.cs`
   owns preview runtime, automation snapshot, nested renderer metrics, preview
   tracking, and slow-frame diagnostic reflection contracts.
-- `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.PerformanceTimeline.Tests.cs`
-  owns `PerformanceTimelineEntry.cs` preview, Flashback playback, Flashback
-  export, and process diagnostics source-shape plus reflection contracts.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.ContractsAndMetrics.Tests.cs` owns
   configuration, native interop, frame type/ownership state, DXGI frame-stat
   state, slow-frame state, metric-window lifecycle, and metric-tracking
