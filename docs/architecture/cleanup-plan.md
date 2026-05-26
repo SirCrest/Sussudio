@@ -368,8 +368,9 @@ stripping, and repo-local `latest-build` staging.
 
 `tools/ssctl/CommandHandlers.cs` owns the complete ssctl command-handler
 surface: top-level CLI router, per-invocation command context, shared command
-sending, response exit-code shaping, generic argument helpers, flag parsing,
-JSON detection/pretty printing, primitive/domain value parsing,
+sending, the `PipeTransport` wrapper's ssctl-specific timeout and structured
+error envelope policy, response exit-code shaping, generic argument helpers,
+flag parsing, JSON detection/pretty printing, primitive/domain value parsing,
 wait/assert/probe plus recording/file verification scripting flow commands,
 diagnostic and observability commands, `presentmon` parsing/swap-chain
 discovery/probe invocation, `diagnostic-session` parsing/runner invocation,

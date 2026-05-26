@@ -121,7 +121,10 @@ public sealed class AutomationToolContractsProtocolXunitTests
     [Fact]
     public void UiAutomationAdapters_UseEnumCommands_WithoutChangingLabelsOrWireNames()
     {
-        var ssctlPipeText = RuntimeContractSource.ReadRepoFile("tools/ssctl/PipeTransport.cs")
+        Assert.False(
+            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "ssctl", "PipeTransport.cs")),
+            "ssctl PipeTransport should stay with the command-handler surface instead of returning as a tiny adapter file.");
+        var ssctlPipeText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var ssctlTransportText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
@@ -193,7 +196,10 @@ public sealed class AutomationToolContractsProtocolXunitTests
         var sharedClientText = RuntimeContractSource.ReadAutomationPipeClientSource();
         var pipeClientText = RuntimeContractSource.ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var ssctlPipeText = RuntimeContractSource.ReadRepoFile("tools/ssctl/PipeTransport.cs")
+        Assert.False(
+            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "ssctl", "PipeTransport.cs")),
+            "ssctl PipeTransport should stay with the command-handler surface instead of returning as a tiny adapter file.");
+        var ssctlPipeText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var mcpPipeText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Program.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);

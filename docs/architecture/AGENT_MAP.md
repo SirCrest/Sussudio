@@ -2804,12 +2804,15 @@ Primary owners:
 - Fixed MCP routes whose commands exist in `AutomationCommandKind` should call
   the typed MCP `PipeClient.SendCommandAsync(AutomationCommandKind, ...)`
   overload at the pipe seam; fixed ssctl routes should do the same through
-  `PipeTransport.SendCommandAsync(AutomationCommandKind, ...)`. The shared
-  command transport must keep those enum calls typed until the request envelope
-  is created. Do not list converted routes here; the shared catalog, per-file
-  MCP owner bullets, and `McpToolSurface.*` source guards are the source of
-  truth. String command names remain only for catalog/manifest-backed dynamic
-  batches and diagnostic-session command callbacks.
+  `PipeTransport.SendCommandAsync(AutomationCommandKind, ...)`, which lives
+  with `tools/ssctl/CommandHandlers.cs` so command parsing, payload shaping,
+  response exit-code handling, and ssctl-specific pipe policy stay in one
+  command-surface file. The shared command transport must keep those enum calls
+  typed until the request envelope is created. Do not list converted routes
+  here; the shared catalog, per-file MCP owner bullets, and `McpToolSurface.*`
+  source guards are the source of truth. String command names remain only for
+  catalog/manifest-backed dynamic batches and diagnostic-session command
+  callbacks.
 - `tools/AutomationClient/Program.cs` owns the low-level pipe client entry
   flow, cancellation handling, shared-protocol command resolution, timeout
   selection, response printing, the local options DTO, flag parsing/help text,

@@ -3726,3 +3726,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds diagnostic-session shared tooling, `ssctl`, MCP, automation contracts, app, and console harnesses; no public scenario names, task labels, priorities, automation command names, IDs, wire payloads, stage names, readiness waits, PresentMon output naming, or scenario activation behavior changed
 Behavior preserved: initial Flashback/preview/recording setup, setup result handoff, PresentMon startup, Flashback scenario task registration, deferred recording-settings task registration, and direct Flashback playback startup now live together in `DiagnosticSessionScenarioActivation.cs`.
 Notes for future agents: keep pre-sampling diagnostic-session setup and scenario startup orchestration in `tools/Common/DiagnosticSessionScenarioActivation.cs`; keep phase sequencing and sampling in `DiagnosticSessionScenarioPhaseRunner.cs`.
+
+Date: 2026-05-26
+Area: ssctl pipe transport locality
+Problem: `tools/ssctl/PipeTransport.cs` was a 64-line ssctl-only wrapper used by `Program.cs` and `CommandHandlers.cs` to apply command timeouts and map unknown commands to `UsageException`. Reviewing CLI command behavior required one extra file hop even though the wrapper only supports the command surface and delegates shared pipe behavior to `AutomationCommandTransport`.
+Files consolidated: `tools/ssctl/PipeTransport.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; ssctl command-surface helper count -1 while preserving the `Sussudio.Tools.Ssctl.PipeTransport` type
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: `PipeTransport` behavior remains covered by reflected pipe-transport tests, ssctl command-handler routing tests, enum-command protocol source-ownership tests, and full solution validation
+Behavior preserved: `PipeTransport.SendCommandAsync` overloads, command-specific timeout selection, typed `AutomationCommandKind` routing, structured failure envelopes, invalid-JSON response behavior, and unknown-command `UsageException` behavior now live in `tools/ssctl/CommandHandlers.cs` with the command parsing and response exit-code owner.
+Notes for future agents: keep ssctl command parsing, payload shaping, response exit-code handling, and ssctl-specific pipe transport policy in `tools/ssctl/CommandHandlers.cs`; keep shared named-pipe transport, retries, response-state parsing, timeout defaults, and synthetic error shaping in `tools/Common/AutomationPipeClient/AutomationPipeClient.cs`.
