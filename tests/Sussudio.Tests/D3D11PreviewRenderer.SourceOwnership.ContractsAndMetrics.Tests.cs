@@ -158,31 +158,30 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task D3D11PreviewRenderer_SlowFrameDiagnosticsLiveInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_SlowFrameDiagnosticsLiveWithMetrics()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
         var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Diagnostics.cs")
-            .Replace("\r\n", "\n");
-        AssertContains(diagnosticsText, "private readonly object _slowFrameDiagnosticsLock = new();");
-        AssertContains(diagnosticsText, "private readonly PreviewSlowFrameDiagnostic[] _slowFrameDiagnostics = new PreviewSlowFrameDiagnostic[64];");
-        AssertContains(diagnosticsText, "public PreviewSlowFrameDiagnostic[] GetRecentSlowFrameDiagnostics(int maxEntries = 16)");
-        AssertContains(diagnosticsText, "private void RecordSlowFrameDiagnostic(");
-        AssertContains(diagnosticsText, "var dxgiSlip = CaptureSlowFrameDxgiSlipSnapshot();");
-        AssertContains(diagnosticsText, "DxgiMissedRefreshCount = dxgiSlip.MissedRefreshCount");
-        AssertContains(diagnosticsText, "private readonly record struct SlowFrameDxgiSlipSnapshot(");
-        AssertContains(diagnosticsText, "private SlowFrameDxgiSlipSnapshot CaptureSlowFrameDxgiSlipSnapshot()");
-        AssertContains(diagnosticsText, "frameStatisticsLastSampleFrameCounter == frameStatisticsFrameCounter");
-        AssertContains(diagnosticsText, "private static string BuildSlowFrameDiagnosticReason(");
-        AssertContains(diagnosticsText, "private static void AppendSlowFrameReason(");
-        AssertContains(diagnosticsText, "\"dxgi_refresh_slip\"");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Diagnostics.cs")),
+            "slow-frame diagnostics folded into renderer metrics owner");
+        AssertContains(metricsText, "private readonly object _slowFrameDiagnosticsLock = new();");
+        AssertContains(metricsText, "private readonly PreviewSlowFrameDiagnostic[] _slowFrameDiagnostics = new PreviewSlowFrameDiagnostic[64];");
+        AssertContains(metricsText, "public PreviewSlowFrameDiagnostic[] GetRecentSlowFrameDiagnostics(int maxEntries = 16)");
+        AssertContains(metricsText, "private void RecordSlowFrameDiagnostic(");
+        AssertContains(metricsText, "var dxgiSlip = CaptureSlowFrameDxgiSlipSnapshot();");
+        AssertContains(metricsText, "DxgiMissedRefreshCount = dxgiSlip.MissedRefreshCount");
+        AssertContains(metricsText, "private readonly record struct SlowFrameDxgiSlipSnapshot(");
+        AssertContains(metricsText, "private SlowFrameDxgiSlipSnapshot CaptureSlowFrameDxgiSlipSnapshot()");
+        AssertContains(metricsText, "frameStatisticsLastSampleFrameCounter == frameStatisticsFrameCounter");
+        AssertContains(metricsText, "private static string BuildSlowFrameDiagnosticReason(");
+        AssertContains(metricsText, "private static void AppendSlowFrameReason(");
+        AssertContains(metricsText, "\"dxgi_refresh_slip\"");
         AssertDoesNotContain(rootText, "private readonly object _slowFrameDiagnosticsLock = new();");
         AssertDoesNotContain(rootText, "new PreviewSlowFrameDiagnostic[64]");
-        AssertDoesNotContain(metricsText, "public PreviewSlowFrameDiagnostic[] GetRecentSlowFrameDiagnostics(");
-        AssertDoesNotContain(metricsText, "private void RecordSlowFrameDiagnostic(");
-        AssertDoesNotContain(metricsText, "private static string BuildSlowFrameDiagnosticReason(");
 
         return Task.CompletedTask;
     }
