@@ -2668,3 +2668,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: invariant build-stamp title formatting, missing build-time fallback, idle title, recording suffix, and culture-restoration checks remain unchanged.
 Notes for future agents: keep WindowTitleController source-shape and formatting behavior checks with `MainWindow.ShellOwnership.Chrome.Tests.cs` while the controller remains a shell chrome concern.
+
+Date: 2026-05-26
+Area: service namespace contract helper locality
+Problem: `ServiceNamespace.ServiceContracts.Tests.cs` only carried `AssertServiceContractsBoundaryOwnership`, and the sole caller was the harness-visible `ServiceNamespaces_FollowServiceFolders` entry point in `ServiceNamespace.FolderRules.Tests.cs`. Reviewing service namespace/boundary rules required opening a helper-only partial without an independent execution surface.
+Files consolidated: `tests/Sussudio.Tests/ServiceNamespace.ServiceContracts.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` service namespace helper partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: app-service contract namespace assertions, automation-contract isolation checks, pooled-frame lease locality check, service-interface locality checks, and AGENT_MAP service-contract coverage checks remain unchanged.
+Notes for future agents: keep service namespace entry-point orchestration and service-contract boundary helper assertions in `ServiceNamespace.FolderRules.Tests.cs`; keep shared project/source parsing helpers in `ServiceNamespace.Helpers.Tests.cs`.
