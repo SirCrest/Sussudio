@@ -3076,3 +3076,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: MJPEG preview jitter adaptive deadline/source-ownership checks and queue/drop/reprime behavior checks remain registered through `XUnit.MjpegPipelineContractsTests`.
 Notes for future agents: keep MJPEG preview jitter source ownership, adaptive policy, queue/drop, and reprime checks together in `PooledVideoFrame.MjpegJitterQueue.Tests.cs`; keep shared pooled-frame reflection/factory helpers in `PooledVideoFrame.Tests.cs`.
+
+Date: 2026-05-26
+Area: NativeXu RTK probe test locality
+Problem: `RtkI2cProbe.Tests.cs` split NativeXuAudioProbe RTK unsafe-path behavior checks away from `ServiceNamespace.NativeXuProbe.Tests.cs`, even though that owner already protects NativeXuAudioProbe routing, RTK command wiring, linked source layout, and `RtkI2cProbe.cs` source guard text.
+Files consolidated: `tests/Sussudio.Tests/RtkI2cProbe.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` NativeXu probe/RTK test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: RTK missing native-XU-path rejection, disabled switch rejection, and RTK device-name normalization remain registered through `XUnit.ToolContractsTests`.
+Notes for future agents: keep NativeXuAudioProbe routing/source ownership and RTK unsafe-path behavior checks in `ServiceNamespace.NativeXuProbe.Tests.cs`; do not recreate a standalone RTK test shard unless the RTK probe gains an independent fixture or broader behavior surface.

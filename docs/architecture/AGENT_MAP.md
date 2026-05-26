@@ -1848,8 +1848,8 @@ Primary current owners:
   enumeration, project XML, and C# comment/string stripping helpers used by
   service namespace architecture assertions.
 - `tests/Sussudio.Tests/ServiceNamespace.NativeXuProbe.Tests.cs` owns
-  NativeXuAudioProbe linked-source, split-source, locator, and no-reflection
-  source ownership assertions.
+  NativeXuAudioProbe linked-source, split-source, locator, RTK unsafe-path
+  behavior, and no-reflection source ownership assertions.
 - `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs`
   owns DeviceService, NativeXu support, GPU interop, decoder, capture
   telemetry, MainViewModel source ownership orchestration assertions, and
