@@ -3196,3 +3196,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: diagnostic-session Flashback playback metrics/result, scenario, stress, health-policy, and warning-tolerance source-shape assertions remain invoked by `DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses`.
 Notes for future agents: keep diagnostic-session Flashback playback metrics and scenario ownership assertions together in `MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionScenarios.Tests.cs` while they remain private source-shape checks for the central diagnostics-refresh entry point.
+
+Date: 2026-05-26
+Area: MCP diagnostic-session Flashback scenario test locality
+Problem: `McpToolSurface.DiagnosticSession.Flashback.Stress.Tests.cs` split Flashback stress scenario flow and audio-master fallback classification checks away from `McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`, even though both files protect the MCP diagnostic-session Flashback scenario review surface and are registered through the same xUnit diagnostic-session contract group.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Stress.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MCP diagnostic-session Flashback scenario partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer` and `tools/ssctl`; test/docs-only consolidation, no public automation command names, IDs, wire payloads, or MCP tool implementations changed
+Behavior preserved: Flashback stress/scrub-stress ownership assertions and audio-master fallback classifier checks remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
+Notes for future agents: keep Flashback stress scenario ownership checks with `McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`; keep metric projection and export helper checks in their focused sibling files unless those surfaces become helper-only.
