@@ -2005,12 +2005,12 @@ Primary current owners:
   run-state/live-state/context/bootstrap/output-lock, and scenario/completion
   phase checks stay grouped in one infrastructure spec.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.ResultOwnership.Tests.cs`
-  owns diagnostic-session model ownership assertions, with builder summary-write
-  failure, formatter, artifact, JSON/shared-text, and infrastructure assertions
-  split into the adjacent `ResultOwnership.*.Tests.cs` files. Builder result
-  assertions are split by ownership band: `ResultOwnership.Builder.Tests.cs`
-  covers core, preview scheduler, overview/capture checks, and Flashback
-  playback, recording, and export result projections; and
+  owns diagnostic-session model ownership assertions, formatter ownership,
+  builder summary-write failure, artifact, and JSON/shared-text checks.
+  Builder result assertions are split by ownership band:
+  `ResultOwnership.Builder.Tests.cs` covers core, preview scheduler,
+  overview/capture checks, and Flashback playback, recording, and export result
+  projections; and
   `ResultOwnership.Builder.PreviewAndCompletion.Tests.cs` covers preview,
   analysis-warning, diagnostic-health, and artifact-handoff ownership.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.HealthPolicy.Tests.cs`

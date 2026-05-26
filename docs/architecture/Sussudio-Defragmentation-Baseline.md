@@ -2920,3 +2920,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: dispatcher payload extraction helpers, missing/default window and wait payload behavior, one-field handler/catalog parity, and `GetAudioRampTrace.maxEntries` metadata checks remain registered through `XUnit.AutomationContractsTests`.
 Notes for future agents: keep dispatcher payload extraction and catalog metadata parity checks in `AutomationCommandDispatcher.Payload.Tests.cs`; do not recreate separate payload extraction/catalog shards.
+
+Date: 2026-05-26
+Area: diagnostic-session result formatter test locality
+Problem: `McpToolSurface.DiagnosticSession.ResultOwnership.Formatter.Tests.cs` only carried the formatted-summary ownership assertion for `DiagnosticSessionResultFormatter`, while `McpToolSurface.DiagnosticSession.ResultOwnership.Tests.cs` already owned diagnostic-session result model, optional text, artifact, JSON, and summary-write ownership assertions through the same diagnostic-session result source-reader surface. Reviewing the result surface required opening a one-method formatter shard beside the main result owner.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.ResultOwnership.Formatter.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` diagnostic-session result ownership test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: diagnostic-session result formatter, model ownership, optional text formatting, artifact, JSON, and summary-write ownership checks remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
+Notes for future agents: keep diagnostic-session result formatter ownership in `McpToolSurface.DiagnosticSession.ResultOwnership.Tests.cs`; keep builder projection assertions in the focused builder owner files.
