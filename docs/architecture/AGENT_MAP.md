@@ -1575,10 +1575,9 @@ Primary current owners:
   focused-partial ownership, and shared formatter rendering checks.
 - `tests/Sussudio.Tests/CaptureService.Snapshots.Tests.cs` owns CaptureService
   diagnostics-snapshot compatibility, recording format/profile helper, HDR
-  warmup-state, and recording-stats ownership assertions.
-- `tests/Sussudio.Tests/CaptureService.Snapshots.Telemetry.Tests.cs` owns
-  CaptureService observed pixel telemetry, source telemetry backend/circuit,
-  tick-age, and telemetry-alignment helper assertions.
+  warmup-state, recording-stats ownership, observed pixel telemetry, source
+  telemetry backend/circuit, tick-age, and telemetry-alignment helper
+  assertions.
 - `tests/Sussudio.Tests/CaptureService.PreviewLifecycle.Tests.cs` owns
   video-only preview fallback, missing audio endpoint, preview-stop API surface,
   preview backend log contracts, CaptureService audio source-family helpers,
