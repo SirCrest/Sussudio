@@ -2531,11 +2531,14 @@ Primary current owners:
   format-change suppression, and projected status text.
   `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs`
   owns pure selected capture-format choice and mode-tuple video-format filtering.
-  `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs`
   is a top-level `Sussudio.Controllers` owner for startup FFmpeg capability
   probes for recording formats and split-encode modes through graph-built
-  context ports, UI enqueue failure logging, and recording-format policy
-  application to observable state.
+  context ports, UI enqueue failure logging, recording-format policy
+  application to observable state, source telemetry ingress behavior,
+  projection, enum-string caching, summary-age refresh, source-aware
+  auto-retargeting hints, and the source telemetry graph-port contract consumed
+  by source telemetry ingress and projection.
   `MainViewModel.CaptureSelection.cs`
   owns HDR toggle side effects: recording-time revert/status, mode option
   rebuilds, immediate reinitialize scheduling, and settings persistence.
@@ -2597,11 +2600,9 @@ Primary current owners:
   partial family stay in `MainViewModel.CaptureSelection.cs`; observable
   resolution dropdown mutation routes through the top-level
   `MainViewModelCaptureModeOptionRebuildController.cs`.
-  `Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs`
-  is a top-level `Sussudio.Controllers` owner for source telemetry ingress behavior, projection, enum-string caching,
-  summary-age refresh, source-aware auto-retargeting hints, and the source telemetry graph-port contract consumed by source telemetry
-  ingress and projection, including the pure summary builder and auto-resolution
-  predicate ports that keep facade-private helpers explicit.
+  `Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs`
+  also keeps the pure summary builder and auto-resolution predicate ports that
+  keep facade-private helpers explicit.
   `Sussudio/ViewModels/ViewModelBuilders.cs`
   owns source telemetry summary, telemetry age, and target-summary display text formatting.
   `MainViewModel.SettingsPersistence.cs` owns settings initialization, simple
@@ -2654,7 +2655,7 @@ Primary current owners:
   dispatch, option collections, suppression flags, selected encoder/output
   state, recording-format coordinator updates, and Flashback encoder setting
   cycles.
-  `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs`
   is a top-level `Sussudio.Controllers` owner for startup FFmpeg capability
   probes for recording formats and split-encode modes plus observable
   recording-format option rebuilds.

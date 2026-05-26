@@ -3554,8 +3554,8 @@ owner, fold it back into that owner and update the source-shape tests and
    format/quality parsing, and custom bitrate clamp policy now live in
    `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`, while startup
    FFmpeg capability probes and observable recording-format option mutation through graph-built context ports live
-   in the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`. `MainViewModel.CaptureSelection.cs`
+   with source telemetry readiness in the top-level
+   `Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs`. `MainViewModel.CaptureSelection.cs`
    keeps selected-format and video-format rebuild compatibility adapters, while
    `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
    is now a top-level `Sussudio.Controllers` owner for selected-format
@@ -3629,7 +3629,7 @@ owner, fold it back into that owner and update the source-shape tests and
    application, source telemetry ingress behavior, telemetry age refresh,
    enum-string caching, source-aware auto-retargeting, and source telemetry
    graph-port contract in
-   `Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs`.
+   `Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs`.
    Settings initialization, simple persistence reactions, the impure settings
    load/save adapter, persisted-settings validation, clamping, deferred-selection
    projection, save DTO projection, load/save projection contracts, validated
@@ -3704,8 +3704,8 @@ owner, fold it back into that owner and update the source-shape tests and
    collections, selected capture-mode state, preview reinitialization checks,
    UI-thread dispatch, and format-change suppression.
    Startup FFmpeg capability probes for recording formats and split-encode modes
-   plus observable recording-format option rebuilds now live in the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`.
+   plus observable recording-format option rebuilds now live with source telemetry readiness in the top-level
+   `Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs`.
    `Sussudio/ViewModels/MainViewModel.RecordingState.cs` keeps recording-runtime
    counters, disk-space assignment, and the stable recording-capability facade
    methods used by settings initialization and HDR mode-change rebuild callers.
