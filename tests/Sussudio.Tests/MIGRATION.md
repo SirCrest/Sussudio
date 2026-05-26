@@ -75,8 +75,8 @@ add xUnit alongside, and port incrementally.
   lease-release checks.
 - `XUnit.FlashbackModelsTests.cs` owns the former legacy Flashback buffer option
   sizing, session, playback-state, export progress, export segment, and export
-  request model contract checks; `XUnit.FlashbackModels.PropertyAssertions.cs`
-  owns the shared reflection/nullability assertion helpers for that suite.
+  request model contract checks plus the shared reflection/nullability assertion
+  helpers for that suite.
 - `XUnit.FlashbackContractsTests.cs` owns the former legacy Flashback encoder
   sink, playback, decoder, and exporter xUnit wrapper classes while preserving
   their frame-rate, codec, queue, force-rotate, startup, command-queue,

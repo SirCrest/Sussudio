@@ -617,9 +617,8 @@ HFR/bitrate policy, recording selection, encoder support, and recording
 pipeline option xUnit contract checks without scattering one contract surface
 across several wrapper files.
 `tests/Sussudio.Tests/XUnit.FlashbackModelsTests.cs` owns Flashback buffer
-option sizing behavior and DTO contracts, with reflection/nullability assertion
-helpers in
-`tests/Sussudio.Tests/XUnit.FlashbackModels.PropertyAssertions.cs`.
+option sizing behavior, DTO contracts, and the reflection/nullability assertion
+helpers for that xUnit contract surface.
 `tests/Sussudio.Tests/XUnit.RecordingModelContractsTests.cs` owns the former
 legacy recording-model execution surface for LibAv sink loop/source-ownership
 checks, capture runtime failure/runtime-flag checks, and Flashback buffer

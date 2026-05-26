@@ -2584,3 +2584,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; xUnit wrapper consolidation only, no automation command names, IDs, or wire payloads changed
 Behavior preserved: stats presentation formatting, detached-window text, encoder text, expected visual-repeat behavior, compact preview summary source-shape checks, frame-time range and graph geometry checks, hardware decode/GPU row formatting, hardware-row input sampling policy, and presentation-preview harness registration coverage remain unchanged.
 Notes for future agents: keep stats presentation xUnit formatting and frame-time behavior in `XUnit.StatsPresentation.Formatting.Tests.cs`; keep hardware row presentation and input-provider behavior in `XUnit.StatsHardwareRowsTests.cs` unless a new independently executable stats test seam emerges.
+
+Date: 2026-05-26
+Area: Flashback model xUnit helper locality
+Problem: `XUnit.FlashbackModels.PropertyAssertions.cs` only provided reflection/nullability helpers for `XUnit.FlashbackModelsTests.cs`. Reviewing the Flashback model contract suite still required opening a helper partial even though it was not shared outside that test class.
+Files consolidated: `tests/Sussudio.Tests/XUnit.FlashbackModels.PropertyAssertions.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `FlashbackModelsTests` xUnit partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; xUnit helper consolidation only, no automation command names, IDs, or wire payloads changed
+Behavior preserved: Flashback buffer option sizing, session/playback/export DTO reflection checks, required/init-only/nullability assertions, property setters/backing-field helpers, enum-value assertions, and collection count helpers remain unchanged.
+Notes for future agents: keep Flashback model reflection helpers with `XUnit.FlashbackModelsTests.cs` while they are used only by that contract suite.
