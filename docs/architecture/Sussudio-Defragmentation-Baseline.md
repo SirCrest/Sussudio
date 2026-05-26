@@ -2740,3 +2740,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: diagnostics UpdateAlerts ownership, diagnostic event state guards, signal alert guards, Flashback alert routing guards, and deleted legacy alert partial guards remain unchanged.
 Notes for future agents: keep diagnostics alert/event ownership assertions in `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs` with the orchestration entry point; keep detailed Flashback alert coverage in the focused RecordingAndStorage and PlaybackAndPreview owner files.
+
+Date: 2026-05-26
+Area: diagnostics refresh source-reader helper locality
+Problem: `MainViewModel.Automation.DiagnosticsRefresh.SourceReaderOwnership.Tests.cs` only carried private source-reader ownership assertions invoked by `DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses` in the diagnostics refresh entry-point file. Reviewing diagnostics refresh orchestration and its source-reader ownership contract required opening a separate helper-only partial.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceReaderOwnership.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` diagnostics-refresh source-reader helper partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: source-reader cadence coherence guards, vtable/DXGI/frame-layout/read-loop/initialization/frame-delivery source ownership checks, and deleted legacy source-reader partial guards remain unchanged.
+Notes for future agents: keep diagnostics refresh source-reader ownership assertions in `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs` with the orchestration entry point; keep reusable source-family readers in `MainViewModel.Automation.DiagnosticsRefresh.SourceReaders.cs`.

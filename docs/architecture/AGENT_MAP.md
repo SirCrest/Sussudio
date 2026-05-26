@@ -1346,7 +1346,8 @@ Primary current owners:
   owns the serialized diagnostics refresh ownership check, core ownership
   orchestration, runtime/HDR verification checks, refresh pipeline/gate,
   snapshot/dispatcher assertions, preview-runtime projection assertions,
-  diagnostics alert/event ownership assertions, and diagnostic-session
+  diagnostics alert/event ownership assertions, source-reader partial
+  ownership assertions used by diagnostics refresh, and diagnostic-session
   core/export/recording ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.FlashbackAlerts.RecordingAndStorage.Tests.cs`
   owns Flashback export, storage, recording, and force-rotate alert coverage
@@ -1363,8 +1364,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotConstructionOwnership.Tests.cs`
   owns initial snapshot, BuildAutomationSnapshot composition, and snapshot
   flattening ownership assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceReaderOwnership.Tests.cs`
-  owns source-reader partial ownership assertions used by diagnostics refresh.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionPlayback.Tests.cs`
   owns diagnostic-session Flashback playback metrics and result assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionPreview.Tests.cs`
