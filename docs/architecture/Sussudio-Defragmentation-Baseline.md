@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: shared runtime window-size helper locality
+Problem: `MinSizeWindowSubclass.cs` was an 82-line Win32 helper used by both the main-window lifecycle controller and the detached stats window, while `RuntimeHelpers.cs` already owns shared runtime helpers with native interop contracts. Auditing shared runtime helper behavior required a second tiny file for one window-size interop helper.
+Files consolidated: `Sussudio/Services/Runtime/MinSizeWindowSubclass.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: none
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: no public automation command names, IDs, wire payloads, XAML bindings, capture negotiation options, or runtime snapshot fields changed
+Behavior preserved: minimum-window-size WNDPROC subclass installation, delegate lifetime handle, DPI scaling, WM_GETMINMAXINFO handling, and original-window-procedure forwarding remain unchanged.
+Notes for future agents: keep shared low-level runtime helper types in `Sussudio/Services/Runtime/RuntimeHelpers.cs`; keep window lifecycle orchestration in the controller/window owners that call the helper.
+
+Date: 2026-05-26
 Area: Media Foundation source-reader cadence locality
 Problem: `MfSourceReaderVideoCapture.Cadence.cs` held timestamp interval tracking, expected-rate window sizing, stop-time cadence reset, and public source-cadence diagnostics while the only state transitions that mutate it happen in source-reader initialization, `StopAsync`, and the active read loop. Auditing source-reader lifetime and source-cadence diagnostics required opening a small extra partial before following the timestamp path.
 Files consolidated: `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Cadence.cs`
