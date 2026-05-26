@@ -128,13 +128,12 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackEncoderSink_QueueCleanupLivesInFocusedPartial()
+    internal static Task FlashbackEncoderSink_QueueingOwnsInputsAndCleanup()
     {
-        var queuesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs")
+        var queueingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs")
             .Replace("\r\n", "\n");
-        var inputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.cs")
-            .Replace("\r\n", "\n");
-        var queueCleanupText = queuesText;
+        var inputsText = queueingText;
+        var queueCleanupText = queueingText;
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
             ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
@@ -173,16 +172,6 @@ static partial class Program
         AssertContains(inputsText, "private static bool TryWriteAudioPacket(");
         AssertContains(inputsText, "DecrementQueueDepth(ref queueDepth, $\"{queueName}_write_failed\");");
 
-        AssertDoesNotContain(queuesText, "private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
-        AssertDoesNotContain(queuesText, "private VideoEnqueueResult TryEnqueueGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
-        AssertDoesNotContain(queuesText, "private string? GetVideoEnqueueRejectReason(bool isGpu)");
-        AssertDoesNotContain(queuesText, "private string? GetVideoInputRejectReason(");
-        AssertDoesNotContain(queuesText, "private string? GetGpuInputRejectReason(");
-        AssertDoesNotContain(queuesText, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
-        AssertDoesNotContain(queuesText, "private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
-        AssertDoesNotContain(queuesText, "private void TrackVideoQueueRejected(string reason)");
-        AssertDoesNotContain(queuesText, "private void TrackGpuQueueRejected(string reason)");
-
         AssertContains(queueCleanupText, "private void ReturnAllRemainingQueuedBuffers()");
         AssertContains(queueCleanupText, "private void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue, ref int queueDepth)");
         AssertContains(queueCleanupText, "private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)");
@@ -193,21 +182,18 @@ static partial class Program
         AssertContains(queueCleanupText, "ReleaseGpuTextureBestEffort(packet.Texture);");
         AssertContains(queueCleanupText, "Interlocked.Exchange(ref queueDepth, 0);");
 
-        AssertContains(queuesText, "private void ReturnAllRemainingQueuedBuffers()");
-        AssertContains(queuesText, "private void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue, ref int queueDepth)");
-        AssertContains(queuesText, "private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)");
-        AssertContains(queuesText, "private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)");
-        AssertContains(queuesText, "private void CompleteWriter<TPacket>(Channel<TPacket>? channel)");
-        AssertContains(queuesText, "private void SignalWork(string operation)");
-        AssertContains(queuesText, "private bool WaitForCancellation(TimeSpan timeout)");
-        AssertContains(queuesText, "private void FailEncoding(Exception ex)");
-        AssertContains(queuesText, "private static void DecrementQueueDepth(ref int target, string queueName)");
-        AssertDoesNotContain(queuesText, "private bool TryEnqueueAudioPacket(");
-        AssertDoesNotContain(queuesText, "private static bool TryWriteAudioPacket(");
-        AssertDoesNotContain(queuesText, "private static bool IsForceRotateQueueGuarded(");
-        AssertDoesNotContain(queuesText, "private void ResetVideoDiagnostics()");
+        AssertContains(queueingText, "private void ReturnAllRemainingQueuedBuffers()");
+        AssertContains(queueingText, "private void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue, ref int queueDepth)");
+        AssertContains(queueingText, "private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)");
+        AssertContains(queueingText, "private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)");
+        AssertContains(queueingText, "private void CompleteWriter<TPacket>(Channel<TPacket>? channel)");
+        AssertContains(queueingText, "private void SignalWork(string operation)");
+        AssertContains(queueingText, "private bool WaitForCancellation(TimeSpan timeout)");
+        AssertContains(queueingText, "private void FailEncoding(Exception ex)");
+        AssertContains(queueingText, "private static void DecrementQueueDepth(ref int target, string queueName)");
+        AssertDoesNotContain(queueingText, "private void ResetVideoDiagnostics()");
 
-        AssertContains(docsText, "FlashbackEncoderSink.Inputs.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.Queueing.cs");
         foreach (var removedFile in new[]
         {
             "FlashbackEncoderSink.VideoQueueSubmission.Guards.cs",
@@ -218,16 +204,24 @@ static partial class Program
             AssertEqual(
                 false,
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
-                $"{removedFile} folded into FlashbackEncoderSink.Inputs.cs");
+                $"{removedFile} folded into FlashbackEncoderSink.Queueing.cs");
         }
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.AudioQueueSubmission.cs")),
-            "FlashbackEncoderSink.AudioQueueSubmission.cs folded into FlashbackEncoderSink.Inputs.cs");
+            "FlashbackEncoderSink.AudioQueueSubmission.cs folded into FlashbackEncoderSink.Queueing.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.VideoQueueSubmission.cs")),
-            "FlashbackEncoderSink.VideoQueueSubmission.cs folded into FlashbackEncoderSink.Inputs.cs");
+            "FlashbackEncoderSink.VideoQueueSubmission.cs folded into FlashbackEncoderSink.Queueing.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Inputs.cs")),
+            "FlashbackEncoderSink.Inputs.cs folded into FlashbackEncoderSink.Queueing.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Queues.cs")),
+            "FlashbackEncoderSink.Queues.cs folded into FlashbackEncoderSink.Queueing.cs");
 
         return Task.CompletedTask;
     }
@@ -330,7 +324,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
-        var inputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.cs")
+        var inputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs")
             .Replace("\r\n", "\n");
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
@@ -356,15 +350,15 @@ static partial class Program
 
         AssertDoesNotContain(rootText, "public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)");
         AssertDoesNotContain(rootText, "public void EnqueueAudioSamples(ReadOnlyMemory<byte> samples)");
-        AssertContains(docsText, "FlashbackEncoderSink.Inputs.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.Queueing.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Inputs.Video.cs")),
-            "FlashbackEncoderSink video producer inputs folded into FlashbackEncoderSink.Inputs.cs");
+            "FlashbackEncoderSink video producer inputs folded into FlashbackEncoderSink.Queueing.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Inputs.Audio.cs")),
-            "FlashbackEncoderSink audio producer inputs folded into FlashbackEncoderSink.Inputs.cs");
+            "FlashbackEncoderSink audio producer inputs folded into FlashbackEncoderSink.Queueing.cs");
 
         return Task.CompletedTask;
     }
@@ -472,11 +466,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var optionsText = startupText;
         var sessionContextText = optionsText;
-        var queuesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs")
+        var queuesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs")
             .Replace("\r\n", "\n");
         var packetBuffersText = queuesText;
         var packetTypesText = packetBuffersText;
-        var inputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.cs")
+        var inputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs")
             .Replace("\r\n", "\n");
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
@@ -519,7 +513,7 @@ static partial class Program
         AssertContains(docsText, "FlashbackEncoderSink.Startup.cs");
         AssertContains(docsText, "recording-to-Flashback session mapping");
         AssertContains(docsText, "generated session ID formatting");
-        AssertContains(docsText, "FlashbackEncoderSink.Queues.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.Queueing.cs");
         AssertContains(docsText, "packet DTOs");
         AssertEqual(
             false,
@@ -528,7 +522,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.PacketBuffers.cs")),
-            "FlashbackEncoderSink.PacketBuffers.cs folded into FlashbackEncoderSink.Queues.cs");
+            "FlashbackEncoderSink.PacketBuffers.cs folded into FlashbackEncoderSink.Queueing.cs");
 
         return Task.CompletedTask;
     }

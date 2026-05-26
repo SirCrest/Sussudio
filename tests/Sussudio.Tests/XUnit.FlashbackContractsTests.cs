@@ -179,8 +179,8 @@ public sealed class FlashbackEncoderSinkContractsTests
         => global::Program.FlashbackEncoderSink_EncodingThreadWorkLivesInEncodingLoop();
 
     [Fact]
-    public Task FlashbackEncoderSinkQueueCleanupLivesInFocusedPartial()
-        => global::Program.FlashbackEncoderSink_QueueCleanupLivesInFocusedPartial();
+    public Task FlashbackEncoderSinkQueueingOwnsInputsAndCleanup()
+        => global::Program.FlashbackEncoderSink_QueueingOwnsInputsAndCleanup();
 
     [Fact]
     public Task FlashbackEncoderSinkStartupLivesInFocusedPartial()

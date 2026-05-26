@@ -33,9 +33,8 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.DisposeLifecycle.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs").Replace("\r\n", "\n")
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.DisposeLifecycle.cs").Replace("\r\n", "\n")
         };
 
         return string.Join("\n", parts);

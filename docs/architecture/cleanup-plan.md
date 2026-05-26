@@ -1409,27 +1409,21 @@ to `FlashbackSessionContext` projection, recording-format codec mapping,
 split-encode mode wire mapping, and recording frame-rate argument parsing in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs`.
 
-Flashback encoder queue ownership now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs`. Keep
+Flashback encoder queueing now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs`. Keep
 video/audio/GPU packet DTOs, video enqueue result classification, ArrayPool
 rent/return helpers, leased video packet disposal, best-effort video packet
-cleanup, GPU texture release helpers, and queued-buffer cleanup there.
-
-Flashback encoder queue helpers now live in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs`. Keep queue
-completion/signaling, shared queue-depth accounting, cancellation waits, and
-failure notification, remaining queued video/audio/microphone/GPU buffer return,
-and depth reset there. Flashback encoder video/GPU/audio/microphone queue
-admission now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.cs` beside the public
-producer entry points. Keep raw/lease/GPU video input validation, texture AddRef
-ownership, audio/microphone entry points, hot WASAPI writer adapters,
+cleanup, GPU texture release helpers, queued-buffer cleanup, queue
+completion/signaling, shared queue-depth accounting, cancellation waits, failure
+notification, remaining queued video/audio/microphone/GPU buffer return, depth
+reset, raw/lease/GPU video input validation, texture AddRef ownership,
+audio/microphone entry points, hot WASAPI writer adapters,
 accepted/rejected/overloaded enqueue transactions, queue-full classification,
 force-rotate audio queue guard policy, producer wakeup signaling,
-disposed/not-started/cancelled/force-rotate/failure rejection reasons,
-channel writes, queue-depth increments, max-depth updates, failed-write depth
-rollback, last-reason state, backlog-eviction accounting, rejection counters,
-audio-drop diagnostics, and throttled queue rejection logs there.
+disposed/not-started/cancelled/force-rotate/failure rejection reasons, channel
+writes, queue-depth increments, max-depth updates, failed-write depth rollback,
+last-reason state, backlog-eviction accounting, rejection counters, audio-drop
+diagnostics, and throttled queue rejection logs there.
 
 Flashback encoder loop orchestration now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs`. Keep the
@@ -1451,8 +1445,8 @@ state machine, encoding-thread request capture, queue drain-to-rotate ordering,
 commit/rotation execution, result completion, failure logging, and
 draining-gate cleanup there.
 
-Flashback encoder producer entry points now live in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.cs`. Keep raw, lease,
+Flashback encoder producer entry points live with queueing in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs`. Keep raw, lease,
 and GPU video enqueue entry points, frame-size validation, video/GPU input
 rejection guards, texture AddRef ownership, audio/microphone enqueue entry
 points, force-rotate input rejection guards, and hot WASAPI writer adapters
