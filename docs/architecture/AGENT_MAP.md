@@ -1338,11 +1338,13 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
   owns the serialized diagnostics refresh ownership check, core ownership
   orchestration, runtime/HDR verification checks, refresh pipeline/gate,
-  snapshot/dispatcher assertions, preview-runtime projection assertions,
-  diagnostics alert/event ownership assertions, source-reader partial
-  ownership assertions used by diagnostics refresh, diagnostics-refresh
-  snapshot projection integration wiring, diagnostic-session preview metric
-  assertions, and diagnostic-session core/export/recording ownership assertions.
+  evaluation-policy, diagnostic evaluation, realtime and Flashback diagnostic
+  lane ownership assertions, snapshot/dispatcher assertions, preview-runtime
+  projection assertions, diagnostics alert/event ownership assertions,
+  source-reader partial ownership assertions used by diagnostics refresh,
+  diagnostics-refresh snapshot projection integration wiring,
+  diagnostic-session preview metric assertions, and diagnostic-session
+  core/export/recording ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.FlashbackAlerts.Tests.cs`
   owns Flashback export, storage, recording, force-rotate, playback, preview
   cadence, MJPEG, and renderer alert coverage for the diagnostics refresh
@@ -1350,9 +1352,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.FlashbackExport.Tests.cs`
   owns capture-service and dispatcher Flashback export operation ownership
   assertions used by diagnostics refresh.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.EvaluationOwnership.Tests.cs`
-  owns diagnostics refresh evaluation-policy, diagnostic evaluation, realtime
-  and Flashback diagnostic lane ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotConstructionOwnership.Tests.cs`
   owns initial snapshot, BuildAutomationSnapshot composition, and snapshot
   flattening ownership assertions.

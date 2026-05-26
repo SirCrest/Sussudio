@@ -3172,3 +3172,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: Flashback export/storage/recording/force-rotate and playback/preview/MJPEG/renderer alert source-shape assertions remain invoked by `DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses`.
 Notes for future agents: keep diagnostics-refresh Flashback alert helper assertions together in `MainViewModel.Automation.DiagnosticsRefresh.FlashbackAlerts.Tests.cs` unless a future slice introduces an executable alert fixture with independent setup.
+
+Date: 2026-05-26
+Area: diagnostics refresh evaluation test locality
+Problem: `MainViewModel.Automation.DiagnosticsRefresh.EvaluationOwnership.Tests.cs` contained one private helper assertion invoked only by the central diagnostics-refresh ownership test, so reviewing refresh evaluation-policy and lane ownership required opening an extra helper-only shard before returning to the primary diagnostics-refresh owner.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.EvaluationOwnership.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` diagnostics refresh ownership helper partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: diagnostics refresh evaluation-policy, diagnostic evaluation, realtime lane, and Flashback lane source-shape assertions remain invoked by `DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses`.
+Notes for future agents: keep diagnostics-refresh evaluation ownership assertions with `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs` while they remain private helper assertions for the central refresh ownership entry point.
