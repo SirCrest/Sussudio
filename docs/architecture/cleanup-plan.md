@@ -1928,11 +1928,11 @@ construction, ring-buffer snapshot copying, unique-interval projection,
 duplicate-percent statistics, and pattern labels there.
 
 MJPEG preview jitter-buffer metrics now live in
-`Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs`. Keep metrics
-records, snapshot construction, timing samples, selected/dropped-frame
-telemetry, and tick/millisecond conversion helpers there; keep queue ordering,
-deadline drops, adaptive target depth, and emit-loop pacing in their focused
-owners.
+`Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs` with the root lifecycle
+state they sample. Keep metrics records, snapshot construction, timing samples,
+selected/dropped-frame telemetry, and tick/millisecond conversion helpers there;
+keep queue ordering, deadline drops, adaptive target depth, and frame pacing in
+their focused owners.
 
 MJPEG preview jitter-buffer ingress/queueing and frame pacing now have focused
 owners. `MjpegPreviewJitterBuffer.FrameIngress.cs` owns decoded

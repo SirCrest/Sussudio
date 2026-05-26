@@ -12,7 +12,6 @@ static partial class Program
     {
         var source = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FrameIngress.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FramePacing.cs");
         var pipelineSource = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs");
@@ -66,8 +65,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var framePacingText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FramePacing.cs")
             .Replace("\r\n", "\n");
-        var metricsText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs")
-            .Replace("\r\n", "\n");
+        var metricsText = rootText;
 
         AssertContains(frameIngressText, "private sealed class BufferedFrame : IDisposable");
         AssertContains(frameIngressText, "public void Enqueue(ReadOnlySpan<byte> nv12Data, int width, int height, long arrivalTick)");
@@ -108,6 +106,10 @@ static partial class Program
         AssertContains(metricsText, "public Metrics GetMetrics()");
         AssertContains(metricsText, "private void RecordInputInterval(long nowTick)");
         AssertContains(metricsText, "private void RecordDroppedFrame(long sourceSequenceNumber, string reason)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MjpegPreviewJitterBuffer.Metrics.cs")),
+            "MJPEG preview jitter metrics folded into the lifecycle root");
 
         return Task.CompletedTask;
     }
