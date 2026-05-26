@@ -4448,3 +4448,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilt MCP, `ssctl`, automation contracts, probes, and console harnesses; no public automation command names, IDs, wire payloads, pipe calls, tool schemas, or tool labels changed.
 Behavior preserved: raw app-state/capture-options separation guards, UI/capture settings surface guards, fixed-command `AutomationCommandKind` source guards, command-routing pipe assertions, formatter batching checks, host JSON-RPC checks, and verification formatting checks now live in `McpToolSurface.CommandRouting.Tests.cs`.
 Notes for future agents: keep MCP route behavior, formatter behavior, command-kind source guards, and route-surface compatibility checks together in `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs`; split only if a route family grows a distinct fixture, process lifecycle, or helper seam.
+
+Date: 2026-05-26
+Area: LibAv encoder initialization policy locality
+Problem: `LibAvEncoder.CodecPolicy.cs` only carried private helper policy for bitstream filters, NVENC preset/split mapping, frame-size math, audio sample-format support, and rational conversion. The helpers were consumed only by encoder initialization, audio initialization, and video submission, so reviewing encoder open/setup still required opening an extra small partial before returning to the initialization owner.
+Files consolidated: `Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `LibAvEncoder` production partial file count 10 -> 9
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~LibAvEncoder|FullyQualifiedName~RecordingContracts|FullyQualifiedName~CoreRuntimeRecordingContracts"` (54 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: none beyond recording-contract test coverage for this source-locality slice; no public automation command names, IDs, wire payloads, XAML bindings, encoder options, FFmpeg option values, bitstream-filter strings, NVENC preset/split mapping, sample-format checks, or frame-size math changed.
+Behavior preserved: LibAvEncoder option validation, FFmpeg runtime/open setup, video codec context setup, HDR/MPEG-TS bitstream-filter selection, NVENC preset/split-encode mapping, frame-rate rational conversion, audio sample-format support, and packed-frame expected-size calculation now live with `LibAvEncoder.Initialization.cs`.
+Notes for future agents: keep LibAvEncoder codec/filter/rational setup policy with `Sussudio/Services/Recording/LibAvEncoder.Initialization.cs`; split only if the policy becomes an injected encoder-profile collaborator with independent callers or tests.

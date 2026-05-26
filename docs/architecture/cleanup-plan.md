@@ -1187,19 +1187,15 @@ video/audio summary handoff fields, integrity status, reason, audio-status
 classification, and the structured `RECORDING_INTEGRITY` log line together.
 Snapshot partials consume that policy instead of containing it.
 
-LibAv encoder codec policy stays in
-`Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs`; keep bitstream-filter
-selection, NVENC preset/split-encode mapping, frame-size math, sample-format
-support, and rational conversion helpers there; leave live send/drain/finalize
-paths in the owner partials.
-
 LibAv encoder initialization now lives in
 `Sussudio/Services/Recording/LibAvEncoder.Initialization.cs`. Keep FFmpeg
 runtime initialization forwarding and the public encoder open/setup sequence
 there, including native allocation order, hardware-frame fallback behavior,
 muxer-option lifetime, open-state timing, startup failure cleanup, required
 path/codec/dimension/frame-rate/bitrate checks, audio/microphone/HDR guards,
-video codec context configuration, NVENC private option application, and video
+video codec context configuration, bitstream-filter selection, NVENC
+preset/split-encode mapping, frame-size math, sample-format support, rational
+conversion helpers, NVENC private option application, and video
 bitstream-filter initialization.
 
 LibAv encoder packet writing now lives in
