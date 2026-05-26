@@ -11,7 +11,7 @@ public partial class StatsPresentationTests
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
         var statsDockRefreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
         var frameTimeOverlayText = statsOverlayCompositionText;
-        var frameTimeOverlayControllerText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
+        var frameTimeOverlayControllerText = statsOverlayCompositionText;
         var frameTimeOverlayGeometryText = frameTimeOverlayControllerText;
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
@@ -62,6 +62,14 @@ public partial class StatsPresentationTests
         AssertContains(statsDockRefreshControllerText, "var presentation = StatsPresentationBuilder.BuildDockPresentation(snapshot);");
         AssertContains(frameTimeOverlayText, "_frameTimeOverlayPresentationController.Apply(snapshot);");
         AssertContains(frameTimeOverlayControllerText, "internal sealed class FrameTimeOverlayPresentationController");
+        Assert.False(
+            System.IO.File.Exists(System.IO.Path.Combine(
+                FindRepoRoot(),
+                "Sussudio",
+                "Controllers",
+                "Stats",
+                "FrameTimeOverlayPresentationController.cs")),
+            "frame-time overlay presentation lives with stats overlay composition ownership");
         AssertContains(frameTimeOverlayControllerText, "public void Apply(StatsSnapshot snapshot)");
         AssertContains(frameTimeOverlayControllerText, "var presentation = StatsPresentationBuilder.BuildFrameTimePresentation(snapshot);");
         AssertContains(frameTimeOverlayControllerText, "UpdateExpectedLine(presentation.Range);");

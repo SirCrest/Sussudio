@@ -1200,9 +1200,10 @@ Primary current owners:
   `StatsDockRowChromePresenter` owns shared row chrome plus decode/GPU row
   pooling while
   `StatsDockRefreshController` owns when decode/GPU rows refresh.
-- `Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs` owns compact
+- `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns compact
   frame-time overlay text application, graph-line mutation, canvas sizing,
-  sample projection, and expected-line geometry.
+  sample projection, and expected-line geometry alongside the stats overlay
+  composition graph that routes polling snapshots into it.
   `Sussudio/MainWindow.ShellChrome.Composition.cs` owns the XAML-facing
   compact overlay adapter beside the stats overlay visibility route.
   `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns the cohesive pure stats

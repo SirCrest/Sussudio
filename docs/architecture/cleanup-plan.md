@@ -2170,8 +2170,8 @@ application, diagnostic rows, hardware rows, and row chrome pooling. Source tele
 projection checks live with stats presentation ownership coverage in
 `tests/Sussudio.Tests/StatsPresentation.Ownership.Tests.cs`.
 Frame-time overlay compact text application and graph-line mutation now live in
-`Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs`, along
-with frame-time canvas sizing, sample projection, and expected-line geometry;
+`Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`, along with
+frame-time canvas sizing, sample projection, and expected-line geometry;
 `Sussudio/MainWindow.ShellChrome.Composition.cs` owns the XAML-facing compact
 overlay adapter beside the stats overlay visibility route, while grouped stats
 composition context contracts and presentation-controller graph composition live

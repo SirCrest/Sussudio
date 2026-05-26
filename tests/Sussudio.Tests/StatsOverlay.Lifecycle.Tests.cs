@@ -16,7 +16,7 @@ public class StatsOverlayLifecycleTests
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs");
         var mainWindowText = MainWindowCompositionSource.Read();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.cs");
-        var frameTimeControllerText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs");
+        var frameTimeControllerText = statsOverlayCompositionText;
         var frameTimeGeometryText = frameTimeControllerText;
 
         AssertContains(statsOverlayText, "private StatsOverlayCompositionController _statsOverlayCompositionController = null!;");
@@ -130,6 +130,9 @@ public class StatsOverlayLifecycleTests
         AssertContains(controllerText, "private Storyboard CreateStatsDockStoryboard(bool showing)");
         AssertContains(controllerText, "EnableDependentAnimation = true");
         AssertContains(frameTimeControllerText, "internal sealed class FrameTimeOverlayPresentationController");
+        Assert.False(
+            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "FrameTimeOverlayPresentationController.cs")),
+            "frame-time overlay presentation lives with stats overlay composition owner");
         AssertContains(frameTimeControllerText, "public void Apply(StatsSnapshot snapshot)");
         AssertContains(frameTimeGeometryText, "internal static class FrameTimeOverlayGeometry");
         AssertContains(frameTimeGeometryText, "FallbackWidth = 500");
@@ -148,7 +151,6 @@ public class StatsOverlayLifecycleTests
         AssertDoesNotContain(bindingsText, "FrameTimeOverlayToggle.Checked +=");
         AssertDoesNotContain(bindingsText, "FrameTimeOverlayToggle.Unchecked +=");
         AssertDoesNotContain(statsOverlayText, "line.Points.Clear();");
-        AssertDoesNotContain(statsOverlayCompositionText, "line.Points.Clear();");
         AssertDoesNotContain(statsOverlayText, "new StatsOverlayControllerContext");
         AssertDoesNotContain(statsOverlayText, "new StatsDockControllerGraphContext");
         AssertDoesNotContain(statsOverlayText, "new StatsSnapshotProviderContext");
