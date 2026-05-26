@@ -1249,16 +1249,13 @@ Primary current owners:
   recording-stop close protection, recording-finalization stop-wait policy,
   post-close shutdown cleanup, automation-host disposal, and ownership
   documentation assertions.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.ShellPreview.Tests.cs`
-  owns MainWindow controller-adapter ownership assertions for control bar,
-  shell elevation, preview-transition, preview startup overlay, and preview
-  fade-in controllers.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.Recording.Tests.cs`
-  owns MainWindow controller-adapter ownership assertions for recording-button
-  chrome, recording-state presentation, and recording-state presentation policy.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` owns
   MainWindow property-change routing ownership assertions across focused
-  controller adapters.
+  controller adapters, visual shell/preview controller-adapter ownership for
+  control bar, shell elevation, preview-transition, preview startup overlay,
+  and preview fade-in controllers, plus recording-button chrome,
+  recording-state presentation, and recording-state presentation policy
+  assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Interaction.Tests.cs`
   owns MainWindow controller-adapter ownership assertions for recording action,
   preview audio fade, preview button presentation, audio control presentation,
