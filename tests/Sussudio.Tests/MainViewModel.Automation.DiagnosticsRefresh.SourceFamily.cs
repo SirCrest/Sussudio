@@ -227,7 +227,6 @@ static partial class Program
     {
         return new DiagnosticSessionSourceFamily(
             ReadDiagnosticSessionRunnerSource()
-                + "\n" + ReadDiagnosticSessionScenarioSetupSource()
                 + "\n" + ReadDiagnosticSessionScenarioStartupSource()
                 + "\n" + ReadDiagnosticSessionCleanupActionsSource()
                 + "\n" + ReadDiagnosticSessionResultBuilderSource()

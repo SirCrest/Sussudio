@@ -2940,26 +2940,18 @@ PresentMon and deferred Flashback recording-settings task tracking,
 interrupted-session observation, warning collection, and the drain handoff
 record.
 
-Diagnostic-session scenario startup now lives in
-`tools/Common/DiagnosticSessionScenarioStartup.cs`, which owns the public
-startup orchestration call, Flashback scenario registration delegation, deferred
-Flashback recording-settings task registration, and the direct Flashback
-playback start command/playback-state wait. The runner now delegates startup
-and keeps the setup/sampling/cleanup/summary phase flow.
-
-Diagnostic-session PresentMon startup now lives in
-`tools/Common/DiagnosticSessionScenarioStartup.cs` beside the scenario task
-registration flow. It owns optional PresentMon launch, correlation snapshot
-capture, and `presentmon.csv` output selection while delegating
-option/correlation policy to `tools/Common/PresentMon/PresentMonProbe.cs`.
-
-Diagnostic-session scenario setup now lives in
-`tools/Common/DiagnosticSessionScenarioSetup.cs`. It owns initial setup
+Diagnostic-session scenario activation now lives in
+`tools/Common/DiagnosticSessionScenarioActivation.cs`, which owns initial setup
 ordering and result handoff, Flashback enable/disable for scenario
 requirements, preview start and video-flow wait, recording start and Flashback
-recording-readiness wait, and setup result records. Fixed setup mutations
-should use `DiagnosticSessionCommandChannel` typed `AutomationCommandKind`
-sends.
+recording-readiness wait, public startup orchestration, Flashback scenario
+registration delegation, deferred Flashback recording-settings task
+registration, direct Flashback playback start command/playback-state wait,
+optional PresentMon launch, correlation snapshot capture, and `presentmon.csv`
+output selection while delegating option/correlation policy to
+`tools/Common/PresentMon/PresentMonProbe.cs`. The runner keeps the
+setup/startup/sampling/cleanup/summary phase flow. Fixed setup mutations should
+use `DiagnosticSessionCommandChannel` typed `AutomationCommandKind` sends.
 
 Diagnostic-session post-run actions now live in
 `tools/Common/DiagnosticSessionPostRunActions.cs`. It owns the public cleanup
@@ -3190,8 +3182,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRunContext.cs`
 - `DiagnosticSessionScenarioCatalog.cs`
 - `DiagnosticSessionScenarioCatalog.cs`
-- `DiagnosticSessionScenarioSetup.cs`
-- `DiagnosticSessionScenarioStartup.cs`
+- `DiagnosticSessionScenarioActivation.cs`
 - `DiagnosticSessionRunner.cs`
 - `DiagnosticSessionScenarioPhaseRunner.cs`
 - `tools/Common/PresentMon/PresentMonProbe.cs`

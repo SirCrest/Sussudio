@@ -9,7 +9,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionPostRunActions.cs");
 
     private static string ReadDiagnosticSessionScenarioSetupSource()
-        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioSetup.cs");
+        => ReadDiagnosticSessionScenarioStartupSource();
 
     private static string ReadDiagnosticSessionFlashbackCycleScenariosSource()
         => ReadNormalizedSourceFiles(
@@ -100,7 +100,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionScenarioStartupSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionScenarioStartup.cs");
+            "tools/Common/DiagnosticSessionScenarioActivation.cs");
 
     private static string ReadNormalizedSourceFiles(params string[] paths)
     {

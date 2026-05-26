@@ -3033,18 +3033,16 @@ Primary owners:
   registered scenario completion, PresentMon and deferred recording-settings
   task tracking, interrupted task observation, warning collection, and the drain
   result handoff.
-- `tools/Common/DiagnosticSessionScenarioStartup.cs` owns diagnostic-session
-  optional background startup orchestration, Flashback scenario registration
-  delegation, deferred Flashback recording-settings task registration, and the
-  direct Flashback playback start command. It also owns optional PresentMon
-  launch, correlation snapshot capture, and `presentmon.csv` output selection
-  for diagnostic sessions. Keep task stage names stable there.
-- `tools/Common/DiagnosticSessionScenarioSetup.cs` owns diagnostic-session
-  initial setup ordering, Flashback enable/disable for scenario requirements,
-  preview start and video-flow readiness wait, recording start and Flashback
-  recording-readiness wait, plus setup result records. Keep fixed setup
-  mutations on `DiagnosticSessionCommandChannel` typed `AutomationCommandKind`
-  sends.
+- `tools/Common/DiagnosticSessionScenarioActivation.cs` owns diagnostic-session
+  initial setup and optional background startup orchestration: Flashback
+  enable/disable for scenario requirements, preview start and video-flow
+  readiness wait, recording start and Flashback recording-readiness wait,
+  setup/startup result records, Flashback scenario registration delegation,
+  deferred Flashback recording-settings task registration, direct Flashback
+  playback start command, optional PresentMon launch, correlation snapshot
+  capture, and `presentmon.csv` output selection. Keep fixed setup mutations on
+  `DiagnosticSessionCommandChannel` typed `AutomationCommandKind` sends and task
+  stage names stable there.
 - `tools/Common/DiagnosticSessionPostRunActions.cs` owns diagnostic-session
   cleanup and recording-check flow: cleanup ordering, stage/action naming,
   cleanup result handoff, recording stop for verification, Flashback playback
