@@ -1967,10 +1967,10 @@ disposal, and error-string helpers together unless a real named collaborator
 emerges.
 
 Parallel MJPEG decode pipeline timing now lives in
-`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Metrics.cs`. Keep timing
-record structs, timing snapshot construction, per-decoder sample windows,
-packet-hash metric access, and stopwatch conversion helpers there; keep worker
-decode ingress in the root pipeline.
+`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs` with the bounded
+work-channel and worker state it samples. Keep timing record structs, timing
+snapshot construction, per-decoder sample windows, packet-hash metric access,
+and stopwatch conversion helpers there beside worker decode ingress.
 
 Parallel MJPEG decode pipeline decoded-frame ordering now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs`. Keep strict

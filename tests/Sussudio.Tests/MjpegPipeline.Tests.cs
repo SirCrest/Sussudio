@@ -61,11 +61,18 @@ static partial class Program
         AssertContains(rootText, "private static bool HasJpegStartOfImage(ReadOnlySpan<byte> data)");
         AssertContains(rootText, "private void DecrementCompressedQueueDepth(string operation)");
         AssertContains(rootText, "FrameFingerprintCadenceTracker.ComputeHash(jpegData)");
+        AssertContains(rootText, "public PipelineTimingMetrics GetTimingMetrics()");
+        AssertContains(rootText, "public FrameFingerprintCadenceTracker.Metrics GetPacketHashMetrics()");
+        AssertContains(rootText, "private void RecordPerDecoderTiming(int workerIndex, double valueMs)");
         AssertContains(rootText, "MJPEG_PIPELINE_COMPRESSED_DEPTH_UNDERFLOW");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "ParallelMjpegDecodePipeline.CompressedQueue.cs")),
             "MJPEG compressed queue admission stays folded into pipeline root/channel owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "ParallelMjpegDecodePipeline.Metrics.cs")),
+            "MJPEG pipeline metrics folded into pipeline root/channel owner");
 
         return Task.CompletedTask;
     }
