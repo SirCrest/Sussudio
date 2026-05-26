@@ -3244,3 +3244,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer` and `tools/ssctl`; test/docs-only consolidation, no public automation command names, IDs, wire payloads, or MCP tool implementations changed
 Behavior preserved: result-builder preview projection, analysis-warning, diagnostic-health, artifact-handoff, and summary-construction ownership assertions remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
 Notes for future agents: keep diagnostic-session result-builder ownership checks together in `McpToolSurface.DiagnosticSession.ResultOwnership.Builder.Tests.cs`; split again only if a production result-builder collaborator gets an independent executable behavior fixture.
+
+Date: 2026-05-26
+Area: MCP diagnostic-session lifecycle ownership test locality
+Problem: `McpToolSurface.DiagnosticSession.Ownership.Planning.Tests.cs`, `McpToolSurface.DiagnosticSession.Ownership.Execution.Tests.cs`, and `McpToolSurface.DiagnosticSession.Ownership.TeardownAndReporting.Tests.cs` split one diagnostic-session helper ownership surface by lifecycle phase. Reviewing planning/setup, startup/sampling, teardown/reporting, post-run snapshots, recording verification, and shared session metrics required jumping across three legacy `Program` partial shards.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Planning.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Execution.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.TeardownAndReporting.Tests.cs`
+Files added: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Tests.cs` (renamed from `Ownership.Planning.Tests.cs`)
+Net production .cs delta: 0; net test .cs delta: -2
+Partial clusters reduced: legacy `Program` MCP diagnostic-session lifecycle ownership partial file count -2
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer` and `tools/ssctl`; test/docs-only consolidation, no public automation command names, IDs, wire payloads, or MCP tool implementations changed
+Behavior preserved: diagnostic-session planning/setup, background task draining, PresentMon startup, sample-loop ordering, cleanup restore warning, recording verification, post-run snapshot, and shared metrics ownership assertions remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
+Notes for future agents: keep diagnostic-session lifecycle helper ownership checks in `McpToolSurface.DiagnosticSession.Ownership.Tests.cs`; keep infrastructure, result ownership, Flashback scenario, and Flashback metric projection checks in their focused sibling files.

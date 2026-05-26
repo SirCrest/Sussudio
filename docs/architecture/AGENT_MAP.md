@@ -1958,13 +1958,10 @@ Primary current owners:
   host/pipe, verification, Flashback tool, diagnostic-session tool entry,
   performance/probe, and window/preview tool contracts after their removal from
   the legacy harness catalog.
-- Diagnostic-session helper ownership checks live in focused lifecycle files:
-  planning/setup checks in
-  `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Planning.Tests.cs`,
-  execution/startup/sampling checks in
-  `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Execution.Tests.cs`,
-  and teardown/reporting/metrics checks in
-  `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.TeardownAndReporting.Tests.cs`.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Tests.cs`
+  owns diagnostic-session helper ownership checks for planning/setup,
+  execution/startup/sampling, teardown/reporting, post-run snapshots,
+  recording verification, and shared session metrics.
 - Diagnostic-session infrastructure ownership checks live in
   `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.InfrastructureOwnership.Tests.cs`:
   runner/initial-snapshot, pipe retry/command-channel,
