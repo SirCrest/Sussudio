@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
@@ -184,7 +184,7 @@ static partial class Program
             "newCapture.AttachRecordingSink(activeSink);",
             "await _previewAudioGraph.StartPlaybackAsync(");
         var updateMicrophoneMonitor = ExtractTextBetween(
-            ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs").Replace("\r\n", "\n"),
             "public Task UpdateMicrophoneMonitorAsync",
             "        }, cancellationToken);");
         AssertContains(updateMicrophoneMonitor, "if (_isRecording)");

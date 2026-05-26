@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 
 // Tests for recording backend finalize, cleanup, and Flashback recovery boundaries.
@@ -12,7 +12,7 @@ static partial class Program
         var captureHealthSnapshotRootSource = sources.CaptureHealthSnapshotRootSource;
         var captureSnapshotsSource = sources.CaptureSnapshotsSource;
         var unifiedVideoCaptureSource = sources.UnifiedVideoCaptureSource;
-        var microphoneMonitorText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs")
+        var microphoneMonitorText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs")
             .Replace("\r\n", "\n");
         var stopRecordingBackendRouter = ExtractSourceBlock(
             captureServiceSource,

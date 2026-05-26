@@ -39,8 +39,8 @@ public sealed class RecordingPipelineContractsTests
         => global::Program.CaptureService_AudioOwnershipLivesInFocusedPartials();
 
     [Fact]
-    public Task CaptureServiceMicrophoneRestartAfterRecordingLivesInMicrophoneMonitorPartial()
-        => global::Program.CaptureService_MicrophoneRestartAfterRecordingLivesInMicrophoneMonitorPartial();
+    public Task CaptureServiceMicrophoneRestartAfterRecordingLivesInAudioPreviewLifecyclePartial()
+        => global::Program.CaptureService_MicrophoneRestartAfterRecordingLivesInAudioPreviewLifecyclePartial();
 
     [Fact]
     public Task LibAvRecordingSinkStopValidatesFinalOutput()

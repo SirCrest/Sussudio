@@ -3449,3 +3449,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, XAML, automation tooling, and console harnesses; no public automation command names, IDs, wire payloads, XAML event handler names, button automation IDs, control names, or property bindings changed
 Behavior preserved: recording toggle, record-button chrome, recording state presentation, refresh/apply-device buttons, output-path browse/open, screenshot button, capture selection binding, capture option binding, capture option presentation, and property-change routing now live in `MainWindow.ControlBindings.cs`; behavior remains delegated to the existing controllers.
 Notes for future agents: keep MainWindow XAML-facing capture/recording/output/screenshot control adapter glue in `Sussudio/MainWindow.ControlBindings.cs`; keep actual control behavior and policies in the capture, recording, output, and screenshot controllers.
+
+Date: 2026-05-26
+Area: CaptureService audio preview and microphone monitor locality
+Problem: `CaptureService.MicrophoneMonitor.cs` was a small CaptureService partial split away from `CaptureService.AudioPreviewLifecycle.cs`, even though preview-time microphone monitor startup, WASAPI event projection, capture-failure routing, audio preview start/stop, live audio input switching, monitor update, disposal, and post-recording monitor restart are one audio lifecycle surface. Reviewing microphone monitoring required opening two CaptureService partials before reaching shared audio graph resources.
+Files consolidated: `Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: CaptureService partial count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, capture session coordinator, automation tooling, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, microphone monitor command surface, log event names, or Flashback microphone writer attach reasons changed
+Behavior preserved: mic-level event projection, mic writer detach/disposal, public microphone monitor update transaction, deferred recording-time monitor updates, rollback cleanup, preview-time Flashback mic writer attachment, and post-recording mic monitor restart/reattachment now live in `CaptureService.AudioPreviewLifecycle.cs` with audio preview startup/teardown and live audio input switching.
+Notes for future agents: keep CaptureService program-audio and microphone-monitor lifecycle in `Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs`; keep `PreviewAudioGraphResources` in `CapturePipelineResources.cs`.

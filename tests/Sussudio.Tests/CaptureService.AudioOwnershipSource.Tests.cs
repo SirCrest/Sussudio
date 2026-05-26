@@ -7,7 +7,6 @@ static partial class Program
     private static readonly string[] CaptureServiceAudioFiles =
     {
         "Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs",
-        "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs",
         "Sussudio/Services/Capture/CapturePipelineResources.cs"
     };
 
@@ -25,7 +24,6 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs");
         var audioPreviewText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs");
-        var microphoneText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs");
         var resourceText = ReadRepoFile("Sussudio/Services/Capture/CapturePipelineResources.cs");
 
         AssertContains(rootText, "private readonly PreviewAudioGraphResources _previewAudioGraph = new();");
@@ -64,7 +62,12 @@ static partial class Program
         AssertContains(audioPreviewText, "public Task UpdateAudioInputAsync(");
         AssertContains(audioPreviewText, "Logger.Log($\"Live audio input switch:");
         AssertContains(audioPreviewText, "Logger.Log(\"AUDIO_INPUT_SWITCH_CANCEL_DEFERRED\");");
-        AssertDoesNotContain(audioPreviewText, "public Task UpdateMicrophoneMonitorAsync(");
+        AssertContains(audioPreviewText, "public Task UpdateMicrophoneMonitorAsync(");
+        AssertContains(audioPreviewText, "RunTransitionAsync(CurrentSessionState,");
+        AssertContains(audioPreviewText, "private async Task DisposeMicrophoneCaptureAsync()");
+        AssertContains(audioPreviewText, "private void OnMicrophoneAudioLevelUpdated(");
+        AssertContains(audioPreviewText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
+        AssertContains(audioPreviewText, "private readonly record struct MicrophoneMonitorRestartOptions(");
         AssertDoesNotContain(audioPreviewText, "private async Task StartWasapiPlaybackAsync(");
         AssertEqual(
             false,
@@ -74,13 +77,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.AudioInputSwitching.cs")),
             "live audio input switching folded into CaptureService.AudioPreviewLifecycle.cs");
-
-        AssertContains(microphoneText, "public Task UpdateMicrophoneMonitorAsync(");
-        AssertContains(microphoneText, "RunTransitionAsync(CurrentSessionState,");
-        AssertContains(microphoneText, "private async Task DisposeMicrophoneCaptureAsync()");
-        AssertContains(microphoneText, "private void OnMicrophoneAudioLevelUpdated(");
-        AssertContains(microphoneText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
-        AssertContains(microphoneText, "private readonly record struct MicrophoneMonitorRestartOptions(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.MicrophoneMonitor.cs")),
+            "microphone monitor state and restart folded into CaptureService.AudioPreviewLifecycle.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.MicrophoneMonitor.Update.cs")),
@@ -103,11 +103,11 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureService_MicrophoneRestartAfterRecordingLivesInMicrophoneMonitorPartial()
+    internal static Task CaptureService_MicrophoneRestartAfterRecordingLivesInAudioPreviewLifecyclePartial()
     {
         var finalizationText = ReadCaptureServiceRecordingFinalizationSource()
             .Replace("\r\n", "\n");
-        var microphoneRootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs")
+        var microphoneRootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(microphoneRootText, "private readonly record struct MicrophoneMonitorRestartOptions(");

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -147,8 +147,7 @@ static partial class Program
         var currentStateTransitionOwners = new[]
         {
             "Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs",
-            "Sussudio/Services/Capture/CaptureService.FlashbackControls.cs",
-            "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs"
+            "Sussudio/Services/Capture/CaptureService.FlashbackControls.cs"
         };
 
         foreach (var owner in currentStateTransitionOwners)

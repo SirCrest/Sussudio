@@ -961,7 +961,7 @@ WASAPI audio-level/failure event projection, audio-preview start/stop
 lifecycle, and live audio input switching now live in
 `Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs`. Preview-time
 microphone monitoring lives in
-`Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs` for shared
+`Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs` for shared
 state, mic-level forwarding, writer-detach/disposal cleanup, the public update
 transaction, preview-time Flashback mic writer attachment, and post-recording
 restart/reattachment.
@@ -1106,7 +1106,7 @@ the visible final outcome publication before delayed cancellation throws.
 Recording outcome field publication now lives with
 `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`; post-recording
 microphone monitor restart mechanics live in
-`Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`.
+`Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs`.
 The live-edge boundary snapshot in
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs`
 keeps idempotent `EndFlashbackRecordingAccounting()` calls, source-frame
