@@ -73,10 +73,11 @@ add xUnit alongside, and port incrementally.
   sink, playback, decoder, and exporter xUnit wrapper classes while preserving
   their frame-rate, codec, queue, force-rotate, startup, command-queue,
   source-shape, cadence, frame-buffer, state/lifetime, timestamp, audio,
-  request validation, segment, cancellation, output path/finalization, and
-  source-ownership checks.
-- `Flashback.Playback.Markers.Tests.cs` owns the former legacy Flashback
-  playback in/out marker API, normalization, disposal, and marker clamp checks.
+  in/out marker, request validation, segment, cancellation, output
+  path/finalization, and source-ownership checks.
+- `Flashback.Playback.Reopen.Tests.cs` owns the former legacy Flashback
+  playback fMP4 reopen, seek recovery, in/out marker API, normalization,
+  disposal, and marker clamp checks.
 - `StatsDockPresentation.Tests.cs` owns the former legacy stats dock, row
   chrome, builder ownership, and HDMI source telemetry panel checks.
 - `MainWindowUiContract.StatsSnapshot.Tests.cs` owns the former legacy stats

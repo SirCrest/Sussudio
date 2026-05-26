@@ -431,6 +431,26 @@ public sealed class FlashbackPlaybackContractsTests
         => global::Program.FlashbackPlaybackController_Fmp4ReopenRetriesAreGuarded();
 
     [Fact]
+    public Task FlashbackPlaybackInOutPointsDefaultToUnset()
+        => global::Program.FlashbackPlaybackController_InOutPoints_DefaultToUnset();
+
+    [Fact]
+    public Task FlashbackPlaybackInOutPointsClearInvalidCounterpart()
+        => global::Program.FlashbackPlaybackController_InOutPoints_ClearInvalidCounterpart();
+
+    [Fact]
+    public Task FlashbackPlaybackInOutPointSettersNormalizeMarkers()
+        => global::Program.FlashbackPlaybackController_InOutPointSettersNormalizeMarkers();
+
+    [Fact]
+    public Task FlashbackPlaybackInOutPointChangesStopAfterDispose()
+        => global::Program.FlashbackPlaybackController_InOutPointChangesStopAfterDispose();
+
+    [Fact]
+    public Task FlashbackPlaybackClampPositionBoundsMarkersToBufferedDuration()
+        => global::Program.FlashbackPlaybackController_ClampPosition_BoundsMarkersToBufferedDuration();
+
+    [Fact]
     public Task FlashbackScrubCoalescingDoesNotRequeueControlCommands()
         => global::Program.FlashbackPlaybackController_ScrubCoalescing_DoesNotRequeueControlCommands();
 
