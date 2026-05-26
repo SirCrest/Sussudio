@@ -1484,20 +1484,20 @@ resampler output conversion, and bounded audio sample/byte sizing there. Decoded
 output, PTS-to-TimeSpan conversion, and best-effort frame timestamp selection now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs` with software
 plane copies and YUV-to-NV12/P010 conversion kernels. Keep file
-open/close and disposal lifecycle in the root decoder. Video
-frame receive, packet feeding, inline audio interleave during video reads, recoverable
-seek log suppression, and decode phase timing state now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.DecodeLoop.cs`. Keyframe/exact seek control flow,
-pending-frame transfer, seek-cap diagnostics, and seek-buffer flushing now live
-in `Sussudio/Services/Flashback/FlashbackDecoder.Seeking.cs` with its seek timestamp conversion helpers.
+  open/close and disposal lifecycle in the root decoder. Keyframe/exact seek
+  control flow, pending-frame transfer, seek-cap diagnostics, seek-buffer
+  flushing, seek timestamp conversion helpers, video frame receive, packet
+  feeding, inline audio interleave during video reads, recoverable seek log
+  suppression, and decode phase timing state now live in
+`Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs`.
 Decoded frame-size calculation, video-dimension validation, D3D11/software
 decoded-frame validation, input stream-count bounds, and stream-index bounds now live in
 the root decoder at `Sussudio/Services/Flashback/FlashbackDecoder.cs`.
 File-close native cleanup, software buffer returns, pending held-frame release,
 decoder state reset, held-frame best-effort release helpers, open/disposed
 state guards, and FFmpeg decoder error formatting now live in the root decoder;
-decode phase timing accumulation lives with
-`Sussudio/Services/Flashback/FlashbackDecoder.DecodeLoop.cs`.
+  decode phase timing accumulation lives with
+`Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs`.
 Decoded video/audio output DTOs now live in the root decoder beside the
 decoder's public output surface, instead of a sub-40-line output-type fragment.
 Video codec setup, D3D11 device-context initialization, get-format callback

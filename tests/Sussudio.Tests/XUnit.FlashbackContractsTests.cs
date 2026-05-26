@@ -39,12 +39,12 @@ public sealed class FlashbackDecoderContractsTests
         => global::Program.FlashbackDecoder_VideoSetupOwnsHardwareAndSoftwareSetup();
 
     [Fact]
-    public Task FlashbackDecoderSeekingLivesInFocusedPartial()
-        => global::Program.FlashbackDecoder_SeekingLivesInFocusedPartial();
+    public Task FlashbackDecoderPlaybackOwnsSeekingAndDecodeLoop()
+        => global::Program.FlashbackDecoder_PlaybackOwnsSeekingAndDecodeLoop();
 
     [Fact]
-    public Task FlashbackDecoderDecodeLoopLivesInFocusedPartial()
-        => global::Program.FlashbackDecoder_DecodeLoopLivesInFocusedPartial();
+    public Task FlashbackDecoderDecodeLoopLivesWithPlayback()
+        => global::Program.FlashbackDecoder_DecodeLoopLivesWithPlayback();
 
     [Fact]
     public Task FlashbackDecoderDefaultsToClosedState()

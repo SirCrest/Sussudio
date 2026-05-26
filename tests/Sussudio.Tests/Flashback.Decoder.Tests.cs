@@ -208,7 +208,7 @@ static partial class Program
     internal static Task FlashbackDecoder_DecodeLoopsObserveCancellation()
     {
         var sourceText = ReadFlashbackDecoderSource();
-        var decodeLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.DecodeLoop.cs")
+        var decodeLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)");
@@ -443,7 +443,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var decodeLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.DecodeLoop.cs")
+        var decodeLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(decodeLoopText, "private void AddLastDecodeReceiveMs(double elapsedMs)");
@@ -500,37 +500,45 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackDecoder_SeekingLivesInFocusedPartial()
+    internal static Task FlashbackDecoder_PlaybackOwnsSeekingAndDecodeLoop()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var seekingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Seeking.cs")
+        var playbackText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(seekingText, "public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)");
-        AssertContains(seekingText, "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)");
-        AssertContains(seekingText, "FLASHBACK_DECODER_SEEK_FALLBACK_OK");
-        AssertContains(seekingText, "FLASHBACK_DECODER_SEEK_CAP_HIT");
+        AssertContains(playbackText, "public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)");
+        AssertContains(playbackText, "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)");
+        AssertContains(playbackText, "FLASHBACK_DECODER_SEEK_FALLBACK_OK");
+        AssertContains(playbackText, "FLASHBACK_DECODER_SEEK_CAP_HIT");
+        AssertContains(playbackText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
+        AssertContains(playbackText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
+        AssertContains(playbackText, "private void AddLastDecodeReceiveMs(double elapsedMs)");
+        AssertContains(playbackText, "private static double ElapsedMsSince(long startTimestamp)");
+        AssertOccursBefore(
+            playbackText,
+            "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)",
+            "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(rootText, "public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(rootText, "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)");
 
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackDecoder_DecodeLoopLivesInFocusedPartial()
+    internal static Task FlashbackDecoder_DecodeLoopLivesWithPlayback()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var decodeLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.DecodeLoop.cs")
+        var playbackText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(decodeLoopText, "private PlaybackDecodePhaseTimings _lastDecodePhaseTimings;");
-        AssertContains(decodeLoopText, "public PlaybackDecodePhaseTimings LastDecodePhaseTimings => _lastDecodePhaseTimings;");
-        AssertContains(decodeLoopText, "public readonly record struct PlaybackDecodePhaseTimings(");
-        AssertContains(decodeLoopText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
-        AssertContains(decodeLoopText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
-        AssertContains(decodeLoopText, "ffmpeg.av_read_frame(_formatCtx, _packet)");
-        AssertContains(decodeLoopText, "DecodeAndDeliverAudioPacket(_packet);");
+        AssertContains(playbackText, "private PlaybackDecodePhaseTimings _lastDecodePhaseTimings;");
+        AssertContains(playbackText, "public PlaybackDecodePhaseTimings LastDecodePhaseTimings => _lastDecodePhaseTimings;");
+        AssertContains(playbackText, "public readonly record struct PlaybackDecodePhaseTimings(");
+        AssertContains(playbackText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
+        AssertContains(playbackText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
+        AssertContains(playbackText, "ffmpeg.av_read_frame(_formatCtx, _packet)");
+        AssertContains(playbackText, "DecodeAndDeliverAudioPacket(_packet);");
         AssertDoesNotContain(rootText, "private PlaybackDecodePhaseTimings _lastDecodePhaseTimings;");
         AssertDoesNotContain(rootText, "public PlaybackDecodePhaseTimings LastDecodePhaseTimings => _lastDecodePhaseTimings;");
         AssertDoesNotContain(rootText, "public readonly record struct PlaybackDecodePhaseTimings(");
