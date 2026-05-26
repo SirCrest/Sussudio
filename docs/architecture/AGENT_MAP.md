@@ -2194,7 +2194,7 @@ Primary current owners:
   `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires
   preview-transition animation callbacks; video-shadow fade callbacks route
   through the shadow controller in `PreviewSurfacePresentationController`.
-- `Sussudio/Controllers/Preview/PreviewButtonActionController.cs` owns preview
+- `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview
   button glyph/tooltip presentation for Start Preview and Stop Preview plus
   preview button command choreography: pending-reinit cancel, user stop intent,
   audio/visual fade-out ordering, preview start/stop calls, reinit animation
@@ -2274,7 +2274,7 @@ Primary current owners:
   `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` keeps the renderer-stop-before-teardown
   handoff and XAML callback endpoints for completion presentation.
   Keep preview startup fields out of the composition root.
-- `Sussudio/Controllers/Preview/PreviewButtonActionController.cs` owns delayed
+- `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns delayed
   preview reveal after first visual: rendered-frame threshold, fade-in timer,
   renderer replacement fallback, and preview-audio fade start ordering.
   `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires the XAML-facing adapter. Keep

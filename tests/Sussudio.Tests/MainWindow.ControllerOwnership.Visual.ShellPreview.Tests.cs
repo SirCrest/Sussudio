@@ -157,7 +157,7 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewTransitionText = ReadMainWindowPreviewTransitionsAdapterSource();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewButtonActionController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private PreviewFadeInController _previewFadeInController = null!;");
         AssertContains(adapterText, "private void InitializePreviewFadeInController()");

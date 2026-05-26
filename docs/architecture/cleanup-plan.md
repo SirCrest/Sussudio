@@ -2477,12 +2477,13 @@ opacity fades route through the preview surface shadow controller kept in
 `PreviewSurfacePresentationController.cs`.
 
 Preview button glyph/tooltip presentation for Start Preview and Stop Preview
-now lives in `Sussudio/Controllers/Preview/PreviewButtonActionController.cs`.
+now lives with preview lifecycle events in
+`Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`.
 `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`
 wires preview button presentation callbacks and preview
 lifecycle property/event routing. Preview
 button command choreography now lives in
-`Sussudio/Controllers/Preview/PreviewButtonActionController.cs`, while
+`Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`, while
 `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` keeps the XAML event
 name stable as part of the preview transition/presentation adapter.
 
@@ -2565,7 +2566,7 @@ timeout status, and failure-stop status text live inside
 and failure-stop decisions are made. This keeps the root shell focused on wiring
 while leaving the existing startup state machine behavior unchanged.
 Delayed preview reveal after first visual now lives in
-`Sussudio/Controllers/Preview/PreviewButtonActionController.cs`; the adapter is
+`Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`; the adapter is
 `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`. Watchdog/timeout recovery remains in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`.
 Preview startup loading overlay presentation now lives in

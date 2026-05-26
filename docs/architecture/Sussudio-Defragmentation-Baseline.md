@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: preview lifecycle button/fade locality
+Problem: `PreviewButtonActionController.cs` carried preview toggle choreography, button glyph/tooltip presentation, and fade-in timer policy while `PreviewLifecycleEventController.cs` owned the adjacent preview start/stop/reinit property-change lifecycle. Reviewing preview startup/stop behavior required opening both controller files even though they coordinate the same preview lifecycle surface and are wired together from `MainWindow.PreviewLifecycle.Composition.cs`.
+Files consolidated: `Sussudio/Controllers/Preview/PreviewButtonActionController.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: none
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed after updating preview lifecycle source-shape assertions); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: no public automation command names, IDs, wire payloads, XAML event handler names, preview button labels/glyphs, preview startup log text, or animation timing changed
+Behavior preserved: preview reinit cancel, user stop intent, audio/visual fade-out before stop, failed-start placeholder reveal, Start/Stop Preview tooltip/glyph selection, delayed fade-in timer scheduling, and first-render fade-in threshold remain unchanged.
+Notes for future agents: keep preview button action, preview button presentation, fade-in timer policy, and preview start/stop property-change lifecycle together in `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`; keep renderer host setup and preview surface presentation in their existing renderer/surface controllers.
+
+Date: 2026-05-26
 Area: shared runtime window-size helper locality
 Problem: `MinSizeWindowSubclass.cs` was an 82-line Win32 helper used by both the main-window lifecycle controller and the detached stats window, while `RuntimeHelpers.cs` already owns shared runtime helpers with native interop contracts. Auditing shared runtime helper behavior required a second tiny file for one window-size interop helper.
 Files consolidated: `Sussudio/Services/Runtime/MinSizeWindowSubclass.cs`
