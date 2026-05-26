@@ -82,18 +82,12 @@ add xUnit alongside, and port incrementally.
   sizing, session, playback-state, export progress, export segment, and export
   request model contract checks; `XUnit.FlashbackModels.PropertyAssertions.cs`
   owns the shared reflection/nullability assertion helpers for that suite.
-- `XUnit.FlashbackEncoderSinkContractsTests.cs` owns the former legacy
-  Flashback encoder sink frame-rate, codec, counter, queue, force-rotate,
-  packet-drain, startup, and source-ownership checks.
-- `XUnit.FlashbackPlaybackContractsTests.cs` owns the former legacy Flashback
-  playback startup, command-queue, source-shape, cadence, submission, reopen,
-  transition-guard, and metric-reset checks.
-- `XUnit.FlashbackDecoderContractsTests.cs` owns the former legacy Flashback
-  decoder frame-buffer, source-ownership, state/lifetime, timestamp, audio,
-  frame-validation, and cancellation checks.
-- `XUnit.FlashbackExporterContractsTests.cs` owns the former legacy Flashback
-  exporter cleanup, request validation, failure classification, segment,
-  cancellation, output path/finalization, and source-ownership checks.
+- `XUnit.FlashbackContractsTests.cs` owns the former legacy Flashback encoder
+  sink, playback, decoder, and exporter xUnit wrapper classes while preserving
+  their frame-rate, codec, queue, force-rotate, startup, command-queue,
+  source-shape, cadence, frame-buffer, state/lifetime, timestamp, audio,
+  request validation, segment, cancellation, output path/finalization, and
+  source-ownership checks.
 - `Flashback.Playback.Markers.Tests.cs` owns the former legacy Flashback
   playback in/out marker API, normalization, disposal, and marker clamp checks.
 - `StatsDockPresentation.Tests.cs` and `StatsPresentation.Ownership.Tests.cs`

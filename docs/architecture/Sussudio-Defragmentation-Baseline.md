@@ -2548,3 +2548,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: diagnostic-session result ownership tests cover the moved health verdict and Flashback playback projection maps; no CLI/MCP command names, automation command IDs, or wire payloads changed
 Behavior preserved: diagnostic health snapshot selection, verdict/tolerance warnings, sparse source and preview-scheduler warning tolerance, Flashback playback projection composition, command/cadence/1% low/decode/audio-master/stage result maps, and `summary.json` field shape remain unchanged
 Notes for future agents: keep diagnostic health verdict helpers with `DiagnosticSessionResultBuilder.Analysis.cs`; keep Flashback playback result projection maps with `DiagnosticSessionResultBuilder.Projections.cs` unless they become a reusable result-projection collaborator outside diagnostic-session summary construction.
+
+Date: 2026-05-26
+Area: Flashback xUnit wrapper locality
+Problem: Four tiny xUnit wrapper files only registered Flashback harness methods for decoder, encoder sink, exporter, and playback contract groups. The real test behavior already lives in focused Flashback test files and shared harness methods, so the wrapper layer added file-count noise without improving ownership or testability.
+Files consolidated: `tests/Sussudio.Tests/XUnit.FlashbackDecoderContractsTests.cs`; `tests/Sussudio.Tests/XUnit.FlashbackEncoderSinkContractsTests.cs`; `tests/Sussudio.Tests/XUnit.FlashbackExporterContractsTests.cs`; `tests/Sussudio.Tests/XUnit.FlashbackPlaybackContractsTests.cs`
+Files added: `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs`
+Net production .cs delta: 0; net test .cs delta: -3
+Partial clusters reduced: n/a; xUnit wrapper file count -3
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; wrapper registration only, no automation command names, IDs, or wire payloads changed
+Behavior preserved: Flashback decoder, encoder sink, exporter, and playback xUnit classes, fact method names, harness calls, and target-assembly bootstrap calls remain unchanged.
+Notes for future agents: keep Flashback xUnit registration wrappers together in `XUnit.FlashbackContractsTests.cs`; add new detailed behavior coverage to the focused Flashback test files, not to additional one-purpose xUnit wrapper files.

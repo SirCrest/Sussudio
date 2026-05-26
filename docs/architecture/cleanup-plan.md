@@ -639,26 +639,13 @@ CPU MJPEG pipeline runtime checks now execute through
 `tests/Sussudio.Tests/XUnit.MjpegPipelineContractsTests.cs`, keeping pipeline,
 cadence, pooled-frame, preview-jitter, and queued lease-release contracts in
 xUnit after their removal from the legacy harness catalog.
-Flashback encoder sink checks now execute through
-`tests/Sussudio.Tests/XUnit.FlashbackEncoderSinkContractsTests.cs`, keeping
-frame-rate, codec, counter, queue, force-rotate, packet-drain, startup, and
-source-ownership contracts in xUnit after their removal from the legacy harness
-catalog.
-Flashback playback checks now execute through
-`tests/Sussudio.Tests/XUnit.FlashbackPlaybackContractsTests.cs`, keeping
-startup, command-queue, source-shape, cadence, submission, reopen,
-transition-guard, and metric-reset contracts in xUnit after their removal from
-the legacy harness catalog.
-Flashback decoder checks now execute through
-`tests/Sussudio.Tests/XUnit.FlashbackDecoderContractsTests.cs`, keeping
-frame-buffer, source-ownership, state/lifetime, timestamp, audio,
-frame-validation, and cancellation contracts in xUnit after their removal from
-the legacy harness catalog.
-Flashback exporter checks now execute through
-`tests/Sussudio.Tests/XUnit.FlashbackExporterContractsTests.cs`, keeping
-cleanup, request validation, failure classification, segment, cancellation,
-output path/finalization, and source-ownership contracts in xUnit after their
-removal from the legacy harness catalog.
+Flashback xUnit wrapper checks now execute through
+`tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs`, keeping encoder sink,
+playback, decoder, and exporter registration classes together while preserving
+their frame-rate, codec, counter, queue, force-rotate, startup, command-queue,
+source-shape, cadence, frame-buffer, state/lifetime, timestamp, audio,
+request-validation, segment, cancellation, output path/finalization, and
+source-ownership contracts after their removal from the legacy harness catalog.
 Core runtime recording checks now execute through
 `tests/Sussudio.Tests/XUnit.CoreRuntimeRecordingContractsTests.cs`, keeping
 recording verifier, LibAv encoder, Flashback integrity, shared formatter, and

@@ -1945,15 +1945,10 @@ Primary current owners:
   legacy recording-model execution surface for LibAv sink loop/source-ownership
   checks, capture runtime failure/runtime-flag checks, and the large Flashback
   buffer manager behavior/source-ownership group.
-- `tests/Sussudio.Tests/XUnit.FlashbackExporterContractsTests.cs` owns the
-  xUnit execution surface for the former legacy Flashback exporter registration
-  group. `tests/Sussudio.Tests/XUnit.FlashbackDecoderContractsTests.cs`
-  owns the xUnit execution surface for the former legacy Flashback decoder
-  registration group. `tests/Sussudio.Tests/XUnit.FlashbackPlaybackContractsTests.cs`
-  owns the xUnit execution surface for the former legacy Flashback playback
-  registration groups. `tests/Sussudio.Tests/XUnit.FlashbackEncoderSinkContractsTests.cs`
-  owns the xUnit execution surface for the former legacy Flashback encoder sink
-  registration groups.
+- `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
+  execution surface for the former legacy Flashback exporter, decoder,
+  playback, and encoder sink registration groups while preserving the same
+  test classes and method names.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for the former legacy NVML snapshot, CaptureSessionSnapshot
   default-state, and RTK I2C unsafe-native-path tool-contract checks.
@@ -2153,9 +2148,9 @@ Primary current owners:
   and drain-loop ordering tests.
 - `tests/Sussudio.Tests/Flashback.EncoderSink.ForceRotate.Tests.cs` owns
   Flashback encoder sink force-rotate and segment-registration recovery tests.
-- `tests/Sussudio.Tests/XUnit.FlashbackEncoderSinkContractsTests.cs` owns the
-  xUnit execution surface for the former legacy Flashback encoder sink
-  frame-rate, codec, counter, queue, force-rotate, packet-drain, startup, and
+- `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
+  execution surface for the former legacy Flashback encoder sink frame-rate,
+  codec, counter, queue, force-rotate, packet-drain, startup, and
   source-ownership checks after their removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/Flashback.Exporter.Basic.Tests.cs` owns Flashback
   exporter request-surface smoke tests, path/request validation, and export
@@ -2183,9 +2178,9 @@ Primary current owners:
   Flashback exporter final-output replacement, overwrite refusal/force
   behavior, final validation cleanup, orphan temp-file cleanup, and
   output-directory scan guard tests.
-- `tests/Sussudio.Tests/XUnit.FlashbackExporterContractsTests.cs` owns the
-  xUnit execution surface for the former legacy Flashback exporter cleanup,
-  request validation, failure classification, segment, cancellation, output
+- `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
+  execution surface for the former legacy Flashback exporter cleanup, request
+  validation, failure classification, segment, cancellation, output
   path/finalization, and source-ownership checks after their removal from the
   legacy harness catalog.
 - `tests/Sussudio.Tests/Flashback.Playback.State.Tests.cs` owns Flashback
@@ -2218,14 +2213,14 @@ Primary current owners:
   ownership, and live-recovery ownership tests.
 - `tests/Sussudio.Tests/Flashback.Playback.Reopen.Tests.cs` owns Flashback
   playback fMP4 reopen, seek-display, and seek recovery tests.
-- `tests/Sussudio.Tests/XUnit.FlashbackPlaybackContractsTests.cs` owns the
-  xUnit execution surface for the former legacy Flashback playback startup,
+- `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
+  execution surface for the former legacy Flashback playback startup,
   command-queue, source-shape, cadence, submission, reopen, transition-guard,
   and metric-reset checks after their removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/Flashback.Decoder.Tests.cs` owns Flashback decoder
   audio, timestamp, stream-bound, validation, lifetime, and callback tests.
-- `tests/Sussudio.Tests/XUnit.FlashbackDecoderContractsTests.cs` owns the
-  xUnit execution surface for the former legacy Flashback decoder frame-buffer,
+- `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
+  execution surface for the former legacy Flashback decoder frame-buffer,
   source-ownership, state/lifetime, timestamp, audio, frame-validation, and
   cancellation checks after their removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/Flashback.Support.Tests.cs` owns cross-cutting Flashback
