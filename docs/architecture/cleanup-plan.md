@@ -2266,7 +2266,7 @@ in/out marker visibility, selection-region layout, and `m:ss` formatting.
 wires marker presentation callbacks.
 
 Flashback playback UI sequencing now lives in
-`Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs`: track-resize
+`Sussudio/Controllers/Flashback/FlashbackUiControllers.cs`: track-resize
 snap/position/marker/CTI refresh order, playback state polling start/stop,
 play/pause glyph policy, Go Live enabled state, buffer-duration text, floating
 playhead label text, buffer-fill/position/marker refresh order, and
