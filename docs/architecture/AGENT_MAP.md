@@ -2451,7 +2451,7 @@ Primary current owners:
   handlers. `MainViewModel.AudioState.cs` owns audio-preview property
   handlers, microphone monitor property handlers, and selected-microphone
   property handlers.
-  `MainViewModel.CaptureModeTransactions.cs`
+  `MainViewModel.CaptureSelection.cs`
   owns capture-mode property handlers for selected resolution, selected format,
   selected video format, and MJPEG decoder count changes.
   `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs` owns
@@ -2566,7 +2566,7 @@ Primary current owners:
   cleanup.
   `MainViewModel.CaptureSelection.cs` owns capture-device selection reactions,
   effective resolution helpers, frame-rate selection reactions, and
-  auto-selection entry points. `MainViewModel.CaptureModeTransactions.cs` keeps
+  auto-selection entry points. `MainViewModel.CaptureSelection.cs` keeps
   the resolution, frame-rate, selected-format, and video-format rebuild
   compatibility adapters alongside capture-mode transaction state, while
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
@@ -2582,7 +2582,7 @@ Primary current owners:
   resolved automatic frame-rate application, disabled frame-rate reason
   projection, and capture-mode reset flags.
   `Sussudio/ViewModels/FrameRateTimingPolicy.cs` also owns source-rate filtering
-  with capture options always visible. `MainViewModel.CaptureModeTransactions.cs`
+  with capture options always visible. `MainViewModel.CaptureSelection.cs`
   owns deferred rebuild behavior, capture-mode reinitialization serialization,
   and duplicate-reinit suppression.
   `Sussudio/ViewModels/FrameRateTimingPolicy.cs` owns pure frame-rate timing
@@ -2593,7 +2593,7 @@ Primary current owners:
   owns the stateful resolver that resolves timing variants and source/preferred
   timing from resolution capabilities, runtime snapshots, selected formats,
   source telemetry, UI selection state, and its graph-built context ports.
-  `MainViewModel.CaptureModeTransactions.cs` keeps selected-format and video-format
+  `MainViewModel.CaptureSelection.cs` keeps selected-format and video-format
   rebuild compatibility adapters, while
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
   is a top-level `Sussudio.Controllers` owner for selected-format assignment,
@@ -2609,7 +2609,7 @@ Primary current owners:
   probes for recording formats and split-encode modes through graph-built
   context ports, UI enqueue failure logging, and recording-format policy
   application to observable state.
-  `MainViewModel.CaptureModeTransactions.cs`
+  `MainViewModel.CaptureSelection.cs`
   owns HDR toggle side effects: recording-time revert/status, mode option
   rebuilds, immediate reinitialize scheduling, and settings persistence.
   `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs` also owns pure recording
@@ -2628,7 +2628,7 @@ Primary current owners:
   partial was retired instead of keeping another sub-100-line facade. Selected
   capture-device reactions, capability projection, source telemetry reset, and
   device-native audio-control refresh handoff live in `MainViewModel.CaptureSelection.cs`; capture-mode property-change hooks live
-  in `MainViewModel.CaptureModeTransactions.cs`; startup audio-list and
+  in `MainViewModel.CaptureSelection.cs`; startup audio-list and
   watcher-driven audio endpoint refresh adaptation live in `MainViewModel.AudioState.cs`.
   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` owns pure capture-card
   endpoint filtering plus previous/saved/default audio and microphone selection
@@ -2649,7 +2649,7 @@ Primary current owners:
   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`
   owns the pure late-probe decision policy for HDR retarget, SDR NV12 retarget,
   MJPG HFR preservation, session mismatch, and active-capture restore.
-  `MainViewModel.CaptureModeTransactions.cs` keeps the compatibility adapter for
+  `MainViewModel.CaptureSelection.cs` keeps the compatibility adapter for
   resolution option rebuild callers.
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
   owns resolution option rebuilds inside the top-level capture option
@@ -2696,7 +2696,7 @@ Primary current owners:
   `MainViewModelPreviewLifecycleController.cs` owns top-level automation preview
   enable/disable idempotence, pending-reinit cancellation, and start/stop
   routing behind the `MainViewModel.cs` compatibility facade.
-  `MainViewModel.CaptureModeTransactions.cs` owns automation HDR and true-HDR
+  `MainViewModel.CaptureSelection.cs` owns automation HDR and true-HDR
   preview recording-time guard enforcement and availability checks alongside
   HDR mode change side effects.
   `MainViewModel.FlashbackState.cs` owns automation Flashback
@@ -2715,7 +2715,7 @@ Primary current owners:
   It also owns the capture-settings automation graph-port contract for option
   collections, selected capture-mode state, preview reinitialization checks,
   UI-thread dispatch, and format-change suppression.
-  `MainViewModel.CaptureModeTransactions.cs` owns capture-mode/HDR
+  `MainViewModel.CaptureSelection.cs` owns capture-mode/HDR
   property-change side effects outside the capture-settings automation
   controller.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs`

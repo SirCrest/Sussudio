@@ -6,7 +6,7 @@ static partial class Program
     internal static Task SourceFilteredFrameRatesAreAlwaysUnlocked()
     {
         var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
-        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
+        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
         var frameRateRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var sourceFilterPolicyText = ReadRepoFile("Sussudio/ViewModels/FrameRateTimingPolicy.cs").Replace("\r\n", "\n");
 
@@ -26,7 +26,7 @@ static partial class Program
     internal static Task FrameRateSourceFilterPolicy_LivesInFocusedHelper()
     {
         var frameRateOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
-        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
+        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
         var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var frameRateRebuildControllerText = captureModeOptionsControllerText;
         var sourceFilterPolicyText = ReadRepoFile("Sussudio/ViewModels/FrameRateTimingPolicy.cs").Replace("\r\n", "\n");
@@ -35,7 +35,8 @@ static partial class Program
 
         AssertContains(frameRateOptionsText, "/// Capture-device, resolution, and frame-rate selection reactions.");
         AssertContains(frameRateOptionsText, "private void SelectAutoFrameRate(bool rebuildOptions)");
-        AssertDoesNotContain(frameRateOptionsText, "private void RebuildFrameRateOptions()");
+        AssertContains(frameRateOptionsText, "private void RebuildFrameRateOptions()");
+        AssertContains(frameRateOptionsText, "=> _captureModeOptionRebuildController.RebuildFrameRateOptions();");
         AssertContains(captureModeTransactionsText, "/// Capture-mode transactions that coordinate option rebuilds");
         AssertContains(captureModeTransactionsText, "private void RebuildFrameRateOptions()");
         AssertContains(captureModeTransactionsText, "=> _captureModeOptionRebuildController.RebuildFrameRateOptions();");
@@ -73,7 +74,7 @@ static partial class Program
     internal static Task FrameRateAutoSelectionPolicy_LivesInFocusedHelper()
     {
         var frameRateOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
-        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
+        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
         var frameRateRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var autoSelectionPolicyText = ReadRepoFile("Sussudio/ViewModels/FrameRateTimingPolicy.cs").Replace("\r\n", "\n");
         var modeSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs").Replace("\r\n", "\n");
@@ -115,7 +116,7 @@ static partial class Program
 
     internal static Task FrameRateTimingPolicy_LivesInFocusedPartial()
     {
-        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
+        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
         var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var timingResolverText = captureModeOptionsControllerText;
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");

@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-26
+Area: MainViewModel capture selection transaction locality
+Problem: `MainViewModel.CaptureModeTransactions.cs` was a 192-line partial that only held capture-mode property-change reactions, HDR/true-HDR guards, and tiny adapter methods for the capture option rebuild controller. Those fields and handlers directly coordinate the capture-device, resolution, frame-rate, video-format, and HDR selection state already owned by `MainViewModel.CaptureSelection.cs`, so reviewing a single capture selection change required opening an extra tiny partial.
+Files consolidated: `Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `MainViewModel` partial cluster reduced from 12 files to 11 files
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (885 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: no public automation command names, IDs, wire payloads, XAML bindings, capture mode option strings, recording/HDR guard messages, or automation controller contracts changed
+Behavior preserved: selected device capability rebuild, resolution/frame-rate/video-format option rebuild adapters, selected-format reinitialization, MJPEG decoder count clamp/reinit, deferred option refresh while recording, HDR recording-time revert/status, true-HDR recording guard, and HDR toggle reinitialize scheduling remain unchanged.
+Notes for future agents: keep capture-mode property-change reactions and adapter methods in `MainViewModel.CaptureSelection.cs` while they are only coordinating selection state; keep pure option rebuild collection mutation in `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`.
+
+Date: 2026-05-26
 Area: preview lifecycle button/fade locality
 Problem: `PreviewButtonActionController.cs` carried preview toggle choreography, button glyph/tooltip presentation, and fade-in timer policy while `PreviewLifecycleEventController.cs` owned the adjacent preview start/stop/reinit property-change lifecycle. Reviewing preview startup/stop behavior required opening both controller files even though they coordinate the same preview lifecycle surface and are wired together from `MainWindow.PreviewLifecycle.Composition.cs`.
 Files consolidated: `Sussudio/Controllers/Preview/PreviewButtonActionController.cs`

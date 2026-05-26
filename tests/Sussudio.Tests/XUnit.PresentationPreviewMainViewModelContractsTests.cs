@@ -135,8 +135,8 @@ public sealed class PresentationPreviewMainViewModelRuntimeContractsTests
         => global::Program.MainViewModelAutomation_PreviewEnablementLivesInPreviewLifecycleController();
 
     [Fact]
-    public Task AutomationHdrEnablementLivesInCaptureModeTransactions()
-        => global::Program.MainViewModelAutomation_HdrEnablementLivesInCaptureModeTransactions();
+    public Task AutomationHdrEnablementLivesInCaptureSelection()
+        => global::Program.MainViewModelAutomation_HdrEnablementLivesInCaptureSelection();
 
     [Fact]
     public Task CaptureRoutesAudioMonitoringThroughCoordinator()
