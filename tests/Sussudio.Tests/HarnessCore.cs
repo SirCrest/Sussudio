@@ -1,9 +1,281 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
+using System.Threading.Tasks;
 
 static partial class Program
 {
+    private static void AssertEqual<T>(T expected, T actual, string fieldName)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+        {
+            throw new InvalidOperationException(
+                $"Assertion failed for {fieldName}: expected '{expected}', actual '{actual}'.");
+        }
+    }
+
+    private static void AssertNearlyEqual(double expected, double actual, double tolerance, string fieldName)
+    {
+        if (Math.Abs(expected - actual) > tolerance)
+        {
+            throw new InvalidOperationException(
+                $"Assertion failed for {fieldName}: expected '{expected}', actual '{actual}', tolerance '{tolerance}'.");
+        }
+    }
+
+    private static void AssertContains(string value, string token)
+    {
+        var normalizedValue = NormalizeLineEndings(value);
+        var normalizedToken = NormalizeLineEndings(token);
+        if (normalizedValue.IndexOf(normalizedToken, StringComparison.OrdinalIgnoreCase) < 0)
+        {
+            throw new InvalidOperationException(
+                $"Assertion failed: expected '{value}' to contain '{token}'.");
+        }
+    }
+
+    private static void AssertDoesNotContain(string value, string token)
+    {
+        var normalizedValue = NormalizeLineEndings(value);
+        var normalizedToken = NormalizeLineEndings(token);
+        if (normalizedValue.IndexOf(normalizedToken, StringComparison.OrdinalIgnoreCase) >= 0)
+        {
+            throw new InvalidOperationException(
+                $"Assertion failed: expected value not to contain '{token}'.");
+        }
+    }
+
+    private static void AssertNotNull(object? value, string fieldName)
+    {
+        if (value == null)
+        {
+            throw new InvalidOperationException($"Assertion failed for {fieldName}: value was null.");
+        }
+    }
+
+    private static string NormalizeLineEndings(string value)
+        => value.Replace("\r\n", "\n").Replace('\r', '\n');
+
+    private static HashSet<string> ExtractSnapshotFields(string sourceText)
+    {
+        var fields = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var callPrefix in new[]
+        {
+            "Get(snapshot,",
+            "GetInt(snapshot,",
+            "GetDouble(snapshot,",
+            "GetLong(snapshot,",
+            "GetNullableLong(snapshot,",
+            "GetBool(snapshot,",
+            "GetString(snapshot,",
+            "FormatFrameBudgetMs(snapshot,",
+            "FormatIntervalMs(snapshot,"
+        })
+        {
+            ExtractSnapshotFieldsFromCalls(sourceText, callPrefix, fields);
+        }
+
+        return fields;
+    }
+
+    private static void ExtractSnapshotFieldsFromCalls(string sourceText, string callPrefix, HashSet<string> fields)
+    {
+        var index = 0;
+        while (index < sourceText.Length)
+        {
+            var callIdx = sourceText.IndexOf(callPrefix, index, StringComparison.Ordinal);
+            if (callIdx < 0)
+                break;
+
+            var afterComma = callIdx + callPrefix.Length;
+            var quoteIdx = sourceText.IndexOf('"', afterComma);
+            if (quoteIdx < 0 || quoteIdx - afterComma > 10)
+            {
+                index = afterComma;
+                continue;
+            }
+
+            var endQuoteIdx = sourceText.IndexOf('"', quoteIdx + 1);
+            if (endQuoteIdx < 0)
+            {
+                index = quoteIdx + 1;
+                continue;
+            }
+
+            var fieldName = sourceText.Substring(quoteIdx + 1, endQuoteIdx - quoteIdx - 1);
+            if (fieldName.Length > 0)
+                fields.Add(fieldName);
+
+            index = endQuoteIdx + 1;
+        }
+    }
+
+    private static string GetRepoRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory != null)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "Sussudio.slnx")))
+            {
+                return directory.FullName;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new InvalidOperationException(
+            $"Could not locate repository root from '{AppContext.BaseDirectory}'.");
+    }
+
+    private static string ReadRepoFile(string relativePath)
+        => File.ReadAllText(Path.Combine(GetRepoRoot(), relativePath));
+
+    private static string ReadAutomationSnapshotFamilyText()
+    {
+        return ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs")
+            .Replace("\r\n", "\n");
+    }
+
+    private static string ReadAutomationSnapshotFlatteningFamilyText()
+        => string.Join(
+            "\n",
+            ReadAutomationSnapshotFlatteningOrchestrationText(),
+            ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs"))
+            .Replace("\r\n", "\n");
+
+    private static string ReadAutomationSnapshotFlatteningOrchestrationText()
+    {
+        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
+            .Replace("\r\n", "\n");
+        const string startToken = "private static AutomationSnapshotFlattenedProjectionSet BuildAutomationSnapshotFlattenedProjectionSet(";
+        const string endToken = "private SnapshotStatusProjection BuildSnapshotStatusProjection(";
+        var startIndex = snapshotProjectionText.IndexOf(startToken, StringComparison.Ordinal);
+        var endIndex = snapshotProjectionText.IndexOf(endToken, StringComparison.Ordinal);
+        if (startIndex < 0 || endIndex <= startIndex)
+        {
+            throw new InvalidOperationException("Unable to locate automation snapshot flattening orchestration in the root snapshot projection file.");
+        }
+
+        return snapshotProjectionText[startIndex..endIndex];
+    }
+
+    private static object BuildRecordingContext(
+        bool usePostMuxAudio,
+        string? videoPath = null,
+        string? audioTempPath = null,
+        string? finalPath = null)
+    {
+        var settings = BuildSettings(hdrEnabled: false);
+        var contextType = RequireType("Sussudio.Services.Contracts.RecordingContext");
+        var context = RuntimeHelpers.GetUninitializedObject(contextType);
+        SetPropertyBackingField(context, "Settings", settings);
+        SetPropertyBackingField(context, "UsePostMuxAudio", usePostMuxAudio);
+        SetPropertyBackingField(context, "EffectiveFrameRate", 60.0);
+        SetPropertyBackingField(context, "FrameRateArg", "60");
+        SetPropertyBackingField(context, "EffectiveWidth", 1920u);
+        SetPropertyBackingField(context, "EffectiveHeight", 1080u);
+        SetPropertyBackingField(context, "VideoInputPixelFormat", "nv12");
+        SetPropertyBackingField(context, "VideoOutputPath", videoPath ?? "/tmp/video.mp4");
+        SetPropertyBackingField(context, "FinalOutputPath", finalPath ?? "/tmp/final.mp4");
+        SetPropertyBackingField(context, "AudioTempPath", audioTempPath);
+        SetPropertyBackingField(context, "HdrPipelineActive", false);
+        return context;
+    }
+
+    private static object BuildDevice(string id = "device-1")
+    {
+        var device = CreateInstance("Sussudio.Models.CaptureDevice");
+        SetPropertyOrBackingField(device, "Id", id);
+        SetPropertyOrBackingField(device, "Name", "Synthetic Capture Device");
+        SetPropertyOrBackingField(device, "AudioDeviceId", "audio-1");
+        SetPropertyOrBackingField(device, "AudioDeviceName", "Synthetic Audio");
+        return device;
+    }
+
+    private static object BuildSettings(bool hdrEnabled)
+    {
+        var settings = CreateInstance("Sussudio.Models.CaptureSettings");
+        SetPropertyOrBackingField(settings, "Width", 1920u);
+        SetPropertyOrBackingField(settings, "Height", 1080u);
+        SetPropertyOrBackingField(settings, "FrameRate", 60d);
+        SetPropertyOrBackingField(settings, "RequestedFrameRateArg", "60/1");
+        SetPropertyOrBackingField(settings, "RequestedFrameRateNumerator", 60u);
+        SetPropertyOrBackingField(settings, "RequestedFrameRateDenominator", 1u);
+        SetPropertyOrBackingField(settings, "RequestedPixelFormat", hdrEnabled ? "P010" : "NV12");
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("Sussudio.Models.RecordingFormat", "HevcMp4"));
+        SetPropertyOrBackingField(settings, "Quality", ParseEnum("Sussudio.Models.VideoQuality", "High"));
+        SetPropertyOrBackingField(settings, "HdrEnabled", hdrEnabled);
+        SetPropertyOrBackingField(settings, "HdrOutputMode", ParseEnum("Sussudio.Models.HdrOutputMode", "Hdr10Pq"));
+        SetPropertyOrBackingField(settings, "AudioEnabled", true);
+        SetPropertyOrBackingField(settings, "OutputPath", Path.GetTempPath());
+        return settings;
+    }
+
+    private static async Task InvokeInitializeAsync(object captureService, object device, object settings)
+    {
+        var initialize = captureService.GetType().GetMethod(
+            "InitializeAsync",
+            BindingFlags.Public | BindingFlags.Instance,
+            binder: null,
+            types: new[] { device.GetType(), settings.GetType(), typeof(CancellationToken) },
+            modifiers: null);
+        if (initialize == null)
+        {
+            throw new InvalidOperationException("CaptureService.InitializeAsync method not found.");
+        }
+
+        var task = initialize.Invoke(captureService, new[] { device, settings, CancellationToken.None }) as Task;
+        if (task == null)
+        {
+            throw new InvalidOperationException("CaptureService.InitializeAsync did not return a Task.");
+        }
+
+        await task.ConfigureAwait(false);
+    }
+
+    private static async Task DisposeAsync(object captureService)
+    {
+        await DisposeValueTaskAsync(captureService).ConfigureAwait(false);
+    }
+
+    private static async Task DisposeValueTaskAsync(object instance)
+    {
+        var disposeAsync = instance.GetType().GetMethod("DisposeAsync", BindingFlags.Public | BindingFlags.Instance);
+        if (disposeAsync == null)
+        {
+            return;
+        }
+
+        var valueTask = disposeAsync.Invoke(instance, null);
+        if (valueTask == null)
+        {
+            return;
+        }
+
+        var asTaskMethod = valueTask.GetType().GetMethod("AsTask", BindingFlags.Public | BindingFlags.Instance);
+        if (asTaskMethod?.Invoke(valueTask, null) is Task task)
+        {
+            await task.ConfigureAwait(false);
+        }
+    }
+
+    private static async Task WaitForConditionAsync(Func<bool> condition, string description, int timeoutMs = 2000, int pollMs = 25)
+    {
+        var sw = Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < timeoutMs)
+        {
+            if (condition())
+            {
+                return;
+            }
+
+            await Task.Delay(pollMs).ConfigureAwait(false);
+        }
+
+        throw new InvalidOperationException($"Timed out waiting for condition: {description}");
+    }
+
     private static void SetPropertyBackingField(object instance, string propertyName, object? value)
     {
         var field = instance.GetType().GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);

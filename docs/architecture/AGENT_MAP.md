@@ -1907,20 +1907,12 @@ Primary current owners:
   orchestration; `Program.Encoding.cs` owns FFmpeg argument and AV1 encoder
   selection policy; `Program.Support.cs` owns CLI parsing, tool-path resolution,
   and child-process log capture.
-- `tests/Sussudio.Tests/HarnessCore.SourceText.cs` owns shared repo-root/file
-  reads, automation snapshot source family readers, and source-text extraction
-  helpers used by harness ownership checks.
-- `tests/Sussudio.Tests/HarnessCore.Reflection.cs` owns shared reflection,
-  private-field/property access, enum/type lookup, and field-value fixture
-  helpers.
-- `tests/Sussudio.Tests/HarnessCore.ObjectFactories.cs` owns synthetic
-  capture, settings, and recording-context object factories.
-- `tests/Sussudio.Tests/HarnessCore.AsyncLifecycle.cs` owns capture-service
-  initialization, async disposal, and polling wait helpers.
-- `tests/Sussudio.Tests/HarnessCore.Assertions.cs` owns generic harness
-  assertion helpers: `AssertEqual<T>`, `AssertNearlyEqual`, `AssertContains`,
-  `AssertDoesNotContain`, `AssertNotNull`, and string line-ending
-  normalization.
+- `tests/Sussudio.Tests/HarnessCore.cs` owns shared harness primitives:
+  generic assertions, repo-root/file reads, automation snapshot source family
+  readers, source-text extraction, reflection/private-field access,
+  enum/type lookup, synthetic capture/settings/recording-context factories,
+  capture-service initialization, async disposal, polling waits, and
+  field-value fixture helpers.
 - `tests/Sussudio.Tests/MjpegTimingMetrics.Helpers.cs` owns synthetic MJPEG
   timing metric factories and the closed-pipeline emit delegate used by
   harness-level MJPEG and snapshot tests.

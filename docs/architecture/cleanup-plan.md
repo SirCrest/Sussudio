@@ -597,14 +597,10 @@ inventory discovery.
 Shared tool assembly loading and stale-build detection now live in
 `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` so the legacy harness body
 no longer owns tool DLL resolution or freshness policy.
-Shared harness helpers now live in focused owners instead of the legacy harness
-body: repo-file/source text helpers live in
-`tests/Sussudio.Tests/HarnessCore.SourceText.cs`, reflection/property access
-lives in `tests/Sussudio.Tests/HarnessCore.Reflection.cs`, assertions live in
-`tests/Sussudio.Tests/HarnessCore.Assertions.cs`, wait helpers live in
-`tests/Sussudio.Tests/HarnessCore.AsyncLifecycle.cs`, and synthetic
-capture/recording object factories live in
-`tests/Sussudio.Tests/HarnessCore.ObjectFactories.cs`.
+Shared harness helpers now live in one support boundary,
+`tests/Sussudio.Tests/HarnessCore.cs`: generic assertions, repo-file/source
+text helpers, reflection/property access, wait helpers, and synthetic
+capture/recording object factories.
 Synthetic MJPEG timing metric factories and the closed-pipeline emit delegate
 now live in `tests/Sussudio.Tests/MjpegTimingMetrics.Helpers.cs`.
 

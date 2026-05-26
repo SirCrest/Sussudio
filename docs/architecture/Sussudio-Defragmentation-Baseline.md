@@ -3112,3 +3112,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: Flashback buffer segment metadata, outside-path, disposed no-op, and recovery-preserve tests remain registered through `XUnit.RecordingModelContractsTests` and `XUnit.PresentationPreviewStartupContractsTests`; Flashback export failure-classifier mapping remains registered through `XUnit.RecordingPipelineContractsTests`.
 Notes for future agents: keep Flashback buffer segment safety checks in `Flashback.Buffer.Segments.Validation.Tests.cs`; keep top-level Flashback exporter request/failure classification checks in `Flashback.Exporter.Basic.Tests.cs` unless either surface gains a separate named collaborator with its own test seam.
+
+Date: 2026-05-26
+Area: test harness core locality
+Problem: `HarnessCore.Assertions.cs`, `HarnessCore.AsyncLifecycle.cs`, `HarnessCore.ObjectFactories.cs`, `HarnessCore.Reflection.cs`, and `HarnessCore.SourceText.cs` split the private legacy `Program` harness primitives into five small helper shards. Understanding or updating shared assertions, repo/source readers, reflection fixtures, object factories, async disposal, and polling waits required opening multiple sub-80-line support files even though they are one harness support boundary.
+Files consolidated: `tests/Sussudio.Tests/HarnessCore.Assertions.cs`; `tests/Sussudio.Tests/HarnessCore.AsyncLifecycle.cs`; `tests/Sussudio.Tests/HarnessCore.ObjectFactories.cs`; `tests/Sussudio.Tests/HarnessCore.Reflection.cs`; `tests/Sussudio.Tests/HarnessCore.SourceText.cs`
+Files added: `tests/Sussudio.Tests/HarnessCore.cs` (renamed from `HarnessCore.Reflection.cs`)
+Net production .cs delta: 0; net test .cs delta: -4
+Partial clusters reduced: legacy `Program` shared harness helper partial file count -4
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: generic harness assertions, source text readers, reflection/private-field helpers, synthetic capture/settings/recording fixtures, capture-service initialization, async disposal, polling waits, and field-value fixtures remain in the same private `Program` harness surface.
+Notes for future agents: keep shared harness primitives in `HarnessCore.cs`; create a separate harness support file only for an independently named fixture family with enough behavior to justify its own owner.
