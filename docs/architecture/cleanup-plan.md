@@ -762,7 +762,8 @@ launch/chrome adapter surface, including the Loaded adapter and native shell
 bootstrap wiring.
 Automation host composition, once-only
 startup, ready/disabled logging, and pipe-before-hub shutdown disposal now live
-in `Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs`.
+with the window automation command owner in
+`Sussudio/Controllers/Window/WindowAutomationController.cs`.
 `Sussudio/Controllers/Launch/LaunchStartupController.cs` starts that
 controller after initial device refresh, and
 `Sussudio/MainWindow.xaml.cs` passes its async dispose

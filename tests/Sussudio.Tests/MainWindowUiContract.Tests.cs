@@ -175,6 +175,7 @@ static partial class Program
         AssertContains(adapterSource, "=> _windowAutomationController.SnapToRegionAsync(region, cancellationToken);");
         AssertContains(mainWindowSource, "InitializeWindowAutomationController();");
         AssertContains(controllerSource, "internal sealed class WindowAutomationController");
+        AssertContains(controllerSource, "internal sealed class WindowAutomationHostLifecycleController");
         AssertContains(controllerSource, "public Task MoveToAsync(int x, int y, CancellationToken cancellationToken = default)");
         AssertContains(controllerSource, "public Task ResizeToAsync(int width, int height, CancellationToken cancellationToken = default)");
         AssertContains(controllerSource, "public Task SnapToRegionAsync(AutomationWindowAction region, CancellationToken cancellationToken = default)");
@@ -191,6 +192,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Window", "WindowSnapRegionLayoutPolicy.cs")),
             "snap-region rectangle math lives with window automation controller concerns");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Window", "WindowAutomationHostLifecycleController.cs")),
+            "automation host lifecycle lives with the window automation controller owner");
         return Task.CompletedTask;
     }
 

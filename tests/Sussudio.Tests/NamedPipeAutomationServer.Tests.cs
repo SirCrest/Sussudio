@@ -160,7 +160,7 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs")
+        var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationController.cs")
             .Replace("\r\n", "\n");
         var startupText = ReadMainWindowShellChromeAdapterSource();
         var launchStartupControllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchStartupController.cs")

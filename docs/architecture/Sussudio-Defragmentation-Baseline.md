@@ -3256,3 +3256,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer` and `tools/ssctl`; test/docs-only consolidation, no public automation command names, IDs, wire payloads, or MCP tool implementations changed
 Behavior preserved: diagnostic-session planning/setup, background task draining, PresentMon startup, sample-loop ordering, cleanup restore warning, recording verification, post-run snapshot, and shared metrics ownership assertions remain registered through `XUnit.McpDiagnosticSessionContractsTests`.
 Notes for future agents: keep diagnostic-session lifecycle helper ownership checks in `McpToolSurface.DiagnosticSession.Ownership.Tests.cs`; keep infrastructure, result ownership, Flashback scenario, and Flashback metric projection checks in their focused sibling files.
+
+Date: 2026-05-26
+Area: shell window automation production locality
+Problem: `WindowAutomationHostLifecycleController.cs` was a small shell automation host lifecycle file separate from `WindowAutomationController.cs`, even though both own the shell window automation surface used by `IAutomationWindowControl`: geometry/recordings-folder commands on one side, named-pipe diagnostics/dispatcher startup and shutdown on the other. Reviewing app-shell automation startup, auth fallback, and window automation command ownership required jumping across two tiny production owners.
+Files consolidated: `Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: shell window automation production owner count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer`, `tools/ssctl`, and automation tooling; no public automation command names, IDs, wire payloads, auth environment variables, pipe names, or XAML bindings changed
+Behavior preserved: automation token/pipe-name resolution, diagnostics hub construction, command dispatcher construction, named-pipe server construction, once-only startup, ready/disabled logging, and pipe-before-hub shutdown disposal now live in `Sussudio/Controllers/Window/WindowAutomationController.cs` with the window automation command owner.
+Notes for future agents: keep native DWM bootstrap and recording-aware close/finalization in their existing window owners; keep shell automation host lifecycle with `WindowAutomationController.cs` unless it grows an independently executable lifecycle policy.

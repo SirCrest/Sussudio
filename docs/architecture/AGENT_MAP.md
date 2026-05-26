@@ -1007,18 +1007,16 @@ Primary current owners:
   `MainWindow.ButtonActions.cs` is the XAML-facing adapter for preview-frame
   screenshots.
 - `Sussudio/Controllers/Window/WindowAutomationController.cs` owns window geometry
-  automation plus the recordings-folder command: UI-thread dispatch, AppWindow
-  and DisplayArea access, maximized presenter restore, side effects, and pure
-  snap-region rectangle math. `MainWindow.ShellChrome.Composition.cs` is the
-  `IAutomationWindowControl` adapter; recording-aware close handling stays with
-  the close lifecycle/finalization owners.
-- `Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs` owns shell
-  automation host lifecycle: automation token/pipe-name resolution, diagnostics
-  hub construction, command dispatcher construction, named-pipe server
-  construction, once-only startup, ready/disabled logging, and pipe-before-hub
-  shutdown disposal. `Sussudio/MainWindow.ShellChrome.Composition.cs` starts
-  the controller after initial device refresh; `Sussudio/MainWindow.xaml.cs`
-  passes the controller dispose delegate into the shutdown cleanup controller.
+  automation plus the recordings-folder command and shell automation host
+  lifecycle: UI-thread dispatch, AppWindow and DisplayArea access, maximized
+  presenter restore, side effects, pure snap-region rectangle math, automation
+  token/pipe-name resolution, diagnostics hub construction, command dispatcher
+  construction, named-pipe server construction, once-only startup, ready/disabled
+  logging, and pipe-before-hub shutdown disposal. `MainWindow.ShellChrome.Composition.cs`
+  is the `IAutomationWindowControl` adapter and starts the host controller after
+  initial device refresh; `Sussudio/MainWindow.xaml.cs` passes the host dispose
+  delegate into the shutdown cleanup controller. Recording-aware close handling
+  stays with the close lifecycle/finalization owners.
 - `Sussudio/MainWindow.ShellChrome.Composition.cs` owns the XAML-facing shell
   launch/chrome adapter surface: native shell bootstrap callbacks, control-bar
   animation callbacks, launch entrance/startup callbacks, settings shelf

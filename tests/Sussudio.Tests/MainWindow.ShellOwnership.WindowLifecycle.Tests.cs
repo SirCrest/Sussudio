@@ -115,7 +115,7 @@ static partial class Program
         var documentedOwners = new[]
         {
             "Sussudio/Controllers/Window/WindowCloseLifecycleController.cs",
-            "Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs",
+            "Sussudio/Controllers/Window/WindowAutomationController.cs",
             "Sussudio/MainWindow.ShellChrome.Composition.cs",
             "Sussudio/MainWindow.xaml.cs",
         };
@@ -378,7 +378,7 @@ static partial class Program
     internal static Task MainWindowShutdownCleanup_OwnsPostCloseCleanupOrder()
     {
         var shutdownCleanupText = ReadMainWindowCompositionSource();
-        var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs").Replace("\r\n", "\n");
+        var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationController.cs").Replace("\r\n", "\n");
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
 
         AssertContains(shutdownCleanupText, "private WindowShutdownCleanupController _windowShutdownCleanupController = null!;");
