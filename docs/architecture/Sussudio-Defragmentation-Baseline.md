@@ -3064,3 +3064,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: PresentMon parser behavior and source-family ownership checks remain registered through `XUnit.ToolContractsTests`.
 Notes for future agents: keep PresentMon parser behavior and source ownership checks together in `PresentMonProbe.Tests.cs`; do not recreate a standalone PresentMon source-ownership shard unless the production probe gains a separately named collaborator with its own test seam.
+
+Date: 2026-05-26
+Area: MJPEG preview jitter test locality
+Problem: `PooledVideoFrame.MjpegJitterPolicy.Tests.cs` split MJPEG preview jitter source-ownership and adaptive deadline policy assertions away from `PooledVideoFrame.MjpegJitterQueue.Tests.cs`, even though both protect the same `MjpegPreviewJitterBuffer` review surface: frame ingress, queue ordering, deadline drops, adaptive target depth, reprime behavior, emit-loop placement, frame pacing, and metrics.
+Files consolidated: `tests/Sussudio.Tests/PooledVideoFrame.MjpegJitterPolicy.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MJPEG preview jitter test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: MJPEG preview jitter adaptive deadline/source-ownership checks and queue/drop/reprime behavior checks remain registered through `XUnit.MjpegPipelineContractsTests`.
+Notes for future agents: keep MJPEG preview jitter source ownership, adaptive policy, queue/drop, and reprime checks together in `PooledVideoFrame.MjpegJitterQueue.Tests.cs`; keep shared pooled-frame reflection/factory helpers in `PooledVideoFrame.Tests.cs`.
