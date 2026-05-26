@@ -1244,14 +1244,11 @@ Primary current owners:
   presentation and input-provider behavior checks, and
   `tests/Sussudio.Tests/MainViewModel.DiskSpacePresentation.Tests.cs` owns disk
   space presentation bridge checks.
-- `tests/Sussudio.Tests/MainWindowUiContract.AutomationIds.Tests.cs` owns
-  MainWindow automation ID inventory checks.
-- `tests/Sussudio.Tests/MainWindowUiContract.WindowAutomation.Tests.cs` owns
-  MainWindow full-screen and window automation source contract checks.
+- `tests/Sussudio.Tests/MainWindowUiContract.Tests.cs` owns MainWindow
+  automation ID inventory, full-screen/window automation, and UI-dispatching
+  source contract checks.
   `tests/Sussudio.Tests/WindowSnapRegionLayoutPolicy.Tests.cs` owns snap-region
   rectangle policy behavior checks.
-- `tests/Sussudio.Tests/MainWindowUiContract.Dispatching.Tests.cs` owns
-  MainWindow UI-dispatching contract checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.StatsSnapshot.Tests.cs` owns
   xUnit stats snapshot builder contract checks.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.Chrome.Tests.cs` owns

@@ -2620,3 +2620,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; xUnit wrapper/helper consolidation only, no automation command names, IDs, or wire payloads changed
 Behavior preserved: bool converter xUnit fact names and reflection assertions, app-surface wrapper behavior, staged target assembly loading lock, and legacy runtime snapshot runner assembly resolution remain unchanged.
 Notes for future agents: keep small app-surface xUnit wrappers in `XUnit.AutomationContractsTests.cs`; keep the xUnit target assembly bootstrap with `Program.cs` while it only initializes the legacy runner assembly cache.
+
+Date: 2026-05-26
+Area: MainWindow UI contract test locality
+Problem: MainWindow automation ID inventory, full-screen/window automation contracts, and UI-dispatching contracts were split across three tiny legacy `Program` partial files even though they all guard the same MainWindow UI/automation surface and share the same source-reader helpers. Reviewing MainWindow's agent-facing UI contract still required opening multiple small shards.
+Files consolidated: `tests/Sussudio.Tests/MainWindowUiContract.AutomationIds.Tests.cs`; `tests/Sussudio.Tests/MainWindowUiContract.WindowAutomation.Tests.cs`; `tests/Sussudio.Tests/MainWindowUiContract.Dispatching.Tests.cs`
+Files added: `tests/Sussudio.Tests/MainWindowUiContract.Tests.cs`
+Net production .cs delta: 0; net test .cs delta: -2
+Partial clusters reduced: legacy `Program` MainWindow UI contract partial file count -2
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: MainWindow automation ID inventory checks, uniqueness checks, full-screen automation transition assertions, window automation controller routing checks, snap-region ownership assertion, and UI dispatching/run-handler source contract assertions remain unchanged.
+Notes for future agents: keep MainWindow's agent-facing UI contract checks in `MainWindowUiContract.Tests.cs`; add focused behavior tests elsewhere only when they exercise a different runtime seam rather than another source-contract shard for the same UI surface.
