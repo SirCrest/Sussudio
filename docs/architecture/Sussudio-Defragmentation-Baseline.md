@@ -2644,8 +2644,8 @@ Net production .cs delta: -1
 Partial clusters reduced: `RecordingVerifier` production partial-family file count 3 -> 2
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
-Behavior preserved: container, codec, dimensions, frame-rate, cadence, Flashback export verification format, and HDR validation logic moved unchanged beside the strict verifier orchestration and result shaping; ffprobe path/process/scalar/HDR/cadence probing remains in `RecordingVerifier.Ffprobe.cs`.
-Notes for future agents: keep pure recording verification policy in the root verifier unless it grows a separate collaborator seam; keep external ffprobe process and JSON probe mechanics in `RecordingVerifier.Ffprobe.cs`.
+Behavior preserved: container, codec, dimensions, frame-rate, cadence, Flashback export verification format, and HDR validation logic moved unchanged beside the strict verifier orchestration and result shaping; ffprobe path/process/scalar/HDR/cadence probing was still in `RecordingVerifier.Ffprobe.cs` at this checkpoint.
+Notes for future agents: superseded by the 2026-05-26 recording verifier ffprobe locality slice; recording verification policy and ffprobe probe mechanics now live together in `RecordingVerifier.cs`.
 
 Date: 2026-05-25
 Area: Automation command dispatcher assert-snapshot locality
@@ -4352,3 +4352,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, Flashback command names, queue coalescing semantics, cancellation routing, or inactive-playback rejection telemetry changed.
 Behavior preserved: serialized capture command queueing, Flashback restart/settings/format mutation cancellation routing, latest-only encoder setting coalescing, Flashback buffer/playback snapshots, export/segment forwarding, playback/scrub/marker/go-live adapters, inactive-playback rejection telemetry, snapshot accounting, disposal drain/cancel behavior, and public command names now live in `CaptureSessionCoordinator.cs`.
 Notes for future agents: keep `CaptureSessionCoordinator` command facade, queue worker, snapshot/accounting, disposal, and Flashback command/query adapters together in `Sussudio/Services/Capture/CaptureSessionCoordinator.cs`; extract only if a named capture transition state machine or Flashback command router replaces partial-file organization.
+
+Date: 2026-05-26
+Area: recording verifier ffprobe locality
+Problem: `RecordingVerifier.Ffprobe.cs` owned private ffprobe path/process/spec helpers, HDR side-data probing, cadence timestamp analysis, scalar parsing, and key-value/JSON parsing used only by `RecordingVerifier.cs`, while the root owned the strict verification orchestration and validation/result shaping that call those helpers. Reviewing one verifier behavior surface still required opening two production partials.
+Files consolidated: `Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `RecordingVerifier` production partial file count -1; verifier is no longer partial
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~RecordingVerifier|FullyQualifiedName~CoreRuntimeRecordingContractsTests"` (45 passed); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, ffprobe command arguments, process priority, timeout policy, verification mismatch taxonomy, or recording verification result shape changed.
+Behavior preserved: strict recording verification orchestration, early failure handling, ffprobe accessibility checks, primary ffprobe stream probing, HDR side-data probing, cadence frame timestamp analysis, scalar/key-value/JSON parsing, dimensions/frame-rate/cadence/container/codec/HDR validation, Flashback export verification format resolution, mismatch taxonomy, and HDR parity now live in `RecordingVerifier.cs`.
+Notes for future agents: keep recording verification orchestration, validation policy, ffprobe process mechanics, probe parsing, and result shaping together in `Sussudio/Services/Recording/Verification/RecordingVerifier.cs`; split only if ffprobe probing becomes a real injected collaborator with its own tests or external callers.

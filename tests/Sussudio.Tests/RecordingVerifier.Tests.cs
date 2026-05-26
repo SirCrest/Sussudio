@@ -112,25 +112,24 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task RecordingVerifier_CadenceAnalysisLivesWithFfprobeProbes()
+    internal static Task RecordingVerifier_CadenceAnalysisLivesWithVerifier()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.cs")
             .Replace("\r\n", "\n");
-        var ffprobeText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(rootText, "public sealed partial class RecordingVerifier : IRecordingVerifier");
-        AssertContains(ffprobeText, "private async Task<CadenceMetrics?> AnalyzeCadenceMetricsAsync(");
-        AssertContains(ffprobeText, "private static CadenceMetrics ComputeCadenceMetrics(");
-        AssertContains(ffprobeText, "private static double? TryGetFrameTimestampSeconds(JsonElement frame)");
-        AssertContains(ffprobeText, "private static double? TryGetJsonDouble(JsonElement element, string propertyName)");
+        AssertContains(rootText, "public sealed class RecordingVerifier : IRecordingVerifier");
+        AssertContains(rootText, "private async Task<CadenceMetrics?> AnalyzeCadenceMetricsAsync(");
+        AssertContains(rootText, "private static CadenceMetrics ComputeCadenceMetrics(");
+        AssertContains(rootText, "private static double? TryGetFrameTimestampSeconds(JsonElement frame)");
+        AssertContains(rootText, "private static double? TryGetJsonDouble(JsonElement element, string propertyName)");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "Verification", "RecordingVerifier.Cadence.cs")),
-            "RecordingVerifier cadence ffprobe pass folded into ffprobe probe owner");
-        AssertDoesNotContain(rootText, "private async Task<CadenceMetrics?> AnalyzeCadenceMetricsAsync(");
-        AssertDoesNotContain(rootText, "private static CadenceMetrics ComputeCadenceMetrics(");
-        AssertDoesNotContain(rootText, "private static double? TryGetFrameTimestampSeconds(JsonElement frame)");
+            "RecordingVerifier cadence ffprobe pass folded into verifier owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "Verification", "RecordingVerifier.Ffprobe.cs")),
+            "RecordingVerifier ffprobe helper partial folded into verifier owner");
 
         return Task.CompletedTask;
     }
@@ -139,15 +138,13 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.cs")
             .Replace("\r\n", "\n");
-        var ffprobeText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(rootText, "public async Task<RecordingVerificationResult> VerifyAsync(");
-        AssertContains(ffprobeText, "private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(");
-        AssertContains(ffprobeText, "private async Task<CadenceMetrics?> AnalyzeCadenceMetricsAsync(");
-        AssertContains(ffprobeText, "private static Dictionary<string, string> ParseKeyValueOutput(string output)");
-        AssertContains(ffprobeText, "private static double? TryParseRational(string? value)");
-        AssertContains(ffprobeText, "private ProcessSpec CreateFfprobeProcessSpec(");
+        AssertContains(rootText, "private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(");
+        AssertContains(rootText, "private async Task<CadenceMetrics?> AnalyzeCadenceMetricsAsync(");
+        AssertContains(rootText, "private static Dictionary<string, string> ParseKeyValueOutput(string output)");
+        AssertContains(rootText, "private static double? TryParseRational(string? value)");
+        AssertContains(rootText, "private ProcessSpec CreateFfprobeProcessSpec(");
         AssertContains(rootText, "private static void ValidateContainer(");
         AssertContains(rootText, "private static void ValidateCodec(");
         AssertContains(rootText, "private static void ValidateDimensions(");
@@ -162,7 +159,6 @@ static partial class Program
         AssertContains(rootText, "private static IReadOnlyList<MismatchTaxonomyEntry> BuildMismatchTaxonomy(");
         AssertContains(rootText, "private static string? TryGetMismatchPart(");
         AssertContains(rootText, "private static RecordingVerificationResult CreateEarlyFailure(");
-        AssertDoesNotContain(rootText, "private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "Verification", "RecordingVerifier.Results.cs")),
@@ -171,6 +167,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "Verification", "RecordingVerifier.Validation.cs")),
             "RecordingVerifier validation policy folded into RecordingVerifier.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "Verification", "RecordingVerifier.Ffprobe.cs")),
+            "RecordingVerifier ffprobe probe/process helpers folded into RecordingVerifier.cs");
 
         return Task.CompletedTask;
     }

@@ -1318,15 +1318,14 @@ texture release, CUDA frame free, and pooled buffer returns there.
 owns the LibAv sink queue, lifecycle, output-validation, drain-loop, and
 packet-drain assertions.
 
-Recording verifier ownership is split across focused partials. Keep strict
+Recording verifier ownership lives in
+`Sussudio/Services/Recording/Verification/RecordingVerifier.cs`. Keep strict
 verification orchestration, early failure results, primary mismatch parsing, HDR
-parity, and mismatch taxonomy in `Sussudio/Services/Recording/Verification/RecordingVerifier.cs`,
-ffprobe process/spec/side-data probing in
-`Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs`,
-including probe scalar parsing and ffprobe frame timestamp cadence analysis.
-Dimensions, frame-rate, cadence, container/codec format, Flashback export
-verification format resolution, and HDR validation policy live in the root
-`RecordingVerifier.cs` with the orchestration and result shaping that consume them.
+parity, mismatch taxonomy, ffprobe process/spec/side-data probing, probe scalar
+parsing, and ffprobe frame timestamp cadence analysis together there. Dimensions,
+frame-rate, cadence, container/codec format, Flashback export verification
+format resolution, and HDR validation policy stay with the orchestration and
+result shaping that consume them.
 `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` keeps the
 recording verifier integration seam together: shared fake process-supervisor,
 runtime snapshot, verifier construction, verification invocation helpers, and
