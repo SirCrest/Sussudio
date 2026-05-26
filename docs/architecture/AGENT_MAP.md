@@ -1363,8 +1363,9 @@ Primary current owners:
   owns capture settings projection ownership assertions, including the focused
   frame-rate request projector used by `BuildCaptureSettings`.
 - `tests/Sussudio.Tests/MainViewModel.AudioControls.GainAndMonitoring.Tests.cs`
-  owns analog gain curve mapping, preview audio monitoring volume-ramp, and
-  audio meter callback-state ownership assertions.
+  owns analog gain curve mapping, audio monitoring visual state, preview audio
+  monitoring volume-ramp, audio meter callback-state, and audio-ramp trace
+  telemetry ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.AudioControls.DeviceAudio.Tests.cs` owns
   device audio refresh, saved-state guard, device-audio request-controller
   ownership assertions, and native XU audio-control service cohesion, profile,
@@ -1467,8 +1468,6 @@ Primary current owners:
   owns Flashback lifecycle outcome log-token, codec no-downgrade, export
   force-rotate, buffer-cycle, delivered-cadence rational, and enable/disable
   preview-state assertions.
-- `tests/Sussudio.Tests/MainViewModel.AudioRuntime.Tests.cs` owns audio
-  monitoring visual state and audio-ramp trace telemetry ownership assertions.
 - `tests/Sussudio.Tests/XUnit.SmallContractsTests.cs` owns ported audio input,
   audio level event, capture device metadata/default collection, and automation
   window action enum contract checks.
