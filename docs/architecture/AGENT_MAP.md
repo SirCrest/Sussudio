@@ -2206,15 +2206,14 @@ Primary current owners:
 - `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`
   keeps the XAML event name stable as part of the preview transition/presentation
   adapter.
-- `Sussudio/Controllers/Recording/RecordingStatePresentationController.cs` owns
-  pure recording-state lockout decisions, recording property-change routing,
-  ViewModel-derived lockout/HDR/title/audio-meter policy application, and
-  delegates record-button chrome.
-  `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs` owns demo-visible
-  record-button chrome: recording glow, Rec pulse, starting spinner,
-  normal/recording content, padding, enabled-state application, and the
-  circle/pill width morph. `MainWindow.ControlBindings.cs` wires the
-  chrome controller, recording action adapter, and recording-state presentation adapter.
+- `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs` owns
+  recording visual behavior: pure recording-state lockout decisions, recording
+  property-change routing, ViewModel-derived lockout/HDR/title/audio-meter
+  policy application, delegated record-button chrome, recording glow, Rec pulse,
+  starting spinner, normal/recording content, padding, enabled-state
+  application, and the circle/pill width morph. `MainWindow.ControlBindings.cs`
+  wires the chrome controller, recording action adapter, and recording-state
+  presentation adapter.
 - `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs` owns the recording
   button command workflow and preview-state logging after a start.
   `MainWindow.ControlBindings.cs` is the XAML-facing adapter for recording and

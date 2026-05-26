@@ -2491,7 +2491,9 @@ name stable as part of the preview transition/presentation adapter.
 Demo-visible record-button chrome now lives in
 `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs`: recording glow,
 Rec pulse, starting spinner, normal/recording content, padding, enabled-state
-application, and the circle/pill width morph.
+application, the circle/pill width morph, recording-state lockout decisions,
+recording property-change routing, ViewModel-derived HDR/title/audio-meter
+policy application, and the `RecordingStatePresentationController` facade.
 `MainWindow.ControlBindings.cs` wires the chrome controller with the
 recording action and recording-state presentation adapters.
 
@@ -2604,11 +2606,10 @@ also routes through this controller so the recording bitrate text keeps one UI
 owner.
 
 Pure recording-state lockout decisions and recording-state UI projection now live in
-`Sussudio/Controllers/Recording/RecordingStatePresentationController.cs`: recording-time
+`Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs`: recording-time
 capture/audio control enablement, analog gain enablement, transition button
 enablement, FFmpeg button enablement, settled record-button content visibility,
-ViewModel-derived property-name routing, lockout/HDR/title/audio-meter policy application, and delegation to
-`Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs` for record-button
+ViewModel-derived property-name routing, lockout/HDR/title/audio-meter policy application, and record-button
 chrome.
 `MainWindow.ControlBindings.cs` is the XAML-facing recording adapter.
 

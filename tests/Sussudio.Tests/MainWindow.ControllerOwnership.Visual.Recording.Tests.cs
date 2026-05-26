@@ -10,7 +10,12 @@ static partial class Program
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var recordingPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs").Replace("\r\n", "\n");
-        var recordingPresentationText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingStatePresentationController.cs").Replace("\r\n", "\n");
+        var presentationStart = controllerText.IndexOf("internal sealed class RecordingStatePresentationControllerContext", System.StringComparison.Ordinal);
+        if (presentationStart < 0)
+        {
+            throw new System.InvalidOperationException("RecordingStatePresentationControllerContext was not found in RecordingButtonChromeController.cs.");
+        }
+        var recordingPresentationText = controllerText[presentationStart..];
 
         AssertContains(recordingPropertyChangedText, "private RecordingButtonChromeController _recordingButtonChromeController = null!;");
         AssertEqual(
@@ -94,14 +99,26 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingStatePresentationController.cs").Replace("\r\n", "\n");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Recording", "RecordingStatePresentationController.cs")),
+            "recording state presentation lives with recording button chrome instead of returning as a tiny adjacent file");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs").Replace("\r\n", "\n");
+        const string presentationMarker = "internal sealed class RecordingStatePresentationControllerContext";
+        var presentationStart = controllerText.IndexOf(presentationMarker, System.StringComparison.Ordinal);
+        if (presentationStart < 0)
+        {
+            throw new System.InvalidOperationException("RecordingStatePresentationControllerContext was not found in RecordingButtonChromeController.cs.");
+        }
+
         const string policyMarker = "internal static class RecordingStatePresentationPolicy";
         var policyStart = controllerText.IndexOf(policyMarker, System.StringComparison.Ordinal);
         if (policyStart < 0)
         {
-            throw new System.InvalidOperationException("RecordingStatePresentationPolicy was not found in RecordingStatePresentationController.cs.");
+            throw new System.InvalidOperationException("RecordingStatePresentationPolicy was not found in RecordingButtonChromeController.cs.");
         }
 
+        var presentationText = controllerText[presentationStart..policyStart];
         var policyText = controllerText[policyStart..];
 
         AssertContains(adapterText, "private RecordingStatePresentationController _recordingStatePresentationController = null!;");
@@ -149,11 +166,11 @@ static partial class Program
         AssertDoesNotContain(adapterText, "case nameof(MainViewModel.");
         AssertDoesNotContain(adapterText, "=> _recordingStatePresentationController.HandleRecordingChanged();");
         AssertDoesNotContain(bindingsText, "RecordButton.IsEnabled = !ViewModel.IsFfmpegMissing");
-        AssertDoesNotContain(controllerText, "_context.RecordButton.");
-        AssertDoesNotContain(controllerText, "_context.RecordButtonStartingContent.");
-        AssertDoesNotContain(controllerText, "_context.RecordingGlowPulseStoryboard.");
-        AssertDoesNotContain(controllerText, "string.Equals(viewModel.SelectedDeviceAudioMode, DeviceAudioMode.Analog");
-        AssertDoesNotContain(controllerText, "_context.ViewModel.IsFfmpegMissing &&");
+        AssertDoesNotContain(presentationText, "_context.RecordButton.");
+        AssertDoesNotContain(presentationText, "_context.RecordButtonStartingContent.");
+        AssertDoesNotContain(presentationText, "_context.RecordingGlowPulseStoryboard.");
+        AssertDoesNotContain(presentationText, "string.Equals(viewModel.SelectedDeviceAudioMode, DeviceAudioMode.Analog");
+        AssertDoesNotContain(presentationText, "_context.ViewModel.IsFfmpegMissing &&");
 
         return Task.CompletedTask;
     }
