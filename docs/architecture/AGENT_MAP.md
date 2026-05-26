@@ -1566,7 +1566,7 @@ Primary current owners:
   CaptureService audio source-family helpers, audio focused-partial ownership,
   PreviewAudioGraphResources ownership, and post-recording microphone monitor
   restart assertions.
-  `tests/Sussudio.Tests/XUnit.RecordingPipelineContractsTests.cs` owns the
+  `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns the
   xUnit execution surface for these recording queue, LibAv sink, WASAPI,
   capture fan-out, and CaptureService recording ownership contracts after their
   removal from the legacy harness catalog.
@@ -1681,7 +1681,12 @@ Primary current owners:
   offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns recording
   service contract DTO checks such as GpuPipelineHandles,
-  RecordingContextRequest, FinalizeResult, and RecordingStats.
+  RecordingContextRequest, FinalizeResult, and RecordingStats, plus the
+  xUnit execution surface for recording pipeline, recording-model/Flashback
+  buffer, recording verifier, LibAv encoder, Flashback integrity, shared
+  formatter, and dedicated LibAv verification script contracts after their
+  removal from the legacy offline harness catalog. Keep the public wrapper
+  classes in this file unless a group needs independent fixture state.
 - `tests/Sussudio.Tests/RecordingArtifactManager.Tests.cs` owns xUnit temp
   artifact finalize/rollback behavior for recording output cleanup.
 - `tests/Sussudio.Tests/LibAvEncoder.Contracts.Tests.cs` owns LibAvEncoder
@@ -1803,9 +1808,9 @@ Primary current owners:
   core-runtime registration group for runtime telemetry, capture-service
   snapshot, recording-integrity, NativeXu, frame-ledger, and basic app contract
   checks after their removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/XUnit.CoreRuntimeRecordingContractsTests.cs` owns the
-  former core-runtime recording registration group for recording verifier,
-  LibAv encoder, Flashback integrity, recording-facing shared formatter, and
+- `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` also owns the former
+  core-runtime recording registration group for recording verifier, LibAv
+  encoder, Flashback integrity, recording-facing shared formatter, and
   dedicated LibAv verification script checks after their removal from the
   legacy offline harness catalog.
 - `Sussudio/Services/Runtime/RuntimeHelpers.cs` owns runtime helper types
@@ -1877,7 +1882,7 @@ Primary current owners:
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral
   classifier cases.
-- `tests/Sussudio.Tests/XUnit.RecordingModelContractsTests.cs` owns the former
+- `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` also owns the former
   legacy recording-model execution surface for LibAv sink loop/source-ownership
   checks, capture runtime failure/runtime-flag checks, and the large Flashback
   buffer manager behavior/source-ownership group.

@@ -3122,7 +3122,7 @@ Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: legacy `Program` CaptureService recording lifecycle/outcome test partial file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
-Behavior preserved: CaptureService recording lifecycle, backend resource aggregate, stop-finalization failure propagation, recording start rollback, and recording outcome-state ownership checks remain registered through `XUnit.RecordingPipelineContractsTests`.
+Behavior preserved: CaptureService recording lifecycle, backend resource aggregate, stop-finalization failure propagation, recording start rollback, and recording outcome-state ownership checks remain registered through `XUnit.RecordingContractsTests`.
 Notes for future agents: keep recording lifecycle, rollback, and outcome-state ownership checks in `CaptureService.RecordingLifecycleOwnership.Tests.cs`; keep Flashback-specific recording orchestration checks in the Flashback orchestration/source owner files.
 
 Date: 2026-05-26
@@ -3182,7 +3182,7 @@ Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: legacy `Program` LibAv recording sink test partial file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
-Behavior preserved: LibAv sink nonblocking video/GPU/CUDA enqueue checks, audio queue ownership, video queue submission ownership, output validation, bounded drain loop, encoding-loop, startup, stop-lifecycle, and lifetime-helper assertions remain registered through `XUnit.RecordingPipelineContractsTests` and `XUnit.RecordingModelContractsTests`.
+Behavior preserved: LibAv sink nonblocking video/GPU/CUDA enqueue checks, audio queue ownership, video queue submission ownership, output validation, bounded drain loop, encoding-loop, startup, stop-lifecycle, and lifetime-helper assertions remain registered through `XUnit.RecordingContractsTests`.
 Notes for future agents: keep LibAv recording sink queue and lifecycle ownership checks together in `RecordingQueue.LibAvSink.Lifecycle.Tests.cs`; do not recreate a separate queue test shard unless production queue behavior becomes a separately named collaborator with its own test seam.
 
 Date: 2026-05-26
@@ -3208,6 +3208,18 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: ssctl pipe transport command ID, retry, parsed-response, invalid-JSON, and unknown-command checks remain registered through `XUnit.ToolContractsTests`; no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed.
 Behavior preserved: PresentMon parser/source-family assertions, ssctl pipe transport behavior checks, KS audio-node ownership assertions, and EGAVDS ownership assertions keep the same method names and public xUnit wrappers.
 Notes for future agents: keep these small tool-probe contract implementations together in `ToolProbeContracts.Tests.cs`; keep `XUnit.ToolContractsTests.cs` as the public wrapper surface unless a group needs independent fixture state.
+
+Date: 2026-05-26
+Area: recording xUnit wrapper locality
+Problem: recording xUnit wrapper classes were spread across `XUnit.RecordingPipelineContractsTests.cs`, `XUnit.RecordingModelContractsTests.cs`, `XUnit.CoreRuntimeRecordingContractsTests.cs`, and the existing `XUnit.RecordingContractsTests.cs`, even though they all perform the same no-fixture xUnit forwarding role for recording/Flashback contracts. Reviewing or adding recording contract registrations required opening four wrapper files before reaching the real implementation owners.
+Files consolidated: `tests/Sussudio.Tests/XUnit.RecordingPipelineContractsTests.cs`; `tests/Sussudio.Tests/XUnit.RecordingModelContractsTests.cs`; `tests/Sussudio.Tests/XUnit.CoreRuntimeRecordingContractsTests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -3
+Partial clusters reduced: n/a; recording xUnit wrapper file count -3
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (885 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; xUnit wrapper-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed.
+Behavior preserved: public xUnit wrapper class names and test method names remain unchanged inside `XUnit.RecordingContractsTests.cs`, including recording pipeline, recording-model/Flashback buffer, core-runtime recording, and recording DTO contract checks.
+Notes for future agents: keep recording xUnit wrappers together in `XUnit.RecordingContractsTests.cs` unless a group needs independent fixture state; keep behavior/source-ownership test implementations in their focused owner files.
 
 Date: 2026-05-26
 Area: MJPEG preview jitter test locality
@@ -3254,7 +3266,7 @@ Net production .cs delta: 0; net test .cs delta: -2
 Partial clusters reduced: legacy `Program` Flashback buffer/exporter test partial file count -2
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
-Behavior preserved: Flashback buffer segment metadata, outside-path, disposed no-op, and recovery-preserve tests remain registered through `XUnit.RecordingModelContractsTests` and `XUnit.PresentationPreviewStartupContractsTests`; Flashback export failure-classifier mapping remains registered through `XUnit.RecordingPipelineContractsTests`.
+Behavior preserved: Flashback buffer segment metadata, outside-path, disposed no-op, and recovery-preserve tests remain registered through `XUnit.RecordingContractsTests` and `XUnit.PresentationPreviewStartupContractsTests`; Flashback export failure-classifier mapping remains registered through `XUnit.RecordingContractsTests`.
 Notes for future agents: keep Flashback buffer segment safety checks in `Flashback.Buffer.Segments.Validation.Tests.cs`; keep top-level Flashback exporter request/failure classification checks in `Flashback.Exporter.Basic.Tests.cs` unless either surface gains a separate named collaborator with its own test seam.
 
 Date: 2026-05-26

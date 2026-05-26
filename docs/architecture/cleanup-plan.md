@@ -616,11 +616,15 @@ without scattering one contract surface across several wrapper files.
 `tests/Sussudio.Tests/XUnit.FlashbackModelsTests.cs` owns Flashback buffer
 option sizing behavior, DTO contracts, and the reflection/nullability assertion
 helpers for that xUnit contract surface.
-`tests/Sussudio.Tests/XUnit.RecordingModelContractsTests.cs` owns the former
-legacy recording-model execution surface for LibAv sink loop/source-ownership
-checks, capture runtime failure/runtime-flag checks, and Flashback buffer
-manager behavior/source-ownership checks after their removal from the legacy
-offline harness catalog.
+`tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns recording contract
+DTO checks plus the former recording pipeline, recording-model, and
+core-runtime recording xUnit execution surfaces: recording queue, LibAv sink,
+WASAPI, capture fan-out, CaptureService recording ownership, recording
+verifier, LibAv encoder, Flashback integrity, recording-facing shared
+formatter, dedicated LibAv verification script, capture runtime failure flags,
+and Flashback buffer manager behavior/source-ownership checks after their
+removal from the legacy offline harness catalog. Keep the public wrapper
+classes in this file unless a group needs independent fixture state.
 
 `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` now keeps only shared
 pooled-frame and jitter-buffer helpers. Pooled-frame coverage is split into
@@ -638,10 +642,10 @@ source-shape, cadence, frame-buffer, state/lifetime, timestamp, audio,
 request-validation, segment, cancellation, output path/finalization, and
 source-ownership contracts after their removal from the legacy harness catalog.
 Core runtime recording checks now execute through
-`tests/Sussudio.Tests/XUnit.CoreRuntimeRecordingContractsTests.cs`, keeping
-recording verifier, LibAv encoder, Flashback integrity, shared formatter, and
-dedicated LibAv verification script contracts in xUnit after their removal from
-the legacy harness catalog.
+`tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs`, keeping recording
+verifier, LibAv encoder, Flashback integrity, shared formatter, and dedicated
+LibAv verification script contracts in xUnit after their removal from the
+legacy harness catalog.
 Core runtime checks now execute through
 `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs`, keeping runtime
 telemetry, capture-service snapshot, NativeXu, frame-ledger, recording-integrity,
@@ -3266,10 +3270,10 @@ owner, fold it back into that owner and update the source-shape tests and
    Recording queue tests are split into overload policy, LibAv sink, WASAPI,
    and capture fan-out/backend owners. These recording pipeline ownership
    checks now execute through
-   `tests/Sussudio.Tests/XUnit.RecordingPipelineContractsTests.cs` after their
-   removal from the legacy harness catalog. Recording model execution checks now
-   run through `tests/Sussudio.Tests/XUnit.RecordingModelContractsTests.cs`
-   after their removal from the legacy harness catalog. D3D preview renderer tests are split
+   `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` after their removal
+   from the legacy harness catalog. Recording model execution checks also run
+   through `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` after their
+   removal from the legacy harness catalog. D3D preview renderer tests are split
    into geometry, cadence, diagnostics-contract, source-ownership marker plus
    ContractsAndMetrics/RenderPipeline/RuntimeCapture owners, device-lost, and
    frame-flow owners. Automation tool contract tests are split into

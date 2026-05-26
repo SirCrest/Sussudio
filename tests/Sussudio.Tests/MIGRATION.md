@@ -50,17 +50,10 @@ add xUnit alongside, and port incrementally.
   settings defaults, output path/file naming, bitrate policy, MJPEG HFR policy,
   MediaFormat equality/hash-code behavior, recording selection policy, encoder
   support, and recording pipeline option xUnit contract checks.
-- `XUnit.RecordingPipelineContractsTests.cs` owns the former legacy recording
-  queue overload-policy, LibAv sink, WASAPI, capture fan-out, and CaptureService
-  recording ownership checks.
-- `XUnit.RecordingModelContractsTests.cs` owns the former legacy recording
-  model execution surface for LibAv sink loop/source-ownership checks,
-  capture runtime failure/runtime-flag checks, and Flashback buffer manager
-  behavior/source-ownership checks.
-- `XUnit.CoreRuntimeRecordingContractsTests.cs` owns the former legacy core
-  runtime recording subgroup: recording verifier, LibAv encoder, Flashback
-  recording integrity, shared formatter, and dedicated LibAv verification
-  script checks.
+- `XUnit.RecordingContractsTests.cs` owns recording contract DTO checks plus
+  the former legacy recording pipeline, recording-model/Flashback buffer, and
+  core-runtime recording xUnit execution surfaces. The public wrapper classes
+  remain separate inside this file so existing test identities stay stable.
 - `XUnit.CoreRuntimeContractsTests.cs` owns the former legacy core runtime
   subgroup: runtime telemetry, capture-service snapshot, NativeXu, frame ledger,
   recording-integrity, and basic app contract checks.
