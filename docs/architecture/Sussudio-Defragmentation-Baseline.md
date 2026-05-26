@@ -384,7 +384,7 @@ Partial clusters reduced: `MfSourceReaderVideoCapture` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed after updating the source-reader source-shape assertion for the folded cadence owner); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: source-reader diagnostics refresh ownership tests cover the moved cadence metrics; no public automation command names, IDs, wire payloads, XAML bindings, capture negotiation options, or runtime snapshot fields changed
 Behavior preserved: source cadence metrics record shape, expected frame-rate window sizing, stop-time reset, Media Foundation timestamp interval tracking, percentile/jitter/1% low/5% low calculations, severe-gap counts, and estimated dropped-frame/drop-percent calculations remain unchanged
-Notes for future agents: keep source cadence state with `MfSourceReaderVideoCapture.Lifecycle.cs` because the read loop observes Media Foundation timestamps and stop/reset owns lifecycle cleanup; keep sample-to-buffer delivery in `MfSourceReaderVideoCapture.FrameDelivery.cs` and raw/compressed CPU conversion in `MfSourceReaderVideoCapture.RawFrameDelivery.cs`.
+Notes for future agents: keep source cadence state with `MfSourceReaderVideoCapture.Lifecycle.cs` because the read loop observes Media Foundation timestamps and stop/reset owns lifecycle cleanup; sample-to-buffer delivery and raw/compressed CPU conversion now live together in `MfSourceReaderVideoCapture.FrameDelivery.cs`.
 
 Date: 2026-05-26
 Area: Media Foundation source-reader initialization locality
@@ -1956,7 +1956,7 @@ Partial clusters reduced: `MfSourceReaderVideoCapture` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: D3D-enabled guards, IMFDXGIBuffer detection, D3D texture IID lookup, resource/subresource failure logging, GPU texture release on subresource failure, and CPU fallback behavior remain unchanged
-Notes for future agents: keep DXGI texture extraction and dual GPU/CPU delivery orchestration together in `MfSourceReaderVideoCapture.FrameDelivery.cs`; keep raw/compressed CPU buffer helpers in `RawFrameDelivery.cs` and shared packed layout math/subtype labels in `MfSourceReaderVideoCapture.cs`
+Notes for future agents: keep DXGI texture extraction, dual GPU/CPU delivery orchestration, and raw/compressed CPU buffer helpers together in `MfSourceReaderVideoCapture.FrameDelivery.cs`; keep shared packed layout math/subtype labels in `MfSourceReaderVideoCapture.cs`
 
 Date: 2026-05-24
 Area: D3D preview renderer render timing and viewport locality
@@ -4460,3 +4460,15 @@ Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csp
 CLI/MCP/pipe checks, if applicable: none beyond recording-contract test coverage for this source-locality slice; no public automation command names, IDs, wire payloads, XAML bindings, encoder options, FFmpeg option values, bitstream-filter strings, NVENC preset/split mapping, sample-format checks, or frame-size math changed.
 Behavior preserved: LibAvEncoder option validation, FFmpeg runtime/open setup, video codec context setup, HDR/MPEG-TS bitstream-filter selection, NVENC preset/split-encode mapping, frame-rate rational conversion, audio sample-format support, and packed-frame expected-size calculation now live with `LibAvEncoder.Initialization.cs`.
 Notes for future agents: keep LibAvEncoder codec/filter/rational setup policy with `Sussudio/Services/Recording/LibAvEncoder.Initialization.cs`; split only if the policy becomes an injected encoder-profile collaborator with independent callers or tests.
+
+Date: 2026-05-26
+Area: MF source-reader frame delivery locality
+Problem: `MfSourceReaderVideoCapture.RawFrameDelivery.cs` held the raw/compressed CPU buffer extraction helpers that were only called by `MfSourceReaderVideoCapture.FrameDelivery.cs`. Reviewing sample delivery required opening two adjacent partials for one hot path: sample-to-buffer conversion, compressed MJPG routing, dual GPU/CPU delivery, 2D buffer handling, packed-stride copies, and CPU fallback.
+Files consolidated: `Sussudio/Services/Capture/MfSourceReaderVideoCapture.RawFrameDelivery.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `MfSourceReaderVideoCapture` production partial file count 7 -> 6
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticsRefresh|FullyQualifiedName~CaptureDiscovery|FullyQualifiedName~SourceReader"` (1 passed); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, or XAML bindings changed.
+Behavior preserved: compressed MJPG byte extraction, raw CPU frame delivery, 2D buffer handling, packed-stride CPU copies, dual-frame CPU payload extraction, D3D texture fallback behavior, and GPU texture release now live together in `MfSourceReaderVideoCapture.FrameDelivery.cs`.
+Notes for future agents: keep source-reader sample-to-frame delivery, compressed/raw CPU extraction, 2D buffer handling, packed-stride copies, DXGI texture extraction, dual GPU/CPU delivery, and debug vtable diagnostics together in `Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs`; keep shared packed layout math/subtype labels in `MfSourceReaderVideoCapture.cs` and reader start/stop/dispose in `MfSourceReaderVideoCapture.Lifecycle.cs`.
