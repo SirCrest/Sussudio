@@ -2980,3 +2980,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: MainWindow native bootstrap, DWM cloak/dark-mode setup, first-composed-frame reveal, shell adapter ordering, close lifecycle registration, and window lifecycle assertions remain registered through `XUnit.PresentationPreviewMainWindowContractsTests`.
 Notes for future agents: keep MainWindow native bootstrap and close/shutdown lifecycle ownership checks together in `MainWindow.ShellOwnership.WindowLifecycle.Tests.cs`; keep launch entrance and loaded-time startup checks in `MainWindow.ShellOwnership.Startup.Launch.Tests.cs`.
+
+Date: 2026-05-26
+Area: CaptureService recording lifecycle test locality
+Problem: `CaptureService.RecordingOutcomeOwnership.Tests.cs` split recording start rollback and recording outcome-state assertions away from `CaptureService.RecordingLifecycleOwnership.Tests.cs`, even though the production ownership surface is the same recording lifecycle family: start rollback, outcome state in `CaptureService.RecordingLifecycle.cs`, backend finalization call sites, and active recording backend resources.
+Files consolidated: `tests/Sussudio.Tests/CaptureService.RecordingOutcomeOwnership.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` CaptureService recording lifecycle/outcome test partial file count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: CaptureService recording lifecycle, backend resource aggregate, stop-finalization failure propagation, recording start rollback, and recording outcome-state ownership checks remain registered through `XUnit.RecordingPipelineContractsTests`.
+Notes for future agents: keep recording lifecycle, rollback, and outcome-state ownership checks in `CaptureService.RecordingLifecycleOwnership.Tests.cs`; keep Flashback-specific recording orchestration checks in the Flashback orchestration/source owner files.

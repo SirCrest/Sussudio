@@ -1569,11 +1569,9 @@ Primary current owners:
   recording backend finalization, Flashback cleanup, microphone restart, and
   post-finalize telemetry assertions.
   `CaptureService.RecordingLifecycleOwnership.Tests.cs` owns CaptureService
-  recording lifecycle, recording-stop finalization failure propagation, and
-  active recording backend resource aggregate ownership assertions.
-  `CaptureService.RecordingOutcomeOwnership.Tests.cs` owns CaptureService
-  recording start rollback and recording outcome-state file-ownership
-  assertions.
+  recording lifecycle, recording-stop finalization failure propagation, active
+  recording backend resource aggregate, recording start rollback, and recording
+  outcome-state file-ownership assertions.
 - `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Queue.Tests.cs` owns LibAv
   recording sink try-enqueue, video-queue submission, audio queue, and
   queue-cleanup ownership assertions.
