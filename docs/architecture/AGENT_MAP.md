@@ -1387,14 +1387,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
   owns xUnit execution for the former legacy diagnostics-loop polling catalog
   check.
-- Keep new automation diagnostics projection ownership assertions in the focused
-  owner files; do not rebuild the old mega refresh assertion there:
-  `MainViewModel.Automation.DiagnosticsProjection.Snapshot.Tests.cs`,
-  `.Audio.Tests.cs`, `.Capture.Tests.cs`,
-  `.CaptureFormatTransport.Tests.cs`, `.SourceCadence.Tests.cs`,
-  `.Mjpeg.Tests.cs`,
-  `.Recording.Tests.cs`, `.Preview.Tests.cs`, and
-  `.Flashback.Tests.cs`.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsProjection.Tests.cs`
+  owns focused automation diagnostics projection ownership assertions for
+  snapshot root, audio/ingest, capture commands/settings, capture
+  format/transport, source/cadence, MJPEG, recording, preview, and Flashback
+  projection families; keep this surface separate from the old mega diagnostics
+  refresh assertion.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SettingsProjection.Tests.cs`
   owns capture settings projection ownership assertions, including the focused
   frame-rate request projector used by `BuildCaptureSettings`.
