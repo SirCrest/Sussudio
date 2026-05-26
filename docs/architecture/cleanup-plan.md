@@ -601,8 +601,9 @@ Shared harness helpers now live in one support boundary,
 `tests/Sussudio.Tests/HarnessCore.cs`: generic assertions, repo-file/source
 text helpers, reflection/property access, wait helpers, and synthetic
 capture/recording object factories.
-Synthetic MJPEG timing metric factories and the closed-pipeline emit delegate
-now live in `tests/Sussudio.Tests/MjpegTimingMetrics.Helpers.cs`.
+Synthetic MJPEG timing metric factories now live with the only scenarios that
+use them in
+`tests/Sussudio.Tests/CaptureService.HealthSnapshots.MjpegCachedMetrics.Tests.cs`.
 
 `tests/Sussudio.Tests/CaptureConfigurationModels.Tests.cs` now keeps only
 shared reflection helpers for remaining legacy capture model checks.

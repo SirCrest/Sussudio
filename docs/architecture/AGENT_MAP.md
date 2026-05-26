@@ -1621,7 +1621,8 @@ Primary current owners:
   owns CaptureService health snapshot recording and source-telemetry ownership
   assertions plus the structured source telemetry behavior scenario.
 - `tests/Sussudio.Tests/CaptureService.HealthSnapshots.MjpegCachedMetrics.Tests.cs`
-  owns cached MJPEG timing propagation for health and diagnostics snapshots.
+  owns cached MJPEG timing propagation for health and diagnostics snapshots
+  plus the synthetic MJPEG timing metric factories used by those scenarios.
 - `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` owns the
   recording verifier integration seam: fake process-supervisor,
   runtime-snapshot, verifier-construction, verification-invocation helpers,
@@ -1898,9 +1899,6 @@ Primary current owners:
   enum/type lookup, synthetic capture/settings/recording-context factories,
   capture-service initialization, async disposal, polling waits, and
   field-value fixture helpers.
-- `tests/Sussudio.Tests/MjpegTimingMetrics.Helpers.cs` owns synthetic MJPEG
-  timing metric factories and the closed-pipeline emit delegate used by
-  harness-level MJPEG and snapshot tests.
 - `tests/Sussudio.Tests/CaptureConfigurationModels.Tests.cs` owns shared
   reflection helpers for remaining legacy capture configuration model
   contract tests.
