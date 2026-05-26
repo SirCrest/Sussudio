@@ -3376,3 +3376,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds preview renderer consumers and automation tooling; no public automation command names, IDs, wire payloads, renderer mode labels, HLSL source text, shader compile profiles, or render-pass behavior changed
 Behavior preserved: NV12 renderer mode label, HDR shader mode label, fullscreen vertex shader, HDR tonemap shader, HDR passthrough shader, NV12 pixel shader, D3DCompile handoff, shader resource cleanup, and compile-fallback logging now live together in `D3D11PreviewRenderer.ShaderRendering.cs`.
 Notes for future agents: keep `PreviewShaderSources` with `D3D11PreviewRenderer.ShaderRendering.cs` unless shader sources become shared by another renderer or external shader packaging pipeline.
+
+Date: 2026-05-26
+Area: native window bootstrap lifecycle locality
+Problem: `NativeWindowBootstrapController.cs` was an 83-line one-use native shell startup owner used only by `MainWindow.ShellChrome.Composition.cs`, while `WindowCloseLifecycleController.cs` already owned MainWindow close lifecycle, first-frame reveal cancellation during shutdown, and window lifecycle contract tests. Reviewing startup cloak/reveal behavior and shutdown reveal cancellation required opening two window lifecycle controller files.
+Files consolidated: `Sussudio/Controllers/Window/NativeWindowBootstrapController.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: window lifecycle production owner count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed after ownership-doc wording fix); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, screenshot, automation, and shell consumers; no public automation command names, IDs, wire payloads, XAML bindings, window size, icon path, DWM attributes, or close-lifecycle behavior changed
+Behavior preserved: native window handle handoff, AppWindow lookup, min-size subclassing, DWM cloak/dark-mode setup, first-composed-frame reveal scheduling/cancellation, shell resize/icon setup, close request choreography, recording-stop close guard, and shutdown cleanup order now live in `WindowCloseLifecycleController.cs`.
+Notes for future agents: keep native shell bootstrap with `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs` while first-frame reveal scheduling and shutdown cancellation remain coupled; keep `_hwnd` storage and XAML-facing adapters in `MainWindow.ShellChrome.Composition.cs`.

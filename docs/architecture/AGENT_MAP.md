@@ -1089,7 +1089,7 @@ Primary current owners:
   `WindowShutdownCleanupController`, and owns the timer,
   event-detach, stats, recording-visual, and preview-size cleanup delegate
   adapters.
-- `Sussudio/Controllers/Window/NativeWindowBootstrapController.cs` owns native window
+- `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs` also owns native window
   bootstrap: `AppWindow` lookup, ViewModel window handle handoff,
   minimum-size subclassing, DWM cloak/dark-mode setup, first-composed-frame
   shell reveal scheduling/cancellation, initial shell size, icon, and native

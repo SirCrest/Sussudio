@@ -841,7 +841,7 @@ adapters.
 Native `AppWindow` lookup, ViewModel window handle handoff, minimum-size
 subclassing, DWM cloak/dark-mode setup, first-composed-frame shell reveal
 scheduling/cancellation, initial shell size, icon, and uncloaking now live in
-`Sussudio/Controllers/Window/NativeWindowBootstrapController.cs`.
+`Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`.
 `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing shell
 launch/chrome native-window adapter and keeps the `_hwnd` field consumed by screenshot and window
 automation paths.

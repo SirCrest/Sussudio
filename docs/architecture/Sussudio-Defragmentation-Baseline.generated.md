@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-26T07:48:11Z
+Generated UTC: 2026-05-26T07:53:09Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 382 |
+| Production .cs files | 381 |
 | Test .cs files | 251 |
 | Production .cs files under 60 lines | 2 (0.5%) |
 | Production .cs files under 80 lines | 7 (1.8%) |
@@ -77,10 +77,10 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 684 | Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs |
 | 683 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs |
 | 677 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
+| 675 | Sussudio/Controllers/Window/WindowCloseLifecycleController.cs |
 | 663 | Sussudio/MainWindow.ShellChrome.Composition.cs |
 | 662 | tools/Common/PresentMon/PresentMonProbe.cs |
 | 649 | tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs |
-| 647 | Sussudio/Services/Automation/NamedPipeAutomationServer.cs |
 
 ## Sample production files under 60 lines
 
