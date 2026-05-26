@@ -1758,11 +1758,9 @@ Primary current owners:
   `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for those shared snapshot formatter checks after their removal from
   the legacy offline harness catalog.
-- `tests/Sussudio.Tests/Formatters.Tests.cs` owns ssctl formatted snapshot
+- `tests/Sussudio.Tests/Formatters.Tests.cs` owns ssctl formatted snapshot and timeline
   output smoke checks. `tests/Sussudio.Tests/Formatters.SnapshotOwnership.Tests.cs`
-  owns ssctl formatter source ownership assertions, while
-  `tests/Sussudio.Tests/Formatters.Timeline.Tests.cs` owns timeline table and
-  summary output checks.
+  owns ssctl formatter source ownership assertions.
   `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for those ssctl formatter checks after their removal from the legacy
   offline harness catalog.
