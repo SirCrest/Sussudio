@@ -1160,10 +1160,9 @@ Primary current owners:
   driven by the overlay controller.
   `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` owns stats dock refresh
   orchestration: snapshot acquisition, dock presentation build/apply,
-  diagnostics visibility gating, and decode/GPU row refresh ordering.
-  `Sussudio/Controllers/Stats/StatsDockPresentationController.cs` owns
-  stats dock metric text, visibility, and status brush application after the
-  presentation model is built. `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`
+  diagnostics visibility gating, decode/GPU row refresh ordering, stats dock
+  metric text, visibility, and status brush application after the presentation
+  model is built. `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`
   keeps the local section chrome controller that owns stats dock section
   expand/collapse chrome and automation-visible section visibility application;
   `Sussudio/MainWindow.ShellChrome.Composition.cs`

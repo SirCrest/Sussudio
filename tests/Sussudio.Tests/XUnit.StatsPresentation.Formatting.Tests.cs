@@ -232,7 +232,7 @@ public partial class StatsPresentationTests
     {
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
-        var dockPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockPresentationController.cs");
+        var dockPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs");
         var statsSnapshotProviderText = statsOverlayCompositionText;
         var frameTimeOverlayControllerText = statsOverlayCompositionText;
         var frameTimeOverlayGeometryText = frameTimeOverlayControllerText;

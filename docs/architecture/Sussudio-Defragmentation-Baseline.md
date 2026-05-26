@@ -3412,3 +3412,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, MainWindow Flashback adapters, ViewModel consumers, automation tooling, and test harnesses; no public automation command names, IDs, wire payloads, XAML bindings, glyphs, label text, polling cadence, CTI refresh reasons, or track-resize order changed
 Behavior preserved: Flashback play/pause glyph selection, Go Live enablement, buffer duration text, playhead position label, playback polling start/stop, track resize snap/position/marker/CTI ordering, buffer-fill/position/marker refresh ordering, and CTI re-anchor gating now live in `FlashbackUiControllers.cs` with the rest of Flashback UI presentation.
 Notes for future agents: keep Flashback playback UI presentation/coordinator behavior with `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs`; keep pointer scrub mechanics in `FlashbackScrubInteractionController.cs`, timeline geometry/animation in `FlashbackTimelineController.cs`, and continuous playhead motion in `FlashbackPlayheadMotionController.cs`.
+
+Date: 2026-05-26
+Area: stats dock refresh presentation locality
+Problem: `StatsDockPresentationController.cs` was a 142-line dock value/visibility/brush application shard split away from `StatsDockRefreshController.cs`, even though the refresh owner is its only consumer and already owns snapshot acquisition, dock presentation model construction, diagnostics gating, and decode/GPU refresh order. Reviewing the stats dock update path required opening both files for one refresh behavior.
+Files consolidated: `Sussudio/Controllers/Stats/StatsDockPresentationController.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: stats dock refresh/presentation owner count -1
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, stats dock composition, stats presentation tests, automation tooling, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, metric labels, brush colors, visibility policy, or refresh ordering changed
+Behavior preserved: stats dock snapshot gate, dock presentation model build, text-change guards, metric status brushes, A/V sync encoder row visibility, encoder section visibility, diagnostics row refresh, and decode/GPU row refresh now live in `StatsDockRefreshController.cs`.
+Notes for future agents: keep stats dock value/brush/visibility application with `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` while it remains a direct part of dock refresh; keep dynamic diagnostic/decode/GPU row pooling in `StatsDockRowsController.cs`.

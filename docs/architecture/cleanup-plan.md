@@ -2146,9 +2146,8 @@ polling/visibility orchestration they mutate.
 Stats dock refresh orchestration now lives in
 `Sussudio/Controllers/Stats/StatsDockRefreshController.cs`: snapshot acquisition,
 dock presentation build/apply, diagnostics visibility gating, and decode/GPU
-row refresh ordering.
-Stats dock metric value, visibility, and status brush application now live in
-`Sussudio/Controllers/Stats/StatsDockPresentationController.cs`.
+row refresh ordering. Stats dock metric value, visibility, and status brush
+application also live there.
 Stats section expand/collapse chrome and automation-visible section application
 now live in the local section chrome controller inside
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
