@@ -3461,7 +3461,19 @@ Partial clusters reduced: legacy `Program` D3D11 preview diagnostics test partia
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: present cadence metric reflection and suppression-baseline tests remain registered through the same xUnit presentation-preview D3D contract surface.
-Notes for future agents: keep present cadence metric shape and suppression-baseline checks in `D3D11PreviewRenderer.DiagnosticsContract.Tests.cs` with the rest of the renderer diagnostics API contract; keep snapshot-model and performance-timeline DTO reflection in their focused sibling files.
+Notes for future agents: superseded by the 2026-05-27 D3D diagnostics contract locality slice; keep renderer diagnostics API/source-shape, present cadence, snapshot-model DTO reflection, and performance-timeline DTO reflection in `D3D11PreviewRenderer.DiagnosticsContract.Tests.cs`.
+
+Date: 2026-05-27
+Area: D3D preview diagnostics contract test locality
+Problem: `D3D11PreviewRenderer.DiagnosticsContract.SnapshotModels.Tests.cs` split preview runtime, automation snapshot, nested renderer metrics, preview tracking, and slow-frame diagnostic reflection checks away from `D3D11PreviewRenderer.DiagnosticsContract.Tests.cs`, even though both files were fixture-free `Program` partials registered through the same presentation-preview D3D diagnostics xUnit surface. Reviewing renderer diagnostics contracts still required opening a sidecar DTO reflection file after the API/source-shape and performance-timeline owner.
+Files consolidated: `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.SnapshotModels.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` D3D11 preview diagnostics test partial file count -1
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~D3D11PreviewRenderer|FullyQualifiedName~PresentationPreviewD3D|FullyQualifiedName~PreviewRuntimeSnapshot"` (43 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: D3D preview diagnostics API/source-shape checks, present cadence metrics, preview runtime DTO reflection, automation snapshot D3D fields, nested renderer metrics, preview tracking, slow-frame diagnostic reflection, and performance-timeline reflection remain registered through the same xUnit presentation-preview D3D contract surface.
+Notes for future agents: keep D3D preview diagnostics contract and DTO reflection checks in `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.Tests.cs` unless a new independent fixture or runtime harness is introduced.
 
 Date: 2026-05-26
 Area: MainViewModel preview reinitialization test locality
